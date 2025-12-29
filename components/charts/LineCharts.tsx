@@ -384,7 +384,7 @@ function DonutChartWithCenter({
   label: string;
 }) {
   const radius = 64;
-  const stroke = 20;
+  const stroke = 12;
   const center = 90;
   const circumference = 2 * Math.PI * radius;
   let offset = 0;
@@ -534,7 +534,7 @@ const Card = ({
 };
 
 const Legend = ({ data }: { data: DonutChartData[] }) => (
-  <div className="flex flex-col gap-3 sm:gap-4 justify-center min-w-0 sm:min-w-[210px] w-full sm:w-auto">
+  <div className="flex flex-col gap-3 sm:gap-4 justify-center min-w-0 sm:min-w-[150px] w-full sm:w-auto">
     {data.map((d) => (
       <div
         key={d.label}
@@ -553,7 +553,7 @@ const Legend = ({ data }: { data: DonutChartData[] }) => (
         <span className="text-muted-foreground font-medium flex-1 min-w-0 wrap-break-word sm:text-sm md:text-base">
           {d.label}
         </span>
-        <span className="dark:text-white text-[#051015] font-medium ml-auto min-w-[60px] sm:min-w-[95px] text-right tracking-tight flex-shrink-0 text-[11px] sm:text-sm md:text-base">
+        <span className="dark:text-white text-[#051015] font-medium ml-auto min-w-[60px] sm:min-w-[60px] text-right tracking-tight shrink-0 text-[11px] sm:text-sm md:text-base">
           {formatLargeNumber(d.value)} USD
         </span>
       </div>
@@ -933,7 +933,7 @@ const LineCharts = React.memo(
               />
             </div>
           </Card>
-          <Card className="w-full rounded-none lg:rounded-2xl bg-card border border-[#35353E]">
+          <Card className="w-full rounded-none lg:rounded-2xl bg-card border border-[#35353E] flex flex-col">
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 pt-4 pb-3">
               <h3 className="text-sm sm:text-base md:text-lg font-semibold dark:text-white text-gray-900">
@@ -959,12 +959,12 @@ const LineCharts = React.memo(
             </div>
 
             {/* Body */}
-            <div className="flex flex-col lg:flex-row gap-6 px-4 pb-6">
-              <div className="lg:w-1/2">
+            <div className="flex flex-col xl:flex-row gap-6 px-4 pb-6 flex-1">
+              <div className="xl:w-1/2">
                 <Legend data={overviewTotalData(transactionSummary, activeTab)} />
               </div>
 
-              <div className="flex-1 flex justify-center items-center">
+              <div className="flex-1 flex justify-center items-end">
                 <DonutChartWithCenter
                   data={overviewTotalData(transactionSummary, activeTab)}
                   total={overviewTotalSummary(transactionSummary, activeTab).total}
@@ -980,7 +980,7 @@ const LineCharts = React.memo(
             </div>
           </Card>
 
-          <Card className="w-full rounded-none lg:rounded-2xl bg-card border border-[#35353E]">
+          <Card className="w-full rounded-none lg:rounded-2xl bg-card border border-[#35353E] flex flex-col">
             {/* Header */}
             <div className="flex items-center justify-between px-4 pt-4 pb-3">
               <h3 className="text-sm sm:text-base md:text-lg font-semibold dark:text-white">
@@ -995,14 +995,14 @@ const LineCharts = React.memo(
             </div>
 
             {/* Body */}
-            <div className="flex flex-col lg:flex-row gap-6 px-4 pb-6">
-              <div className="lg:w-1/2">
+            <div className="flex flex-col xl:flex-row gap-6 px-4 pb-6 flex-1">
+              <div className="xl:w-1/2">
                 <Legend
                   data={referralCommissionsData(transactionSummary, walletData || undefined)}
                 />
               </div>
 
-              <div className="flex-1 flex justify-center items-center">
+              <div className="flex-1 flex justify-center items-end">
                 <DonutChartWithCenter
                   data={referralCommissionsData(transactionSummary, walletData || undefined)}
                   total={referralCommissionsSummary(transactionSummary, walletData || undefined).total}

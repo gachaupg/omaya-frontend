@@ -15,9 +15,6 @@ import {
 import { useLanguageOptional } from "@/context/language";
 import { useTheme } from "@/context/theme";
 
-
-
-
 const DefaultProfileIcon = () => (
   <div className="w-10 h-10 rounded-full flex items-center justify-center bg-[#1D8751] border-2 border-white">
     <User className="w-6 h-6 text-white" />
@@ -52,8 +49,8 @@ const NavLink = ({
         active
           ? "text-[#1D8751]" // Active link in green
           : isTransparent
-          ? "text-gray-900 dark:text-white" // Dark in light mode, white in dark mode when navbar is transparent
-          : "dark:text-white text-gray-900" // Theme-based when navbar has background
+            ? "text-gray-900 dark:text-white" // Dark in light mode, white in dark mode when navbar is transparent
+            : "dark:text-white text-gray-900" // Theme-based when navbar has background
       } hover:text-[#1D8751] transition-colors duration-200 text-xs md:text-xs lg:text-base xl:text-base 2xl:text-lg`}
     >
       {children}
@@ -85,10 +82,11 @@ const MobileNavLink = ({
   return (
     <Link
       href={href}
-      className={`block py-2 transition-colors duration-200 text-lg ${active
-        ? "text-[#1D8751]"
-        : "dark:text-white text-gray-900 hover:text-[#1D8751]"
-        }`}
+      className={`block py-2 transition-colors duration-200 text-lg ${
+        active
+          ? "text-[#1D8751]"
+          : "dark:text-white text-gray-900 hover:text-[#1D8751]"
+      }`}
       onClick={onClick}
     >
       {children}
@@ -106,10 +104,11 @@ const AuthButton = ({
   fullWidth?: boolean;
 }) => (
   <button
-    className={`${variant === "primary"
-      ? "bg-[#0E5531] hover:bg-[#13B562] text-white" // Primary button always has white text
-      : "bg-transparent border border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751] hover:text-white" // Secondary button with brand colors
-      } 
+    className={`${
+      variant === "primary"
+        ? "bg-[#0E5531] hover:bg-[#13B562] text-white" // Primary button always has white text
+        : "bg-transparent border border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751] hover:text-white" // Secondary button with brand colors
+    } 
     px-3 py-1 rounded-[22px] transition-colors duration-200 text-sm md:text-base 2xl:text-lg
     ${fullWidth ? "w-full" : ""}`}
   >
@@ -138,7 +137,7 @@ const LanguageSelector = () => {
       } else {
         document.cookie = `NEXT_LOCALE=${locale}; path=/; max-age=${60 * 60 * 24 * 365}`;
       }
-    } catch { }
+    } catch {}
   };
 
   return (
@@ -215,7 +214,9 @@ const LanguageSelector = () => {
                 </div>
                 {selectedLanguage === "Somali" && (
                   <div className="w-4 h-4 sm:w-4 sm:h-4 lg:w-4 lg:h-4 rounded-full flex items-center justify-center flex-shrink-0">
-                    <span className="text-[10px] sm:text-[10px] lg:text-[10px] text-[#1D8751]">✓</span>
+                    <span className="text-[10px] sm:text-[10px] lg:text-[10px] text-[#1D8751]">
+                      ✓
+                    </span>
                   </div>
                 )}
               </div>
@@ -227,7 +228,11 @@ const LanguageSelector = () => {
   );
 };
 
-const ThemeSelector = ({ isTransparentNavbar }: { isTransparentNavbar: boolean }) => {
+const ThemeSelector = ({
+  isTransparentNavbar,
+}: {
+  isTransparentNavbar: boolean;
+}) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const { theme, setTheme, isDark } = useTheme();
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -319,9 +324,9 @@ const ThemeSelector = ({ isTransparentNavbar }: { isTransparentNavbar: boolean }
       <button
         type="button"
         className={`flex items-center justify-center cursor-pointer min-h-[44px] sm:min-h-0 lg:min-h-0 px-1 sm:px-0 lg:px-0 border-none bg-transparent p-0 ${
-          isTransparentNavbar 
-            ? isDark 
-              ? "text-white" 
+          isTransparentNavbar
+            ? isDark
+              ? "text-white"
               : "text-gray-900"
             : "dark:text-white text-gray-900"
         }`}
@@ -343,7 +348,7 @@ const ThemeSelector = ({ isTransparentNavbar }: { isTransparentNavbar: boolean }
       {dropdownOpen && (
         <>
           {/* Backdrop for all screen sizes */}
-          <div 
+          <div
             className="fixed inset-0 z-40"
             onClick={() => setDropdownOpen(false)}
           />
@@ -423,7 +428,7 @@ const ThemeSelector = ({ isTransparentNavbar }: { isTransparentNavbar: boolean }
                       d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
                     />
                   </svg>
-                  <span className="text-sm sm:text-sm lg:text-sm">Deem</span>
+                  <span className="text-sm sm:text-sm lg:text-sm">Dim</span>
                 </div>
                 {theme === "deem" && (
                   <div className="w-4 h-4 sm:w-4 sm:h-4 lg:w-4 lg:h-4 rounded-full flex items-center justify-center flex-shrink-0">
@@ -447,10 +452,13 @@ export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [depositDropdownOpen, setDepositDropdownOpen] = useState(false);
-  const [mobileDepositDropdownOpen, setMobileDepositDropdownOpen] = useState(false);
+  const [mobileDepositDropdownOpen, setMobileDepositDropdownOpen] =
+    useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [profileImageError, setProfileImageError] = useState(false);
-  const [cachedProfilePhoto, setCachedProfilePhoto] = useState<string | null>(null);
+  const [cachedProfilePhoto, setCachedProfilePhoto] = useState<string | null>(
+    null
+  );
 
   const {
     isAuthenticated,
@@ -619,7 +627,8 @@ export default function Navbar() {
   };
 
   // Check if navbar should show white text (transparent on home page or about page when not scrolled)
-  const isTransparentNavbar = (pathname === "/" && !scrolled) || (pathname === "/about" && !scrolled);
+  const isTransparentNavbar =
+    (pathname === "/" && !scrolled) || (pathname === "/about" && !scrolled);
 
   // Use theme context instead of manual localStorage parsing
   const { theme } = useTheme();
@@ -665,7 +674,7 @@ export default function Navbar() {
       e.stopPropagation();
       e.preventDefault();
     }
-    setShowImagePreview(prev => !prev);
+    setShowImagePreview((prev) => !prev);
   };
 
   const closeImageModal = () => {
@@ -676,12 +685,13 @@ export default function Navbar() {
   if (!mounted) {
     return (
       <nav
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isTransparentNavbar
-          ? "bg-transparent"
-          : "bg-white dark:bg-gray-900 shadow-lg"
-          }`}
+        className={`fixed top-0 left-0 right-0 z-50 w-full transition-all duration-300 ${
+          isTransparentNavbar
+            ? "bg-transparent"
+            : "bg-white dark:bg-gray-900 shadow-lg"
+        }`}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Placeholder content during SSR */}
             <div className="flex items-center">
@@ -697,15 +707,16 @@ export default function Navbar() {
     );
   }
 
-
-
   return (
     <div>
       <nav
-        className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-3 py-3 sm:px-4 sm:py-4 md:px-4 md:py-2.5 lg:px-8 lg:py-4 xl:px-12 2xl:px-20 transition-all duration-300 ${getNavbarBackground()}`}
+        className={`fixed top-0 left-0 right-0 z-50 w-full flex items-center justify-between px-3 py-3 sm:px-4 sm:py-4 md:px-4 md:py-2.5 lg:px-8 lg:py-4 xl:px-12 2xl:px-20 transition-all duration-300 ${getNavbarBackground()}`}
       >
         <div className="flex items-center min-w-0 flex-1">
-          <Link href="/" className="mr-4 sm:mr-8 md:mr-6 lg:mr-12 xl:mr-20 flex-shrink-0">
+          <Link
+            href="/"
+            className="mr-4 sm:mr-8 md:mr-6 lg:mr-12 xl:mr-20 shrink-0"
+          >
             {/* Optimized logo selection using memoized config */}
             {logoConfig && (
               <Image
@@ -720,25 +731,49 @@ export default function Navbar() {
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex space-x-1 md:space-x-1.5 lg:space-x-4 xl:space-x-5 2xl:space-x-8 flex-shrink-0">
-            <NavLink href="/" isTransparent={isTransparentNavbar} pathname={pathname}>
+          <div className="hidden md:flex space-x-1 md:space-x-1.5 lg:space-x-5 shrink-0 wrap-break-word">
+            <NavLink
+              href="/"
+              isTransparent={isTransparentNavbar}
+              pathname={pathname}
+            >
               Home
             </NavLink>
             {isAuthenticated && (
-              <NavLink href="/dashboard" isTransparent={isTransparentNavbar} pathname={pathname}>
+              <NavLink
+                href="/dashboard"
+                isTransparent={isTransparentNavbar}
+                pathname={pathname}
+              >
                 Dashboard
               </NavLink>
             )}
-            <NavLink href="/market" isTransparent={isTransparentNavbar} pathname={pathname}>
+            <NavLink
+              href="/market"
+              isTransparent={isTransparentNavbar}
+              pathname={pathname}
+            >
               Market
             </NavLink>
-            <NavLink href="/rates" isTransparent={isTransparentNavbar} pathname={pathname}>
+            <NavLink
+              href="/rates"
+              isTransparent={isTransparentNavbar}
+              pathname={pathname}
+            >
               Rates
             </NavLink>
-            <NavLink href="/blog" isTransparent={isTransparentNavbar} pathname={pathname}>
+            <NavLink
+              href="/blog"
+              isTransparent={isTransparentNavbar}
+              pathname={pathname}
+            >
               Blog
             </NavLink>
-            <NavLink href="/about" isTransparent={isTransparentNavbar} pathname={pathname}>
+            <NavLink
+              href="/about"
+              isTransparent={isTransparentNavbar}
+              pathname={pathname}
+            >
               <span className="hidden lg:inline">About Us</span>
               <span className="lg:hidden">About</span>
             </NavLink>
@@ -752,7 +787,11 @@ export default function Navbar() {
               </NavLink>
             )} */}
 
-            <NavLink href="/contactUs" isTransparent={isTransparentNavbar} pathname={pathname}>
+            <NavLink
+              href="/contactUs"
+              isTransparent={isTransparentNavbar}
+              pathname={pathname}
+            >
               <span className="hidden lg:inline">Contact us</span>
               <span className="lg:hidden">Contact</span>
             </NavLink>
@@ -809,38 +848,28 @@ export default function Navbar() {
                           setDepositDropdownOpen(false);
                         }}
                       >
-                        <div className={`flex items-center rounded-lg transition-colors duration-200 group p-3 -m-3 ${
-                          pathname === "/dashboard/express-exchange" 
-                            ? "bg-[#35353E]" 
-                            : "hover:bg-[#35353E]"
-                        }`}>
-                          <div className="flex items-center justify-center mr-4">
-                            <svg
-                              width="45"
-                              height="40"
-                              viewBox="0 0 45 40"
-                              fill="none"
-                              xmlns="http://www.w3.org/2000/svg"
-                            >
-                              <path
-                                d="M28 12 L14 12 L18 8"
-                                stroke="#F79330"
-                                strokeWidth="4"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                              <path
-                                d="M17 20 L31 20 L27 24"
-                                stroke="#1D8751"
-                                strokeWidth="4"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                            </svg>
+                        <div
+                          className={`flex items-center rounded-lg transition-colors duration-200 group p-3 -m-3 ${
+                            pathname === "/dashboard/express-exchange"
+                              ? "dark:bg-[#35353E] bg-[#e8f5ee]"
+                              : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
+                          }`}
+                        >
+                          <div className="w-10 h-10 flex items-center justify-center mr-4">
+                            <img
+                              className=""
+                              src="https://res.cloudinary.com/pitz/image/upload/v1752243765/Vector_2_xauedx.png"
+                              alt=""
+                            />
                           </div>
                           <div className="flex-1">
-                            <h4 className="dark:text-white text-gray-900 font-medium text-base mb-1">
-                              Express Exchange
+                            <h4 className="dark:text-white flex flex-row text-gray-900 font-medium text-base mb-1">
+                              <span>E</span>
+                              <img
+                                className="mt-[4.5px]"
+                                src="https://res.cloudinary.com/pitz/image/upload/v1764698106/Group_8_hjhlxe.png"
+                                alt=""
+                              />
                             </h4>
                             <p className="dark:text-gray-400 text-gray-600 text-sm">
                               Trade cryptocurrencies on the exchange with
@@ -872,53 +901,19 @@ export default function Navbar() {
                           setDepositDropdownOpen(false);
                         }}
                       >
-                        <div className={`flex items-center transition-colors duration-200 group rounded-lg p-3 -m-3 ${
-                          pathname === "/dashboard/exchange" 
-                            ? "bg-[#35353E]" 
-                            : "hover:bg-[#35353E]"
-                        }`}>
+                        <div
+                          className={`flex items-center transition-colors duration-200 group rounded-lg p-3 -m-3 ${
+                            pathname === "/dashboard/exchange"
+                              ? "dark:bg-[#35353E] bg-[#e8f5ee]"
+                              : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
+                          }`}
+                        >
                           <div className="w-10 h-10 flex items-center justify-center mr-4">
-                            <svg
-                              width="100"
-                              height="100"
-                              viewBox="0 0 100 100"
-                              xmlns="http://www.w3.org/2000/svg"
-                            >
-                              <rect
-                                x="20"
-                                y="25"
-                                width="60"
-                                height="40"
-                                rx="5"
-                                fill="none"
-                                stroke="#1D8751"
-                                strokeWidth="4"
-                              />
-                              <path
-                                d="M30 45 L40 55 L70 25"
-                                stroke="#1D8751"
-                                strokeWidth="4"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                fill="none"
-                              />
-                              <circle
-                                cx="50"
-                                cy="70"
-                                r="8"
-                                fill="#1D8751"
-                              />
-                              <path
-                                d="M50 65 L50 75 M45 70 L55 70"
-                                stroke="white"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                              />
-                            </svg>
+                           <img className="w-10 h-10" src="https://res.cloudinary.com/pitz/image/upload/v1764568507/uil_exchange_1_okxkvb.png" alt="" />
                           </div>
                           <div className="flex-1">
-                            <h4 className="dark:text-white text-gray-900 font-medium text-base mb-1">
-                              MoneyX
+                            <h4 className="dark:text-white flex flex-row text-gray-900 font-medium text-base mb-1">
+                              <span>Money</span> <img className="mt-[4.5px]" src="https://res.cloudinary.com/pitz/image/upload/v1764663236/Group_7_ichuyz.png" alt="" />
                             </h4>
                             <p className="dark:text-gray-400 text-gray-600 text-sm">
                               Transfer money between different payment methods
@@ -949,67 +944,16 @@ export default function Navbar() {
                           setDepositDropdownOpen(false);
                         }}
                       >
-                        <div className={`flex items-center rounded-lg transition-colors duration-200 group p-3 -m-3 ${
-                          pathname === "/dashboard/p2p" || pathname?.startsWith("/dashboard/p2p/")
-                            ? "bg-[#35353E]" 
-                            : "hover:bg-[#35353E]"
-                        }`}>
+                        <div
+                          className={`flex items-center rounded-lg transition-colors duration-200 group p-3 -m-3 ${
+                            pathname === "/dashboard/p2p" ||
+                            pathname?.startsWith("/dashboard/p2p/")
+                              ? "dark:bg-[#35353E] bg-[#e8f5ee]"
+                              : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
+                          }`}
+                        >
                           <div className="w-10 h-10 flex items-center justify-center mr-4">
-                            <svg
-                              width="120"
-                              height="120"
-                              viewBox="0 0 120 120"
-                              xmlns="http://www.w3.org/2000/svg"
-                            >
-                              <circle
-                                cx="40"
-                                cy="30"
-                                r="10"
-                                stroke="#1C8F4D"
-                                strokeWidth="6"
-                                fill="none"
-                              />
-                              <path
-                                d="M58 22 A22 22 0 0 1 58 38"
-                                fill="none"
-                                stroke="#1C8F4D"
-                                strokeWidth="6"
-                                strokeLinecap="round"
-                              />
-                              <path
-                                d="M20 90 Q20 65 45 65"
-                                fill="none"
-                                stroke="#1C8F4D"
-                                strokeWidth="6"
-                                strokeLinecap="round"
-                              />
-                              <path
-                                d="M70 85 A20 20 0 0 1 110 85"
-                                fill="none"
-                                stroke="#F49A29"
-                                strokeWidth="6"
-                                strokeLinecap="round"
-                              />
-                              <path
-                                d="M110 85 L104 80 M110 85 L108 77"
-                                stroke="#F49A29"
-                                strokeWidth="6"
-                                strokeLinecap="round"
-                              />
-                              <path
-                                d="M110 85 A20 20 0 0 1 70 85"
-                                fill="none"
-                                stroke="#F49A29"
-                                strokeWidth="6"
-                                strokeLinecap="round"
-                              />
-                              <path
-                                d="M70 85 L75 90 M70 85 L67 93"
-                                stroke="#F49A29"
-                                strokeWidth="6"
-                                strokeLinecap="round"
-                              />
-                            </svg>
+                            <img src="https://res.cloudinary.com/pitz/image/upload/v1747237692/users-profiles-left_e2oejc.png" alt="" />
                           </div>
                           <div className="flex-1">
                             <h4 className="dark:text-white text-gray-900 font-medium text-base mb-1">
@@ -1044,43 +988,16 @@ export default function Navbar() {
                           setDepositDropdownOpen(false);
                         }}
                       >
-                        <div className={`flex items-center transition-colors duration-200 group rounded-lg p-3 -m-3 ${
-                          pathname === "/dashboard/swap" || pathname?.startsWith("/dashboard/swap/")
-                            ? "bg-[#35353E]" 
-                            : "hover:bg-[#35353E]"
-                        }`}>
+                        <div
+                          className={`flex items-center transition-colors duration-200 group rounded-lg p-3 -m-3 ${
+                            pathname === "/dashboard/swap" ||
+                            pathname?.startsWith("/dashboard/swap/")
+                              ? "dark:bg-[#35353E] bg-[#e8f5ee]"
+                              : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
+                          }`}
+                        >
                           <div className="w-10 h-10 flex items-center justify-center mr-4">
-                            <svg
-                              width="100"
-                              height="100"
-                              viewBox="0 0 100 100"
-                              xmlns="http://www.w3.org/2000/svg"
-                            >
-                              <path
-                                d="M30 70H20V30H60V40"
-                                fill="none"
-                                stroke="#1C8F4D"
-                                strokeWidth="5"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                              <polygon
-                                points="30,60 20,70 30,80"
-                                fill="#1D8751"
-                              />
-                              <path
-                                d="M70 30H80V70H40V60"
-                                fill="none"
-                                stroke="#F49A29"
-                                strokeWidth="5"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                              <polygon
-                                points="70,40 80,30 70,20"
-                                fill="#F79330"
-                              />
-                            </svg>
+                            <img src="https://res.cloudinary.com/pitz/image/upload/v1747237691/Group_164002_fgt2kf.png" alt="" />
                           </div>
                           <div className="flex-1">
                             <h4 className="dark:text-white text-gray-900 font-medium text-base mb-1">
@@ -1116,7 +1033,8 @@ export default function Navbar() {
                   onClick={toggleProfileModal}
                   className="text-white focus:outline-none relative"
                 >
-                  {(userProfile?.photo || cachedProfilePhoto) && !profileImageError ? (
+                  {(userProfile?.photo || cachedProfilePhoto) &&
+                  !profileImageError ? (
                     <img
                       src={userProfile?.photo || cachedProfilePhoto || ""}
                       alt="Profile"
@@ -1136,18 +1054,40 @@ export default function Navbar() {
                   )}
                   {/* Verification Badge - positioned on top of profile image */}
                   <span className="absolute -top-0.5 -right-0.5 md:-top-0.5 md:-right-0.5 lg:-top-1 lg:-right-1 inline-flex items-center justify-center w-4 h-4 md:w-4 md:h-4 lg:w-5 lg:h-5 z-10">
-                    <svg width="20" height="20" viewBox="0 0 20 20" className="absolute w-4 h-4 md:w-4 md:h-4 lg:w-5 lg:h-5">
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 20 20"
+                      className="absolute w-4 h-4 md:w-4 md:h-4 lg:w-5 lg:h-5"
+                    >
                       <circle cx="10" cy="10" r="9" fill="white" />
                       <circle cx="10" cy="10" r="7.5" fill="#1D8751" />
                       {/* Serrated edge using small circles */}
-                      {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map(angle => {
+                      {[
+                        0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330,
+                      ].map((angle) => {
                         const rad = (angle * Math.PI) / 180;
                         const x = 10 + 8.5 * Math.cos(rad);
                         const y = 10 + 8.5 * Math.sin(rad);
-                        return <circle key={angle} cx={x} cy={y} r="1" fill="white" />;
+                        return (
+                          <circle
+                            key={angle}
+                            cx={x}
+                            cy={y}
+                            r="1"
+                            fill="white"
+                          />
+                        );
                       })}
                     </svg>
-                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg" className="relative z-10 w-2 h-2 md:w-2.5 md:h-2.5 lg:w-2.5 lg:h-2.5">
+                    <svg
+                      width="10"
+                      height="10"
+                      viewBox="0 0 10 10"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="relative z-10 w-2 h-2 md:w-2.5 md:h-2.5 lg:w-2.5 lg:h-2.5"
+                    >
                       <path
                         d="M2 5L4 7L8 3"
                         stroke="#FFFFFF"
@@ -1166,15 +1106,20 @@ export default function Navbar() {
                       {/* User Info */}
                       <div className="flex items-center mb-4 pb-4 border-b dark:border-[#35353E] border-gray-200">
                         <div className="mr-3 relative">
-                          <button 
-                            className="relative cursor-pointer hover:opacity-80 transition-opacity" 
+                          <button
+                            className="relative cursor-pointer hover:opacity-80 transition-opacity"
                             onClick={toggleImageModal}
                             type="button"
                           >
-                            {(userProfile?.photo || cachedProfilePhoto) && !profileImageError ? (
+                            {(userProfile?.photo || cachedProfilePhoto) &&
+                            !profileImageError ? (
                               <>
                                 <img
-                                  src={userProfile?.photo || cachedProfilePhoto || ""}
+                                  src={
+                                    userProfile?.photo ||
+                                    cachedProfilePhoto ||
+                                    ""
+                                  }
                                   alt="Profile"
                                   className="w-12 h-12 rounded-full object-cover"
                                   onError={() => {
@@ -1188,18 +1133,51 @@ export default function Navbar() {
                                 />
                                 {/* Verification Badge */}
                                 <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 z-10">
-                                  <svg width="20" height="20" viewBox="0 0 20 20" className="absolute">
-                                    <circle cx="10" cy="10" r="9" fill="white" />
-                                    <circle cx="10" cy="10" r="7.5" fill="#1D8751" />
+                                  <svg
+                                    width="20"
+                                    height="20"
+                                    viewBox="0 0 20 20"
+                                    className="absolute"
+                                  >
+                                    <circle
+                                      cx="10"
+                                      cy="10"
+                                      r="9"
+                                      fill="white"
+                                    />
+                                    <circle
+                                      cx="10"
+                                      cy="10"
+                                      r="7.5"
+                                      fill="#1D8751"
+                                    />
                                     {/* Serrated edge using small circles */}
-                                    {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map(angle => {
+                                    {[
+                                      0, 30, 60, 90, 120, 150, 180, 210, 240,
+                                      270, 300, 330,
+                                    ].map((angle) => {
                                       const rad = (angle * Math.PI) / 180;
                                       const x = 10 + 8.5 * Math.cos(rad);
                                       const y = 10 + 8.5 * Math.sin(rad);
-                                      return <circle key={angle} cx={x} cy={y} r="1" fill="white" />;
+                                      return (
+                                        <circle
+                                          key={angle}
+                                          cx={x}
+                                          cy={y}
+                                          r="1"
+                                          fill="white"
+                                        />
+                                      );
                                     })}
                                   </svg>
-                                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg" className="relative z-10">
+                                  <svg
+                                    width="10"
+                                    height="10"
+                                    viewBox="0 0 10 10"
+                                    fill="none"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="relative z-10"
+                                  >
                                     <path
                                       d="M2 5L4 7L8 3"
                                       stroke="#FFFFFF"
@@ -1229,8 +1207,6 @@ export default function Navbar() {
 
                       {/* Menu Items */}
                       <div className="space-y-2">
-
-
                         <Link
                           href="/dashboard/account"
                           className="flex items-center w-full px-3 py-2 dark:text-gray-300 text-gray-700 dark:hover:text-white hover:text-gray-900 dark:hover:bg-[#35353E] hover:bg-gray-100 rounded-md transition-colors duration-200"
@@ -1298,27 +1274,55 @@ export default function Navbar() {
           <div
             className={`fixed top-14 sm:top-16 left-0 right-0 z-50 md:hidden p-4 sm:p-6 space-y-4 sm:space-y-6 shadow-lg transition-all duration-300 dark:bg-[var(--bg-color)] bg-white max-h-[calc(100vh-3.5rem)] sm:max-h-[calc(100vh-4rem)] overflow-y-auto`}
           >
-            <MobileNavLink href="/" onClick={toggleMobileMenu} pathname={pathname}>
+            <MobileNavLink
+              href="/"
+              onClick={toggleMobileMenu}
+              pathname={pathname}
+            >
               Home
             </MobileNavLink>
             {isAuthenticated && (
-              <MobileNavLink href="/dashboard" onClick={toggleMobileMenu} pathname={pathname}>
+              <MobileNavLink
+                href="/dashboard"
+                onClick={toggleMobileMenu}
+                pathname={pathname}
+              >
                 Dashboard
               </MobileNavLink>
             )}
-            <MobileNavLink href="/market" onClick={toggleMobileMenu} pathname={pathname}>
+            <MobileNavLink
+              href="/market"
+              onClick={toggleMobileMenu}
+              pathname={pathname}
+            >
               Market
             </MobileNavLink>
-            <MobileNavLink href="/rates" onClick={toggleMobileMenu} pathname={pathname}>
+            <MobileNavLink
+              href="/rates"
+              onClick={toggleMobileMenu}
+              pathname={pathname}
+            >
               Rates
             </MobileNavLink>
-            <MobileNavLink href="/blog" onClick={toggleMobileMenu} pathname={pathname}>
+            <MobileNavLink
+              href="/blog"
+              onClick={toggleMobileMenu}
+              pathname={pathname}
+            >
               Blog
             </MobileNavLink>
-            <MobileNavLink href="/about" onClick={toggleMobileMenu} pathname={pathname}>
+            <MobileNavLink
+              href="/about"
+              onClick={toggleMobileMenu}
+              pathname={pathname}
+            >
               About Us
             </MobileNavLink>
-            <MobileNavLink href="/contactUs" onClick={toggleMobileMenu} pathname={pathname}>
+            <MobileNavLink
+              href="/contactUs"
+              onClick={toggleMobileMenu}
+              pathname={pathname}
+            >
               Contact us
             </MobileNavLink>
 
@@ -1382,11 +1386,13 @@ export default function Navbar() {
                                 toggleMobileMenu();
                               }}
                             >
-                              <div className={`flex items-center rounded-lg transition-colors duration-200 group p-3 ${
-                                pathname === "/dashboard/express-exchange" 
-                                  ? "bg-[#35353E]" 
-                                  : "dark:hover:bg-[#35353E] hover:bg-gray-100"
-                              }`}>
+                              <div
+                                className={`flex items-center rounded-lg transition-colors duration-200 group p-3 ${
+                                  pathname === "/dashboard/express-exchange"
+                                    ? "dark:bg-[#35353E] bg-[#e8f5ee]"
+                                    : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
+                                }`}
+                              >
                                 <div className="flex items-center justify-center mr-4 flex-shrink-0">
                                   <svg
                                     width="45"
@@ -1446,11 +1452,14 @@ export default function Navbar() {
                                 toggleMobileMenu();
                               }}
                             >
-                              <div className={`flex items-center rounded-lg transition-colors duration-200 group p-3 ${
-                                pathname === "/dashboard/p2p" || pathname?.startsWith("/dashboard/p2p/")
-                                  ? "bg-[#35353E]" 
-                                  : "dark:hover:bg-[#35353E] hover:bg-gray-100"
-                              }`}>
+                              <div
+                                className={`flex items-center rounded-lg transition-colors duration-200 group p-3 ${
+                                  pathname === "/dashboard/p2p" ||
+                                  pathname?.startsWith("/dashboard/p2p/")
+                                    ? "dark:bg-[#35353E] bg-[#e8f5ee]"
+                                    : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
+                                }`}
+                              >
                                 <div className="w-10 h-10 flex items-center justify-center mr-4 flex-shrink-0">
                                   <svg
                                     width="120"
@@ -1542,11 +1551,14 @@ export default function Navbar() {
                                 toggleMobileMenu();
                               }}
                             >
-                              <div className={`flex items-center rounded-lg transition-colors duration-200 group p-3 ${
-                                pathname === "/dashboard/swap" || pathname?.startsWith("/dashboard/swap/")
-                                  ? "bg-[#35353E]" 
-                                  : "dark:hover:bg-[#35353E] hover:bg-gray-100"
-                              }`}>
+                              <div
+                                className={`flex items-center rounded-lg transition-colors duration-200 group p-3 ${
+                                  pathname === "/dashboard/swap" ||
+                                  pathname?.startsWith("/dashboard/swap/")
+                                    ? "dark:bg-[#35353E] bg-[#e8f5ee]"
+                                    : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
+                                }`}
+                              >
                                 <div className="w-10 h-10 flex items-center justify-center mr-4 flex-shrink-0">
                                   <svg
                                     width="100"
@@ -1585,8 +1597,8 @@ export default function Navbar() {
                                     Swap
                                   </h4>
                                   <p className="dark:text-gray-400 text-gray-600 text-sm leading-relaxed">
-                                    Exchange one cryptocurrency for another instantly
-                                    and securely within your wallet
+                                    Exchange one cryptocurrency for another
+                                    instantly and securely within your wallet
                                   </p>
                                 </div>
                                 <svg
@@ -1614,11 +1626,13 @@ export default function Navbar() {
                                 toggleMobileMenu();
                               }}
                             >
-                              <div className={`flex items-center rounded-lg transition-colors duration-200 group p-3 ${
-                                pathname === "/dashboard/exchange" 
-                                  ? "bg-[#35353E]" 
-                                  : "dark:hover:bg-[#35353E] hover:bg-gray-100"
-                              }`}>
+                              <div
+                                className={`flex items-center rounded-lg transition-colors duration-200 group p-3 ${
+                                  pathname === "/dashboard/exchange"
+                                    ? "dark:bg-[#35353E] bg-[#e8f5ee]"
+                                    : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
+                                }`}
+                              >
                                 <div className="w-10 h-10 flex items-center justify-center mr-4 flex-shrink-0">
                                   <svg
                                     width="100"
@@ -1663,8 +1677,8 @@ export default function Navbar() {
                                     MoneyX
                                   </h4>
                                   <p className="dark:text-gray-400 text-gray-600 text-sm leading-relaxed">
-                                    Transfer money between different payment methods
-                                    quickly and securely
+                                    Transfer money between different payment
+                                    methods quickly and securely
                                   </p>
                                 </div>
                                 <svg
@@ -1723,10 +1737,13 @@ export default function Navbar() {
                           onClick={toggleMobileMenu}
                           className="text-white relative inline-block"
                         >
-                          {(userProfile?.photo || cachedProfilePhoto) && !profileImageError ? (
+                          {(userProfile?.photo || cachedProfilePhoto) &&
+                          !profileImageError ? (
                             <>
                               <img
-                                src={userProfile?.photo || cachedProfilePhoto || ""}
+                                src={
+                                  userProfile?.photo || cachedProfilePhoto || ""
+                                }
                                 alt="Profile"
                                 className="w-10 h-10 rounded-full object-cover"
                                 onError={() => {
@@ -1740,18 +1757,46 @@ export default function Navbar() {
                               />
                               {/* Verification Badge */}
                               <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 z-10">
-                                <svg width="20" height="20" viewBox="0 0 20 20" className="absolute">
+                                <svg
+                                  width="20"
+                                  height="20"
+                                  viewBox="0 0 20 20"
+                                  className="absolute"
+                                >
                                   <circle cx="10" cy="10" r="9" fill="white" />
-                                  <circle cx="10" cy="10" r="7.5" fill="#1D8751" />
+                                  <circle
+                                    cx="10"
+                                    cy="10"
+                                    r="7.5"
+                                    fill="#1D8751"
+                                  />
                                   {/* Serrated edge using small circles */}
-                                  {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map(angle => {
+                                  {[
+                                    0, 30, 60, 90, 120, 150, 180, 210, 240, 270,
+                                    300, 330,
+                                  ].map((angle) => {
                                     const rad = (angle * Math.PI) / 180;
                                     const x = 10 + 8.5 * Math.cos(rad);
                                     const y = 10 + 8.5 * Math.sin(rad);
-                                    return <circle key={angle} cx={x} cy={y} r="1" fill="white" />;
+                                    return (
+                                      <circle
+                                        key={angle}
+                                        cx={x}
+                                        cy={y}
+                                        r="1"
+                                        fill="white"
+                                      />
+                                    );
                                   })}
                                 </svg>
-                                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg" className="relative z-10">
+                                <svg
+                                  width="10"
+                                  height="10"
+                                  viewBox="0 0 10 10"
+                                  fill="none"
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  className="relative z-10"
+                                >
                                   <path
                                     d="M2 5L4 7L8 3"
                                     stroke="#FFFFFF"
@@ -1795,50 +1840,90 @@ export default function Navbar() {
                                 onClick={toggleImageModal}
                                 type="button"
                               >
-                                {(userProfile?.photo || cachedProfilePhoto) && !profileImageError ? (
+                                {(userProfile?.photo || cachedProfilePhoto) &&
+                                !profileImageError ? (
                                   <>
-                                  <img
-                                    src={userProfile?.photo || cachedProfilePhoto || ""}
-                                    alt="Profile"
-                                    className="w-16 h-16 rounded-full object-cover border-2 border-white"
-                                    onError={() => {
-                                      setProfileImageError(true);
-                                      // Clear invalid cached photo
-                                      if (typeof window !== "undefined") {
-                                        localStorage.removeItem("profile_photo");
-                                        setCachedProfilePhoto(null);
+                                    <img
+                                      src={
+                                        userProfile?.photo ||
+                                        cachedProfilePhoto ||
+                                        ""
                                       }
-                                    }}
-                                  />
-                                  {/* Verification Badge */}
-                                  <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-6 h-6 z-10">
-                                    <svg width="24" height="24" viewBox="0 0 24 24" className="absolute">
-                                      <circle cx="12" cy="12" r="11" fill="white" />
-                                      <circle cx="12" cy="12" r="9" fill="#1D8751" />
-                                      {/* Serrated edge using small circles */}
-                                      {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map(angle => {
-                                        const rad = (angle * Math.PI) / 180;
-                                        const x = 12 + 10 * Math.cos(rad);
-                                        const y = 12 + 10 * Math.sin(rad);
-                                        return <circle key={angle} cx={x} cy={y} r="1.2" fill="white" />;
-                                      })}
-                                    </svg>
-                                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" className="relative z-10">
-                                      <path
-                                        d="M2.5 6L5 8.5L9.5 4"
-                                        stroke="#FFFFFF"
-                                        strokeWidth="1.8"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                      />
-                                    </svg>
-                                  </span>
-                                </>
-                              ) : (
-                                <div className="w-16 h-16 rounded-full flex items-center justify-center bg-[#1D8751] border-2 border-white">
-                                  <User className="w-8 h-8 text-white" />
-                                </div>
-                              )}
+                                      alt="Profile"
+                                      className="w-16 h-16 rounded-full object-cover border-2 border-white"
+                                      onError={() => {
+                                        setProfileImageError(true);
+                                        // Clear invalid cached photo
+                                        if (typeof window !== "undefined") {
+                                          localStorage.removeItem(
+                                            "profile_photo"
+                                          );
+                                          setCachedProfilePhoto(null);
+                                        }
+                                      }}
+                                    />
+                                    {/* Verification Badge */}
+                                    <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-6 h-6 z-10">
+                                      <svg
+                                        width="24"
+                                        height="24"
+                                        viewBox="0 0 24 24"
+                                        className="absolute"
+                                      >
+                                        <circle
+                                          cx="12"
+                                          cy="12"
+                                          r="11"
+                                          fill="white"
+                                        />
+                                        <circle
+                                          cx="12"
+                                          cy="12"
+                                          r="9"
+                                          fill="#1D8751"
+                                        />
+                                        {/* Serrated edge using small circles */}
+                                        {[
+                                          0, 30, 60, 90, 120, 150, 180, 210,
+                                          240, 270, 300, 330,
+                                        ].map((angle) => {
+                                          const rad = (angle * Math.PI) / 180;
+                                          const x = 12 + 10 * Math.cos(rad);
+                                          const y = 12 + 10 * Math.sin(rad);
+                                          return (
+                                            <circle
+                                              key={angle}
+                                              cx={x}
+                                              cy={y}
+                                              r="1.2"
+                                              fill="white"
+                                            />
+                                          );
+                                        })}
+                                      </svg>
+                                      <svg
+                                        width="12"
+                                        height="12"
+                                        viewBox="0 0 12 12"
+                                        fill="none"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        className="relative z-10"
+                                      >
+                                        <path
+                                          d="M2.5 6L5 8.5L9.5 4"
+                                          stroke="#FFFFFF"
+                                          strokeWidth="1.8"
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                        />
+                                      </svg>
+                                    </span>
+                                  </>
+                                ) : (
+                                  <div className="w-16 h-16 rounded-full flex items-center justify-center bg-[#1D8751] border-2 border-white">
+                                    <User className="w-8 h-8 text-white" />
+                                  </div>
+                                )}
                               </button>
                             </div>
                             <div>
@@ -1909,34 +1994,36 @@ export default function Navbar() {
       )}
 
       {/* Image Preview Modal */}
-      {showImagePreview && (userProfile?.photo || cachedProfilePhoto) && !profileImageError && (
-        <div 
-          className="fixed inset-0 z-[10000] flex items-center justify-center bg-black bg-opacity-75 p-4"
-          onClick={closeImageModal}
-        >
-          <div 
-            className="relative max-w-2xl max-h-[90vh] w-full"
-            onClick={(e) => e.stopPropagation()}
+      {showImagePreview &&
+        (userProfile?.photo || cachedProfilePhoto) &&
+        !profileImageError && (
+          <div
+            className="fixed inset-0 z-[10000] flex items-center justify-center bg-black bg-opacity-75 p-4"
+            onClick={closeImageModal}
           >
-            <button
-              onClick={closeImageModal}
-              className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors z-10 bg-black bg-opacity-50 rounded-full p-2 hover:bg-opacity-70"
-              aria-label="Close image preview"
+            <div
+              className="relative max-w-2xl max-h-[90vh] w-full"
+              onClick={(e) => e.stopPropagation()}
             >
-              <X size={24} className="w-6 h-6" />
-            </button>
-            <img
-              src={userProfile?.photo || cachedProfilePhoto || ""}
-              alt="Profile Preview"
-              className="w-full h-auto rounded-lg shadow-2xl object-contain max-h-[90vh]"
-              onError={() => {
-                setProfileImageError(true);
-                closeImageModal();
-              }}
-            />
+              <button
+                onClick={closeImageModal}
+                className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors z-10 bg-black bg-opacity-50 rounded-full p-2 hover:bg-opacity-70"
+                aria-label="Close image preview"
+              >
+                <X size={24} className="w-6 h-6" />
+              </button>
+              <img
+                src={userProfile?.photo || cachedProfilePhoto || ""}
+                alt="Profile Preview"
+                className="w-full h-auto rounded-lg shadow-2xl object-contain max-h-[90vh]"
+                onError={() => {
+                  setProfileImageError(true);
+                  closeImageModal();
+                }}
+              />
+            </div>
           </div>
-        </div>
-      )}
+        )}
     </div>
   );
 }

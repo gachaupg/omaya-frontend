@@ -560,7 +560,7 @@ export const Table: React.FC<TableProps> = ({
                   )}
                 </div>
                 {isDateDropdownOpen && (
-                  <div className="absolute top-full left-0 mt-2 w-full min-w-[100px] rounded-xl bg-white dark:bg-[#0F0F13] text-gray-900 dark:text-white shadow-lg z-20 py-1 border border-gray-200 dark:border-[#35353E]">
+                  <div className="absolute top-full left-0 mt-2 w-full min-w-[100px] rounded-xl bg-white dark:bg-[var(--bg-color)] text-gray-900 dark:text-white shadow-lg z-20 py-1 border border-gray-200 dark:border-[#35353E]">
                     {dateFilterOptions.map((option) => {
                       const isSelected = dateFilter === option;
                       return (

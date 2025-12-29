@@ -369,7 +369,7 @@ const PasswordSection: React.FC = () => {
         <div className="flex flex-col gap-2">
           {!otpSent ? (
             <button
-              className="w-full py-2 sm:py-2.5 rounded-[18px] border border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751] hover:text-white transition text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full mt-2 py-2 sm:py-2.5 rounded-[18px] border border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751] hover:text-white transition text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={handleSendOTP}
               disabled={updating}
             >

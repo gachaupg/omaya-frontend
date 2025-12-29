@@ -3,6 +3,9 @@ import React, { useState, useMemo } from "react";
 import { useMarketingI18n } from "@/lib/useMarketingI18n";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store/rootReducer";
 import { tokens } from "@/styles/tokens";
 import { Play, MessageCircle, BarChart, Globe, Lock, DollarSign, Users, TrendingUp, Shield, Zap, UserPlus, ArrowRight, Calendar, Clock, MapPin, Phone, Mail, ChevronDown, ChevronUp, ArrowLeftRight, HelpCircle } from "lucide-react";
 import ExchangeForm from "@/components/ExchangeForm";
@@ -116,7 +119,9 @@ interface Article {
 
 export default function MarketingPage() {
   const { t } = useMarketingI18n();
-  // removed unused 'activeCategory' and 'setActiveCategory'
+  const router = useRouter();
+  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const [activeCategory, setActiveCategory] = useState<Category>("News");
   const [openFAQ, setOpenFAQ] = useState<number | null>(0);
   const [showContactSuccess, setShowContactSuccess] = useState(false);
   const [showContactError, setShowContactError] = useState(false);
@@ -339,45 +344,6 @@ export default function MarketingPage() {
             }}
           ></div>
         </div>
-        
-        {/* Heptagonal Patterns */}
-        <div className="absolute inset-0 overflow-hidden">
-          {/* Bottom right heptagon */}
-          <div
-            className="absolute bottom-[80px] right-[20px] w-[100px] h-[100px] sm:bottom-[120px] sm:right-[30px] sm:w-[130px] sm:h-[130px] md:bottom-[160px] md:right-[40px] md:w-[170px] md:h-[170px] 2xl:bottom-[220px] 2xl:right-[130px] opacity-20 bg-[#1D8751] hidden sm:block"
-            style={{
-              clipPath:
-                "polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%)",
-            }}
-          ></div>
-
-          {/* Top left heptagon */}
-          <div
-            className="absolute top-[-20px] left-[20px] w-[70px] h-[70px] sm:left-[30px] sm:w-[90px] sm:h-[90px] 2xl:left-[60px] opacity-20 bg-[#1D8751] hidden sm:block"
-            style={{
-              clipPath:
-                "polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%)",
-            }}
-          ></div>
-
-          {/* Bottom left heptagon */}
-          <div
-            className="absolute bottom-[-40px] left-[150px] w-[120px] h-[120px] sm:left-[200px] sm:w-[150px] sm:h-[150px] md:left-[300px] md:w-[180px] md:h-[180px] opacity-20 bg-[#1D8751] hidden sm:block"
-            style={{
-              clipPath:
-                "polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%)",
-            }}
-          ></div>
-
-          {/* Top right heptagon */}
-          <div
-            className="absolute top-[40px] left-[50%] translate-x-[-50%] w-[120px] h-[120px] sm:top-[60px] sm:left-[60%] sm:w-[150px] sm:h-[150px] md:top-[70px] md:left-[720px] md:w-[180px] md:h-[180px] 2xl:left-[1250px] opacity-20 bg-[#1D8751] hidden md:block"
-            style={{
-              clipPath:
-                "polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%)",
-            }}
-          ></div>
-        </div>
 
         <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 relative z-10 mt-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 items-start gap-y-5 md:gap-y-4 md:gap-x-6 lg:gap-x-8 xl:gap-x-10">
@@ -408,13 +374,16 @@ export default function MarketingPage() {
 
               {/* CTA Buttons */}
               <div className="flex flex-wrap gap-2 sm:gap-3 justify-center md:justify-start w-full sm:w-auto">
-                <a
-                  href="#contact"
-                  className="rounded-lg px-5 sm:px-6 py-2.5 sm:py-2.5 text-white bg-[#1D8751] text-sm sm:text-base font-medium hover:bg-[#167a47] transition-colors min-h-[44px] flex items-center justify-center gap-2"
+                <button
+                  type="button"
+                  onClick={() =>
+                    router.push(isAuthenticated ? "/dashboard/express-exchange" : "/auth/login")
+                  }
+                  className="cursor-pointer rounded-lg px-5 sm:px-6 py-2.5 sm:py-2.5 text-white bg-[#1D8751] text-sm sm:text-base font-medium hover:bg-[#167a47] transition-colors min-h-[44px] flex items-center justify-center gap-2"
                 >
                   Start Trading Now
                   <span className="text-lg">→</span>
-                </a>
+                </button>
                 <button className="rounded-lg px-5 sm:px-6 py-2.5 sm:py-2.5 text-gray-900 dark:text-white bg-gray-100 dark:bg-[#1D1D23] border border-gray-300 dark:border-[#35353E] text-sm sm:text-base font-medium hover:bg-gray-200 dark:hover:bg-[#23232B] transition-colors min-h-[44px] flex items-center justify-center gap-2">
                   Watch Demo
                   <Play size={16} className="text-[#1D8751]" />
@@ -422,32 +391,44 @@ export default function MarketingPage() {
               </div>
 
               {/* Three stat cards */}
-              <div className="flex flex-wrap gap-2 sm:gap-3 justify-center md:justify-start pt-1 md:pt-2">
+              <div className="flex flex-wrap md:flex-nowrap gap-2 sm:gap-3 justify-center md:justify-start pt-2 md:pt-3 w-full">
                 {/* Trading Volume Card */}
-                <div className="bg-gray-100 dark:bg-white/10 backdrop-blur-sm rounded-lg px-5 py-3 flex flex-col items-center gap-2 min-w-[160px]">
+                <div className="bg-gray-100 dark:bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3.5 flex flex-col items-center gap-2.5 shadow-sm flex-1">
                   <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
                     <BarChart className="w-5 h-5 text-blue-400" />
                   </div>
-                  <p className="text-gray-900 dark:text-white text-sm font-semibold text-center">$50M+</p>
-                  <p className="text-gray-700 dark:text-white text-xs font-medium text-center">Trading Volume</p>
+                  <p className="text-gray-900 dark:text-white text-lg sm:text-xl md:text-2xl font-extrabold text-center">
+                    100M+
+                  </p>
+                  <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm font-semibold text-center tracking-wide">
+                    Trading Volume
+                  </p>
                 </div>
 
                 {/* Countries Card */}
-                <div className="bg-gray-100 dark:bg-white/10 backdrop-blur-sm rounded-lg px-5 py-3 flex flex-col items-center gap-2 min-w-[160px]">
+                <div className="bg-gray-100 dark:bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3.5 flex flex-col items-center gap-2.5 shadow-sm flex-1">
                   <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
                     <Globe className="w-5 h-5 text-purple-400" />
                   </div>
-                  <p className="text-gray-900 dark:text-white text-sm font-semibold text-center">50+</p>
-                  <p className="text-gray-700 dark:text-white text-xs font-medium text-center">Countries</p>
+                  <p className="text-gray-900 dark:text-white text-lg sm:text-xl md:text-2xl font-extrabold text-center">
+                    150+
+                  </p>
+                  <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm font-semibold text-center tracking-wide">
+                    Countries
+                  </p>
                 </div>
 
                 {/* Uptime Card */}
-                <div className="bg-gray-100 dark:bg-white/10 backdrop-blur-sm rounded-lg px-5 py-3 flex flex-col items-center gap-2 min-w-[160px]">
+                <div className="bg-gray-100 dark:bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3.5 flex flex-col items-center gap-2.5 shadow-sm flex-1">
                   <div className="w-10 h-10 rounded-lg bg-[#1D8751]/20 flex items-center justify-center">
                     <Lock className="w-5 h-5 text-[#1D8751]" />
                   </div>
-                  <p className="text-gray-900 dark:text-white text-sm font-semibold text-center">99.9%</p>
-                  <p className="text-gray-700 dark:text-white text-xs font-medium text-center">Uptime</p>
+                  <p className="text-gray-900 dark:text-white text-lg sm:text-xl md:text-2xl font-extrabold text-center">
+                    99.9%
+                  </p>
+                  <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm font-semibold text-center tracking-wide">
+                    Uptime
+                  </p>
                 </div>
               </div>
             </div>
@@ -460,8 +441,11 @@ export default function MarketingPage() {
         </div>
       </section>
 
-      <div className="pt-4 sm:pt-6 md:pt-8 pb-12 sm:pb-16 md:pb-20 px-4 md:px-[100px] bg-[#18181b] dark:bg-[#18181b]">
-        <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl">
+      <div className="pt-4 sm:pt-6 md:pt-8 pb-12 sm:pb-16 md:pb-20 px-4 md:px-[100px] bg-white dark:bg-[var(--bg-color)] relative overflow-hidden">
+        {/* Greenish gradient background glow */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] rounded-full blur-3xl pointer-events-none" style={{ background: 'radial-gradient(ellipse at center, rgba(29, 135, 81, 0.35) 0%, rgba(19, 181, 98, 0.20) 40%, transparent 70%)' }}></div>
+        
+        <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl relative z-10">
           {/* Green pill banner */}
           <div className="flex justify-center mb-4 sm:mb-6">
             <span className="bg-[#1D8751]/10 border border-[#1D8751] text-[#1D8751] px-4 py-1.5 sm:px-5 sm:py-2 rounded-full text-xs sm:text-sm font-medium">
@@ -475,7 +459,9 @@ export default function MarketingPage() {
               {t(
                 "marketing.achievements.title.leading",
                 "Celebrating Success:"
-              )}{" "}
+              )}
+            </span>{" "}
+            <span className="text-[#1D8751]">
               {t(
                 "marketing.achievements.title.highlight",
                 "Key Achievements"
@@ -485,7 +471,7 @@ export default function MarketingPage() {
 
           {/* Subtitle */}
           <p className="text-center text-gray-700 dark:text-white text-sm sm:text-base md:text-lg mb-8 sm:mb-10 md:mb-12 px-4">
-            Join the fastest-growing crypto exchange platform in Somalia.
+            Join  the fastest-growing crypto exchange platform in Somalia.
           </p>
 
           {/* First Row - Achievement Cards */}
@@ -568,59 +554,12 @@ export default function MarketingPage() {
             })}
           </div>
 
-          {/* Second Row - Feature Cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
-            {/* 0.1% Trading Fee */}
-            <div 
-              className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg sm:rounded-xl p-4 sm:p-5 md:p-6 flex flex-col items-center justify-center border border-gray-200 dark:border-[#2A2A2A] hover:border-[#1D8751]/40 transition-colors shadow-lg"
-              style={{
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2)'
-              }}
-            >
-              <Zap className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-[#FF9500] mb-2 sm:mb-3" />
-              <p className="text-gray-900 dark:text-white text-xs sm:text-sm md:text-base text-center font-medium">
-                0.1% Trading Fee
-              </p>
-            </div>
-
-            {/* Bank-Grade Security */}
-            <div 
-              className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg sm:rounded-xl p-4 sm:p-5 md:p-6 flex flex-col items-center justify-center border border-gray-200 dark:border-[#2A2A2A] hover:border-[#1D8751]/40 transition-colors shadow-lg"
-              style={{
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2)'
-              }}
-            >
-              <Shield className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-[#3B82F6] mb-2 sm:mb-3" />
-              <p className="text-gray-900 dark:text-white text-xs sm:text-sm md:text-base text-center font-medium">
-                Bank-Grade Security
-              </p>
-            </div>
-
-            {/* 24/7 Support */}
-            <div 
-              className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg sm:rounded-xl p-4 sm:p-5 md:p-6 flex flex-col items-center justify-center border border-gray-200 dark:border-[#2A2A2A] hover:border-[#1D8751]/40 transition-colors shadow-lg"
-              style={{
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2)'
-              }}
-            >
-              <Globe className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-[#8B5CF6] mb-2 sm:mb-3" />
-              <p className="text-gray-900 dark:text-white text-xs sm:text-sm md:text-base text-center font-medium">
-                24/7 Support
-              </p>
-            </div>
-
-            {/* Real-Time Charts */}
-            <div 
-              className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg sm:rounded-xl p-4 sm:p-5 md:p-6 flex flex-col items-center justify-center border border-gray-200 dark:border-[#2A2A2A] hover:border-[#1D8751]/40 transition-colors shadow-lg"
-              style={{
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2)'
-              }}
-            >
-              <BarChart className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-[#1D8751] mb-2 sm:mb-3" />
-              <p className="text-gray-900 dark:text-white text-xs sm:text-sm md:text-base text-center font-medium">
-                Real-Time Charts
-              </p>
-            </div>
+          <div className="w-full mt-4">
+            <img
+              src="https://res.cloudinary.com/pitz/image/upload/v1766121183/Container_14_omqgii.png"
+              alt="Celebrating Success"
+              className="w-full h-auto object-cover"
+            />
           </div>
         </div>
 
@@ -750,7 +689,7 @@ export default function MarketingPage() {
                           <div className="relative mb-3 w-full -mx-4">
                             {/* Colored horizontal bar cutting across - faded, edge to edge, no padding, full right coverage */}
                             <div 
-                              className={`absolute top-1/2 left-0 h-12 ${iconBgColor} transform -translate-y-1/2 opacity-30`}
+                              className={`absolute top-1/2 left-0 h-16 ${iconBgColor} transform -translate-y-1/2 opacity-30`}
                               style={{
                                 right: '-1rem',
                                 width: 'calc(100% + 2rem)'
@@ -758,12 +697,12 @@ export default function MarketingPage() {
                             ></div>
                             {/* Centered asset image */}
                             <div className="relative z-10 flex items-center justify-center">
-                              <div className="w-10 h-10 bg-white dark:bg-[#1D1D23] rounded-full flex items-center justify-center border border-gray-200 dark:border-transparent">
+                              <div className="w-14 h-14 rounded-full flex items-center justify-center">
                                 <Image
                                   src={asset.image}
                                   alt={asset.name}
-                                  width={32}
-                                  height={32}
+                                  width={48}
+                                  height={48}
                                   className="object-contain w-full h-full"
                                   unoptimized
                                 />
@@ -817,7 +756,7 @@ export default function MarketingPage() {
 
           {/* Feature/Achievement Cards - Bottom Row */}
           <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-5">
-            {/* 500+ Total Assets */}
+            {/* 1000+ Total Assets */}
             <div 
               className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4 sm:p-5 md:p-6 border border-gray-200 dark:border-[#2A2A2A] hover:border-[#1D8751]/40 transition-colors flex flex-col items-center relative overflow-hidden"
             >
@@ -837,7 +776,7 @@ export default function MarketingPage() {
                     <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </div>
-                <div className="text-gray-900 dark:text-white text-2xl sm:text-3xl md:text-4xl font-bold mb-2 text-center">500+</div>
+                <div className="text-gray-900 dark:text-white text-2xl sm:text-3xl md:text-4xl font-bold mb-2 text-center">1000+</div>
                 <div className="text-gray-700 dark:text-white text-xs sm:text-sm md:text-base text-center">Total Assets</div>
               </div>
             </div>
@@ -866,7 +805,7 @@ export default function MarketingPage() {
               </div>
             </div>
 
-            {/* $2B+ Daily Volume */}
+            {/* $2M+ Daily Volume */}
             <div 
               className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4 sm:p-5 md:p-6 border border-gray-200 dark:border-[#2A2A2A] hover:border-[#1D8751]/40 transition-colors flex flex-col items-center relative overflow-hidden"
             >
@@ -882,7 +821,7 @@ export default function MarketingPage() {
                 <div className="w-8 h-8 sm:w-10 sm:h-10 mb-3 flex items-center justify-center">
                   <DollarSign className="w-full h-full text-[#13B562]" />
                 </div>
-                <div className="text-gray-900 dark:text-white text-2xl sm:text-3xl md:text-4xl font-bold mb-2 text-center">$2B+</div>
+                <div className="text-gray-900 dark:text-white text-2xl sm:text-3xl md:text-4xl font-bold mb-2 text-center">$2M+</div>
                 <div className="text-gray-700 dark:text-white text-xs sm:text-sm md:text-base text-center">Daily Volume</div>
               </div>
             </div>
@@ -921,29 +860,36 @@ export default function MarketingPage() {
       </div>
 
       {/* Safe & Reliable Section */}
-      <div className="w-full bg-white dark:bg-[var(--bg-color)] pt-8 pb-16">
-        <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl px-4">
+      <div className="w-full bg-white rounded-lg dark:bg-[var(--bg-color)] pt-8 pb-16">
+        <div className="container dark:bg-[#1D1D23] rounded-lg pt-2 mb-2 mx-auto max-w-6xl 2xl:max-w-screen-2xl px-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             {/* Left Section - Image */}
             <div className="relative">
-              <div className="relative w-full overflow-hidden rounded-t-[1.5rem] md:rounded-t-[2rem] rounded-b-lg">
-                <Image
-                  src="https://res.cloudinary.com/pitz/image/upload/v1765268255/Container_17_n6i2xm.png"
-                  alt="Safe & Reliable Cryptocurrency Exchange Platform"
-                  width={800}
-                  height={600}
-                  className="w-full h-auto object-contain"
-                  unoptimized
-                />
-                
-                {/* Badge - Since 2015 */}
-                <div className="absolute top-3 right-8 md:top-4 md:right-12 bg-[#1D8751] rounded-full px-3 md:px-4 py-1 md:py-1.5 z-20">
-                  <span className="text-white text-xs font-medium">Since 2015</span>
-                </div>
-                
-                {/* Badge - 100K+ Users */}
-                <div className="absolute bottom-16 left-8 md:bottom-20 md:left-12 bg-[#1D8751] rounded-full px-3 md:px-4 py-1 md:py-1.5 z-20">
-                  <span className="text-white text-xs font-medium">100K+ Users</span>
+              {/* Outer card with border that fades out toward the bottom */}
+              <div className="relative w-full rounded-[2rem] border border-[#2EF299]/50 bg-[#050712] overflow-hidden">
+                {/* Overlay to hide/fade the bottom part of the border */}
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-[#050712] to-transparent" />
+
+                {/* Main illustration area */}
+                <div className="relative w-full">
+                  <Image
+                    src="https://res.cloudinary.com/pitz/image/upload/v1765268255/Container_17_n6i2xm.png"
+                    alt="Safe & Reliable Cryptocurrency Exchange Platform"
+                    width={800}
+                    height={600}
+                    className="w-full h-auto object-contain"
+                    unoptimized
+                  />
+                  
+                  {/* Badge - Since 2019 */}
+                  <div className="absolute top-4 right-6 md:top-6 md:right-10 bg-[#1D8751] rounded-full px-3 md:px-4 py-1 md:py-1.5 shadow-lg shadow-[#1D8751]/30 z-20">
+                    <span className="text-white text-xs md:text-sm font-medium">Since 2019</span>
+                  </div>
+                  
+                  {/* Badge - 10K+ Users */}
+                  <div className="absolute bottom-4 left-6 md:bottom-8 md:left-10 bg-[#1D8751] rounded-full px-3 md:px-4 py-1 md:py-1.5 shadow-lg shadow-[#1D8751]/30 z-20">
+                    <span className="text-white text-xs md:text-sm font-medium">10K+ Users</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -965,15 +911,17 @@ export default function MarketingPage() {
               
               {/* Descriptive Text */}
               <p className="text-gray-700 dark:text-white/80 text-sm md:text-base leading-relaxed">
-                Established in 2015, OMAYA Exchange is Somalia's leading cryptocurrency exchange, 
+                Established in 2019, OMAYA.io is a leading digital asset and cryptocurrency trading platform in Somalia,
                 licensed by the{" "}
                 <span className="text-[#1D8751] font-semibold">Central Bank of Somalia</span>.
-                With a team rooted in East Africa, we specialize in localized transactions, 
-                supporting the region's unique demands to meet your financial needs. At OMAYA Exchange, 
-                our focus extends beyond mere transactions. We are committed to empowering you by 
-                offering expert insights and resources that support informed financial decision-making. 
-                Leveraging deep knowledge of East African markets, we provide secure and responsive 
-                solutions tailored to local requirements.
+                With a team deeply rooted in East Africa, OMAYA.io is built to serve the region&apos;s unique financial
+                landscape by delivering secure, compliant, and localized trading and exchange solutions.
+                <br />
+                <br />
+                At OMAYA.io, we go beyond transactions. We are committed to empowering our users through education,
+                transparency, and access to expert insights that support informed financial decision-making. Backed by
+                deep regional market knowledge, we provide reliable, responsive, and secure services tailored to the
+                evolving needs of individuals, traders, and businesses across emerging markets.
               </p>
               
               {/* Feature Boxes - 2x2 Grid */}
@@ -996,12 +944,12 @@ export default function MarketingPage() {
                   <div className="text-gray-700 dark:text-white/70 text-xs">Approved by Central Bank of Somalia</div>
                 </div>
 
-                {/* 100K+ Active Users */}
+                {/* 10K Active users */}
                 <div className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4 border border-gray-200 dark:border-[#2A2A2A]">
                   <div className="w-10 h-10 bg-green-400/20 rounded-lg flex items-center justify-center mb-3">
                     <Users className="w-6 h-6 text-green-400" />
                   </div>
-                  <div className="text-gray-900 dark:text-white font-bold text-sm mb-1">100K+ Active Users</div>
+                  <div className="text-gray-900 dark:text-white font-bold text-sm mb-1">10K Active users</div>
                   <div className="text-gray-700 dark:text-white/70 text-xs">Trusted by traders across East Africa</div>
                 </div>
 
@@ -1202,12 +1150,18 @@ export default function MarketingPage() {
                 </div>
               ))}
             </div>
+            <div 
+              className="flex justify-center mt-5 cursor-pointer"
+              onClick={() => router.push(isAuthenticated ? '/dashboard' : '/auth/login')}
+            >
+              <img src="https://res.cloudinary.com/pitz/image/upload/v1765959050/Button_muu3er.png" alt="Get Started" />
+            </div>
           </div>
         </div>
       </div>
 
       {/* Why Choose Us Section with Phone */}
-      <section className="w-full bg-[#050711] py-20 md:py-28 px-4 md:px-[100px] relative overflow-hidden">
+      <section className="w-full bg-[#050711] pt-12 pb-20 md:pt-16 md:pb-28 px-4 md:px-[100px] relative overflow-hidden">
         {/* Subtle floating particles */}
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute top-16 left-1/4 w-2 h-2 bg-[#1D8751] rounded-full opacity-60 blur-sm"></div>

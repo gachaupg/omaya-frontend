@@ -72,7 +72,7 @@ const ExchangeLayout = () => {
 
   return (
     <ExchangeDataProvider>
-      <div className="w-full px-4 sm:px-0">
+      <div className="w-full px-0 sm:px-4 overflow-x-hidden">
         {selectedAction ? (
           <div className="grid grid-cols-1 gap-4 lg:gap-6">
             <div className="w-full">

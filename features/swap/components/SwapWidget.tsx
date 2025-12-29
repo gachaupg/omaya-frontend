@@ -506,10 +506,25 @@ const SwapWidget = () => {
     }
   };
 
+  // Validate amount: max 12 digits before decimal point
+  const validateAmount = (value: string): boolean => {
+    if (value === "" || value === ".") return true;
+    const parts = value.split(".");
+    const integerPart = parts[0] || "";
+    // Check if integer part has more than 12 digits
+    if (integerPart.length > 12) {
+      showToast.error("Invalid Amount", "Maximum 12 digits allowed before the decimal point.");
+      return false;
+    }
+    return true;
+  };
+
   const handleFromAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     // Only allow numbers and decimals
     if (value === "" || /^\d*\.?\d*$/.test(value)) {
+      // Validate max 12 digits before decimal
+      if (!validateAmount(value)) return;
       setActiveInputField("from");
       dispatch(setFromAmount(value));
     }
@@ -519,6 +534,8 @@ const SwapWidget = () => {
     const value = e.target.value;
     // Only allow numbers and decimals
     if (value === "" || /^\d*\.?\d*$/.test(value)) {
+      // Validate max 12 digits before decimal
+      if (!validateAmount(value)) return;
       setActiveInputField("to");
       dispatch(setToAmount(value));
     }
@@ -671,7 +688,7 @@ const SwapWidget = () => {
     }
 
     return (
-      <div className="w-full max-w-lg mx-auto p-4 sm:p-6 bg-white dark:bg-[var(--card-color)] rounded-lg border dark:border-[#35353E] border-gray-200 px-3 sm:px-4">
+      <div className="w-full sm:max-w-lg sm:mx-auto p-3 sm:p-4 md:p-6 bg-white dark:bg-[var(--card-color)] rounded-lg border dark:border-[#35353E] border-gray-200">
         <div className="flex flex-col items-center text-center gap-3">
           <SwapWidgetSkeleton />
           <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
@@ -698,7 +715,7 @@ const SwapWidget = () => {
 
   if (error) {
     return (
-      <div className="mx-auto dark:text-white text-gray-900 px-3 sm:px-4">
+      <div className="w-full dark:text-white text-gray-900">
         <div className="bg-red-500/10 dark:bg-red-500/10 border border-red-500/20 dark:border-red-500/20 rounded-lg p-3 sm:p-4">
           <h3 className="text-red-600 dark:text-red-400 font-semibold mb-2 text-sm sm:text-base">
             Error Loading Swap
@@ -716,7 +733,7 @@ const SwapWidget = () => {
   }
 
   return (
-    <div className="mx-auto dark:text-white text-gray-900 px-1 sm:px-2 md:px-3">
+    <div className="flex flex-col dark:text-white text-gray-900 w-full sm:pl-4 pr-2 sm:pr-0 sm:mr-40 sm:w-[calc(100%-12rem)]">
       <h2 className="text-base sm:text-lg font-semibold mb-2 sm:mb-4 md:mb-6 text-gray-900 dark:text-white">
         Swap Crypto
       </h2>

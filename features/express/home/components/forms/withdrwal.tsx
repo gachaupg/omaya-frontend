@@ -1449,7 +1449,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
   const getDefaultAmount = (asset: any) => {
     if (!asset) return 100;
     const ticker = (asset?.ticker || asset?.symbol || "").toLowerCase();
-    return ticker === "usdt" || ticker === "usdc" ? 100 : 0.001;
+    return ticker === "usdt" || ticker === "usdc" ? 100 : 0.1;
   };
 
   // Get minimum amount based on asset type
@@ -2416,17 +2416,17 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                               }}
                             />
                             <div className="flex-1">
-                              <div className="text-[#111827] dark:text-[#ffffff] font-medium flex items-center gap-2">
+                              <div className="text-[#1F2937] dark:text-[#ffffff] font-normal text-sm flex items-center gap-2">
                                 {(asset.ticker ||
                                   asset.symbol ||
                                   asset.name ||
                                   "Unknown"
                                 ).toUpperCase()}
-                                <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
+                                <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-normal px-2 py-0.5 rounded-full">
                                   {getNetworkDisplayName(asset.network)}
                                 </span>
                               </div>
-                              <div className="text-[#475569] dark:text-[#788099] text-sm">
+                              <div className="text-sm text-gray-500 dark:text-gray-400">
                                 {asset.name ||
                                   (asset.ticker || "").toUpperCase() ||
                                   (asset.symbol || "").toUpperCase() ||
@@ -2526,17 +2526,17 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                       }}
                     />
                     <div className="flex-1">
-                      <div className="text-[#111827] dark:text-[#ffffff] font-medium flex items-center gap-2">
+                      <div className="text-[#1F2937] dark:text-[#ffffff] font-normal text-sm flex items-center gap-2">
                         {(asset.ticker ||
                           asset.symbol ||
                           asset.name ||
                           "Unknown"
                         ).toUpperCase()}
-                        <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
+                        <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-normal px-2 py-0.5 rounded-full">
                           {getNetworkDisplayName(asset.network)}
                         </span>
                       </div>
-                      <div className="text-[#475569] dark:text-[#788099] text-sm">
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
                         {asset.name ||
                           (asset.ticker || "").toUpperCase() ||
                           (asset.symbol || "").toUpperCase() ||
@@ -3609,8 +3609,8 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                         />
                         <div className="flex flex-col">
                           <div className="flex items-center gap-2">
-                            <span className={`font-semibold ${
-                              isDark ? "text-white" : "text-[#111827]"
+                            <span className={`font-normal text-sm ${
+                              isDark ? "text-white" : "text-[#1F2937]"
                             }`}>
                               {(
                                 selectedAsset.ticker ||
@@ -3619,7 +3619,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                                 "Unknown"
                               ).toUpperCase()}
                             </span>
-                            <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
+                            <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-normal px-2 py-0.5 rounded-full">
                               {getNetworkDisplayName(selectedAsset.network)}
                             </span>
                           </div>
@@ -3997,11 +3997,18 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                   
                   if (Array.isArray(publicPaymentMethods?.data?.providers) && publicPaymentMethods.data.providers.length > 0) {
                     // Use public payment methods with logos
-                    paymentMethodOptions = publicPaymentMethods.data.providers.map((provider: any) => ({
-                      value: provider.provider_name || provider.payment_provider_name || "",
-                      label: provider.provider_name || provider.payment_provider_name || "Unknown",
-                      logo: provider.logo || provider.provider_logo || undefined,
-                    })).filter((opt: any) => opt.value && opt.value.trim());
+                    paymentMethodOptions = publicPaymentMethods.data.providers.map((provider: any) => {
+                      const providerName = provider.provider_name || provider.payment_provider_name || "Unknown";
+                      const methodName = provider.method?.method_name || provider.method?.method_display || provider.method_name || null;
+                      const subtitle = methodName ? `${providerName} - ${methodName}` : null;
+                      
+                      return {
+                        value: providerName,
+                        label: providerName,
+                        subtitle: subtitle || undefined,
+                        logo: provider.logo || provider.provider_logo || undefined,
+                      };
+                    }).filter((opt: any) => opt.value && opt.value.trim());
                   } else {
                     // Fallback to admin wallet list
                     const providerNames = Array.from(
@@ -4018,9 +4025,14 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                           wallet.admin_payment_detail?.provider_name === paymentType
                       )?.admin_payment_detail;
 
+                      const providerName = adminDetail?.provider_name || paymentType;
+                      const methodName = adminDetail?.payment_method_type || adminDetail?.payment_method_name || null;
+                      const subtitle = methodName ? `${providerName} - ${methodName}` : null;
+
                       return {
                         value: paymentType,
-                        label: adminDetail?.provider_name || paymentType,
+                        label: providerName,
+                        subtitle: subtitle || undefined,
                         logo: adminDetail?.provider_logo || undefined,
                       };
                     });
@@ -4374,7 +4386,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                 </div>
               ) : (
                 <span className="flex items-center justify-center gap-2">
-                  <span className="text-base font-medium">Express</span>
+                  <span className="text-base font-medium text-white">Express</span>
                   <img
                     className="h-5 w-auto mt-3"
                     src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
@@ -4570,19 +4582,19 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
               <div className=" dark:bg-[#1D1D23] border border-[#1D8751] rounded-xl p-4">
                 <ul className="list-none space-y-2">
                   <li className="flex items-start">
-                    <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] dark:bg-[#1D8751] inline-block mr-3"></span>
+                    <span className="w-2 h-2 mt-1.5 rounded-full bg-[#1D8751] dark:bg-[#1D8751] flex-shrink-0 mr-3"></span>
                     <span className="text-[#35353e] dark:text-[#788099] text-sm">
                       Please send the money from your own account Only
                     </span>
                   </li>
                   <li className="flex items-start">
-                    <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] dark:bg-[#1D8751] inline-block mr-3"></span>
+                    <span className="w-2 h-2 mt-1.5 rounded-full bg-[#1D8751] dark:bg-[#1D8751] flex-shrink-0 mr-3"></span>
                     <span className="text-[#35353e] dark:text-[#788099] text-sm">
                       Put transaction ID in the description field of the bank
                     </span>
                   </li>
                   <li className="flex items-start">
-                    <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] dark:bg-[#1D8751] inline-block mr-3"></span>
+                    <span className="w-2 h-2 mt-1.5 rounded-full bg-[#1D8751] dark:bg-[#1D8751] flex-shrink-0 mr-3"></span>
                     <span className="text-[#35353e] dark:text-[#788099] text-sm">
                       Please note, If you do not follow above conditions, we
                       will reject your transaction and send you back your money.

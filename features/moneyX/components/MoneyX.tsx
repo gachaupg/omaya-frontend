@@ -64,7 +64,7 @@ const MoneyX = ({ onTransferComplete }: MoneyXProps) => {
   };
 
   return (
-    <div className="mx-auto dark:text-white text-gray-900 px-1 sm:px-2 md:px-3">
+    <div className="w-full pl-0 sm:pl-4 pr-2 sm:pr-0 pt-0 mb-0 overflow-x-hidden">
       <TransferForm onTransfer={handleTransfer} />
     </div>
   );

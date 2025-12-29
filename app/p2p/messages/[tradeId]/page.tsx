@@ -140,7 +140,7 @@ const TradeMessagesPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-[#0A0A0B] flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-[var(--bg-color)] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1D8751] mx-auto mb-4"></div>
           <p className="text-gray-600 dark:text-gray-400">Loading trade messages...</p>
@@ -173,7 +173,7 @@ const TradeMessagesPage = () => {
 
   if (error || !tradeData) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-[#0A0A0B] flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-[var(--bg-color)] flex items-center justify-center">
         <div className="text-center">
           <div className="text-red-500 text-6xl mb-4">⚠️</div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
@@ -194,7 +194,7 @@ const TradeMessagesPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-[#0A0A0B]">
+    <div className="min-h-screen bg-gray-50 dark:bg-[var(--bg-color)]">
       {/* Header */}
       <div className="bg-white dark:bg-[#1A1A1D] border-b border-gray-200 dark:border-[#35353E]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

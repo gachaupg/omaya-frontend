@@ -14,7 +14,7 @@ interface WalletAddressStepProps {
 }
 
 const strongBorder =
-  "border-[1.5px] border-gray-200 dark:border-white/10 shadow-[0_0_0_1px_rgba(255,255,255,0.05)]";
+  "border-[1.5px] border-gray-200 dark:border-[#35353E]";
 
 const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
   walletAddress,
@@ -31,22 +31,23 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
   // Get currency from toAsset (the asset we're receiving)
   const getCurrencyFromAsset = useCallback((asset: any): string | undefined => {
     if (!asset) return undefined;
-    
+
     // Try different properties in order of preference
     if (asset.ticker) {
       return asset.ticker.toUpperCase();
     } else if (asset.symbol) {
-      return asset.symbol.toUpperCase();
+      // Handle special case for USDT Tether
+      return asset.symbol === "USDT Tether" ? "USDT" : asset.symbol.toUpperCase();
     } else if (asset.name) {
       return asset.name.toUpperCase();
     }
-    
+
     return undefined;
   }, []);
 
   const currentCurrency = getCurrencyFromAsset(toAsset);
 
-  // Address validation hook
+  // Address validation hook - only API validation, no manual checks
   const {
     result: addressValidationResult,
     isValidating: isAddressValidating,
@@ -56,19 +57,14 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
   } = useValidateAddress({
     currency: currentCurrency,
     debounceMs: 500,
-    minLength: 10,
+    minLength: 0, // No manual length validation, let API handle it
     validateEmpty: false,
   });
 
-  // Update wallet error based on validation result
+  // Update wallet error based on API validation result only
   useEffect(() => {
     if (walletAddress.trim() === "") {
       setWalletError(null);
-      return;
-    }
-
-    if (!currentCurrency) {
-      setWalletError("Please select an asset first");
       return;
     }
 
@@ -77,6 +73,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
       return;
     }
 
+    // Only use API validation results
     if (addressValidationResult) {
       if (!addressValidationResult.isValid) {
         setWalletError(
@@ -95,7 +92,6 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
     addressValidationError,
     isAddressValidating,
     walletAddress,
-    currentCurrency,
   ]);
 
   // Reset validation when asset changes
@@ -106,6 +102,14 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentCurrency]); // Only run when currency changes
+
+  // Auto-validate on mount if wallet address is already present
+  useEffect(() => {
+    if (walletAddress.trim() && currentCurrency) {
+      validateAddress(walletAddress, currentCurrency);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run on mount
 
   const handlePaste = async () => {
     try {
@@ -137,13 +141,13 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
 
   const trimmedWalletAddress = walletAddress.trim();
   const hasWalletInput = trimmedWalletAddress.length > 0;
+  // Only block based on API validation results, no manual checks
   const shouldBlockForInvalidAddress =
     hasWalletInput &&
-    !!currentCurrency &&
     !!addressValidationResult &&
     !addressValidationResult.isValid;
   const shouldBlockWhileValidating =
-    hasWalletInput && !!currentCurrency && isAddressValidating;
+    hasWalletInput && isAddressValidating;
   const isSubmitDisabled =
     !hasAcceptedTerms ||
     !hasWalletInput ||
@@ -153,8 +157,8 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
     shouldBlockWhileValidating;
 
   return (
-    <div className="w-full flex flex-col    gap-4">
-      <div className="mb-2 text-base sm:text-lg md:text-xl font-bold text-[#788099]">
+    <div className="w-full flex flex-col gap-2 sm:gap-4">
+      <div className="mb-1 sm:mb-2 text-base sm:text-lg md:text-xl font-bold text-[#788099]">
         <span className="text-[#7e7e8f]">2-</span> Your Wallet Address
       </div>
       <div className="w-full">
@@ -209,8 +213,8 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                       placeholder={`Paste your ${toAsset?.name || toAsset?.symbol || ""} address here`}
                       disabled={isLoading}
                     />
-                    {/* Validation status indicator */}
-                    {walletAddress.trim() && currentCurrency && (
+                    {/* Validation status indicator - show based on API validation only */}
+                    {walletAddress.trim() && (
                       <div className="absolute right-12 top-1/2 -translate-y-1/2 flex items-center">
                         {isAddressValidating ? (
                           <div className="w-4 h-4 border-2 border-[#1D8751] border-t-transparent rounded-full animate-spin"></div>
@@ -279,8 +283,8 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                 </button>
               </div>
               
-              {/* Validation messages */}
-              {walletAddress.trim() && currentCurrency && (
+              {/* Validation messages - based on API validation only */}
+              {walletAddress.trim() && (
                 <div className="mt-2">
                   {isAddressValidating && (
                     <p className="text-[#1D8751] text-sm font-medium flex items-center gap-2">
@@ -307,11 +311,6 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                     </p>
                   )}
                 </div>
-              )}
-              {walletError && !currentCurrency && walletAddress.trim() && (
-                <p className="text-red-500 text-sm mt-2 font-medium">
-                  ❌ {walletError}
-                </p>
               )}
             </div>
 
@@ -375,11 +374,11 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                   checked={hasAcceptedTerms}
                   onChange={(e) => setHasAcceptedTerms(e.target.checked)}
                   disabled={isLoading}
-                  className="w-4 h-4 sm:w-5 sm:h-5 text-[#1D8751] bg-white dark:bg-[var(--card-color)] border-gray-300 dark:border-[#39394a] rounded focus:ring-[#1D8751] focus:ring-2 disabled:opacity-50 flex-shrink-0"
+                  className="w-4 h-4 sm:w-5 sm:h-5 accent-[#1D8751] text-[#1D8751] bg-white dark:bg-[var(--card-color)] border-gray-300 dark:border-[#39394a] rounded focus:ring-[#1D8751] focus:ring-2 disabled:opacity-50 flex-shrink-0 cursor-pointer"
                 />
                 <label
                   htmlFor="accept-terms"
-                  className="text-xs sm:text-sm text-[#1D8751] leading-relaxed"
+                  className="text-xs sm:text-sm text-[#1D8751] leading-relaxed cursor-pointer"
                 >
                   <span className="text-gray-900 dark:text-white font-medium">
                     I have read and agreed to Omaya Exchange{" "}

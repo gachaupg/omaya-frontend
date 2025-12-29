@@ -51,9 +51,9 @@ const Express = ({ isHomePage = false }: ExpressProps) => {
   };
 
   return (
-    <div className="w-full mx-auto px-0 sm:px-0 md:px-4 pt-0 sm:pt-1 md:pt-2 mb-1 sm:mb-2 md:mb-4">
+    <div className="w-full pl-0 sm:pl-4 pr-2 sm:pr-0 pt-0 mb-0 overflow-x-hidden">
       {!isHomePage && (
-        <div className=" mb-1">
+        <div className="mb-1">
           <button
             onClick={handleModeToggle}
             className="hover:opacity-80  transition-opacity"

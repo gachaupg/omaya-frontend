@@ -897,7 +897,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
     !selectedToPaymentDetail;
 
   return (
-    <div className="w-full flex flex-col dark:bg-[var(--bg-color)]">
+    <div className="flex flex-col dark:bg-[var(--bg-color)] pl-0 sm:pl-4 pr-2 sm:pr-0 mr-0 sm:mr-40 w-full sm:w-[calc(100%-12rem)]">
       <h2 className="text-lg sm:text-xl font-bold mb-1 sm:mb-2 text-[#788099] dark:text-[#788099] inline-flex items-center gap-2">
         <span className="text-[#7e7e8f] dark:text-[#788099]">1-</span>
         Transfer Information
@@ -1299,19 +1299,19 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
             <div className="dark:bg-[var(--card-color)] border border-[#1D8751] rounded-xl p-4">
               <ul className="list-none space-y-2">
                 <li className="flex items-start">
-                  <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
+                  <span className="w-2 h-2 mt-1 rounded-full bg-[#1D8751] inline-block mr-3 shrink-0"></span>
                   <span className="text-[#35353e] dark:text-[#788099] text-sm">
                     Please send the money from your own account Only
                   </span>
                 </li>
                 <li className="flex items-start">
-                  <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
+                  <span className="w-2 h-2 mt-1 rounded-full bg-[#1D8751] inline-block mr-3 shrink-0"></span>
                   <span className="text-[#35353e] dark:text-[#788099] text-sm">
                     Put transaction ID in the description field of the bank
                   </span>
                 </li>
                 <li className="flex items-start">
-                  <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
+                  <span className="w-2 h-2 mt-1 rounded-full bg-[#1D8751] inline-block mr-3 shrink-0"></span>
                   <span className="text-[#35353e] dark:text-[#788099] text-sm">
                     Please note, If you do not follow above conditions, we will
                     reject your transaction and send you back your money.

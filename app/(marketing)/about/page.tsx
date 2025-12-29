@@ -147,38 +147,9 @@ const AboutPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#0F0F11]">
+    <div className="min-h-screen bg-white dark:bg-[var(--bg-color)]">
       {/* Hero Section */}
       <section className="relative pt-24 md:pt-32 pb-20 px-4 overflow-hidden bg-gradient-to-br from-[#1D8751] via-[#16864a] to-[#0e5c33] dark:from-[#0F0F11] dark:via-[#0F0F11] dark:to-[#0F0F11]">
-        {/* Heptagonal Patterns - matching homepage style */}
-        <div className="absolute inset-0 overflow-hidden">
-          {/* Bottom right heptagon */}
-          <div
-            className="absolute bottom-[80px] right-[20px] w-[100px] h-[100px] sm:bottom-[120px] sm:right-[30px] sm:w-[130px] sm:h-[130px] md:bottom-[160px] md:right-[40px] md:w-[170px] md:h-[170px] 2xl:bottom-[220px] 2xl:right-[130px] opacity-20 bg-[#13B562] dark:bg-white/10 hidden sm:block"
-            style={{
-              clipPath:
-                "polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%)",
-            }}
-          ></div>
-
-          {/* Top left heptagon */}
-          <div
-            className="absolute top-[-20px] left-[20px] w-[70px] h-[70px] sm:left-[30px] sm:w-[90px] sm:h-[90px] 2xl:left-[60px] opacity-20 bg-[#13B562] dark:bg-white/10 hidden sm:block"
-            style={{
-              clipPath:
-                "polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%)",
-            }}
-          ></div>
-
-          {/* Bottom left heptagon */}
-          <div
-            className="absolute bottom-[-40px] left-[150px] w-[120px] h-[120px] sm:left-[200px] sm:w-[150px] sm:h-[150px] md:left-[300px] md:w-[180px] md:h-[180px] opacity-20 bg-[#13B562] dark:bg-white/10 hidden sm:block"
-            style={{
-              clipPath:
-                "polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%)",
-            }}
-          ></div>
-        </div>
         
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="text-center">
@@ -224,7 +195,7 @@ const AboutPage = () => {
       </section>
 
       {/* Trusted by Millions Worldwide Section */}
-      <section className="py-16 px-4 bg-white dark:bg-[#0F0F11]">
+      <section className="py-16 px-4 bg-white dark:bg-[var(--bg-color)]">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-3">
@@ -336,7 +307,7 @@ const AboutPage = () => {
       </section>
 
       {/* Mission Section */}
-      <section className="py-16 px-4 bg-white dark:bg-[#0F0F11]">
+      <section className="py-16 px-4 bg-white dark:bg-[var(--bg-color)]">
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             {/* Left Column - Mission Content */}
@@ -404,7 +375,7 @@ const AboutPage = () => {
       </section>
 
       {/* Vision Section */}
-      <section className="py-16 px-4 bg-gray-50 dark:bg-[#0F0F11]">
+      <section className="py-16 px-4 bg-gray-50 dark:bg-[var(--bg-color)]">
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             {/* Left Column - Image */}
@@ -562,7 +533,7 @@ const AboutPage = () => {
       </section>
       {/* Our Story Section */} 
 
-      <section id="story" className="py-20 px-4 bg-white dark:bg-[#0A0A0F]">
+      <section id="story" className="py-20 px-4 bg-white dark:bg-[var(--bg-color)]">
         <div className="max-w-6xl mx-auto">
           {/* Section Header */}
           <div className="text-center mb-16">
@@ -747,7 +718,7 @@ const AboutPage = () => {
     {/* Achievements Section - Figma Match */}
 
       {/* Achievements Section */}
-      <section className="py-20 px-4 bg-white dark:bg-[#0A0A0F]">
+      <section className="py-20 px-4 bg-white dark:bg-[var(--bg-color)]">
         <div className="max-w-6xl mx-auto">
           {/* Header - NO ITALIC */}
           <div className="text-center mb-12">
@@ -892,12 +863,12 @@ const AboutPage = () => {
       {/* Security Section - Figma Match */}
      
       {/* Security Section */}
-      <section className="py-20 px-4 bg-white dark:bg-[#0A0A0F]">
+      <section className="py-20 px-4 bg-white dark:bg-[var(--bg-color)]">
         <div className="max-w-6xl mx-auto">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             {/* Left Column - Padlock Image - NO OVERLAY (image has badge baked in) */}
             <div className="relative">
-              <div className="relative w-full h-[400px] rounded-3xl overflow-hidden bg-gray-100 dark:bg-[#0F0F14]">
+              <div className="relative w-full h-[400px] rounded-3xl overflow-hidden bg-gray-100 dark:bg-[var(--bg-color)]">
                 <Image
                   src="https://res.cloudinary.com/pitz/image/upload/v1764575591/Container_11_tss9j7.png"
                   alt="Security Padlock"
@@ -1010,7 +981,7 @@ const AboutPage = () => {
       {/* Location Section */}
 
       {/* Location Section */}
-      <section className="py-20 px-4 bg-white dark:bg-[#0A0A0F] relative overflow-hidden">
+      <section className="py-20 px-4 bg-white dark:bg-[var(--bg-color)] relative overflow-hidden">
         <div className="max-w-7xl mx-auto relative z-10">
           {/* Header */}
           <div className="text-center mb-12">      

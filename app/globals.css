@@ -9,7 +9,7 @@
   --card-color: #ffffff;
 }
 
-.dark {
+.dark:not(.deem) {
   --background: #0A0A0A;
   --foreground: #ededed;
   /* Reusable background and card colors for dark mode */
@@ -17,13 +17,12 @@
   --card-color: #18181D;
 }
 
-.deem,
-.deem.dark {
-  --background: #18181D;
-  --foreground: #ededed;
+.deem {
+  --background: #18181D !important;
+  --foreground: #ededed !important;
   /* Reusable background and card colors for deem mode */
-  --bg-color: #18181D;
-  --card-color: #18181D;
+  --bg-color: #18181D !important;
+  --card-color: #18181D !important;
 }
 
 @theme inline {
@@ -31,7 +30,7 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  
+
   /* Custom theme colors */
   --color-primary: #0A0A0A;
   --color-accent: #35353E;
@@ -39,7 +38,7 @@
   --color-warning: #F79330;
   --color-success: #0A0A0A;
   --color-error: #EF4444;
-  
+
   /* Light theme specific colors */
   --color-card: #ffffff;
   --color-card-foreground: #171717;
@@ -52,7 +51,7 @@
   --color-popover-foreground: #171717;
 }
 
-.dark {
+.dark:not(.deem) {
   --color-card: #1D1D23;
   --color-card-foreground: #ededed;
   --color-border: #35353E;
@@ -64,17 +63,77 @@
   --color-popover-foreground: #ededed;
 }
 
-.deem,
-.deem.dark {
-  --color-card: #1D1D23;
-  --color-card-foreground: #ededed;
-  --color-border: #35353E;
-  --color-input: #2A2A2A;
-  --color-ring: #13b562;
-  --color-muted: #262626;
-  --color-muted-foreground: #9ca3af;
-  --color-popover: #1E1E1E;
-  --color-popover-foreground: #ededed;
+.deem {
+  --color-card: #1D1D23 !important;
+  --color-card-foreground: #ededed !important;
+  --color-border: #35353E !important;
+  --color-input: #2A2A2A !important;
+  --color-ring: #13b562 !important;
+  --color-muted: #262626 !important;
+  --color-muted-foreground: #9ca3af !important;
+  --color-popover: #1E1E1E !important;
+  --color-popover-foreground: #ededed !important;
+}
+
+
+@keyframes floatSlow {
+  0% {
+    transform: translate(0px, 0px);
+  }
+
+  50% {
+    transform: translate(12px, -18px);
+  }
+
+  100% {
+    transform: translate(0px, 0px);
+  }
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-20px);
+  }
+
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+@keyframes floatDelayed {
+  0% {
+    transform: translateY(0px) rotate(-5deg);
+  }
+
+  50% {
+    transform: translateY(-15px) rotate(-5deg);
+  }
+
+  100% {
+    transform: translateY(0px) rotate(-5deg);
+  }
+}
+
+/* Create Tailwind utility class */
+.animate-floatSlow {
+  animation: floatSlow 14s ease-in-out infinite;
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-float-delayed {
+  animation: floatDelayed 7s ease-in-out infinite 1s;
+  /* 1s delay */
+}
+
+.perspective-1000 {
+  perspective: 1000px;
 }
 
 body {
@@ -82,8 +141,10 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
   transition: background-color 0.3s ease, color 0.3s ease;
-  overflow-x: hidden; /* Prevent horizontal scrolling on body */
-  max-width: 100vw; /* Ensure body doesn't exceed viewport width */
+  overflow-x: hidden;
+  /* Prevent horizontal scrolling on body */
+  max-width: 100vw;
+  /* Ensure body doesn't exceed viewport width */
 }
 
 /* Ensure root element doesn't cause horizontal scroll */
@@ -119,12 +180,15 @@ textarea:active {
 
 /* Utility class to hide scrollbars while maintaining scroll functionality */
 .scrollbar-hide {
-  -ms-overflow-style: none; /* Internet Explorer 10+ */
-  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none;
+  /* Internet Explorer 10+ */
+  scrollbar-width: none;
+  /* Firefox */
 }
 
 .scrollbar-hide::-webkit-scrollbar {
-  display: none; /* Safari and Chrome */
+  display: none;
+  /* Safari and Chrome */
 }
 
 /* Custom scrollbar styles for dropdowns */
@@ -138,6 +202,7 @@ textarea:active {
 
 /* Ensure minimum touch target size for mobile accessibility */
 @media (max-width: 768px) {
+
   button,
   a,
   input[type="button"],
@@ -147,7 +212,7 @@ textarea:active {
     min-height: 44px;
     min-width: 44px;
   }
-  
+
   /* Allow exceptions for icon-only buttons that are explicitly smaller */
   button.icon-only,
   [role="button"].icon-only {
@@ -181,6 +246,20 @@ textarea:active {
   padding-inline: var(--layout-gutter);
 }
 
+.dashboard-page-wrapper {
+  padding-inline: 0 !important;
+  margin-left: 0.5rem !important; /* 8px margin left on small screens */
+  margin-right: 1rem !important; /* 16px margin right on small screens */
+}
+
+@media (min-width: 640px) {
+  .dashboard-page-wrapper {
+    padding-inline: var(--layout-gutter) !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+}
+
 /* Line clamp utility for text truncation */
 .line-clamp-3 {
   display: -webkit-box;
@@ -190,15 +269,34 @@ textarea:active {
 }
 
 /* Theme-aware utility classes for marketing page pilot */
-.theme-bg-primary { background-color: var(--background); }
-.theme-bg-card { background-color: var(--color-card); }
-.theme-text-primary { color: var(--foreground); }
-.theme-text-muted { color: var(--color-muted-foreground); }
-.theme-border { border-color: var(--color-border); }
+.theme-bg-primary {
+  background-color: var(--background);
+}
+
+.theme-bg-card {
+  background-color: var(--color-card);
+}
+
+.theme-text-primary {
+  color: var(--foreground);
+}
+
+.theme-text-muted {
+  color: var(--color-muted-foreground);
+}
+
+.theme-border {
+  border-color: var(--color-border);
+}
 
 /* Reusable background and card color utility classes */
-.bg-app { background-color: var(--bg-color); }
-.bg-card { background-color: var(--card-color); }
+.bg-app {
+  background-color: var(--bg-color);
+}
+
+.bg-card {
+  background-color: var(--card-color);
+}
 
 /* Scroll snap utilities for responsive horizontal navigation */
 .snap-x {
@@ -212,7 +310,8 @@ textarea:active {
 /* Smooth scrolling behavior */
 .scroll-smooth {
   scroll-behavior: smooth;
-  -webkit-overflow-scrolling: touch; /* iOS momentum scrolling */
+  -webkit-overflow-scrolling: touch;
+  /* iOS momentum scrolling */
 }
 
 @custom-variant dark (&:where(.dark, .dark *));
@@ -232,12 +331,14 @@ textarea:active {
 
 /* CHANGED: Blue (rgba(59, 130, 246, 0.2)) -> Transparent (no color on hover for unselected) */
 .dropdown-item-hover:hover {
-  background-color: rgba(29, 135, 81, 0.1) !important; /* Light green hover */
+  background-color: rgba(29, 135, 81, 0.1) !important;
+  /* Light green hover */
 }
 
 /* CHANGED: Blue (rgba(59, 130, 246, 0.25)) -> Green (#1D8751) for selected items */
 .dropdown-item-selected {
-  background-color: #1D8751 !important; /* Solid green for selected */
+  background-color: #1D8751 !important;
+  /* Solid green for selected */
 }
 
 /* Additional utility classes for dropdown styling */
@@ -246,5 +347,6 @@ textarea:active {
 }
 
 .dropdown-item-unselected:hover {
-  background-color: rgba(29, 135, 81, 0.1) !important; /* Light green on hover */
+  background-color: rgba(29, 135, 81, 0.1) !important;
+  /* Light green on hover */
 }

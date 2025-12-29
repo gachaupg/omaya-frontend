@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { SupportedAsset, SwapEstimate } from "../types";
 import { useTheme } from "@/context/theme";
@@ -34,12 +34,12 @@ interface TransactionInfoStepProps {
 }
 
 const strongBorder =
-  "border-[1.5px] border-[#35353E] dark:border-[#35353E]";
+  "border-[1.5px] border-gray-200 dark:border-[#35353E]";
 const baseCard =
-  `rounded-[26px] ${strongBorder} bg-white dark:bg-[#18181D] dark:text-white text-gray-900`;
+  `rounded-2xl ${strongBorder} bg-white dark:bg-[#18181D] dark:text-white text-gray-900`;
 const labelCopy = "text-[12px] tracking-wide dark:text-[#7d7f95] text-gray-600";
 const inputBase =
-  `rounded-2xl bg-transparent dark:bg-transparent ${strongBorder} dark:text-white text-[#35353e] px-4 py-2 w-full text-lg dark:placeholder:text-[#5f6070] placeholder:text-gray-400 focus:outline-none h-[48px]`;
+  `rounded-lg sm:rounded-2xl bg-transparent dark:bg-transparent ${strongBorder} dark:text-white text-[#35353e] px-2 sm:px-4 py-2 w-full text-sm sm:text-lg dark:placeholder:text-[#5f6070] placeholder:text-gray-400 focus:outline-none h-[42px] sm:h-[48px]`;
 
 const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
   const { isDark } = useTheme();
@@ -77,6 +77,8 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
   const toAssetDropdownRef = useRef<HTMLDivElement>(null);
   const toAssetDropdownContentRef = useRef<HTMLDivElement | null>(null);
   const [isComponentMounted, setIsComponentMounted] = useState(false);
+
+  
 
   useEffect(() => {
     setIsComponentMounted(true);
@@ -192,6 +194,27 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
   };
 
 
+  // Memoize filtered assets to prevent recalculation on every render
+  const filteredFromAssets = useMemo(() => {
+    if (!searchTerm) return supportedAssets;
+    const term = searchTerm.toLowerCase();
+    return supportedAssets.filter((option) =>
+      option.ticker?.toLowerCase().includes(term) ||
+      option.name?.toLowerCase().includes(term) ||
+      option.network?.toLowerCase().includes(term)
+    );
+  }, [supportedAssets, searchTerm]);
+
+  const filteredToAssets = useMemo(() => {
+    if (!toSearchTerm) return supportedAssets;
+    const term = toSearchTerm.toLowerCase();
+    return supportedAssets.filter((option) =>
+      option.ticker?.toLowerCase().includes(term) ||
+      option.name?.toLowerCase().includes(term) ||
+      option.network?.toLowerCase().includes(term)
+    );
+  }, [supportedAssets, toSearchTerm]);
+
   const renderAssetDropdown = (
     asset: SupportedAsset | null,
     isOpen: boolean,
@@ -206,21 +229,14 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
     }
 
     const dropdownStyle = updateDropdownPosition(isFrom);
-    const filtered = supportedAssets.filter((option) => {
-      if (!searchValue) return true;
-      const term = searchValue.toLowerCase();
-      return (
-        option.ticker?.toLowerCase().includes(term) ||
-        option.name?.toLowerCase().includes(term) ||
-        option.network?.toLowerCase().includes(term)
-      );
-    });
+    // Use memoized filtered list
+    const filtered = isFrom ? filteredFromAssets : filteredToAssets;
 
     return createPortal(
       (
         <div
           ref={isFrom ? fromAssetDropdownContentRef : toAssetDropdownContentRef}
-          className="bg-white dark:bg-[#18181D] border border-gray-300 dark:border-accent rounded-2xl shadow-xl z-45 max-h-[70vh] sm:max-h-[60vh] overflow-hidden"
+          className="flex flex-col bg-white dark:bg-[#18181D] border border-gray-300 dark:border-accent rounded-2xl shadow-xl z-45 max-h-[70vh] sm:max-h-[60vh]"
           style={dropdownStyle}
         >
           {/* Dropdown Title */}
@@ -252,7 +268,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
           </div>
 
           {/* Asset List */}
-          <div className="max-h-[60vh] sm:max-h-[50vh] overflow-y-auto p-0.5 sm:p-1">
+          <div className="flex-1 overflow-y-auto p-0.5 sm:p-1">
             {filtered.length === 0 ? (
               <div className="p-4 text-center text-sm text-gray-500 dark:text-gray-400">
                 {searchValue ? "No assets found" : "No assets available"}
@@ -277,12 +293,13 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
                       }
                       alt={option.name || "Asset"}
                       className="w-6 h-6 rounded-full object-cover"
+                      loading="lazy"
                       onError={(e) => {
                         e.currentTarget.src =
                           "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
                       }}
                     />
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <div className={`font-medium flex items-center gap-2 ${isDark ? "text-white" : "text-[#111827]"
                         }`}>
                         {(option.ticker || option.symbol || option.name || "Unknown").toUpperCase()}
@@ -292,14 +309,14 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
                           </span>
                         )}
                       </div>
-                      <div className={`text-sm ${isDark ? "text-[#788099]" : "text-[#475569]"
+                      <div className={`text-sm truncate ${isDark ? "text-[#788099]" : "text-[#475569]"
                         }`}>
                         {option.name || option.ticker || "Unknown Asset"}
                       </div>
                     </div>
                     {asset?.ticker === option.ticker &&
                       asset?.network === option.network && (
-                        <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
+                        <div className="w-2 h-2 bg-[#1D8751] rounded-full flex-shrink-0"></div>
                       )}
                   </div>
                 ))}
@@ -321,13 +338,15 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
     onSearchChange: (value: string) => void,
     isFrom: boolean
   ) => {
+    // Show subtle loading state on asset selector when estimate is loading
+    const isLoadingEstimate = estimateLoading && asset !== null;
 
     return (
       <div className="relative" ref={isFrom ? fromAssetDropdownRef : toAssetDropdownRef}>
         <button
           type="button"
           onClick={toggle}
-          className={`flex items-center justify-between w-full rounded-2xl ${strongBorder} bg-transparent dark:bg-transparent px-4 py-2 text-lg h-[48px]`}
+          className={`flex items-center justify-between w-full rounded-2xl ${strongBorder} bg-transparent dark:bg-transparent px-4 py-2 text-lg h-[48px] transition-opacity ${isLoadingEstimate ? "opacity-80" : ""}`}
         >
           <div className="flex items-center gap-3 text-left min-w-0">
             <img
@@ -339,6 +358,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
               }
               alt={asset?.name || "asset icon"}
               className="w-6 h-6 rounded-full object-cover flex-shrink-0"
+              loading="lazy"
               onError={(e) => {
                 e.currentTarget.src =
                   "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
@@ -379,6 +399,14 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
       ? inputBase 
       : inputBase.replace('bg-transparent dark:bg-transparent', 'bg-white dark:bg-[#35353E]');
     
+    // Show loader on the OPPOSITE input (the one receiving calculated value)
+    // If user is typing in "from" (isYouSend=true, activeInputField="from"), show loader on "to" (isYouSend=false)
+    // If user is typing in "to" (isYouSend=false, activeInputField="to"), show loader on "from" (isYouSend=true)
+    const showLoader = estimateLoading && (
+      (activeInputField === "from" && !isYouSend) || 
+      (activeInputField === "to" && isYouSend)
+    );
+    
     return (
     <div className="space-y-2">
       {label && <p className={labelCopy}>{label}</p>}
@@ -386,19 +414,20 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
         <input
           type="text"
           inputMode="decimal"
-          value={value}
+          value={showLoader ? "" : value}
           onChange={onChange}
-          placeholder="Enter amount"
-          className={inputClassName}
+          placeholder={showLoader ? "Calculating..." : "Enter amount"}
+          className={`${inputClassName} ${showLoader ? "opacity-70" : ""}`}
+          disabled={showLoader}
         />
         <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-[#35353e] dark:text-white/80">
           {asset?.ticker?.toUpperCase() ||
             asset?.symbol?.toUpperCase() ||
             "USDT"}
         </span>
-        {estimateLoading && isActive && (
-          <span className="absolute right-12 top-1/2 -translate-y-1/2">
-            <span className="h-5 w-5 rounded-full border-b-2 border-[#1D8751] animate-spin" />
+        {showLoader && (
+          <span className="absolute left-4 top-1/2 -translate-y-1/2">
+            <span className="inline-block h-4 w-4 rounded-full border-2 border-[#1D8751] border-t-transparent animate-spin" />
           </span>
         )}
       </div>
@@ -521,6 +550,18 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
         </p>
       </div>
 
+      {/* Estimate Error - shown just above the button */}
+      {estimateError && (
+        <div className="mb-3 bg-red-500/10 border border-red-500/30 rounded-xl p-3 flex items-start gap-2">
+          <div className="w-5 h-5 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+            <span className="text-red-500 text-xs font-bold">!</span>
+          </div>
+          <p className="text-red-600 dark:text-red-400 text-xs sm:text-sm">
+            {estimateError}
+          </p>
+        </div>
+      )}
+
       {!hideContinueButton && (
         <button
           type="button"
@@ -532,7 +573,8 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
             parseFloat(fromAmount) <= 0 ||
             !estimate ||
             estimateLoading ||
-            swapLoading
+            swapLoading ||
+            !!estimateError
           }
           className={`w-full text-white text-sm sm:text-base font-medium py-3 sm:py-2.5 rounded-3xl flex items-center justify-center gap-2 transition-colors min-h-[48px] mb-2 ${!fromAsset ||
             !toAsset ||
@@ -540,7 +582,8 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
             parseFloat(fromAmount) <= 0 ||
             !estimate ||
             estimateLoading ||
-            swapLoading
+            swapLoading ||
+            !!estimateError
             ? "bg-gray-500 cursor-not-allowed"
             : "bg-[#1D8751] hover:bg-[#147043]"
             }`}
@@ -556,12 +599,6 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
         </button>
       )}
 
-      {estimateError && (
-        <div className="mt-4 bg-red-500/10 dark:bg-red-500/10 border border-red-500 rounded-2xl p-3 sm:p-4 dark:text-red-200 text-red-700">
-          <h3 className="font-semibold mb-1 text-sm sm:text-base">Estimate Error</h3>
-          <p className="text-xs sm:text-sm break-words">{estimateError}</p>
-        </div>
-      )}
       {localSwapError && (
         <div className="mt-4 bg-red-500/10 dark:bg-red-500/10 border border-red-500 rounded-2xl p-3 sm:p-4 dark:text-red-200 text-red-700">
           <h3 className="font-semibold mb-1 text-sm sm:text-base">Error</h3>

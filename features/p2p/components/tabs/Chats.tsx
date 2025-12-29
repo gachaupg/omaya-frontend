@@ -135,6 +135,7 @@ export const Chats: React.FC = () => {
   const [messageInput, setMessageInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+  const [uploadedImages, setUploadedImages] = useState<File[]>([]);
 
   // Check localStorage for terms acceptance on mount
   useEffect(() => {
@@ -152,6 +153,7 @@ export const Chats: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const prevSelectedUserIdRef = useRef<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Track when initial data has been loaded at least once so we don't "reload"
   // the whole page with a spinner on subsequent background fetches.
@@ -380,8 +382,25 @@ export const Chats: React.FC = () => {
     return latestMessage?.sender_photo || (userGroup as any).sender_photo || null;
   };
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+    const filesArray = Array.from(e.target.files);
+    setUploadedImages((prev) => [...prev, ...filesArray]);
+    // Allow selecting the same file again
+    e.target.value = "";
+  };
+
+  const removeSelectedImage = (index: number) => {
+    setUploadedImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const handleSendMessage = async () => {
-    if (!messageInput.trim() || !selectedUser || !termsAccepted || isSending) {
+    if (
+      (!messageInput.trim() && uploadedImages.length === 0) ||
+      !selectedUser ||
+      !termsAccepted ||
+      isSending
+    ) {
       return;
     }
 
@@ -392,12 +411,14 @@ export const Chats: React.FC = () => {
 
     const messageContent = messageInput.trim();
     const tempId = `temp-${Date.now()}-${Math.random()}`;
+    const imagesToSend = uploadedImages;
     
     // Create optimistic message
     const optimisticMessage = {
       id: tempId,
       content: messageContent,
       message: messageContent,
+      images: imagesToSend.map((file) => URL.createObjectURL(file)),
       sender_id: user?.id || 0,
       sender_email: user?.email || "",
       sender_name: user?.email || "",
@@ -426,13 +447,14 @@ export const Chats: React.FC = () => {
 
     // Clear input immediately for better UX
     setMessageInput("");
+    setUploadedImages([]);
     setIsSending(true);
 
     try {
       // Send via HTTP POST API (same as ChatBox in orders page)
       await postTradeMessage(selectedUser.entity_id, {
         message: messageContent,
-        uploaded_images: [], // No image support in chats yet
+        uploaded_images: imagesToSend,
         sender_name: user?.email || "",
       });
 
@@ -513,7 +535,7 @@ export const Chats: React.FC = () => {
     return (
       <div 
         ref={messagesContainerRef}
-        className="flex flex-col gap-1 px-4 py-4 overflow-y-auto max-h-[calc(100vh-260px)]"
+        className="flex flex-col gap-1 px-4 py-4 overflow-y-auto flex-1 min-h-0"
       >
         {allMessages
           .slice()
@@ -550,6 +572,28 @@ export const Chats: React.FC = () => {
                   {msg.content && (
                     <div className="text-xs sm:text-sm break-words mb-0.5 whitespace-pre-line">
                       {msg.content}
+                    </div>
+                  )}
+
+                  {/* Image attachments (if present) */}
+                  {Array.isArray(msg.images) && msg.images.length > 0 && (
+                    <div className="mt-1 flex flex-wrap gap-2">
+                      {msg.images.map((img: any, idx: number) => {
+                        const imageUrl =
+                          typeof img === "string"
+                            ? img
+                            : img?.image_url || img?.image || img?.url || "";
+                        if (!imageUrl) return null;
+                        return (
+                          <img
+                            key={`${msg.id}-img-${idx}`}
+                            src={imageUrl}
+                            alt={`attachment-${idx + 1}`}
+                            className="w-20 h-20 rounded object-cover border border-white/20 cursor-pointer hover:opacity-90"
+                            onClick={() => window.open(imageUrl, "_blank")}
+                          />
+                        );
+                      })}
                     </div>
                   )}
                   
@@ -627,7 +671,7 @@ export const Chats: React.FC = () => {
   }
 
   return (
-    <div className="w-full h-full flex flex-col">
+    <div className="w-full min-h-[100dvh] flex flex-col">
       {/* Header */}
       <div className="px-1 sm:px-2 md:px-4 pt-0 pb-2">
         <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
@@ -638,9 +682,9 @@ export const Chats: React.FC = () => {
         </p>
       </div>
 
-      <div className="flex-1 flex gap-3 sm:gap-4 min-h-[480px]">
+      <div className="flex-1 flex flex-col md:flex-row gap-3 sm:gap-4 min-h-0">
         {/* Conversations list - Left Card */}
-        <div className="w-full sm:w-80 md:w-72 lg:w-80 rounded-2xl border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#15161D] overflow-hidden flex flex-col">
+        <div className="w-full md:w-72 lg:w-80 rounded-2xl border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#15161D] overflow-hidden flex flex-col min-h-0">
           <div className="px-3 py-2">
             <div className="relative">
               <input
@@ -648,12 +692,12 @@ export const Chats: React.FC = () => {
                 placeholder="Search conversations..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full rounded-full bg-gray-100 dark:bg-[#050608] border border-gray-300 dark:border-[#272837] px-4 py-2 text-xs sm:text-sm text-gray-900 dark:text-[#E5E7EB] placeholder:text-gray-500 dark:placeholder:text-[#6B7280] focus:outline-none focus:border-[#1D8751]"
+                className="w-full rounded-full bg-gray-100 dark:bg-[var(--bg-color)] border border-gray-300 dark:border-[#272837] px-4 py-2 text-xs sm:text-sm text-gray-900 dark:text-[#E5E7EB] placeholder:text-gray-500 dark:placeholder:text-[#6B7280] focus:outline-none focus:border-[#1D8751]"
               />
             </div>
           </div>
 
-          <div className="px-2 pb-2 space-y-1 flex-1 overflow-y-auto max-h-[calc(100vh-200px)]">
+          <div className="px-2 pb-2 space-y-1 flex-1 overflow-y-auto max-h-[30dvh] md:max-h-[calc(100vh-200px)]">
             {filteredConversations.length === 0 && (
               <div className="px-3 py-4 text-xs text-gray-600 dark:text-[#9CA3AF]">
                 No conversations yet.
@@ -685,7 +729,7 @@ export const Chats: React.FC = () => {
         </div>
 
         {/* Chat panel - Right Card */}
-        <div className="flex-1 flex flex-col rounded-2xl border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#111217] overflow-hidden">
+        <div className="flex-1 flex flex-col rounded-2xl border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#111217] overflow-hidden min-h-0">
           {/* Chat header */}
           <div className="px-4 py-3 border-b border-gray-200 dark:border-[#1F2937] flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -803,10 +847,34 @@ export const Chats: React.FC = () => {
           )}
 
           {/* Messages area */}
-          <div className="flex-1">{renderMessages()}</div>
+          <div className="flex-1 min-h-0">{renderMessages()}</div>
 
           {/* Input bar */}
-          <div className="px-4 py-3 border-t border-gray-200 dark:border-[#1F2937] bg-gray-50 dark:bg-[#050608]">
+          <div className="px-4 py-3 border-t border-gray-200 dark:border-[#1F2937] bg-gray-50 dark:bg-[var(--bg-color)]">
+            {/* Selected image previews */}
+            {uploadedImages.length > 0 && (
+              <div className="mb-2 flex flex-wrap gap-2">
+                {uploadedImages.map((file, idx) => (
+                  <div key={`${file.name}-${idx}`} className="relative">
+                    <img
+                      src={URL.createObjectURL(file)}
+                      alt={`selected-${idx}`}
+                      className="w-12 h-12 rounded object-cover border border-gray-200 dark:border-[#35353E]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeSelectedImage(idx)}
+                      className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-black/70 text-white text-xs flex items-center justify-center"
+                      aria-label="Remove image"
+                      title="Remove"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <div className="flex items-center gap-2">
               <div className="flex-1">
                 <input
@@ -836,11 +904,39 @@ export const Chats: React.FC = () => {
                   className="w-full rounded-full bg-white dark:bg-[#111827] border border-gray-300 dark:border-[#374151] px-4 py-2 text-xs sm:text-sm text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-[#6B7280] focus:outline-none focus:border-[#1D8751] disabled:opacity-50 disabled:cursor-not-allowed"
                 />
               </div>
+              {/* Attach image */}
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={!termsAccepted || isSending}
+                className="w-8 h-8 rounded-full border border-gray-300 dark:border-[#374151] bg-white dark:bg-[#111827] text-[#1D8751] flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Attach image"
+                aria-label="Attach image"
+              >
+                <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
+                  <path
+                    d="M16.5 6.5l-7.8 7.8a3 3 0 104.2 4.2l7.1-7.1a5 5 0 00-7.1-7.1l-8.5 8.5"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    fill="none"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+              <input
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                accept="image/*"
+                multiple
+                onChange={handleImageChange}
+              />
               <button
                 onClick={handleSendMessage}
                 disabled={
                   !termsAccepted || 
-                  !messageInput.trim() || 
+                  (!messageInput.trim() && uploadedImages.length === 0) || 
                   isSending ||
                   (() => {
                     const status = selectedUser ? (selectedUser as any).status : null;
@@ -854,7 +950,7 @@ export const Chats: React.FC = () => {
                     const normalizedStatus = status ? String(status).toLowerCase() : null;
                     const isClosed = normalizedStatus === "complete" || normalizedStatus === "responded";
                     return termsAccepted && 
-                           messageInput.trim() && 
+                           (messageInput.trim() || uploadedImages.length > 0) && 
                            !isSending &&
                            !isClosed;
                   })()

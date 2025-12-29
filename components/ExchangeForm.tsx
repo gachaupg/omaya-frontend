@@ -1006,14 +1006,14 @@ export default function ExchangeForm({
       if (typeof selectedPayment === 'string') {
         return selectedPayment === provider.provider_name || selectedPayment === provider.method_name;
       }
-      return selectedPayment.provider_id === provider.provider_id || 
-             selectedPayment.provider_name === provider.provider_name;
+      return selectedPayment.provider_id === provider.provider_id ||
+        selectedPayment.provider_name === provider.provider_name;
     };
 
     return (
       <div
         ref={paymentDropdownRef}
-        className="absolute top-full left-0 right-3 mt-2 bg-white dark:bg-[#0505F0FF] border border-gray-200 dark:border-[#35353E] rounded-xl shadow-lg z-[9999] w-full"
+        className="absolute top-full left-0 right-3 mt-2 bg-white dark:bg-[var(--bg-color)] border border-gray-200 dark:border-[#35353E] rounded-xl shadow-lg z-[9999] w-full"
       >
         {/* Search Input */}
         <div className="p-3 border-b border-gray-200 dark:border-[#35353E]">
@@ -1071,13 +1071,12 @@ export default function ExchangeForm({
               (provider: any, index: number) => {
                 const isSelected = isProviderSelected(provider);
                 const fallbackLogo = "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
-                
+
                 return (
                   <div
                     key={provider.provider_id || index}
-                    className={`p-3 hover:bg-gray-50 dark:hover:bg-[#2A2A2A] cursor-pointer border-b border-gray-100 dark:border-[#35353E] last:border-b-0 ${
-                      isSelected ? "bg-[#1D8751]/10" : ""
-                    }`}
+                    className={`p-3 hover:bg-gray-50 dark:hover:bg-[#2A2A2A] cursor-pointer border-b border-gray-100 dark:border-[#35353E] last:border-b-0 ${isSelected ? "bg-[#1D8751]/10" : ""
+                      }`}
                     onClick={() => {
                       onSelect(provider);
                     }}
@@ -1094,14 +1093,14 @@ export default function ExchangeForm({
                         }}
                       />
                       <div className="flex-1 min-w-0">
-                        <div className="text-[#1F2937] dark:text-[#ffffff] font-medium flex items-center gap-2 flex-wrap">
+                        <div className="text-[#1F2937] dark:text-[#ffffff] font-normal text-sm flex items-center gap-2 flex-wrap">
                           <span className="truncate">{provider.provider_name}</span>
                           {isSelected && (
                             <span className="text-[#1D8751] text-sm">✓</span>
                           )}
                         </div>
                         <div className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                          {provider.method_display || provider.method_name || "Payment Method"}
+                          {provider.provider_name} - {provider.method_display || provider.method_name || "Payment Method"}
                         </div>
                       </div>
                     </div>
@@ -1129,7 +1128,7 @@ export default function ExchangeForm({
   }> = ({ id, label, variant, position = "middle" }) => {
     const isActive = activeTab === id;
     const [isSmallScreen, setIsSmallScreen] = useState(false);
-    
+
     useEffect(() => {
       const checkScreenSize = () => {
         setIsSmallScreen(window.innerWidth < 640);
@@ -1138,17 +1137,17 @@ export default function ExchangeForm({
       window.addEventListener("resize", checkScreenSize);
       return () => window.removeEventListener("resize", checkScreenSize);
     }, []);
-    
+
     // Determine if neighbors are active to know where to apply slanting
     const leftNeighborActive = (position === "middle" && activeTab === "express") || (position === "last" && activeTab === "moneyx");
     const rightNeighborActive = (position === "first" && activeTab === "moneyx") || (position === "middle" && activeTab === "swap");
-    
+
     // Only apply slanting when:
     // 1. This tab is active (slants where it meets inactive neighbors)
     // 2. This tab is inactive but neighbor is active (slants where it meets active neighbor)
     // When both tabs are inactive, no slanting - straight rectangle
     let clipPath: string | undefined;
-    
+
     if (!isActive && !leftNeighborActive && !rightNeighborActive) {
       // Both neighbors inactive - straight rectangle, no slanting
       clipPath = undefined;
@@ -1178,10 +1177,10 @@ export default function ExchangeForm({
       // Middle tab (MoneyX): slanted on both sides only where it meets active neighbors
       const slantRight = isActive || rightNeighborActive;
       const slantLeft = isActive || leftNeighborActive;
-      
+
       if (slantRight && slantLeft) {
         // When MoneyX is active, left side curves downward (from 8% top to 0 bottom)
-        clipPath = isActive 
+        clipPath = isActive
           ? "polygon(8% 0, 92% 0, 100% 100%, 0 100%)"
           : "polygon(0 0, 92% 0, 100% 100%, 8% 100%)";
       } else if (slantRight) {
@@ -1197,10 +1196,13 @@ export default function ExchangeForm({
     }
 
     // Determine border styling: outer edges only, no borders between buttons
-    const borderColor = isDark ? "#2f323b" : "#D0D4DD";
+    const borderColor = isDark ? "#2f323b" : "#6B7280";
     const hasLeftBorder = position === "first"; // Only first tab has left border
     const hasRightBorder = position === "last"; // Only last tab has right border
     // No borders between buttons (no right border on first/middle, no left border on middle/last)
+
+    // When MoneyX is active, remove all borders from Express tab
+    const shouldHideBorders = position === "first" && activeTab === "moneyx";
 
     const buttonClasses = [
       "relative flex w-full items-center justify-center overflow-hidden transition-all duration-200",
@@ -1208,8 +1210,8 @@ export default function ExchangeForm({
       isActive
         ? "bg-transparent text-white"
         : isDark
-        ? "bg-[#0e1018] text-[#7C8A97]"
-        : "bg-[#F4F7F6] text-[#627180]"
+          ? "bg-[#0e1018] text-[#7C8A97]"
+          : "bg-gray-300 text-[#627180]"
     ].join(" ");
 
     // We don't use the normal border to draw the joint; it's all done with
@@ -1222,14 +1224,10 @@ export default function ExchangeForm({
       "text-[10px] sm:text-xs md:text-sm lg:text-base font-semibold tracking-wide transition-colors whitespace-nowrap"
     ].join(" ");
 
-    // For express variant in light mode, use greyish text when active
-    const expressTextColorClass = variant === "express" && isActive && !isDark
-      ? "text-[#788099]"
-      : isActive
-      ? isDark
-        ? "text-white"
-        : "text-[#0B1418]"
-      : "text-[#727272]";
+    // Uniform text color for all tabs in light mode (same color for active and inactive)
+    const expressTextColorClass = isActive && isDark
+      ? "text-white"
+      : "text-[#727272]"; // Light mode: always grey, dark mode: white when active, grey when inactive
 
     const textColorClass = expressTextColorClass;
 
@@ -1251,8 +1249,8 @@ export default function ExchangeForm({
       variant === "express"
         ? t("marketing.exchange.tabs.express", "Express Exchange")
         : variant === "moneyx"
-        ? t("marketing.exchange.tabs.moneyx", "Money X")
-        : label || t("marketing.exchange.tabs.swap", "Swap");
+          ? t("marketing.exchange.tabs.moneyx", "Money X")
+          : label || t("marketing.exchange.tabs.swap", "Swap");
 
     // Process label for moneyx variant - replace "X" with icon
     const renderLabel = () => {
@@ -1267,7 +1265,7 @@ export default function ExchangeForm({
               <img
                 src={moneyXIconSrc}
                 alt="X"
-                className="inline-block w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 object-contain -ml-0.5"
+                className="inline-block w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 object-contain -ml-0.5 mt-2 sm:mt-2.5 md:mt-3 lg:mt-3.5"
                 style={{ verticalAlign: 'middle' }}
                 onError={(e) => {
                   // Fallback if image fails to load
@@ -1300,7 +1298,8 @@ export default function ExchangeForm({
       // Apply curves at meeting points where tabs connect
       if (position === "first") {
         // Express tab: curve at top-right meeting point (where it meets MoneyX)
-        if (hasSlantRight) {
+        // When MoneyX is active, make it straight (no curve)
+        if (hasSlantRight && !shouldHideBorders) {
           return '0 12px 0 0'; // Top-right corner curved
         }
         return '0';
@@ -1336,10 +1335,14 @@ export default function ExchangeForm({
           flexBasis: 0,
           borderRadius: getBorderRadius(),
           // Outer edges only - no borders between buttons (slanted edges handled separately)
-          borderLeft: hasLeftBorder && !isActive && !hasSlantLeft ? `1px solid ${borderColor}` : 'none',
-          borderRight: hasRightBorder && !isActive && !hasSlantRight ? `1px solid ${borderColor}` : 'none',
-          borderTop: !isActive ? `1px solid ${borderColor}` : 'none',
-          borderBottom: !isActive ? `1px solid ${borderColor}` : 'none',
+          // When MoneyX is active, remove all borders from Express tab
+          borderLeft: hasLeftBorder && !isActive && !hasSlantLeft && !shouldHideBorders ? `2px solid ${borderColor}` : "none",
+          borderRight:
+            hasRightBorder && !isActive && !hasSlantRight && !shouldHideBorders
+              ? `2px solid ${borderColor}`
+              : "none",
+          borderTop: !isActive && !shouldHideBorders ? `2px solid ${borderColor}` : "none",
+          borderBottom: !isActive && !shouldHideBorders ? `2px solid ${borderColor}` : "none",
         }}
       >
         {/* Border on slanted right edge */}
@@ -1357,7 +1360,7 @@ export default function ExchangeForm({
                 x2="100%"
                 y2="100%"
                 stroke={borderColor}
-                strokeWidth="1"
+                strokeWidth="2"
               />
             ) : hasSlantRightBottom ? (
               // Bottom-right slant: from 100% at top to 92% at bottom (MoneyX active, Express inactive - opposite direction)
@@ -1367,13 +1370,13 @@ export default function ExchangeForm({
                 x2="92%"
                 y2="100%"
                 stroke={borderColor}
-                strokeWidth="1"
+                strokeWidth="2"
               />
             ) : null}
           </svg>
         )}
         {/* Border on slanted left edge */}
-        {hasSlantLeft && !isActive && (
+        {hasSlantLeft && !isActive && !shouldHideBorders && (
           <svg
             className="pointer-events-none absolute top-0 left-0 z-10"
             style={{ width: '100%', height: '100%', overflow: 'visible' }}
@@ -1387,7 +1390,7 @@ export default function ExchangeForm({
                 x2="8%"
                 y2="100%"
                 stroke={borderColor}
-                strokeWidth="1"
+                strokeWidth="2"
               />
             ) : null}
           </svg>
@@ -1420,9 +1423,8 @@ export default function ExchangeForm({
       onChange={(e) => onChange(e.target.value)}
       disabled={disabled}
       placeholder="0"
-      className={`border border-gray-300 dark:border-gray-300/20 bg-white dark:bg-transparent text-gray-900 dark:text-white w-full px-3 sm:px-4 md:px-5 py-2.5 sm:py-3 md:py-3.5 rounded-3xl placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#1D8751] focus:border-transparent min-h-[44px] text-sm sm:text-base ${
-        disabled ? "opacity-50 cursor-not-allowed" : ""
-      }`}
+      className={`border border-gray-300 dark:border-gray-300/20 bg-white dark:bg-transparent text-gray-900 dark:text-white w-full px-3 sm:px-4 md:px-5 py-2.5 sm:py-3 md:py-3.5 rounded-3xl placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#1D8751] focus:border-transparent min-h-[44px] text-sm sm:text-base ${disabled ? "opacity-50 cursor-not-allowed" : ""
+        }`}
     />
   );
 
@@ -1542,42 +1544,173 @@ export default function ExchangeForm({
 
   /* ------------------- UI ------------------- */
   // Render tabs and content based on active tab
-  const renderTabs = () => (
-    <div className="relative flex w-full overflow-hidden mt-0 mb-0 rounded-t-[28px] bg-[#F4F7F6] dark:bg-[#18181D] gap-0">
-      <TabButton
-        id="express"
-        variant="express"
-        position="first"
-        label={t("marketing.exchange.tabs.express", "Express")}
-      />
-      <TabButton
-        id="moneyx"
-        variant="moneyx"
-        position="middle"
-        label={t("marketing.exchange.tabs.moneyx", "Money X")}
-      />
-      <TabButton
-        id="swap"
-        variant="swap"
-        position="last"
-        label={t("marketing.exchange.tabs.swap", "Swap")}
-      />
-    </div>
-  );
+  const renderTabs = () => {
+    const borderColor = isDark ? "#2f323b" : "#6B7280";
+
+    // Tab layout math (flexGrow: Express=2, MoneyX=1.6, Swap=2 => total=5.6)
+    // Express width = 2/5.6 = 35.714%
+    // MoneyX width  = 1.6/5.6 = 28.571%
+    // Swap starts at 64.285%
+    // Slants used in clipPaths:
+    // - Right slant uses 92% at top (or 92% at bottom depending on state)
+    // - Left slant uses 8% at bottom for the "upward" cut
+    const P_EXPRESS = "35.714%";
+    const P_SWAP_START = "64.285%";
+    const P_MONEYX_W = "28.571%";
+    const P_MONEYX_LEFT_BOTTOM_INSET = "2.286%"; // 8% of MoneyX width (0.08 * 28.571)
+    const P_EXPRESS_RIGHT_BOTTOM_INSET = "32.857%"; // 92% of Express width (0.92 * 35.714)
+    const P_MONEYX_RIGHT_TOP_CUT = "62%"; // Express start + (92% of MoneyX width) = 35.714 + 26.285 ≈ 62
+    // Swap width = 100% - 64.285% = 35.715%, 8% of Swap width = 2.857%
+    const P_SWAP_LEFT_BOTTOM_INSET = "2.857%"; // 8% of Swap width (0.08 * 35.715)
+    const P_SWAP_BOTTOM_END = "67.142%"; // Swap start + 8% of Swap width = 64.285 + 2.857
+
+    return (
+      <div
+        className="relative flex w-full overflow-hidden mt-0 mb-0 rounded-t-[28px] bg-gray-300 dark:bg-[#18181D] gap-0 border-0"
+      >
+        {/* Uniform OUTER border that DOES NOT touch the active tab area (segmented). */}
+        {/* Left / Right borders (hide the side border next to the active outer tab) */}
+        {activeTab !== "express" && (
+          <div
+            className="pointer-events-none absolute left-0 top-0 bottom-0 border-l-2 z-30"
+            style={{ borderColor }}
+            aria-hidden="true"
+          />
+        )}
+        {activeTab !== "swap" && (
+          <div
+            className="pointer-events-none absolute right-0 top-0 bottom-0 border-r-2 z-30"
+            style={{ borderColor }}
+            aria-hidden="true"
+          />
+        )}
+
+        {/* Rounded top corners (hide the corner border next to the active tab) */}
+        {activeTab !== "express" && (
+          <div
+            className="pointer-events-none absolute top-0 left-0 h-10 w-10 sm:w-12 rounded-tl-[28px] border-t-2 border-l-2 z-30"
+            style={{ borderColor }}
+            aria-hidden="true"
+          />
+        )}
+        {activeTab !== "swap" && (
+          <div
+            className="pointer-events-none absolute top-0 right-0 h-10 w-10 sm:w-12 rounded-tr-[28px] border-t-2 border-r-2 z-30"
+            style={{ borderColor }}
+            aria-hidden="true"
+          />
+        )}
+
+        {/* Top border segments (skip the active tab width) */}
+        {activeTab === "express" && (
+          <div
+            className="pointer-events-none absolute top-0 border-t-2 z-30"
+            // Express active => MoneyX inactive has a LEFT slant at the BOTTOM only, so TOP join is straight.
+            style={{ borderColor, left: P_EXPRESS, right: 0 }}
+            aria-hidden="true"
+          />
+        )}
+        {activeTab === "moneyx" && (
+          <>
+            <div
+              className="pointer-events-none absolute top-0 left-0 border-t-2 z-30"
+              // MoneyX active => Express top border extends until it meets the start of slanting part (full Express width)
+              style={{ borderColor, width: P_EXPRESS }}
+              aria-hidden="true"
+            />
+            <div
+              className="pointer-events-none absolute top-0 border-t-2 z-30"
+              // MoneyX active => Swap inactive join is straight at the TOP.
+              style={{ borderColor, left: P_SWAP_START, right: 0 }}
+              aria-hidden="true"
+            />
+          </>
+        )}
+        {activeTab === "swap" && (
+          <div
+            className="pointer-events-none absolute top-0 left-0 border-t-2 z-30"
+            // Swap active => MoneyX inactive has a RIGHT slant at the TOP (92%), so stop before the slant point.
+            style={{ borderColor, width: P_MONEYX_RIGHT_TOP_CUT }}
+            aria-hidden="true"
+          />
+        )}
+        <TabButton
+          id="express"
+          variant="express"
+          position="first"
+          label={t("marketing.exchange.tabs.express", "Express")}
+        />
+        <TabButton
+          id="moneyx"
+          variant="moneyx"
+          position="middle"
+          label={t("marketing.exchange.tabs.moneyx", "Money X")}
+        />
+        <TabButton
+          id="swap"
+          variant="swap"
+          position="last"
+          label={t("marketing.exchange.tabs.swap", "Swap")}
+        />
+
+        {/* Bottom border segments (skip the active tab width) */}
+        {activeTab === "express" && (
+          <div
+            className="pointer-events-none absolute bottom-0 h-[2px] z-30"
+            // Express active => MoneyX inactive LEFT edge is inset by 8% at the BOTTOM.
+            style={{
+              backgroundColor: borderColor,
+              left: `calc(${P_EXPRESS} + ${P_MONEYX_LEFT_BOTTOM_INSET})`,
+              right: 0,
+            }}
+            aria-hidden="true"
+          />
+        )}
+        {activeTab === "moneyx" && (
+          <>
+            <div
+              className="pointer-events-none absolute bottom-0 left-0 h-[2px] z-30"
+              // MoneyX active => Express inactive RIGHT edge is inset by 92% at the BOTTOM.
+              // Border stops at the slant point (92% of Express width)
+              style={{ backgroundColor: borderColor, width: P_EXPRESS_RIGHT_BOTTOM_INSET }}
+              aria-hidden="true"
+            />
+            <div
+              className="pointer-events-none absolute bottom-0 h-[2px] z-30"
+              // MoneyX active => Swap inactive LEFT edge slant starts at 8% from Swap's left edge.
+              // Border starts at Swap start + 8% of Swap width, ends at right edge
+              style={{
+                backgroundColor: borderColor,
+                left: P_SWAP_BOTTOM_END,
+                right: 0,
+              }}
+              aria-hidden="true"
+            />
+          </>
+        )}
+        {activeTab === "swap" && (
+          <div
+            className="pointer-events-none absolute bottom-0 left-0 h-[2px] z-30"
+            // Swap active => MoneyX inactive RIGHT edge reaches 100% at the BOTTOM (slant goes to full width).
+            style={{ backgroundColor: borderColor, width: P_SWAP_START }}
+            aria-hidden="true"
+          />
+        )}
+      </div>
+    );
+  };
 
   // If Swap Crypto tab is active, render SwapWidget with tab controls
   if (activeTab === "swap") {
     return (
-      <div 
-      className={`w-full mx-auto bg-white dark:bg-[#18181D] 
-        rounded-2xl sm:rounded-3xl ${isHomePage ? 
-          "" : ""} shadow-lg ${isDeem ? "border border-[#35353E]" : ""} ${
-        isHomePage 
-          ? "max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl 2xl:max-w-4xl" 
-          : "max-w-none"
-      }`}>
+      <div
+        className={`w-full mx-auto bg-background dark:bg-[#18181D]
+        rounded-2xl sm:rounded-3xl shadow-xl ${isHomePage
+            ? "max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl 2xl:max-w-4xl"
+            : "max-w-none"
+          }`}>
         {renderTabs()}
-        <div className="mt-2 sm:mt-3 px-3 sm:px-4 md:px-5">
+        <div className="mt-5 sm:mt-5 px-3 sm:px-4 md:px-5 py-3 border-l border-r border-b border-border dark:border-accent rounded-b-2xl sm:rounded-b-3xl">
           <SwapWidget usePublicApi={isHomePage} />
         </div>
       </div>
@@ -1587,16 +1720,14 @@ export default function ExchangeForm({
   // If Money X tab is active, render MoneyX component
   if (activeTab === "moneyx") {
     return (
-      <div 
-      className={`w-full mx-auto bg-white dark:bg-[#18181D] 
-        rounded-2xl sm:rounded-3xl ${isHomePage ? 
-          "" : ""} shadow-lg ${isDeem ? "border border-[#35353E]" : ""} ${
-        isHomePage 
-          ? "max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl 2xl:max-w-4xl" 
-          : "max-w-none"
-      }`}>
+      <div
+        className={`w-full mx-auto bg-background dark:bg-[#18181D] 
+        rounded-2xl sm:rounded-3xl shadow-xl ${isHomePage
+            ? "max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl 2xl:max-w-4xl"
+            : "max-w-none"
+          }`}>
         {renderTabs()}
-        <div className="mt-2 sm:mt-3 px-3 sm:px-4 md:px-5">
+        <div className="mt-2 sm:mt-3 px-3 sm:px-4 md:px-5 py-3 border-l border-r border-b border-border dark:border-accent rounded-b-2xl sm:rounded-b-3xl">
           <MoneyX isHomePage={isHomePage} />
         </div>
       </div>
@@ -1605,19 +1736,18 @@ export default function ExchangeForm({
 
   // Default: Express Exchange tab
   return (
-    <div 
-    className={`w-full mx-auto bg-white dark:bg-[#18181D] 
-      rounded-2xl sm:rounded-3xl ${isHomePage ? 
-        "" : ""} shadow-lg ${isDeem ? "border border-[#35353E]" : ""} ${
-      isHomePage 
-        ? "max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl 2xl:max-w-4xl" 
-        : "max-w-none"
-    }`}>
+    <div
+      className={`w-full mx-auto bg-background dark:bg-[#18181D] 
+      rounded-2xl sm:rounded-3xl shadow-xl ${isHomePage
+          ? "max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl 2xl:max-w-4xl"
+          : "max-w-none"
+        }`}>
       {renderTabs()}
       {/* Express Exchange Content */}
-      <div className="mt-2 sm:mt-3 px-3 sm:px-4 md:px-5">
+      <div className="mt-2 sm:mt-3 px-3 sm:px-4 md:px-5 py-3 border-l border-r border-b border-border dark:border-accent rounded-b-2xl sm:rounded-b-3xl">
         <Express isHomePage={isHomePage} />
       </div>
     </div>
   );
 }
+

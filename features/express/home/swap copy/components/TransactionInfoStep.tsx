@@ -349,19 +349,17 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                     }}
                   />
                   <div className="flex-1">
-                    <div className={`font-medium flex items-center gap-2 ${
-                      isDark ? "text-white" : "text-[#111827]"
+                    <div className={`font-normal text-sm flex items-center gap-2 ${
+                      isDark ? "text-white" : "text-[#1F2937]"
                     }`}>
                       {(assetItem.ticker || assetItem.symbol || assetItem.name || "Unknown").toUpperCase()}
                       {assetItem.network && (
-                        <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
+                        <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-normal px-2 py-0.5 rounded-full">
                           {assetItem.network}
                         </span>
                       )}
                     </div>
-                    <div className={`text-sm ${
-                      isDark ? "text-[#788099]" : "text-[#475569]"
-                    }`}>
+                    <div className={`text-sm text-gray-500 dark:text-gray-400`}>
                       {assetItem.name || assetItem.ticker || "Unknown Asset"}
                     </div>
                   </div>
@@ -418,7 +416,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                   }`}
                 />
                 <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
-                  <span className={`text-sm font-medium ${isDark ? "text-white" : "text-[#35353e]"}`}>
+                  <span className={`text-sm font-normal ${isDark ? "text-white" : "text-[#1F2937]"}`}>
                     {fromAsset
                       ? fromAsset.ticker?.toUpperCase() ||
                         fromAsset.symbol?.toUpperCase() ||
@@ -461,14 +459,14 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                           }}
                         />
                         <div className="flex items-center gap-2">
-                          <span className={`font-semibold ${isDark ? "text-white" : "text-[#111827]"}`}>
+                          <span className={`font-normal text-sm ${isDark ? "text-white" : "text-[#1F2937]"}`}>
                             {(() => {
                               // Prioritize ticker/symbol, but show name if ticker/symbol is not available
                               const ticker = fromAsset.ticker?.toUpperCase() || fromAsset.symbol?.toUpperCase();
                               return ticker || fromAsset.name || "Unknown";
                             })()}
                           </span>
-                          <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
+                          <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-normal px-2 py-0.5 rounded-full">
                             {fromAsset.network || "Unknown"}
                           </span>
                         </div>
@@ -570,7 +568,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                   }`}
                 />
                 <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
-                  <span className={`text-sm font-medium ${isDark ? "text-white" : "text-[#35353e]"}`}>
+                  <span className={`text-sm font-normal ${isDark ? "text-white" : "text-[#1F2937]"}`}>
                     {toAsset
                       ? toAsset.ticker?.toUpperCase() ||
                         toAsset.symbol?.toUpperCase() ||
@@ -618,14 +616,14 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                           }}
                         />
                         <div className="flex items-center gap-2">
-                          <span className={`font-semibold ${isDark ? "text-white" : "text-[#111827]"}`}>
+                          <span className={`font-normal text-sm ${isDark ? "text-white" : "text-[#1F2937]"}`}>
                             {(() => {
                               // Prioritize ticker/symbol, but show name if ticker/symbol is not available
                               const ticker = toAsset.ticker?.toUpperCase() || toAsset.symbol?.toUpperCase();
                               return ticker || toAsset.name || "Unknown";
                             })()}
                           </span>
-                          <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
+                          <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-normal px-2 py-0.5 rounded-full">
                             {toAsset.network || "Unknown"}
                           </span>
                         </div>

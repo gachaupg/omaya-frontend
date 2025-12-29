@@ -482,15 +482,19 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
 
     // Get provider name - handle both admin and public payment methods structure
     let providerName = payment.provider_name || payment.provider?.provider_name || payment.method?.method_name || payment.payment_method_name || "";
-    const paymentMethod = payment.payment_method || payment.payment_method_type || payment.method?.method_display || "";
+    const paymentMethod = payment.payment_method || payment.payment_method_type || payment.method?.method_display || payment.method?.method_name || "";
 
     // Clean provider name - remove "- Bank" suffix if present
     providerName = providerName.replace(/\s*-\s*Bank\s*$/i, "").trim();
+    
+    // Create subtitle: Provider - Method
+    const subtitle = paymentMethod ? `${providerName} - ${paymentMethod}` : null;
 
     return {
       value: providerName,
       // Show only provider name (remove - {method} part) for cleaner display
       label: providerName,
+      subtitle: subtitle || undefined,
       logo: logoUrl,
       raw: payment,
     };
@@ -672,7 +676,7 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
     !selectedToPaymentDetail;
 
   return (
-    <div className="w-full flex flex-col dark:bg-[#18181D]  ">
+    <div className="w-full flex flex-col dark:bg-[#18181D]">
       <div className="mb-2" />
     
       {/* API Validation Error - Show as simple red text */}
@@ -1117,19 +1121,19 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
             >
               <ul className="list-none space-y-2">
                 <li className="flex items-start">
-                  <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
+                  <span className="w-2 h-2 mt-1 rounded-full bg-[#1D8751] inline-block mr-3 shrink-0"></span>
                   <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm`}>
                     Please send the money from your own account Only
                   </span>
                 </li>
                 <li className="flex items-start">
-                  <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
+                  <span className="w-2 h-2 mt-1 rounded-full bg-[#1D8751] inline-block mr-3 shrink-0"></span>
                   <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm`}>
                     Put transaction ID in the description field of the bank
                   </span>
                 </li>
                 <li className="flex items-start">
-                  <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
+                  <span className="w-2 h-2 mt-1 rounded-full bg-[#1D8751] inline-block mr-3 shrink-0"></span>
                   <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm`}>
                     Please note, If you do not follow above conditions, we will
                     reject your transaction and send you back your money.
