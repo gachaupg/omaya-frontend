@@ -676,7 +676,7 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
     !selectedToPaymentDetail;
 
   return (
-    <div className="flex flex-col dark:bg-[#18181D] pl-0 sm:pl-4 pr-2 sm:pr-0 mr-0 sm:mr-40 w-full sm:w-[calc(100%-12rem)]">
+    <div className="w-full flex flex-col dark:bg-[#18181D]">
       <div className="mb-2" />
     
       {/* API Validation Error - Show as simple red text */}
