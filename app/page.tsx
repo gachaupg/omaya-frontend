@@ -616,7 +616,7 @@ export default function MarketingPage() {
           </div>
 
           {/* First Row - Achievement Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 md:gap-6 mb-6 sm:mb-8 md:mb-10 max-w-8xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 md:gap-6 mb-6 sm:mb-8 md:mb-10 max-w-7xl mx-auto">
             {achievements.map((achievement, index) => {
               const icons = [
                 <DollarSign key="dollar" className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-white" />,
@@ -642,13 +642,13 @@ export default function MarketingPage() {
               return (
                 <div
                   key={index}
-                  className="bg-gray-50 dark:bg-white/2 rounded-lg sm:rounded-3xl p-4 sm:p-5 md:p-6 flex flex-col relative overflow-hidden border-2 border-gray-200 dark:border-white/10"
+                  className="bg-gray-50 dark:bg-white/2 rounded-lg sm:rounded-3xl p-4 sm:p-5 md:p-6 flex flex-col relative overflow-hidden border border-gray-200 dark:border-white/10"
                 >
                   {/* Subtle white gradient overlay */}
                   <div className="absolute inset-0 bg-linear-to-b from-white/5 via-white/2 to-transparent pointer-events-none rounded-lg sm:rounded-3xl"></div>
 
                   {/* Greenish blur glow at top-right */}
-                  <div className="absolute top-2 right-1 w-25 h-25 bg-[#1D8751]/25 blur-3xl rounded-full pointer-events-none"></div>
+                  <div className="absolute top-2 right-7 w-25 h-25 bg-[#1D8751] opacity-45 blur-3xl rounded-full pointer-events-none"></div>
 
                   {/* Content wrapper */}
                   <div className="relative z-10 flex flex-col">
@@ -686,7 +686,7 @@ export default function MarketingPage() {
           </div>
 
           {/* New Features Banner */}
-          <div className="w-full mt-8 sm:mt-12 relative z-10">
+          <div className="max-w-7xl mx-auto mt-8 sm:mt-12 relative z-10">
             <div className="bg-white dark:bg-white/2 rounded-2xl sm:rounded-3xl p-6 sm:p-10 relative overflow-hidden shadow-2xl border border-border dark:border-[#1D8751]/20">
               {/* Glow effects */}
               <div className="absolute inset-0 overflow-hidden pointer-events-none">
