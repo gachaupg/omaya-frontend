@@ -76,5 +76,5 @@ export const formatLargeNumber = (num: number | undefined | null): string => {
     return num.toLocaleString();
   }
   
-  return num.toString();
+  return num.toFixed(2).toString();
 };
