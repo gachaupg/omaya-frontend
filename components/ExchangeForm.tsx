@@ -1462,91 +1462,76 @@ export default function ExchangeForm({
               Loading assets...
             </div>
           ) : sortedAssets.length > 0 ? (
-            sortedAssets.map((asset: Asset, index: number) => {
-              const isSelected = selectedAsset?.asset_id === asset.asset_id;
-              return (
-                <div
-                  key={`${asset.asset_id || "asset"}-${asset.symbol || asset.ticker || asset.name}-${asset.network || "unknown"}-${index}`}
-                  className={`flex items-center gap-3 p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E] last:border-b-0 min-w-0 ${isSelected ? "" : ""}`}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onSelect(asset);
-                  }}
-                >
-                  <img
-                    src={getAssetImageUrl(asset)}
-                    alt={asset?.name || asset?.ticker || asset?.symbol || "Asset"}
-                    className="w-6 h-6 rounded-full object-cover"
-                    onError={(e) => {
-                      e.currentTarget.src =
-                        "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
-                    }}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[#1F2937] dark:text-[#ffffff] !font-normal text-sm flex items-center gap-2 flex-wrap">
-                      <span className="truncate !font-normal">
-                        {(
-                          asset.ticker ||
-                          asset.symbol ||
-                          asset.name ||
-                          "Unknown"
-                        ).toUpperCase()}
-                      </span>
-                      <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs !font-normal px-2 py-0.5 rounded-full flex-shrink-0">
-                        {getNetworkDisplayName(getAssetNetwork(asset))}
-                      </span>
-                    </div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                      {(() => {
-                        // Clean up asset name to remove redundant network information
-                        let displayName =
-                          asset.name ||
-                          asset.ticker ||
-                          asset.symbol ||
-                          "Unknown Asset";
-                        const originalName = displayName;
+            sortedAssets.map((asset: Asset, index: number) => (
+              // Updated AssetDropdown item with fixed overflow issue
+// Updated AssetDropdown item with improved responsive layout
 
-                        // Remove common redundant patterns - less aggressive approach
-                        // Only remove redundant network info when it's duplicated in the network badge
-                        displayName = displayName
-                          // Handle cases like "Tether (Binance Smart Chain) (BSC)" - remove duplicate BSC
-                          .replace(/\s*\(Binance Smart Chain\)\s*\(BSC\)/gi, "")
-                          .replace(/\s*\(Ethereum\)\s*\(ETH\)/gi, "")
-                          .replace(/\s*\(Polygon\)\s*\(MATIC\)/gi, "")
-                          .replace(/\s*\(Avalanche\)\s*\(AVAX\)/gi, "")
-                          .replace(/\s*\(TRON\)\s*\(TRX\)/gi, "")
-                          .replace(/\s*\(Solana\)\s*\(SOL\)/gi, "")
-                          // Only remove single network references if they're clearly redundant
-                          .replace(/\s*\(BSC\)$/gi, "") // Only remove BSC at the end
-                          .replace(/\s*\(ETH\)$/gi, "") // Only remove ETH at the end
-                          .replace(/\s*\(MATIC\)$/gi, "") // Only remove MATIC at the end
-                          .replace(/\s*\(AVAX\)$/gi, "") // Only remove AVAX at the end
-                          .replace(/\s*\(TRX\)$/gi, "") // Only remove TRX at the end
-                          .replace(/\s*\(SOL\)$/gi, "") // Only remove SOL at the end
-                          .trim();
+<div
+  key={`${asset.asset_id || "asset"}-${asset.symbol || asset.ticker || asset.name}-${asset.network || "unknown"}-${index}`}
+  className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E] last:border-b-0 w-full"
+  onClick={(e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onSelect(asset);
+  }}
+>
+  <img
+    src={getAssetImageUrl(asset)}
+    alt={asset?.name || asset?.ticker || asset?.symbol || "Asset"}
+    className="w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover flex-shrink-0"
+    onError={(e) => {
+      e.currentTarget.src =
+        "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+    }}
+  />
+  <div className="flex-1 min-w-0 pr-2">
+    <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5">
+      <span className="text-[#111827] dark:text-[#ffffff] font-medium text-sm sm:text-base truncate">
+        {(
+          asset.ticker ||
+          asset.symbol ||
+          asset.name ||
+          "Unknown"
+        ).toUpperCase()}
+      </span>
+      <span className="bg-[#1D8751] text-[#ffffff] text-[10px] sm:text-xs font-semibold px-1.5 sm:px-2 py-0.5 rounded-full whitespace-nowrap flex-shrink-0">
+        {getNetworkDisplayName(getAssetNetwork(asset))}
+      </span>
+    </div>
+    <div className="text-[#475569] dark:text-[#788099] text-xs sm:text-sm truncate">
+      {(() => {
+        // Clean up asset name to remove redundant network information
+        let displayName =
+          asset.name ||
+          asset.ticker ||
+          asset.symbol ||
+          "Unknown Asset";
 
-                        // Debug logging for all assets to see the pattern
-                        console.log("🔍 Asset name processing:", {
-                          original: originalName,
-                          cleaned: displayName,
-                          assetName: asset.name,
-                          assetTicker: asset.ticker,
-                          assetSymbol: asset.symbol,
-                          assetNetwork: asset.network,
-                          changed: originalName !== displayName,
-                        });
+        // Remove common redundant patterns
+        displayName = displayName
+          .replace(/\s*\(Binance Smart Chain\)\s*\(BSC\)/gi, "")
+          .replace(/\s*\(Ethereum\)\s*\(ETH\)/gi, "")
+          .replace(/\s*\(Polygon\)\s*\(MATIC\)/gi, "")
+          .replace(/\s*\(Avalanche\)\s*\(AVAX\)/gi, "")
+          .replace(/\s*\(TRON\)\s*\(TRX\)/gi, "")
+          .replace(/\s*\(Solana\)\s*\(SOL\)/gi, "")
+          .replace(/\s*\(BSC\)$/gi, "")
+          .replace(/\s*\(ETH\)$/gi, "")
+          .replace(/\s*\(MATIC\)$/gi, "")
+          .replace(/\s*\(AVAX\)$/gi, "")
+          .replace(/\s*\(TRX\)$/gi, "")
+          .replace(/\s*\(SOL\)$/gi, "")
+          .trim();
 
-                        return displayName;
-                      })()}
-                    </div>
-                  </div>
-                  {isSelected && (
-                    <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
-                  )}
-                </div>
-              );
-            })
+        return displayName;
+      })()}
+    </div>
+  </div>
+  {selectedAsset?.asset_id === asset.asset_id && (
+    <div className="w-2 h-2 bg-[#1D8751] rounded-full flex-shrink-0"></div>
+  )}
+</div>
+            ))
           ) : (
             <div className="p-4 text-center text-[#7e7e8f] dark:text-[#788099]">
               {assetSearchTerm ? "No assets found" : "No assets available"}
