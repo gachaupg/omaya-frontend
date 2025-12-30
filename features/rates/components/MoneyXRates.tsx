@@ -73,7 +73,7 @@ const MoneyXRates = () => {
       // Check if it's an array first
       if (Array.isArray(publicPaymentMethods)) {
         processedMethods = publicPaymentMethods;
-      } 
+      }
       // Check if it has a data property with providers
       else if (publicPaymentMethods && typeof publicPaymentMethods === 'object' && 'data' in publicPaymentMethods) {
         const data = (publicPaymentMethods as any).data;
@@ -171,7 +171,7 @@ const MoneyXRates = () => {
   // Helper function to get provider name
   const getProviderName = useCallback((payment: any) => {
     if (!payment) return "";
-    
+
     let providerName =
       payment?.provider_name ||
       payment?.provider?.provider_name ||
@@ -179,15 +179,15 @@ const MoneyXRates = () => {
       payment?.method?.method_name ||
       payment?.payment_method_name ||
       "";
-    
+
     // Convert to string if it's not already
     providerName = String(providerName || "");
-    
+
     // Remove common method suffixes (case-insensitive)
     providerName = providerName
       .replace(/\s*-\s*(Bank|Mobile|Crypto|Forex|Marchant|Money\s*Transfer|Merchant)\s*$/i, "")
       .trim();
-    
+
     return providerName;
   }, []);
 
@@ -198,7 +198,7 @@ const MoneyXRates = () => {
     const paymentMethod = (method?.payment_method || "").toLowerCase();
     const paymentMethodType = (method?.payment_method_type || "").toLowerCase();
     const provider = (method?.provider || "").toLowerCase();
-    
+
     return (
       providerName.includes("bank") ||
       paymentMethod.includes("bank") ||
@@ -216,8 +216,8 @@ const MoneyXRates = () => {
     // Check if current selection still exists in the latest list
     const currentExists = fromPaymentMethod
       ? finalPaymentMethods.some(
-          (m: any) => getProviderName(m) === fromPaymentMethod
-        )
+        (m: any) => getProviderName(m) === fromPaymentMethod
+      )
       : false;
 
     // If nothing selected OR the current selection no longer exists, (re)auto-select
@@ -242,11 +242,11 @@ const MoneyXRates = () => {
     if (!Array.isArray(finalPaymentMethods) || finalPaymentMethods.length === 0) {
       return;
     }
-    
+
     if (finalPaymentMethods.length > 1 && fromPaymentMethod && !toPaymentMethod) {
       // Filter for banks first
       const bankMethods = finalPaymentMethods.filter(isBankMethod);
-      
+
       // Select the second bank (index 1) if it exists, otherwise select the second method overall
       let methodToSelect;
       if (bankMethods.length > 1) {
@@ -273,7 +273,7 @@ const MoneyXRates = () => {
           );
         }
       }
-      
+
       if (methodToSelect) {
         const providerName = getProviderName(methodToSelect);
         if (providerName) {
@@ -393,7 +393,7 @@ const MoneyXRates = () => {
       // Get the base provider name (without suffix) for better matching
       const fromProviderBase = selectedFromPaymentDetail?.provider || getProviderName(selectedFromPaymentDetail) || fromPaymentMethod;
       const toProviderBase = selectedToPaymentDetail?.provider || getProviderName(selectedToPaymentDetail) || toPaymentMethod;
-      
+
       const state = {
         mode: "moneyx",
         // Send amounts (You Send)
@@ -410,18 +410,18 @@ const MoneyXRates = () => {
         fromPaymentDetail: selectedFromPaymentDetail ? { ...selectedFromPaymentDetail } : null,
         toPaymentDetail: selectedToPaymentDetail ? { ...selectedToPaymentDetail } : null,
       };
-      
+
       console.log("💾 [Rates] Saving moneyx form state before login:", state);
       console.log("💾 [Rates] From payment detail:", selectedFromPaymentDetail);
       console.log("💾 [Rates] To payment detail:", selectedToPaymentDetail);
-      
+
       // Save to localStorage
       localStorage.setItem("moneyx_form_state", JSON.stringify(state));
-      
+
       // Set redirect path - redirect to moneyX in dashboard
       const redirectPath = `/dashboard/exchange?mode=moneyx&source=public-rates`;
       setAuthRedirectPath(redirectPath);
-      
+
       // Redirect to login
       router.push("/auth/login");
       return;
@@ -431,14 +431,14 @@ const MoneyXRates = () => {
 
     try {
       // Extract provider IDs from selected payment methods
-      const senderProviderId = 
-        selectedFromPaymentDetail?.id || 
-        selectedFromPaymentDetail?.provider_id || 
+      const senderProviderId =
+        selectedFromPaymentDetail?.id ||
+        selectedFromPaymentDetail?.provider_id ||
         selectedFromPaymentDetail?.providerId;
-      
-      const receiverProviderId = 
-        selectedToPaymentDetail?.id || 
-        selectedToPaymentDetail?.provider_id || 
+
+      const receiverProviderId =
+        selectedToPaymentDetail?.id ||
+        selectedToPaymentDetail?.provider_id ||
         selectedToPaymentDetail?.providerId;
 
       if (!senderProviderId || !receiverProviderId) {
@@ -461,7 +461,7 @@ const MoneyXRates = () => {
       // Store the transaction result
       setMoneyXTransactionResult(result);
       setIsFirstCardSubmitted(true);
-      
+
       // Scroll to the bank account address section
       setTimeout(() => {
         if (paymentDetailsRef.current) {
@@ -515,7 +515,7 @@ const MoneyXRates = () => {
       ).unwrap();
 
       showToast.success("Account number updated successfully!");
-      
+
       // Create transaction data for Exchanging component
       const moneyxTransactionData = {
         type: "deposit" as const,
@@ -581,7 +581,7 @@ const MoneyXRates = () => {
   return (
     <div className="bg-white dark:bg-[#18181D] p-3 sm:p-4 lg:p-6 rounded-xl sm:rounded-xl lg:rounded-2xl border-[1.5px] border-gray-200 dark:border-[#35353E] shadow-md container mx-auto">
       <div className="mb-2" />
-      
+
       {/* Validation Errors */}
       {validationErrors.length > 0 && (
         <div className="mb-4">
@@ -599,21 +599,19 @@ const MoneyXRates = () => {
           {moneyXError}
         </div>
       )}
-      
+
       <div className={`w-full ${isDark ? "text-white" : "text-[#1F2937]"}`}>
         {/* Top Section - You Send: Amount and Bank/Payment Method in one card */}
         <div className="relative mb-0 pb-2">
           <div
-            className={`relative flex flex-col sm:flex-row gap-6 rounded-2xl p-4 sm:p-6 overflow-visible border-[1.5px] ${
-              isDark ? "border-[#2F2F3A]" : "border-[#E2E8F0] shadow-sm"
-            } bg-transparent`}
+            className={`relative flex flex-col sm:flex-row gap-6 rounded-2xl p-4 sm:p-6 overflow-visible border-[1.5px] ${isDark ? "border-[#2F2F3A]" : "border-[#E2E8F0] shadow-sm"
+              } bg-transparent`}
           >
             {/* Amount Section */}
             <div className="flex-1 min-w-0">
               <label
-                className={`block text-sm mb-2 font-semibold flex items-center gap-2 ${
-                  isDark ? "text-[#9CA3AF]" : "text-[#475569]"
-                }`}
+                className={`block text-sm mb-2 font-semibold flex items-center gap-2 ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"
+                  }`}
               >
                 You Send
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
@@ -625,11 +623,10 @@ const MoneyXRates = () => {
                   value={payAmountInput}
                   onChange={(e) => handleAmountChange(e.target.value, true)}
                   placeholder="Enter amount"
-                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${
-                    isDark
-                      ? "border-white/10 text-white"
-                      : "border-gray-200 text-[#111827]"
-                  }`}
+                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${isDark
+                    ? "border-white/10 text-white"
+                    : "border-gray-200 text-[#111827]"
+                    }`}
                 />
               </div>
             </div>
@@ -637,127 +634,139 @@ const MoneyXRates = () => {
             {/* Bank/Payment Method Section */}
             <div className="flex-1 min-w-0" ref={fromDropdownRef}>
               <label
-                className={`block text-[15px] mb-2 font-semibold ${
-                  isDark ? "text-[#9CA3AF]" : "text-[#475569]"
-                }`}
+                className={`block text-[15px] mb-2 font-semibold ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"
+                  }`}
               >
                 Bank/Payment Method
               </label>
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => {
-                setIsFromDropdownOpen(!isFromDropdownOpen);
-                setIsToDropdownOpen(false);
-              }}
-              className={`w-full rounded-2xl px-4 py-2 text-lg focus:outline-none border appearance-none bg-transparent flex items-center justify-between ${
-                isDark
-                  ? "border-white/10 text-white"
-                  : "border-gray-200 text-[#111827]"
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                {selectedFromPaymentDetail?.provider_logo || selectedFromPaymentDetail?.logo ? (
-                  <img
-                    src={selectedFromPaymentDetail.provider_logo || selectedFromPaymentDetail.logo}
-                    alt={fromPaymentMethod || "Bank"}
-                    className="w-8 h-8 rounded-full"
-                  />
-                ) : (
-                  <div className="w-8 h-8 rounded-full bg-[#1D8751] flex items-center justify-center text-white text-xs font-semibold">
-                    {fromPaymentMethod?.charAt(0) || "B"}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsFromDropdownOpen(!isFromDropdownOpen);
+                    setIsToDropdownOpen(false);
+                  }}
+                  className={`w-full rounded-2xl px-4 py-2 text-lg focus:outline-none border appearance-none bg-transparent flex items-center justify-between ${isDark
+                    ? "border-white/10 text-white"
+                    : "border-gray-200 text-[#111827]"
+                    }`}
+                >
+                  <div className="flex items-center gap-3">
+                    {selectedFromPaymentDetail?.provider_logo || selectedFromPaymentDetail?.logo ? (
+                      <img
+                        src={selectedFromPaymentDetail.provider_logo || selectedFromPaymentDetail.logo}
+                        alt={fromPaymentMethod || "Bank"}
+                        className="w-8 h-8 rounded-full"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-[#1D8751] flex items-center justify-center text-white text-xs font-semibold">
+                        {fromPaymentMethod?.charAt(0) || "B"}
+                      </div>
+                    )}
+                    <span>{fromPaymentMethod || "Select payment method"}</span>
+                  </div>
+                  <FiChevronDown className="w-5 h-5" />
+                </button>
+
+                {isFromDropdownOpen && (
+                  <div
+                    className={`absolute z-50 w-full mt-1 rounded-xl shadow-lg border ${isDark
+                      ? "bg-[#1D1D23] border-[#35353E]"
+                      : "bg-white border-[#E2E8F0]"
+                      } max-h-60 overflow-y-auto`}
+                  >
+                    <div className="p-2">
+                      <div className="relative mb-2">
+                        <input
+                          type="text"
+                          placeholder="Search..."
+                          value={fromSearchTerm}
+                          onChange={(e) => setFromSearchTerm(e.target.value)}
+                          className={`w-full px-3 py-2 rounded-lg border ${isDark
+                            ? "bg-[#18181D] border-[#35353E] text-white"
+                            : "bg-white border-[#E2E8F0] text-gray-900"
+                            } focus:outline-none`}
+                        />
+                      </div>
+                      {filteredFromMethods.map((method: any, index: number) => (
+                        <button
+                          key={index}
+                          type="button"
+                          onClick={() => {
+                            const providerName = getProviderName(method);
+                            setFromPaymentMethod(providerName);
+                            setSelectedFromPaymentDetail(method);
+                            setIsFromDropdownOpen(false);
+                            setFromSearchTerm("");
+                          }}
+                          className={`w-full px-3 py-2 rounded-lg flex items-center gap-3 hover:bg-opacity-50 ${isDark ? "hover:bg-[#2F2F3A]" : "hover:bg-gray-100"
+                            }`}
+                        >
+                          {method.provider_logo || method.logo ? (
+                            <img
+                              src={method.provider_logo || method.logo}
+                              alt={getProviderName(method)}
+                              className="w-8 h-8 rounded-full"
+                            />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-[#1D8751] flex items-center justify-center text-white text-xs font-semibold">
+                              {getProviderName(method)?.charAt(0) || "B"}
+                            </div>
+                          )}
+                          <span>{getProviderName(method)}</span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 )}
-                <span>{fromPaymentMethod || "Select payment method"}</span>
               </div>
-              <FiChevronDown className="w-5 h-5" />
-            </button>
-
-            {isFromDropdownOpen && (
-              <div
-                className={`absolute z-50 w-full mt-1 rounded-xl shadow-lg border ${
-                  isDark
-                    ? "bg-[#1D1D23] border-[#35353E]"
-                    : "bg-white border-[#E2E8F0]"
-                } max-h-60 overflow-y-auto`}
-              >
-                <div className="p-2">
-                  <div className="relative mb-2">
-                    <input
-                      type="text"
-                      placeholder="Search..."
-                      value={fromSearchTerm}
-                      onChange={(e) => setFromSearchTerm(e.target.value)}
-                      className={`w-full px-3 py-2 rounded-lg border ${
-                        isDark
-                          ? "bg-[#18181D] border-[#35353E] text-white"
-                          : "bg-white border-[#E2E8F0] text-gray-900"
-                      } focus:outline-none`}
-                    />
-                  </div>
-                  {filteredFromMethods.map((method: any, index: number) => (
-                    <button
-                      key={index}
-                      type="button"
-                      onClick={() => {
-                        const providerName = getProviderName(method);
-                        setFromPaymentMethod(providerName);
-                        setSelectedFromPaymentDetail(method);
-                        setIsFromDropdownOpen(false);
-                        setFromSearchTerm("");
-                      }}
-                      className={`w-full px-3 py-2 rounded-lg flex items-center gap-3 hover:bg-opacity-50 ${
-                        isDark ? "hover:bg-[#2F2F3A]" : "hover:bg-gray-100"
-                      }`}
-                    >
-                      {method.provider_logo || method.logo ? (
-                        <img
-                          src={method.provider_logo || method.logo}
-                          alt={getProviderName(method)}
-                          className="w-8 h-8 rounded-full"
-                        />
-                      ) : (
-                        <div className="w-8 h-8 rounded-full bg-[#1D8751] flex items-center justify-center text-white text-xs font-semibold">
-                          {getProviderName(method)?.charAt(0) || "B"}
-                        </div>
-                      )}
-                      <span>{getProviderName(method)}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
             </div>
           </div>
         </div>
 
-        {/* Swap Indicator */}
+        {/* Swap Indicator - Clickable */}
         <div className="flex justify-center my-4">
           <div className="flex flex-col items-center">
-            <div
-              className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                isDark ? "bg-[#2F2F3A]" : "bg-gray-100"
-              }`}
+            <button
+              type="button"
+              onClick={() => {
+                // Swap the payment methods
+                const tempPaymentMethod = fromPaymentMethod;
+                const tempPaymentDetail = selectedFromPaymentDetail;
+
+                setFromPaymentMethod(toPaymentMethod);
+                setSelectedFromPaymentDetail(selectedToPaymentDetail);
+
+                setToPaymentMethod(tempPaymentMethod);
+                setSelectedToPaymentDetail(tempPaymentDetail);
+
+                // Swap the amounts
+                const tempPayAmount = payAmountInput;
+                setPayAmountInput(getAmountInput);
+                setPayAmount(getAmount);
+
+                setGetAmountInput(tempPayAmount);
+                setGetAmount(payAmount);
+              }}
+              className={`w-10 h-10 rounded-full flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity ${isDark ? "bg-[#2F2F3A]" : "bg-gray-100"
+                }`}
             >
               <FaExchangeAlt className="text-[#1D8751] w-5 h-5" />
-            </div>
+            </button>
           </div>
         </div>
 
         {/* Bottom Section - You Get: Amount and Provider in one card */}
         <div className="relative mb-0 pb-2">
           <div
-            className={`relative flex flex-col sm:flex-row gap-6 rounded-2xl p-4 sm:p-6 overflow-visible border-[1.5px] ${
-              isDark ? "border-[#2F2F3A]" : "border-[#E2E8F0] shadow-sm"
-            } bg-transparent`}
+            className={`relative flex flex-col sm:flex-row gap-6 rounded-2xl p-4 sm:p-6 overflow-visible border-[1.5px] ${isDark ? "border-[#2F2F3A]" : "border-[#E2E8F0] shadow-sm"
+              } bg-transparent`}
           >
             {/* Amount Section */}
             <div className="flex-1 min-w-0">
               <label
-                className={`block text-sm mb-2 font-semibold flex items-center gap-2 ${
-                  isDark ? "text-[#9CA3AF]" : "text-[#475569]"
-                }`}
+                className={`block text-sm mb-2 font-semibold flex items-center gap-2 ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"
+                  }`}
               >
                 You Get
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
@@ -769,11 +778,10 @@ const MoneyXRates = () => {
                   value={getAmountInput}
                   onChange={(e) => handleAmountChange(e.target.value, false)}
                   placeholder="Enter amount"
-                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${
-                    isDark
-                      ? "border-white/10 text-white"
-                      : "border-gray-200 text-[#111827]"
-                  }`}
+                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${isDark
+                    ? "border-white/10 text-white"
+                    : "border-gray-200 text-[#111827]"
+                    }`}
                 />
               </div>
             </div>
@@ -781,97 +789,92 @@ const MoneyXRates = () => {
             {/* Provider Section */}
             <div className="flex-1 min-w-0" ref={toDropdownRef}>
               <label
-                className={`block text-[15px] mb-2 font-semibold ${
-                  isDark ? "text-[#9CA3AF]" : "text-[#475569]"
-                }`}
+                className={`block text-[15px] mb-2 font-semibold ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"
+                  }`}
               >
                 Provider
               </label>
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => {
-                setIsToDropdownOpen(!isToDropdownOpen);
-                setIsFromDropdownOpen(false);
-              }}
-              className={`w-full rounded-2xl px-4 py-2 text-lg focus:outline-none border appearance-none bg-transparent flex items-center justify-between ${
-                isDark
-                  ? "border-white/10 text-white"
-                  : "border-gray-200 text-[#111827]"
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                {selectedToPaymentDetail?.provider_logo || selectedToPaymentDetail?.logo ? (
-                  <img
-                    src={selectedToPaymentDetail.provider_logo || selectedToPaymentDetail.logo}
-                    alt={toPaymentMethod || "Bank"}
-                    className="w-8 h-8 rounded-full"
-                  />
-                ) : (
-                  <div className="w-8 h-8 rounded-full bg-[#1D8751] flex items-center justify-center text-white text-xs font-semibold">
-                    {toPaymentMethod?.charAt(0) || "P"}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsToDropdownOpen(!isToDropdownOpen);
+                    setIsFromDropdownOpen(false);
+                  }}
+                  className={`w-full rounded-2xl px-4 py-2 text-lg focus:outline-none border appearance-none bg-transparent flex items-center justify-between ${isDark
+                    ? "border-white/10 text-white"
+                    : "border-gray-200 text-[#111827]"
+                    }`}
+                >
+                  <div className="flex items-center gap-3">
+                    {selectedToPaymentDetail?.provider_logo || selectedToPaymentDetail?.logo ? (
+                      <img
+                        src={selectedToPaymentDetail.provider_logo || selectedToPaymentDetail.logo}
+                        alt={toPaymentMethod || "Bank"}
+                        className="w-8 h-8 rounded-full"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-[#1D8751] flex items-center justify-center text-white text-xs font-semibold">
+                        {toPaymentMethod?.charAt(0) || "P"}
+                      </div>
+                    )}
+                    <span>{toPaymentMethod || "Select provider"}</span>
+                  </div>
+                  <FiChevronDown className="w-5 h-5" />
+                </button>
+
+                {isToDropdownOpen && (
+                  <div
+                    className={`absolute z-50 w-full mt-1 rounded-xl shadow-lg border ${isDark
+                      ? "bg-[#1D1D23] border-[#35353E]"
+                      : "bg-white border-[#E2E8F0]"
+                      } max-h-60 overflow-y-auto`}
+                  >
+                    <div className="p-2">
+                      <div className="relative mb-2">
+                        <input
+                          type="text"
+                          placeholder="Search..."
+                          value={toSearchTerm}
+                          onChange={(e) => setToSearchTerm(e.target.value)}
+                          className={`w-full px-3 py-2 rounded-lg border ${isDark
+                            ? "bg-[#18181D] border-[#35353E] text-white"
+                            : "bg-white border-[#E2E8F0] text-gray-900"
+                            } focus:outline-none`}
+                        />
+                      </div>
+                      {filteredToMethods.map((method: any, index: number) => (
+                        <button
+                          key={index}
+                          type="button"
+                          onClick={() => {
+                            const providerName = getProviderName(method);
+                            setToPaymentMethod(providerName);
+                            setSelectedToPaymentDetail(method);
+                            setIsToDropdownOpen(false);
+                            setToSearchTerm("");
+                          }}
+                          className={`w-full px-3 py-2 rounded-lg flex items-center gap-3 hover:bg-opacity-50 ${isDark ? "hover:bg-[#2F2F3A]" : "hover:bg-gray-100"
+                            }`}
+                        >
+                          {method.provider_logo || method.logo ? (
+                            <img
+                              src={method.provider_logo || method.logo}
+                              alt={getProviderName(method)}
+                              className="w-8 h-8 rounded-full"
+                            />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-[#1D8751] flex items-center justify-center text-white text-xs font-semibold">
+                              {getProviderName(method)?.charAt(0) || "P"}
+                            </div>
+                          )}
+                          <span>{getProviderName(method)}</span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 )}
-                <span>{toPaymentMethod || "Select provider"}</span>
               </div>
-              <FiChevronDown className="w-5 h-5" />
-            </button>
-
-            {isToDropdownOpen && (
-              <div
-                className={`absolute z-50 w-full mt-1 rounded-xl shadow-lg border ${
-                  isDark
-                    ? "bg-[#1D1D23] border-[#35353E]"
-                    : "bg-white border-[#E2E8F0]"
-                } max-h-60 overflow-y-auto`}
-              >
-                <div className="p-2">
-                  <div className="relative mb-2">
-                    <input
-                      type="text"
-                      placeholder="Search..."
-                      value={toSearchTerm}
-                      onChange={(e) => setToSearchTerm(e.target.value)}
-                      className={`w-full px-3 py-2 rounded-lg border ${
-                        isDark
-                          ? "bg-[#18181D] border-[#35353E] text-white"
-                          : "bg-white border-[#E2E8F0] text-gray-900"
-                      } focus:outline-none`}
-                    />
-                  </div>
-                  {filteredToMethods.map((method: any, index: number) => (
-                    <button
-                      key={index}
-                      type="button"
-                      onClick={() => {
-                        const providerName = getProviderName(method);
-                        setToPaymentMethod(providerName);
-                        setSelectedToPaymentDetail(method);
-                        setIsToDropdownOpen(false);
-                        setToSearchTerm("");
-                      }}
-                      className={`w-full px-3 py-2 rounded-lg flex items-center gap-3 hover:bg-opacity-50 ${
-                        isDark ? "hover:bg-[#2F2F3A]" : "hover:bg-gray-100"
-                      }`}
-                    >
-                      {method.provider_logo || method.logo ? (
-                        <img
-                          src={method.provider_logo || method.logo}
-                          alt={getProviderName(method)}
-                          className="w-8 h-8 rounded-full"
-                        />
-                      ) : (
-                        <div className="w-8 h-8 rounded-full bg-[#1D8751] flex items-center justify-center text-white text-xs font-semibold">
-                          {getProviderName(method)?.charAt(0) || "P"}
-                        </div>
-                      )}
-                      <span>{getProviderName(method)}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
             </div>
           </div>
         </div>
@@ -958,9 +961,8 @@ const MoneyXRates = () => {
           <button
             onClick={handleExchange}
             disabled={isSubmitting}
-            className={`w-full py-3 px-4 rounded-xl font-semibold text-white bg-[#1D8751] hover:bg-[#0f8f4d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-              isSubmitting ? "opacity-50 cursor-not-allowed" : ""
-            }`}
+            className={`w-full py-3 px-4 rounded-xl font-semibold text-white bg-[#1D8751] hover:bg-[#0f8f4d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""
+              }`}
           >
             {isSubmitting ? "Processing..." : "Exchange Now"}
           </button>
@@ -977,12 +979,12 @@ const MoneyXRates = () => {
                 <span className={isDark ? "text-[#788099]" : "text-[#475569]"}>2-</span>
                 Bank Account Address
               </h2>
-              
+
               {/* Bank Account Address Label */}
               <label className={`block text-base ${isDark ? "text-[#788099]" : "text-[#475569]"} mb-2 font-semibold`}>
                 Bank Account Address
               </label>
-              
+
               {/* Input group */}
               <div className={`flex items-center ${isDark ? "bg-[#1D1D23]" : "bg-white"} border ${isDark ? "border-[#35353E]" : "border-[#E2E8F0]"} rounded-2xl px-4 py-2 mb-2 overflow-hidden gap-2`}>
                 {/* Left icon */}
@@ -1018,13 +1020,12 @@ const MoneyXRates = () => {
                     setBankAddressError(null);
                   }}
                   placeholder="Paste here your Bank Account Address"
-                  className={`flex-1 min-w-0 bg-transparent border-none outline-none ${isDark ? "text-[#788099]" : "text-[#475569]"} placeholder-[#788099] text-sm sm:text-base ${
-                    bankAddressError
-                      ? "border-red-500"
-                      : bankAccountAddress.trim() && !bankAddressError
-                        ? "border-green-500"
-                        : ""
-                  }`}
+                  className={`flex-1 min-w-0 bg-transparent border-none outline-none ${isDark ? "text-[#788099]" : "text-[#475569]"} placeholder-[#788099] text-sm sm:text-base ${bankAddressError
+                    ? "border-red-500"
+                    : bankAccountAddress.trim() && !bankAddressError
+                      ? "border-green-500"
+                      : ""
+                    }`}
                 />
                 {/* Paste button */}
                 <button
@@ -1100,9 +1101,8 @@ const MoneyXRates = () => {
                 </span>
               </div>
               <div
-                className={`border border-[#1D8751] rounded-xl p-4 ${
-                  isDark ? "bg-[#1D1D23]" : "bg-[#F8FAFF]"
-                }`}
+                className={`border border-[#1D8751] rounded-xl p-4 ${isDark ? "bg-[#1D1D23]" : "bg-[#F8FAFF]"
+                  }`}
               >
                 <ul className="list-none space-y-2">
                   <li className="flex items-start">
@@ -1130,11 +1130,10 @@ const MoneyXRates = () => {
 
             {/* Final Submit Button */}
             <button
-              className={`w-full text-base font-medium py-3 rounded-xl flex items-center justify-center gap-2 transition-colors text-white ${
-                !bankAccountAddress.trim() || bankAddressError || !isAddressConfirmed || isUpdatingTransaction
-                  ? "bg-gray-500 cursor-not-allowed"
-                  : "bg-[#1D8751] hover:bg-[#166b3e]"
-              }`}
+              className={`w-full text-base font-medium py-3 rounded-xl flex items-center justify-center gap-2 transition-colors text-white ${!bankAccountAddress.trim() || bankAddressError || !isAddressConfirmed || isUpdatingTransaction
+                ? "bg-gray-500 cursor-not-allowed"
+                : "bg-[#1D8751] hover:bg-[#166b3e]"
+                }`}
               onClick={handleBankAccountSubmit}
               disabled={!bankAccountAddress.trim() || !!bankAddressError || !isAddressConfirmed || isUpdatingTransaction}
             >

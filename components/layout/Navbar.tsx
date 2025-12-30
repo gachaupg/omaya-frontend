@@ -45,13 +45,12 @@ const NavLink = ({
   return (
     <Link
       href={href}
-      className={`${
-        active
-          ? "text-[#1D8751]" // Active link in green
-          : isTransparent
-            ? "text-gray-900 dark:text-white" // Dark in light mode, white in dark mode when navbar is transparent
-            : "dark:text-white text-gray-900" // Theme-based when navbar has background
-      } hover:text-[#1D8751] transition-colors duration-200 text-xs md:text-xs lg:text-base xl:text-base 2xl:text-lg`}
+      className={`${active
+        ? "text-[#1D8751]" // Active link in green
+        : isTransparent
+          ? "text-gray-900 dark:text-white" // Dark in light mode, white in dark mode when navbar is transparent
+          : "dark:text-white text-gray-900" // Theme-based when navbar has background
+        } hover:text-[#1D8751] transition-colors duration-200 text-xs md:text-xs lg:text-base xl:text-base 2xl:text-lg`}
     >
       {children}
     </Link>
@@ -82,11 +81,10 @@ const MobileNavLink = ({
   return (
     <Link
       href={href}
-      className={`block py-2 transition-colors duration-200 text-lg ${
-        active
-          ? "text-[#1D8751]"
-          : "dark:text-white text-gray-900 hover:text-[#1D8751]"
-      }`}
+      className={`block py-2 transition-colors duration-200 text-lg ${active
+        ? "text-[#1D8751]"
+        : "dark:text-white text-gray-900 hover:text-[#1D8751]"
+        }`}
       onClick={onClick}
     >
       {children}
@@ -104,11 +102,10 @@ const AuthButton = ({
   fullWidth?: boolean;
 }) => (
   <button
-    className={`${
-      variant === "primary"
-        ? "bg-[#0E5531] hover:bg-[#13B562] text-white" // Primary button always has white text
-        : "bg-transparent border border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751] hover:text-white" // Secondary button with brand colors
-    } 
+    className={`${variant === "primary"
+      ? "bg-[#0E5531] hover:bg-[#13B562] text-white" // Primary button always has white text
+      : "bg-transparent border border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751] hover:text-white" // Secondary button with brand colors
+      } 
     px-3 py-1 rounded-[22px] transition-colors duration-200 text-sm md:text-base 2xl:text-lg
     ${fullWidth ? "w-full" : ""}`}
   >
@@ -137,7 +134,7 @@ const LanguageSelector = () => {
       } else {
         document.cookie = `NEXT_LOCALE=${locale}; path=/; max-age=${60 * 60 * 24 * 365}`;
       }
-    } catch {}
+    } catch { }
   };
 
   return (
@@ -323,13 +320,12 @@ const ThemeSelector = ({
     <div className="relative" ref={dropdownRef}>
       <button
         type="button"
-        className={`flex items-center justify-center cursor-pointer min-h-[44px] sm:min-h-0 lg:min-h-0 px-1 sm:px-0 lg:px-0 border-none bg-transparent p-0 ${
-          isTransparentNavbar
-            ? isDark
-              ? "text-white"
-              : "text-gray-900"
-            : "dark:text-white text-gray-900"
-        }`}
+        className={`flex items-center justify-center cursor-pointer min-h-[44px] sm:min-h-0 lg:min-h-0 px-1 sm:px-0 lg:px-0 border-none bg-transparent p-0 ${isTransparentNavbar
+          ? isDark
+            ? "text-white"
+            : "text-gray-900"
+          : "dark:text-white text-gray-900"
+          }`}
         onClick={toggleDropdown}
       >
         {getThemeIcon()}
@@ -337,9 +333,8 @@ const ThemeSelector = ({
           xmlns="http://www.w3.org/2000/svg"
           width="12"
           height="12"
-          className={`ml-0.5 sm:ml-1 lg:ml-1 w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-3 md:h-3 lg:w-4 lg:h-4 ${
-            isTransparentNavbar ? "fill-white" : "fill-current"
-          }`}
+          className={`ml-0.5 sm:ml-1 lg:ml-1 w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-3 md:h-3 lg:w-4 lg:h-4 ${isTransparentNavbar ? "fill-white" : "fill-current"
+            }`}
           viewBox="0 0 16 16"
         >
           <path d="M1.5 6.5l6 6 6-6h-12z" />
@@ -685,11 +680,10 @@ export default function Navbar() {
   if (!mounted) {
     return (
       <nav
-        className={`fixed top-0 left-0 right-0 z-50 w-full transition-all duration-300 ${
-          isTransparentNavbar
-            ? "bg-transparent"
-            : "bg-white dark:bg-gray-900 shadow-lg"
-        }`}
+        className={`fixed top-0 left-0 right-0 z-50 w-full transition-all duration-300 ${isTransparentNavbar
+          ? "bg-transparent"
+          : "bg-white dark:bg-gray-900 shadow-lg"
+          }`}
       >
         <div className="w-full px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
@@ -712,10 +706,10 @@ export default function Navbar() {
       <nav
         className={`fixed top-0 left-0 right-0 z-50 w-full flex items-center justify-between px-3 py-3 sm:px-4 sm:py-4 md:px-4 md:py-2.5 lg:px-8 lg:py-4 xl:px-12 2xl:px-20 transition-all duration-300 ${getNavbarBackground()}`}
       >
-        <div className="flex items-center min-w-0 flex-1">
+        <div className="flex items-center min-w-0 flex-shrink">
           <Link
             href="/"
-            className="mr-4 sm:mr-8 md:mr-6 lg:mr-12 xl:mr-20 shrink-0"
+            className="mr-2 sm:mr-4 md:mr-3 lg:mr-8 xl:mr-16 shrink-0"
           >
             {/* Optimized logo selection using memoized config */}
             {logoConfig && (
@@ -724,14 +718,14 @@ export default function Navbar() {
                 alt={logoConfig.alt}
                 width={150}
                 height={40}
-                className="h-auto w-20 sm:w-28 md:w-32 lg:w-40 2xl:w-48 dark:brightness-0 dark:invert"
+                className="h-auto w-16 sm:w-24 md:w-24 lg:w-32 xl:w-40 2xl:w-48 dark:brightness-0 dark:invert"
                 priority
               />
             )}
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex space-x-1 md:space-x-1.5 lg:space-x-5 shrink-0 wrap-break-word">
+          <div className="hidden md:flex space-x-0.5 md:space-x-1 lg:space-x-3 xl:space-x-5 shrink-0">
             <NavLink
               href="/"
               isTransparent={isTransparentNavbar}
@@ -805,10 +799,10 @@ export default function Navbar() {
               <div className="" ref={depositDropdownRef}>
                 <button
                   onClick={toggleDepositDropdown}
-                  className="flex items-center bg-[#1D8751] hover:bg-[#13B562] text-white px-2 py-1 md:px-3 md:py-1.5 lg:px-5 lg:py-2 xl:px-6 rounded-[10px] transition-colors duration-200 text-xs md:text-xs lg:text-base xl:text-base 2xl:text-lg"
+                  className="flex items-center bg-[#1D8751] hover:bg-[#13B562] text-white px-2 py-1.5 md:px-2.5 md:py-1.5 lg:px-4 lg:py-2 xl:px-5 xl:py-2 rounded-[10px] transition-colors duration-200 text-[10px] md:text-xs lg:text-sm xl:text-base flex-shrink-0"
                 >
                   <svg
-                    className="mr-0.5 md:mr-1 lg:mr-2 w-3 h-3 md:w-3.5 md:h-3.5 lg:w-5 lg:h-5"
+                    className="mr-0.5 md:mr-1 lg:mr-1.5 w-3 h-3 md:w-3.5 md:h-3.5 lg:w-4 lg:h-4 xl:w-5 xl:h-5 flex-shrink-0"
                     fill="none"
                     viewBox="0 0 24 24"
                   >
@@ -834,7 +828,7 @@ export default function Navbar() {
                       strokeLinejoin="round"
                     />
                   </svg>
-                  Deposit
+                  <span className="whitespace-nowrap">Deposit</span>
                 </button>
                 {/* Deposit Dropdown */}
                 {depositDropdownOpen && (
@@ -849,11 +843,10 @@ export default function Navbar() {
                         }}
                       >
                         <div
-                          className={`flex items-center rounded-lg transition-colors duration-200 group p-3 -m-3 ${
-                            pathname === "/dashboard/express-exchange"
-                              ? "dark:bg-[#35353E] bg-[#e8f5ee]"
-                              : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
-                          }`}
+                          className={`flex items-center rounded-lg transition-colors duration-200 group p-3 -m-3 ${pathname === "/dashboard/express-exchange"
+                            ? "dark:bg-[#35353E] bg-[#e8f5ee]"
+                            : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
+                            }`}
                         >
                           <div className="w-10 h-10 flex items-center justify-center mr-4">
                             <img
@@ -902,14 +895,13 @@ export default function Navbar() {
                         }}
                       >
                         <div
-                          className={`flex items-center transition-colors duration-200 group rounded-lg p-3 -m-3 ${
-                            pathname === "/dashboard/exchange"
-                              ? "dark:bg-[#35353E] bg-[#e8f5ee]"
-                              : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
-                          }`}
+                          className={`flex items-center transition-colors duration-200 group rounded-lg p-3 -m-3 ${pathname === "/dashboard/exchange"
+                            ? "dark:bg-[#35353E] bg-[#e8f5ee]"
+                            : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
+                            }`}
                         >
                           <div className="w-10 h-10 flex items-center justify-center mr-4">
-                           <img className="w-10 h-10" src="https://res.cloudinary.com/pitz/image/upload/v1764568507/uil_exchange_1_okxkvb.png" alt="" />
+                            <img className="w-10 h-10" src="https://res.cloudinary.com/pitz/image/upload/v1764568507/uil_exchange_1_okxkvb.png" alt="" />
                           </div>
                           <div className="flex-1">
                             <h4 className="dark:text-white flex flex-row text-gray-900 font-medium text-base mb-1">
@@ -945,12 +937,11 @@ export default function Navbar() {
                         }}
                       >
                         <div
-                          className={`flex items-center rounded-lg transition-colors duration-200 group p-3 -m-3 ${
-                            pathname === "/dashboard/p2p" ||
+                          className={`flex items-center rounded-lg transition-colors duration-200 group p-3 -m-3 ${pathname === "/dashboard/p2p" ||
                             pathname?.startsWith("/dashboard/p2p/")
-                              ? "dark:bg-[#35353E] bg-[#e8f5ee]"
-                              : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
-                          }`}
+                            ? "dark:bg-[#35353E] bg-[#e8f5ee]"
+                            : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
+                            }`}
                         >
                           <div className="w-10 h-10 flex items-center justify-center mr-4">
                             <img src="https://res.cloudinary.com/pitz/image/upload/v1747237692/users-profiles-left_e2oejc.png" alt="" />
@@ -989,12 +980,11 @@ export default function Navbar() {
                         }}
                       >
                         <div
-                          className={`flex items-center transition-colors duration-200 group rounded-lg p-3 -m-3 ${
-                            pathname === "/dashboard/swap" ||
+                          className={`flex items-center transition-colors duration-200 group rounded-lg p-3 -m-3 ${pathname === "/dashboard/swap" ||
                             pathname?.startsWith("/dashboard/swap/")
-                              ? "dark:bg-[#35353E] bg-[#e8f5ee]"
-                              : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
-                          }`}
+                            ? "dark:bg-[#35353E] bg-[#e8f5ee]"
+                            : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
+                            }`}
                         >
                           <div className="w-10 h-10 flex items-center justify-center mr-4">
                             <img src="https://res.cloudinary.com/pitz/image/upload/v1747237691/Group_164002_fgt2kf.png" alt="" />
@@ -1034,7 +1024,7 @@ export default function Navbar() {
                   className="text-white focus:outline-none relative"
                 >
                   {(userProfile?.photo || cachedProfilePhoto) &&
-                  !profileImageError ? (
+                    !profileImageError ? (
                     <img
                       src={userProfile?.photo || cachedProfilePhoto || ""}
                       alt="Profile"
@@ -1112,7 +1102,7 @@ export default function Navbar() {
                             type="button"
                           >
                             {(userProfile?.photo || cachedProfilePhoto) &&
-                            !profileImageError ? (
+                              !profileImageError ? (
                               <>
                                 <img
                                   src={
@@ -1248,11 +1238,10 @@ export default function Navbar() {
 
         {/* Mobile Menu Button */}
         <button
-          className={`md:hidden p-1.5 sm:p-2 rounded-md focus:outline-none ${
-            isTransparentNavbar
-              ? "text-white" // White when navbar is transparent
-              : "dark:text-white text-gray-900" // Theme-based when navbar has background
-          }`}
+          className={`md:hidden p-1.5 sm:p-2 rounded-md focus:outline-none ${isTransparentNavbar
+            ? "text-white" // White when navbar is transparent
+            : "dark:text-white text-gray-900" // Theme-based when navbar has background
+            }`}
           onClick={toggleMobileMenu}
         >
           {mobileMenuOpen ? (
@@ -1387,11 +1376,10 @@ export default function Navbar() {
                               }}
                             >
                               <div
-                                className={`flex items-center rounded-lg transition-colors duration-200 group p-3 ${
-                                  pathname === "/dashboard/express-exchange"
-                                    ? "dark:bg-[#35353E] bg-[#e8f5ee]"
-                                    : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
-                                }`}
+                                className={`flex items-center rounded-lg transition-colors duration-200 group p-3 ${pathname === "/dashboard/express-exchange"
+                                  ? "dark:bg-[#35353E] bg-[#e8f5ee]"
+                                  : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
+                                  }`}
                               >
                                 <div className="flex items-center justify-center mr-4 flex-shrink-0">
                                   <svg
@@ -1453,12 +1441,11 @@ export default function Navbar() {
                               }}
                             >
                               <div
-                                className={`flex items-center rounded-lg transition-colors duration-200 group p-3 ${
-                                  pathname === "/dashboard/p2p" ||
+                                className={`flex items-center rounded-lg transition-colors duration-200 group p-3 ${pathname === "/dashboard/p2p" ||
                                   pathname?.startsWith("/dashboard/p2p/")
-                                    ? "dark:bg-[#35353E] bg-[#e8f5ee]"
-                                    : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
-                                }`}
+                                  ? "dark:bg-[#35353E] bg-[#e8f5ee]"
+                                  : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
+                                  }`}
                               >
                                 <div className="w-10 h-10 flex items-center justify-center mr-4 flex-shrink-0">
                                   <svg
@@ -1552,12 +1539,11 @@ export default function Navbar() {
                               }}
                             >
                               <div
-                                className={`flex items-center rounded-lg transition-colors duration-200 group p-3 ${
-                                  pathname === "/dashboard/swap" ||
+                                className={`flex items-center rounded-lg transition-colors duration-200 group p-3 ${pathname === "/dashboard/swap" ||
                                   pathname?.startsWith("/dashboard/swap/")
-                                    ? "dark:bg-[#35353E] bg-[#e8f5ee]"
-                                    : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
-                                }`}
+                                  ? "dark:bg-[#35353E] bg-[#e8f5ee]"
+                                  : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
+                                  }`}
                               >
                                 <div className="w-10 h-10 flex items-center justify-center mr-4 flex-shrink-0">
                                   <svg
@@ -1627,11 +1613,10 @@ export default function Navbar() {
                               }}
                             >
                               <div
-                                className={`flex items-center rounded-lg transition-colors duration-200 group p-3 ${
-                                  pathname === "/dashboard/exchange"
-                                    ? "dark:bg-[#35353E] bg-[#e8f5ee]"
-                                    : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
-                                }`}
+                                className={`flex items-center rounded-lg transition-colors duration-200 group p-3 ${pathname === "/dashboard/exchange"
+                                  ? "dark:bg-[#35353E] bg-[#e8f5ee]"
+                                  : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
+                                  }`}
                               >
                                 <div className="w-10 h-10 flex items-center justify-center mr-4 flex-shrink-0">
                                   <svg
@@ -1738,7 +1723,7 @@ export default function Navbar() {
                           className="text-white relative inline-block"
                         >
                           {(userProfile?.photo || cachedProfilePhoto) &&
-                          !profileImageError ? (
+                            !profileImageError ? (
                             <>
                               <img
                                 src={
@@ -1841,7 +1826,7 @@ export default function Navbar() {
                                 type="button"
                               >
                                 {(userProfile?.photo || cachedProfilePhoto) &&
-                                !profileImageError ? (
+                                  !profileImageError ? (
                                   <>
                                     <img
                                       src={

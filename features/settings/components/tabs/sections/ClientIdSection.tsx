@@ -33,7 +33,17 @@ const ClientIdSection: React.FC<ClientIdSectionProps> = ({ user }) => {
               <span className="text-[#1D8751] text-xs sm:text-sm font-semibold truncate min-w-0">
                 {user?.user_id || ""}
               </span>
-              <span className="ml-auto flex-shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  if (user?.user_id) {
+                    navigator.clipboard.writeText(user.user_id);
+                    showToast.success("ID copied to clipboard");
+                  }
+                }}
+                className="ml-auto flex-shrink-0 hover:opacity-70 transition-opacity cursor-pointer"
+                title="Copy ID"
+              >
                 {/* QR icon */}
                 <svg
                   width="16"
@@ -84,12 +94,11 @@ const ClientIdSection: React.FC<ClientIdSectionProps> = ({ user }) => {
                     strokeWidth="2"
                   />
                 </svg>
-              </span>
+              </button>
             </div>
             <button
-              className={`flex items-center justify-center gap-1 px-3 py-2 rounded-xl dark:bg-[var(--card-color)] bg-gray-200 text-[#1D8751] font-semibold hover:bg-[#1D8751] hover:text-white transition text-sm whitespace-nowrap flex-shrink-0 ${
-                copied ? "bg-[#1D8751] text-white" : ""
-              }`}
+              className={`flex items-center justify-center gap-1 px-3 py-2 rounded-xl dark:bg-[var(--card-color)] bg-gray-200 text-[#1D8751] font-semibold hover:bg-[#1D8751] hover:text-white transition text-sm whitespace-nowrap flex-shrink-0 ${copied ? "bg-[#1D8751] text-white" : ""
+                }`}
               onClick={handleCopy}
               type="button"
             >
