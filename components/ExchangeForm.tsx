@@ -1225,9 +1225,9 @@ export default function ExchangeForm({
     ].join(" ");
 
     // Uniform text color for all tabs in light mode (same color for active and inactive)
-    const expressTextColorClass = isActive && isDark
-      ? "text-white"
-      : "text-[#727272]"; // Light mode: always grey, dark mode: white when active, grey when inactive
+    const expressTextColorClass = isDark
+      ? "text-white" // Dark mode: always white for consistency
+      : "text-[#727272]"; // Light mode: always grey
 
     const textColorClass = expressTextColorClass;
 
@@ -1238,12 +1238,11 @@ export default function ExchangeForm({
     const expressInactiveIconSrc =
       "https://res.cloudinary.com/pitz/image/upload/v1764698096/Group_9_momvgo.png";
 
-    // MoneyX icon: use green X when active in dark mode, dark X for active in light mode, dark X for inactive
-    const moneyXIconSrc = isActive
-      ? isDark
-        ? "https://res.cloudinary.com/pitz/image/upload/v1764663236/Group_7_ichuyz.png" // green X for dark mode active
-        : "https://res.cloudinary.com/pitz/image/upload/v1764661972/Group_6_ohph9q.png" // dark X for light mode active (visible on white)
-      : "https://res.cloudinary.com/pitz/image/upload/v1764661972/Group_6_ohph9q.png"; // dark X for inactive
+    // MoneyX icon: use green X when active in dark mode, dark X for active in light mode
+    // For inactive state in dark mode, also use green X to maintain consistent color and visibility
+    const moneyXIconSrc = isDark
+      ? "https://res.cloudinary.com/pitz/image/upload/v1764663236/Group_7_ichuyz.png" // Green X for dark mode (both active and inactive)
+      : "https://res.cloudinary.com/pitz/image/upload/v1764661972/Group_6_ohph9q.png"; // Dark X for light mode
 
     const ariaLabel =
       variant === "express"
@@ -1464,73 +1463,73 @@ export default function ExchangeForm({
           ) : sortedAssets.length > 0 ? (
             sortedAssets.map((asset: Asset, index: number) => (
               // Updated AssetDropdown item with fixed overflow issue
-// Updated AssetDropdown item with improved responsive layout
+              // Updated AssetDropdown item with improved responsive layout
 
-<div
-  key={`${asset.asset_id || "asset"}-${asset.symbol || asset.ticker || asset.name}-${asset.network || "unknown"}-${index}`}
-  className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E] last:border-b-0 w-full"
-  onClick={(e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    onSelect(asset);
-  }}
->
-  <img
-    src={getAssetImageUrl(asset)}
-    alt={asset?.name || asset?.ticker || asset?.symbol || "Asset"}
-    className="w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover flex-shrink-0"
-    onError={(e) => {
-      e.currentTarget.src =
-        "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
-    }}
-  />
-  <div className="flex-1 min-w-0 pr-2">
-    <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5">
-      <span className="text-[#111827] dark:text-[#ffffff] font-medium text-sm sm:text-base truncate">
-        {(
-          asset.ticker ||
-          asset.symbol ||
-          asset.name ||
-          "Unknown"
-        ).toUpperCase()}
-      </span>
-      <span className="bg-[#1D8751] text-[#ffffff] text-[10px] sm:text-xs font-semibold px-1.5 sm:px-2 py-0.5 rounded-full whitespace-nowrap flex-shrink-0">
-        {getNetworkDisplayName(getAssetNetwork(asset))}
-      </span>
-    </div>
-    <div className="text-[#475569] dark:text-[#788099] text-xs sm:text-sm truncate">
-      {(() => {
-        // Clean up asset name to remove redundant network information
-        let displayName =
-          asset.name ||
-          asset.ticker ||
-          asset.symbol ||
-          "Unknown Asset";
+              <div
+                key={`${asset.asset_id || "asset"}-${asset.symbol || asset.ticker || asset.name}-${asset.network || "unknown"}-${index}`}
+                className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E] last:border-b-0 w-full"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onSelect(asset);
+                }}
+              >
+                <img
+                  src={getAssetImageUrl(asset)}
+                  alt={asset?.name || asset?.ticker || asset?.symbol || "Asset"}
+                  className="w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover flex-shrink-0"
+                  onError={(e) => {
+                    e.currentTarget.src =
+                      "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                  }}
+                />
+                <div className="flex-1 min-w-0 pr-2">
+                  <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5">
+                    <span className="text-[#111827] dark:text-[#ffffff] font-medium text-sm sm:text-base truncate">
+                      {(
+                        asset.ticker ||
+                        asset.symbol ||
+                        asset.name ||
+                        "Unknown"
+                      ).toUpperCase()}
+                    </span>
+                    <span className="bg-[#1D8751] text-[#ffffff] text-[10px] sm:text-xs font-semibold px-1.5 sm:px-2 py-0.5 rounded-full whitespace-nowrap flex-shrink-0">
+                      {getNetworkDisplayName(getAssetNetwork(asset))}
+                    </span>
+                  </div>
+                  <div className="text-[#475569] dark:text-[#788099] text-xs sm:text-sm truncate">
+                    {(() => {
+                      // Clean up asset name to remove redundant network information
+                      let displayName =
+                        asset.name ||
+                        asset.ticker ||
+                        asset.symbol ||
+                        "Unknown Asset";
 
-        // Remove common redundant patterns
-        displayName = displayName
-          .replace(/\s*\(Binance Smart Chain\)\s*\(BSC\)/gi, "")
-          .replace(/\s*\(Ethereum\)\s*\(ETH\)/gi, "")
-          .replace(/\s*\(Polygon\)\s*\(MATIC\)/gi, "")
-          .replace(/\s*\(Avalanche\)\s*\(AVAX\)/gi, "")
-          .replace(/\s*\(TRON\)\s*\(TRX\)/gi, "")
-          .replace(/\s*\(Solana\)\s*\(SOL\)/gi, "")
-          .replace(/\s*\(BSC\)$/gi, "")
-          .replace(/\s*\(ETH\)$/gi, "")
-          .replace(/\s*\(MATIC\)$/gi, "")
-          .replace(/\s*\(AVAX\)$/gi, "")
-          .replace(/\s*\(TRX\)$/gi, "")
-          .replace(/\s*\(SOL\)$/gi, "")
-          .trim();
+                      // Remove common redundant patterns
+                      displayName = displayName
+                        .replace(/\s*\(Binance Smart Chain\)\s*\(BSC\)/gi, "")
+                        .replace(/\s*\(Ethereum\)\s*\(ETH\)/gi, "")
+                        .replace(/\s*\(Polygon\)\s*\(MATIC\)/gi, "")
+                        .replace(/\s*\(Avalanche\)\s*\(AVAX\)/gi, "")
+                        .replace(/\s*\(TRON\)\s*\(TRX\)/gi, "")
+                        .replace(/\s*\(Solana\)\s*\(SOL\)/gi, "")
+                        .replace(/\s*\(BSC\)$/gi, "")
+                        .replace(/\s*\(ETH\)$/gi, "")
+                        .replace(/\s*\(MATIC\)$/gi, "")
+                        .replace(/\s*\(AVAX\)$/gi, "")
+                        .replace(/\s*\(TRX\)$/gi, "")
+                        .replace(/\s*\(SOL\)$/gi, "")
+                        .trim();
 
-        return displayName;
-      })()}
-    </div>
-  </div>
-  {selectedAsset?.asset_id === asset.asset_id && (
-    <div className="w-2 h-2 bg-[#1D8751] rounded-full flex-shrink-0"></div>
-  )}
-</div>
+                      return displayName;
+                    })()}
+                  </div>
+                </div>
+                {selectedAsset?.asset_id === asset.asset_id && (
+                  <div className="w-2 h-2 bg-[#1D8751] rounded-full flex-shrink-0"></div>
+                )}
+              </div>
             ))
           ) : (
             <div className="p-4 text-center text-[#7e7e8f] dark:text-[#788099]">
