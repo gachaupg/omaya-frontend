@@ -7,7 +7,7 @@
   "rates.iWantToReceive": "I want to receive",
   "rates.method": "Method",
   "rates.bankPaymentMethod": "Bank/Payment Method",
-  "rates.provider": "Provider",
+  "rates.provider": "Assets",
   "rates.loadingAssets": "Loading assets...",
   "rates.errorAssets": "Error loading assets",
   "rates.noAssets": "No assets available",
