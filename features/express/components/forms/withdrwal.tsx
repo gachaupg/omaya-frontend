@@ -108,9 +108,8 @@ const AssetDropdownItem = ({
 
   return (
     <div
-      className={`flex items-center gap-3 p-3 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-b transition-all duration-150 last:border-b-0 group ${
-        isSelected ? "bg-blue-50 dark:bg-blue-900/20 border-b-blue-400" : ""
-      }`}
+      className={`flex items-center gap-3 p-3 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-b transition-all duration-150 last:border-b-0 group ${isSelected ? "bg-blue-50 dark:bg-blue-900/20 border-b-blue-400" : ""
+        }`}
       onClick={onSelect}
     >
       <img
@@ -163,11 +162,10 @@ const UserPaymentSelector = ({
             return (
               <div
                 key={detail.id}
-                className={`flex items-center justify-between p-3 rounded-xl border ${
-                  isSelected
+                className={`flex items-center justify-between p-3 rounded-xl border ${isSelected
                     ? "border-[#1D8751] bg-[#1D8751]/10 dark:bg-[#1D8751]/10"
                     : "border-gray-300 dark:border-[#A2A4A9FF] bg-gray-50 dark:bg-[#A2A4A9FF]"
-                }`}
+                  }`}
               >
                 <div className="flex-1">
                   <div className="text-gray-900 dark:text-white font-medium text-base sm:text-lg">
@@ -176,7 +174,7 @@ const UserPaymentSelector = ({
                       const adminDetail = adminWalletListDisplay.displayData?.find(
                         (wallet: any) => wallet.admin_payment_detail?.payment_method_type === detail.payment_method_name
                       )?.admin_payment_detail;
-                      
+
                       return adminDetail?.provider_name || detail.payment_provider_name || detail.provider_name || "Unknown Provider";
                     })()} - {detail.account_name || detail.account_number}
                   </div>
@@ -192,11 +190,10 @@ const UserPaymentSelector = ({
                       onSelect(detail);
                     }
                   }}
-                  className={`px-4 py-2 rounded-lg text-base sm:text-lg font-medium transition-colors ${
-                    isSelected
+                  className={`px-4 py-2 rounded-lg text-base sm:text-lg font-medium transition-colors ${isSelected
                       ? "bg-red-500 text-white hover:bg-red-600"
                       : "bg-[#1D8751] text-white hover:bg-[#166b3e]"
-                  }`}
+                    }`}
                 >
                   {isSelected ? "Remove" : "Select"}
                 </button>
@@ -262,7 +259,7 @@ const getNetworkDisplayName = (network: string) => {
     'trc20': 'TRON',
     'trx': 'TRON'
   };
-  
+
   return networkMap[network?.toLowerCase()] || network || 'Unknown';
 };
 
@@ -276,19 +273,19 @@ export default function WithdrawalForm({
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
   const [transactionMode, setTransactionMode] = useState<"crypto" | "forex">("crypto");
-  
+
   // Declare all refs early to avoid initialization errors
   const paymentDetailsRef = useRef<HTMLDivElement>(null);
   const assetDropdownRef = useRef<HTMLDivElement>(null);
   const assetDropdownContentRef = useRef<HTMLDivElement | null>(null);
-  
+
   // Helper function to check if asset is FXP (forex) - defined early to avoid hoisting issues
   const isForexAsset = (asset: any) => {
     if (!asset) return false;
     const ticker = (asset?.ticker || asset?.symbol || "").toLowerCase();
     return ticker === "fxp";
   };
-  
+
   const { adminPaymentDetails, adminWalletList, loading, error } = useSelector(
     (state: any) => state.payment
   );
@@ -374,17 +371,17 @@ export default function WithdrawalForm({
   ).filter(method => method && typeof method === 'string' && method.trim().length > 0) as string[];
 
   // Add "Bank" as a default option if not already present
-  const validPaymentMethods = uniquePaymentMethods.filter(method => 
+  const validPaymentMethods = uniquePaymentMethods.filter(method =>
     method && typeof method === 'string' && method.trim().length > 0
   );
-  
+
   const allPaymentMethods = validPaymentMethods.includes("Bank")
     ? validPaymentMethods
     : ["Bank", ...validPaymentMethods];
 
   // Fallback payment methods if data is corrupted or not loaded yet
   const fallbackPaymentMethods = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
-  const finalPaymentMethods = allPaymentMethods.length > 0 && allPaymentMethods.every(method => 
+  const finalPaymentMethods = allPaymentMethods.length > 0 && allPaymentMethods.every(method =>
     typeof method === 'string' && method.trim().length > 0
   ) ? allPaymentMethods : fallbackPaymentMethods;
 
@@ -412,7 +409,7 @@ export default function WithdrawalForm({
         if (payment.is_active === undefined || payment.is_active === null) return true;
         return payment.is_active === true || payment.is_active === 'true' || payment.is_active === 1 || payment.is_active === '1';
       });
-      
+
       if (activeMethods.length > 0) {
         paymentMethodsRef.current = activeMethods;
       }
@@ -424,7 +421,7 @@ export default function WithdrawalForm({
       userPaymentMethodsRef.current = userPaymentDetails;
     }
   }, [userPaymentDetails]);
-  
+
   // Always use ref data - completely stable, never changes unless ref is updated
   const effectivePaymentMethods = paymentMethodsRef.current;
   const effectiveUserPaymentMethods = userPaymentMethodsRef.current;
@@ -448,21 +445,21 @@ export default function WithdrawalForm({
   // Initialize refs with cached data IMMEDIATELY on mount (runs only once)
   useEffect(() => {
     if (isHomePage) return;
-    
+
     const initializePaymentMethods = async () => {
       try {
         const { sliceCache } = await import("@/lib/utils/sliceCache");
-        
+
         // Load admin payment methods
         const cachedAdmin = await sliceCache.get<any[]>('payment', 'fetchAdminPaymentDetails');
         if (cachedAdmin && cachedAdmin.length > 0) {
-          const filtered = cachedAdmin.filter((p: any) => 
+          const filtered = cachedAdmin.filter((p: any) =>
             p.is_active === undefined || p.is_active === null || p.is_active === true || p.is_active === 'true'
           );
-          
+
           // Initialize ref FIRST
           paymentMethodsRef.current = filtered;
-          
+
           dispatch({
             type: 'payment/fetchAdminPaymentDetails/fulfilled',
             payload: cachedAdmin,
@@ -474,7 +471,7 @@ export default function WithdrawalForm({
         if (cachedUser && cachedUser.length > 0) {
           // Initialize ref FIRST
           userPaymentMethodsRef.current = cachedUser;
-          
+
           dispatch({
             type: 'payment/fetchUserPaymentDetails/fulfilled',
             payload: cachedUser,
@@ -484,7 +481,7 @@ export default function WithdrawalForm({
         // Silent fail
       }
     };
-    
+
     initializePaymentMethods();
   }, []); // Empty deps - runs only once on mount
 
@@ -495,19 +492,19 @@ export default function WithdrawalForm({
     hasData: walletListRef.current.length > 0,
   };
 
-const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
+  const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
 
- 
+
 
   // Debug function to test asset fetching
   const handleDebugAssets = async () => {
     try {
-     
+
       await dispatch(fetchAssets(true)).unwrap();
-      
-      
+
+
       await dispatch(fetchSupportedAssets(true)).unwrap();
-      
+
     } catch (error) {
     }
   };
@@ -515,7 +512,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
   // Force refresh assets
   const handleForceRefreshAssets = async () => {
     try {
-            await dispatch(fetchSupportedAssets(true)).unwrap();
+      await dispatch(fetchSupportedAssets(true)).unwrap();
     } catch (error) {
     }
   };
@@ -545,8 +542,8 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
       const firstDetail = initialState.paymentDetails[0];
       return extractProviderDisplayName(
         firstDetail.payment_provider_name ||
-          firstDetail.provider_name ||
-          firstDetail.payment_provider
+        firstDetail.provider_name ||
+        firstDetail.payment_provider
       );
     }
     // Also check if initialState has payBank directly
@@ -598,7 +595,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
   const [responseMessage, setResponseMessage] = useState<string>("");
   const [websocketUrl, setWebsocketUrl] = useState<string>("");
   const [transactionId, setTransactionId] = useState<string>("");
-  
+
   // Forex-specific state for withdrawal
   const [userNotesForex, setUserNotesForex] = useState<string>("");
   const [showForexWithdrawalForm, setShowForexWithdrawalForm] = useState<boolean>(false);
@@ -679,9 +676,9 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
       const displayData = adminWalletList.filter((wallet: any) => {
         const paymentDetail = wallet?.admin_payment_detail;
         if (!paymentDetail) return false;
-        
+
         if (paymentDetail.is_active === undefined || paymentDetail.is_active === null) return true;
-        
+
         return (
           paymentDetail.is_active === true ||
           paymentDetail.is_active === "true" ||
@@ -770,23 +767,23 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
     }
 
     return (userPaymentMethodsDisplay.displayData || effectiveUserPaymentMethods || []).filter(
-        (detail: any) => {
-          // Debug logging
-          console.log("Filtering user payment details:");
-          console.log("Selected provider (payBank):", payBank);
-          console.log("User detail:", detail);
-          console.log("User payment_provider_name:", detail.payment_provider_name);
+      (detail: any) => {
+        // Debug logging
+        console.log("Filtering user payment details:");
+        console.log("Selected provider (payBank):", payBank);
+        console.log("User detail:", detail);
+        console.log("User payment_provider_name:", detail.payment_provider_name);
         console.log(
           "Match result:",
           normalizeProviderName(detail.payment_provider_name || detail.provider_name) === normalizedPayBank
         );
-          
-          // Match user payment provider name with selected admin provider name
+
+        // Match user payment provider name with selected admin provider name
         return (
           normalizeProviderName(detail.payment_provider_name || detail.provider_name) ===
           normalizedPayBank
         );
-        }
+      }
     );
   }, [initialState?.paymentDetails, payBank, userPaymentMethodsDisplay.displayData, effectiveUserPaymentMethods]);
 
@@ -805,33 +802,33 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
     if (!normalizedPayBank) {
       return [];
     }
-    
+
     const sourceData = userPaymentMethodsDisplay.displayData || effectiveUserPaymentMethods || [];
-    
+
     console.log("Enhanced filtering debug:");
     console.log("Selected provider (payBank):", payBank);
     console.log("Source data length:", sourceData.length);
-    
+
     const filtered = sourceData.filter((detail: any) => {
-        // Match user payment provider name with selected admin provider name
-        const matchesProvider =
-          normalizeProviderName(detail.payment_provider_name || detail.provider_name) ===
-          normalizedPayBank;
-        
-        console.log("User detail:", detail);
-        console.log("User payment_provider_name:", detail.payment_provider_name);
-        console.log("Selected payBank:", payBank);
-        console.log("Match result:", matchesProvider);
-      
+      // Match user payment provider name with selected admin provider name
+      const matchesProvider =
+        normalizeProviderName(detail.payment_provider_name || detail.provider_name) ===
+        normalizedPayBank;
+
+      console.log("User detail:", detail);
+      console.log("User payment_provider_name:", detail.payment_provider_name);
+      console.log("Selected payBank:", payBank);
+      console.log("Match result:", matchesProvider);
+
       // If FXP is selected, only show approved payment methods
       if (selectedAsset && isForexAsset(selectedAsset)) {
         const isApproved = detail.status?.toLowerCase() === 'approved';
         return matchesProvider && isApproved;
       }
-      
+
       return matchesProvider;
     });
-    
+
     console.log("Filtered results:", filtered);
     return filtered;
   }, [initialState?.paymentDetails, payBank, userPaymentMethodsDisplay.displayData, effectiveUserPaymentMethods, selectedAsset]);
@@ -842,7 +839,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
     if (initialState?.paymentDetails && Array.isArray(initialState.paymentDetails) && initialState.paymentDetails.length > 0) {
       // Always use exact objects from initialState - full objects from home page
       setSelectedPaymentDetails(initialState.paymentDetails as UserPaymentDetail[]);
-      
+
       // Set payBank from the first payment detail
       const firstDetail = initialState.paymentDetails[0];
       const providerName =
@@ -862,12 +859,12 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
         setSelectedPaymentDetails([firstAccount]);
         return;
       }
-      
+
       // If no payBank is set yet, get all available user payment details
-      const allUserPaymentDetails = effectiveUserPaymentMethods || 
-                                   userPaymentMethodsDisplay.displayData || 
-                                   [];
-      
+      const allUserPaymentDetails = effectiveUserPaymentMethods ||
+        userPaymentMethodsDisplay.displayData ||
+        [];
+
       // Auto-select first available payment detail if we have any and no payment details are selected
       if (allUserPaymentDetails.length > 0 && selectedPaymentDetails.length === 0) {
         const firstAccount = allUserPaymentDetails[0];
@@ -908,7 +905,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
   }, [isTransactionSubmitted, withdrawalAddress, qrCodeUrl, responseMessage]);
 
   // Monitor wallet section visibility
-  useEffect(() => {}, [
+  useEffect(() => { }, [
     isTransactionSubmitted,
     withdrawalAddress,
     qrCodeUrl,
@@ -931,14 +928,14 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
     if (isHomePage) {
       return;
     }
-    
+
     // First try to get from cache, then force refresh if no data
     dispatch(fetchAdminPaymentDetails(false))
       .unwrap()
       .then((data) => {
         // Update ref immediately
         if (data && data.length > 0) {
-          paymentMethodsRef.current = data.filter((p: any) => 
+          paymentMethodsRef.current = data.filter((p: any) =>
             p.is_active === undefined || p.is_active === null || p.is_active === true || p.is_active === 'true'
           );
         }
@@ -955,7 +952,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
           .then((data) => {
             // Update ref immediately
             if (data && data.length > 0) {
-              paymentMethodsRef.current = data.filter((p: any) => 
+              paymentMethodsRef.current = data.filter((p: any) =>
                 p.is_active === undefined || p.is_active === null || p.is_active === true || p.is_active === 'true'
               );
             }
@@ -974,21 +971,21 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
     if (isHomePage || hasFetchedAdminWallet) {
       return;
     }
-    
+
     // Prevent infinite retries - max 3 attempts
     if (adminWalletRetryCount >= MAX_RETRIES) {
       console.warn('⚠️ Max retries reached for admin wallet list');
       setHasFetchedAdminWallet(true);
       return;
     }
-    
+
     dispatch(fetchAdminWalletList(false))
       .unwrap()
       .then((data) => {
         console.log("✅ Admin wallet list fetched successfully");
         setHasFetchedAdminWallet(true);
         setAdminWalletRetryCount(0); // Reset retry count on success
-        
+
         // If no data in cache, try one force refresh (counts as a retry)
         if ((!data || !data.results || data.results.length === 0) && adminWalletRetryCount === 0) {
           setAdminWalletRetryCount(1);
@@ -1004,7 +1001,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
       .catch((error: unknown) => {
         console.error(`❌ Failed to fetch admin wallet list (attempt ${adminWalletRetryCount + 1}/${MAX_RETRIES}):`, error);
         setAdminWalletRetryCount(prev => prev + 1);
-        
+
         // Only show toast on final retry
         if (adminWalletRetryCount + 1 >= MAX_RETRIES) {
           if (!isHomePage) {
@@ -1020,14 +1017,14 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
     if (isHomePage || hasFetchedAssets) {
       return;
     }
-    
+
     // Prevent infinite retries - max 3 attempts
     if (assetsRetryCount >= MAX_RETRIES) {
       console.warn('⚠️ Max retries reached for assets');
       setHasFetchedAssets(true);
       return;
     }
-    
+
     // First try to get from cache, then force refresh if no data
     dispatch(fetchAssets(false))
       .unwrap()
@@ -1035,7 +1032,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
         console.log("✅ Assets fetched successfully");
         setHasFetchedAssets(true);
         setAssetsRetryCount(0); // Reset retry count on success
-        
+
         // If no assets in cache, try one force refresh (counts as a retry)
         if ((!data?.assets || data.assets.length === 0) && assetsRetryCount === 0) {
           setAssetsRetryCount(1);
@@ -1051,7 +1048,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
       .catch((error: unknown) => {
         console.error(`❌ Failed to fetch assets (attempt ${assetsRetryCount + 1}/${MAX_RETRIES}):`, error);
         setAssetsRetryCount(prev => prev + 1);
-        
+
         // Only show toast on final retry
         if (assetsRetryCount + 1 >= MAX_RETRIES) {
           if (!isHomePage) {
@@ -1068,7 +1065,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
     if (isHomePage) {
       return;
     }
-    
+
     // First try to get from cache, then force refresh if no data
     dispatch(fetchUserPaymentDetails(false))
       .unwrap()
@@ -1107,12 +1104,12 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
     if (isHomePage || hasFetchedSwapAssets) {
       return;
     }
-    
+
     // Prevent infinite retries - max 3 attempts
     if (swapAssetsRetryCount >= MAX_RETRIES) {
       console.warn('⚠️ Max retries reached for swap assets');
       setHasFetchedSwapAssets(true);
-      
+
       // Set fallback assets after max retries
       const fallbackAssets = [
         {
@@ -1126,7 +1123,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
         },
         {
           ticker: "USDT",
-          symbol: "USDT", 
+          symbol: "USDT",
           name: "USD Coin",
           network: "BSC",
           range_commissions: [{ commission: "2" }],
@@ -1134,21 +1131,21 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
           fee_rate: "2"
         }
       ];
-      
+
       dispatch({
         type: "swap/fetchSupportedAssets/fulfilled",
         payload: fallbackAssets
       });
       return;
     }
-    
+
     dispatch(fetchSupportedAssets(false))
       .unwrap()
       .then((data) => {
         console.log("✅ Swap assets fetched successfully");
         setHasFetchedSwapAssets(true);
         setSwapAssetsRetryCount(0); // Reset retry count on success
-        
+
         // If no assets in cache, try one force refresh (counts as a retry)
         if ((!data || data.length === 0) && swapAssetsRetryCount === 0) {
           setSwapAssetsRetryCount(1);
@@ -1164,13 +1161,13 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
       .catch((error: unknown) => {
         console.error(`❌ Failed to fetch swap assets (attempt ${swapAssetsRetryCount + 1}/${MAX_RETRIES}):`, error);
         setSwapAssetsRetryCount(prev => prev + 1);
-        
+
         // Only show toast on final retry
         if (swapAssetsRetryCount + 1 >= MAX_RETRIES) {
           if (!isHomePage) {
             showToast.warning("Unable to fetch swap assets. Using fallback data.");
           }
-          
+
           // Set fallback assets
           const fallbackAssets = [
             {
@@ -1184,7 +1181,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
             },
             {
               ticker: "USDT",
-              symbol: "USDT", 
+              symbol: "USDT",
               name: "USD Coin",
               network: "BSC",
               range_commissions: [{ commission: "2" }],
@@ -1192,12 +1189,12 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
               fee_rate: "2"
             }
           ];
-          
+
           dispatch({
             type: "swap/fetchSupportedAssets/fulfilled",
             payload: fallbackAssets
           });
-          
+
           setHasFetchedSwapAssets(true);
         }
       });
@@ -1212,7 +1209,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
     // If we have initialState with asset, try to match it first (priority over defaults)
     if (initialState?.asset) {
       const initialStateAsset = initialState.asset;
-      
+
       // Use asset directly from initialState (full object from home page)
       // Try to find it in available assets by asset_id, otherwise use initialState asset directly
       const matchingAsset = assetsDisplay.displayData.find((asset: any) => {
@@ -1224,7 +1221,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
 
       // Use matched asset if found, otherwise use initialState asset directly
       const assetToUse = matchingAsset || initialStateAsset;
-      
+
       setIsRestoringFromInitialState(true);
       setSelectedAsset(assetToUse);
       // Restore exact amounts from initialState
@@ -1274,7 +1271,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
         ) {
           return 1;
         }
-        
+
         // Priority 2: USDC on BSC
         if (
           tickerA === "usdc" &&
@@ -1290,7 +1287,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
         ) {
           return 1;
         }
-        
+
         // Priority 3: FXPRIMUS (ticker: fxp)
         if (
           tickerA === "fxp" &&
@@ -1304,7 +1301,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
         ) {
           return 1;
         }
-        
+
         return 0;
       });
 
@@ -1353,8 +1350,8 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
   useEffect(() => {
     if (estimate && !estimateLoading) {
       // Ensure loading states are cleared when we have an estimate
-        setIsCalculating(false);
-        setIsCalculatingReceive(false);
+      setIsCalculating(false);
+      setIsCalculatingReceive(false);
     }
   }, [estimate, estimateLoading]);
 
@@ -1383,10 +1380,10 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
     if (!asset) return false;
     const ticker = (asset?.ticker || asset?.symbol || "").toLowerCase();
     const network = (asset?.network || "").toLowerCase();
-    
+
     // First two assets: USDT on BSC and USDC on BSC
-    return (ticker === "usdt" && network === "bsc") || 
-           (ticker === "usdc" && network === "bsc");
+    return (ticker === "usdt" && network === "bsc") ||
+      (ticker === "usdc" && network === "bsc");
   };
 
   // FXP withdrawal rate: 1 FXP = 1.1 USD (user sends FXP, receives USD)
@@ -1573,7 +1570,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
               setEstimate(result.payload);
               setCalculationError(null); // Clear any previous errors
               setApiValidationError(null);
-              
+
               // Update UI immediately instead of waiting for another useEffect
               const estimatedAmount = (result.payload as any)?.toAmount || (result.payload as any)?.estimated_amount;
               if (estimatedAmount !== undefined && estimatedAmount !== null && !isNaN(estimatedAmount)) {
@@ -1581,12 +1578,12 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                 setGetAmount(finalAmount);
                 setGetAmountInput(finalAmount.toString());
                 setReceiveAmountError(null);
-                
+
                 // Clear loading states immediately
                 setIsCalculating(false);
                 setIsCalculatingReceive(false);
               }
-              
+
               // Cache the result with timestamp
               setEstimateCache((prev) =>
                 new Map(prev).set(cacheKey, {
@@ -1801,7 +1798,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
 
   // Reverse calculation effect for non-simple assets when user types in "You Receive"
   useEffect(() => {
-  
+
 
     if (
       selectedAsset &&
@@ -1816,7 +1813,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
         setEstimateError(null);
       }
 
-  
+
 
       // Add timeout to prevent hanging API calls
       const timeoutPromise = new Promise((_, reject) => {
@@ -1865,7 +1862,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
           setIsCalculating(false);
           setIsCalculatingReceive(false);
           setEstimateLoading(false);
-          
+
           // Handle API validation errors for receive amount first
           if (
             error.response?.data?.error ||
@@ -2020,11 +2017,11 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
             setIsCalculatingReceive(false);
             return;
           }
-          
+
           // Check for specific API validation errors - handle different error structures
           let errorMessage = "";
           let errorDetails = "";
-          
+
           // Handle the exact structure you provided
           if (error?.response_data?.error) {
             errorMessage = error.response_data.error;
@@ -2035,23 +2032,23 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
           } else if (error?.message) {
             errorMessage = error.message;
           }
-          
+
           // Also check for the specific "Exchange service error" format
           if (errorMessage.includes("Exchange service error:")) {
             const serviceError = errorMessage.replace("Exchange service error: ", "");
             errorMessage = serviceError;
           }
-          
+
           console.log("Error parsing (withdrawal):", { errorMessage, errorDetails, hasResponseData: !!error?.response_data });
-          
+
           // Handle deposit_too_small error
           if (errorMessage.includes("deposit_too_small") || errorDetails.includes("Out of min amount")) {
             // Try to get minimum amount from error payload
             const minAmount = error?.response_data?.payload?.range?.minAmount;
-            const errorText = minAmount 
+            const errorText = minAmount
               ? `Amount entered is too small. Minimum amount is ${minAmount.toFixed(8)}.`
               : "Amount entered is too small. Please enter a larger amount.";
-            
+
             setApiValidationError(errorText);
             setEstimateError(null);
             setGetAmount(0);
@@ -2061,15 +2058,15 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
             setEstimateLoading(false);
             return;
           }
-          
+
           // Handle other specific validation errors
           if (errorMessage.includes("deposit_too_large") || errorDetails.includes("Out of max amount")) {
             // Try to get maximum amount from error payload
             const maxAmount = error?.response_data?.payload?.range?.maxAmount;
-            const errorText = maxAmount 
+            const errorText = maxAmount
               ? `Amount entered is too large. Maximum amount is ${maxAmount.toFixed(8)}.`
               : "Amount entered is too large. Please enter a smaller amount.";
-            
+
             setApiValidationError(errorText);
             setEstimateError(null);
             setGetAmount(0);
@@ -2079,10 +2076,10 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
             setEstimateLoading(false);
             return;
           }
-          
+
           // Clear API validation errors for network/timeout issues
           setApiValidationError(null);
-          
+
           // Handle timeout - just clear error and allow retry
           if (error.message?.includes("Request timeout")) {
             setEstimateError(null);
@@ -2178,7 +2175,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
     ) {
       return 1;
     }
-    
+
     // Priority 2: USDC on BSC
     if (
       tickerA === "usdc" &&
@@ -2194,7 +2191,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
     ) {
       return 1;
     }
-    
+
     // Priority 3: FXPRIMUS (ticker: fxp)
     if (
       tickerA === "fxp" &&
@@ -2208,7 +2205,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
     ) {
       return 1;
     }
-    
+
     // Default: preserve original order (no change)
     return 0;
   });
@@ -2275,7 +2272,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
     if (fromPay && selectedAsset && isForexAsset(selectedAsset)) {
       // For withdrawal: FXP to USD (multiply by 1.1)
       const calculatedGetAmount = fromAmount * FXP_TO_USD_RATE;
-      
+
       setGetAmount(calculatedGetAmount);
       setGetAmountInput(calculatedGetAmount.toFixed(2));
       setPreviousValidAmount(calculatedGetAmount.toFixed(2));
@@ -2297,12 +2294,12 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
       setIsCalculatingReceive(false);
       return;
     }
-    
+
     // For FXP reverse calculation (user types USD, get FXP amount)
     if (!fromPay && selectedAsset && isForexAsset(selectedAsset)) {
       // For reverse: USD to FXP (divide by 1.1)
       const calculatedPayAmount = fromAmount / FXP_TO_USD_RATE;
-      
+
       setPayAmount(calculatedPayAmount);
       setPayAmountInput(calculatedPayAmount.toFixed(2));
 
@@ -2491,17 +2488,17 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
   // Validate first card data
   const validateFirstCard = () => {
     const errors: string[] = [];
-    
+
     // Clear previous payment method error
     setPaymentMethodError(null);
-    
+
     // Check if amount is entered
     if (!payAmountInput || payAmountInput.trim() === "") {
       errors.push("Please enter an amount");
       showToast.error("Please enter an amount");
       return false;
     }
-    
+
     // Check if amount is valid
     if (!payAmount || payAmount <= 0) {
       errors.push("Please enter a valid amount greater than 0");
@@ -2554,8 +2551,8 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
             selectedNetwork?.network_type ||
             selectedAsset.network,
           // For FXP, use user_payment_detail_id; for others, use id
-          user_payment_detail_id: isForexAsset(selectedAsset) 
-            ? selectedPaymentDetails[0].user_payment_detail_id 
+          user_payment_detail_id: isForexAsset(selectedAsset)
+            ? selectedPaymentDetails[0].user_payment_detail_id
             : String(selectedPaymentDetails[0].id),
         };
 
@@ -2636,7 +2633,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
         setIsTransactionSubmitted(true);
         setForceUpdate(forceUpdate + 1);
 
-        
+
       } catch (error: any) {
         let errorMessage = "Failed to submit withdrawal request";
 
@@ -2688,10 +2685,10 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
     }
 
     // Check if we have user payment methods available
-    const allUserPaymentDetails = effectiveUserPaymentMethods || 
-                                 userPaymentMethodsDisplay.displayData || 
-                                 [];
-    
+    const allUserPaymentDetails = effectiveUserPaymentMethods ||
+      userPaymentMethodsDisplay.displayData ||
+      [];
+
     // If no payment details selected and we have available payment methods, wait a bit for auto-selection
     if (selectedPaymentDetails.length === 0 && allUserPaymentDetails.length > 0) {
       // Give it a moment for the auto-selection useEffect to run
@@ -2719,10 +2716,10 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
       // Auto-submit the first card (same as clicking the submit button)
       const timer = setTimeout(() => {
         if (!isTransactionSubmitted && !isSubmitting && selectedPaymentDetails.length > 0) {
-          console.log("🚀 AUTO-SUBMITTING WITHDRAWAL:", { 
-            selectedAsset: selectedAsset.ticker, 
+          console.log("🚀 AUTO-SUBMITTING WITHDRAWAL:", {
+            selectedAsset: selectedAsset.ticker,
             selectedPaymentDetails: selectedPaymentDetails.length,
-            payBank 
+            payBank
           });
           handleFirstCardSubmit();
           setHasAutoExpanded(true);
@@ -2747,7 +2744,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
   // Validate form data
   const validateForm = () => {
     const errors: string[] = [];
-    
+
     // Clear previous payment method error
     setPaymentMethodError(null);
 
@@ -2812,8 +2809,8 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
             selectedNetwork?.network_type ||
             selectedAsset.network,
           // For FXP, use user_payment_detail_id; for others, use id
-          user_payment_detail_id: isForexAsset(selectedAsset) 
-            ? selectedPaymentDetails[0].user_payment_detail_id 
+          user_payment_detail_id: isForexAsset(selectedAsset)
+            ? selectedPaymentDetails[0].user_payment_detail_id
             : String(selectedPaymentDetails[0].id),
         };
 
@@ -3220,869 +3217,862 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
       {/* Crypto/Forex Toggle Buttons Removed */}
 
       {transactionMode === "forex" ? (
-        <ForexWithdrawal 
+        <ForexWithdrawal
           payAmount={payAmount}
           getAmount={getAmount}
           selectedPaymentDetails={selectedPaymentDetails}
         />
       ) : (
         <>
-      <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
-        <span className="text-[#7e7e8f] dark:text-[#788099]">1-</span> Transaction Info
-      </h2>
-      
-      {/* API Validation Error - Show as simple red text */}
-      {apiValidationError && (
-        <div className="mb-2 sm:mb-4 text-red-500 text-sm font-medium">
-          {apiValidationError}
-        </div>
-      )}
+          <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
+            <span className="text-[#7e7e8f] dark:text-[#788099]">1-</span> Transaction Info
+          </h2>
 
-      <div className="w-full text-white">
-        {/* Top Section - You Send and You Get in one card */}
-        <div className="relative mb-2 sm:mb-3 md:mb-4">
-          {/* Top Card Container */}
-          <div className="relative flex flex-col sm:flex-row border border-[#35353E] dark:border-[#35353E] rounded-2xl p-2 sm:p-3 md:p-4 gap-2 sm:gap-3 md:gap-0 overflow-visible bg-white dark:bg-[#18181D]">
-            {/* You Send Section */}
-            <div className="flex-1">
-              <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
-                You Send
-                {isCalculatingFromPay &&
-                  (isCalculating || isCalculatingReceive) && (
-                    <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
-                  )}
-              </label>
-              <div className="text-xs text-[#788099] dark:text-[#788099] mb-1">Amount</div>
-              <div className="relative">
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  value={payAmountInput}
-                  onChange={(e) => {
-                    const inputValue = e.target.value;
+          {/* API Validation Error - Show as simple red text */}
+          {apiValidationError && (
+            <div className="mb-2 sm:mb-4 text-red-500 text-sm font-medium">
+              {apiValidationError}
+            </div>
+          )}
 
-                    // Allow any numeric input including negative numbers and 0
-                    if (inputValue === "" || /^-?\d*\.?\d*$/.test(inputValue)) {
-                      // Check for decimal places validation
-                      if (inputValue.includes(".")) {
-                        const decimalPart = inputValue.split(".")[1];
-                        if (decimalPart && decimalPart.length > 8) {
-                          setApiValidationError("Number cannot have more than 8 decimal places.");
-                          return;
-                        }
-                      }
+          <div className="w-full text-white">
+            {/* Top Section - You Send and You Get in one card */}
+            <div className="relative mb-2 sm:mb-3 md:mb-4">
+              {/* Top Card Container */}
+              <div className="relative flex flex-col sm:flex-row border border-[#35353E] dark:border-[#35353E] rounded-2xl p-2 sm:p-3 md:p-4 gap-2 sm:gap-3 md:gap-0 overflow-visible bg-white dark:bg-[#18181D]">
+                {/* You Send Section */}
+                <div className="flex-1">
+                  <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
+                    You Send
+                    {isCalculatingFromPay &&
+                      (isCalculating || isCalculatingReceive) && (
+                        <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
+                      )}
+                  </label>
+                  <div className="text-xs text-[#788099] dark:text-[#788099] mb-1">Amount</div>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={payAmountInput}
+                      onChange={(e) => {
+                        const inputValue = e.target.value;
 
-                      // Convert to number for calculations
-                      const parsedValue =
-                        inputValue === "" ? 0 : parseFloat(inputValue) || 0;
-
-                      const newValue = parsedValue;
-                      
-                      // Only update state and calculate if value actually changed
-                      if (newValue !== payAmount || inputValue !== payAmountInput) {
-                        setPayAmountInput(inputValue);
-                      setPayAmount(newValue);
-                      setIsCalculatingFromPay(true);
-
-                      // Mark that user has manually modified the amount
-                      setIsUserModifiedAmount(true);
-
-                      // Clear any previous errors when user starts typing
-                      setReceiveAmountError(null);
-                      setApiValidationError(null);
-                      setCalculationError(null);
-
-                      // Only calculate if we have a valid amount and asset
-                      if (selectedAsset && newValue >= 0) {
-                        // Check asset type first and handle accordingly
-                        if (isSimpleCalculationAsset(selectedAsset)) {
-                          // For direct assets (USDT on BSC, USDC on BSC), calculate immediately
-                          calculateAmounts(newValue, true);
-                        } else if (isForexAsset(selectedAsset)) {
-                          // For FXP, calculate immediately without API
-                          calculateAmounts(newValue, true);
-                        } else if (newValue > 0) {
-                          // For non-simple assets, stop normal calculation and go directly to API
-
-                          // Stop any ongoing normal calculations first
-                          if (calculationTimeout) {
-                            clearTimeout(calculationTimeout);
-                          }
-                          if (estimateTimeout) {
-                            clearTimeout(estimateTimeout);
-                          }
-
-                          // Clear previous calculation states
-                          setEstimate(null);
-                          setEstimateError(null);
-                          setEstimateLoading(false);
-                          setCalculationError(null);
-                          setReceiveAmountError(null);
-                          setApiValidationError(null);
-                          setApiValidationError(null);
-
-                          // Store current value as previous valid amount before showing loading
-                          if (
-                            getAmountInput &&
-                            getAmountInput !== "0" &&
-                            !isCalculating
-                          ) {
-                            setPreviousValidAmount(getAmountInput);
-                          }
-
-                          // Keep field empty during calculation - no intermediate values
-                          setGetAmount(0);
-                          setGetAmountInput("");
-                          if (!apiValidationError) {
-                            if (!apiValidationError) {
-                              setReceiveAmountError("Calculating..."); // Show immediate feedback
+                        // Allow any numeric input including negative numbers and 0
+                        if (inputValue === "" || /^-?\d*\.?\d*$/.test(inputValue)) {
+                          // Check for decimal places validation
+                          if (inputValue.includes(".")) {
+                            const decimalPart = inputValue.split(".")[1];
+                            if (decimalPart && decimalPart.length > 8) {
+                              setApiValidationError("Number cannot have more than 8 decimal places.");
+                              return;
                             }
                           }
 
-                          // Set loading state for visual feedback
-                          setIsCalculating(true);
-                          setIsCalculatingReceive(true);
-                          setEstimateLoading(true);
+                          // Convert to number for calculations
+                          const parsedValue =
+                            inputValue === "" ? 0 : parseFloat(inputValue) || 0;
 
-                          // Go directly to API calculation - the estimate useEffect will handle it
-                        } else {
-                          // For zero/negative values, clear the receive amount but don't show "0"
-                          setGetAmount(0);
-                          setGetAmountInput("");
-                          setReceiveAmountError(null);
-                          setApiValidationError(null);
-                          setIsCalculating(false);
-                          setIsCalculatingReceive(false);
-                        }
-                        }
-                      }
-                    }
-                  }}
-                  placeholder={
-                    (isCalculating || isCalculatingReceive) &&
-                    !apiValidationError
-                      ? "Calculating..."
-                      : "Enter amount"
-                  }
-                  className={`w-full h-[48px] text-[#35353e] dark:text-white bg-transparent dark:bg-transparent rounded-2xl px-2 sm:px-3 md:px-4 pr-12 sm:pr-16 text-base sm:text-lg focus:outline-none border appearance-none ${
-                    apiValidationError
-                      ? "border-red-500"
-                      : isCalculating || isCalculatingReceive
-                        ? "border-[#1D8751]"
-                        : "border-[#A2A4A9FF] dark:border-[#35353E]"
-                  }`}
-                />
-                <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
-                  <span className="text-[#35353e] dark:text-white text-sm font-medium">
-                    {selectedAsset
-                      ? (
-                          selectedAsset.ticker ||
-                          selectedAsset.symbol ||
-                          selectedAsset.name ||
-                          "USD"
-                        )
-                      : "USD"}
-                  </span>
-                </div>
-                    </div>
-            </div>
+                          const newValue = parsedValue;
 
-            {/* You Get Section */}
-            <div className="flex-1 sm:pl-4 border-t sm:border-t-0 sm:border-l border-[#35353E] dark:border-[#35353E] pt-3 sm:pt-0 sm:border-none" data-select-card="true">
-              <div className="text-xs text-[#788099] dark:text-[#788099] mb-1 mt-[30px] sm:mt-[34px]">You Get</div>
-              <div className="relative" ref={assetDropdownRef}>
-                <div
-                  className={`w-full h-[48px] bg-transparent dark:bg-transparent text-[#35353e] dark:text-white rounded-2xl px-4 text-lg focus:outline-none border border-[#39394A] dark:border-[#35353E] flex items-center justify-between cursor-pointer`}
-                  onClick={() => {
-                    if (!isAssetDropdownOpen) {
-                      updateAssetDropdownPosition();
-                    }
-                    setIsAssetDropdownOpen(!isAssetDropdownOpen);
-                  }}
-                >
-                  <div className="flex items-center gap-3">
-                    {selectedAsset ? (
-                      <>
-                        <img
-                          src={getHighResAssetIcon(selectedAsset, 72)}
-                          alt={
-                            selectedAsset?.name ||
-                            selectedAsset?.ticker ||
-                            selectedAsset?.symbol ||
-                            "Asset"
+                          // Only update state and calculate if value actually changed
+                          if (newValue !== payAmount || inputValue !== payAmountInput) {
+                            setPayAmountInput(inputValue);
+                            setPayAmount(newValue);
+                            setIsCalculatingFromPay(true);
+
+                            // Mark that user has manually modified the amount
+                            setIsUserModifiedAmount(true);
+
+                            // Clear any previous errors when user starts typing
+                            setReceiveAmountError(null);
+                            setApiValidationError(null);
+                            setCalculationError(null);
+
+                            // Only calculate if we have a valid amount and asset
+                            if (selectedAsset && newValue >= 0) {
+                              // Check asset type first and handle accordingly
+                              if (isSimpleCalculationAsset(selectedAsset)) {
+                                // For direct assets (USDT on BSC, USDC on BSC), calculate immediately
+                                calculateAmounts(newValue, true);
+                              } else if (isForexAsset(selectedAsset)) {
+                                // For FXP, calculate immediately without API
+                                calculateAmounts(newValue, true);
+                              } else if (newValue > 0) {
+                                // For non-simple assets, stop normal calculation and go directly to API
+
+                                // Stop any ongoing normal calculations first
+                                if (calculationTimeout) {
+                                  clearTimeout(calculationTimeout);
+                                }
+                                if (estimateTimeout) {
+                                  clearTimeout(estimateTimeout);
+                                }
+
+                                // Clear previous calculation states
+                                setEstimate(null);
+                                setEstimateError(null);
+                                setEstimateLoading(false);
+                                setCalculationError(null);
+                                setReceiveAmountError(null);
+                                setApiValidationError(null);
+                                setApiValidationError(null);
+
+                                // Store current value as previous valid amount before showing loading
+                                if (
+                                  getAmountInput &&
+                                  getAmountInput !== "0" &&
+                                  !isCalculating
+                                ) {
+                                  setPreviousValidAmount(getAmountInput);
+                                }
+
+                                // Keep field empty during calculation - no intermediate values
+                                setGetAmount(0);
+                                setGetAmountInput("");
+                                if (!apiValidationError) {
+                                  if (!apiValidationError) {
+                                    setReceiveAmountError("Calculating..."); // Show immediate feedback
+                                  }
+                                }
+
+                                // Set loading state for visual feedback
+                                setIsCalculating(true);
+                                setIsCalculatingReceive(true);
+                                setEstimateLoading(true);
+
+                                // Go directly to API calculation - the estimate useEffect will handle it
+                              } else {
+                                // For zero/negative values, clear the receive amount but don't show "0"
+                                setGetAmount(0);
+                                setGetAmountInput("");
+                                setReceiveAmountError(null);
+                                setApiValidationError(null);
+                                setIsCalculating(false);
+                                setIsCalculatingReceive(false);
+                              }
+                            }
                           }
-                          className={`${ASSET_ICON_BASE_CLASS} w-6 h-6`}
-                          loading="lazy"
-                          onError={(e) => {
-                            console.log(
-                              "Image failed to load for asset:",
-                              selectedAsset
-                            );
-                            e.currentTarget.src = getHighResAssetIcon(null, 72);
-                          }}
-                        />
-                        <div className="flex flex-col">
-                          <div className="flex items-center gap-2">
-                            <span className="text-[#35353e] dark:text-white font-medium">
-                          {(
+                        }
+                      }}
+                      placeholder={
+                        (isCalculating || isCalculatingReceive) &&
+                          !apiValidationError
+                          ? "Calculating..."
+                          : "Enter amount"
+                      }
+                      className={`w-full h-[48px] text-[#35353e] dark:text-white bg-transparent dark:bg-transparent rounded-2xl px-2 sm:px-3 md:px-4 pr-12 sm:pr-16 text-base sm:text-lg focus:outline-none border appearance-none ${apiValidationError
+                          ? "border-red-500"
+                          : isCalculating || isCalculatingReceive
+                            ? "border-[#1D8751]"
+                            : "border-[#A2A4A9FF] dark:border-[#35353E]"
+                        }`}
+                    />
+                    <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
+                      <span className="text-[#35353e] dark:text-white text-sm font-medium">
+                        {selectedAsset
+                          ? (
                             selectedAsset.ticker ||
                             selectedAsset.symbol ||
                             selectedAsset.name ||
-                            "Unknown"
-                          ).toUpperCase()}
-                        </span>
-                            <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
-                          {getNetworkDisplayName(selectedAsset.network)}
-                        </span>
-                          </div>
-                          <span className="text-[#788099] text-xs">
-                            {selectedAsset.name || 
-                             (selectedAsset.ticker || selectedAsset.symbol || "Unknown")} ({getNetworkDisplayName(selectedAsset.network)})
-                          </span>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <img
-                          src={getHighResAssetIcon(null, 72)}
-                          alt="asset icon"
-                          className={`${ASSET_ICON_BASE_CLASS} w-12 h-12`}
-                          loading="lazy"
-                        />
-                        <span className="text-[#7e7e8f] dark:text-[#788099]">
-                          {assetsDisplay.isLoading
-                            ? "Loading assets..."
-                            : "Select Asset"}
-                        </span>
-                      </>
-                    )}
+                            "USD"
+                          )
+                          : "USD"}
+                      </span>
+                    </div>
                   </div>
-                  <svg
-                    className={`w-5 h-5 text-[#7e7e8f] transition-transform ${
-                      isAssetDropdownOpen ? "rotate-180" : ""
-                    }`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
                 </div>
 
-                {/* Asset Dropdown */}
-                {renderAssetDropdown()}
+                {/* You Get Section */}
+                <div className="flex-1 sm:pl-4 border-t sm:border-t-0 sm:border-l border-[#35353E] dark:border-[#35353E] pt-3 sm:pt-0 sm:border-none" data-select-card="true">
+                  <div className="text-xs text-[#788099] dark:text-[#788099] mb-1 mt-[30px] sm:mt-[34px]">You Get</div>
+                  <div className="relative" ref={assetDropdownRef}>
+                    <div
+                      className={`w-full h-[48px] bg-transparent dark:bg-transparent text-[#35353e] dark:text-white rounded-2xl px-4 text-lg focus:outline-none border border-[#39394A] dark:border-[#35353E] flex items-center justify-between cursor-pointer`}
+                      onClick={() => {
+                        if (!isAssetDropdownOpen) {
+                          updateAssetDropdownPosition();
+                        }
+                        setIsAssetDropdownOpen(!isAssetDropdownOpen);
+                      }}
+                    >
+                      <div className="flex items-center gap-3">
+                        {selectedAsset ? (
+                          <>
+                            <img
+                              src={getHighResAssetIcon(selectedAsset, 72)}
+                              alt={
+                                selectedAsset?.name ||
+                                selectedAsset?.ticker ||
+                                selectedAsset?.symbol ||
+                                "Asset"
+                              }
+                              className={`${ASSET_ICON_BASE_CLASS} w-6 h-6`}
+                              loading="lazy"
+                              onError={(e) => {
+                                console.log(
+                                  "Image failed to load for asset:",
+                                  selectedAsset
+                                );
+                                e.currentTarget.src = getHighResAssetIcon(null, 72);
+                              }}
+                            />
+                            <div className="flex flex-col">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[#35353e] dark:text-white font-medium">
+                                  {(
+                                    selectedAsset.ticker ||
+                                    selectedAsset.symbol ||
+                                    selectedAsset.name ||
+                                    "Unknown"
+                                  ).toUpperCase()}
+                                </span>
+                                <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
+                                  {getNetworkDisplayName(selectedAsset.network)}
+                                </span>
+                              </div>
+                              <span className="text-[#788099] text-xs">
+                                {selectedAsset.name ||
+                                  (selectedAsset.ticker || selectedAsset.symbol || "Unknown")} ({getNetworkDisplayName(selectedAsset.network)})
+                              </span>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <img
+                              src={getHighResAssetIcon(null, 72)}
+                              alt="asset icon"
+                              className={`${ASSET_ICON_BASE_CLASS} w-12 h-12`}
+                              loading="lazy"
+                            />
+                            <span className="text-[#7e7e8f] dark:text-[#788099]">
+                              {assetsDisplay.isLoading
+                                ? "Loading assets..."
+                                : "Select Asset"}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                      <svg
+                        className={`w-5 h-5 text-[#7e7e8f] transition-transform ${isAssetDropdownOpen ? "rotate-180" : ""
+                          }`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 9l-7 7-7-7"
+                        />
+                      </svg>
+                    </div>
+
+                    {/* Asset Dropdown */}
+                    {renderAssetDropdown()}
+                  </div>
+                </div>
+              </div>
+
+              {/* Swap Circle - positioned to touch both borders equally */}
+              <div className="absolute left-1/2 transform -translate-x-1/2 top-full -translate-y-1/3 z-10">
+                <button
+                  className="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-105"
+                  onClick={() => {
+                    // Switch between deposit and withdrawal modes
+                    if (onModeChange) {
+                      onModeChange(mode === "deposit" ? "withdrawal" : "deposit");
+                    }
+                  }}
+                >
+                  {/* Light mode image */}
+                  <img
+                    src="https://res.cloudinary.com/pitz/image/upload/v1756579504/Frame_36261_1_d9cnq1.png"
+                    alt="swap icon"
+                    className="w-10 h-10 dark:hidden"
+                  />
+                  {/* Dark mode image */}
+                  <img
+                    src="https://res.cloudinary.com/pitz/image/upload/v1755500509/Frame_36261_ledmyw.png"
+                    alt="swap icon"
+                    className="w-10 h-10 hidden dark:block"
+                  />
+                </button>
               </div>
             </div>
-          </div>
 
-          {/* Swap Circle - positioned to touch both borders equally */}
-          <div className="absolute left-1/2 transform -translate-x-1/2 top-full -translate-y-1/3 z-10">
-            <button
-              className="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-105"
-              onClick={() => {
-                // Switch between deposit and withdrawal modes
-                if (onModeChange) {
-                  onModeChange(mode === "deposit" ? "withdrawal" : "deposit");
-                }
-              }}
-            >
-              {/* Light mode image */}
-              <img
-                src="https://res.cloudinary.com/pitz/image/upload/v1756579504/Frame_36261_1_d9cnq1.png"
-                alt="swap icon"
-                className="w-10 h-10 dark:hidden"
-              />
-              {/* Dark mode image */}
-              <img
-                src="https://res.cloudinary.com/pitz/image/upload/v1755500509/Frame_36261_ledmyw.png"
-                alt="swap icon"
-                className="w-10 h-10 hidden dark:block"
-              />
-            </button>
-          </div>
-        </div>
+            {/* Bottom Section - You Receive and Bank/Payment Method in one card */}
+            <div className="relative mb-2 sm:mb-3">
+              <div className="relative flex flex-col sm:flex-row border border-[#35353E] dark:border-[#35353E] rounded-2xl p-2 sm:p-3 md:p-4 gap-2 sm:gap-3 md:gap-4 overflow-visible bg-white dark:bg-[#18181D]">
+                {/* You Receive Section */}
+                <div className="flex-1">
+                  <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
+                    You Receive
+                    {!isCalculatingFromPay &&
+                      (isCalculating || isCalculatingReceive) && (
+                        <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
+                      )}
+                  </label>
+                  <div className="text-xs text-[#788099] dark:text-[#788099] mb-1">Amount</div>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={getAmountInput}
+                      onChange={(e) => {
+                        const value = e.target.value;
 
-        {/* Bottom Section - You Receive and Bank/Payment Method in one card */}
-        <div className="relative mb-2 sm:mb-3">
-          <div className="relative flex flex-col sm:flex-row border border-[#35353E] dark:border-[#35353E] rounded-2xl p-2 sm:p-3 md:p-4 gap-2 sm:gap-3 md:gap-4 overflow-visible bg-white dark:bg-[#18181D]">
-            {/* You Receive Section */}
-            <div className="flex-1">
-              <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
-                You Receive
-                {!isCalculatingFromPay &&
-                  (isCalculating || isCalculatingReceive) && (
-                    <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
-                  )}
-              </label>
-              <div className="text-xs text-[#788099] dark:text-[#788099] mb-1">Amount</div>
-              <div className="relative">
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  value={getAmountInput}
-                  onChange={(e) => {
-                    const value = e.target.value;
-
-                    // Don't do anything if the value hasn't actually changed
-                    if (value === getAmountInput) {
-                      return;
-                    }
-
-                    // Only allow numbers and decimals (including 0.006 format)
-                    if (value === "" || /^\d*\.?\d*$/.test(value)) {
-                      // Check for decimal places validation
-                      if (value.includes(".")) {
-                        const decimalPart = value.split(".")[1];
-                        if (decimalPart && decimalPart.length > 8) {
-                          setApiValidationError("Number cannot have more than 8 decimal places.");
+                        // Don't do anything if the value hasn't actually changed
+                        if (value === getAmountInput) {
                           return;
                         }
-                      }
 
-                      const newAmount = parseFloat(value) || 0;
-                      
-                      // Only update state and calculate if value actually changed
-                      if (newAmount !== getAmount || value !== getAmountInput) {
-                        setGetAmountInput(value); // Store the string value for display
-                      setGetAmount(newAmount);
-                      setIsCalculatingFromPay(false);
-
-                      // Clear any previous errors when user starts typing
-                      setReceiveAmountError(null);
-                      setApiValidationError(null);
-                      setCalculationError(null);
-
-                      // Only calculate if we have a valid amount and asset
-                      if (selectedAsset && newAmount >= 0) {
-                        // Check asset type first and handle accordingly
-                        if (isSimpleCalculationAsset(selectedAsset)) {
-                          // For direct assets (USDT on BSC, USDC on BSC), calculate immediately
-                          const commissionRate = selectedAsset
-                            ?.range_commissions?.[0]?.commission
-                            ? parseFloat(
-                                selectedAsset.range_commissions[0].commission
-                              )
-                            : 2;
-                          const commissionAmount =
-                            (newAmount * commissionRate) / 100;
-                          const calculatedPayAmount =
-                            newAmount + commissionAmount;
-                          setPayAmount(calculatedPayAmount);
-                          setPayAmountInput(calculatedPayAmount.toString());
-
-                          // Simple assets don't need loading states - calculation is instant
-                          setIsCalculating(false);
-                          setIsCalculatingReceive(false);
-                        } else if (isForexAsset(selectedAsset)) {
-                          // For FXP, calculate immediately without API (reverse: USD to FXP)
-                          const calculatedPayAmount = newAmount / FXP_TO_USD_RATE;
-                          setPayAmount(calculatedPayAmount);
-                          setPayAmountInput(calculatedPayAmount.toFixed(2));
-
-                          // FXP doesn't need loading states - calculation is instant
-                          setIsCalculating(false);
-                          setIsCalculatingReceive(false);
-                        } else if (newAmount > 0) {
-                          // For non-simple assets, stop normal calculation and go directly to API
-
-                          // Stop any ongoing normal calculations first
-                          if (calculationTimeout) {
-                            clearTimeout(calculationTimeout);
-                          }
-                          if (estimateTimeout) {
-                            clearTimeout(estimateTimeout);
-                          }
-
-                          // Clear previous calculation states
-                          setEstimate(null);
-                          setEstimateError(null);
-                          setEstimateLoading(false);
-                          setCalculationError(null);
-                          setReceiveAmountError(null);
-                          setApiValidationError(null);
-                          setApiValidationError(null);
-
-                          // Store current value as previous valid amount before showing loading
-                          if (
-                            payAmountInput &&
-                            payAmountInput !== "0" &&
-                            !isCalculating
-                          ) {
-                            setPreviousValidAmount(payAmountInput);
-                          }
-
-                          // Keep field empty during calculation - no intermediate values
-                          setPayAmount(0);
-                          setPayAmountInput("");
-                          if (!apiValidationError) {
-                            if (!apiValidationError) {
-                              setReceiveAmountError("Calculating..."); // Show immediate feedback
+                        // Only allow numbers and decimals (including 0.006 format)
+                        if (value === "" || /^\d*\.?\d*$/.test(value)) {
+                          // Check for decimal places validation
+                          if (value.includes(".")) {
+                            const decimalPart = value.split(".")[1];
+                            if (decimalPart && decimalPart.length > 8) {
+                              setApiValidationError("Number cannot have more than 8 decimal places.");
+                              return;
                             }
                           }
 
-                          // Set loading state for visual feedback
-                          setIsCalculating(true);
-                          setIsCalculatingReceive(true);
-                          setEstimateLoading(true);
+                          const newAmount = parseFloat(value) || 0;
 
-                          // Go directly to API calculation - the reverse calculation useEffect will handle it
-                        } else {
-                          // For zero/negative values, clear the pay amount but don't show "0"
-                          setPayAmount(0);
-                          setPayAmountInput("");
-                          setReceiveAmountError(null);
-                          setApiValidationError(null);
-                          setIsCalculating(false);
-                          setIsCalculatingReceive(false);
+                          // Only update state and calculate if value actually changed
+                          if (newAmount !== getAmount || value !== getAmountInput) {
+                            setGetAmountInput(value); // Store the string value for display
+                            setGetAmount(newAmount);
+                            setIsCalculatingFromPay(false);
+
+                            // Clear any previous errors when user starts typing
+                            setReceiveAmountError(null);
+                            setApiValidationError(null);
+                            setCalculationError(null);
+
+                            // Only calculate if we have a valid amount and asset
+                            if (selectedAsset && newAmount >= 0) {
+                              // Check asset type first and handle accordingly
+                              if (isSimpleCalculationAsset(selectedAsset)) {
+                                // For direct assets (USDT on BSC, USDC on BSC), calculate immediately
+                                const commissionRate = selectedAsset
+                                  ?.range_commissions?.[0]?.commission
+                                  ? parseFloat(
+                                    selectedAsset.range_commissions[0].commission
+                                  )
+                                  : 2;
+                                const commissionAmount =
+                                  (newAmount * commissionRate) / 100;
+                                const calculatedPayAmount =
+                                  newAmount + commissionAmount;
+                                setPayAmount(calculatedPayAmount);
+                                setPayAmountInput(calculatedPayAmount.toString());
+
+                                // Simple assets don't need loading states - calculation is instant
+                                setIsCalculating(false);
+                                setIsCalculatingReceive(false);
+                              } else if (isForexAsset(selectedAsset)) {
+                                // For FXP, calculate immediately without API (reverse: USD to FXP)
+                                const calculatedPayAmount = newAmount / FXP_TO_USD_RATE;
+                                setPayAmount(calculatedPayAmount);
+                                setPayAmountInput(calculatedPayAmount.toFixed(2));
+
+                                // FXP doesn't need loading states - calculation is instant
+                                setIsCalculating(false);
+                                setIsCalculatingReceive(false);
+                              } else if (newAmount > 0) {
+                                // For non-simple assets, stop normal calculation and go directly to API
+
+                                // Stop any ongoing normal calculations first
+                                if (calculationTimeout) {
+                                  clearTimeout(calculationTimeout);
+                                }
+                                if (estimateTimeout) {
+                                  clearTimeout(estimateTimeout);
+                                }
+
+                                // Clear previous calculation states
+                                setEstimate(null);
+                                setEstimateError(null);
+                                setEstimateLoading(false);
+                                setCalculationError(null);
+                                setReceiveAmountError(null);
+                                setApiValidationError(null);
+                                setApiValidationError(null);
+
+                                // Store current value as previous valid amount before showing loading
+                                if (
+                                  payAmountInput &&
+                                  payAmountInput !== "0" &&
+                                  !isCalculating
+                                ) {
+                                  setPreviousValidAmount(payAmountInput);
+                                }
+
+                                // Keep field empty during calculation - no intermediate values
+                                setPayAmount(0);
+                                setPayAmountInput("");
+                                if (!apiValidationError) {
+                                  if (!apiValidationError) {
+                                    setReceiveAmountError("Calculating..."); // Show immediate feedback
+                                  }
+                                }
+
+                                // Set loading state for visual feedback
+                                setIsCalculating(true);
+                                setIsCalculatingReceive(true);
+                                setEstimateLoading(true);
+
+                                // Go directly to API calculation - the reverse calculation useEffect will handle it
+                              } else {
+                                // For zero/negative values, clear the pay amount but don't show "0"
+                                setPayAmount(0);
+                                setPayAmountInput("");
+                                setReceiveAmountError(null);
+                                setApiValidationError(null);
+                                setIsCalculating(false);
+                                setIsCalculatingReceive(false);
+                              }
+                            } else {
+                              // For invalid input, clear the pay amount but don't show "0"
+                              setPayAmount(0);
+                              setPayAmountInput("");
+                              setReceiveAmountError(null);
+                              setApiValidationError(null);
+                              setIsCalculating(false);
+                              setIsCalculatingReceive(false);
+                            }
+                          }
                         }
-                      } else {
-                        // For invalid input, clear the pay amount but don't show "0"
-                        setPayAmount(0);
-                        setPayAmountInput("");
-                        setReceiveAmountError(null);
-                        setApiValidationError(null);
-                        setIsCalculating(false);
-                        setIsCalculatingReceive(false);
+                      }}
+                      onKeyDown={(e) => {
+                        // Allow all numeric input including negative signs
+                      }}
+                      onBlur={() => {
+                        // Allow any value on blur, but still validate if positive
+                        const currentValue = parseFloat(getAmountInput) || 0;
+                        if (currentValue > 0) {
+                          const validationError = validateReceiveAmount(
+                            currentValue,
+                            selectedAsset
+                          );
+                          setReceiveAmountError(validationError);
                         }
+                      }}
+                      placeholder={
+                        (isCalculating || isCalculatingReceive) &&
+                          !apiValidationError
+                          ? "Calculating..."
+                          : "Enter amount"
                       }
-                    }
-                  }}
-                  onKeyDown={(e) => {
-                    // Allow all numeric input including negative signs
-                  }}
-                  onBlur={() => {
-                    // Allow any value on blur, but still validate if positive
-                    const currentValue = parseFloat(getAmountInput) || 0;
-                    if (currentValue > 0) {
-                      const validationError = validateReceiveAmount(
-                        currentValue,
-                        selectedAsset
-                      );
-                      setReceiveAmountError(validationError);
-                    }
-                  }}
-                  placeholder={
-                    (isCalculating || isCalculatingReceive) &&
-                    !apiValidationError
-                      ? "Calculating..."
-                      : "Enter amount"
-                  }
-                  className={`w-full h-[48px] text-[#35353e] dark:text-white bg-white dark:bg-[#35353E] rounded-2xl px-3 sm:px-4 pr-16 text-base sm:text-lg focus:outline-none border appearance-none ${
-                    (receiveAmountError &&
-                      (receiveAmountError.includes("Rough estimate") ||
-                        receiveAmountError.includes("Using estimated rate"))) ||
-                    (apiValidationError &&
-                      (apiValidationError.includes("Rough estimate") ||
-                        apiValidationError.includes("Using estimated rate")))
-                      ? "border-[#F79330]"
-                      : (receiveAmountError &&
+                      className={`w-full h-[48px] text-[#35353e] dark:text-white bg-white dark:bg-[#35353E] rounded-2xl px-3 sm:px-4 pr-16 text-base sm:text-lg focus:outline-none border appearance-none ${(receiveAmountError &&
+                          (receiveAmountError.includes("Rough estimate") ||
+                            receiveAmountError.includes("Using estimated rate"))) ||
+                          (apiValidationError &&
+                            (apiValidationError.includes("Rough estimate") ||
+                              apiValidationError.includes("Using estimated rate")))
+                          ? "border-[#F79330]"
+                          : (receiveAmountError &&
                             !receiveAmountError.includes("Rough estimate") &&
                             !receiveAmountError.includes(
                               "Using estimated rate"
                             )) ||
-                          (apiValidationError &&
-                            !apiValidationError.includes("Rough estimate") &&
-                            !apiValidationError.includes(
-                              "Using estimated rate"
-                            ))
-                        ? "border-red-500"
-                        : isCalculating || isCalculatingReceive
-                          ? "border-[#1D8751]"
-                          : "border-[#A2A4A9FF] dark:border-[#35353E]"
-                  }`}
-                />
-                <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
-                  <span className="text-[#35353e] dark:text-[#ffffff] text-sm font-medium">
-                    USD
-                  </span>
-                </div>
-                {(isCalculatingReceive || isCalculating) &&
-                  !apiValidationError && (
-                    <div className="absolute right-12 top-1/2 transform -translate-y-1/2">
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#1D8751]"></div>
+                            (apiValidationError &&
+                              !apiValidationError.includes("Rough estimate") &&
+                              !apiValidationError.includes(
+                                "Using estimated rate"
+                              ))
+                            ? "border-red-500"
+                            : isCalculating || isCalculatingReceive
+                              ? "border-[#1D8751]"
+                              : "border-[#A2A4A9FF] dark:border-[#35353E]"
+                        }`}
+                    />
+                    <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
+                      <span className="text-[#35353e] dark:text-[#ffffff] text-sm font-medium">
+                        USD
+                      </span>
                     </div>
+                    {(isCalculatingReceive || isCalculating) &&
+                      !apiValidationError && (
+                        <div className="absolute right-12 top-1/2 transform -translate-y-1/2">
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#1D8751]"></div>
+                        </div>
+                      )}
+                    {((receiveAmountError &&
+                      !receiveAmountError.includes("Rough estimate") &&
+                      !receiveAmountError.includes("Using estimated rate")) ||
+                      apiValidationError) && (
+                        <div className="absolute right-16 top-1/2 transform -translate-y-1/2">
+                          <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
+                            <circle
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              className="text-red-500"
+                            />
+                            <line
+                              x1="12"
+                              y1="8"
+                              x2="12"
+                              y2="12"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              className="text-red-500"
+                            />
+                            <circle
+                              cx="12"
+                              cy="16"
+                              r="1"
+                              fill="currentColor"
+                              className="text-red-500"
+                            />
+                          </svg>
+                        </div>
+                      )}
+                    {((receiveAmountError &&
+                      (receiveAmountError.includes("Rough estimate") ||
+                        receiveAmountError.includes("Using estimated rate"))) ||
+                      (apiValidationError &&
+                        (apiValidationError.includes("Rough estimate") ||
+                          apiValidationError.includes(
+                            "Using estimated rate"
+                          )))) && (
+                        <div className="absolute right-16 top-1/2 transform -translate-y-1/2">
+                          <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
+                            <path
+                              d="M12 8v4m0 4h.01"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              className="text-[#F79330]"
+                            />
+                            <circle
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              className="text-[#F79330]"
+                            />
+                          </svg>
+                        </div>
+                      )}
+                  </div>
+                  {receiveAmountError && (
+                    <p
+                      className={`text-sm mt-1 ${receiveAmountError.includes("Rough estimate") ||
+                          receiveAmountError.includes("Using estimated rate")
+                          ? "text-[#F79330]"
+                          : "text-red-500"
+                        }`}
+                    >
+                      {receiveAmountError}
+                    </p>
                   )}
-                {((receiveAmountError &&
-                  !receiveAmountError.includes("Rough estimate") &&
-                  !receiveAmountError.includes("Using estimated rate")) ||
-                  apiValidationError) && (
-                  <div className="absolute right-16 top-1/2 transform -translate-y-1/2">
-                    <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
-                      <circle
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        className="text-red-500"
-                      />
-                      <line
-                        x1="12"
-                        y1="8"
-                        x2="12"
-                        y2="12"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        className="text-red-500"
-                      />
-                      <circle
-                        cx="12"
-                        cy="16"
-                        r="1"
-                        fill="currentColor"
-                        className="text-red-500"
-                      />
-                    </svg>
-                  </div>
-                )}
-                {((receiveAmountError &&
-                  (receiveAmountError.includes("Rough estimate") ||
-                    receiveAmountError.includes("Using estimated rate"))) ||
-                  (apiValidationError &&
-                    (apiValidationError.includes("Rough estimate") ||
-                      apiValidationError.includes(
-                        "Using estimated rate"
-                      )))) && (
-                  <div className="absolute right-16 top-1/2 transform -translate-y-1/2">
-                    <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
-                      <path
-                        d="M12 8v4m0 4h.01"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="text-[#F79330]"
-                      />
-                      <circle
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        className="text-[#F79330]"
-                      />
-                    </svg>
-                  </div>
-                )}
-              </div>
-              {receiveAmountError && (
-                <p
-                  className={`text-sm mt-1 ${
-                    receiveAmountError.includes("Rough estimate") ||
-                    receiveAmountError.includes("Using estimated rate")
-                      ? "text-[#F79330]"
-                      : "text-red-500"
-                  }`}
-                >
-                  {receiveAmountError}
-                </p>
-              )}
-              {apiValidationError && (
-                <p className="text-sm mt-1 text-yellow-500">
-                  {apiValidationError}
-                </p>
-              )}
-            </div>
+                  {apiValidationError && (
+                    <p className="text-sm mt-1 text-yellow-500">
+                      {apiValidationError}
+                    </p>
+                  )}
+                </div>
 
-            {/* Payment Method Section */}
-            <div className="flex-1 sm:pl-4 border-t sm:border-t-0 sm:border-l border-[#35353E] dark:border-[#35353E] pt-3 sm:pt-0 sm:border-none" data-select-card="true">
-              <div className="text-xs text-[#788099] dark:text-[#788099] mb-1 mt-[30px] sm:mt-[34px]">Bank/Payment Method</div>
-              <div className="relative">
-                {(() => {
-                  // PRIORITY: If we have initialState paymentDetails, use EXACT payment method from there - NO MATCHING
-                  if (initialState?.paymentDetails && Array.isArray(initialState.paymentDetails) && initialState.paymentDetails.length > 0) {
-                    const firstDetail = initialState.paymentDetails[0];
-                    // Use EXACT provider name from the payment detail object from home page
-                    const providerName = firstDetail.payment_provider_name || firstDetail.provider_name || firstDetail.payment_provider || "";
-                    const providerLogo = firstDetail.provider_logo || firstDetail.logo || firstDetail.provider_logo_url;
-                    
-                    if (providerName && providerName.trim() !== "") {
+                {/* Payment Method Section */}
+                <div className="flex-1 sm:pl-4 border-t sm:border-t-0 sm:border-l border-[#35353E] dark:border-[#35353E] pt-3 sm:pt-0 sm:border-none" data-select-card="true">
+                  <div className="text-xs text-[#788099] dark:text-[#788099] mb-1 mt-[30px] sm:mt-[34px]">Bank/Payment Method</div>
+                  <div className="relative">
+                    {(() => {
+                      // PRIORITY: If we have initialState paymentDetails, use EXACT payment method from there - NO MATCHING
+                      if (initialState?.paymentDetails && Array.isArray(initialState.paymentDetails) && initialState.paymentDetails.length > 0) {
+                        const firstDetail = initialState.paymentDetails[0];
+                        // Use EXACT provider name from the payment detail object from home page
+                        const providerName = firstDetail.payment_provider_name || firstDetail.provider_name || firstDetail.payment_provider || "";
+                        const providerLogo = firstDetail.provider_logo || firstDetail.logo || firstDetail.provider_logo_url;
+
+                        if (providerName && providerName.trim() !== "") {
+                          return (
+                            <CustomSelect
+                              options={[{
+                                value: providerName,
+                                label: providerName,
+                                logo: providerLogo,
+                              }]}
+                              value={providerName}
+                              sizeMode="card"
+                              logoSize={32}
+                              dropdownMaxHeight={350}
+                              dropdownPosition="above"
+                              className={`w-full ${paymentMethodError ? "border-red-500 dark:border-red-500" : ""
+                                }`}
+                              triggerClassName="bg-transparent dark:bg-transparent text-[#35353e] dark:text-white border border-gray-300 dark:border-[#39394A] px-3 sm:px-4 py-2 sm:py-2.5 text-base sm:text-lg"
+                              onChange={(value) => {
+                                // Don't allow changing if using initialState
+                                setPaymentMethodError(null);
+                              }}
+                              placeholder={providerName}
+                              disabled={true}
+                              searchable={false}
+                            />
+                          );
+                        }
+                      }
+
+                      // Otherwise, use normal dropdown with all options
+                      const providerNames = Array.from(
+                        new Set(
+                          (adminWalletListDisplay.displayData || []).map(
+                            (wallet: any) => wallet?.admin_payment_detail?.provider_name
+                          )
+                        )
+                      ).filter((type) => Boolean(type && type.trim())) as string[];
+
+                      const optionProviders =
+                        providerNames.length > 0 ? providerNames : fallbackProviderNames;
+
                       return (
                         <CustomSelect
-                          options={[{
-                            value: providerName,
-                            label: providerName,
-                            logo: providerLogo,
-                          }]}
-                          value={providerName}
+                          options={optionProviders.map((paymentType: string) => {
+                            const adminDetail = adminWalletListDisplay.displayData?.find(
+                              (wallet: any) =>
+                                wallet.admin_payment_detail?.provider_name === paymentType
+                            )?.admin_payment_detail;
+
+                            return {
+                              value: paymentType,
+                              label: adminDetail?.provider_name || paymentType,
+                              logo: adminDetail?.provider_logo || undefined,
+                            };
+                          })}
+                          value={payBank}
                           sizeMode="card"
                           logoSize={32}
                           dropdownMaxHeight={350}
                           dropdownPosition="above"
-                          className={`w-full ${
-                            paymentMethodError ? "border-red-500 dark:border-red-500" : ""
-                          }`}
+                          className={`w-full ${paymentMethodError ? "border-red-500 dark:border-red-500" : ""
+                            }`}
                           triggerClassName="bg-transparent dark:bg-transparent text-[#35353e] dark:text-white border border-gray-300 dark:border-[#39394A] px-3 sm:px-4 py-2 sm:py-2.5 text-base sm:text-lg"
                           onChange={(value) => {
-                            // Don't allow changing if using initialState
+                            const selectedWallet = adminWalletListDisplay.displayData?.find(
+                              (wallet: any) =>
+                                wallet.admin_payment_detail?.provider_name === value
+                            );
+
+                            setPayBank(extractProviderDisplayName(value));
+                            setSelectedPaymentDetail(
+                              selectedWallet?.admin_payment_detail || null
+                            );
+
+                            // Auto-select first registered account for the selected payment method
+                            // Clear first, then let the auto-selection useEffect handle it
+                            setSelectedPaymentDetails([]);
                             setPaymentMethodError(null);
+
+                            // The auto-selection useEffect will handle selecting the first account
+                            // after enhancedFilteredUserPaymentDetails updates
                           }}
-                          placeholder={providerName}
-                          disabled={true}
-                          searchable={false}
+                          placeholder={
+                            adminWalletListDisplay.isLoading
+                              ? "Loading payment methods..."
+                              : providerNames.length === 0
+                                ? "No payment methods available"
+                                : "Select Payment Method"
+                          }
+                          disabled={adminWalletListDisplay.isLoading}
+                          loading={adminWalletListDisplay.isLoading}
+                          loadingText="Loading payment methods..."
+                          emptyText="No payment methods available"
+                          searchable={true}
                         />
                       );
-                    }
-                  }
+                    })()}
+                  </div>
+                  {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
+                  {paymentMethodError && <p className="text-red-500 text-sm mt-1">{paymentMethodError}</p>}
 
-                  // Otherwise, use normal dropdown with all options
-                  const providerNames = Array.from(
-                    new Set(
-                      (adminWalletListDisplay.displayData || []).map(
-                        (wallet: any) => wallet?.admin_payment_detail?.provider_name
-                      )
-                    )
-                  ).filter((type) => Boolean(type && type.trim())) as string[];
-
-                  const optionProviders =
-                    providerNames.length > 0 ? providerNames : fallbackProviderNames;
-
-                  return (
-                    <CustomSelect
-                      options={optionProviders.map((paymentType: string) => {
-                        const adminDetail = adminWalletListDisplay.displayData?.find(
-                          (wallet: any) =>
-                            wallet.admin_payment_detail?.provider_name === paymentType
-                        )?.admin_payment_detail;
-
-                        return {
-                          value: paymentType,
-                          label: adminDetail?.provider_name || paymentType,
-                          logo: adminDetail?.provider_logo || undefined,
-                        };
-                      })}
-                      value={payBank}
-                      sizeMode="card"
-                      logoSize={32}
-                      dropdownMaxHeight={350}
-                      dropdownPosition="above"
-                      className={`w-full ${
-                        paymentMethodError ? "border-red-500 dark:border-red-500" : ""
-                      }`}
-                      triggerClassName="bg-transparent dark:bg-transparent text-[#35353e] dark:text-white border border-gray-300 dark:border-[#39394A] px-3 sm:px-4 py-2 sm:py-2.5 text-base sm:text-lg"
-                      onChange={(value) => {
-                        const selectedWallet = adminWalletListDisplay.displayData?.find(
-                          (wallet: any) =>
-                            wallet.admin_payment_detail?.provider_name === value
-                        );
-
-                        setPayBank(extractProviderDisplayName(value));
-                        setSelectedPaymentDetail(
-                          selectedWallet?.admin_payment_detail || null
-                        );
-                        
-                        // Auto-select first registered account for the selected payment method
-                        // Clear first, then let the auto-selection useEffect handle it
-                        setSelectedPaymentDetails([]);
-                        setPaymentMethodError(null);
-                        
-                        // The auto-selection useEffect will handle selecting the first account
-                        // after enhancedFilteredUserPaymentDetails updates
-                      }}
-                      placeholder={
-                        adminWalletListDisplay.isLoading
-                          ? "Loading payment methods..."
-                          : providerNames.length === 0
-                          ? "No payment methods available"
-                          : "Select Payment Method"
-                      }
-                      disabled={adminWalletListDisplay.isLoading}
-                      loading={adminWalletListDisplay.isLoading}
-                      loadingText="Loading payment methods..."
-                      emptyText="No payment methods available"
-                      searchable={true}
-                    />
-                  );
-                })()}
-              </div>
-              {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
-              {paymentMethodError && <p className="text-red-500 text-sm mt-1">{paymentMethodError}</p>}
-
-              {/* Registered Account Section */}
-              {payBank && (
-                <div className="mt-2 sm:mt-3">
-                  <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
-                    Registered Account
-                  </label>
-                  {/* If we have selectedPaymentDetails from initialState, show ONLY those - EXACT objects from home page */}
-                  {initialState?.paymentDetails && Array.isArray(initialState.paymentDetails) && initialState.paymentDetails.length > 0 ? (
-                    <div className="relative">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-sm text-gray-600 dark:text-gray-400">
-                          {initialState.paymentDetails.length} account(s) found
-                        </span>
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            try {
-                              await dispatch(fetchUserPaymentDetails(true)).unwrap();
-                              showToast.success("Payment details refreshed!");
-                            } catch (error) {
-                              showToast.error("Failed to refresh payment details");
-                            }
-                          }}
-                          className="text-xs text-[#1D8751] hover:text-[#166b3e] underline"
-                        >
-                          Refresh
-                        </button>
-                      </div>
-                      <div className="space-y-2">
-                        {initialState.paymentDetails.map((detail: any, index: number) => (
-                          <div
-                            key={index}
-                            className="flex items-center justify-between p-3 rounded-xl border border-[#1D8751] bg-[#1D8751]/10 dark:bg-[#1D8751]/10"
-                          >
-                            <div className="flex-1">
-                              <div className="text-gray-900 dark:text-white font-medium text-base sm:text-lg">
-                                {detail.payment_provider_name || detail.provider_name || "Unknown Provider"} - {detail.account_name || detail.account_number}
-                              </div>
-                              <div className="text-gray-600 dark:text-[#788099] text-sm sm:text-base">
-                                {detail.account_name} ({detail.account_number})
-                              </div>
-                            </div>
+                  {/* Registered Account Section */}
+                  {payBank && (
+                    <div className="mt-2 sm:mt-3">
+                      <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
+                        Registered Account
+                      </label>
+                      {/* If we have selectedPaymentDetails from initialState, show ONLY those - EXACT objects from home page */}
+                      {initialState?.paymentDetails && Array.isArray(initialState.paymentDetails) && initialState.paymentDetails.length > 0 ? (
+                        <div className="relative">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-sm text-gray-600 dark:text-gray-400">
+                              {initialState.paymentDetails.length} account(s) found
+                            </span>
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                try {
+                                  await dispatch(fetchUserPaymentDetails(true)).unwrap();
+                                  showToast.success("Payment details refreshed!");
+                                } catch (error) {
+                                  showToast.error("Failed to refresh payment details");
+                                }
+                              }}
+                              className="text-xs text-[#1D8751] hover:text-[#166b3e] underline"
+                            >
+                              Refresh
+                            </button>
                           </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : selectedPaymentDetails.length > 0 ? (
-                    <div className="relative">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-sm text-gray-600 dark:text-gray-400">
-                          {selectedPaymentDetails.length} account(s) selected
-                        </span>
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            try {
-                              await dispatch(fetchUserPaymentDetails(true)).unwrap();
-                              showToast.success("Payment details refreshed!");
-                            } catch (error) {
-                              showToast.error("Failed to refresh payment details");
-                            }
-                          }}
-                          className="text-xs text-[#1D8751] hover:text-[#166b3e] underline"
-                        >
-                          Refresh
-                        </button>
-                      </div>
-                      <div className="space-y-2">
-                        {selectedPaymentDetails.map((detail: UserPaymentDetail, index: number) => (
-                          <div
-                            key={detail.id || detail.user_payment_detail_id || index}
-                            className="flex items-center justify-between p-3 rounded-xl border border-[#1D8751] bg-[#1D8751]/10 dark:bg-[#1D8751]/10"
-                          >
-                            <div className="flex-1">
-                              <div className="text-gray-900 dark:text-white font-medium text-base sm:text-lg">
-                                {detail.payment_provider_name || detail.provider_name || "Unknown Provider"} - {detail.account_name || detail.account_number}
+                          <div className="space-y-2">
+                            {initialState.paymentDetails.map((detail: any, index: number) => (
+                              <div
+                                key={index}
+                                className="flex items-center justify-between p-3 rounded-xl border border-[#1D8751] bg-[#1D8751]/10 dark:bg-[#1D8751]/10"
+                              >
+                                <div className="flex-1">
+                                  <div className="text-gray-900 dark:text-white font-medium text-base sm:text-lg">
+                                    {detail.payment_provider_name || detail.provider_name || "Unknown Provider"} - {detail.account_name || detail.account_number}
+                                  </div>
+                                  <div className="text-gray-600 dark:text-[#788099] text-sm sm:text-base">
+                                    {detail.account_name} ({detail.account_number})
+                                  </div>
+                                </div>
                               </div>
-                              <div className="text-gray-600 dark:text-[#788099] text-sm sm:text-base">
-                                {detail.account_name || "N/A"} ({detail.account_number || detail.wallet_address || "N/A"})
-                              </div>
-                            </div>
+                            ))}
                           </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : enhancedFilteredUserPaymentDetails.length > 0 ? (
-                    <div className="relative">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-sm text-gray-600 dark:text-gray-400">
-                          {enhancedFilteredUserPaymentDetails.length} account(s) found
-                        </span>
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            try {
-                              await dispatch(fetchUserPaymentDetails(true)).unwrap();
-                              showToast.success("Payment details refreshed!");
-                            } catch (error) {
-                              showToast.error("Failed to refresh payment details");
-                            }
-                          }}
-                          className="text-xs text-[#1D8751] hover:text-[#166b3e] underline"
-                        >
-                          Refresh
-                        </button>
-                      </div>
-                      <CustomSelect
-                        options={(enhancedFilteredUserPaymentDetails || []).map(
-                          (detail: UserPaymentDetail) => {
-                            const adminDetail = adminWalletListDisplay.displayData?.find(
-                              (wallet: any) => {
-                                const walletProviderName = wallet.admin_payment_detail?.provider_name;
-                                const detailProviderName = detail.payment_provider_name || detail.provider_name;
-                                return normalizeProviderName(walletProviderName) === normalizeProviderName(detailProviderName);
+                        </div>
+                      ) : selectedPaymentDetails.length > 0 ? (
+                        <div className="relative">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-sm text-gray-600 dark:text-gray-400">
+                              {selectedPaymentDetails.length} account(s) selected
+                            </span>
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                try {
+                                  await dispatch(fetchUserPaymentDetails(true)).unwrap();
+                                  showToast.success("Payment details refreshed!");
+                                } catch (error) {
+                                  showToast.error("Failed to refresh payment details");
+                                }
+                              }}
+                              className="text-xs text-[#1D8751] hover:text-[#166b3e] underline"
+                            >
+                              Refresh
+                            </button>
+                          </div>
+                          <div className="space-y-2">
+                            {selectedPaymentDetails.map((detail: UserPaymentDetail, index: number) => (
+                              <div
+                                key={detail.id || detail.user_payment_detail_id || index}
+                                className="flex items-center justify-between p-3 rounded-xl border border-[#1D8751] bg-[#1D8751]/10 dark:bg-[#1D8751]/10"
+                              >
+                                <div className="flex-1">
+                                  <div className="text-gray-900 dark:text-white font-medium text-base sm:text-lg">
+                                    {detail.payment_provider_name || detail.provider_name || "Unknown Provider"} - {detail.account_name || detail.account_number}
+                                  </div>
+                                  <div className="text-gray-600 dark:text-[#788099] text-sm sm:text-base">
+                                    {detail.account_name || "N/A"} ({detail.account_number || detail.wallet_address || "N/A"})
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : enhancedFilteredUserPaymentDetails.length > 0 ? (
+                        <div className="relative">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-sm text-gray-600 dark:text-gray-400">
+                              {enhancedFilteredUserPaymentDetails.length} account(s) found
+                            </span>
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                try {
+                                  await dispatch(fetchUserPaymentDetails(true)).unwrap();
+                                  showToast.success("Payment details refreshed!");
+                                } catch (error) {
+                                  showToast.error("Failed to refresh payment details");
+                                }
+                              }}
+                              className="text-xs text-[#1D8751] hover:text-[#166b3e] underline"
+                            >
+                              Refresh
+                            </button>
+                          </div>
+                          <CustomSelect
+                            options={(enhancedFilteredUserPaymentDetails || []).map(
+                              (detail: UserPaymentDetail) => {
+                                const adminDetail = adminWalletListDisplay.displayData?.find(
+                                  (wallet: any) => {
+                                    const walletProviderName = wallet.admin_payment_detail?.provider_name;
+                                    const detailProviderName = detail.payment_provider_name || detail.provider_name;
+                                    return normalizeProviderName(walletProviderName) === normalizeProviderName(detailProviderName);
+                                  }
+                                )?.admin_payment_detail;
+
+                                return {
+                                  value: detail.id?.toString() || detail.user_payment_detail_id || "",
+                                  label: `${adminDetail?.provider_name || detail.payment_provider_name || detail.provider_name || "Unknown Provider"} - ${detail.account_name || detail.account_number || "N/A"} (${detail.account_number || detail.wallet_address || 'No Account'})`,
+                                  logo: detail.provider_logo || adminDetail?.provider_logo || undefined,
+                                };
                               }
-                            )?.admin_payment_detail;
-                            
-                            return {
-                              value: detail.id?.toString() || detail.user_payment_detail_id || "",
-                              label: `${adminDetail?.provider_name || detail.payment_provider_name || detail.provider_name || "Unknown Provider"} - ${detail.account_name || detail.account_number || "N/A"} (${detail.account_number || detail.wallet_address || 'No Account'})`,
-                              logo: detail.provider_logo || adminDetail?.provider_logo || undefined,
-                            };
-                          }
-                        )}
-                        value={
-                          selectedPaymentDetails.length > 0
-                            ? (selectedPaymentDetails[0].id?.toString() || selectedPaymentDetails[0].user_payment_detail_id || "")
-                            : ""
-                        }
-                        onChange={(value) => {
-                          const selectedDetail =
-                            enhancedFilteredUserPaymentDetails.find(
-                              (detail: UserPaymentDetail) =>
-                                (detail.id?.toString() === value) || (detail.user_payment_detail_id === value)
-                            );
-                          if (selectedDetail) {
-                            setSelectedPaymentDetails([selectedDetail]);
-                            setPaymentMethodError(null);
-                          }
-                        }}
-                        placeholder={
-                          userPaymentMethodsDisplay.isLoading
-                            ? "Loading accounts..."
-                            : enhancedFilteredUserPaymentDetails.length > 0
-                            ? "Select Registered Account"
-                            : "No registered accounts available"
-                        }
-                        disabled={userPaymentMethodsDisplay.isLoading}
-                        loading={userPaymentMethodsDisplay.isLoading}
-                        loadingText="Loading accounts..."
-                        emptyText="No registered accounts available"
-                        searchable={true}
-                        sizeMode="card"
-                        className={`w-full ${
-                          paymentMethodError 
-                            ? "border-red-500 dark:border-red-500" 
-                            : ""
-                        }`}
-                      />
+                            )}
+                            value={
+                              selectedPaymentDetails.length > 0
+                                ? (selectedPaymentDetails[0].id?.toString() || selectedPaymentDetails[0].user_payment_detail_id || "")
+                                : ""
+                            }
+                            onChange={(value) => {
+                              const selectedDetail =
+                                enhancedFilteredUserPaymentDetails.find(
+                                  (detail: UserPaymentDetail) =>
+                                    (detail.id?.toString() === value) || (detail.user_payment_detail_id === value)
+                                );
+                              if (selectedDetail) {
+                                setSelectedPaymentDetails([selectedDetail]);
+                                setPaymentMethodError(null);
+                              }
+                            }}
+                            placeholder={
+                              userPaymentMethodsDisplay.isLoading
+                                ? "Loading accounts..."
+                                : enhancedFilteredUserPaymentDetails.length > 0
+                                  ? "Select Registered Account"
+                                  : "No registered accounts available"
+                            }
+                            disabled={userPaymentMethodsDisplay.isLoading}
+                            loading={userPaymentMethodsDisplay.isLoading}
+                            loadingText="Loading accounts..."
+                            emptyText="No registered accounts available"
+                            searchable={true}
+                            sizeMode="card"
+                            className={`w-full ${paymentMethodError
+                                ? "border-red-500 dark:border-red-500"
+                                : ""
+                              }`}
+                          />
+                        </div>
+                      ) : (
+                        <p className="text-[#F79330] text-sm">
+                          <button
+                            type="button"
+                            onClick={() => setIsPaymentModalOpen(true)}
+                            className="hover:underline cursor-pointer"
+                          >
+                            Don't have an account? Register Now
+                          </button>
+                        </p>
+                      )}
                     </div>
-                  ) : (
-                    <p className="text-[#F79330] text-sm">
-                      <button
-                        type="button"
-                        onClick={() => setIsPaymentModalOpen(true)}
-                        className="hover:underline cursor-pointer"
-                      >
-                        Don't have an account? Register Now
-                      </button>
-                    </p>
                   )}
                 </div>
-              )}
+              </div>
             </div>
-          </div>
-        </div>
 
-        {/* Fee & Rate - Dynamic based on selected asset */}
-        {/* <div className="flex items-center rounded-2xl border border-[#39394a] bg-[#23232b] px-2 py-2 mb-3">
+            {/* Fee & Rate - Dynamic based on selected asset */}
+            {/* <div className="flex items-center rounded-2xl border border-[#39394a] bg-[#23232b] px-2 py-2 mb-3">
             <div className="flex flex-col gap-2 flex-1">
               <span className="flex items-center bg-[#F79330] text-white rounded-full px-5 py-1 text-sm font-medium w-fit">
                 <span className="w-2 h-2 bg-white rounded-full mr-2 inline-block"></span>
@@ -4106,468 +4096,466 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
             />
           </div>  */}
 
-        {/* Disclaimer Banner */}
-        <div className="flex items-center rounded-2xl px-2 sm:px-3 md:px-4 py-2 sm:py-3 mb-2 sm:mb-4 bg-white dark:bg-[#18181D]">
-          <div className="flex items-center gap-3">
-            <div className="w-5 h-5 border-2 border-[#1D8751] rounded-full flex items-center justify-center flex-shrink-0">
-              <span className="text-[#1D8751] text-xs font-bold">i</span>
-            </div>
-            <span className="text-[#35353e] dark:text-[#788099] text-sm font-medium">
-              This is only an estimated price based on current market rates. The
-              final price will be confirmed when we receive the funds.
-            </span>
-          </div>
-        </div>
-
-        {/* Submit Button for First Card */}
-          {!isTransactionSubmitted && !showForexWithdrawalForm && (
-        <div className="mt-4">
-          {(() => {
-            const isDisabled =
-              isHomePage
-                ? false
-                : isSubmitting ||
-                  isTransactionSubmitted ||
-                  isInfoModalOpen ||
-                  getAmount > 15000 ||
-                  selectedPaymentDetails.length === 0;
-            return (
-            <button
-              className={`w-full text-[#35353e] dark:text-[#788099] text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${
-                isHomePage
-                  ? "bg-[#1D8751] hover:bg-[#166b3e] cursor-pointer"
-                  : isDisabled
-                  ? "bg-gray-500 cursor-not-allowed"
-                  : "bg-[#1D8751] hover:bg-[#166b3e]"
-              }`}
-              onClick={() => {
-                if (isHomePage) {
-                  const state = {
-                    mode,
-                    amountInput: getAmountInput,
-                    amountValue: getAmount,
-                    asset: selectedAsset,
-                    paymentDetails: selectedPaymentDetails,
-                  };
-                  setAuthRedirectPath(buildExpressRedirectPath(mode, state));
-                  router.push("/auth/login");
-                  return;
-                }
-
-                      if (selectedAsset && isForexAsset(selectedAsset)) {
-                        if (!payAmount || payAmount <= 0) {
-                          showToast.error("Please enter a valid amount");
-                          return;
-                        }
-                        if (selectedPaymentDetails.length === 0) {
-                          showToast.error("Please select a payment method");
-                          return;
-                        }
-                        setShowForexWithdrawalForm(true);
-                      } else {
-                        handleFirstCardSubmit();
-                      }
-              }}
-              disabled={isDisabled}
-            >
-              {isSubmitting ? (
-                <div className="flex items-center gap-2">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#A2A4A9FF] dark:border-[#35353E]"></div>
-                  <span>Getting Withdrawal Addresses...</span>
+            {/* Disclaimer Banner */}
+            <div className="flex items-center rounded-2xl px-2 sm:px-3 md:px-4 py-2 sm:py-3 mb-2 sm:mb-4 bg-white dark:bg-[#18181D]">
+              <div className="flex items-center gap-3">
+                <div className="w-5 h-5 border-2 border-[#1D8751] rounded-full flex items-center justify-center flex-shrink-0">
+                  <span className="text-[#1D8751] text-xs font-bold">i</span>
                 </div>
-              ) : isTransactionSubmitted ? (
-                <div className="flex items-center gap-2">
-                  <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
-                    <path
-                      d="M9 12l2 2 4-4"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                  <span>Withdrawal Addresses Generated</span>
-                </div>
-              ) : (
-                <span className="flex items-center justify-center">
-                  <span className="text-base font-bold dark:text-white text-white">Express</span>
-                  <img
-                    className="mt-2"
-                    src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
-                    alt=""
-                  />
+                <span className="text-[#35353e] dark:text-[#788099] text-sm font-medium">
+                  This is only an estimated price based on current market rates. The
+                  final price will be confirmed when we receive the funds.
                 </span>
-              )}
-            </button>
-            );
-          })()}
-        </div>
-          )}
-
-        {/* Forex Withdrawal Form - Shows when FXP is selected */}
-        {showForexWithdrawalForm && selectedAsset && isForexAsset(selectedAsset) && (
-          <ForexWithdrawal 
-            payAmount={payAmount}
-            getAmount={getAmount}
-            selectedPaymentDetails={selectedPaymentDetails}
-          />
-        )}
-      </div>
-
-      {/* Wallet Address Section - shown after transaction submission */}
-      {isTransactionSubmitted && (
-        <div
-          key={`wallet-section-${forceUpdate}`}
-          className="mb-6 flex flex-col gap-3 w-full px-2"
-        >
-          <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
-            <span className="text-[#7e7e8f] dark:text-[#788099]">2-</span>
-            Wallet Address
-          </h2>
-          <div className="bg-white dark:bg-[#18181D] border-2 border-[#35353e] rounded-2xl p-3 sm:p-4 md:p-5 shadow-lg w-full text-[#35353e] dark:text-[#788099]">
-            {/* USDT Wallet Address */}
-            <div className="mb-2 sm:mb-3 md:mb-4">
-              <h3 className="text-[#35353e] dark:text-[#788099] font-semibold mb-2">
-                USDT Wallet Address
-              </h3>
-              {withdrawalAddress ? (
-                <div className="bg-white dark:bg-[#18181D] border border-[#1D8751] rounded-xl p-2 sm:p-3 md:p-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[#35353e] dark:text-[#788099] text-sm font-mono break-all">
-                      {withdrawalAddress}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(withdrawalAddress);
-                          setIsWalletAddressCopied(true);
-                          // Reset the copied state after 2 seconds
-                          setTimeout(() => {
-                            setIsWalletAddressCopied(false);
-                          }, 2000);
-                        }}
-                        className="flex items-center gap-1 bg-[#23232b] dark:bg-[#35353E] border border-[#1D8751] text-[#1D8751] rounded-full px-4 py-1 font-semibold text-base hover:bg-[#1D8751] hover:text-[#35353e] transition-colors"
-                      >
-                        {isWalletAddressCopied ? (
-                          <>
-                            <svg
-                              width="16"
-                              height="16"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                d="M9 12l2 2 4-4"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                            </svg>
-                            Copied
-                          </>
-                        ) : (
-                          <>
-                            <svg
-                              width="16"
-                              height="16"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                            >
-                              <rect
-                                x="9"
-                                y="9"
-                                width="13"
-                                height="13"
-                                rx="2"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                              />
-                              <rect
-                                x="3"
-                                y="3"
-                                width="13"
-                                height="13"
-                                rx="2"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                              />
-                            </svg>
-                            Copy
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className=" dark:bg-[#1D1D23] border border-[#1D8751] rounded-xl p-4">
-                  <div className="flex items-center gap-3">
-                    <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
-                      <path
-                        d="M9 12l2 2 4-4"
-                        stroke="#1D8751"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                    <span className="text-[#1D8751] font-medium">
-                      Transaction submitted successfully! Please wait for
-                      further instructions.
-                    </span>
-                  </div>
-                </div>
-              )}
+              </div>
             </div>
-            {/* QR Code */}
-            <div className="mb-2 sm:mb-3 md:mb-4">
-              <div className="bg-white dark:bg-[#18181D] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-xl p-2 sm:p-3 md:p-4 flex justify-center">
-                {qrCodeUrl ? (
-                  <img src={qrCodeUrl} alt="QR Code" className="w-48 h-48" />
-                ) : (
-                  <div className="flex flex-col items-center justify-center w-48 h-48 text-[#7e7e8f] dark:text-[#788099]">
-                    <svg width="48" height="48" fill="none" viewBox="0 0 24 24">
-                      <path
-                        d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9z"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                      <path
-                        d="M3 5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4H3V5z"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                    <span className="text-sm mt-2 text-center">
-                      QR Code not available
+
+            {/* Submit Button for First Card */}
+            {!isTransactionSubmitted && !showForexWithdrawalForm && (
+              <div className="mt-4">
+                {(() => {
+                  const isDisabled =
+                    isHomePage
+                      ? false
+                      : isSubmitting ||
+                      isTransactionSubmitted ||
+                      isInfoModalOpen ||
+                      getAmount > 15000 ||
+                      selectedPaymentDetails.length === 0;
+                  return (
+                    <button
+                      className={`w-full text-[#35353e] dark:text-[#788099] text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${isHomePage
+                          ? "bg-[#1D8751] hover:bg-[#166b3e] cursor-pointer"
+                          : isDisabled
+                            ? "bg-gray-500 cursor-not-allowed"
+                            : "bg-[#1D8751] hover:bg-[#166b3e]"
+                        }`}
+                      onClick={() => {
+                        if (isHomePage) {
+                          const state = {
+                            mode,
+                            amountInput: getAmountInput,
+                            amountValue: getAmount,
+                            asset: selectedAsset,
+                            paymentDetails: selectedPaymentDetails,
+                          };
+                          setAuthRedirectPath(buildExpressRedirectPath(mode, state));
+                          router.push("/auth/login");
+                          return;
+                        }
+
+                        if (selectedAsset && isForexAsset(selectedAsset)) {
+                          if (!payAmount || payAmount <= 0) {
+                            showToast.error("Please enter a valid amount");
+                            return;
+                          }
+                          if (selectedPaymentDetails.length === 0) {
+                            showToast.error("Please select a payment method");
+                            return;
+                          }
+                          setShowForexWithdrawalForm(true);
+                        } else {
+                          handleFirstCardSubmit();
+                        }
+                      }}
+                      disabled={isDisabled}
+                    >
+                      {isSubmitting ? (
+                        <div className="flex items-center gap-2">
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#A2A4A9FF] dark:border-[#35353E]"></div>
+                          <span>Getting Withdrawal Addresses...</span>
+                        </div>
+                      ) : isTransactionSubmitted ? (
+                        <div className="flex items-center gap-2">
+                          <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
+                            <path
+                              d="M9 12l2 2 4-4"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                          <span>Withdrawal Addresses Generated</span>
+                        </div>
+                      ) : (
+                        <span className="flex items-center justify-center">
+                          <span className="text-base font-bold dark:text-white text-white">Express</span>
+                          <img
+                            className="mt-2"
+                            src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
+                            alt=""
+                          />
+                        </span>
+                      )}
+                    </button>
+                  );
+                })()}
+              </div>
+            )}
+
+            {/* Forex Withdrawal Form - Shows when FXP is selected */}
+            {showForexWithdrawalForm && selectedAsset && isForexAsset(selectedAsset) && (
+              <ForexWithdrawal
+                payAmount={payAmount}
+                getAmount={getAmount}
+                selectedPaymentDetails={selectedPaymentDetails}
+              />
+            )}
+          </div>
+
+          {/* Wallet Address Section - shown after transaction submission */}
+          {isTransactionSubmitted && (
+            <div
+              key={`wallet-section-${forceUpdate}`}
+              className="mb-6 flex flex-col gap-3 w-full px-2"
+            >
+              <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
+                <span className="text-[#7e7e8f] dark:text-[#788099]">2-</span>
+                Wallet Address
+              </h2>
+              <div className="bg-white dark:bg-[#18181D] border-2 border-[#35353e] rounded-2xl p-3 sm:p-4 md:p-5 shadow-lg w-full text-[#35353e] dark:text-[#788099]">
+                {/* USDT Wallet Address */}
+                <div className="mb-2 sm:mb-3 md:mb-4">
+                  <h3 className="text-[#35353e] dark:text-[#788099] font-semibold mb-2">
+                    USDT Wallet Address
+                  </h3>
+                  {withdrawalAddress ? (
+                    <div className="bg-white dark:bg-[#18181D] border border-[#1D8751] rounded-xl p-2 sm:p-3 md:p-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[#35353e] dark:text-[#788099] text-sm font-mono break-all">
+                          {withdrawalAddress}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(withdrawalAddress);
+                              setIsWalletAddressCopied(true);
+                              // Reset the copied state after 2 seconds
+                              setTimeout(() => {
+                                setIsWalletAddressCopied(false);
+                              }, 2000);
+                            }}
+                            className="flex items-center gap-1 bg-[#23232b] dark:bg-[#35353E] border border-[#1D8751] text-[#1D8751] rounded-full px-4 py-1 font-semibold text-base hover:bg-[#1D8751] hover:text-[#35353e] transition-colors"
+                          >
+                            {isWalletAddressCopied ? (
+                              <>
+                                <svg
+                                  width="16"
+                                  height="16"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    d="M9 12l2 2 4-4"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  />
+                                </svg>
+                                Copied
+                              </>
+                            ) : (
+                              <>
+                                <svg
+                                  width="16"
+                                  height="16"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <rect
+                                    x="9"
+                                    y="9"
+                                    width="13"
+                                    height="13"
+                                    rx="2"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                  />
+                                  <rect
+                                    x="3"
+                                    y="3"
+                                    width="13"
+                                    height="13"
+                                    rx="2"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                  />
+                                </svg>
+                                Copy
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className=" dark:bg-[#1D1D23] border border-[#1D8751] rounded-xl p-4">
+                      <div className="flex items-center gap-3">
+                        <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
+                          <path
+                            d="M9 12l2 2 4-4"
+                            stroke="#1D8751"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                        <span className="text-[#1D8751] font-medium">
+                          Transaction submitted successfully! Please wait for
+                          further instructions.
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                {/* QR Code */}
+                <div className="mb-2 sm:mb-3 md:mb-4">
+                  <div className="bg-white dark:bg-[#18181D] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-xl p-2 sm:p-3 md:p-4 flex justify-center">
+                    {qrCodeUrl ? (
+                      <img src={qrCodeUrl} alt="QR Code" className="w-48 h-48" />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center w-48 h-48 text-[#7e7e8f] dark:text-[#788099]">
+                        <svg width="48" height="48" fill="none" viewBox="0 0 24 24">
+                          <path
+                            d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9z"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                          <path
+                            d="M3 5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4H3V5z"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                        <span className="text-sm mt-2 text-center">
+                          QR Code not available
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-center text-[#7e7e8f] dark:text-[#788099] text-sm mt-2">
+                    {qrCodeUrl
+                      ? `Scan QR code to send ${selectedAsset?.ticker?.toUpperCase()}`
+                      : "Please wait for further instructions"}
+                  </p>
+                </div>
+
+                {/* Terms and Conditions Summary */}
+                <div className="flex flex-col gap-2 mt-2">
+                  <div className="flex items-center mb-2">
+                    <span className="mr-2 text-[#1D8751]">
+                      <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
+                        <circle
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="#1D8751"
+                          strokeWidth="2"
+                        />
+                        <line
+                          x1="12"
+                          y1="8"
+                          x2="12"
+                          y2="12"
+                          stroke="#1D8751"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                        />
+                        <circle cx="12" cy="16" r="1" fill="#1D8751" />
+                      </svg>
+                    </span>
+                    <span className="text-base font-semibold text-[#7e7e8f] dark:text-[#788099]">
+                      Terms and Conditions Summary
+                    </span>
+                  </div>
+                  <div className=" dark:bg-[#1D1D23] border border-[#1D8751] rounded-xl p-4">
+                    <ul className="list-none space-y-2">
+                      <li className="flex items-start">
+                        <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] dark:bg-[#1D8751] inline-block mr-3"></span>
+                        <span className="text-[#35353e] dark:text-[#788099] text-sm">
+                          Please send the money from your own account Only
+                        </span>
+                      </li>
+                      <li className="flex items-start">
+                        <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] dark:bg-[#1D8751] inline-block mr-3"></span>
+                        <span className="text-[#35353e] dark:text-[#788099] text-sm">
+                          Put transaction ID in the description field of the bank
+                        </span>
+                      </li>
+                      <li className="flex items-start">
+                        <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] dark:bg-[#1D8751] inline-block mr-3"></span>
+                        <span className="text-[#35353e] dark:text-[#788099] text-sm">
+                          Please note, If you do not follow above conditions, we
+                          will reject your transaction and send you back your money.
+                        </span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+
+                {/* Terms Checkbox */}
+                <div className="mt-4">
+                  <label className="flex items-start cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="mt-1 mr-3 w-5 h-5 text-[#1D8751] bg-[#1D1D23] dark:bg-[#35353E] border-[#A2A4A9FF] dark:border-[#35353E ] rounded-none focus:ring-[#1D8751] focus:ring-2 flex-shrink-0"
+                    />
+                    <span className="text-[#35353e] dark:text-[#788099] text-sm">
+                      I've read and agree to the{" "}
+                      <span className="text-[#1D8751] cursor-pointer hover:underline">
+                        Terms of Use
+                      </span>
+                      ,{" "}
+                      <span className="text-[#1D8751] cursor-pointer hover:underline">
+                        Privacy Policy
+                      </span>
+                      ,{" "}
+                      <span className="text-[#1D8751] cursor-pointer hover:underline">
+                        Payment Policies
+                      </span>
+                      ,{" "}
+                      <span className="text-[#1D8751] cursor-pointer hover:underline">
+                        AML
+                      </span>
+                      ,{" "}
+                      <span className="text-[#1D8751] cursor-pointer hover:underline">
+                        Risk Disclosure Statements
+                      </span>
+                    </span>
+                  </label>
+                </div>
+              </div>
+              {/* Disclaimer and Button outside the card */}
+              <div className="flex flex-col gap-3 w-full px-2">
+                <div className="flex items-center text-[#35353e] dark:text-[#788099] text-[16px] font-semibold">
+                  <div className="w-5 h-5 border-2 border-[#1D8751] rounded-full flex items-center justify-center flex-shrink-0 mr-2">
+                    <span className="text-[#1D8751] text-xs font-bold">i</span>
+                  </div>
+                  <span>
+                    This is only an estimated price based on current market rates.
+                    The final price will be confirmed when we receive the funds.
+                  </span>
+                </div>
+
+                {/* Warning message for amounts over $15,000 */}
+                {getAmount > 15000 && (
+                  <div className="flex items-center text-[#1D8751] text-[14px] font-medium bg-[#23232b] dark:bg-[#35353E] border border-[#1D8751] rounded-xl p-3">
+                    <FaExclamationCircle className="mr-2 text-[#1D8751]" />
+                    <span>
+                      Amount exceeds $15,000. Please reduce the amount or contact
+                      our OTC Desk for better rates.
                     </span>
                   </div>
                 )}
+                <button
+                  className={`w-full text-[#35353e] dark:text-[#788099] text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${isSubmitting || isInfoModalOpen || getAmount > 15000 || !withdrawalAddress
+                      ? "bg-gray-500 cursor-not-allowed"
+                      : "bg-[#1D8751] hover:bg-[#166b3e]"
+                    }`}
+                  onClick={() => {
+                    // Navigate to exchanging page with websocket URL
+                    if (onExchange) {
+                      const transactionData = {
+                        type: "withdrawal" as const,
+                        amount: payAmount,
+                        asset: {
+                          ...selectedAsset,
+                          icon:
+                            selectedAsset.image_url ||
+                            selectedAsset.asset_image ||
+                            selectedAsset.icon_url ||
+                            selectedAsset.image,
+                        },
+                        paymentDetail: selectedPaymentDetail,
+                        walletAddress: withdrawalAddress,
+                        network: selectedNetwork,
+                        transactionId: transactionId,
+                        withdrawalAddress: withdrawalAddress,
+                        message: responseMessage,
+                        websocketUrl: websocketUrl,
+                        paymentDetails: selectedPaymentDetails,
+                      };
+                      onExchange(transactionData);
+                    }
+                  }}
+                  disabled={
+                    isSubmitting ||
+                    isInfoModalOpen ||
+                    getAmount > 15000 ||
+                    !withdrawalAddress
+                  }
+                >
+                  {isSubmitting ? (
+                    <div className="flex items-center gap-2">
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#A2A4A9FF] dark:border-[#35353E]"></div>
+                      <span>Submitting...</span>
+                    </div>
+                  ) : (
+                    <span className="flex items-center justify-center">
+                      <span className="text-base font-bold dark:text-white text-white">Express</span>
+                      <img
+                        className="mt-2"
+                        src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
+                        alt=""
+                      />
+                    </span>
+                  )}
+                </button>
               </div>
-              <p className="text-center text-[#7e7e8f] dark:text-[#788099] text-sm mt-2">
-                {qrCodeUrl
-                  ? `Scan QR code to send ${selectedAsset?.ticker?.toUpperCase()}`
-                  : "Please wait for further instructions"}
-              </p>
             </div>
+          )}
 
-            {/* Terms and Conditions Summary */}
-            <div className="flex flex-col gap-2 mt-2">
-              <div className="flex items-center mb-2">
-                <span className="mr-2 text-[#1D8751]">
-                  <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
-                    <circle
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="#1D8751"
-                      strokeWidth="2"
-                    />
-                    <line
-                      x1="12"
-                      y1="8"
-                      x2="12"
-                      y2="12"
-                      stroke="#1D8751"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                    />
-                    <circle cx="12" cy="16" r="1" fill="#1D8751" />
-                  </svg>
-                </span>
-                <span className="text-base font-semibold text-[#7e7e8f] dark:text-[#788099]">
-                  Terms and Conditions Summary
-                </span>
-              </div>
-              <div className=" dark:bg-[#1D1D23] border border-[#1D8751] rounded-xl p-4">
-                <ul className="list-none space-y-2">
-                  <li className="flex items-start">
-                    <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] dark:bg-[#1D8751] inline-block mr-3"></span>
-                    <span className="text-[#35353e] dark:text-[#788099] text-sm">
-                      Please send the money from your own account Only
-                    </span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] dark:bg-[#1D8751] inline-block mr-3"></span>
-                    <span className="text-[#35353e] dark:text-[#788099] text-sm">
-                      Put transaction ID in the description field of the bank
-                    </span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] dark:bg-[#1D8751] inline-block mr-3"></span>
-                    <span className="text-[#35353e] dark:text-[#788099] text-sm">
-                      Please note, If you do not follow above conditions, we
-                      will reject your transaction and send you back your money.
-                    </span>
-                  </li>
+          {/* Validation Errors Display */}
+          {validationErrors.length > 0 && (
+            <div className="w-full mt-4 px-2 mb-4">
+              <div className="bg-[#23232b] dark:bg-[#35353E] border border-[#1D8751] rounded-2xl p-4">
+
+                <ul className="list-disc list-inside text-[#1D8751] space-y-1">
+                  {validationErrors.map((error, index) => (
+                    <li key={index}>{error}</li>
+                  ))}
                 </ul>
               </div>
             </div>
+          )}
 
-            {/* Terms Checkbox */}
-            <div className="mt-4">
-              <label className="flex items-start cursor-pointer">
-                <input
-                  type="checkbox"
-                  className="mt-1 mr-3 w-4 h-4 text-[#1D8751] bg-[#1D1D23] dark:bg-[#35353E] border-[#A2A4A9FF] dark:border-[#35353E ] rounded focus:ring-[#1D8751] focus:ring-2"
-                />
-                <span className="text-[#35353e] dark:text-[#788099] text-sm">
-                  I've read and agree to the{" "}
-                  <span className="text-[#1D8751] cursor-pointer hover:underline">
-                    Terms of Use
-                  </span>
-                  ,{" "}
-                  <span className="text-[#1D8751] cursor-pointer hover:underline">
-                    Privacy Policy
-                  </span>
-                  ,{" "}
-                  <span className="text-[#1D8751] cursor-pointer hover:underline">
-                    Payment Policies
-                  </span>
-                  ,{" "}
-                  <span className="text-[#1D8751] cursor-pointer hover:underline">
-                    AML
-                  </span>
-                  ,{" "}
-                  <span className="text-[#1D8751] cursor-pointer hover:underline">
-                    Risk Disclosure Statements
-                  </span>
-                </span>
-              </label>
-            </div>
-          </div>
-          {/* Disclaimer and Button outside the card */}
-          <div className="flex flex-col gap-3 w-full px-2">
-            <div className="flex items-center text-[#35353e] dark:text-[#788099] text-[16px] font-semibold">
-              <div className="w-5 h-5 border-2 border-[#1D8751] rounded-full flex items-center justify-center flex-shrink-0 mr-2">
-                <span className="text-[#1D8751] text-xs font-bold">i</span>
-              </div>
-              <span>
-                This is only an estimated price based on current market rates.
-                The final price will be confirmed when we receive the funds.
-              </span>
-            </div>
-
-            {/* Warning message for amounts over $15,000 */}
-            {getAmount > 15000 && (
-              <div className="flex items-center text-[#1D8751] text-[14px] font-medium bg-[#23232b] dark:bg-[#35353E] border border-[#1D8751] rounded-xl p-3">
-                <FaExclamationCircle className="mr-2 text-[#1D8751]" />
-                <span>
-                  Amount exceeds $15,000. Please reduce the amount or contact
-                  our OTC Desk for better rates.
-                </span>
-              </div>
-            )}
-            <button
-              className={`w-full text-[#35353e] dark:text-[#788099] text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${
-                isSubmitting || isInfoModalOpen || getAmount > 15000 || !withdrawalAddress
-                  ? "bg-gray-500 cursor-not-allowed"
-                  : "bg-[#1D8751] hover:bg-[#166b3e]"
-              }`}
-              onClick={() => {
-                // Navigate to exchanging page with websocket URL
-                if (onExchange) {
-                  const transactionData = {
-                    type: "withdrawal" as const,
-                    amount: payAmount,
-                    asset: {
-                      ...selectedAsset,
-                      icon:
-                        selectedAsset.image_url ||
-                        selectedAsset.asset_image ||
-                        selectedAsset.icon_url ||
-                        selectedAsset.image,
-                    },
-                    paymentDetail: selectedPaymentDetail,
-                    walletAddress: withdrawalAddress,
-                    network: selectedNetwork,
-                    transactionId: transactionId,
-                    withdrawalAddress: withdrawalAddress,
-                    message: responseMessage,
-                    websocketUrl: websocketUrl,
-                    paymentDetails: selectedPaymentDetails,
-                  };
-                  onExchange(transactionData);
-                }
-              }}
-              disabled={
-                isSubmitting ||
-                isInfoModalOpen ||
-                getAmount > 15000 ||
-                !withdrawalAddress
+          {/* PaymentMethodsModal */}
+          <PaymentMethodsModal
+            open={isPaymentModalOpen}
+            onClose={() => setIsPaymentModalOpen(false)}
+            onAdd={async () => {
+              try {
+                // Refresh both user and admin payment details after adding (force refresh)
+                await Promise.all([
+                  dispatch(fetchUserPaymentDetails(true)).unwrap(),
+                  dispatch(fetchAdminWalletList(true)).unwrap(),
+                ]);
+                showToast.success("Payment method added successfully!");
+              } catch (error) {
+                console.error("Failed to refresh payment details:", error);
+                showToast.error("Payment method added, but failed to refresh. Please reload the page.");
               }
-            >
-              {isSubmitting ? (
-                <div className="flex items-center gap-2">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#A2A4A9FF] dark:border-[#35353E]"></div>
-                  <span>Submitting...</span>
-                </div>
-              ) : (
-                <span className="flex items-center justify-center">
-                  <span className="text-base font-bold dark:text-white text-white">Express</span>
-                  <img
-                    className="mt-2"
-                    src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
-                    alt=""
-                  />
-                </span>
-              )}
-            </button>
-          </div>
-        </div>
-      )}
+            }}
+          />
 
-      {/* Validation Errors Display */}
-      {validationErrors.length > 0 && (
-        <div className="w-full mt-4 px-2 mb-4">
-          <div className="bg-[#23232b] dark:bg-[#35353E] border border-[#1D8751] rounded-2xl p-4">
-            
-            <ul className="list-disc list-inside text-[#1D8751] space-y-1">
-              {validationErrors.map((error, index) => (
-                <li key={index}>{error}</li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      )}
-
-      {/* PaymentMethodsModal */}
-      <PaymentMethodsModal
-        open={isPaymentModalOpen}
-        onClose={() => setIsPaymentModalOpen(false)}
-        onAdd={async () => {
-          try {
-            // Refresh both user and admin payment details after adding (force refresh)
-            await Promise.all([
-              dispatch(fetchUserPaymentDetails(true)).unwrap(),
-              dispatch(fetchAdminWalletList(true)).unwrap(),
-            ]);
-            showToast.success("Payment method added successfully!");
-          } catch (error) {
-            console.error("Failed to refresh payment details:", error);
-            showToast.error("Payment method added, but failed to refresh. Please reload the page.");
-          }
-        }}
-      />
-
-      {/* InfoModal */}
-      <InfoModal
-        isOpen={isInfoModalOpen}
-        onClose={() => {
-          setIsInfoModalOpen(false);
-          // Don't automatically acknowledge when just closing - user must reduce amount
-        }}
-        onContactUs={() => {
-          // Handle contact us action - you can customize this
-          window.open("https://wa.me/your-whatsapp-number", "_blank");
-          setIsInfoModalOpen(false);
-        }}
-      />
+          {/* InfoModal */}
+          <InfoModal
+            isOpen={isInfoModalOpen}
+            onClose={() => {
+              setIsInfoModalOpen(false);
+              // Don't automatically acknowledge when just closing - user must reduce amount
+            }}
+            onContactUs={() => {
+              // Handle contact us action - you can customize this
+              window.open("https://wa.me/your-whatsapp-number", "_blank");
+              setIsInfoModalOpen(false);
+            }}
+          />
         </>
       )}
     </div>
