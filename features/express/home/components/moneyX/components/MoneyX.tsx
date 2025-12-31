@@ -1,7 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import TransferForm from "./TransferForm";
+import Exchanging from "./Exchanging";
 
 interface MoneyXProps {
   isHomePage?: boolean;
@@ -17,6 +18,9 @@ interface MoneyXProps {
 }
 
 const MoneyX = ({ isHomePage = false, onTransferComplete }: MoneyXProps) => {
+  const [showExchanging, setShowExchanging] = useState(false);
+  const [transactionData, setTransactionData] = useState<any>(null);
+
   const handleTransfer = (data: {
     fromPaymentMethod: any;
     toPaymentMethod: any;
@@ -58,12 +62,33 @@ const MoneyX = ({ isHomePage = false, onTransferComplete }: MoneyXProps) => {
       JSON.stringify(moneyxTransactionData)
     );
 
-    // Call callback to switch tab instead of navigating
+    // Set state to show Exchanging component
+    setTransactionData(moneyxTransactionData);
+    setShowExchanging(true);
+
+    // Call callback if provided (for external state management)
     if (onTransferComplete) {
       onTransferComplete(data);
     }
   };
 
+  // If showing exchanging, render it
+  if (showExchanging && transactionData) {
+    return (
+      <Exchanging
+        transactionData={transactionData}
+        onBackToTransfer={() => {
+          setShowExchanging(false);
+          setTransactionData(null);
+          // Clear localStorage to reset on refresh
+          localStorage.removeItem("moneyx_transaction_data");
+          localStorage.removeItem("express_transaction_data");
+        }}
+      />
+    );
+  }
+
+  // Otherwise show the transfer form
   return (
     <div className="w-full pt-0 mb-0">
       <TransferForm isHomePage={isHomePage} onTransfer={handleTransfer} />
