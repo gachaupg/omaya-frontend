@@ -378,14 +378,14 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
   };
 
   return (
-    <div className="w-full flex flex-col mt-0">
+    <div className="w-full flex flex-col mt-0 overflow-x-hidden">
       <div className={`w-full mx-auto ${isDark ? "text-white" : "text-[#1F2937]"}`}>
         {/* Top Section - You Send and You Get in one card */}
         <div className="relative mb-4">
           {/* Top Card Container */}
           <div
             data-swap-card="true"
-            className={`relative flex flex-col sm:flex-row gap-4 rounded-2xl p-3 sm:p-4 overflow-visible ${
+            className={`relative flex flex-col sm:flex-row gap-4 rounded-2xl p-3 sm:p-4 overflow-hidden ${
               isDark ? "border border-[#2F2F3A] bg-[#0F0F17]" : "border border-[#E2E8F0] bg-white shadow-sm"
             }`}
           >
@@ -458,15 +458,15 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                               "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
                           }}
                         />
-                        <div className="flex items-center gap-2">
-                          <span className={`font-normal text-sm ${isDark ? "text-white" : "text-[#1F2937]"}`}>
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <span className={`font-normal text-sm truncate ${isDark ? "text-white" : "text-[#1F2937]"}`}>
                             {(() => {
                               // Prioritize ticker/symbol, but show name if ticker/symbol is not available
                               const ticker = fromAsset.ticker?.toUpperCase() || fromAsset.symbol?.toUpperCase();
                               return ticker || fromAsset.name || "Unknown";
                             })()}
                           </span>
-                          <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-normal px-2 py-0.5 rounded-full">
+                          <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-normal px-2 py-0.5 rounded-full flex-shrink-0">
                             {fromAsset.network || "Unknown"}
                           </span>
                         </div>
@@ -533,7 +533,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
         <div className="relative mb-3">
           <div
             data-swap-card="true"
-            className={`relative flex flex-col sm:flex-row gap-4 rounded-2xl p-3 sm:p-4 overflow-visible ${
+            className={`relative flex flex-col sm:flex-row gap-4 rounded-2xl p-3 sm:p-4 overflow-hidden ${
               isDark ? "border border-[#2F2F3A] bg-[#0F0F17]" : "border border-[#E2E8F0] bg-white shadow-sm"
             }`}
           >
@@ -615,15 +615,15 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                               "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
                           }}
                         />
-                        <div className="flex items-center gap-2">
-                          <span className={`font-normal text-sm ${isDark ? "text-white" : "text-[#1F2937]"}`}>
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <span className={`font-normal text-sm truncate ${isDark ? "text-white" : "text-[#1F2937]"}`}>
                             {(() => {
                               // Prioritize ticker/symbol, but show name if ticker/symbol is not available
                               const ticker = toAsset.ticker?.toUpperCase() || toAsset.symbol?.toUpperCase();
                               return ticker || toAsset.name || "Unknown";
                             })()}
                           </span>
-                          <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-normal px-2 py-0.5 rounded-full">
+                          <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-normal px-2 py-0.5 rounded-full flex-shrink-0">
                             {toAsset.network || "Unknown"}
                           </span>
                         </div>

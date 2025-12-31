@@ -738,7 +738,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
   }
 
   return (
-    <div className={`w-full min-h-screen flex flex-col pt-2 `}>
+    <div className={`w-full min-h-screen flex flex-col pt-2 overflow-x-hidden`}>
       {/* Timer Banner */}
       {timerActive && timeRemaining > 0 && (
         <div
@@ -809,9 +809,9 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
           isDark
             ? "bg-[#23232B]  border:[#E8EFF5] dark:border-[#35353E]"
             : "bg-white border-gray-200"
-        } border-2 rounded-2xl p-4 shadow-lg w-full mb-4 min-h-[180px]`}
+        } border-2 rounded-2xl p-4 shadow-lg w-full mb-4 min-h-[180px] overflow-hidden`}
       >
-        <div className="flex-1 flex flex-col justify-between py-2 pr-2">
+        <div className="flex-1 flex flex-col justify-between py-2 pr-2 min-w-0">
           <div>
             <div
               className={`${
@@ -843,7 +843,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                 >
                   From Payment Method:
                 </div>
-                <div className="flex items-center mb-2">
+                <div className="flex items-center mb-2 min-w-0">
                   {effectiveTransactionData.fromPaymentMethod.provider_logo ||
                   effectiveTransactionData.fromPaymentMethod.logo ? (
                     <img
@@ -852,7 +852,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                         effectiveTransactionData.fromPaymentMethod.logo
                       }
                       alt={effectiveTransactionData.fromPaymentMethod.provider_name}
-                      className="w-6 h-6 mr-2 rounded-md object-contain bg-white"
+                      className="w-6 h-6 mr-2 rounded-md object-contain bg-white flex-shrink-0"
                       onError={(e) => {
                         e.currentTarget.src =
                           "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
@@ -862,7 +862,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                   <span
                     className={`${
                       isDark ? "text-white" : "text-gray-900"
-                    } text-sm font-semibold`}
+                    } text-sm font-semibold truncate`}
                   >
                     {effectiveTransactionData.fromPaymentMethod.provider_name}
                   </span>
@@ -879,7 +879,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                 >
                   To Payment Method:
                 </div>
-                <div className="flex items-center mb-2">
+                <div className="flex items-center mb-2 min-w-0">
                   {effectiveTransactionData.toPaymentMethod.provider_logo ||
                   effectiveTransactionData.toPaymentMethod.logo ? (
                     <img
@@ -888,7 +888,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                         effectiveTransactionData.toPaymentMethod.logo
                       }
                       alt={effectiveTransactionData.toPaymentMethod.provider_name}
-                      className="w-6 h-6 mr-2 rounded-md object-contain bg-white"
+                      className="w-6 h-6 mr-2 rounded-md object-contain bg-white flex-shrink-0"
                       onError={(e) => {
                         e.currentTarget.src =
                           "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
@@ -898,7 +898,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                   <span
                     className={`${
                       isDark ? "text-white" : "text-gray-900"
-                    } text-sm font-semibold`}
+                    } text-sm font-semibold truncate`}
                   >
                     {effectiveTransactionData.toPaymentMethod.provider_name}
                   </span>
@@ -916,17 +916,17 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                 >
                   Bank Account Address:
                 </div>
-                <div className="flex items-center mb-2">
+                <div className="flex items-center mb-2 min-w-0">
                   <span
                     className={`${
                       isDark ? "text-white" : "text-gray-900"
-                    } text-sm font-mono bg-gray-500/10 px-2 py-1 rounded text-xs break-all`}
+                    } text-sm font-mono bg-gray-500/10 px-2 py-1 rounded text-xs break-all flex-1 min-w-0`}
                   >
                     {effectiveTransactionData.walletAddress}
                   </span>
                   <CopyButton
                     value={effectiveTransactionData.walletAddress}
-                    className="ml-2"
+                    className="ml-2 flex-shrink-0"
                   />
                 </div>
               </>
@@ -1366,7 +1366,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
       <div
         className={`${
           isDark ? "bg-[#23232B] border-[#35353E]" : "bg-white border-gray-200"
-        } border-2 rounded-2xl p-6 shadow-lg w-full mb-4`}
+        } border-2 rounded-2xl p-6 shadow-lg w-full mb-4 overflow-hidden`}
       >
         <div
           className={`${
@@ -1376,19 +1376,19 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
           Transaction Details
         </div>
         {/* Transaction ID Row */}
-        <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center justify-between mb-1 gap-2 min-w-0">
           <div
             className={`${
               isDark ? "text-[#7B7B7B]" : "text-gray-600"
-            } text-base font-medium`}
+            } text-base font-medium flex-shrink-0`}
           >
             Transaction ID
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
             <span
               className={`${
                 isDark ? "text-white" : "text-gray-900"
-              } text-base font-mono font-semibold`}
+              } text-base font-mono font-semibold truncate min-w-0`}
             >
               {liveTransactionId || effectiveTransactionData?.transactionId || "Pending..."}
             </span>
@@ -1399,7 +1399,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                   effectiveTransactionData?.transactionId ||
                   ""
                 }
-                className="text-[#FFA200] hover:text-[#FFB833] transition-colors"
+                className="text-[#FFA200] hover:text-[#FFB833] transition-colors flex-shrink-0"
                 showIcon={true}
               />
             )}
@@ -1429,9 +1429,9 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
           </div>
         </div>
         {/* From/To Content Row */}
-        <div className="flex items-center justify-between mt-2">
+        <div className="flex items-start justify-between mt-2 gap-4 min-w-0">
           {/* From */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
             {effectiveTransactionData?.fromPaymentMethod ? (
               <>
                 {(effectiveTransactionData.fromPaymentMethod.provider_logo ||
@@ -1449,11 +1449,11 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                     }}
                   />
                 )}
-                <div>
+                <div className="min-w-0 flex-1">
                   <div
                     className={`${
                       isDark ? "text-white" : "text-gray-900"
-                    } text-base font-semibold`}
+                    } text-base font-semibold truncate`}
                   >
                     {effectiveTransactionData.fromPaymentMethod.provider_name}
                   </div>
@@ -1461,7 +1461,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                     <div
                       className={`${
                         isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                      } text-sm font-mono`}
+                      } text-sm font-mono break-all`}
                     >
                       {effectiveTransactionData.fromPaymentMethod.account_number}
                     </div>
@@ -1479,7 +1479,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
             )}
           </div>
           {/* To */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 min-w-0 flex-1 justify-end">
             {effectiveTransactionData?.toPaymentMethod ? (
               <>
                 {(effectiveTransactionData.toPaymentMethod.provider_logo ||
@@ -1497,11 +1497,11 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                     }}
                   />
                 )}
-                <div className="text-right">
+                <div className="text-right min-w-0 flex-1">
                   <div
                     className={`${
                       isDark ? "text-white" : "text-gray-900"
-                    } text-base font-semibold`}
+                    } text-base font-semibold truncate`}
                   >
                     {effectiveTransactionData.toPaymentMethod.provider_name}
                   </div>
@@ -1509,7 +1509,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                     <div
                       className={`${
                         isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                      } text-sm font-mono`}
+                      } text-sm font-mono break-all`}
                     >
                       {effectiveTransactionData.toPaymentMethod.account_number}
                     </div>

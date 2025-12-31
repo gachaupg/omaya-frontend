@@ -3133,7 +3133,7 @@ export default function DepositForm({
                   placeholder="Enter amount"
                   className={`w-full h-[48px] text-[#35353e] dark:text-white bg-transparent dark:bg-transparent
     rounded-2xl px-3 sm:px-4 pr-12 sm:pr-16 text-base sm:text-lg focus:outline-none
-    border appearance-none
+    border appearance-none transition-colors duration-200
     ${(isCalculating || isCalculatingReceive) &&
                       isCalculatingFromPay &&
                       selectedAsset &&
@@ -3488,7 +3488,7 @@ export default function DepositForm({
                     }
                   }}
                   placeholder="Enter amount"
-                  className={`w-full h-[48px] text-[#35353e] dark:text-white bg-white dark:bg-[#35353E] rounded-2xl px-4 pr-16 text-base sm:text-lg focus:outline-none border appearance-none ${receiveAmountError &&
+                  className={`w-full h-[48px] text-[#35353e] dark:text-white bg-white dark:bg-[#35353E] rounded-2xl px-4 pr-16 text-base sm:text-lg focus:outline-none border appearance-none transition-colors duration-200 ${receiveAmountError &&
                     (receiveAmountError.includes("Rough estimate") ||
                       receiveAmountError.includes("Using estimated rate"))
                     ? "border-[#F79330]"
@@ -3617,7 +3617,7 @@ export default function DepositForm({
               <div className="text-xs text-[#788099] dark:text-[#788099] mb-1 mt-[30px] sm:mt-[34px]">{t("express.youGet", "You Get")}</div>
               <div className="relative" ref={assetDropdownRef}>
                 <div
-                  className={`h-[48px] w-full text-[#35353e] bg-transparent dark:bg-transparent dark:text-[#ffffff] rounded-2xl px-3 sm:px-4 text-base sm:text-lg border border-[#A2A4A9FF] dark:border-[#35353E] flex items-center justify-between cursor-pointer`}
+                  className={`h-[48px] w-full text-[#35353e] bg-transparent dark:bg-transparent dark:text-[#ffffff] rounded-2xl px-3 sm:px-4 text-base sm:text-lg border border-[#A2A4A9FF] dark:border-[#35353E] hover:border-blue-400 dark:hover:border-blue-400 flex items-center justify-between cursor-pointer transition-colors duration-200`}
                   onClick={() => {
                     if (!isAssetDropdownOpen) {
                       updateAssetDropdownPosition();

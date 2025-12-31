@@ -559,10 +559,10 @@ const Legend = ({ data }: { data: DonutChartData[] }) => (
           }}
           className="rounded-sm block"
         ></span>
-        <span className="text-muted-foreground font-medium flex-1 min-w-0 wrap-break-word sm:text-sm md:text-base">
+        <span className="text-muted-foreground font-medium flex-1 min-w-0 break-normal sm:text-sm md:text-base">
           {d.label}
         </span>
-        <span className="dark:text-white text-[#051015] font-medium ml-auto min-w-[60px] sm:min-w-[60px] text-right tracking-tight shrink-0 text-[11px] sm:text-sm md:text-base">
+        <span className="dark:text-white text-[#051015] font-medium ml-auto min-w-[60px] sm:min-w-[60px] text-right tracking-tight shrink-0 text-[11px] md:text-sm lg:text-base">
           {formatLargeNumber(d.value)} USD
         </span>
       </div>
@@ -968,7 +968,7 @@ const LineCharts = React.memo(
             </div>
 
             {/* Body */}
-            <div className="flex flex-col xl:flex-row gap-6 px-4 pb-6 flex-1">
+            <div className="flex flex-col xl:flex-row gap-3 px-4 pb-6 flex-1">
               <div className="xl:w-1/2">
                 <Legend data={overviewTotalData(transactionSummary, activeTab)} />
               </div>

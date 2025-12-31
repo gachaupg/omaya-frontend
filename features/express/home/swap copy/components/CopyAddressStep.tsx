@@ -241,10 +241,10 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center py-4 sm:py-8 px-3 sm:px-4 w-full">
+    <div className="min-h-screen flex flex-col items-center py-4 sm:py-8 px-3 sm:px-4 w-full overflow-x-hidden">
       {/* Top Card */}
-      <div className="flex flex-col md:flex-row justify-between items-stretch bg-white dark:bg-[#23232b] border-2 border-gray-200 dark:border-[#35353E] rounded-2xl p-3 sm:p-4 shadow-lg w-full max-w-4xl mb-4 min-h-[180px]">
-        <div className="flex-1 flex flex-col justify-between py-2 pr-0 sm:pr-2">
+      <div className="flex flex-col md:flex-row justify-between items-stretch bg-white dark:bg-[#23232b] border-2 border-gray-200 dark:border-[#35353E] rounded-2xl p-3 sm:p-4 shadow-lg w-full max-w-4xl mb-4 min-h-[180px] overflow-hidden">
+        <div className="flex-1 flex flex-col justify-between py-2 pr-0 sm:pr-2 min-w-0">
           <div>
             <div className="text-gray-600 dark:text-[#7e7e8f] text-xs font-semibold mb-0.5">
               Amount:
@@ -258,8 +258,8 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
               <div className="text-gray-600 dark:text-[#7e7e8f] text-xs font-semibold mb-1">
                 To this address:
               </div>
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                <span className="text-[#1D8751] dark:text-[#1D8751] font-mono text-xs sm:text-base break-all sm:truncate max-w-full">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 min-w-0">
+                <span className="text-[#1D8751] dark:text-[#1D8751] font-mono text-xs sm:text-base break-all sm:break-words max-w-full min-w-0 flex-1">
                   {swapResponse.payinAddress}
                 </span>
                 <button
