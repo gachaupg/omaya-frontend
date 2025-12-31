@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
 import type { RootState } from "@/store/rootReducer";
 import { tokens } from "@/styles/tokens";
-import { Play, MessageCircle, Plus, BarChart, Globe, Lock, DollarSign, Users, TrendingUp, Shield, Zap, Gift, UserPlus, ArrowRight, Building2, Calendar, Clock, MapPin, Phone, Mail, Send, ChevronDown, ChevronUp, ArrowLeftRight, HelpCircle, Wallet } from "lucide-react";
+import { Play, MessageCircle, Plus, BarChart, Globe, Lock, DollarSign, Users, TrendingUp, Shield, Zap, Gift, UserPlus, ArrowRight, Building2, Calendar, Clock, MapPin, Phone, Mail, Send, ChevronDown, ChevronUp, ArrowLeftRight, HelpCircle, Wallet, BarChart3 } from "lucide-react";
 import ExchangeForm from "@/components/ExchangeForm";
 import { useBlog } from "@/features/blogs/hooks/blog";
 import { BlogPost } from "@/features/blogs/types";
@@ -413,6 +413,8 @@ export default function MarketingPage() {
           <div className="absolute top-[600px] right-1/3 w-2 h-2 bg-[#13B562] rounded-full opacity-5 dark:opacity-10 blur-sm animate-pulse" style={{ animationDelay: '0.4s' }}></div>
           <div className="absolute bottom-1/4 right-1/4 w-1.5 h-1.5 bg-[#1D8751] rounded-full opacity-7 dark:opacity-12 blur-sm animate-pulse" style={{ animationDelay: '1.2s' }}></div>
           <div className="absolute top-[700px] left-1/2 w-2 h-2 bg-[#13B562] rounded-full opacity-6 dark:opacity-11 blur-sm animate-pulse" style={{ animationDelay: '0.6s' }}></div>
+          <FloatingParticles count={4} />
+
         </div>
 
         {/* Simplified heptagonal patterns - matching Figma minimalism */}
@@ -456,14 +458,18 @@ export default function MarketingPage() {
               </h1>
 
               {/* Description text */}
-              <p className="leading-relaxed max-w-full sm:max-w-2xl md:max-w-3xl mx-auto lg:mx-0 px-4 sm:px-0 text-xs sm:text-sm md:text-sm lg:text-base relative">
+              <p className="leading-relaxed max-w-full sm:max-w-md md:max-w-xl mx-auto lg:mx-0 px-4 sm:px-0 text-xs sm:text-base lg:text-xl relative">
                 {/* Soft, diffused purple glow - only on left side, behind text - more visible */}
-                <span className="absolute -left-8 sm:-left-12 md:-left-16 top-1/2 -translate-y-1/2 w-32 sm:w-40 md:w-48 h-full -z-10 bg-gradient-to-r from-purple-500/20 via-purple-400/12 to-transparent dark:from-purple-500/30 dark:via-purple-400/18 dark:to-transparent rounded-full blur-3xl"></span>
+
+                <span className="absolute -left-4 sm:-left-6 md:-left-8 top-1/2 -translate-y-1/2 w-60 h-52 -z-10 bg-linear-to-br  from-[#9810FA] to-[#E60076] rounded-full blur-3xl opacity-20"></span>
+
+                {/* <span className="absolute -left-8 sm:-left-12 md:-left-16 top-1/2 -translate-y-1/2 w-32 sm:w-40 md:w-48 h-full -z-10 bg-gradient-to-r from-purple-500/20 via-purple-400/12 to-transparent dark:from-purple-500/30 dark:via-purple-400/18 dark:to-transparent rounded-full blur-3xl"></span>
                 <span className="absolute -left-4 sm:-left-6 md:-left-8 top-1/2 -translate-y-1/2 w-24 sm:w-32 md:w-40 h-3/4 -z-10 bg-gradient-to-br from-purple-600/15 via-purple-500/10 to-transparent dark:from-purple-600/25 dark:via-purple-500/15 dark:to-transparent rounded-full blur-2xl"></span>
-                <span className="absolute -left-2 sm:-left-3 md:-left-4 top-1/2 -translate-y-1/2 w-16 sm:w-20 md:w-24 h-1/2 -z-10 bg-gradient-to-r from-purple-400/12 to-transparent dark:from-purple-400/20 dark:to-transparent rounded-full blur-xl"></span>
+                <span className="absolute -left-2 sm:-left-3 md:-left-4 top-1/2 -translate-y-1/2 w-16 sm:w-20 md:w-24 h-1/2 -z-10 bg-gradient-to-r from-purple-400/12 to-transparent dark:from-purple-400/20 dark:to-transparent rounded-full blur-xl"></span> */}
                 <span className="relative">
-                  <span className="text-gray-900 dark:text-[#788099]">Buy, Sell, Exchange, and Trade Crypto with Speed, Security, and Full Regulatory Compliance!</span>
-                  {/* <span className="text-[#1D8751] dark:text-[#13B562]">Join 500,000+ traders worldwide.</span> */}
+                  <span className="text-gray-900 dark:text-[#788099]">Experience lightning-fast trades, ultra-low fees and bank grade security</span>
+                  <br />
+                  <span className="text-[#1D8751] dark:text-[#13B562]">Join 500,000+ traders worldwide.</span>
                 </span>
               </p>
 
@@ -474,74 +480,67 @@ export default function MarketingPage() {
                   onClick={() =>
                     router.push(isAuthenticated ? "/dashboard/express-exchange" : "/auth/login")
                   }
-                  className="cursor-pointer rounded-lg px-5 sm:px-6 py-2.5 sm:py-2.5 text-white bg-[#1D8751] text-sm sm:text-base font-medium hover:bg-[#167a47] transition-colors min-h-[44px] flex items-center justify-center gap-2"
+                  className="cursor-pointer rounded-xl px-5 sm:px-6 py-2.5 sm:py-2.5 text-white bg-linear-to-br from-[#1D8751] to-[#309A64] text-sm sm:text-base font-medium hover:bg-[#167a47] transition-colors min-h-[44px] flex items-center justify-center gap-2 shadow-xl"
                 >
                   Start Trading Now
                   <span className="text-lg">→</span>
                 </button>
-                <button className="rounded-lg px-5 sm:px-6 py-2.5 sm:py-2.5 text-gray-900 dark:text-white bg-gray-100 dark:bg-[#1D1D23] border border-gray-300 dark:border-[#35353E] text-sm sm:text-base font-medium hover:bg-gray-200 dark:hover:bg-[#23232B] transition-colors min-h-[44px] flex items-center justify-center gap-2">
+                <button className="rounded-xl px-5 sm:px-6 py-2.5 sm:py-2.5 text-gray-900 dark:text-white bg-gray-100 dark:bg-[#1D1D23] border-2 border-gray-300 dark:border-[#35353E] text-sm sm:text-base font-medium hover:bg-gray-200 dark:hover:bg-[#23232B] transition-colors min-h-[44px] flex items-center justify-center gap-2">
                   Watch Demo
                   <Play size={16} className="text-[#1D8751]" />
                 </button>
               </div>
 
               {/* Security & Reliability Stat Cards (Hero) */}
-              <div className="flex flex-wrap gap-2 sm:gap-3 justify-center md:justify-start pt-2 md:pt-3 w-full">
-                {/* Bank-Grade Security */}
-                <div className="bg-gray-100 dark:bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3.5 flex flex-col items-center gap-2.5 shadow-sm flex-1 min-w-[150px]">
-                  <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
-                    <Shield className="w-5 h-5 text-blue-400" />
+              <div className="flex flex-wrap gap-3 sm:gap-4 justify-center md:justify-start pt-4 md:pt-6 w-full">
+                {/* $2.5B+ Trading Volume */}
+                <div className="bg-white/5 dark:bg-white/5 backdrop-blur-sm rounded-2xl px-5 py-4 flex flex-col gap-3 shadow-lg border border-white/10 flex-1 min-w-[120px] max-w-[180px]">
+                  <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#2B7FFF] to-[#00B8DB] flex items-center justify-center shadow-lg">
+                    <BarChart3 className="w-5 h-5 text-white" />
                   </div>
-                  <p className="text-gray-900 dark:text-white text-sm sm:text-base md:text-lg font-bold text-center">
-                    Bank-Grade Security
-                  </p>
-                  <p className="text-gray-500 dark:text-gray-300 text-[11px] sm:text-xs font-medium text-center leading-snug">
-                    Advanced encryption & multi-layer protection
-                  </p>
+                  <div>
+                    <p className="text-gray-900 dark:text-white text-xl sm:text-2xl font-bold mb-1">
+                      $2.5B+
+                    </p>
+                    <p className="text-gray-600 dark:text-gray-400 text-xs font-medium">
+                      Trading Volume
+                    </p>
+                  </div>
                 </div>
 
-                {/* Licensed & Regulated */}
-                <div className="bg-gray-100 dark:bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3.5 flex flex-col items-center gap-2.5 shadow-sm flex-1 min-w-[150px]">
-                  <div className="w-10 h-10 rounded-lg bg-pink-500/20 flex items-center justify-center">
-                    <Lock className="w-5 h-5 text-pink-400" />
+                {/* 150+ Countries */}
+                <div className="bg-white/5 dark:bg-white/5 backdrop-blur-sm rounded-2xl px-5 py-4 flex flex-col gap-3 shadow-lg border border-white/10 flex-1 min-w-[120px] max-w-[180px]">
+                  <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#AD46FF] to-[#F6339A] flex items-center justify-center shadow-lg">
+                    <Globe className="w-5 h-5 text-white" />
                   </div>
-                  <p className="text-gray-900 dark:text-white text-sm sm:text-base md:text-lg font-bold text-center">
-                    Licensed & Regulated
-                  </p>
-                  <p className="text-gray-500 dark:text-gray-300 text-[11px] sm:text-xs font-medium text-center leading-snug">
-                    Approved by Central Bank of Somalia
-                  </p>
-                </div>
-
-                {/* 10K Active Users */}
-                <div className="bg-gray-100 dark:bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3.5 flex flex-col items-center gap-2.5 shadow-sm flex-1 min-w-[150px]">
-                  <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
-                    <Users className="w-5 h-5 text-green-400" />
+                  <div>
+                    <p className="text-gray-900 dark:text-white text-xl sm:text-2xl font-bold mb-1">
+                      150+
+                    </p>
+                    <p className="text-gray-600 dark:text-gray-400 text-xs font-medium">
+                      Countries
+                    </p>
                   </div>
-                  <p className="text-gray-900 dark:text-white text-sm sm:text-base md:text-lg font-bold text-center">
-                    10K Active users
-                  </p>
-                  <p className="text-gray-500 dark:text-gray-300 text-[11px] sm:text-xs font-medium text-center leading-snug">
-                    Trusted by traders across East Africa
-                  </p>
                 </div>
 
                 {/* 99.9% Uptime */}
-                <div className="bg-gray-100 dark:bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3.5 flex flex-col items-center gap-2.5 shadow-sm flex-1 min-w-[150px]">
-                  <div className="w-10 h-10 rounded-lg bg-orange-500/20 flex items-center justify-center">
-                    <TrendingUp className="w-5 h-5 text-orange-400" />
+                <div className="bg-white/5 dark:bg-white/5 backdrop-blur-sm rounded-2xl px-5 py-4 flex flex-col gap-3 shadow-lg border border-white/10 flex-1 min-w-[120px] max-w-[180px]">
+                  <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#1D8751] to-[#309A64] flex items-center justify-center shadow-lg">
+                    <Lock className="w-5 h-5 text-white" />
                   </div>
-                  <p className="text-gray-900 dark:text-white text-sm sm:text-base md:text-lg font-bold text-center">
-                    99.9% Uptime
-                  </p>
-                  <p className="text-gray-500 dark:text-gray-300 text-[11px] sm:text-xs font-medium text-center leading-snug">
-                    Reliable trading 24/7/365
-                  </p>
+                  <div>
+                    <p className="text-gray-900 dark:text-white text-xl sm:text-2xl font-bold mb-1">
+                      99.9%
+                    </p>
+                    <p className="text-gray-600 dark:text-gray-400 text-xs font-medium">
+                      Uptime
+                    </p>
+                  </div>
                 </div>
               </div>
 
               {/* Trust tags under hero stats */}
-              <div className="flex flex-wrap gap-2 sm:gap-3 justify-center md:justify-start mt-3">
+              {/* <div className="flex flex-wrap gap-2 sm:gap-3 justify-center md:justify-start mt-3">
                 <div className="border border-[#1D8751] rounded-full px-3 sm:px-4 py-1.5 flex items-center gap-2 bg-gray-50 dark:bg-transparent">
                   <Lock className="w-4 h-4 text-[#1D8751]" />
                   <span className="text-gray-900 dark:text-white text-[11px] sm:text-xs font-medium">
@@ -560,7 +559,7 @@ export default function MarketingPage() {
                     Fast Execution
                   </span>
                 </div>
-              </div>
+              </div> */}
             </div>
             <div className="flex justify-center md:justify-end lg:justify-end w-full">
               <div className="w-full max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl 2xl:max-w-4xl">
@@ -686,12 +685,46 @@ export default function MarketingPage() {
             })}
           </div>
 
-          <div className="w-full mt-4">
-            <img
-              src="https://res.cloudinary.com/pitz/image/upload/v1766121183/Container_14_omqgii.png"
-              alt=""
-              className="w-full h-auto object-cover z-10"
-            />
+          {/* Bottom Feature Cards Row - Matching Figma Design */}
+          <div className="relative mt-6 sm:mt-8 md:mt-10">
+            {/* Dark background container with green gradient */}
+            <div className="bg-gray-100 dark:bg-[#1D1D23] rounded-2xl p-4 sm:p-6 md:p-8 border border-gray-200 dark:border-[#2A2A2A]">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 md:gap-8">
+                {/* Lowest Trading Fee */}
+                <div className="flex flex-col items-center justify-center py-2">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-orange-400 to-orange-500 flex items-center justify-center mb-3 shadow-lg">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                    </svg>
+                  </div>
+                  <span className="text-gray-900 dark:text-white text-xs sm:text-sm md:text-base font-medium text-center">Lowest Trading Fee</span>
+                </div>
+
+                {/* Bank-Grade Security */}
+                <div className="flex flex-col items-center justify-center py-2">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-[#1D8751] to-[#13B562] flex items-center justify-center mb-3 shadow-lg">
+                    <Shield className="w-6 h-6 text-white" />
+                  </div>
+                  <span className="text-gray-900 dark:text-white text-xs sm:text-sm md:text-base font-medium text-center">Bank-Grade Security</span>
+                </div>
+
+                {/* 24/7 Support */}
+                <div className="flex flex-col items-center justify-center py-2">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-pink-400 to-pink-500 flex items-center justify-center mb-3 shadow-lg">
+                    <Globe className="w-6 h-6 text-white" />
+                  </div>
+                  <span className="text-gray-900 dark:text-white text-xs sm:text-sm md:text-base font-medium text-center">24/7 Support</span>
+                </div>
+
+                {/* Real-Time Charts */}
+                <div className="flex flex-col items-center justify-center py-2">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-[#1D8751] to-[#13B562] flex items-center justify-center mb-3 shadow-lg">
+                    <TrendingUp className="w-6 h-6 text-white" />
+                  </div>
+                  <span className="text-gray-900 dark:text-white text-xs sm:text-sm md:text-base font-medium text-center">Real-Time Charts</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
