@@ -1376,7 +1376,7 @@ export default function MarketingPage() {
           </div>
           <div className="flex justify-center mt-10">
             <button
-              onClick={() => router.push(isAuthenticated ? '/dashboard' : '/auth/login')}
+              onClick={() => router.push(isAuthenticated ? '/dashboard' : '/auth/register')}
               className="group relative bg-[#1D8751] hover:bg-[#1a7547] text-white text-base sm:text-lg px-8 sm:px-10 py-3.5 sm:py-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-3 cursor-pointer"
             >
               <span>Get Started Now</span>
