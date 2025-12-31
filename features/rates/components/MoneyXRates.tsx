@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useEffect, useState, useMemo, useRef, useCallback } from "react";
+import React, {
+  useEffect,
+  useState,
+  useMemo,
+  useRef,
+  useCallback,
+} from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import { AppDispatch } from "@/store";
@@ -17,14 +23,13 @@ import { useTheme } from "@/context/theme";
 import { showToast } from "@/lib/utils/toast";
 import { usePaymentMethodsDisplay } from "@/features/express/hooks/useDataDisplay";
 import { setAuthRedirectPath } from "@/lib/utils/authRedirect";
-import { FaExchangeAlt } from "react-icons/fa";
 import { FiChevronDown, FiInfo } from "react-icons/fi";
 import { AlertCircle } from "lucide-react";
 import { useRatesI18n } from "@/lib/useRatesI18n";
 import Exchanging from "@/features/moneyX/components/Exchanging";
 
 const MoneyXRates = () => {
-  console.log('MoneyXRates component rendering');
+  console.log("MoneyXRates component rendering");
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
   const { isDark } = useTheme();
@@ -75,7 +80,11 @@ const MoneyXRates = () => {
         processedMethods = publicPaymentMethods;
       }
       // Check if it has a data property with providers
-      else if (publicPaymentMethods && typeof publicPaymentMethods === 'object' && 'data' in publicPaymentMethods) {
+      else if (
+        publicPaymentMethods &&
+        typeof publicPaymentMethods === "object" &&
+        "data" in publicPaymentMethods
+      ) {
         const data = (publicPaymentMethods as any).data;
         if (data) {
           if (Array.isArray(data.providers)) {
@@ -150,8 +159,10 @@ const MoneyXRates = () => {
   const [getAmountInput, setGetAmountInput] = useState("98");
   const [fromPaymentMethod, setFromPaymentMethod] = useState<string>("");
   const [toPaymentMethod, setToPaymentMethod] = useState<string>("");
-  const [selectedFromPaymentDetail, setSelectedFromPaymentDetail] = useState<any>(null);
-  const [selectedToPaymentDetail, setSelectedToPaymentDetail] = useState<any>(null);
+  const [selectedFromPaymentDetail, setSelectedFromPaymentDetail] =
+    useState<any>(null);
+  const [selectedToPaymentDetail, setSelectedToPaymentDetail] =
+    useState<any>(null);
   const [isFromDropdownOpen, setIsFromDropdownOpen] = useState(false);
   const [isToDropdownOpen, setIsToDropdownOpen] = useState(false);
   const [fromSearchTerm, setFromSearchTerm] = useState("");
@@ -163,7 +174,8 @@ const MoneyXRates = () => {
   const [bankAddressError, setBankAddressError] = useState<string | null>(null);
   const [isAddressConfirmed, setIsAddressConfirmed] = useState(false);
   const [isUpdatingTransaction, setIsUpdatingTransaction] = useState(false);
-  const [moneyXTransactionResult, setMoneyXTransactionResult] = useState<any>(null);
+  const [moneyXTransactionResult, setMoneyXTransactionResult] =
+    useState<any>(null);
   const [showExchanging, setShowExchanging] = useState(false);
   const [transactionData, setTransactionData] = useState<any>(null);
   const paymentDetailsRef = useRef<HTMLDivElement>(null);
@@ -185,39 +197,50 @@ const MoneyXRates = () => {
 
     // Remove common method suffixes (case-insensitive)
     providerName = providerName
-      .replace(/\s*-\s*(Bank|Mobile|Crypto|Forex|Marchant|Money\s*Transfer|Merchant)\s*$/i, "")
+      .replace(
+        /\s*-\s*(Bank|Mobile|Crypto|Forex|Marchant|Money\s*Transfer|Merchant)\s*$/i,
+        ""
+      )
       .trim();
 
     return providerName;
   }, []);
 
   // Helper function to check if a payment method is a bank
-  const isBankMethod = useCallback((method: any) => {
-    if (!method) return false;
-    const providerName = getProviderName(method).toLowerCase();
-    const paymentMethod = (method?.payment_method || "").toLowerCase();
-    const paymentMethodType = (method?.payment_method_type || "").toLowerCase();
-    const provider = (method?.provider || "").toLowerCase();
+  const isBankMethod = useCallback(
+    (method: any) => {
+      if (!method) return false;
+      const providerName = getProviderName(method).toLowerCase();
+      const paymentMethod = (method?.payment_method || "").toLowerCase();
+      const paymentMethodType = (
+        method?.payment_method_type || ""
+      ).toLowerCase();
+      const provider = (method?.provider || "").toLowerCase();
 
-    return (
-      providerName.includes("bank") ||
-      paymentMethod.includes("bank") ||
-      paymentMethodType.includes("bank") ||
-      provider.includes("bank")
-    );
-  }, [getProviderName]);
+      return (
+        providerName.includes("bank") ||
+        paymentMethod.includes("bank") ||
+        paymentMethodType.includes("bank") ||
+        provider.includes("bank")
+      );
+    },
+    [getProviderName]
+  );
 
   // Auto-select first bank for "from" when payment methods are loaded
   useEffect(() => {
-    if (!Array.isArray(finalPaymentMethods) || finalPaymentMethods.length === 0) {
+    if (
+      !Array.isArray(finalPaymentMethods) ||
+      finalPaymentMethods.length === 0
+    ) {
       return;
     }
 
     // Check if current selection still exists in the latest list
     const currentExists = fromPaymentMethod
       ? finalPaymentMethods.some(
-        (m: any) => getProviderName(m) === fromPaymentMethod
-      )
+          (m: any) => getProviderName(m) === fromPaymentMethod
+        )
       : false;
 
     // If nothing selected OR the current selection no longer exists, (re)auto-select
@@ -239,11 +262,18 @@ const MoneyXRates = () => {
   // Auto-select second payment method for "to"
   useEffect(() => {
     // Only run if we have payment methods, "from" is selected, and "to" is not selected
-    if (!Array.isArray(finalPaymentMethods) || finalPaymentMethods.length === 0) {
+    if (
+      !Array.isArray(finalPaymentMethods) ||
+      finalPaymentMethods.length === 0
+    ) {
       return;
     }
 
-    if (finalPaymentMethods.length > 1 && fromPaymentMethod && !toPaymentMethod) {
+    if (
+      finalPaymentMethods.length > 1 &&
+      fromPaymentMethod &&
+      !toPaymentMethod
+    ) {
       // Filter for banks first
       const bankMethods = finalPaymentMethods.filter(isBankMethod);
 
@@ -254,7 +284,10 @@ const MoneyXRates = () => {
         methodToSelect = bankMethods[1];
       } else if (bankMethods.length === 1 && finalPaymentMethods.length > 1) {
         // If only one bank exists, select the second method overall (index 1) if it's different from "from"
-        if (finalPaymentMethods[1] && getProviderName(finalPaymentMethods[1]) !== fromPaymentMethod) {
+        if (
+          finalPaymentMethods[1] &&
+          getProviderName(finalPaymentMethods[1]) !== fromPaymentMethod
+        ) {
           methodToSelect = finalPaymentMethods[1];
         } else {
           // Find first method that's different from "from"
@@ -264,7 +297,10 @@ const MoneyXRates = () => {
         }
       } else {
         // No banks or only one method, select the second method (index 1) if it's different from "from"
-        if (finalPaymentMethods[1] && getProviderName(finalPaymentMethods[1]) !== fromPaymentMethod) {
+        if (
+          finalPaymentMethods[1] &&
+          getProviderName(finalPaymentMethods[1]) !== fromPaymentMethod
+        ) {
           methodToSelect = finalPaymentMethods[1];
         } else {
           // Find first method that's different from "from"
@@ -282,7 +318,13 @@ const MoneyXRates = () => {
         }
       }
     }
-  }, [finalPaymentMethods, fromPaymentMethod, toPaymentMethod, isBankMethod, getProviderName]);
+  }, [
+    finalPaymentMethods,
+    fromPaymentMethod,
+    toPaymentMethod,
+    isBankMethod,
+    getProviderName,
+  ]);
 
   // Calculate amounts
   const handleAmountChange = (value: string, isFromPay: boolean) => {
@@ -299,7 +341,8 @@ const MoneyXRates = () => {
       if (isFromPay) {
         setPayAmountInput(value);
         setPayAmount(newAmount);
-        const calculatedGetAmount = newAmount < 2 ? newAmount : Math.max(0, newAmount - 2);
+        const calculatedGetAmount =
+          newAmount < 2 ? newAmount : Math.max(0, newAmount - 2);
         setGetAmount(calculatedGetAmount);
         setGetAmountInput(calculatedGetAmount.toFixed(2));
       } else {
@@ -365,7 +408,12 @@ const MoneyXRates = () => {
     // Validation
     const errors: string[] = [];
 
-    if (!payAmountInput || payAmountInput.trim() === "" || !payAmount || payAmount <= 0) {
+    if (
+      !payAmountInput ||
+      payAmountInput.trim() === "" ||
+      !payAmount ||
+      payAmount <= 0
+    ) {
       errors.push("Please enter a valid amount");
     }
 
@@ -391,8 +439,14 @@ const MoneyXRates = () => {
     if (!isAuthenticated) {
       // Save state to localStorage for restoration after login
       // Get the base provider name (without suffix) for better matching
-      const fromProviderBase = selectedFromPaymentDetail?.provider || getProviderName(selectedFromPaymentDetail) || fromPaymentMethod;
-      const toProviderBase = selectedToPaymentDetail?.provider || getProviderName(selectedToPaymentDetail) || toPaymentMethod;
+      const fromProviderBase =
+        selectedFromPaymentDetail?.provider ||
+        getProviderName(selectedFromPaymentDetail) ||
+        fromPaymentMethod;
+      const toProviderBase =
+        selectedToPaymentDetail?.provider ||
+        getProviderName(selectedToPaymentDetail) ||
+        toPaymentMethod;
 
       const state = {
         mode: "moneyx",
@@ -407,8 +461,12 @@ const MoneyXRates = () => {
         toPaymentMethod: toPaymentMethod, // Cleaned name
         fromProviderBase: fromProviderBase, // Base provider name from API
         toProviderBase: toProviderBase, // Base provider name from API
-        fromPaymentDetail: selectedFromPaymentDetail ? { ...selectedFromPaymentDetail } : null,
-        toPaymentDetail: selectedToPaymentDetail ? { ...selectedToPaymentDetail } : null,
+        fromPaymentDetail: selectedFromPaymentDetail
+          ? { ...selectedFromPaymentDetail }
+          : null,
+        toPaymentDetail: selectedToPaymentDetail
+          ? { ...selectedToPaymentDetail }
+          : null,
       };
 
       console.log("💾 [Rates] Saving moneyx form state before login:", state);
@@ -473,7 +531,8 @@ const MoneyXRates = () => {
       }, 100);
     } catch (error: any) {
       console.error("Transfer error:", error);
-      const errorMessage = error?.message || error || "An error occurred. Please try again.";
+      const errorMessage =
+        error?.message || error || "An error occurred. Please try again.";
       setValidationErrors([errorMessage]);
       showToast.error(errorMessage);
     } finally {
@@ -497,7 +556,9 @@ const MoneyXRates = () => {
     }
 
     if (!moneyXTransactionResult?.moneyx_transaction_id) {
-      showToast.error("Transaction not found. Please submit the transfer form first.");
+      showToast.error(
+        "Transaction not found. Please submit the transfer form first."
+      );
       return;
     }
 
@@ -553,7 +614,10 @@ const MoneyXRates = () => {
       setShowExchanging(true);
     } catch (error: any) {
       console.error("Update transaction error:", error);
-      const errorMessage = error?.message || error || "An error occurred while updating the transaction.";
+      const errorMessage =
+        error?.message ||
+        error ||
+        "An error occurred while updating the transaction.";
       showToast.error(errorMessage);
     } finally {
       setIsUpdatingTransaction(false);
@@ -604,14 +668,16 @@ const MoneyXRates = () => {
         {/* Top Section - You Send: Amount and Bank/Payment Method in one card */}
         <div className="relative mb-0 pb-2">
           <div
-            className={`relative flex flex-col sm:flex-row gap-6 rounded-2xl p-4 sm:p-6 overflow-visible border-[1.5px] ${isDark ? "border-[#2F2F3A]" : "border-[#E2E8F0] shadow-sm"
-              } bg-transparent`}
+            className={`relative flex flex-col sm:flex-row gap-6 rounded-2xl p-4 sm:p-6 overflow-visible border-[1.5px] ${
+              isDark ? "border-[#2F2F3A]" : "border-[#E2E8F0] shadow-sm"
+            } bg-transparent`}
           >
             {/* Amount Section */}
             <div className="flex-1 min-w-0">
               <label
-                className={`block text-sm mb-2 font-semibold flex items-center gap-2 ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"
-                  }`}
+                className={`block text-sm mb-2 font-semibold flex items-center gap-2 ${
+                  isDark ? "text-[#9CA3AF]" : "text-[#475569]"
+                }`}
               >
                 You Send
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
@@ -623,10 +689,11 @@ const MoneyXRates = () => {
                   value={payAmountInput}
                   onChange={(e) => handleAmountChange(e.target.value, true)}
                   placeholder="Enter amount"
-                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${isDark
-                    ? "border-white/10 text-white"
-                    : "border-gray-200 text-[#111827]"
-                    }`}
+                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${
+                    isDark
+                      ? "border-white/10 text-white"
+                      : "border-gray-200 text-[#111827]"
+                  }`}
                 />
               </div>
             </div>
@@ -634,8 +701,9 @@ const MoneyXRates = () => {
             {/* Bank/Payment Method Section */}
             <div className="flex-1 min-w-0" ref={fromDropdownRef}>
               <label
-                className={`block text-[15px] mb-2 font-semibold ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"
-                  }`}
+                className={`block text-[15px] mb-2 font-semibold ${
+                  isDark ? "text-[#9CA3AF]" : "text-[#475569]"
+                }`}
               >
                 Bank/Payment Method
               </label>
@@ -646,15 +714,20 @@ const MoneyXRates = () => {
                     setIsFromDropdownOpen(!isFromDropdownOpen);
                     setIsToDropdownOpen(false);
                   }}
-                  className={`w-full rounded-2xl px-4 py-2 text-lg focus:outline-none border appearance-none bg-transparent flex items-center justify-between ${isDark
-                    ? "border-white/10 text-white"
-                    : "border-gray-200 text-[#111827]"
-                    }`}
+                  className={`w-full rounded-2xl px-4 py-2 text-lg focus:outline-none border appearance-none bg-transparent flex items-center justify-between ${
+                    isDark
+                      ? "border-white/10 text-white"
+                      : "border-gray-200 text-[#111827]"
+                  }`}
                 >
                   <div className="flex items-center gap-3">
-                    {selectedFromPaymentDetail?.provider_logo || selectedFromPaymentDetail?.logo ? (
+                    {selectedFromPaymentDetail?.provider_logo ||
+                    selectedFromPaymentDetail?.logo ? (
                       <img
-                        src={selectedFromPaymentDetail.provider_logo || selectedFromPaymentDetail.logo}
+                        src={
+                          selectedFromPaymentDetail.provider_logo ||
+                          selectedFromPaymentDetail.logo
+                        }
                         alt={fromPaymentMethod || "Bank"}
                         className="w-8 h-8 rounded-full"
                       />
@@ -670,10 +743,11 @@ const MoneyXRates = () => {
 
                 {isFromDropdownOpen && (
                   <div
-                    className={`absolute z-50 w-full mt-1 rounded-xl shadow-lg border ${isDark
-                      ? "bg-[#1D1D23] border-[#35353E]"
-                      : "bg-white border-[#E2E8F0]"
-                      } max-h-60 overflow-y-auto`}
+                    className={`absolute z-50 w-full mt-1 rounded-xl shadow-lg border ${
+                      isDark
+                        ? "bg-[#1D1D23] border-[#35353E]"
+                        : "bg-white border-[#E2E8F0]"
+                    } max-h-60 overflow-y-auto`}
                   >
                     <div className="p-2">
                       <div className="relative mb-2">
@@ -682,10 +756,11 @@ const MoneyXRates = () => {
                           placeholder="Search..."
                           value={fromSearchTerm}
                           onChange={(e) => setFromSearchTerm(e.target.value)}
-                          className={`w-full px-3 py-2 rounded-lg border ${isDark
-                            ? "bg-[#18181D] border-[#35353E] text-white"
-                            : "bg-white border-[#E2E8F0] text-gray-900"
-                            } focus:outline-none`}
+                          className={`w-full px-3 py-2 rounded-lg border ${
+                            isDark
+                              ? "bg-[#18181D] border-[#35353E] text-white"
+                              : "bg-white border-[#E2E8F0] text-gray-900"
+                          } focus:outline-none`}
                         />
                       </div>
                       {filteredFromMethods.map((method: any, index: number) => (
@@ -699,8 +774,9 @@ const MoneyXRates = () => {
                             setIsFromDropdownOpen(false);
                             setFromSearchTerm("");
                           }}
-                          className={`w-full px-3 py-2 rounded-lg flex items-center gap-3 hover:bg-opacity-50 ${isDark ? "hover:bg-[#2F2F3A]" : "hover:bg-gray-100"
-                            }`}
+                          className={`w-full px-3 py-2 rounded-lg flex items-center gap-3 hover:bg-opacity-50 ${
+                            isDark ? "hover:bg-[#2F2F3A]" : "hover:bg-gray-100"
+                          }`}
                         >
                           {method.provider_logo || method.logo ? (
                             <img
@@ -722,11 +798,9 @@ const MoneyXRates = () => {
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Swap Indicator - Clickable */}
-        <div className="flex justify-center my-4">
-          <div className="flex flex-col items-center">
+          {/* Swap Indicator - Clickable */}
+          <div className="absolute left-1/2 transform -translate-x-1/2 top-full -translate-y-[60%] sm:-translate-y-[45%] z-10">
             <button
               type="button"
               onClick={() => {
@@ -748,10 +822,17 @@ const MoneyXRates = () => {
                 setGetAmountInput(tempPayAmount);
                 setGetAmount(payAmount);
               }}
-              className={`w-10 h-10 rounded-full flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity ${isDark ? "bg-[#2F2F3A]" : "bg-gray-100"
-                }`}
+              className="flex items-center justify-center p-0 bg-transparent border-none shadow-none"
             >
-              <FaExchangeAlt className="text-[#1D8751] w-5 h-5" />
+              <img
+                src={
+                  isDark
+                    ? "https://res.cloudinary.com/pitz/image/upload/v1755500509/Frame_36261_ledmyw.png"
+                    : "https://res.cloudinary.com/pitz/image/upload/v1756579504/Frame_36261_1_d9cnq1.png"
+                }
+                alt="swap"
+                className="w-11 h-11"
+              />
             </button>
           </div>
         </div>
@@ -759,14 +840,16 @@ const MoneyXRates = () => {
         {/* Bottom Section - You Get: Amount and Provider in one card */}
         <div className="relative mb-0 pb-2">
           <div
-            className={`relative flex flex-col sm:flex-row gap-6 rounded-2xl p-4 sm:p-6 overflow-visible border-[1.5px] ${isDark ? "border-[#2F2F3A]" : "border-[#E2E8F0] shadow-sm"
-              } bg-transparent`}
+            className={`relative flex flex-col sm:flex-row gap-6 rounded-2xl p-4 sm:p-6 overflow-visible border-[1.5px] ${
+              isDark ? "border-[#2F2F3A]" : "border-[#E2E8F0] shadow-sm"
+            } bg-transparent`}
           >
             {/* Amount Section */}
             <div className="flex-1 min-w-0">
               <label
-                className={`block text-sm mb-2 font-semibold flex items-center gap-2 ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"
-                  }`}
+                className={`block text-sm mb-2 font-semibold flex items-center gap-2 ${
+                  isDark ? "text-[#9CA3AF]" : "text-[#475569]"
+                }`}
               >
                 You Get
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
@@ -778,10 +861,11 @@ const MoneyXRates = () => {
                   value={getAmountInput}
                   onChange={(e) => handleAmountChange(e.target.value, false)}
                   placeholder="Enter amount"
-                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${isDark
-                    ? "border-white/10 text-white"
-                    : "border-gray-200 text-[#111827]"
-                    }`}
+                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${
+                    isDark
+                      ? "border-white/10 text-white"
+                      : "border-gray-200 text-[#111827]"
+                  }`}
                 />
               </div>
             </div>
@@ -789,10 +873,11 @@ const MoneyXRates = () => {
             {/* Provider Section */}
             <div className="flex-1 min-w-0" ref={toDropdownRef}>
               <label
-                className={`block text-[15px] mb-2 font-semibold ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"
-                  }`}
+                className={`block text-[15px] mb-2 font-semibold ${
+                  isDark ? "text-[#9CA3AF]" : "text-[#475569]"
+                }`}
               >
-                Provider
+                Bank/Payment Method
               </label>
               <div className="relative">
                 <button
@@ -801,15 +886,20 @@ const MoneyXRates = () => {
                     setIsToDropdownOpen(!isToDropdownOpen);
                     setIsFromDropdownOpen(false);
                   }}
-                  className={`w-full rounded-2xl px-4 py-2 text-lg focus:outline-none border appearance-none bg-transparent flex items-center justify-between ${isDark
-                    ? "border-white/10 text-white"
-                    : "border-gray-200 text-[#111827]"
-                    }`}
+                  className={`w-full rounded-2xl px-4 py-2 text-lg focus:outline-none border appearance-none bg-transparent flex items-center justify-between ${
+                    isDark
+                      ? "border-white/10 text-white"
+                      : "border-gray-200 text-[#111827]"
+                  }`}
                 >
                   <div className="flex items-center gap-3">
-                    {selectedToPaymentDetail?.provider_logo || selectedToPaymentDetail?.logo ? (
+                    {selectedToPaymentDetail?.provider_logo ||
+                    selectedToPaymentDetail?.logo ? (
                       <img
-                        src={selectedToPaymentDetail.provider_logo || selectedToPaymentDetail.logo}
+                        src={
+                          selectedToPaymentDetail.provider_logo ||
+                          selectedToPaymentDetail.logo
+                        }
                         alt={toPaymentMethod || "Bank"}
                         className="w-8 h-8 rounded-full"
                       />
@@ -825,10 +915,11 @@ const MoneyXRates = () => {
 
                 {isToDropdownOpen && (
                   <div
-                    className={`absolute z-50 w-full mt-1 rounded-xl shadow-lg border ${isDark
-                      ? "bg-[#1D1D23] border-[#35353E]"
-                      : "bg-white border-[#E2E8F0]"
-                      } max-h-60 overflow-y-auto`}
+                    className={`absolute z-50 w-full mt-1 rounded-xl shadow-lg border ${
+                      isDark
+                        ? "bg-[#1D1D23] border-[#35353E]"
+                        : "bg-white border-[#E2E8F0]"
+                    } max-h-60 overflow-y-auto`}
                   >
                     <div className="p-2">
                       <div className="relative mb-2">
@@ -837,10 +928,11 @@ const MoneyXRates = () => {
                           placeholder="Search..."
                           value={toSearchTerm}
                           onChange={(e) => setToSearchTerm(e.target.value)}
-                          className={`w-full px-3 py-2 rounded-lg border ${isDark
-                            ? "bg-[#18181D] border-[#35353E] text-white"
-                            : "bg-white border-[#E2E8F0] text-gray-900"
-                            } focus:outline-none`}
+                          className={`w-full px-3 py-2 rounded-lg border ${
+                            isDark
+                              ? "bg-[#18181D] border-[#35353E] text-white"
+                              : "bg-white border-[#E2E8F0] text-gray-900"
+                          } focus:outline-none`}
                         />
                       </div>
                       {filteredToMethods.map((method: any, index: number) => (
@@ -854,8 +946,9 @@ const MoneyXRates = () => {
                             setIsToDropdownOpen(false);
                             setToSearchTerm("");
                           }}
-                          className={`w-full px-3 py-2 rounded-lg flex items-center gap-3 hover:bg-opacity-50 ${isDark ? "hover:bg-[#2F2F3A]" : "hover:bg-gray-100"
-                            }`}
+                          className={`w-full px-3 py-2 rounded-lg flex items-center gap-3 hover:bg-opacity-50 ${
+                            isDark ? "hover:bg-[#2F2F3A]" : "hover:bg-gray-100"
+                          }`}
                         >
                           {method.provider_logo || method.logo ? (
                             <img
@@ -880,7 +973,9 @@ const MoneyXRates = () => {
         </div>
 
         {/* Estimated Price Warning */}
-        <div className={`flex items-start ${isDark ? "text-white" : "text-[#1F2937]"} text-xs sm:text-sm lg:text-sm mt-2 mb-4`}>
+        <div
+          className={`flex items-start ${isDark ? "text-white" : "text-[#1F2937]"} text-xs sm:text-sm lg:text-sm mt-2 mb-4`}
+        >
           <AlertCircle className="w-4 h-4 text-[#E23D3A] mr-2 mt-0.5 flex-shrink-0" />
           <span>
             {t(
@@ -891,19 +986,29 @@ const MoneyXRates = () => {
         </div>
 
         {/* Amount & Fees */}
-        <div className={`border ${isDark ? "border-[#35353E]" : "border-[#E8EFF5]"} rounded-xl p-4 bg-transparent mb-4`}>
-          <p className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm font-medium mb-2`}>
+        <div
+          className={`border ${isDark ? "border-[#35353E]" : "border-[#E8EFF5]"} rounded-xl p-4 bg-transparent mb-4`}
+        >
+          <p
+            className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm font-medium mb-2`}
+          >
             {t("rates.amountAndFees", "Amount & Fees")}
           </p>
           <div className="flex flex-col lg:flex-row gap-7 items-center">
             <div className="flex-1 flex flex-col justify-start">
-              <span className={`${isDark ? "text-white" : "text-[#1F2937]"} text-sm mb-2`}>
+              <span
+                className={`${isDark ? "text-white" : "text-[#1F2937]"} text-sm mb-2`}
+              >
                 {t("rates.netAmount", "Net Amount to Transfer")}
               </span>
               <div className="max-w-xl">
-                <div className={`w-full ${isDark ? "bg-[#35353E]" : "bg-white"} border ${isDark ? "border-[#35353E]" : "border-[#E8EFF5]"} rounded-2xl flex items-center px-2 py-2`}>
+                <div
+                  className={`w-full ${isDark ? "bg-[#35353E]" : "bg-white"} border ${isDark ? "border-[#35353E]" : "border-[#E8EFF5]"} rounded-2xl flex items-center px-2 py-2`}
+                >
                   <button className="flex-1 flex items-center justify-center bg-transparent">
-                    <span className={`${isDark ? "text-[#BDF4D8]" : "text-[#051015]"} text-sm ml-4`}>
+                    <span
+                      className={`${isDark ? "text-[#BDF4D8]" : "text-[#051015]"} text-sm ml-4`}
+                    >
                       {t(
                         "rates.amountIncludingFees",
                         "Amount including Total Fees"
@@ -917,7 +1022,9 @@ const MoneyXRates = () => {
               </div>
             </div>
             {/* Right: Fee Breakdown */}
-            <div className={`max-w-lg flex flex-col justify-between ${isDark ? "bg-[#1D1D23]" : "bg-white"} border ${isDark ? "border-accent" : "border-[#E8EFF5]"} rounded-md px-4 py-3`}>
+            <div
+              className={`max-w-lg flex flex-col justify-between ${isDark ? "bg-[#1D1D23]" : "bg-white"} border ${isDark ? "border-accent" : "border-[#E8EFF5]"} rounded-md px-4 py-3`}
+            >
               <div className="flex justify-between gap-20 text-sm mb-1">
                 <span className={isDark ? "text-[#E8EFF5]" : "text-[#051015]"}>
                   {t("rates.commission", "Commission:")} {commissionRate}%
@@ -930,11 +1037,11 @@ const MoneyXRates = () => {
                 <span className={isDark ? "text-[#E8EFF5]" : "text-[#051015]"}>
                   {t("rates.networkFee", "Network Fee:")}
                 </span>
-                <span className="text-[#1D8751]">
-                  ${networkFee.toFixed(2)}
-                </span>
+                <span className="text-[#1D8751]">${networkFee.toFixed(2)}</span>
               </div>
-              <div className={`border-t ${isDark ? "border-[#35353E]" : "border-[#E8EFF5]"} mt-2 pt-2 flex justify-between text-sm`}>
+              <div
+                className={`border-t ${isDark ? "border-[#35353E]" : "border-[#E8EFF5]"} mt-2 pt-2 flex justify-between text-sm`}
+              >
                 <span className="text-[#F79330] font-semibold">
                   {t("rates.totalFees", "Total Fees")}
                 </span>
@@ -961,8 +1068,9 @@ const MoneyXRates = () => {
           <button
             onClick={handleExchange}
             disabled={isSubmitting}
-            className={`w-full py-3 px-4 rounded-xl font-semibold text-white bg-[#1D8751] hover:bg-[#0f8f4d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""
-              }`}
+            className={`w-full py-3 px-4 rounded-xl font-semibold text-white bg-[#1D8751] hover:bg-[#0f8f4d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+              isSubmitting ? "opacity-50 cursor-not-allowed" : ""
+            }`}
           >
             {isSubmitting ? "Processing..." : "Exchange Now"}
           </button>
@@ -975,18 +1083,26 @@ const MoneyXRates = () => {
               ref={paymentDetailsRef}
               className={`flex flex-col ${isDark ? "bg-[#1D1D23]" : "bg-white"} border-2 ${isDark ? "border-[#35353E]" : "border-[#E2E8F0]"} rounded-2xl p-4 sm:p-5 shadow-lg w-full mb-4`}
             >
-              <h2 className={`text-xl font-bold mb-4 ${isDark ? "text-[#788099]" : "text-[#475569]"} inline-flex items-center gap-2`}>
-                <span className={isDark ? "text-[#788099]" : "text-[#475569]"}>2-</span>
+              <h2
+                className={`text-xl font-bold mb-4 ${isDark ? "text-[#788099]" : "text-[#475569]"} inline-flex items-center gap-2`}
+              >
+                <span className={isDark ? "text-[#788099]" : "text-[#475569]"}>
+                  2-
+                </span>
                 Bank Account Address
               </h2>
 
               {/* Bank Account Address Label */}
-              <label className={`block text-base ${isDark ? "text-[#788099]" : "text-[#475569]"} mb-2 font-semibold`}>
+              <label
+                className={`block text-base ${isDark ? "text-[#788099]" : "text-[#475569]"} mb-2 font-semibold`}
+              >
                 Bank Account Address
               </label>
 
               {/* Input group */}
-              <div className={`flex items-center ${isDark ? "bg-[#1D1D23]" : "bg-white"} border ${isDark ? "border-[#35353E]" : "border-[#E2E8F0]"} rounded-2xl px-4 py-2 mb-2 overflow-hidden gap-2`}>
+              <div
+                className={`flex items-center ${isDark ? "bg-[#1D1D23]" : "bg-white"} border ${isDark ? "border-[#35353E]" : "border-[#E2E8F0]"} rounded-2xl px-4 py-2 mb-2 overflow-hidden gap-2`}
+              >
                 {/* Left icon */}
                 <span className="text-[#1D8751] flex-shrink-0">
                   <svg width="22" height="22" fill="none" viewBox="0 0 24 24">
@@ -1020,12 +1136,13 @@ const MoneyXRates = () => {
                     setBankAddressError(null);
                   }}
                   placeholder="Paste here your Bank Account Address"
-                  className={`flex-1 min-w-0 bg-transparent border-none outline-none ${isDark ? "text-[#788099]" : "text-[#475569]"} placeholder-[#788099] text-sm sm:text-base ${bankAddressError
-                    ? "border-red-500"
-                    : bankAccountAddress.trim() && !bankAddressError
-                      ? "border-green-500"
-                      : ""
-                    }`}
+                  className={`flex-1 min-w-0 bg-transparent border-none outline-none ${isDark ? "text-[#788099]" : "text-[#475569]"} placeholder-[#788099] text-sm sm:text-base ${
+                    bankAddressError
+                      ? "border-red-500"
+                      : bankAccountAddress.trim() && !bankAddressError
+                        ? "border-green-500"
+                        : ""
+                  }`}
                 />
                 {/* Paste button */}
                 <button
@@ -1061,7 +1178,9 @@ const MoneyXRates = () => {
               )}
 
               {/* Confirmation checkbox */}
-              <label className={`flex mb-4 items-center gap-2 mt-4 text-sm ${isDark ? "text-[#788099]" : "text-[#475569]"}`}>
+              <label
+                className={`flex mb-4 items-center gap-2 mt-4 text-sm ${isDark ? "text-[#788099]" : "text-[#475569]"}`}
+              >
                 <input
                   type="checkbox"
                   checked={isAddressConfirmed}
@@ -1070,7 +1189,9 @@ const MoneyXRates = () => {
                   }
                   className="w-4 h-4 rounded border-[#1D8751] text-[#1D8751] focus:ring-[#1D8751]"
                 />
-                <span>I confirm that this bank account address is correct.</span>
+                <span>
+                  I confirm that this bank account address is correct.
+                </span>
               </label>
 
               {/* Terms and Conditions Summary */}
@@ -1096,32 +1217,41 @@ const MoneyXRates = () => {
                     <circle cx="12" cy="16" r="1" fill="#1D8751" />
                   </svg>
                 </span>
-                <span className={`text-base font-semibold ${isDark ? "text-[#788099]" : "text-[#475569]"}`}>
+                <span
+                  className={`text-base font-semibold ${isDark ? "text-[#788099]" : "text-[#475569]"}`}
+                >
                   Terms and Conditions Summary
                 </span>
               </div>
               <div
-                className={`border border-[#1D8751] rounded-xl p-4 ${isDark ? "bg-[#1D1D23]" : "bg-[#F8FAFF]"
-                  }`}
+                className={`border border-[#1D8751] rounded-xl p-4 ${
+                  isDark ? "bg-[#1D1D23]" : "bg-[#F8FAFF]"
+                }`}
               >
                 <ul className="list-none space-y-2">
                   <li className="flex items-start">
                     <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
-                    <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm`}>
+                    <span
+                      className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm`}
+                    >
                       Please send the money from your own account Only
                     </span>
                   </li>
                   <li className="flex items-start">
                     <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
-                    <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm`}>
+                    <span
+                      className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm`}
+                    >
                       Put transaction ID in the description field of the bank
                     </span>
                   </li>
                   <li className="flex items-start">
                     <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
-                    <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm`}>
-                      Please note, If you do not follow above conditions, we will
-                      reject your transaction and send you back your money.
+                    <span
+                      className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm`}
+                    >
+                      Please note, If you do not follow above conditions, we
+                      will reject your transaction and send you back your money.
                     </span>
                   </li>
                 </ul>
@@ -1130,12 +1260,21 @@ const MoneyXRates = () => {
 
             {/* Final Submit Button */}
             <button
-              className={`w-full text-base font-medium py-3 rounded-xl flex items-center justify-center gap-2 transition-colors text-white ${!bankAccountAddress.trim() || bankAddressError || !isAddressConfirmed || isUpdatingTransaction
-                ? "bg-gray-500 cursor-not-allowed"
-                : "bg-[#1D8751] hover:bg-[#166b3e]"
-                }`}
+              className={`w-full text-base font-medium py-3 rounded-xl flex items-center justify-center gap-2 transition-colors text-white ${
+                !bankAccountAddress.trim() ||
+                bankAddressError ||
+                !isAddressConfirmed ||
+                isUpdatingTransaction
+                  ? "bg-gray-500 cursor-not-allowed"
+                  : "bg-[#1D8751] hover:bg-[#166b3e]"
+              }`}
               onClick={handleBankAccountSubmit}
-              disabled={!bankAccountAddress.trim() || !!bankAddressError || !isAddressConfirmed || isUpdatingTransaction}
+              disabled={
+                !bankAccountAddress.trim() ||
+                !!bankAddressError ||
+                !isAddressConfirmed ||
+                isUpdatingTransaction
+              }
             >
               {isUpdatingTransaction ? (
                 <div className="flex items-center gap-2">
@@ -1144,7 +1283,9 @@ const MoneyXRates = () => {
                 </div>
               ) : (
                 <span className="flex items-center justify-center gap-2">
-                  <span className="text-base font-medium text-white">Express</span>
+                  <span className="text-base font-medium text-white">
+                    Express
+                  </span>
                   <img
                     className="h-5 w-auto"
                     src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
@@ -1161,4 +1302,3 @@ const MoneyXRates = () => {
 };
 
 export default MoneyXRates;
-
