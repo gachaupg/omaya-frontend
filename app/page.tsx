@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
 import type { RootState } from "@/store/rootReducer";
 import { tokens } from "@/styles/tokens";
-import { Play, MessageCircle, Plus, BarChart, Globe, Lock, DollarSign, Users, TrendingUp, Shield, Zap, Gift, UserPlus, ArrowRight, Building2, Calendar, Clock, MapPin, Phone, Mail, Send, ChevronDown, ChevronUp, ArrowLeftRight, HelpCircle } from "lucide-react";
+import { Play, MessageCircle, Plus, BarChart, Globe, Lock, DollarSign, Users, TrendingUp, Shield, Zap, Gift, UserPlus, ArrowRight, Building2, Calendar, Clock, MapPin, Phone, Mail, Send, ChevronDown, ChevronUp, ArrowLeftRight, HelpCircle, Wallet } from "lucide-react";
 import ExchangeForm from "@/components/ExchangeForm";
 import { useBlog } from "@/features/blogs/hooks/blog";
 import { BlogPost } from "@/features/blogs/types";
@@ -20,6 +20,7 @@ import { HiOutlineDeviceMobile } from "react-icons/hi";
 import { FaRegStar } from "react-icons/fa";
 import { Sparkles } from "lucide-react"
 import { MdCurrencyBitcoin } from "react-icons/md";
+import { ShieldCheck } from "lucide-react";
 
 import { GoDotFill } from "react-icons/go";
 
@@ -570,10 +571,11 @@ export default function MarketingPage() {
         </div>
       </section>
 
-      <div className="pt-4 sm:pt-6 md:pt-8 pb-12 sm:pb-16 md:pb-20 px-4 md:px-[100px] bg-white dark:bg-[var(--bg-color)] relative z-10">
+      <div className="pt-4 sm:pt-6 md:pt-8 pb-12 sm:pb-16 md:pb-20 px-4 md:px-[100px] bg-white dark:bg-(--card-color) relative z-10">
+        <div className="absolute -top-10 left-90 w-[200px] sm:w-[300px] h-[200px] sm:h-[300px] bg-[#1D8751]/10 blur-3xl rounded-full" />
 
         <div className="absolute inset-0 overflow-hidden pointer-events-none -z-1">
-          <div className="absolute w-[280px] sm:w-[300px] h-[500px] right-90 bottom-25 sm:h-24 blur-3xl bg-[#9810FA] rounded-full opacity-25" />
+          <div className="absolute w-[280px] sm:w-[300px] h-[600px] right-90 bottom-25 sm:h-24 blur-3xl bg-[#9810FA] rounded-full opacity-15" />
         </div>
         <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl">
           {/* Green pill banner */}
@@ -585,27 +587,12 @@ export default function MarketingPage() {
           </div>
 
           {/* Title + Subtitle (small green gradient only around "Celebrating Success:") */}
-          <div className="mx-auto mb-8 sm:mb-10 md:mb-12 max-w-3xl px-2">
+          <div className="mx-auto mb-8 sm:mb-10 md:mb-12 max-w-5xl px-2">
             {/* Section Title */}
             <div className="relative flex justify-center mb-3 sm:mb-4">
-              {/* Greenish glow behind the whole title */}
-              <div className="pointer-events-none absolute inset-0 flex justify-center items-center -z-10">
-                <div className="w-[440px] sm:w-[700px] h-[120px] sm:h-[150px] bg-gradient-to-r from-transparent via-[#1D8751]/32 to-transparent blur-3xl rounded-full" />
-                <div className="absolute w-[280px] sm:w-[420px] h-[78px] sm:h-[96px] bg-gradient-to-r from-transparent via-[#13B562]/38 to-transparent blur-2xl rounded-full" />
-                <div className="absolute w-[560px] sm:w-[860px] h-[180px] sm:h-[230px] bg-[#1D8751]/10 blur-[64px] rounded-full" />
-
-              </div>
               <h2 className="text-center text-xl sm:text-2xl md:text-3xl lg:text-4xl 2xl:text-5xl font-bold">
                 <span className="text-gray-900 dark:text-white">
                   <span className="relative inline-flex items-center">
-                    <span
-                      className="pointer-events-none absolute -inset-x-10 -inset-y-5 rounded-full bg-gradient-to-r from-transparent via-[#1D8751]/20 to-transparent dark:via-[#13B562]/24 blur-2xl opacity-70"
-                      aria-hidden="true"
-                    />
-                    <span
-                      className="pointer-events-none absolute -inset-x-6 -inset-y-3 rounded-full bg-gradient-to-r from-transparent via-[#13B562]/28 to-transparent blur-2xl opacity-70"
-                      aria-hidden="true"
-                    />
                     <span className="relative">
                       {t(
                         "marketing.achievements.title.leading",
@@ -630,7 +617,7 @@ export default function MarketingPage() {
           </div>
 
           {/* First Row - Achievement Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 md:gap-6 mb-6 sm:mb-8 md:mb-10 max-w-8xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 md:gap-6 mb-6 sm:mb-8 md:mb-10 max-w-7xl mx-auto">
             {achievements.map((achievement, index) => {
               const icons = [
                 <DollarSign key="dollar" className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-white" />,
@@ -656,23 +643,13 @@ export default function MarketingPage() {
               return (
                 <div
                   key={index}
-                  className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg sm:rounded-3xl p-4 sm:p-5 md:p-6 flex flex-col relative overflow-hidden border-2 border-gray-200 dark:border-[#2A2A2A]"
+                  className="bg-gray-50 dark:bg-white/2 rounded-lg sm:rounded-3xl p-4 sm:p-5 md:p-6 flex flex-col relative overflow-hidden border border-gray-200 dark:border-white/10"
                 >
-                  {/* Dark mode gradient background */}
-                  <div
-                    className="hidden dark:block absolute inset-0 rounded-lg sm:rounded-xl"
-                    style={{
-                      background: 'linear-gradient(to bottom, rgba(29, 29, 35, 0.95), rgba(29, 29, 35, 1))'
-                    }}
-                  ></div>
+                  {/* Subtle white gradient overlay */}
+                  <div className="absolute inset-0 bg-linear-to-b from-white/5 via-white/2 to-transparent pointer-events-none rounded-lg sm:rounded-3xl"></div>
 
-                  {/* Greenish gradient overlay - lighter in light mode */}
-                  <div
-                    className="absolute top-0 right-0 bottom-0 w-3/4 opacity-30 dark:opacity-60 rounded-lg sm:rounded-xl"
-                    style={{
-                      background: 'linear-gradient(to left, rgba(29, 135, 81, 0.15) 0%, rgba(29, 135, 81, 0.08) 40%, transparent 100%)'
-                    }}
-                  ></div>
+                  {/* Greenish blur glow at top-right */}
+                  <div className="absolute top-2 right-7 w-25 h-25 bg-[#1D8751] opacity-45 blur-3xl rounded-full pointer-events-none"></div>
 
                   {/* Content wrapper */}
                   <div className="relative z-10 flex flex-col">
@@ -1217,14 +1194,16 @@ export default function MarketingPage() {
         {/* Dark gradient background with green dots */}
         <div className="absolute inset-0 overflow-hidden">
           {/* Green glowing particles background */}
-          <div className="absolute top-20 left-10 w-2 h-2 bg-[#1D8751] rounded-full opacity-60 blur-sm animate-pulse"></div>
+          <FloatingParticles count={7} />
+
+          {/* <div className="absolute top-20 left-10 w-2 h-2 bg-[#1D8751] rounded-full opacity-60 blur-sm animate-pulse"></div>
           <div className="absolute top-40 right-20 w-3 h-3 bg-[#1D8751] rounded-full opacity-40 blur-md animate-pulse" style={{ animationDelay: '0.5s' }}></div>
           <div className="absolute bottom-32 left-1/4 w-2 h-2 bg-[#1D8751] rounded-full opacity-50 blur-sm animate-pulse" style={{ animationDelay: '1s' }}></div>
           <div className="absolute top-1/3 right-1/3 w-2.5 h-2.5 bg-[#1D8751] rounded-full opacity-45 blur-sm animate-pulse" style={{ animationDelay: '1.5s' }}></div>
-          <div className="absolute bottom-20 right-1/4 w-3 h-3 bg-[#1D8751] rounded-full opacity-35 blur-md animate-pulse" style={{ animationDelay: '2s' }}></div>
+          <div className="absolute bottom-20 right-1/4 w-3 h-3 bg-[#1D8751] rounded-full opacity-35 blur-md animate-pulse" style={{ animationDelay: '2s' }}></div> */}
 
           {/* Subtle gradient overlays */}
-          <div
+          {/* <div
             className="absolute inset-0 opacity-30"
             style={{
               background: `
@@ -1232,7 +1211,13 @@ export default function MarketingPage() {
                 radial-gradient(circle at 80% 70%, ${tokens.colors.brand.lightGreen}10 0%, transparent 50%)
               `,
             }}
-          ></div>
+          ></div> */}
+
+          {/* Subtle gradient overlays */}
+          <div className="relative inset-0 opacity-30">
+            <div className="absolute top-5 left-20 w-65 h-80 rounded-full bg-[#1D8751] blur-3xl opacity-60" />
+            <div className="absolute top-145 right-10 w-75 h-90 rounded-full bg-[#1D8751] blur-3xl opacity-60" />
+          </div>
         </div>
 
         <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl px-4 relative z-10">
@@ -1253,7 +1238,7 @@ export default function MarketingPage() {
           </div>
 
           {/* Description */}
-          <p className="text-center text-gray-700 dark:text-[#99A1AF] text-sm sm:text-base md:text-lg mb-12 max-w-2xl mx-auto">
+          <p className="text-center text-gray-700 dark:text-[#788099] text-sm sm:text-base md:text-lg mb-12 max-w-2xl mx-auto">
             Begin your crypto journey in 4 simple steps. Join thousands of traders who trust OMAYA Exchange.
           </p>
 
@@ -1265,6 +1250,7 @@ export default function MarketingPage() {
                   number: 1,
                   icon: UserPlus,
                   iconBg: "bg-blue-500",
+                  ringColor: "bg-blue-500/15",
                   title: t("marketing.steps.create.title", "Create Account"),
                   description: t("marketing.steps.create.desc", "Create an account quickly and securely to start your digital trading journey."),
                   features: [
@@ -1275,8 +1261,9 @@ export default function MarketingPage() {
                 },
                 {
                   number: 2,
-                  icon: Shield,
+                  icon: ShieldCheck,
                   iconBg: "bg-purple-500",
+                  ringColor: "bg-purple-500/15",
                   title: t("marketing.steps.verify.title", "Verify Identity"),
                   description: t("marketing.steps.verify.desc", "Verify your identity to ensure a secure and compliant trading experience."),
                   features: [
@@ -1287,8 +1274,9 @@ export default function MarketingPage() {
                 },
                 {
                   number: 3,
-                  icon: DollarSign,
+                  icon: Wallet,
                   iconBg: "bg-[#1D8751]",
+                  ringColor: "bg-[#1D8751]/15",
                   title: t("marketing.steps.transfer.title", "Transfer Funds"),
                   description: t("marketing.steps.transfer.desc", "Transfer funds effortlessly and access a world of digital assets."),
                   features: [
@@ -1301,6 +1289,7 @@ export default function MarketingPage() {
                   number: 4,
                   icon: ArrowLeftRight,
                   iconBg: "bg-orange-500",
+                  ringColor: "bg-orange-500/15",
                   title: t("marketing.steps.start.title", "Start Exchanging"),
                   description: t("marketing.steps.start.desc", "Start exchanging instantly and explore endless opportunities."),
                   features: [
@@ -1312,21 +1301,28 @@ export default function MarketingPage() {
               ].map((step, index) => (
                 <div key={step.number} className="relative">
                   {/* Step Card */}
-                  <div className="relative bg-white dark:bg-[#18181D] rounded-3xl p-6 border-2 border-[#1D8751] shadow-lg hover:shadow-xl transition-all duration-300 h-full flex flex-col items-center text-center mx-auto">
-                    {/* Number Badge - Inside card */}
-                    <div className="absolute top-4 right-4 w-9 h-9 bg-[#1D8751]/20 rounded-full border border-[#1D8751]/30 flex items-center justify-center">
-                      <span className="text-[#1D8751] dark:text-[#1D8751] text-sm font-bold">{step.number}</span>
+                  <div className="relative bg-white dark:bg-white/5 rounded-3xl p-6 pt-2 border-2 border-[#1D8751]/80 shadow-lg h-full flex flex-col items-center text-center mx-auto">
+                    {/* Number Badge - Inside card, top right */}
+                    <div className="absolute top-4 right-4 w-10 h-10  rounded-full bg-[#1D8751]/20 border border-[#1D8751]/30 flex items-center justify-center">
+                      <span className="text-[#1D8751] dark:text-[#1D8751] text-base font-bold">{step.number}</span>
                     </div>
 
-                    {/* Icon Container */}
-                    <div className="relative mb-6">
-                      {/* Green dots decoration */}
-                      <div className="absolute -top-1 -left-1 w-2 h-2 bg-[#1D8751] rounded-full opacity-60"></div>
-                      <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-[#1D8751] rounded-full opacity-60"></div>
+                    {/* Icon Container with gradient background */}
+                    <div className="relative mb-5 mt-2">
+                      {/* Outer darker background container */}
+                      <div className={`relative ${step.ringColor} rounded-[20px] p-2 w-fit`}>
+                        {/* Green dots decoration - positioned on the outer container */}
+                        <div className="absolute top-1 left-1 w-2 h-2 lg:w-3 lg:h-3 bg-[#1D8751] rounded-full z-10"></div>
+                        <div className="absolute bottom-1 right-1 w-2 h-2 lg:w-3 lg:h-3 bg-[#1D8751] rounded-full z-10"></div>
 
-                      {/* Icon background */}
-                      <div className={`${step.iconBg} w-16 h-16 rounded-xl flex items-center justify-center shadow-lg relative`}>
-                        <step.icon className="w-8 h-8 text-white" />
+                        {/* Inner gradient icon background */}
+                        <div className="relative">
+                          <div className={`${step.iconBg} w-[72px] h-[72px] rounded-[16px] flex items-center justify-center shadow-lg relative overflow-hidden`}>
+                            {/* Gradient overlay for depth */}
+                            <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent rounded-[16px]"></div>
+                            <step.icon className="w-8 h-8 text-white relative z-10" strokeWidth={2} />
+                          </div>
+                        </div>
                       </div>
                     </div>
 
@@ -1336,28 +1332,30 @@ export default function MarketingPage() {
                     </h3>
 
                     {/* Description */}
-                    <p className="text-gray-700 dark:text-[#99A1AF] text-sm mb-4 flex-grow">
+                    <p className="text-gray-700 dark:text-[#788099] text-sm mb-4 grow px-2">
                       {step.description}
                     </p>
 
-                    {/* Features List */}
-                    <div className="flex flex-col space-y-2 mt-auto justify-start">
+                    {/* Features List - Left aligned */}
+                    <div className="flex flex-col space-y-2.5 mt-auto w-full">
                       {step.features.map((feature, idx) => (
-                        <div key={idx} className="flex items-center gap-2">
-                          <svg
-                            className="w-5 h-5 text-[#1D8751] shrink-0"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M5 13l4 4L19 7"
-                            />
-                          </svg>
-                          <span className="text-gray-700 dark:text-[#99A1AF] text-sm">
+                        <div key={idx} className="flex items-center gap-2.5">
+                          <div className="w-5 h-5 rounded-full bg-[#1D8751]/20 flex items-center justify-center shrink-0">
+                            <svg
+                              className="w-3.5 h-3.5 text-[#1D8751]/75"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={3}
+                                d="M5 13l4 4L19 7"
+                              />
+                            </svg>
+                          </div>
+                          <span className="text-gray-700 dark:text-[#788099] text-sm text-left">
                             {feature}
                           </span>
                         </div>
@@ -1377,8 +1375,14 @@ export default function MarketingPage() {
               ))}
             </div>
           </div>
-          <div className="flex justify-center mt-10" onClick={() => router.push(isAuthenticated ? '/dashboard' : '/auth/login')}>
-            <img src="https://res.cloudinary.com/pitz/image/upload/v1765959050/Button_muu3er.png" alt="" />
+          <div className="flex justify-center mt-10">
+            <button
+              onClick={() => router.push(isAuthenticated ? '/dashboard' : '/auth/login')}
+              className="group relative bg-[#1D8751] hover:bg-[#1a7547] text-white text-base sm:text-lg px-8 sm:px-10 py-3.5 sm:py-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-3 cursor-pointer"
+            >
+              <span>Get Started Now</span>
+              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" strokeWidth={2.5} />
+            </button>
           </div>
         </div>
       </div>
@@ -1391,7 +1395,7 @@ export default function MarketingPage() {
   relative overflow-hidden
 ">
         {/* Subtle floating particles */}
-        <FloatingParticles count={10} />
+        <FloatingParticles count={8} />
         {/* <div className="pointer-events-none absolute inset-0 hidden sm:block">
           <div className="absolute top-16 left-1/4 w-2 h-2 bg-[#1D8751] rounded-full opacity-60"></div>
           <div className="absolute top-32 right-1/3 w-3 h-3 bg-[#13B562] rounded-full opacity-40 "></div>
