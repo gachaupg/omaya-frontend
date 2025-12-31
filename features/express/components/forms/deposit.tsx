@@ -1697,52 +1697,52 @@ export default function DepositForm({
                               setAssetSearchTerm("");
                             }}
                           >
-                          <img
-                            src={getHighResAssetIcon(asset, ASSET_ICON_SIZE)}
-                            alt={asset?.name || asset?.ticker || asset?.symbol || "Asset"}
-                            className={`${ASSET_ICON_BASE_CLASS} w-9 h-9`}
-                            loading="lazy"
-                            onError={(e) => {
-                              e.currentTarget.src = getHighResAssetIcon(null, ASSET_ICON_SIZE);
-                            }}
-                          />
-                          <div className="flex-1">
-                            <div className="text-[#35353e] dark:text-[#ffffff] font-medium flex items-center gap-2">
-                              {(asset.ticker || asset.symbol || asset.name || "Unknown").toUpperCase()}
-                              <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
-                                {getNetworkDisplayName(getAssetNetwork(asset))}
-                              </span>
-                            </div>
-                            <div className="text-[#35353e] dark:text-[#788099] text-sm">
-                              {(() => {
-                                let displayName =
-                                  asset.name || asset.ticker || asset.symbol || "Unknown Asset";
+                            <img
+                              src={getHighResAssetIcon(asset, ASSET_ICON_SIZE)}
+                              alt={asset?.name || asset?.ticker || asset?.symbol || "Asset"}
+                              className={`${ASSET_ICON_BASE_CLASS} w-9 h-9`}
+                              loading="lazy"
+                              onError={(e) => {
+                                e.currentTarget.src = getHighResAssetIcon(null, ASSET_ICON_SIZE);
+                              }}
+                            />
+                            <div className="flex-1">
+                              <div className="text-[#35353e] dark:text-[#ffffff] font-medium flex items-center gap-2">
+                                {(asset.ticker || asset.symbol || asset.name || "Unknown").toUpperCase()}
+                                <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
+                                  {getNetworkDisplayName(getAssetNetwork(asset))}
+                                </span>
+                              </div>
+                              <div className="text-[#35353e] dark:text-[#788099] text-sm">
+                                {(() => {
+                                  let displayName =
+                                    asset.name || asset.ticker || asset.symbol || "Unknown Asset";
 
-                                displayName = displayName
-                                  .replace(/\s*\(Binance Smart Chain\)\s*\(BSC\)/gi, "")
-                                  .replace(/\s*\(Ethereum\)\s*\(ETH\)/gi, "")
-                                  .replace(/\s*\(Polygon\)\s*\(MATIC\)/gi, "")
-                                  .replace(/\s*\(Avalanche\)\s*\(AVAX\)/gi, "")
-                                  .replace(/\s*\(TRON\)\s*\(TRX\)/gi, "")
-                                  .replace(/\s*\(Solana\)\s*\(SOL\)/gi, "")
-                                  .replace(/\s*\(BSC\)$/gi, "")
-                                  .replace(/\s*\(ETH\)$/gi, "")
-                                  .replace(/\s*\(MATIC\)$/gi, "")
-                                  .replace(/\s*\(AVAX\)$/gi, "")
-                                  .replace(/\s*\(TRX\)$/gi, "")
-                                  .replace(/\s*\(SOL\)$/gi, "")
-                                  .trim();
+                                  displayName = displayName
+                                    .replace(/\s*\(Binance Smart Chain\)\s*\(BSC\)/gi, "")
+                                    .replace(/\s*\(Ethereum\)\s*\(ETH\)/gi, "")
+                                    .replace(/\s*\(Polygon\)\s*\(MATIC\)/gi, "")
+                                    .replace(/\s*\(Avalanche\)\s*\(AVAX\)/gi, "")
+                                    .replace(/\s*\(TRON\)\s*\(TRX\)/gi, "")
+                                    .replace(/\s*\(Solana\)\s*\(SOL\)/gi, "")
+                                    .replace(/\s*\(BSC\)$/gi, "")
+                                    .replace(/\s*\(ETH\)$/gi, "")
+                                    .replace(/\s*\(MATIC\)$/gi, "")
+                                    .replace(/\s*\(AVAX\)$/gi, "")
+                                    .replace(/\s*\(TRX\)$/gi, "")
+                                    .replace(/\s*\(SOL\)$/gi, "")
+                                    .trim();
 
-                                return displayName;
-                              })()}
+                                  return displayName;
+                                })()}
+                              </div>
                             </div>
+                            {selectedAsset?.asset_id === asset.asset_id && (
+                              <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
+                            )}
                           </div>
-                          {selectedAsset?.asset_id === asset.asset_id && (
-                            <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
-                          )}
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
 
                     <div className="border-t-2 border-[#D1D2D4FF] dark:border-[#35353E]"></div>
 
@@ -1769,52 +1769,52 @@ export default function DepositForm({
                           setAssetSearchTerm("");
                         }}
                       >
-                      <img
-                        src={getHighResAssetIcon(asset, ASSET_ICON_SIZE)}
-                        alt={asset?.name || asset?.ticker || asset?.symbol || "Asset"}
-                        className={`${ASSET_ICON_BASE_CLASS} w-9 h-9`}
-                        loading="lazy"
-                        onError={(e) => {
-                          e.currentTarget.src = getHighResAssetIcon(null, ASSET_ICON_SIZE);
-                        }}
-                      />
-                      <div className="flex-1">
-                        <div className="text-[#35353e] dark:text-[#ffffff] font-medium flex items-center gap-2">
-                          {(asset.ticker || asset.symbol || asset.name || "Unknown").toUpperCase()}
-                          <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
-                            {getNetworkDisplayName(getAssetNetwork(asset))}
-                          </span>
-                        </div>
-                        <div className="text-[#35353e] dark:text-[#788099] text-sm">
-                          {(() => {
-                            let displayName =
-                              asset.name || asset.ticker || asset.symbol || "Unknown Asset";
+                        <img
+                          src={getHighResAssetIcon(asset, ASSET_ICON_SIZE)}
+                          alt={asset?.name || asset?.ticker || asset?.symbol || "Asset"}
+                          className={`${ASSET_ICON_BASE_CLASS} w-9 h-9`}
+                          loading="lazy"
+                          onError={(e) => {
+                            e.currentTarget.src = getHighResAssetIcon(null, ASSET_ICON_SIZE);
+                          }}
+                        />
+                        <div className="flex-1">
+                          <div className="text-[#35353e] dark:text-[#ffffff] font-medium flex items-center gap-2">
+                            {(asset.ticker || asset.symbol || asset.name || "Unknown").toUpperCase()}
+                            <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
+                              {getNetworkDisplayName(getAssetNetwork(asset))}
+                            </span>
+                          </div>
+                          <div className="text-[#35353e] dark:text-[#788099] text-sm">
+                            {(() => {
+                              let displayName =
+                                asset.name || asset.ticker || asset.symbol || "Unknown Asset";
 
-                            displayName = displayName
-                              .replace(/\s*\(Binance Smart Chain\)\s*\(BSC\)/gi, "")
-                              .replace(/\s*\(Ethereum\)\s*\(ETH\)/gi, "")
-                              .replace(/\s*\(Polygon\)\s*\(MATIC\)/gi, "")
-                              .replace(/\s*\(Avalanche\)\s*\(AVAX\)/gi, "")
-                              .replace(/\s*\(TRON\)\s*\(TRX\)/gi, "")
-                              .replace(/\s*\(Solana\)\s*\(SOL\)/gi, "")
-                              .replace(/\s*\(BSC\)$/gi, "")
-                              .replace(/\s*\(ETH\)$/gi, "")
-                              .replace(/\s*\(MATIC\)$/gi, "")
-                              .replace(/\s*\(AVAX\)$/gi, "")
-                              .replace(/\s*\(TRX\)$/gi, "")
-                              .replace(/\s*\(SOL\)$/gi, "")
-                              .trim();
+                              displayName = displayName
+                                .replace(/\s*\(Binance Smart Chain\)\s*\(BSC\)/gi, "")
+                                .replace(/\s*\(Ethereum\)\s*\(ETH\)/gi, "")
+                                .replace(/\s*\(Polygon\)\s*\(MATIC\)/gi, "")
+                                .replace(/\s*\(Avalanche\)\s*\(AVAX\)/gi, "")
+                                .replace(/\s*\(TRON\)\s*\(TRX\)/gi, "")
+                                .replace(/\s*\(Solana\)\s*\(SOL\)/gi, "")
+                                .replace(/\s*\(BSC\)$/gi, "")
+                                .replace(/\s*\(ETH\)$/gi, "")
+                                .replace(/\s*\(MATIC\)$/gi, "")
+                                .replace(/\s*\(AVAX\)$/gi, "")
+                                .replace(/\s*\(TRX\)$/gi, "")
+                                .replace(/\s*\(SOL\)$/gi, "")
+                                .trim();
 
-                            return displayName;
-                          })()}
+                              return displayName;
+                            })()}
+                          </div>
                         </div>
+                        {selectedAsset?.asset_id === asset.asset_id && (
+                          <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
+                        )}
                       </div>
-                      {selectedAsset?.asset_id === asset.asset_id && (
-                        <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
-                      )}
-                    </div>
-                  );
-                })}
+                    );
+                  })}
               </>
             ) : (
               <div className="p-4 text-center text-[#7e7e8f] dark:text-[#788099]">
@@ -3489,16 +3489,16 @@ export default function DepositForm({
                   }}
                   placeholder="Enter amount"
                   className={`w-full h-[48px] text-[#35353e] dark:text-white bg-white dark:bg-[#35353E] rounded-2xl px-4 pr-16 text-base sm:text-lg focus:outline-none border appearance-none transition-colors duration-200 ${receiveAmountError &&
-                      (receiveAmountError.includes("Rough estimate") ||
-                        receiveAmountError.includes("Using estimated rate"))
-                      ? "border-[#F79330]"
-                      : receiveAmountError
-                        ? "border-red-500"
-                        : (isCalculating || isCalculatingReceive) &&
-                          selectedAsset &&
-                          !isForexAsset(selectedAsset)
-                          ? "border-[#1D8751]"
-                          : "border-[#A2A4A9FF] dark:border-[#35353E]"
+                    (receiveAmountError.includes("Rough estimate") ||
+                      receiveAmountError.includes("Using estimated rate"))
+                    ? "border-[#F79330]"
+                    : receiveAmountError
+                      ? "border-red-500"
+                      : (isCalculating || isCalculatingReceive) &&
+                        selectedAsset &&
+                        !isForexAsset(selectedAsset)
+                        ? "border-[#1D8751]"
+                        : "border-[#A2A4A9FF] dark:border-[#35353E]"
                     }`}
                 />
                 {/* Show loading spinner when calculating "You Send" from "You Receive" */}
@@ -3532,9 +3532,9 @@ export default function DepositForm({
                     </svg>
                     <span
                       className={`text-sm font-medium ${receiveAmountError.includes("Rough estimate") ||
-                          receiveAmountError.includes("Using estimated rate")
-                          ? "text-[#F79330]"
-                          : "text-red-500"
+                        receiveAmountError.includes("Using estimated rate")
+                        ? "text-[#F79330]"
+                        : "text-red-500"
                         }`}
                     >
                       {receiveAmountError}
@@ -3752,16 +3752,16 @@ export default function DepositForm({
           <div className="mt-2 sm:mt-3 md:mt-4 relative">
             <button
               className={`w-full text-white dark:text-white text-sm sm:text-base font-medium py-3 sm:py-2 rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 transition-colors min-h-[44px] sm:min-h-0 ${isHomePage
-                  ? "bg-[#1D8751] hover:bg-[#166b3e] cursor-pointer"
-                  : isSubmitting ||
-                    !selectedAsset ||
-                    !payBank ||
-                    (selectedAsset &&
-                      !isSimpleCalculationAsset(selectedAsset) &&
-                      !isForexAsset(selectedAsset) &&
-                      estimateLoading)
-                    ? "bg-gray-500 cursor-not-allowed"
-                    : "bg-[#1D8751] hover:bg-[#166b3e]"
+                ? "bg-[#1D8751] hover:bg-[#166b3e] cursor-pointer"
+                : isSubmitting ||
+                  !selectedAsset ||
+                  !payBank ||
+                  (selectedAsset &&
+                    !isSimpleCalculationAsset(selectedAsset) &&
+                    !isForexAsset(selectedAsset) &&
+                    estimateLoading)
+                  ? "bg-gray-500 cursor-not-allowed"
+                  : "bg-[#1D8751] hover:bg-[#166b3e]"
                 }`}
               onClick={() => {
                 if (isHomePage) {
@@ -3971,8 +3971,8 @@ export default function DepositForm({
             {/* Submit Forex Exchange Button */}
             <button
               className={`w-full text-white text-sm sm:text-base font-medium py-3 sm:py-3 rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 transition-colors min-h-[44px] sm:min-h-0 ${isSubmitting || !forexAccountNumber.trim()
-                  ? "bg-gray-500 cursor-not-allowed"
-                  : "bg-[#1D8751] hover:bg-[#166b3e]"
+                ? "bg-gray-500 cursor-not-allowed"
+                : "bg-[#1D8751] hover:bg-[#166b3e]"
                 }`}
               onClick={async () => {
                 if (!forexAccountNumber.trim()) {
@@ -4329,10 +4329,10 @@ export default function DepositForm({
                   }}
                   placeholder="Paste your crypto address"
                   className={`flex-1 bg-transparent border-none outline-none text-[#35353e] dark:text-[#788099] placeholder-[#788099] text-sm sm:text-base min-w-0 ${walletError
-                      ? "border-red-500"
-                      : walletAddress.trim() && !walletError && addressValidationResult?.isValid
-                        ? "border-green-500"
-                        : ""
+                    ? "border-red-500"
+                    : walletAddress.trim() && !walletError && addressValidationResult?.isValid
+                      ? "border-green-500"
+                      : ""
                     }`}
                 />
                 {/* Validation status indicator */}
@@ -4541,7 +4541,7 @@ export default function DepositForm({
                 type="checkbox"
                 checked={termsAccepted}
                 onChange={(e) => setTermsAccepted(e.target.checked)}
-                className="mt-0.5 w-4 h-4 rounded border-2 border-[#F79330] text-[#F79330] focus:ring-[#F79330] appearance-none bg-transparent checked:bg-[#F79330] checked:border-[#F79330]"
+                className="mt-0.5 w-5 h-5 rounded-none border-2 border-[#F79330] text-[#F79330] focus:ring-[#F79330] appearance-none bg-transparent checked:bg-[#F79330] checked:border-[#F79330] flex-shrink-0"
               />
               <span>
                 I've read and agree to the OMAYA EXCHANGE{" "}
@@ -4596,8 +4596,8 @@ export default function DepositForm({
             {/* Button outside the card */}
             <button
               className={`w-full text-white dark:text-white text-sm sm:text-base font-medium py-3 sm:py-2 rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 transition-colors min-h-[44px] sm:min-h-0 ${isProceedDisabled
-                  ? "bg-gray-500 cursor-not-allowed"
-                  : "bg-[#1D8751] hover:bg-[#166b3e]"
+                ? "bg-gray-500 cursor-not-allowed"
+                : "bg-[#1D8751] hover:bg-[#166b3e]"
                 }`}
               onClick={handleProceedToNext}
               disabled={isProceedDisabled}
