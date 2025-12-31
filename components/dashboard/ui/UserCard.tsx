@@ -303,15 +303,16 @@ function UserCard() {
             </div>
           </div>
 
-          {/* Right Side: Action Buttons */}
-          <div className="flex flex-row items-center gap-2 sm:gap-3 flex-shrink-0 min-w-0">
+          {/* Right Side: Action Buttons (responsive) */}
+          <div className="flex flex-row flex-wrap items-center gap-2 sm:gap-3 flex-shrink-0 min-w-0 max-w-full">
             <Button
               variant="ghost"
               size="sm"
-              className="flex items-center justify-center p-0"
+              className="flex items-center justify-center p-0 min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0"
               onClick={() => router.push("/dashboard/notifications")}
               icon={
                 <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-[#1D8751] flex items-center justify-center p-1 relative min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0">
+                  {/* ...existing code... */}
                   <svg
                     width="16"
                     height="16"
@@ -358,12 +359,13 @@ function UserCard() {
             <Button
               variant="ghost"
               size="sm"
-              className="flex items-center justify-center p-0"
+              className="flex items-center justify-center p-0 min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0"
               onClick={() => {
                 router.push("/contactUs");
               }}
               icon={
                 <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-[#1D8751] flex items-center justify-center p-0 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0">
+                  {/* ...existing code... */}
                   <svg
                     width="16"
                     height="16"

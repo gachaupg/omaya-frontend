@@ -512,21 +512,30 @@ const Card = ({
   children: React.ReactNode;
   className?: string;
 }) => {
-  const [minHeight, setMinHeight] = React.useState(290);
+  const [dimensions, setDimensions] = React.useState({ minHeight: 290, padding: "1rem" });
 
   React.useEffect(() => {
-    const updateHeight = () => {
-      setMinHeight(window.innerWidth < 640 ? 250 : 290);
+    const updateDimensions = () => {
+      const width = window.innerWidth;
+      if (width < 480) {
+        setDimensions({ minHeight: 220, padding: "0.75rem" });
+      } else if (width < 640) {
+        setDimensions({ minHeight: 250, padding: "0.875rem" });
+      } else if (width < 768) {
+        setDimensions({ minHeight: 270, padding: "1rem" });
+      } else {
+        setDimensions({ minHeight: 290, padding: "1rem" });
+      }
     };
-    updateHeight();
-    window.addEventListener("resize", updateHeight);
-    return () => window.removeEventListener("resize", updateHeight);
+    updateDimensions();
+    window.addEventListener("resize", updateDimensions);
+    return () => window.removeEventListener("resize", updateDimensions);
   }, []);
 
   return (
     <div
-      className={`bg-card shadow-md w-full ${className}`}
-      style={{ minHeight, padding: "1rem" }}
+      className={`bg-card shadow-md w-full overflow-hidden ${className}`}
+      style={{ minHeight: dimensions.minHeight, padding: dimensions.padding }}
     >
       {children}
     </div>

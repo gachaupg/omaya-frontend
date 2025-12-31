@@ -3364,7 +3364,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                       ? "Calculating..."
                       : "Enter amount"
                   }
-                  className={`w-full h-[48px] text-[#35353e] dark:text-white bg-transparent dark:bg-transparent rounded-2xl px-2 sm:px-3 md:px-4 pr-12 sm:pr-16 text-base sm:text-lg focus:outline-none border appearance-none ${
+                  className={`w-full h-[48px] text-[#35353e] dark:text-white bg-transparent dark:bg-transparent rounded-2xl px-2 sm:px-3 md:px-4 pr-12 sm:pr-16 text-base sm:text-lg focus:outline-none border appearance-none transition-colors duration-200 ${
                     apiValidationError
                       ? "border-red-500"
                       : isCalculating || isCalculatingReceive
@@ -3392,7 +3392,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
               <div className="text-xs text-[#788099] dark:text-[#788099] mb-1 mt-[30px] sm:mt-[34px]">You Get</div>
               <div className="relative" ref={assetDropdownRef}>
                 <div
-                  className={`w-full h-[48px] bg-transparent dark:bg-transparent text-[#35353e] dark:text-white rounded-2xl px-4 text-lg focus:outline-none border border-[#39394A] dark:border-[#35353E] flex items-center justify-between cursor-pointer`}
+                  className={`w-full h-[48px] bg-transparent dark:bg-transparent text-[#35353e] dark:text-white rounded-2xl px-4 text-lg focus:outline-none border border-[#39394A] dark:border-[#35353E] hover:border-blue-400 dark:hover:border-blue-400 flex items-center justify-between cursor-pointer transition-colors duration-200`}
                   onClick={() => {
                     if (!isAssetDropdownOpen) {
                       updateAssetDropdownPosition();
@@ -3672,7 +3672,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                       ? "Calculating..."
                       : "Enter amount"
                   }
-                  className={`w-full h-[48px] text-[#35353e] dark:text-white bg-white dark:bg-[#35353E] rounded-2xl px-3 sm:px-4 pr-16 text-base sm:text-lg focus:outline-none border appearance-none ${
+                  className={`w-full h-[48px] text-[#35353e] dark:text-white bg-white dark:bg-[#35353E] rounded-2xl px-3 sm:px-4 pr-16 text-base sm:text-lg focus:outline-none border appearance-none transition-colors duration-200 ${
                     (receiveAmountError &&
                       (receiveAmountError.includes("Rough estimate") ||
                         receiveAmountError.includes("Using estimated rate"))) ||

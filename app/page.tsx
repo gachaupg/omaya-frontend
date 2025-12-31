@@ -686,47 +686,43 @@ export default function MarketingPage() {
             })}
           </div>
 
-          {/* New Features Banner */}
-          <div className="max-w-7xl mx-auto mt-8 sm:mt-12 relative z-10">
-            <div className="bg-white dark:bg-white/2 rounded-2xl sm:rounded-3xl p-6 sm:p-10 relative overflow-hidden shadow-2xl border border-border dark:border-[#1D8751]/20">
-              {/* Glow effects */}
-              <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#1D8751]/10 rounded-full blur-[100px] -translate-y-1/2"></div>
-                <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-[#13B562]/5 rounded-full blur-[100px] translate-y-1/2"></div>
-                <div className="absolute bottom-0 left-0 w-96 h-96 bg-[#1D8751]/15 rounded-full blur-[100px] translate-y-1/2"></div>
-              </div>
-
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-y-8 gap-x-4 relative z-10 w-full">
-                {/* 0.1% Trading Fee */}
-                <div className="flex flex-col items-center justify-center text-center group">
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-[#FF9F43] flex items-center justify-center mb-4 shadow-lg shadow-orange-500/20 group-hover:scale-110 transition-transform duration-150">
-                    <Zap className="w-6 h-6 sm:w-7 sm:h-7 text-white" fill="white" />
+          {/* Bottom Feature Cards Row - Matching Figma Design */}
+          <div className="relative mt-6 sm:mt-8 md:mt-10">
+            {/* Dark background container with green gradient */}
+            <div className="bg-gray-100 dark:bg-[#1D1D23] rounded-2xl p-4 sm:p-6 md:p-8 border border-gray-200 dark:border-[#2A2A2A]">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 md:gap-8">
+                {/* Lowest Trading Fee */}
+                <div className="flex flex-col items-center justify-center py-2">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-orange-400 to-orange-500 flex items-center justify-center mb-3 shadow-lg">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                    </svg>
                   </div>
-                  <h3 className="text-gray-900 dark:text-white font-bold text-sm sm:text-base md:text-lg">0.1% Trading Fee</h3>
+                  <span className="text-gray-900 dark:text-white text-xs sm:text-sm md:text-base font-medium text-center">Lowest Trading Fee</span>
                 </div>
 
                 {/* Bank-Grade Security */}
-                <div className="flex flex-col items-center justify-center text-center group">
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-[#0EA5E9] flex items-center justify-center mb-4 shadow-lg shadow-blue-500/20 group-hover:scale-110 transition-transform duration-150">
-                    <Shield className="w-6 h-6 sm:w-7 sm:h-7 text-white" fill="white" />
+                <div className="flex flex-col items-center justify-center py-2">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-[#1D8751] to-[#13B562] flex items-center justify-center mb-3 shadow-lg">
+                    <Shield className="w-6 h-6 text-white" />
                   </div>
-                  <h3 className="text-gray-900 dark:text-white font-bold text-sm sm:text-base md:text-lg">Bank-Grade Security</h3>
+                  <span className="text-gray-900 dark:text-white text-xs sm:text-sm md:text-base font-medium text-center">Bank-Grade Security</span>
                 </div>
 
                 {/* 24/7 Support */}
-                <div className="flex flex-col items-center justify-center text-center group">
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-[#D946EF] flex items-center justify-center mb-4 shadow-lg shadow-pink-500/20 group-hover:scale-110 transition-transform duration-150">
-                    <Globe className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
+                <div className="flex flex-col items-center justify-center py-2">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-pink-400 to-pink-500 flex items-center justify-center mb-3 shadow-lg">
+                    <Globe className="w-6 h-6 text-white" />
                   </div>
-                  <h3 className="text-gray-900 dark:text-white font-bold text-sm sm:text-base md:text-lg">24/7 Support</h3>
+                  <span className="text-gray-900 dark:text-white text-xs sm:text-sm md:text-base font-medium text-center">24/7 Support</span>
                 </div>
 
                 {/* Real-Time Charts */}
-                <div className="flex flex-col items-center justify-center text-center group">
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-[#1D8751] flex items-center justify-center mb-4 shadow-lg shadow-green-500/20 group-hover:scale-110 transition-transform duration-150">
-                    <TrendingUp className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
+                <div className="flex flex-col items-center justify-center py-2">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-[#1D8751] to-[#13B562] flex items-center justify-center mb-3 shadow-lg">
+                    <TrendingUp className="w-6 h-6 text-white" />
                   </div>
-                  <h3 className="text-gray-900 dark:text-white font-bold text-sm sm:text-base md:text-lg">Real-Time Charts</h3>
+                  <span className="text-gray-900 dark:text-white text-xs sm:text-sm md:text-base font-medium text-center">Real-Time Charts</span>
                 </div>
               </div>
             </div>
@@ -870,21 +866,21 @@ export default function MarketingPage() {
                           <div className="relative mb-3 w-full -mx-4">
                             {/* Colored horizontal bar cutting across - faded, edge to edge, no padding, full right coverage */}
                             <div
-                              className={`absolute top-1/2 left-0 h-14 sm:h-16 ${iconBgColor} transform -translate-y-1/2 opacity-40`}
+                              className={`absolute top-1/2 left-0 h-16 sm:h-20 md:h-24 ${iconBgColor} transform -translate-y-1/2 opacity-40`}
                               style={{
                                 right: '-1rem',
                                 width: 'calc(100% + 2rem)'
                               }}
                             ></div>
-                            {/* Centered asset image */}
+                            {/* Centered asset image - Larger to match Figma */}
                             <div className="relative z-10 flex items-center justify-center">
-                              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-white dark:bg-[#1D1D23] rounded-full flex items-center justify-center border border-gray-200 dark:border-transparent">
+                              <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 bg-white dark:bg-[#1D1D23] rounded-full flex items-center justify-center border border-gray-200 dark:border-transparent shadow-lg">
                                 <Image
                                   src={asset.image}
                                   alt={asset.name}
-                                  width={48}
-                                  height={48}
-                                  className="object-contain w-10 h-10 sm:w-12 sm:h-12"
+                                  width={80}
+                                  height={80}
+                                  className="object-contain w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20"
                                   unoptimized
                                 />
                               </div>
