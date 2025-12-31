@@ -46,11 +46,11 @@ const NavLink = ({
     <Link
       href={href}
       className={`${active
-        ? "text-[#1D8751]" // Active link in green
-        : isTransparent
-          ? "text-gray-900 dark:text-white" // Dark in light mode, white in dark mode when navbar is transparent
-          : "dark:text-white text-gray-900" // Theme-based when navbar has background
-        } hover:text-[#1D8751] transition-colors duration-200 text-xs md:text-xs lg:text-base xl:text-base 2xl:text-lg`}
+          ? "text-[#1D8751]" // Active link in green
+          : isTransparent
+            ? "text-gray-900 dark:text-white" // Dark in light mode, white in dark mode when navbar is transparent
+            : "dark:text-white text-gray-900" // Theme-based when navbar has background
+        } hover:text-[#1D8751] transition-colors duration-200 text-[11px] md:text-sm xl:text-base 2xl:text-lg whitespace-nowrap`}
     >
       {children}
     </Link>
@@ -82,8 +82,8 @@ const MobileNavLink = ({
     <Link
       href={href}
       className={`block py-2 transition-colors duration-200 text-lg ${active
-        ? "text-[#1D8751]"
-        : "dark:text-white text-gray-900 hover:text-[#1D8751]"
+          ? "text-[#1D8751]"
+          : "dark:text-white text-gray-900 hover:text-[#1D8751]"
         }`}
       onClick={onClick}
     >
@@ -103,10 +103,10 @@ const AuthButton = ({
 }) => (
   <button
     className={`${variant === "primary"
-      ? "bg-[#0E5531] hover:bg-[#13B562] text-white" // Primary button always has white text
-      : "bg-transparent border border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751] hover:text-white" // Secondary button with brand colors
+        ? "bg-[#0E5531] hover:bg-[#13B562] text-white" // Primary button always has white text
+        : "bg-transparent border border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751] hover:text-white" // Secondary button with brand colors
       } 
-    px-3 py-1 rounded-[22px] transition-colors duration-200 text-sm md:text-base 2xl:text-lg
+    px-2 py-1 md:px-3 md:py-1.5 lg:px-4 lg:py-2 rounded-[22px] transition-colors duration-200 text-xs md:text-sm lg:text-base xl:text-base 2xl:text-lg whitespace-nowrap
     ${fullWidth ? "w-full" : ""}`}
   >
     {children}
@@ -321,10 +321,10 @@ const ThemeSelector = ({
       <button
         type="button"
         className={`flex items-center justify-center cursor-pointer min-h-[44px] sm:min-h-0 lg:min-h-0 px-1 sm:px-0 lg:px-0 border-none bg-transparent p-0 ${isTransparentNavbar
-          ? isDark
-            ? "text-white"
-            : "text-gray-900"
-          : "dark:text-white text-gray-900"
+            ? isDark
+              ? "text-white"
+              : "text-gray-900"
+            : "dark:text-white text-gray-900"
           }`}
         onClick={toggleDropdown}
       >
@@ -681,8 +681,8 @@ export default function Navbar() {
     return (
       <nav
         className={`fixed top-0 left-0 right-0 z-50 w-full transition-all duration-300 ${isTransparentNavbar
-          ? "bg-transparent"
-          : "bg-white dark:bg-gray-900 shadow-lg"
+            ? "bg-transparent"
+            : "bg-white dark:bg-gray-900 shadow-lg"
           }`}
       >
         <div className="w-full px-4 sm:px-6 lg:px-8">
@@ -706,10 +706,10 @@ export default function Navbar() {
       <nav
         className={`fixed top-0 left-0 right-0 z-50 w-full flex items-center justify-between px-3 py-3 sm:px-4 sm:py-4 md:px-4 md:py-2.5 lg:px-8 lg:py-4 xl:px-12 2xl:px-20 transition-all duration-300 ${getNavbarBackground()}`}
       >
-        <div className="flex items-center min-w-0 flex-shrink">
+        <div className="flex items-center min-w-0 flex-1">
           <Link
             href="/"
-            className="mr-2 sm:mr-4 md:mr-3 lg:mr-8 xl:mr-16 shrink-0"
+            className="mr-4 sm:mr-8 md:mr-6 lg:mr-12 xl:mr-20 shrink-0"
           >
             {/* Optimized logo selection using memoized config */}
             {logoConfig && (
@@ -718,14 +718,14 @@ export default function Navbar() {
                 alt={logoConfig.alt}
                 width={150}
                 height={40}
-                className="h-auto w-16 sm:w-24 md:w-24 lg:w-32 xl:w-40 2xl:w-48 dark:brightness-0 dark:invert"
+                className="h-auto w-16 sm:w-24 md:w-28 lg:w-36 xl:w-40 2xl:w-48 dark:brightness-0 dark:invert"
                 priority
               />
             )}
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex space-x-0.5 md:space-x-1 lg:space-x-3 xl:space-x-5 shrink-0">
+          <div className="hidden md:flex items-center space-x-1 md:space-x-2 lg:space-x-3 xl:space-x-4 2xl:space-x-6 shrink min-w-0">
             <NavLink
               href="/"
               isTransparent={isTransparentNavbar}
@@ -793,16 +793,16 @@ export default function Navbar() {
         </div>
 
         {/* Desktop Auth Buttons */}
-        <div className="hidden md:flex items-center space-x-1 md:space-x-1.5 lg:space-x-3 xl:space-x-4 2xl:space-x-6 relative flex-shrink-0">
+        <div className="hidden md:flex items-center space-x-1 md:space-x-1.5 lg:space-x-2 xl:space-x-3 2xl:space-x-4 relative flex-shrink-0">
           {isAuthenticated ? (
-            <div className="flex items-center space-x-1 md:space-x-1.5 lg:space-x-4">
+            <div className="flex items-center space-x-1 md:space-x-1.5 lg:space-x-2 xl:space-x-3 2xl:space-x-4">
               <div className="" ref={depositDropdownRef}>
                 <button
                   onClick={toggleDepositDropdown}
-                  className="flex items-center bg-[#1D8751] hover:bg-[#13B562] text-white px-2 py-1.5 md:px-2.5 md:py-1.5 lg:px-4 lg:py-2 xl:px-5 xl:py-2 rounded-[10px] transition-colors duration-200 text-[10px] md:text-xs lg:text-sm xl:text-base flex-shrink-0"
+                  className="flex items-center bg-[#1D8751] hover:bg-[#13B562] text-white px-2 py-1 md:px-2.5 md:py-1.5 lg:px-4 lg:py-2 xl:px-5 xl:py-2.5 rounded-[10px] transition-colors duration-200 text-xs md:text-xs lg:text-sm xl:text-base 2xl:text-lg whitespace-nowrap"
                 >
                   <svg
-                    className="mr-0.5 md:mr-1 lg:mr-1.5 w-3 h-3 md:w-3.5 md:h-3.5 lg:w-4 lg:h-4 xl:w-5 xl:h-5 flex-shrink-0"
+                    className="mr-0.5 md:mr-1 lg:mr-2 w-3 h-3 md:w-3.5 md:h-3.5 lg:w-5 lg:h-5"
                     fill="none"
                     viewBox="0 0 24 24"
                   >
@@ -828,7 +828,7 @@ export default function Navbar() {
                       strokeLinejoin="round"
                     />
                   </svg>
-                  <span className="whitespace-nowrap">Deposit</span>
+                  Deposit
                 </button>
                 {/* Deposit Dropdown */}
                 {depositDropdownOpen && (
@@ -844,8 +844,8 @@ export default function Navbar() {
                       >
                         <div
                           className={`flex items-center rounded-lg transition-colors duration-200 group p-3 -m-3 ${pathname === "/dashboard/express-exchange"
-                            ? "dark:bg-[#35353E] bg-[#e8f5ee]"
-                            : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
+                              ? "dark:bg-[#35353E] bg-[#e8f5ee]"
+                              : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
                             }`}
                         >
                           <div className="w-10 h-10 flex items-center justify-center mr-4">
@@ -896,8 +896,8 @@ export default function Navbar() {
                       >
                         <div
                           className={`flex items-center transition-colors duration-200 group rounded-lg p-3 -m-3 ${pathname === "/dashboard/exchange"
-                            ? "dark:bg-[#35353E] bg-[#e8f5ee]"
-                            : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
+                              ? "dark:bg-[#35353E] bg-[#e8f5ee]"
+                              : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
                             }`}
                         >
                           <div className="w-10 h-10 flex items-center justify-center mr-4">
@@ -938,9 +938,9 @@ export default function Navbar() {
                       >
                         <div
                           className={`flex items-center rounded-lg transition-colors duration-200 group p-3 -m-3 ${pathname === "/dashboard/p2p" ||
-                            pathname?.startsWith("/dashboard/p2p/")
-                            ? "dark:bg-[#35353E] bg-[#e8f5ee]"
-                            : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
+                              pathname?.startsWith("/dashboard/p2p/")
+                              ? "dark:bg-[#35353E] bg-[#e8f5ee]"
+                              : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
                             }`}
                         >
                           <div className="w-10 h-10 flex items-center justify-center mr-4">
@@ -981,9 +981,9 @@ export default function Navbar() {
                       >
                         <div
                           className={`flex items-center transition-colors duration-200 group rounded-lg p-3 -m-3 ${pathname === "/dashboard/swap" ||
-                            pathname?.startsWith("/dashboard/swap/")
-                            ? "dark:bg-[#35353E] bg-[#e8f5ee]"
-                            : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
+                              pathname?.startsWith("/dashboard/swap/")
+                              ? "dark:bg-[#35353E] bg-[#e8f5ee]"
+                              : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
                             }`}
                         >
                           <div className="w-10 h-10 flex items-center justify-center mr-4">
@@ -1230,7 +1230,7 @@ export default function Navbar() {
             </>
           )}
 
-          <div className="flex items-center space-x-1 sm:space-x-1.5 md:space-x-1.5 lg:space-x-3 xl:space-x-4 2xl:space-x-6">
+          <div className="flex items-center space-x-1 sm:space-x-1.5 md:space-x-1.5 lg:space-x-2 xl:space-x-3 2xl:space-x-4">
             <LanguageSelector />
             <ThemeSelector isTransparentNavbar={isTransparentNavbar} />
           </div>
@@ -1239,8 +1239,8 @@ export default function Navbar() {
         {/* Mobile Menu Button */}
         <button
           className={`md:hidden p-1.5 sm:p-2 rounded-md focus:outline-none ${isTransparentNavbar
-            ? "text-white" // White when navbar is transparent
-            : "dark:text-white text-gray-900" // Theme-based when navbar has background
+              ? "text-white" // White when navbar is transparent
+              : "dark:text-white text-gray-900" // Theme-based when navbar has background
             }`}
           onClick={toggleMobileMenu}
         >
@@ -1377,8 +1377,8 @@ export default function Navbar() {
                             >
                               <div
                                 className={`flex items-center rounded-lg transition-colors duration-200 group p-3 ${pathname === "/dashboard/express-exchange"
-                                  ? "dark:bg-[#35353E] bg-[#e8f5ee]"
-                                  : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
+                                    ? "dark:bg-[#35353E] bg-[#e8f5ee]"
+                                    : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
                                   }`}
                               >
                                 <div className="flex items-center justify-center mr-4 flex-shrink-0">
@@ -1442,9 +1442,9 @@ export default function Navbar() {
                             >
                               <div
                                 className={`flex items-center rounded-lg transition-colors duration-200 group p-3 ${pathname === "/dashboard/p2p" ||
-                                  pathname?.startsWith("/dashboard/p2p/")
-                                  ? "dark:bg-[#35353E] bg-[#e8f5ee]"
-                                  : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
+                                    pathname?.startsWith("/dashboard/p2p/")
+                                    ? "dark:bg-[#35353E] bg-[#e8f5ee]"
+                                    : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
                                   }`}
                               >
                                 <div className="w-10 h-10 flex items-center justify-center mr-4 flex-shrink-0">
@@ -1540,9 +1540,9 @@ export default function Navbar() {
                             >
                               <div
                                 className={`flex items-center rounded-lg transition-colors duration-200 group p-3 ${pathname === "/dashboard/swap" ||
-                                  pathname?.startsWith("/dashboard/swap/")
-                                  ? "dark:bg-[#35353E] bg-[#e8f5ee]"
-                                  : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
+                                    pathname?.startsWith("/dashboard/swap/")
+                                    ? "dark:bg-[#35353E] bg-[#e8f5ee]"
+                                    : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
                                   }`}
                               >
                                 <div className="w-10 h-10 flex items-center justify-center mr-4 flex-shrink-0">
@@ -1614,8 +1614,8 @@ export default function Navbar() {
                             >
                               <div
                                 className={`flex items-center rounded-lg transition-colors duration-200 group p-3 ${pathname === "/dashboard/exchange"
-                                  ? "dark:bg-[#35353E] bg-[#e8f5ee]"
-                                  : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
+                                    ? "dark:bg-[#35353E] bg-[#e8f5ee]"
+                                    : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
                                   }`}
                               >
                                 <div className="w-10 h-10 flex items-center justify-center mr-4 flex-shrink-0">
