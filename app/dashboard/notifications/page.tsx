@@ -163,42 +163,29 @@ const Notifications = () => {
   if (!hasNotifications)
     return (
       <div className="w-full px-2">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 mb-4 sm:mb-6">
           {/* Breadcrumb */}
           <nav
             aria-label="Breadcrumb"
-            className="flex items-center text-sm text-gray-500 dark:text-[#A3A3C2] mb-1"
+            className="flex items-center text-xs sm:text-sm text-gray-500 dark:text-[#A3A3C2]"
           >
-            <ol className="inline-flex items-center md:space-x-2">
-
-              <li className="inline-flex items-center">
-                <a onClick={() => router.push("/dashboard")} className="hover:text-muted transition-colors">
+            <ol className="flex items-center flex-nowrap">
+              <li className="flex-shrink-0">
+                <a onClick={() => router.push("/dashboard")} className="hover:text-muted transition-colors cursor-pointer whitespace-nowrap">
                   Dashboard
                 </a>
               </li>
-
-              <li>
-                <div className="flex items-center">
-                  <FaChevronRight className="mx-2 text-muted-foreground " size={12} />
-
-                  <a href="/dashboard/notifications" className="text-secondary transition-colors">
-                    Notification center
-                  </a>
-                </div>
+              <li className="flex-shrink-0 px-2 flex items-center justify-center">
+                <FaChevronRight className="text-muted-foreground" size={10} />
               </li>
-
-              {/* <li aria-current="page">
-              <div className="flex items-center">
-                <i className="bi bi-chevron-right mx-2"></i>
-                <span className="font-medium text-gray-900 dark:text-white">
-                  Notifications
-                </span>
-              </div>
-            </li> */}
-
+              <li className="flex-shrink-0">
+                <a href="/dashboard/notifications" className="text-secondary transition-colors whitespace-nowrap">
+                  Notification center
+                </a>
+              </li>
             </ol>
           </nav>
-          <span className="text-sm dark:text-[#A3A3C2] text-gray-600">0 notifications</span>
+          <span className="text-xs sm:text-sm dark:text-[#A3A3C2] text-gray-600 whitespace-nowrap">0 notifications</span>
         </div>
 
         <div className="dark:bg-[#23232B] bg-white rounded-xl p-8 text-center shadow-lg border dark:border-[#35353E] border-gray-200">
@@ -249,44 +236,31 @@ const Notifications = () => {
 
   return (
     <div className="w-full px-2">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 mb-4 sm:mb-6">
         {/* Breadcrumb */}
         <nav
           aria-label="Breadcrumb"
-          className="flex items-center text-sm text-gray-500 dark:text-[#A3A3C2] mb-1"
+          className="flex items-center text-xs sm:text-sm text-gray-500 dark:text-[#A3A3C2]"
         >
-          <ol className="inline-flex items-center md:space-x-2">
-
-            <li className="inline-flex items-center">
-              <a href="/dashboard" className="hover:text-muted transition-colors">
+          <ol className="flex items-center flex-nowrap">
+            <li className="flex-shrink-0">
+              <a href="/dashboard" className="hover:text-muted transition-colors cursor-pointer whitespace-nowrap">
                 Dashboard
               </a>
             </li>
-
-            <li>
-              <div className="flex items-center">
-                <FaChevronRight className="mx-2 text-muted-foreground " size={12} />
-
-                <a href="/dashboard/notifications" className="text-secondary transition-colors">
-                  Notification center
-                </a>
-              </div>
+            <li className="flex-shrink-0 px-2 flex items-center justify-center">
+              <FaChevronRight className="text-muted-foreground" size={10} />
             </li>
-
-            {/* <li aria-current="page">
-              <div className="flex items-center">
-                <i className="bi bi-chevron-right mx-2"></i>
-                <span className="font-medium text-gray-900 dark:text-white">
-                  Notifications
-                </span>
-              </div>
-            </li> */}
-
+            <li className="flex-shrink-0">
+              <a href="/dashboard/notifications" className="text-secondary transition-colors whitespace-nowrap">
+                Notification center
+              </a>
+            </li>
           </ol>
         </nav>
 
 
-        <span className="text-sm text-gray-500 dark:text-[#A3A3C2]">
+        <span className="text-xs sm:text-sm text-gray-500 dark:text-[#A3A3C2] whitespace-nowrap">
           {matchedTrades.count || matchedTrades.results.length}{" "}
           {(matchedTrades.count || matchedTrades.results.length) === 1
             ? "notification"

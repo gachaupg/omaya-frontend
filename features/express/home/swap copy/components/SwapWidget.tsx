@@ -596,6 +596,27 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
     // Clear the estimate when swapping assets
     dispatch(clearEstimate());
     setHasUserInteracted(true);
+
+    // Trigger re-estimate after swap
+    setTimeout(() => {
+      if (
+        fromAsset &&
+        toAsset &&
+        fromAmount &&
+        parseFloat(fromAmount) > 0
+      ) {
+        dispatch(
+          fetchSwapEstimate({
+            fromCurrency: toAsset.ticker,
+            fromNetwork: toAsset.network,
+            toCurrency: fromAsset.ticker,
+            toNetwork: fromAsset.network,
+            amount: parseFloat(toAmount),
+            usePublicApi: !!usePublicApi,
+          })
+        );
+      }
+    }, 0);
   };
 
   // Add timeout to prevent skeleton from getting stuck
