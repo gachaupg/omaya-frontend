@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 
 import { logger } from "@/lib/utils/logger";
 import { useValidateAddress } from "@/hooks/useValidateAddress";
@@ -207,9 +208,8 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                           validateAddress(e.target.value, currentCurrency);
                         }
                       }}
-                      className={`flex-1 bg-transparent outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-[#7e7e8f] text-sm sm:text-base ${
-                        walletError ? "text-red-500" : ""
-                      }`}
+                      className={`flex-1 bg-transparent outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-[#7e7e8f] text-sm sm:text-base ${walletError ? "text-red-500" : ""
+                        }`}
                       placeholder={`Paste your ${toAsset?.name || toAsset?.symbol || ""} address here`}
                       disabled={isLoading}
                     />
@@ -282,7 +282,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                   <span className="text-xs sm:text-sm font-medium">Paste</span>
                 </button>
               </div>
-              
+
               {/* Validation messages - based on API validation only */}
               {walletAddress.trim() && (
                 <div className="mt-2">
@@ -383,38 +383,50 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                   <span className="text-gray-900 dark:text-white font-medium">
                     I have read and agreed to Omaya Exchange{" "}
                   </span>
-                  <a
+                  <Link
                     href="/legal/terms-of-service"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-[#1D8751] underline font-medium"
                   >
                     Terms of Use
-                  </a>{" "}
-                  
-                  <a
+                  </Link>{" "}
+
+                  <Link
                     href="/legal/privacy-policy"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-[#1D8751] underline font-medium"
                   >
                     Privacy Policy
-                  </a>
+                  </Link>
                   ,{" "}
-                  <a
+                  <Link
                     href="/legal/payment-policy"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-[#1D8751] underline font-medium"
                   >
                     Payment Policies
-                  </a>
+                  </Link>
                   ,{" "}
-                  <span className="text-[#1D8751] font-medium">AML</span>,{" "}
-                  <span className="text-[#1D8751] font-medium">
+                  <Link
+                    href="/legal/aml-policy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[#1D8751] font-medium underline"
+                  >
+                    AML
+                  </Link>,{" "}
+                  <Link
+                    href="/legal/risk-disclosure-statement"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[#1D8751] font-medium underline"
+                  >
                     Risk Disclosure Statement
-                  </span>
-                  
+                  </Link>
+
                 </label>
               </div>
             </div>

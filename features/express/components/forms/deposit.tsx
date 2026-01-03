@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { FaExchangeAlt, FaExclamationCircle } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "../../../../store";
@@ -4543,52 +4544,47 @@ export default function DepositForm({
                 onChange={(e) => setTermsAccepted(e.target.checked)}
                 className="mt-0.5 w-5 h-5 rounded-none border-2 border-[#F79330] text-[#F79330] focus:ring-[#F79330] appearance-none bg-transparent checked:bg-[#F79330] checked:border-[#F79330] flex-shrink-0"
               />
-              <span>
+              <span className="text-[#35353e] dark:text-[#788099]">
                 I've read and agree to the OMAYA EXCHANGE{" "}
-                <a
-                  href="/terms-of-use"
+                <Link
+                  href="/legal/terms-of-service"
                   target="_blank"
-                  rel="noopener noreferrer"
                   className="underline text-[#1D8751]"
                 >
                   Terms of Use
-                </a>
+                </Link>
                 ,{" "}
-                <a
-                  href="/privacy-policy"
+                <Link
+                  href="/legal/privacy-policy"
                   target="_blank"
-                  rel="noopener noreferrer"
                   className="underline text-[#1D8751]"
                 >
                   Privacy Policy
-                </a>
+                </Link>
                 ,{" "}
-                <a
-                  href="/payment-policies"
+                <Link
+                  href="/legal/payment-policy"
                   target="_blank"
-                  rel="noopener noreferrer"
                   className="underline text-[#1D8751]"
                 >
                   Payment Policies
-                </a>
+                </Link>
                 ,{" "}
-                <a
-                  href="/aml-policy"
+                <Link
+                  href="/legal/aml-policy"
                   target="_blank"
-                  rel="noopener noreferrer"
                   className="underline text-[#1D8751]"
                 >
                   AML
-                </a>
+                </Link>
                 ,{" "}
-                <a
-                  href="/risk-disclosure"
+                <Link
+                  href="/legal/risk-disclosure-statement"
                   target="_blank"
-                  rel="noopener noreferrer"
                   className="underline text-[#1D8751]"
                 >
                   Risk Disclosure Statements
-                </a>
+                </Link>
                 .
               </span>
             </label>

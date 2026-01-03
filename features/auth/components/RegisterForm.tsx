@@ -198,12 +198,12 @@ function EmailVerificationModal({
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
-    
+
     setCanResend(false);
     setVerificationCode(["", "", "", "", "", ""]);
     setError("");
     setTimeLeft(300); // Reset timer
-    
+
     // Restart timer manually
     timerRef.current = setInterval(() => {
       setTimeLeft((prev) => {
@@ -218,7 +218,7 @@ function EmailVerificationModal({
         return prev - 1;
       });
     }, 1000);
-    
+
     await onResendCode();
   };
   if (!isOpen) return null;
@@ -280,11 +280,10 @@ function EmailVerificationModal({
                 onKeyDown={(e) => handleKeyDown(index, e)}
                 onPaste={(e) => handlePaste(e, index)}
                 onFocus={(e) => e.target.select()}
-                className={`w-10 h-12 sm:w-12 sm:h-14 text-center dark:text-white text-gray-900 text-xl font-semibold dark:bg-[#35353E] bg-gray-100 border ${
-                  error
-                    ? "border-[#F04438]"
-                    : "border-gray-300 dark:border-[#35353E]"
-                } rounded-lg focus:outline-none focus:border-[#1D8751] transition-colors`}
+                className={`w-10 h-12 sm:w-12 sm:h-14 text-center dark:text-white text-gray-900 text-xl font-semibold dark:bg-[#35353E] bg-gray-100 border ${error
+                  ? "border-[#F04438]"
+                  : "border-gray-300 dark:border-[#35353E]"
+                  } rounded-lg focus:outline-none focus:border-[#1D8751] transition-colors`}
               />
             ))}
           </div>
@@ -346,27 +345,27 @@ export default function RegistrationPage() {
   );
 
   // Form state
-const [firstName, setFirstName] = useState("");
-const [lastName, setLastName] = useState("");
-const [email, setEmail] = useState("");
-const [phone, setPhone] = useState("");
-const [password, setPassword] = useState("");
-const [confirmPassword, setConfirmPassword] = useState("");
-const [referralCode, setReferralCode] = useState("");
-const [agreeToTerms, setAgreeToTerms] = useState(false);
-const [isSubmitting, setIsSubmitting] = useState(false);
-const [showVerificationModal, setShowVerificationModal] = useState(false);
-const [showPassword, setShowPassword] = useState(false);
-const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-const [submitAttempted, setSubmitAttempted] = useState(false);
-const [selectedCountry, setSelectedCountry] = useState("SO"); // Default to Somalia
-const [showCountryDropdown, setShowCountryDropdown] = useState(false);
-const [countrySearchTerm, setCountrySearchTerm] = useState("");
-const [showReferralTooltip, setShowReferralTooltip] = useState(false);
-const [formErrors, setFormErrors] = useState<string[]>([]);
-const referralTooltipRef = React.useRef<HTMLDivElement | null>(null);
-const referralTooltipButtonRef = React.useRef<HTMLButtonElement | null>(null);
-const errorBannerRef = React.useRef<HTMLDivElement | null>(null);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [referralCode, setReferralCode] = useState("");
+  const [agreeToTerms, setAgreeToTerms] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [submitAttempted, setSubmitAttempted] = useState(false);
+  const [selectedCountry, setSelectedCountry] = useState("SO"); // Default to Somalia
+  const [showCountryDropdown, setShowCountryDropdown] = useState(false);
+  const [countrySearchTerm, setCountrySearchTerm] = useState("");
+  const [showReferralTooltip, setShowReferralTooltip] = useState(false);
+  const [formErrors, setFormErrors] = useState<string[]>([]);
+  const referralTooltipRef = React.useRef<HTMLDivElement | null>(null);
+  const referralTooltipButtonRef = React.useRef<HTMLButtonElement | null>(null);
+  const errorBannerRef = React.useRef<HTMLDivElement | null>(null);
 
   // Facebook login state
   const [profile, setProfile] = useState<any>(null);
@@ -404,18 +403,18 @@ const errorBannerRef = React.useRef<HTMLDivElement | null>(null);
     if (!showReferralTooltip) {
       return;
     }
-  React.useEffect(() => {
-    if (formErrors.length === 0 || typeof document === "undefined") {
-      return;
-    }
+    React.useEffect(() => {
+      if (formErrors.length === 0 || typeof document === "undefined") {
+        return;
+      }
 
-    if (errorBannerRef.current) {
-      errorBannerRef.current.scrollIntoView({
-        behavior: "smooth",
-        block: "center",
-      });
-    }
-  }, [formErrors]);
+      if (errorBannerRef.current) {
+        errorBannerRef.current.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      }
+    }, [formErrors]);
 
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -674,7 +673,7 @@ const errorBannerRef = React.useRef<HTMLDivElement | null>(null);
       // Handle unexpected errors
       console.error("Registration error:", error);
       const errorMessage = error?.message || "An error occurred during registration";
-      
+
       setErrors((prev) => ({
         ...prev,
         email: typeof errorMessage === "string" ? errorMessage : "An error occurred during registration",
@@ -769,6 +768,7 @@ const errorBannerRef = React.useRef<HTMLDivElement | null>(null);
               width={350}
               height={650}
               className="mx-auto"
+              style={{ width: "auto", height: "auto" }}
               priority
             />
             {/* App store badges */}
@@ -780,6 +780,7 @@ const errorBannerRef = React.useRef<HTMLDivElement | null>(null);
                   width={40}
                   height={13}
                   className="mr-2"
+                  style={{ width: "auto", height: "auto" }}
                 />
                 <div>
                   <p className="text-[#051015] text-xs">Download on the</p>
@@ -795,6 +796,7 @@ const errorBannerRef = React.useRef<HTMLDivElement | null>(null);
                   width={20}
                   height={20}
                   className="mr-2"
+                  style={{ width: "auto", height: "auto" }}
                 />
                 <div>
                   <p className="text-[#051015] text-xs">Download on the</p>
@@ -857,11 +859,10 @@ const errorBannerRef = React.useRef<HTMLDivElement | null>(null);
                       id="company-name"
                       value={firstName}
                       onChange={(e) => setFirstName(e.target.value)}
-                      className={`w-full py-2 px-4 pl-9 rounded-full bg-white dark:bg-[var(--card-color)] border ${
-                          errors.firstName
-                            ? "border-[#FDA29B]"
-                            : "border-gray-300 dark:border-[#35353E]"
-                      } text-gray-900 dark:text-white focus:outline-none focus:border-[#13B562]`}
+                      className={`w-full py-2 px-4 pl-9 rounded-full bg-white dark:bg-[var(--card-color)] border ${errors.firstName
+                        ? "border-[#FDA29B]"
+                        : "border-gray-300 dark:border-[#35353E]"
+                        } text-gray-900 dark:text-white focus:outline-none focus:border-[#13B562]`}
                       placeholder={t("auth.register.firstName", "Full Name")}
                     />
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -909,9 +910,8 @@ const errorBannerRef = React.useRef<HTMLDivElement | null>(null);
                       id="establishment-date"
                       value={lastName}
                       onChange={(e) => setLastName(e.target.value)}
-                      className={`w-full py-2 px-4 pl-9 rounded-full bg-white dark:bg-[var(--card-color)] border ${
-                        errors.lastName ? "border-[#FDA29B]" : "border-gray-300 dark:border-[#35353E]"
-                      } text-gray-900 dark:text-white focus:outline-none focus:border-[#13B562]`}
+                      className={`w-full py-2 px-4 pl-9 rounded-full bg-white dark:bg-[var(--card-color)] border ${errors.lastName ? "border-[#FDA29B]" : "border-gray-300 dark:border-[#35353E]"
+                        } text-gray-900 dark:text-white focus:outline-none focus:border-[#13B562]`}
                       placeholder={t("auth.register.lastName", "Last Name")}
                     />
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -961,9 +961,8 @@ const errorBannerRef = React.useRef<HTMLDivElement | null>(null);
                       id="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className={`w-full py-2 px-4 pl-9 rounded-full bg-white dark:bg-[var(--card-color)] border ${
-                        errors.email ? "border-[#FDA29B]" : "border-gray-300 dark:border-[#35353E]"
-                      } text-gray-900 dark:text-white focus:outline-none focus:border-[#13B562]`}
+                      className={`w-full py-2 px-4 pl-9 rounded-full bg-white dark:bg-[var(--card-color)] border ${errors.email ? "border-[#FDA29B]" : "border-gray-300 dark:border-[#35353E]"
+                        } text-gray-900 dark:text-white focus:outline-none focus:border-[#13B562]`}
                       placeholder={t(
                         "auth.login.email.placeholder",
                         "Email Address"
@@ -1158,9 +1157,8 @@ const errorBannerRef = React.useRef<HTMLDivElement | null>(null);
                       id="phone"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
-                      className={`w-full py-2 px-4 pl-9 rounded-full bg-white dark:bg-[var(--card-color)] border ${
-                        errors.phone ? "border-[#FDA29B]" : "border-gray-300 dark:border-[#35353E]"
-                      } text-gray-900 dark:text-white focus:outline-none focus:border-[#13B562]`}
+                      className={`w-full py-2 px-4 pl-9 rounded-full bg-white dark:bg-[var(--card-color)] border ${errors.phone ? "border-[#FDA29B]" : "border-gray-300 dark:border-[#35353E]"
+                        } text-gray-900 dark:text-white focus:outline-none focus:border-[#13B562]`}
                       placeholder={"+12345678"}
                     />
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -1206,9 +1204,8 @@ const errorBannerRef = React.useRef<HTMLDivElement | null>(null);
                         setPassword(e.target.value);
                         if (submitAttempted) setSubmitAttempted(false);
                       }}
-                      className={`w-full py-2 px-4 pl-9 rounded-full bg-white dark:bg-[var(--card-color)] border ${
-                        errors.password ? "border-[#FDA29B]" : "border-gray-300 dark:border-[#35353E]"
-                      } text-gray-900 dark:text-white focus:outline-none focus:border-[#13B562]`}
+                      className={`w-full py-2 px-4 pl-9 rounded-full bg-white dark:bg-[var(--card-color)] border ${errors.password ? "border-[#FDA29B]" : "border-gray-300 dark:border-[#35353E]"
+                        } text-gray-900 dark:text-white focus:outline-none focus:border-[#13B562]`}
                       placeholder={t(
                         "auth.register.password.placeholder",
                         "Enter password"
@@ -1342,11 +1339,10 @@ const errorBannerRef = React.useRef<HTMLDivElement | null>(null);
                       id="confirm-password"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className={`w-full py-2 px-4 pl-9 rounded-full bg-white dark:bg-[var(--card-color)] border ${
-                        errors.confirmPassword
-                          ? "border-[#FDA29B]"
-                          : "border-gray-300 dark:border-[#35353E]"
-                      } text-gray-900 dark:text-white focus:outline-none focus:border-[#13B562]`}
+                      className={`w-full py-2 px-4 pl-9 rounded-full bg-white dark:bg-[var(--card-color)] border ${errors.confirmPassword
+                        ? "border-[#FDA29B]"
+                        : "border-gray-300 dark:border-[#35353E]"
+                        } text-gray-900 dark:text-white focus:outline-none focus:border-[#13B562]`}
                       placeholder={t(
                         "auth.register.confirm.placeholder",
                         "Confirm password"
@@ -1473,22 +1469,20 @@ const errorBannerRef = React.useRef<HTMLDivElement | null>(null);
               <div className="flex flex-col space-y-1 ml-1">
                 <div className="flex items-center space-x-2">
                   <div
-                    className={`h-2 w-2 rounded-full ${
-                      hasMinChars
-                        ? "bg-[#1D8751]"
-                        : submitAttempted
-                          ? "bg-red-500"
-                          : "bg-gray-400 dark:bg-gray-500"
-                    }`}
+                    className={`h-2 w-2 rounded-full ${hasMinChars
+                      ? "bg-[#1D8751]"
+                      : submitAttempted
+                        ? "bg-red-500"
+                        : "bg-gray-400 dark:bg-gray-500"
+                      }`}
                   ></div>
                   <span
-                    className={`text-sm ${
-                      hasMinChars
-                        ? "text-[#1D8751]"
-                        : submitAttempted
-                          ? "text-red-500"
-                          : "text-gray-900 dark:text-white"
-                    }`}
+                    className={`text-sm ${hasMinChars
+                      ? "text-[#1D8751]"
+                      : submitAttempted
+                        ? "text-red-500"
+                        : "text-gray-900 dark:text-white"
+                      }`}
                   >
                     {t(
                       "auth.register.requirements.8chars",
@@ -1498,22 +1492,20 @@ const errorBannerRef = React.useRef<HTMLDivElement | null>(null);
                 </div>
                 <div className="flex items-center space-x-2">
                   <div
-                    className={`h-2 w-2 rounded-full ${
-                      hasNumber || hasSymbol
-                        ? "bg-[#1D8751]"
-                        : submitAttempted
-                          ? "bg-red-500"
-                          : "bg-gray-400 dark:bg-gray-500"
-                    }`}
+                    className={`h-2 w-2 rounded-full ${hasNumber || hasSymbol
+                      ? "bg-[#1D8751]"
+                      : submitAttempted
+                        ? "bg-red-500"
+                        : "bg-gray-400 dark:bg-gray-500"
+                      }`}
                   ></div>
                   <span
-                    className={`text-sm ${
-                      hasNumber || hasSymbol
-                        ? "text-[#1D8751]"
-                        : submitAttempted
-                          ? "text-red-500"
-                          : "text-gray-900 dark:text-white"
-                    }`}
+                    className={`text-sm ${hasNumber || hasSymbol
+                      ? "text-[#1D8751]"
+                      : submitAttempted
+                        ? "text-red-500"
+                        : "text-gray-900 dark:text-white"
+                      }`}
                   >
                     {t(
                       "auth.register.requirements.numberSymbol",
@@ -1523,22 +1515,20 @@ const errorBannerRef = React.useRef<HTMLDivElement | null>(null);
                 </div>
                 <div className="flex items-center space-x-2">
                   <div
-                    className={`h-2 w-2 rounded-full ${
-                      hasMixedCase
-                        ? "bg-[#1D8751]"
-                        : submitAttempted
-                          ? "bg-red-500"
-                          : "bg-gray-400 dark:bg-gray-500"
-                    }`}
+                    className={`h-2 w-2 rounded-full ${hasMixedCase
+                      ? "bg-[#1D8751]"
+                      : submitAttempted
+                        ? "bg-red-500"
+                        : "bg-gray-400 dark:bg-gray-500"
+                      }`}
                   ></div>
                   <span
-                    className={`text-sm ${
-                      hasMixedCase
-                        ? "text-[#1D8751]"
-                        : submitAttempted
-                          ? "text-red-500"
-                          : "text-gray-900 dark:text-white"
-                    }`}
+                    className={`text-sm ${hasMixedCase
+                      ? "text-[#1D8751]"
+                      : submitAttempted
+                        ? "text-red-500"
+                        : "text-gray-900 dark:text-white"
+                      }`}
                   >
                     {t(
                       "auth.register.requirements.mixedCase",

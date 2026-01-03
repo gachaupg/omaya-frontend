@@ -2,6 +2,7 @@
 import React, { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { FaExchangeAlt, FaExclamationCircle } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "../../../../store";
@@ -163,8 +164,8 @@ const UserPaymentSelector = ({
               <div
                 key={detail.id}
                 className={`flex items-center justify-between p-3 rounded-xl border ${isSelected
-                    ? "border-[#1D8751] bg-[#1D8751]/10 dark:bg-[#1D8751]/10"
-                    : "border-gray-300 dark:border-[#A2A4A9FF] bg-gray-50 dark:bg-[#A2A4A9FF]"
+                  ? "border-[#1D8751] bg-[#1D8751]/10 dark:bg-[#1D8751]/10"
+                  : "border-gray-300 dark:border-[#A2A4A9FF] bg-gray-50 dark:bg-[#A2A4A9FF]"
                   }`}
               >
                 <div className="flex-1">
@@ -191,8 +192,8 @@ const UserPaymentSelector = ({
                     }
                   }}
                   className={`px-4 py-2 rounded-lg text-base sm:text-lg font-medium transition-colors ${isSelected
-                      ? "bg-red-500 text-white hover:bg-red-600"
-                      : "bg-[#1D8751] text-white hover:bg-[#166b3e]"
+                    ? "bg-red-500 text-white hover:bg-red-600"
+                    : "bg-[#1D8751] text-white hover:bg-[#166b3e]"
                     }`}
                 >
                   {isSelected ? "Remove" : "Select"}
@@ -3362,10 +3363,10 @@ export default function WithdrawalForm({
                           : "Enter amount"
                       }
                       className={`w-full h-[48px] text-[#35353e] dark:text-white bg-transparent dark:bg-transparent rounded-2xl px-2 sm:px-3 md:px-4 pr-12 sm:pr-16 text-base sm:text-lg focus:outline-none border appearance-none transition-colors duration-200 ${apiValidationError
-                          ? "border-red-500"
-                          : isCalculating || isCalculatingReceive
-                            ? "border-[#1D8751]"
-                            : "border-[#A2A4A9FF] dark:border-[#35353E]"
+                        ? "border-red-500"
+                        : isCalculating || isCalculatingReceive
+                          ? "border-[#1D8751]"
+                          : "border-[#A2A4A9FF] dark:border-[#35353E]"
                         }`}
                     />
                     <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
@@ -3668,26 +3669,26 @@ export default function WithdrawalForm({
                           : "Enter amount"
                       }
                       className={`w-full h-[48px] text-[#35353e] dark:text-white bg-white dark:bg-[#35353E] rounded-2xl px-3 sm:px-4 pr-16 text-base sm:text-lg focus:outline-none border appearance-none transition-colors duration-200 ${(receiveAmountError &&
-                          (receiveAmountError.includes("Rough estimate") ||
-                            receiveAmountError.includes("Using estimated rate"))) ||
+                        (receiveAmountError.includes("Rough estimate") ||
+                          receiveAmountError.includes("Using estimated rate"))) ||
+                        (apiValidationError &&
+                          (apiValidationError.includes("Rough estimate") ||
+                            apiValidationError.includes("Using estimated rate")))
+                        ? "border-[#F79330]"
+                        : (receiveAmountError &&
+                          !receiveAmountError.includes("Rough estimate") &&
+                          !receiveAmountError.includes(
+                            "Using estimated rate"
+                          )) ||
                           (apiValidationError &&
-                            (apiValidationError.includes("Rough estimate") ||
-                              apiValidationError.includes("Using estimated rate")))
-                          ? "border-[#F79330]"
-                          : (receiveAmountError &&
-                            !receiveAmountError.includes("Rough estimate") &&
-                            !receiveAmountError.includes(
+                            !apiValidationError.includes("Rough estimate") &&
+                            !apiValidationError.includes(
                               "Using estimated rate"
-                            )) ||
-                            (apiValidationError &&
-                              !apiValidationError.includes("Rough estimate") &&
-                              !apiValidationError.includes(
-                                "Using estimated rate"
-                              ))
-                            ? "border-red-500"
-                            : isCalculating || isCalculatingReceive
-                              ? "border-[#1D8751]"
-                              : "border-[#A2A4A9FF] dark:border-[#35353E]"
+                            ))
+                          ? "border-red-500"
+                          : isCalculating || isCalculatingReceive
+                            ? "border-[#1D8751]"
+                            : "border-[#A2A4A9FF] dark:border-[#35353E]"
                         }`}
                     />
                     <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
@@ -3768,9 +3769,9 @@ export default function WithdrawalForm({
                   {receiveAmountError && (
                     <p
                       className={`text-sm mt-1 ${receiveAmountError.includes("Rough estimate") ||
-                          receiveAmountError.includes("Using estimated rate")
-                          ? "text-[#F79330]"
-                          : "text-red-500"
+                        receiveAmountError.includes("Using estimated rate")
+                        ? "text-[#F79330]"
+                        : "text-red-500"
                         }`}
                     >
                       {receiveAmountError}
@@ -4049,8 +4050,8 @@ export default function WithdrawalForm({
                             searchable={true}
                             sizeMode="card"
                             className={`w-full ${paymentMethodError
-                                ? "border-red-500 dark:border-red-500"
-                                : ""
+                              ? "border-red-500 dark:border-red-500"
+                              : ""
                               }`}
                           />
                         </div>
@@ -4124,10 +4125,10 @@ export default function WithdrawalForm({
                   return (
                     <button
                       className={`w-full text-[#35353e] dark:text-[#788099] text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${isHomePage
-                          ? "bg-[#1D8751] hover:bg-[#166b3e] cursor-pointer"
-                          : isDisabled
-                            ? "bg-gray-500 cursor-not-allowed"
-                            : "bg-[#1D8751] hover:bg-[#166b3e]"
+                        ? "bg-[#1D8751] hover:bg-[#166b3e] cursor-pointer"
+                        : isDisabled
+                          ? "bg-gray-500 cursor-not-allowed"
+                          : "bg-[#1D8751] hover:bg-[#166b3e]"
                         }`}
                       onClick={() => {
                         if (isHomePage) {
@@ -4407,25 +4408,25 @@ export default function WithdrawalForm({
                     />
                     <span className="text-[#35353e] dark:text-[#788099] text-sm">
                       I've read and agree to the{" "}
-                      <span className="text-[#1D8751] cursor-pointer hover:underline">
+                      <Link href="/legal/terms-of-service" target="_blank" className="text-[#1D8751] cursor-pointer hover:underline">
                         Terms of Use
-                      </span>
+                      </Link>
                       ,{" "}
-                      <span className="text-[#1D8751] cursor-pointer hover:underline">
+                      <Link href="/legal/privacy-policy" target="_blank" className="text-[#1D8751] cursor-pointer hover:underline">
                         Privacy Policy
-                      </span>
+                      </Link>
                       ,{" "}
-                      <span className="text-[#1D8751] cursor-pointer hover:underline">
+                      <Link href="/legal/payment-policy" target="_blank" className="text-[#1D8751] cursor-pointer hover:underline">
                         Payment Policies
-                      </span>
+                      </Link>
                       ,{" "}
-                      <span className="text-[#1D8751] cursor-pointer hover:underline">
+                      <Link href="/legal/aml-policy" target="_blank" className="text-[#1D8751] cursor-pointer hover:underline">
                         AML
-                      </span>
+                      </Link>
                       ,{" "}
-                      <span className="text-[#1D8751] cursor-pointer hover:underline">
+                      <Link href="/legal/risk-disclosure-statement" target="_blank" className="text-[#1D8751] cursor-pointer hover:underline">
                         Risk Disclosure Statements
-                      </span>
+                      </Link>
                     </span>
                   </label>
                 </div>
@@ -4454,8 +4455,8 @@ export default function WithdrawalForm({
                 )}
                 <button
                   className={`w-full text-[#35353e] dark:text-[#788099] text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${isSubmitting || isInfoModalOpen || getAmount > 15000 || !withdrawalAddress
-                      ? "bg-gray-500 cursor-not-allowed"
-                      : "bg-[#1D8751] hover:bg-[#166b3e]"
+                    ? "bg-gray-500 cursor-not-allowed"
+                    : "bg-[#1D8751] hover:bg-[#166b3e]"
                     }`}
                   onClick={() => {
                     // Navigate to exchanging page with websocket URL
