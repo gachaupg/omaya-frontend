@@ -322,6 +322,27 @@ export default function MarketingPage() {
   const articles = getArticles();
   const filteredArticles = articles;
 
+  const heroStats = [
+    {
+      label: "Trading Volume",
+      value: "100M+",
+      icon: BarChart3,
+      gradient: "from-[#2B7FFF] to-[#00B8DB]",
+    },
+    {
+      label: "Countries",
+      value: "150+",
+      icon: Globe,
+      gradient: "from-[#AD46FF] to-[#F6339A]",
+    },
+    {
+      label: "Uptime",
+      value: "99.9%",
+      icon: Lock,
+      gradient: "from-[#1D8751] to-[#309A64]",
+    },
+  ];
+
   const toggleFAQ = (id: number) => {
     setOpenFAQ(openFAQ === id ? null : id);
   };
@@ -491,52 +512,23 @@ export default function MarketingPage() {
                 </button>
               </div>
 
-              {/* Security & Reliability Stat Cards (Hero) */}
+              {/* Stats */}
               <div className="flex flex-wrap gap-3 sm:gap-4 justify-center md:justify-start pt-4 md:pt-6 w-full">
-                {/* $2.5B+ Trading Volume */}
-                <div className="bg-white/5 dark:bg-white/5 backdrop-blur-sm rounded-2xl px-5 py-4 flex flex-col gap-3 shadow-lg border border-white/10 flex-1 min-w-[120px] max-w-[180px]">
-                  <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#2B7FFF] to-[#00B8DB] flex items-center justify-center shadow-lg">
-                    <BarChart3 className="w-5 h-5 text-white" />
+                {heroStats.map((stat, index) => (
+                  <div key={index} className="bg-white/5 dark:bg-white/5 backdrop-blur-sm rounded-2xl px-2 py-3 sm:px-5 sm:py-4 flex flex-col items-center sm:items-start gap-3 shadow-lg border border-white/10 flex-1 min-w-[120px] max-w-[180px]">
+                    <div className={`w-10 h-10 rounded-xl bg-linear-to-br ${stat.gradient} flex items-center justify-center shadow-lg`}>
+                      <stat.icon className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-gray-900 dark:text-white text-xl sm:text-2xl font-bold mb-1">
+                        {stat.value}
+                      </p>
+                      <p className="text-gray-600 dark:text-gray-400 text-xs font-medium">
+                        {stat.label}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-gray-900 dark:text-white text-xl sm:text-2xl font-bold mb-1">
-                      $2.5B+
-                    </p>
-                    <p className="text-gray-600 dark:text-gray-400 text-xs font-medium">
-                      Trading Volume
-                    </p>
-                  </div>
-                </div>
-
-                {/* 150+ Countries */}
-                <div className="bg-white/5 dark:bg-white/5 backdrop-blur-sm rounded-2xl px-5 py-4 flex flex-col gap-3 shadow-lg border border-white/10 flex-1 min-w-[120px] max-w-[180px]">
-                  <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#AD46FF] to-[#F6339A] flex items-center justify-center shadow-lg">
-                    <Globe className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-gray-900 dark:text-white text-xl sm:text-2xl font-bold mb-1">
-                      150+
-                    </p>
-                    <p className="text-gray-600 dark:text-gray-400 text-xs font-medium">
-                      Countries
-                    </p>
-                  </div>
-                </div>
-
-                {/* 99.9% Uptime */}
-                <div className="bg-white/5 dark:bg-white/5 backdrop-blur-sm rounded-2xl px-5 py-4 flex flex-col gap-3 shadow-lg border border-white/10 flex-1 min-w-[120px] max-w-[180px]">
-                  <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#1D8751] to-[#309A64] flex items-center justify-center shadow-lg">
-                    <Lock className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-gray-900 dark:text-white text-xl sm:text-2xl font-bold mb-1">
-                      99.9%
-                    </p>
-                    <p className="text-gray-600 dark:text-gray-400 text-xs font-medium">
-                      Uptime
-                    </p>
-                  </div>
-                </div>
+                ))}
               </div>
 
               {/* Trust tags under hero stats */}
