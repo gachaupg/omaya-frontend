@@ -1704,7 +1704,7 @@ export default function ExchangeForm({
     return (
       <div
         className={`w-full mx-auto bg-background dark:bg-[#18181D]
-        rounded-2xl sm:rounded-3xl shadow-xl ${isHomePage
+        rounded-2xl sm:rounded-3xl ${isHomePage
             ? "max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl 2xl:max-w-4xl"
             : "max-w-none"
           }`}>
@@ -1721,7 +1721,7 @@ export default function ExchangeForm({
     return (
       <div
         className={`w-full mx-auto bg-background dark:bg-[#18181D] 
-        rounded-2xl sm:rounded-3xl shadow-xl ${isHomePage
+        rounded-2xl sm:rounded-3xl ${isHomePage
             ? "max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl 2xl:max-w-4xl"
             : "max-w-none"
           }`}>
@@ -1737,7 +1737,7 @@ export default function ExchangeForm({
   return (
     <div
       className={`w-full mx-auto bg-background dark:bg-[#18181D] 
-      rounded-2xl sm:rounded-3xl shadow-xl ${isHomePage
+      rounded-2xl sm:rounded-3xl ${isHomePage
           ? "max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl 2xl:max-w-4xl"
           : "max-w-none"
         }`}>

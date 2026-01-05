@@ -142,7 +142,7 @@ export default function Sidebar() {
                           </span>
                         </span>
                       </span>
-                    ) : (
+                    ) : item.labelKey === "navigation.exchange" ? null : (
                       <span className="font-bold ml-1">{label}</span>
                     )}
 
