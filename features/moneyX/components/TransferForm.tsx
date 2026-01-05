@@ -15,6 +15,7 @@ import { useTheme } from "@/context/theme";
 import CustomSelect from "@/components/ui/CustomSelect";
 import { showToast } from "../../../lib/utils/toast";
 import { usePaymentMethodsDisplay } from "../../express/hooks/useDataDisplay";
+import { useExpressI18n } from "@/lib/useExpressI18n";
 
 interface TransferFormProps {
   onTransfer?: (transactionData: {
@@ -31,6 +32,7 @@ interface TransferFormProps {
 export default function TransferForm({ onTransfer }: TransferFormProps) {
   const dispatch = useDispatch<AppDispatch>();
   const { isDark } = useTheme();
+  const { t } = useExpressI18n();
 
   const {
     adminMethods,
@@ -75,7 +77,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
       isArray: Array.isArray(adminMethods),
       length: adminMethods?.length || 0
     });
-    
+
     if (adminMethods && Array.isArray(adminMethods) && adminMethods.length > 0) {
       const activeMethods = adminMethods
         .filter((payment: any) => {
@@ -172,21 +174,21 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
   // Removes method suffixes like "- Bank", "- Mobile", "- Crypto", etc.
   const getProviderName = useCallback((payment: any) => {
     if (!payment) return "";
-    
+
     // Priority order: provider_name (dashboard) > provider (home page) > provider.provider_name > method.method_name (fallback)
     // Dashboard API has: provider_name: "Equity Bank", method: "Bank"
     // Home page API has: provider_name: "Equity Bank - Bank", provider: "Equity Bank"
     let providerName = payment.provider_name || payment.provider || payment.provider?.provider_name || "";
-    
+
     // Only use method_name as last resort if no provider name exists
     if (!providerName || providerName.trim() === "") {
       providerName = payment.method?.method_name || payment.payment_method_name || "";
     }
-    
+
     // Remove common method suffixes (case-insensitive)
     // Matches patterns like "- Bank", "- Mobile", "- Crypto", "- Forex", "- Marchant", "- Money Transfer", etc.
     providerName = providerName.replace(/\s*-\s*(Bank|Mobile|Crypto|Forex|Marchant|Money\s*Transfer|Merchant)\s*$/i, "").trim();
-    
+
     return providerName;
   }, []);
 
@@ -197,7 +199,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
     const paymentMethod = (method?.payment_method || "").toLowerCase();
     const paymentMethodType = (method?.payment_method_type || "").toLowerCase();
     const provider = (method?.provider || "").toLowerCase();
-    
+
     return (
       providerName.includes("bank") ||
       paymentMethod.includes("bank") ||
@@ -209,7 +211,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
   // Restore state from localStorage after login (when navigating from home page)
   const hasRestoredState = useRef(false);
   const paymentMethodRestoreAttempted = useRef(false);
-  
+
   // Restore state on mount and when authentication changes
   useEffect(() => {
     // Only restore if user is authenticated and we haven't restored yet
@@ -231,9 +233,9 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
       const savedState = localStorage.getItem("moneyx_form_state");
       if (savedState) {
         const state = JSON.parse(savedState);
-        
+
         console.log("🔄 [Dashboard] Restoring moneyx form state:", state);
-        
+
         // Restore amounts immediately
         if (state.amountInput !== undefined && state.amountInput !== null && state.amountInput !== "") {
           const sendAmount = state.amountValue || parseFloat(state.amountInput) || 0;
@@ -253,12 +255,12 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
           // Use base provider name if available (from home page API), otherwise use cleaned name
           const fromName = state.fromProviderBase || state.fromPaymentMethod || "";
           const toName = state.toProviderBase || state.toPaymentMethod || "";
-          
+
           localStorage.setItem("moneyx_restore_from", fromName);
           localStorage.setItem("moneyx_restore_to", toName);
           localStorage.setItem("moneyx_restore_from_cleaned", state.fromPaymentMethod || "");
           localStorage.setItem("moneyx_restore_to_cleaned", state.toPaymentMethod || "");
-          
+
           if (state.fromPaymentDetail) {
             localStorage.setItem("moneyx_restore_from_detail", JSON.stringify(state.fromPaymentDetail));
           }
@@ -307,14 +309,14 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
     const restoreTo = localStorage.getItem("moneyx_restore_to");
     const restoreFromCleaned = localStorage.getItem("moneyx_restore_from_cleaned");
     const restoreToCleaned = localStorage.getItem("moneyx_restore_to_cleaned");
-    
-    console.log("🔍 [Dashboard] Restoration data check:", { 
-      restoreFrom, 
+
+    console.log("🔍 [Dashboard] Restoration data check:", {
+      restoreFrom,
       restoreTo,
       restoreFromCleaned,
       restoreToCleaned
     });
-    
+
     // If no restoration data, skip
     if (!restoreFrom && !restoreTo) {
       console.log("ℹ️ [Dashboard] No restoration data found");
@@ -329,10 +331,10 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
 
     // Check if we're using fallback methods (they have generic names like "Bank", "Mobile Money")
     // We should NEVER restore using fallback methods - they don't have real provider names
-    const isUsingFallback = methodsToCheck && methodsToCheck.length > 0 && 
-      methodsToCheck.some((m: any) => 
-        m.provider_name === "Bank" || 
-        m.provider_name === "Mobile Money" || 
+    const isUsingFallback = methodsToCheck && methodsToCheck.length > 0 &&
+      methodsToCheck.some((m: any) =>
+        m.provider_name === "Bank" ||
+        m.provider_name === "Mobile Money" ||
         m.provider_name === "Cryptocurrency"
       );
 
@@ -369,45 +371,45 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
       id: m.id,
       provider_id: m.provider_id
     })));
-    
+
     paymentMethodRestoreAttempted.current = true;
-    
+
     let matchedFromMethod = null;
     let matchedToMethod = null;
-    
+
     // Restore "from" payment method
     if (restoreFrom) {
       const savedFromDetail = localStorage.getItem("moneyx_restore_from_detail");
 
-        if (savedFromDetail) {
-          try {
-            const fromDetail = JSON.parse(savedFromDetail);
-            console.log("Trying to match from payment detail:", fromDetail);
-            
-            // Try multiple matching strategies
-            matchedFromMethod = methodsToCheck.find(
-              (m: any) => {
-                const providerName = getProviderName(m);
-                const savedProviderName = getProviderName(fromDetail);
-                const savedProvider = fromDetail.provider || fromDetail.provider_name || "";
-                const cleanedSavedProvider = getProviderName({ provider_name: savedProvider });
-                
-                return (
-                  (m.id && m.id === fromDetail.id) ||
-                  (m.provider_id && m.provider_id === fromDetail.provider_id) ||
-                  (m.providerId && m.providerId === fromDetail.providerId) ||
-                  (providerName.toLowerCase() === restoreFrom.toLowerCase()) ||
-                  (providerName.toLowerCase() === savedProviderName.toLowerCase()) ||
-                  (providerName.toLowerCase() === cleanedSavedProvider.toLowerCase()) ||
-                  (m.provider_name && getProviderName(m).toLowerCase() === getProviderName(fromDetail).toLowerCase()) ||
-                  (m.provider && getProviderName({ provider_name: m.provider }).toLowerCase() === cleanedSavedProvider.toLowerCase())
-                );
-              }
-            );
-          } catch (e) {
-            console.error("Failed to parse from payment detail:", e);
-          }
+      if (savedFromDetail) {
+        try {
+          const fromDetail = JSON.parse(savedFromDetail);
+          console.log("Trying to match from payment detail:", fromDetail);
+
+          // Try multiple matching strategies
+          matchedFromMethod = methodsToCheck.find(
+            (m: any) => {
+              const providerName = getProviderName(m);
+              const savedProviderName = getProviderName(fromDetail);
+              const savedProvider = fromDetail.provider || fromDetail.provider_name || "";
+              const cleanedSavedProvider = getProviderName({ provider_name: savedProvider });
+
+              return (
+                (m.id && m.id === fromDetail.id) ||
+                (m.provider_id && m.provider_id === fromDetail.provider_id) ||
+                (m.providerId && m.providerId === fromDetail.providerId) ||
+                (providerName.toLowerCase() === restoreFrom.toLowerCase()) ||
+                (providerName.toLowerCase() === savedProviderName.toLowerCase()) ||
+                (providerName.toLowerCase() === cleanedSavedProvider.toLowerCase()) ||
+                (m.provider_name && getProviderName(m).toLowerCase() === getProviderName(fromDetail).toLowerCase()) ||
+                (m.provider && getProviderName({ provider_name: m.provider }).toLowerCase() === cleanedSavedProvider.toLowerCase())
+              );
+            }
+          );
+        } catch (e) {
+          console.error("Failed to parse from payment detail:", e);
         }
+      }
 
       // If no match by ID, try by name (use base name first, then cleaned name)
       if (!matchedFromMethod) {
@@ -421,21 +423,21 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
           method: m.method,
           id: m.id
         })));
-        
+
         matchedFromMethod = methodsToCheck.find(
           (m: any) => {
             // Direct comparison of provider_name field (most reliable) - exact match
             const directMatch = m.provider_name && m.provider_name.toLowerCase().trim() === baseName.toLowerCase().trim();
-            
+
             // Also try cleaned provider_name (removes "- Bank" suffix)
             const cleanedProviderName = m.provider_name ? getProviderName({ provider_name: m.provider_name }) : "";
             const cleanedMatch = cleanedProviderName && cleanedProviderName.toLowerCase().trim() === cleanedBaseName.toLowerCase().trim();
-            
+
             // Try provider field if available
             const providerMatch = m.provider && m.provider.toLowerCase().trim() === baseName.toLowerCase().trim();
-            
+
             const match = directMatch || cleanedMatch || providerMatch;
-            
+
             if (match) {
               console.log("✅ [Dashboard] Found match!");
               console.log("   Method provider_name:", m.provider_name);
@@ -489,35 +491,35 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
     if (restoreTo) {
       const savedToDetail = localStorage.getItem("moneyx_restore_to_detail");
 
-        if (savedToDetail) {
-          try {
-            const toDetail = JSON.parse(savedToDetail);
-            console.log("Trying to match to payment detail:", toDetail);
-            
-            // Try multiple matching strategies
-            matchedToMethod = methodsToCheck.find(
-              (m: any) => {
-                const providerName = getProviderName(m);
-                const savedProviderName = getProviderName(toDetail);
-                const savedProvider = toDetail.provider || toDetail.provider_name || "";
-                const cleanedSavedProvider = getProviderName({ provider_name: savedProvider });
-                
-                return (
-                  (m.id && m.id === toDetail.id) ||
-                  (m.provider_id && m.provider_id === toDetail.provider_id) ||
-                  (m.providerId && m.providerId === toDetail.providerId) ||
-                  (providerName.toLowerCase() === restoreTo.toLowerCase()) ||
-                  (providerName.toLowerCase() === savedProviderName.toLowerCase()) ||
-                  (providerName.toLowerCase() === cleanedSavedProvider.toLowerCase()) ||
-                  (m.provider_name && getProviderName(m).toLowerCase() === getProviderName(toDetail).toLowerCase()) ||
-                  (m.provider && getProviderName({ provider_name: m.provider }).toLowerCase() === cleanedSavedProvider.toLowerCase())
-                );
-              }
-            );
-          } catch (e) {
-            console.error("Failed to parse to payment detail:", e);
-          }
+      if (savedToDetail) {
+        try {
+          const toDetail = JSON.parse(savedToDetail);
+          console.log("Trying to match to payment detail:", toDetail);
+
+          // Try multiple matching strategies
+          matchedToMethod = methodsToCheck.find(
+            (m: any) => {
+              const providerName = getProviderName(m);
+              const savedProviderName = getProviderName(toDetail);
+              const savedProvider = toDetail.provider || toDetail.provider_name || "";
+              const cleanedSavedProvider = getProviderName({ provider_name: savedProvider });
+
+              return (
+                (m.id && m.id === toDetail.id) ||
+                (m.provider_id && m.provider_id === toDetail.provider_id) ||
+                (m.providerId && m.providerId === toDetail.providerId) ||
+                (providerName.toLowerCase() === restoreTo.toLowerCase()) ||
+                (providerName.toLowerCase() === savedProviderName.toLowerCase()) ||
+                (providerName.toLowerCase() === cleanedSavedProvider.toLowerCase()) ||
+                (m.provider_name && getProviderName(m).toLowerCase() === getProviderName(toDetail).toLowerCase()) ||
+                (m.provider && getProviderName({ provider_name: m.provider }).toLowerCase() === cleanedSavedProvider.toLowerCase())
+              );
+            }
+          );
+        } catch (e) {
+          console.error("Failed to parse to payment detail:", e);
         }
+      }
 
       // If no match by ID, try by name (use base name first, then cleaned name)
       if (!matchedToMethod) {
@@ -525,21 +527,21 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
         const baseName = restoreTo || restoreToCleaned || "";
         const cleanedBaseName = getProviderName({ provider_name: baseName });
         console.log("🔍 [Dashboard] Trying to match - Base:", baseName, "Cleaned:", cleanedBaseName);
-        
+
         matchedToMethod = methodsToCheck.find(
           (m: any) => {
             // Direct comparison of provider_name field (most reliable) - exact match
             const directMatch = m.provider_name && m.provider_name.toLowerCase().trim() === baseName.toLowerCase().trim();
-            
+
             // Also try cleaned provider_name (removes "- Bank" suffix)
             const cleanedProviderName = m.provider_name ? getProviderName({ provider_name: m.provider_name }) : "";
             const cleanedMatch = cleanedProviderName && cleanedProviderName.toLowerCase().trim() === cleanedBaseName.toLowerCase().trim();
-            
+
             // Try provider field if available
             const providerMatch = m.provider && m.provider.toLowerCase().trim() === baseName.toLowerCase().trim();
-            
+
             const match = directMatch || cleanedMatch || providerMatch;
-            
+
             if (match) {
               console.log("✅ [Dashboard] Found match!");
               console.log("   Method provider_name:", m.provider_name);
@@ -623,8 +625,8 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
     // Check if current selection still exists in the latest list
     const currentExists = fromPaymentMethod
       ? finalPaymentMethods.some(
-          (m: any) => getProviderName(m) === fromPaymentMethod
-        )
+        (m: any) => getProviderName(m) === fromPaymentMethod
+      )
       : false;
 
     // If nothing selected OR the current selection no longer exists, (re)auto-select
@@ -644,10 +646,10 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
           setGetAmountInput("98");
           setGetAmount(98);
         }
-        
+
         setFromPaymentMethod(providerName);
         setSelectedFromPaymentDetail(methodToSelect);
-        
+
         // Immediately set "to" to second method (index 1) - run in next tick to ensure state is updated
         if (finalPaymentMethods.length > 1) {
           setTimeout(() => {
@@ -689,32 +691,32 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
       : (Array.isArray(stablePaymentMethods) && stablePaymentMethods.length > 0
         ? stablePaymentMethods
         : null);
-    
+
     // Must have at least 2 methods
     if (!methodsToCheck || methodsToCheck.length < 2) {
       return;
     }
-    
+
     // Must have "from" selected
     if (!fromPaymentMethod || fromPaymentMethod === "") {
       return;
     }
-    
+
     // Skip if "to" is already selected
     if (toPaymentMethod && toPaymentMethod !== "") {
       return;
     }
-    
+
     // ALWAYS select the second payment method (index 1) from the original array
     const secondMethod = methodsToCheck[1];
-    
+
     // If second method exists and is different from "from", use it immediately
     if (secondMethod?.provider_name && secondMethod.provider_name !== fromPaymentMethod) {
       setToPaymentMethod(secondMethod.provider_name);
       setSelectedToPaymentDetail(secondMethod);
       return;
     }
-    
+
     // If second method is same as "from", find the next different method starting from index 2
     for (let i = 2; i < methodsToCheck.length; i++) {
       const method = methodsToCheck[i];
@@ -724,12 +726,12 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
         return;
       }
     }
-    
+
     // Final fallback: find ANY method that's different from "from"
     const methodToSelect = methodsToCheck.find(
       (method) => method?.provider_name && method.provider_name !== fromPaymentMethod
     );
-    
+
     if (methodToSelect?.provider_name) {
       setToPaymentMethod(methodToSelect.provider_name);
       setSelectedToPaymentDetail(methodToSelect);
@@ -779,7 +781,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
         setPayAmountInput(value);
         setPayAmount(newAmount);
         setIsCalculatingFromPay(true);
-        
+
         // Calculate receive amount (simple: subtract 2)
         const calculatedGetAmount = newAmount < 2 ? newAmount : Math.max(0, newAmount - 2);
         setGetAmount(calculatedGetAmount);
@@ -788,7 +790,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
         setGetAmountInput(value);
         setGetAmount(newAmount);
         setIsCalculatingFromPay(false);
-        
+
         // Calculate send amount (reverse: add 2)
         const calculatedPayAmount = newAmount < 2 ? newAmount : newAmount + 2;
         setPayAmount(calculatedPayAmount);
@@ -796,7 +798,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
       }
 
       setApiValidationError(null);
-      
+
       // Show info modal if amount exceeds $15,000
       if (newAmount > 15000) {
         // You can add an info modal here similar to deposit form
@@ -838,14 +840,14 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
 
     try {
       // Extract provider IDs from selected payment methods
-      const senderProviderId = 
-        selectedFromPaymentDetail?.id || 
-        selectedFromPaymentDetail?.provider_id || 
+      const senderProviderId =
+        selectedFromPaymentDetail?.id ||
+        selectedFromPaymentDetail?.provider_id ||
         selectedFromPaymentDetail?.providerId;
-      
-      const receiverProviderId = 
-        selectedToPaymentDetail?.id || 
-        selectedToPaymentDetail?.provider_id || 
+
+      const receiverProviderId =
+        selectedToPaymentDetail?.id ||
+        selectedToPaymentDetail?.provider_id ||
         selectedToPaymentDetail?.providerId;
 
       if (!senderProviderId || !receiverProviderId) {
@@ -866,7 +868,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
       showToast.success("Transfer request submitted successfully!");
 
       setIsFirstCardSubmitted(true);
-      
+
       // Scroll to the next section
       setTimeout(() => {
         if (paymentDetailsRef.current) {
@@ -925,7 +927,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
             {/* Amount Section */}
             <div className="flex-1 sm:pr-4">
               <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
-                You Send
+                {t("express.youSend", "You Send")}
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
               </label>
               <div className="relative">
@@ -948,7 +950,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
               className="flex-1 sm:pl-4 border-t sm:border-t-0 sm:border-l border-[#35353E] dark:border-[#35353E] pt-3 sm:pt-0 sm:border-none"
             >
               <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
-                From Payment Method
+                {t("express.fromPaymentMethod", "From Payment Method")}
               </label>
               <div className="relative w-full">
                 <CustomSelect
@@ -965,7 +967,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
                   }}
                   placeholder={
                     paymentMethodsDisplay.isLoading &&
-                    finalPaymentMethods.length === 0
+                      finalPaymentMethods.length === 0
                       ? "Loading payment methods..."
                       : finalPaymentMethods && finalPaymentMethods.length > 0
                         ? "Select Payment Method"
@@ -1028,7 +1030,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
             {/* You Receive Section */}
             <div className="flex-1 sm:pr-4">
               <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
-                You Receive
+                {t("express.youReceive", "You Receive")}
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
                 {!isCalculatingFromPay && (
                   <span className="text-xs text-[#1D8751] font-medium hidden sm:inline">
@@ -1053,7 +1055,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
             {/* To Payment Method Section */}
             <div className="flex-1 sm:pl-4 border-t sm:border-t-0 sm:border-l border-[#35353E] dark:border-[#35353E] pt-3 sm:pt-0 sm:border-none">
               <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
-                To Payment Method
+                {t("express.toPaymentMethod", "To Payment Method")}
               </label>
               <div className="relative w-full">
                 <CustomSelect
@@ -1072,7 +1074,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
                   }}
                   placeholder={
                     paymentMethodsDisplay.isLoading &&
-                    finalPaymentMethods.length === 0
+                      finalPaymentMethods.length === 0
                       ? "Loading payment methods..."
                       : finalPaymentMethods && finalPaymentMethods.length > 0
                         ? "Select Payment Method"
@@ -1132,11 +1134,10 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
         {!isFirstCardSubmitted && (
           <div className="mt-4 relative">
             <button
-              className={`w-full text-white dark:text-white text-sm sm:text-base font-medium py-3 sm:py-2 rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 transition-colors min-h-[44px] sm:min-h-0 ${
-                isTransferDisabled
-                  ? "bg-gray-500 cursor-not-allowed"
-                  : "bg-[#1D8751] hover:bg-[#166b3e]"
-              }`}
+              className={`w-full text-white dark:text-white text-sm sm:text-base font-medium py-3 sm:py-2 rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 transition-colors min-h-[44px] sm:min-h-0 ${isTransferDisabled
+                ? "bg-gray-500 cursor-not-allowed"
+                : "bg-[#1D8751] hover:bg-[#166b3e]"
+                }`}
               onClick={handleFirstCardSubmit}
               disabled={isTransferDisabled}
             >
@@ -1203,13 +1204,12 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
                   setBankAddressError(null);
                 }}
                 placeholder="Paste here your Bank Account Address"
-                className={`flex-1 min-w-0 bg-transparent border-none outline-none text-[#35353e] dark:text-[#788099] placeholder-[#788099] text-sm sm:text-base ${
-                  bankAddressError
-                    ? "border-red-500"
-                    : bankAccountAddress.trim() && !bankAddressError
-                      ? "border-green-500"
-                      : ""
-                }`}
+                className={`flex-1 min-w-0 bg-transparent border-none outline-none text-[#35353e] dark:text-[#788099] placeholder-[#788099] text-sm sm:text-base ${bankAddressError
+                  ? "border-red-500"
+                  : bankAccountAddress.trim() && !bankAddressError
+                    ? "border-green-500"
+                    : ""
+                  }`}
               />
               {/* Bookmark icon - hidden on small screens */}
               <span className="hidden sm:block mx-1 sm:mx-2 text-[#788099] cursor-pointer flex-shrink-0">
@@ -1324,11 +1324,10 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
           {/* Final Submit Button */}
           <div className="flex flex-col gap-3 w-full px-2">
             <button
-              className={`w-full text-white dark:text-white text-sm sm:text-base font-medium py-3 sm:py-2 rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 transition-colors min-h-[44px] sm:min-h-0 ${
-                !bankAccountAddress.trim() || bankAddressError || !isAddressConfirmed
-                  ? "bg-gray-500 cursor-not-allowed"
-                  : "bg-[#1D8751] hover:bg-[#166b3e]"
-              }`}
+              className={`w-full text-white dark:text-white text-sm sm:text-base font-medium py-3 sm:py-2 rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 transition-colors min-h-[44px] sm:min-h-0 ${!bankAccountAddress.trim() || bankAddressError || !isAddressConfirmed
+                ? "bg-gray-500 cursor-not-allowed"
+                : "bg-[#1D8751] hover:bg-[#166b3e]"
+                }`}
               onClick={async () => {
                 if (!bankAccountAddress.trim()) {
                   showToast.error("Please enter a bank account address");
@@ -1362,7 +1361,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
                   ).unwrap();
 
                   showToast.success("Account number updated successfully!");
-                  
+
                   // Call onTransfer callback with transaction data including MoneyX transaction ID
                   if (onTransfer) {
                     onTransfer({
