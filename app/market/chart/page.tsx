@@ -78,11 +78,13 @@ const formatVolume = (volume: number | null | undefined): string => {
 
 // Star Icon Component
 const StarIcon = ({ filled = false }: { filled?: boolean }) => (
-  <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
     <path
-      d="M11 3l2.09 6.26H19l-5.18 3.76L15.91 19 11 14.77 6.09 19l1.09-5.98L2 9.26h5.91z"
+      d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
       stroke={filled ? "#FFD700" : "#788099"}
       strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
       fill={filled ? "#FFD700" : "none"}
     />
   </svg>
@@ -359,50 +361,40 @@ const MarketChartContent = () => {
 
         {coinDetails && (
           <div className="bg-gray-50 dark:bg-[#1D1D23] rounded-xl sm:rounded-xl lg:rounded-2xl p-4 sm:p-5 lg:p-6 mb-4 sm:mb-6 lg:mb-8 border border-[#E8EFF5] dark:border-[#35353E]">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-4 lg:gap-4">
-              <div className="flex items-center gap-3 sm:gap-4 lg:gap-4 flex-1">
+            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 lg:gap-6">
+              {/* Left Section: Logo, Name, Price */}
+              <div className="flex items-center gap-3 sm:gap-4">
                 <img
                   src={coinDetails.image?.large}
                   alt={coinDetails.name}
-                  className="w-10 h-10 sm:w-12 sm:h-12 lg:w-12 lg:h-12 rounded-full flex-shrink-0"
+                  className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-full flex-shrink-0"
                   onError={(e) => {
-                    (e.target as HTMLImageElement).src = '/api/placeholder/48/48';
+                    (e.target as HTMLImageElement).src = '/api/placeholder/64/64';
                   }}
                 />
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 sm:gap-4 lg:gap-4">
-                    <div>
-                      <h2 className="font-bold text-[#051015] dark:text-white text-base sm:text-lg lg:text-lg">
-                        {coinDetails.name} ({coinDetails.symbol.toUpperCase()})
-                      </h2>
-                      <div className="text-xs sm:text-sm lg:text-sm text-[#13B562]">
-                        Rank #{coinDetails.market_cap_rank}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <p className="font-bold text-[#13B562] text-lg sm:text-xl lg:text-2xl">
-                        {formatPrice(coinDetails.market_data?.current_price?.usd || 0)}
-                      </p>
-                      <span
-                        className="cursor-pointer hover:opacity-70 transition-opacity flex-shrink-0"
-                        onClick={handleToggleFavorite}
-                        title={
-                          isFavorited(coinDetails.symbol, coinDetails.name)
-                            ? "Remove from favorites"
-                            : "Add to favorites"
-                        }
-                      >
-                        <StarIcon filled={isFavorited(coinDetails.symbol, coinDetails.name)} />
-                      </span>
-                    </div>
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-2">
+                    <h2 className="font-bold text-[#051015] dark:text-white text-lg sm:text-xl lg:text-2xl">
+                      {coinDetails.symbol.toUpperCase()}
+                    </h2>
+                    <span className="text-[#788099] text-sm sm:text-base lg:text-lg">
+                      {coinDetails.name}
+                    </span>
+                  </div>
+                  <div className="text-xs sm:text-sm text-[#13B562]">
+                    Rank #{coinDetails.market_cap_rank}
                   </div>
                 </div>
+                <p className="font-bold text-[#051015] dark:text-white text-2xl sm:text-3xl lg:text-4xl ml-4 sm:ml-6">
+                  {formatPrice(coinDetails.market_data?.current_price?.usd || 0)}
+                </p>
               </div>
 
-              <div className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6 w-full sm:w-auto lg:w-auto">
-                <div>
-                  <p className="text-gray-600 dark:text-[#788099] text-xs sm:text-sm lg:text-sm">24h Change</p>
-                  <p className={`font-bold text-sm sm:text-base lg:text-base ${
+              {/* Right Section: Stats Grid */}
+              <div className="flex items-center gap-4 sm:gap-6 lg:gap-8">
+                <div className="text-center px-3 sm:px-4 py-2 border-r border-[#E8EFF5] dark:border-[#35353E]">
+                  <p className="text-gray-600 dark:text-[#788099] text-xs sm:text-sm">24h Change</p>
+                  <p className={`font-bold text-base sm:text-lg lg:text-xl ${
                     coinDetails.market_data?.price_change_percentage_24h >= 0 
                       ? "text-[#13B562]" 
                       : "text-[#FF6B6B]"
@@ -411,19 +403,32 @@ const MarketChartContent = () => {
                   </p>
                 </div>
                 
-                <div>
-                  <p className="text-gray-600 dark:text-[#788099] text-xs sm:text-sm lg:text-sm">Market Cap</p>
-                  <p className="font-bold text-sm sm:text-base lg:text-base">
+                <div className="text-center px-3 sm:px-4 py-2 border-r border-[#E8EFF5] dark:border-[#35353E]">
+                  <p className="text-gray-600 dark:text-[#788099] text-xs sm:text-sm">Market Cap</p>
+                  <p className="font-bold text-[#051015] dark:text-white text-base sm:text-lg lg:text-xl">
                     {formatMarketCap(coinDetails.market_data?.market_cap?.usd || 0)}
                   </p>
                 </div>
                 
-                <div>
-                  <p className="text-gray-600 dark:text-[#788099] text-xs sm:text-sm lg:text-sm">24h Volume</p>
-                  <p className="font-bold text-sm sm:text-base lg:text-base">
+                <div className="text-center px-3 sm:px-4 py-2 border-r border-[#E8EFF5] dark:border-[#35353E]">
+                  <p className="text-gray-600 dark:text-[#788099] text-xs sm:text-sm">24h Volume</p>
+                  <p className="font-bold text-[#051015] dark:text-white text-base sm:text-lg lg:text-xl">
                     {formatVolume(coinDetails.market_data?.total_volume?.usd || 0)}
                   </p>
                 </div>
+
+                {/* Favorite Star Icon */}
+                <button
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-[#2D2D33] rounded-full transition-colors"
+                  onClick={handleToggleFavorite}
+                  title={
+                    isFavorited(coinDetails.symbol, coinDetails.name)
+                      ? "Remove from favorites"
+                      : "Add to favorites"
+                  }
+                >
+                  <StarIcon filled={isFavorited(coinDetails.symbol, coinDetails.name)} />
+                </button>
               </div>
             </div>
           </div>

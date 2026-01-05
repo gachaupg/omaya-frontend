@@ -19,9 +19,9 @@ export const Chats = ({ data, symbol = 'BTC/USD', timeRange = '1', height = '100
   useEffect(() => {
     const chartId = chartIdRef.current;
     const containerElement = document.getElementById(chartId);
-    
+
     if (!containerElement) return;
-    
+
     // Dispose existing chart if it exists
     if (chartInstanceRef.current) {
       dispose(chartId);
@@ -30,7 +30,7 @@ export const Chats = ({ data, symbol = 'BTC/USD', timeRange = '1', height = '100
 
     const chart = init(chartId);
     chartInstanceRef.current = chart;
-    
+
     // Handle resize to ensure chart covers full width
     const handleResize = () => {
       if (chartInstanceRef.current && containerElement) {
@@ -40,54 +40,98 @@ export const Chats = ({ data, symbol = 'BTC/USD', timeRange = '1', height = '100
         }
       }
     };
-    
+
     // Add resize observer
     const resizeObserver = new ResizeObserver(handleResize);
     resizeObserver.observe(containerElement);
-    
+
     // Also listen to window resize
     window.addEventListener('resize', handleResize);
-    
+
     // Initial resize after a short delay to ensure container is rendered
     const resizeTimeout = setTimeout(handleResize, 100);
 
     if (chart) {
-      chart.setSymbol({ ticker: symbol });
-      
-      // Configure chart styles to prevent text overlap and ensure full width
+      // Configure chart styles to match Figma dark theme design
       chart.setStyles({
         grid: {
           show: true,
           horizontal: {
             show: true,
             size: 1,
-            color: '#35353E',
+            color: 'rgba(53, 53, 62, 0.5)',
             style: 'dashed',
-            dashedValue: [4, 4],
+            dashedValue: [3, 3],
           },
           vertical: {
-            show: false,
+            show: true,
+            size: 1,
+            color: 'rgba(53, 53, 62, 0.5)',
+            style: 'dashed',
+            dashedValue: [3, 3],
           },
         },
         candle: {
+          type: 'candle_solid',
+          bar: {
+            upColor: '#13B562',
+            downColor: '#FF6B6B',
+            noChangeColor: '#888888',
+            upBorderColor: '#13B562',
+            downBorderColor: '#FF6B6B',
+            noChangeBorderColor: '#888888',
+            upWickColor: '#13B562',
+            downWickColor: '#FF6B6B',
+            noChangeWickColor: '#888888',
+          },
           priceMark: {
             show: true,
             high: {
-              show: true,
-              color: '#788099',
+              show: false,
             },
             low: {
+              show: false,
+            },
+            last: {
               show: true,
-              color: '#788099',
+              upColor: '#13B562',
+              downColor: '#FF6B6B',
+              noChangeColor: '#888888',
+              line: {
+                show: true,
+                style: 'dashed',
+                dashedValue: [4, 4],
+                size: 1,
+              },
+              text: {
+                show: true,
+                size: 11,
+                paddingLeft: 4,
+                paddingTop: 2,
+                paddingRight: 4,
+                paddingBottom: 2,
+                borderRadius: 2,
+                color: '#FFFFFF',
+              },
             },
           },
           tooltip: {
-            showRule: 'always',
+            showRule: 'follow_cross',
             showType: 'standard',
+            labels: ['O: ', 'H: ', 'L: ', 'C: '],
+            text: {
+              size: 12,
+              color: '#D1D4DC',
+              marginLeft: 8,
+              marginTop: 6,
+              marginRight: 8,
+              marginBottom: 0,
+            },
           },
         },
         xAxis: {
           show: true,
+          size: 'auto',
           axisLine: {
             show: true,
             color: '#35353E',
@@ -100,10 +144,17 @@ export const Chats = ({ data, symbol = 'BTC/USD', timeRange = '1', height = '100
             show: true,
             color: '#788099',
             size: 11,
+            marginStart: 4,
+            marginEnd: 4,
           },
         },
         yAxis: {
           show: true,
+          size: 'auto',
+          position: 'right',
+          type: 'normal',
+          inside: false,
+          reverse: false,
           axisLine: {
             show: true,
             color: '#35353E',
@@ -116,6 +167,8 @@ export const Chats = ({ data, symbol = 'BTC/USD', timeRange = '1', height = '100
             show: true,
             color: '#788099',
             size: 11,
+            marginStart: 4,
+            marginEnd: 4,
           },
         },
         crosshair: {
@@ -131,10 +184,14 @@ export const Chats = ({ data, symbol = 'BTC/USD', timeRange = '1', height = '100
             },
             text: {
               show: true,
-              color: '#788099',
+              color: '#FFFFFF',
               size: 11,
               paddingLeft: 4,
               paddingRight: 4,
+              paddingTop: 2,
+              paddingBottom: 2,
+              borderRadius: 2,
+              backgroundColor: '#505058',
             },
           },
           vertical: {
@@ -148,114 +205,108 @@ export const Chats = ({ data, symbol = 'BTC/USD', timeRange = '1', height = '100
             },
             text: {
               show: true,
-              color: '#788099',
+              color: '#FFFFFF',
               size: 11,
-              paddingTop: 4,
-              paddingBottom: 4,
+              paddingLeft: 4,
+              paddingRight: 4,
+              paddingTop: 2,
+              paddingBottom: 2,
+              borderRadius: 2,
+              backgroundColor: '#505058',
             },
           },
         },
+        indicator: {
+          lastValueMark: {
+            show: false,
+          },
+          tooltip: {
+            showRule: 'follow_cross',
+            showType: 'standard',
+          },
+        },
+        separator: {
+          size: 1,
+          color: '#35353E',
+        },
       });
-      
-      // Determine period based on timeRange
+
+      // Process and apply data to chart
       const days = Number(timeRange);
-      let periodType: 'minute' | 'hour' | 'day' = 'day';
-      let span = 1;
       
-      if (days === 1) {
-        periodType = 'hour';
-        span = 1;
-      } else if (days <= 7) {
-        periodType = 'hour';
-        span = 4;
-      } else if (days <= 30) {
-        periodType = 'day';
-        span = 1;
-      } else {
-        periodType = 'day';
-        span = days <= 90 ? 1 : 7;
-      }
-      
-      chart.setPeriod({ span, type: periodType });
+      if (data?.prices && Array.isArray(data.prices) && data.prices.length > 0) {
+        // Convert price data to OHLCV format
+        const ohlcvData: Array<{
+          timestamp: number;
+          open: number;
+          high: number;
+          low: number;
+          close: number;
+          volume: number;
+        }> = [];
 
-      chart.setDataLoader({
-        getBars: ({ callback }) => {
-          if (!data?.prices || !Array.isArray(data.prices) || data.prices.length === 0) {
-            callback([]);
-            return;
+        // Create a map for volumes if available
+        const volumeMap = new Map<number, number>();
+        if (data.total_volumes && Array.isArray(data.total_volumes)) {
+          data.total_volumes.forEach(([timestamp, volume]) => {
+            volumeMap.set(timestamp, volume);
+          });
+        }
+
+        // Group prices into candles
+        const prices = data.prices;
+
+        // Determine interval based on timeRange
+        let intervalMs: number;
+        if (days === 1) {
+          intervalMs = 60 * 60 * 1000; // 1 hour
+        } else if (days <= 7) {
+          intervalMs = 4 * 60 * 60 * 1000; // 4 hours
+        } else if (days <= 30) {
+          intervalMs = 24 * 60 * 60 * 1000; // 1 day
+        } else {
+          intervalMs = 7 * 24 * 60 * 60 * 1000; // 1 week
+        }
+
+        // Group prices into intervals
+        const groupedData = new Map<number, number[]>();
+
+        prices.forEach(([timestamp, price]) => {
+          // Round timestamp to nearest interval
+          const intervalTimestamp = Math.floor(timestamp / intervalMs) * intervalMs;
+          if (!groupedData.has(intervalTimestamp)) {
+            groupedData.set(intervalTimestamp, []);
           }
+          groupedData.get(intervalTimestamp)!.push(price);
+        });
 
-          // Convert price data to OHLCV format
-          const ohlcvData: Array<{
-            timestamp: number;
-            open: number;
-            high: number;
-            low: number;
-            close: number;
-            volume: number;
-          }> = [];
+        // Convert grouped data to OHLCV
+        Array.from(groupedData.entries())
+          .sort(([a], [b]) => a - b)
+          .forEach(([timestamp, groupPrices]) => {
+            if (groupPrices.length > 0) {
+              const open = groupPrices[0];
+              const close = groupPrices[groupPrices.length - 1];
+              const high = Math.max(...groupPrices);
+              const low = Math.min(...groupPrices);
+              const volume = volumeMap.get(timestamp) || 0;
 
-          // Create a map for volumes if available
-          const volumeMap = new Map<number, number>();
-          if (data.total_volumes && Array.isArray(data.total_volumes)) {
-            data.total_volumes.forEach(([timestamp, volume]) => {
-              volumeMap.set(timestamp, volume);
-            });
-          }
-
-          // Group prices into candles
-          // For simplicity, we'll create candles based on time intervals
-          const prices = data.prices;
-          
-          // Determine interval based on timeRange
-          let intervalMs: number;
-          if (days === 1) {
-            intervalMs = 60 * 60 * 1000; // 1 hour
-          } else if (days <= 7) {
-            intervalMs = 4 * 60 * 60 * 1000; // 4 hours
-          } else if (days <= 30) {
-            intervalMs = 24 * 60 * 60 * 1000; // 1 day
-          } else {
-            intervalMs = 7 * 24 * 60 * 60 * 1000; // 1 week
-          }
-
-          // Group prices into intervals
-          const groupedData = new Map<number, number[]>();
-          
-          prices.forEach(([timestamp, price]) => {
-            // Round timestamp to nearest interval
-            const intervalTimestamp = Math.floor(timestamp / intervalMs) * intervalMs;
-            if (!groupedData.has(intervalTimestamp)) {
-              groupedData.set(intervalTimestamp, []);
+              ohlcvData.push({
+                timestamp,
+                open,
+                high,
+                low,
+                close,
+                volume,
+              });
             }
-            groupedData.get(intervalTimestamp)!.push(price);
           });
 
-          // Convert grouped data to OHLCV
-          Array.from(groupedData.entries())
-            .sort(([a], [b]) => a - b)
-            .forEach(([timestamp, prices]) => {
-              if (prices.length > 0) {
-                const open = prices[0];
-                const close = prices[prices.length - 1];
-                const high = Math.max(...prices);
-                const low = Math.min(...prices);
-                const volume = volumeMap.get(timestamp) || 0;
-
-                ohlcvData.push({
-                  timestamp,
-                  open,
-                  high,
-                  low,
-                  close,
-                  volume,
-                });
-              }
-            });
-
-          callback(ohlcvData);
+        // Apply data directly to the chart
+        if (ohlcvData.length > 0) {
+          chart.applyNewData(ohlcvData);
         }
-      });
+      }
     }
 
     return () => {
@@ -272,20 +323,20 @@ export const Chats = ({ data, symbol = 'BTC/USD', timeRange = '1', height = '100
   }, [data, symbol, timeRange]);
 
   return (
-    <div 
+    <div
       className="w-full h-full overflow-hidden"
-      style={{ 
-        width: typeof width === 'number' ? `${width}px` : width, 
+      style={{
+        width: typeof width === 'number' ? `${width}px` : width,
         height: typeof height === 'number' ? `${height}px` : height,
         minWidth: 0,
         minHeight: 0,
       }}
     >
-      <div 
-        id={chartIdRef.current} 
+      <div
+        id={chartIdRef.current}
         className="w-full h-full"
-        style={{ 
-          width: '100%', 
+        style={{
+          width: '100%',
           height: '100%',
           minWidth: 0,
           minHeight: 0,

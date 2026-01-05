@@ -123,6 +123,36 @@ const policyContent: Record<string, PolicyConfig> = {
       },
     ],
   },
+  "aml-policy": {
+    title: "AML Policy",
+    description: "Our Anti-Money Laundering (AML) policy outlines the measures we take to prevent financial crimes.",
+    lastUpdated: "October 1, 2024",
+    sections: [
+      {
+        heading: "Compliance Commitment",
+        body: "OMAYA Exchange is committed to the highest standards of Anti-Money Laundering (AML) compliance and requires management and employees to adhere to these standards to prevent the use of our products and services for money laundering purposes.",
+      },
+      {
+        heading: "Identity Verification",
+        body: "We implement robust Know Your Customer (KYC) procedures to verify the identity of our users and ensure the legitimacy of transaction sources.",
+      },
+    ],
+  },
+  "risk-disclosure-statement": {
+    title: "Risk Disclosure Statement",
+    description: "This Risk Disclosure Statement provides you with information about the risks associated with trading digital assets.",
+    lastUpdated: "October 1, 2024",
+    sections: [
+      {
+        heading: "Market Risk",
+        body: "Digital asset trading involves significant risk and can result in the loss of your invested capital. You should not invest more than you can afford to lose and should ensure that you fully understand the risks involved.",
+      },
+      {
+        heading: "Volatility",
+        body: "The prices of digital assets can be extremely volatile and may be affected by external factors such as financial regulatory activity or government policies.",
+      },
+    ],
+  },
 };
 
 type LegalPageParams = {

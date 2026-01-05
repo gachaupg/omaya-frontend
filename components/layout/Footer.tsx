@@ -96,12 +96,12 @@ export default function Footer() {
 
       const footerRect = footerRef.current.getBoundingClientRect();
       const viewportHeight = window.innerHeight;
-      
+
       // Sidebar is fixed at top-28 (112px from top)
       // Change background when footer's top reaches the sidebar's vertical position
       // This happens when scrolling down and footer reaches ~112px from top of viewport
       const sidebarTopPosition = 112; // top-28 = 7rem = 112px
-      
+
       // When footer top reaches or passes the sidebar's top position (scrolling up into sidebar area)
       if (footerRect.top <= sidebarTopPosition + 50) {
         setIsVisible(true);
@@ -122,13 +122,12 @@ export default function Footer() {
   }, []);
 
   return (
-    <footer 
+    <footer
       ref={footerRef}
-      className={`relative z-40 pt-6 sm:pt-8 md:pt-10 pb-4 text-gray-700 dark:text-[#788099] transition-colors duration-300 ${
-        isVisible 
-          ? "bg-white dark:bg-[#1D1D23]" 
-          : "bg-[var(--bg-color)]"
-      }`}
+      className={`relative z-40 pt-6 sm:pt-8 md:pt-10 pb-4 text-gray-700 dark:text-[#788099] transition-colors duration-300 ${isVisible
+        ? "bg-white dark:bg-[#1D1D23]"
+        : "bg-[var(--bg-color)]"
+        }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 pb-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-8 pb-8 border-b border-border dark:border-accent">
@@ -141,8 +140,8 @@ export default function Footer() {
                 alt="OMAYA Exchange"
                 width={150}
                 height={40}
-                style={{ height: 'auto' }}
-                className="h-auto"
+                style={{ width: 'auto', height: 'auto' }}
+                className="h-auto w-auto"
               />
             </Link>
             <div className="space-y-3 sm:space-y-4 md:space-y-5 mt-2 sm:mt-4">
@@ -456,7 +455,8 @@ export default function Footer() {
                         alt="App Store QR Code"
                         width={84}
                         height={84}
-                        className="w-[70px] h-[70px] sm:w-[84px] sm:h-[84px] object-contain"
+                        className="object-contain"
+                        style={{ width: "100%", height: "auto" }}
                       />
                     </td>
                     <td style={{ padding: 0, paddingLeft: '8px' }} className="sm:pl-3">
@@ -467,7 +467,8 @@ export default function Footer() {
                           width={84}
                           height={84}
                           priority
-                          className="w-[70px] h-[70px] sm:w-[84px] sm:h-[84px] object-contain"
+                          className="object-contain"
+                          style={{ width: "100%", height: "auto" }}
                         />
                       </div>
                     </td>
@@ -487,7 +488,8 @@ export default function Footer() {
                         alt="Google Play QR Code"
                         width={84}
                         height={84}
-                        className="w-[70px] h-[70px] sm:w-[84px] sm:h-[84px] object-contain"
+                        className="object-contain"
+                        style={{ width: "100%", height: "auto" }}
                       />
                     </td>
                     <td style={{ padding: 0, paddingLeft: '8px' }} className="sm:pl-3">
@@ -497,7 +499,8 @@ export default function Footer() {
                           alt="Google Play QR Code"
                           width={84}
                           height={84}
-                          className="w-[70px] h-[70px] sm:w-[84px] sm:h-[84px] object-contain"
+                          className="object-contain"
+                          style={{ width: "100%", height: "auto" }}
                         />
                       </div>
                     </td>
