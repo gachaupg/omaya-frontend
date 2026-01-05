@@ -1,10 +1,69 @@
-import React from "react";
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { useDispatch } from "react-redux";
+import { AppDispatch } from "@/store";
+import { updateProfile } from "@/features/settings/slices/settingsSlice";
+import { showToast } from "@/lib/utils/toast";
 
 interface BasicInfoSectionProps {
   user: any;
 }
 
 const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ user }) => {
+  const dispatch = useDispatch<AppDispatch>();
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [formData, setFormData] = useState({
+    first_name: "",
+    last_name: "",
+    phone_number: "",
+    email: "",
+  });
+
+  // Initialize form data when user changes
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        first_name: user.first_name || "",
+        last_name: user.last_name || "",
+        phone_number: user.phone_number || "",
+        email: user.email || "",
+      });
+    }
+  }, [user]);
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  const handleUpdate = async () => {
+    // Validate required fields
+    if (!formData.first_name.trim() || !formData.last_name.trim()) {
+      showToast.error("First name and last name are required");
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      // Only send editable fields (exclude email as it's typically not editable)
+      await dispatch(
+        updateProfile({
+          first_name: formData.first_name.trim(),
+          last_name: formData.last_name.trim(),
+          phone_number: formData.phone_number.trim(),
+        })
+      ).unwrap();
+      showToast.success("Profile updated successfully");
+    } catch (error: any) {
+      showToast.error(error?.message || "Failed to update profile");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   return (
     <>
       <div className="text-sm font-bold dark:text-white text-gray-900 mb-1">
@@ -17,9 +76,10 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ user }) => {
               First Name*
             </label>
             <input
-              className="dark:bg-[var(--card-color)] bg-white border  border-[#E8EFF5] dark:border-[#35353E] rounded-[18px] px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base dark:text-[#788099] text-[#0D0D0D] w-full"
-              value={user?.first_name || ""}
-              readOnly
+              className="dark:bg-[var(--card-color)] bg-white border  border-[#E8EFF5] dark:border-[#35353E] rounded-[18px] px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base dark:text-[#788099] text-[#0D0D0D] w-full focus:outline-none focus:border-[#1D8751]"
+              value={formData.first_name}
+              onChange={(e) => handleInputChange("first_name", e.target.value)}
+              placeholder="Enter first name"
             />
           </div>
           <div>
@@ -27,9 +87,10 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ user }) => {
               Last Name*
             </label>
             <input
-              className="dark:bg-[var(--card-color)] bg-white border dark:border-[#35353E] border-[#E8EFF5] rounded-[18px] px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base dark:text-[#788099] text-[#0D0D0D] w-full"
-              value={user?.last_name || ""}
-              readOnly
+              className="dark:bg-[var(--card-color)] bg-white border dark:border-[#35353E] border-[#E8EFF5] rounded-[18px] px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base dark:text-[#788099] text-[#0D0D0D] w-full focus:outline-none focus:border-[#1D8751]"
+              value={formData.last_name}
+              onChange={(e) => handleInputChange("last_name", e.target.value)}
+              placeholder="Enter last name"
             />
           </div>
           <div>
@@ -37,9 +98,10 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ user }) => {
               Phone*
             </label>
             <input
-              className="dark:bg-[var(--card-color)] bg-white border dark:border-[#35353E] border-[#E8EFF5] rounded-[18px] px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base dark:text-[#788099] text-[#0D0D0D] w-full"
-              value={user?.phone_number || ""}
-              readOnly
+              className="dark:bg-[var(--card-color)] bg-white border dark:border-[#35353E] border-[#E8EFF5] rounded-[18px] px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base dark:text-[#788099] text-[#0D0D0D] w-full focus:outline-none focus:border-[#1D8751]"
+              value={formData.phone_number}
+              onChange={(e) => handleInputChange("phone_number", e.target.value)}
+              placeholder="Enter phone number"
             />
           </div>
           <div>
@@ -47,17 +109,20 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ user }) => {
               Email*
             </label>
             <input
-              className="dark:bg-[var(--card-color)] bg-white border dark:border-[#35353E] border-[#E8EFF5] rounded-[18px] px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base dark:text-[#788099] text-[#0D0D0D] w-full"
-              value={user?.email || ""}
+              className="dark:bg-[var(--card-color)] bg-white border dark:border-[#35353E] border-[#E8EFF5] rounded-[18px] px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base dark:text-[#788099] text-[#0D0D0D] w-full opacity-60 cursor-not-allowed"
+              value={formData.email}
               readOnly
+              title="Email cannot be changed"
             />
           </div>
         </div>
         <button
-          className="w-full mt-3 py-2.5 rounded-xl bg-transparent border border-[#1D8751] text-[#1D8751] font-semibold text-sm hover:bg-[#1D8751] hover:text-white transition"
+          className="w-full mt-3 py-2.5 rounded-xl bg-transparent border border-[#1D8751] text-[#1D8751] font-semibold text-sm hover:bg-[#1D8751] hover:text-white transition disabled:opacity-50 disabled:cursor-not-allowed"
           type="button"
+          onClick={handleUpdate}
+          disabled={isUpdating}
         >
-          Update
+          {isUpdating ? "Updating..." : "Update"}
         </button>
       </section>
     </>
