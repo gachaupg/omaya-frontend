@@ -4289,17 +4289,17 @@ export default function WithdrawalForm({
 
             {/* Submit Button for First Card */}
             {!isTransactionSubmitted && !showForexWithdrawalForm && (
-              <div className="mt-4">
+              <div className="relative">
                 <button
                   type="button"
-                  className={`w-full text-[#35353e] dark:text-[#788099] text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${isHomePage
-                    ? "bg-[#1D8751] hover:bg-[#166b3e] cursor-pointer"
+                  className={`w-full text-[#35353e] dark:text-[#788099] text-base font-medium py-1.5 rounded-full flex items-center justify-center gap-2 transition-colors ${isHomePage
+                    ? "bg-[#1D8751] hover:bg-[#1D8751]/80 cursor-pointer"
                     : isSubmitting ||
                       isTransactionSubmitted ||
                       isInfoModalOpen ||
                       getAmount > 15000
                       ? "bg-gray-500 cursor-not-allowed"
-                      : "bg-[#1D8751] hover:bg-[#166b3e]"
+                      : "bg-[#1D8751] hover:bg-[#1D8751]/80"
                     }`}
                   onClick={() => {
                     if (requiresLoginRedirect) {
