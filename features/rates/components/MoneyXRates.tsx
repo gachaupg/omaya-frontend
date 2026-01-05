@@ -1260,13 +1260,13 @@ const MoneyXRates = () => {
 
             {/* Final Submit Button */}
             <button
-              className={`w-full text-base font-medium py-3 rounded-xl flex items-center justify-center gap-2 transition-colors text-white ${
+              className={`w-full text-base font-medium py-1.5 rounded-full flex items-center justify-center gap-2 transition-colors text-white ${
                 !bankAccountAddress.trim() ||
                 bankAddressError ||
                 !isAddressConfirmed ||
                 isUpdatingTransaction
                   ? "bg-gray-500 cursor-not-allowed"
-                  : "bg-[#1D8751] hover:bg-[#166b3e]"
+                  : "bg-[#1D8751] hover:bg-[#1D8751]/80"
               }`}
               onClick={handleBankAccountSubmit}
               disabled={

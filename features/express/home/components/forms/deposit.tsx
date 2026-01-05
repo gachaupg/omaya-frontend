@@ -3147,12 +3147,12 @@ export default function DepositForm({
 
         {/* Submit Button for First Card */}
           {!isFirstCardSubmitted && !showForexForm && (
-            <div className="mt-4 relative">
+            <div className="relative">
               <button
                 type="button"
-                className={`w-full text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors text-white ${
+                className={`w-full text-base font-medium py-1.5 rounded-full flex items-center justify-center gap-2 transition-colors text-white ${
                   isHomePage
-                    ? "bg-[#1D8751] hover:bg-[#166b3e] cursor-pointer"
+                    ? "bg-[#1D8751] hover:bg-[#1D8751]/80 cursor-pointer"
                     : isSubmitting ||
                       !selectedAsset ||
                       !payBank ||
@@ -3161,7 +3161,7 @@ export default function DepositForm({
                         !isForexAsset(selectedAsset) &&
                         estimateLoading)
                       ? "bg-gray-500 cursor-not-allowed"
-                      : "bg-[#1D8751] hover:bg-[#166b3e]"
+                      : "bg-[#1D8751] hover:bg-[#1D8751]/80"
                 }`}
               onClick={() => {
                 if (requiresLoginRedirect) {
