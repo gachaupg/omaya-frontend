@@ -80,7 +80,7 @@ interface RatesCalculatorProps {
 const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
   // Debug: Log activeTab on every render
   console.log('RatesCalculator render - activeTab:', activeTab, 'type:', typeof activeTab, '=== moneyx?', activeTab === 'moneyx');
-  
+
   const { t } = useRatesI18n();
   const { isDark } = useTheme();
   const router = useRouter();
@@ -1636,7 +1636,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
     console.log('Rendering MoneyXRates component, activeTab:', activeTab);
     return <MoneyXRates />;
   }
-  
+
   console.log('Rendering Crypto calculator, activeTab:', activeTab);
 
   // If showing exchanging component, render it instead of the main form
@@ -1646,9 +1646,28 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
 
   return (
     <div className="bg-white dark:bg-[#18181D] p-3 sm:p-4 lg:p-6 rounded-xl sm:rounded-xl lg:rounded-2xl border-[1.5px] border-gray-200 dark:border-[#35353E] shadow-md container mx-auto">
+      <div className="mb-2" />
       <div className={`w-full ${isDark ? "text-white" : "text-[#1F2937]"}`}>
         {/* Top Section - You Send: Amount and Bank/Payment Method in one card */}
         <div className="relative mb-0 pb-2">
+          {/* Swap Indicator - Clickable */}
+          <div className="absolute left-1/2 transform -translate-x-1/2 top-full -translate-y-[60%] sm:-translate-y-[45%] z-10">
+            <button
+              type="button"
+              onClick={handleModeSwitch}
+              className="flex items-center justify-center p-0 bg-transparent border-none shadow-none"
+            >
+              <img
+                src={
+                  isDark
+                    ? "https://res.cloudinary.com/pitz/image/upload/v1755500509/Frame_36261_ledmyw.png"
+                    : "https://res.cloudinary.com/pitz/image/upload/v1756579504/Frame_36261_1_d9cnq1.png"
+                }
+                alt="swap"
+                className="w-11 h-11"
+              />
+            </button>
+          </div>
           <div
             data-asset-card="true"
             data-select-card="true"
@@ -1704,15 +1723,15 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                       }
                     }
                   }}
-                  placeholder="Enter amount"
+                  placeholder={t("rates.enterAmount", "Enter amount")}
                   className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${(isCalculating || isCalculatingReceive) &&
-                      isCalculatingFromPay &&
-                      selectedAsset &&
-                      !isSimpleCalculationAsset(selectedAsset)
-                      ? "border-[#1D8751]"
-                      : isDark
-                        ? "border-white/10 text-white"
-                        : "border-gray-200 text-[#111827]"
+                    isCalculatingFromPay &&
+                    selectedAsset &&
+                    !isSimpleCalculationAsset(selectedAsset)
+                    ? "border-[#1D8751]"
+                    : isDark
+                      ? "border-white/10 text-white"
+                      : "border-gray-200 text-[#111827]"
                     }`}
                 />
                 {/* Show loading spinner */}
@@ -1876,8 +1895,8 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                           />
                           <span className={`${isDark ? "text-[#788099]" : "text-[#64748B]"}`}>
                             {assetsDisplay.isLoading
-                              ? "Loading assets..."
-                              : "Select Asset"}
+                              ? t("rates.loadingAssets", "Loading assets...")
+                              : t("rates.selectAsset", "Select Asset")}
                           </span>
                         </>
                       )}
@@ -1897,7 +1916,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                           <FaSearch className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${isDark ? "text-[#788099]" : "text-[#7e7e8f]"} w-4 h-4`} />
                           <input
                             type="text"
-                            placeholder="Search assets..."
+                            placeholder={t("rates.searchPlaceholder", "Search...")}
                             value={assetSearchTerm}
                             onChange={(e) => setAssetSearchTerm(e.target.value)}
                             className={`w-full ${isDark ? "text-white bg-[#1D1D23]" : "text-gray-900 bg-white"} rounded-lg px-10 py-2 text-sm focus:outline-none border ${isDark ? "border-[#35353E]" : "border-gray-300"}`}
@@ -1917,28 +1936,8 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
           </div>
         </div>
 
-        {/* Swap Circle - positioned between both cards, covering both borders */}
-        <div className="relative -my-2 z-30 flex justify-center" style={{ marginTop: '-28px', marginBottom: '-28px' }}>
-          <button
-            className="w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-105 bg-transparent dark:bg-transparent dark:border-[#35353E]"
-            onClick={handleModeSwitch}
-            type="button"
-          >
-            <img
-              src="https://res.cloudinary.com/pitz/image/upload/v1756579504/Frame_36261_1_d9cnq1.png"
-              alt="swap icon"
-              className="w-12 h-12 dark:hidden"
-            />
-            <img
-              src="https://res.cloudinary.com/pitz/image/upload/v1755500509/Frame_36261_ledmyw.png"
-              alt="swap icon"
-              className="w-12 h-12 hidden dark:block"
-            />
-          </button>
-        </div>
-
         {/* Bottom Section - You Get: Amount and Provider in one card */}
-        <div className="relative mb-3 mt-0 pt-2">
+        <div className="relative mb-0 pb-2">
           <div
             data-asset-card="true"
             className={`relative flex flex-col sm:flex-row gap-6 rounded-2xl p-4 sm:p-6 overflow-visible border-[1.5px] ${isDark ? "border-[#2F2F3A]" : "border-[#E2E8F0] shadow-sm"
@@ -1989,15 +1988,15 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                       }
                     }
                   }}
-                  placeholder="Enter amount"
+                  placeholder={t("rates.enterAmount", "Enter amount")}
                   className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${(isCalculating || isCalculatingReceive) &&
-                      !isCalculatingFromPay &&
-                      selectedAsset &&
-                      !isSimpleCalculationAsset(selectedAsset)
-                      ? "border-[#1D8751]"
-                      : isDark
-                        ? "border-white/10 text-white"
-                        : "border-gray-200 text-[#111827]"
+                    !isCalculatingFromPay &&
+                    selectedAsset &&
+                    !isSimpleCalculationAsset(selectedAsset)
+                    ? "border-[#1D8751]"
+                    : isDark
+                      ? "border-white/10 text-white"
+                      : "border-gray-200 text-[#111827]"
                     }`}
                 />
                 {/* Show loading spinner */}
@@ -2071,8 +2070,8 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                           />
                           <span className={`${isDark ? "text-[#788099]" : "text-[#64748B]"}`}>
                             {assetsDisplay.isLoading
-                              ? "Loading assets..."
-                              : "Select Asset"}
+                              ? t("rates.loadingAssets", "Loading assets...")
+                              : t("rates.selectAsset", "Select Asset")}
                           </span>
                         </>
                       )}
@@ -2092,7 +2091,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                           <FaSearch className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${isDark ? "text-[#788099]" : "text-[#7e7e8f]"} w-4 h-4`} />
                           <input
                             type="text"
-                            placeholder="Search assets..."
+                            placeholder={t("rates.searchPlaceholder", "Search...")}
                             value={assetSearchTerm}
                             onChange={(e) => setAssetSearchTerm(e.target.value)}
                             className={`w-full ${isDark ? "text-white bg-[#1D1D23]" : "text-gray-900 bg-white"} rounded-lg px-10 py-2 text-sm focus:outline-none border ${isDark ? "border-[#35353E]" : "border-gray-300"}`}
@@ -2293,22 +2292,16 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
         </p>
       </div>
 
-      <div className="flex justify-center">
-        <button
-          className={`py-3 px-12 rounded-full font-semibold transition-colors text-white ${isSubmitting
-              ? "bg-gray-500 cursor-not-allowed"
-              : internalActiveTab === "deposit"
-                ? "bg-[#1D8751] hover:bg-opacity-90"
-                : "bg-red-500 hover:bg-opacity-90"
-            }`}
-          onClick={handleSubmit}
-          disabled={isSubmitting}
-        >
-          {isSubmitting
-            ? t("rates.processing", "Processing...")
-            : t("rates.exchangeNow", "Exchange Now")}
-        </button>
-      </div>
+      <button
+        onClick={handleSubmit}
+        disabled={isSubmitting}
+        className={`w-full py-3 px-4 rounded-xl font-semibold text-white bg-[#1D8751] hover:bg-[#0f8f4d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""
+          }`}
+      >
+        {isSubmitting
+          ? t("rates.processing", "Processing...")
+          : t("rates.exchangeNow", "Exchange Now")}
+      </button>
 
       {/* Expanded Pages - shown after first card submission */}
       {selectedPaymentDetail && isFirstCardSubmitted && (
@@ -2316,14 +2309,14 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
           {/* Payment Details Card */}
           <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
             <span className="text-[#7e7e8f] dark:text-[#788099]">2-</span>{" "}
-            Payment Details
+            {t("rates.paymentDetails", "Payment Details")}
           </h2>
           <div className="mt-1 mb-2 w-full flex flex-col gap-3 max-w-4xl mx-auto px-2">
             <div className="flex-1 dark:bg-[#1D1D23] rounded-2xl border border-[#39394a] dark:border-[#35353E] flex flex-col justify-between p-5 relative min-h-[120px]">
               {/* Bank and logo */}
               <div className="flex items-center justify-between mb-4">
                 <span className="text-[#7e7e8f] dark:text-[#788099] text-base font-semibold">
-                  Bank:
+                  {t("rates.bankLabel", "Bank:")}
                 </span>
                 <div className="flex items-center gap-2">
                   <img
@@ -2343,7 +2336,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
               {/* Account Name */}
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[#7e7e8f] dark:text-[#788099] text-base font-medium">
-                  Account Name :
+                  {t("rates.accountNameLabel", "Account Name :")}
                 </span>
                 <span className="text-[#35353e] dark:text-[#788099] text-base font-medium">
                   {selectedPaymentDetail.account_name}
@@ -2353,7 +2346,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
               {/* Account Number */}
               <div className="flex items-center justify-between">
                 <span className="text-[#7e7e8f] dark:text-[#788099] text-base font-medium">
-                  Account Number :
+                  {t("rates.accountNumberLabel", "Account Number :")}
                 </span>
                 <div className="flex items-center gap-2">
                   <span className="text-[#35353e] dark:text-[#788099] text-base font-medium">
@@ -2400,14 +2393,14 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
             <>
               <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
                 <span className="text-[#7e7e8f] dark:text-[#788099]">3-</span>{" "}
-                Transaction Code
+                {t("rates.transactionCode", "Transaction Code")}
               </h2>
               <div className="mb-6 flex flex-col gap-3 max-w-4xl mx-auto w-full px-2">
                 <div className="dark:bg-[#1D1D23] border-2 border-[#35353E] rounded-2xl p-4 shadow-lg w-full text-[#35353e] dark:text-[#788099]">
                   {/* Transaction Code Row */}
                   <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-3">
                     <span className="text-[#7e7e8f] dark:text-[#788099] text-base font-semibold">
-                      Transaction Code:
+                      {t("rates.transactionCodeLabel", "Transaction Code:")}
                     </span>
                     <div className="flex items-center gap-2">
                       <span className="text-[#35353e] dark:text-[#788099] text-lg font-mono font-bold">
@@ -2447,7 +2440,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                             strokeWidth="2"
                           />
                         </svg>
-                        Copy
+                        {t("rates.copy", "Copy")}
                       </button>
                     </div>
                   </div>
@@ -2481,7 +2474,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                         </svg>
                       </span>
                       <span className="text-sm font-semibold text-[#7e7e8f] dark:text-[#788099]">
-                        Note
+                        {t("rates.note", "Note")}
                       </span>
                     </div>
                     <div className="dark:bg-[#1D1D23] border border-[#1D8751] rounded-xl p-3">
@@ -2489,15 +2482,13 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                         <li className="flex items-start">
                           <span className="w-2 h-2 mt-1 rounded-full bg-[#1D8751] inline-block mr-2"></span>
                           <span className="text-[#35353e] dark:text-[#788099] text-xs">
-                            Please write this Transaction Code in the bank
-                            message or note section.
+                            {t("rates.noteInstructions", "Please write this Transaction Code in the bank message or note section.")}
                           </span>
                         </li>
                         <li className="flex items-start">
                           <span className="w-2 h-2 mt-1 rounded-full bg-[#1D8751] inline-block mr-2"></span>
                           <span className="text-[#35353e] dark:text-[#788099] text-xs">
-                            This helps us process your payment quickly and
-                            accurately.
+                            {t("rates.noteAccuracy", "This helps us process your payment quickly and accurately.")}
                           </span>
                         </li>
                       </ul>
@@ -2513,14 +2504,14 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
             <span className="text-[#7e7e8f] dark:text-[#788099]">
               {isDepositMode ? "4-" : "3-"}
             </span>
-            Wallet Address
+            {t("rates.walletAddress", "Wallet Address")}
           </h2>
           <div className="flex flex-col dark:bg-[#1D1D23] border-2 border-[#35353E] rounded-2xl p-5 shadow-lg w-full max-w-4xl mx-auto text-[#35353e] dark:text-[#788099] mb-6">
             {isDepositMode ? (
               // Deposit Mode: Input field for wallet address
               <>
                 <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
-                  Wallet/Account Address
+                  {t("rates.walletAccountAddress", "Wallet/Account Address")}
                 </label>
                 <div className="flex items-center dark:bg-[#1D1D23] border border-[#39394a] dark:border-[#35353E] rounded-2xl px-4 py-2 mb-4">
                   <span className="mr-2 text-[#1D8751]">
@@ -2555,7 +2546,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                       setWalletAddress(e.target.value);
                       setWalletError("");
                     }}
-                    placeholder="Enter your wallet address"
+                    placeholder={t("rates.enterWalletAddressPlaceholder", "Enter your wallet address")}
                     className="flex-1 bg-transparent text-[#35353e] dark:text-[#788099] placeholder-[#7e7e8f] focus:outline-none"
                   />
                 </div>
@@ -2567,7 +2558,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                     onClick={resetTransaction}
                     className="flex-1 bg-gray-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-gray-600 transition-colors"
                   >
-                    Cancel
+                    {t("rates.cancel", "Cancel")}
                   </button>
                   <button
                     onClick={handleProceedToExchanging}
@@ -2575,14 +2566,14 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                       isSubmitting || !walletAddress.trim() || !!walletError
                     }
                     className={`flex-1 font-semibold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 ${isSubmitting || !walletAddress.trim() || !!walletError
-                        ? "bg-gray-500 cursor-not-allowed text-white"
-                        : "bg-[#1D8751] hover:bg-[#166b3f] text-white"
+                      ? "bg-gray-500 cursor-not-allowed text-white"
+                      : "bg-[#1D8751] hover:bg-[#166b3f] text-white"
                       }`}
                   >
                     {isSubmitting ? (
                       <>
                         <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                        <span>Processing...</span>
+                        <span>{t("rates.processing", "Processing...")}</span>
                       </>
                     ) : (
                       <>
@@ -2607,14 +2598,14 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                   onClick={handleProceedToExchanging}
                   disabled={isSubmitting}
                   className={`w-full font-semibold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 ${isSubmitting
-                      ? "bg-gray-500 cursor-not-allowed text-white"
-                      : "bg-[#1D8751] hover:bg-[#166b3f] text-white"
+                    ? "bg-gray-500 cursor-not-allowed text-white"
+                    : "bg-[#1D8751] hover:bg-[#166b3f] text-white"
                     }`}
                 >
                   {isSubmitting ? (
                     <>
                       <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                      <span>Processing...</span>
+                      <span>{t("rates.processing", "Processing...")}</span>
                     </>
                   ) : (
                     <>
