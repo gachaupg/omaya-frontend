@@ -239,8 +239,8 @@ const MoneyXRates = () => {
     // Check if current selection still exists in the latest list
     const currentExists = fromPaymentMethod
       ? finalPaymentMethods.some(
-          (m: any) => getProviderName(m) === fromPaymentMethod
-        )
+        (m: any) => getProviderName(m) === fromPaymentMethod
+      )
       : false;
 
     // If nothing selected OR the current selection no longer exists, (re)auto-select
@@ -668,18 +668,16 @@ const MoneyXRates = () => {
         {/* Top Section - You Send: Amount and Bank/Payment Method in one card */}
         <div className="relative mb-0 pb-2">
           <div
-            className={`relative flex flex-col sm:flex-row gap-6 rounded-2xl p-4 sm:p-6 overflow-visible border-[1.5px] ${
-              isDark ? "border-[#2F2F3A]" : "border-[#E2E8F0] shadow-sm"
-            } bg-transparent`}
+            className={`relative flex flex-col sm:flex-row gap-6 rounded-2xl p-4 sm:p-6 overflow-visible border-[1.5px] ${isDark ? "border-[#2F2F3A]" : "border-[#E2E8F0] shadow-sm"
+              } bg-transparent`}
           >
             {/* Amount Section */}
             <div className="flex-1 min-w-0">
               <label
-                className={`block text-sm mb-2 font-semibold flex items-center gap-2 ${
-                  isDark ? "text-[#9CA3AF]" : "text-[#475569]"
-                }`}
+                className={`block text-sm mb-2 font-semibold flex items-center gap-2 ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"
+                  }`}
               >
-                You Send
+                {t("rates.youSend", "You Send")}
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
               </label>
               <div className="relative">
@@ -689,11 +687,10 @@ const MoneyXRates = () => {
                   value={payAmountInput}
                   onChange={(e) => handleAmountChange(e.target.value, true)}
                   placeholder="Enter amount"
-                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${
-                    isDark
-                      ? "border-white/10 text-white"
-                      : "border-gray-200 text-[#111827]"
-                  }`}
+                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${isDark
+                    ? "border-white/10 text-white"
+                    : "border-gray-200 text-[#111827]"
+                    }`}
                 />
               </div>
             </div>
@@ -701,9 +698,8 @@ const MoneyXRates = () => {
             {/* Bank/Payment Method Section */}
             <div className="flex-1 min-w-0" ref={fromDropdownRef}>
               <label
-                className={`block text-[15px] mb-2 font-semibold ${
-                  isDark ? "text-[#9CA3AF]" : "text-[#475569]"
-                }`}
+                className={`block text-[15px] mb-2 font-semibold ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"
+                  }`}
               >
                 Bank/Payment Method
               </label>
@@ -714,15 +710,14 @@ const MoneyXRates = () => {
                     setIsFromDropdownOpen(!isFromDropdownOpen);
                     setIsToDropdownOpen(false);
                   }}
-                  className={`w-full rounded-2xl px-4 py-2 text-lg focus:outline-none border appearance-none bg-transparent flex items-center justify-between ${
-                    isDark
-                      ? "border-white/10 text-white"
-                      : "border-gray-200 text-[#111827]"
-                  }`}
+                  className={`w-full rounded-2xl px-4 py-2 text-lg focus:outline-none border appearance-none bg-transparent flex items-center justify-between ${isDark
+                    ? "border-white/10 text-white"
+                    : "border-gray-200 text-[#111827]"
+                    }`}
                 >
                   <div className="flex items-center gap-3">
                     {selectedFromPaymentDetail?.provider_logo ||
-                    selectedFromPaymentDetail?.logo ? (
+                      selectedFromPaymentDetail?.logo ? (
                       <img
                         src={
                           selectedFromPaymentDetail.provider_logo ||
@@ -736,31 +731,29 @@ const MoneyXRates = () => {
                         {fromPaymentMethod?.charAt(0) || "B"}
                       </div>
                     )}
-                    <span>{fromPaymentMethod || "Select payment method"}</span>
+                    <span>{fromPaymentMethod || t("rates.selectPaymentMethod", "Select payment method")}</span>
                   </div>
                   <FiChevronDown className="w-5 h-5" />
                 </button>
 
                 {isFromDropdownOpen && (
                   <div
-                    className={`absolute z-50 w-full mt-1 rounded-xl shadow-lg border ${
-                      isDark
-                        ? "bg-[#1D1D23] border-[#35353E]"
-                        : "bg-white border-[#E2E8F0]"
-                    } max-h-60 overflow-y-auto`}
+                    className={`absolute z-50 w-full mt-1 rounded-xl shadow-lg border ${isDark
+                      ? "bg-[#1D1D23] border-[#35353E]"
+                      : "bg-white border-[#E2E8F0]"
+                      } max-h-60 overflow-y-auto`}
                   >
                     <div className="p-2">
                       <div className="relative mb-2">
                         <input
                           type="text"
-                          placeholder="Search..."
+                          placeholder={t("rates.searchPlaceholder", "Search...")}
                           value={fromSearchTerm}
                           onChange={(e) => setFromSearchTerm(e.target.value)}
-                          className={`w-full px-3 py-2 rounded-lg border ${
-                            isDark
-                              ? "bg-[#18181D] border-[#35353E] text-white"
-                              : "bg-white border-[#E2E8F0] text-gray-900"
-                          } focus:outline-none`}
+                          className={`w-full px-3 py-2 rounded-lg border ${isDark
+                            ? "bg-[#18181D] border-[#35353E] text-white"
+                            : "bg-white border-[#E2E8F0] text-gray-900"
+                            } focus:outline-none`}
                         />
                       </div>
                       {filteredFromMethods.map((method: any, index: number) => (
@@ -774,9 +767,8 @@ const MoneyXRates = () => {
                             setIsFromDropdownOpen(false);
                             setFromSearchTerm("");
                           }}
-                          className={`w-full px-3 py-2 rounded-lg flex items-center gap-3 hover:bg-opacity-50 ${
-                            isDark ? "hover:bg-[#2F2F3A]" : "hover:bg-gray-100"
-                          }`}
+                          className={`w-full px-3 py-2 rounded-lg flex items-center gap-3 hover:bg-opacity-50 ${isDark ? "hover:bg-[#2F2F3A]" : "hover:bg-gray-100"
+                            }`}
                         >
                           {method.provider_logo || method.logo ? (
                             <img
@@ -840,18 +832,16 @@ const MoneyXRates = () => {
         {/* Bottom Section - You Get: Amount and Provider in one card */}
         <div className="relative mb-0 pb-2">
           <div
-            className={`relative flex flex-col sm:flex-row gap-6 rounded-2xl p-4 sm:p-6 overflow-visible border-[1.5px] ${
-              isDark ? "border-[#2F2F3A]" : "border-[#E2E8F0] shadow-sm"
-            } bg-transparent`}
+            className={`relative flex flex-col sm:flex-row gap-6 rounded-2xl p-4 sm:p-6 overflow-visible border-[1.5px] ${isDark ? "border-[#2F2F3A]" : "border-[#E2E8F0] shadow-sm"
+              } bg-transparent`}
           >
             {/* Amount Section */}
             <div className="flex-1 min-w-0">
               <label
-                className={`block text-sm mb-2 font-semibold flex items-center gap-2 ${
-                  isDark ? "text-[#9CA3AF]" : "text-[#475569]"
-                }`}
+                className={`block text-sm mb-2 font-semibold flex items-center gap-2 ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"
+                  }`}
               >
-                You Get
+                {t("rates.youGet", "You Get")}
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
               </label>
               <div className="relative">
@@ -861,11 +851,10 @@ const MoneyXRates = () => {
                   value={getAmountInput}
                   onChange={(e) => handleAmountChange(e.target.value, false)}
                   placeholder="Enter amount"
-                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${
-                    isDark
-                      ? "border-white/10 text-white"
-                      : "border-gray-200 text-[#111827]"
-                  }`}
+                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${isDark
+                    ? "border-white/10 text-white"
+                    : "border-gray-200 text-[#111827]"
+                    }`}
                 />
               </div>
             </div>
@@ -873,9 +862,8 @@ const MoneyXRates = () => {
             {/* Provider Section */}
             <div className="flex-1 min-w-0" ref={toDropdownRef}>
               <label
-                className={`block text-[15px] mb-2 font-semibold ${
-                  isDark ? "text-[#9CA3AF]" : "text-[#475569]"
-                }`}
+                className={`block text-[15px] mb-2 font-semibold ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"
+                  }`}
               >
                 Bank/Payment Method
               </label>
@@ -886,15 +874,14 @@ const MoneyXRates = () => {
                     setIsToDropdownOpen(!isToDropdownOpen);
                     setIsFromDropdownOpen(false);
                   }}
-                  className={`w-full rounded-2xl px-4 py-2 text-lg focus:outline-none border appearance-none bg-transparent flex items-center justify-between ${
-                    isDark
-                      ? "border-white/10 text-white"
-                      : "border-gray-200 text-[#111827]"
-                  }`}
+                  className={`w-full rounded-2xl px-4 py-2 text-lg focus:outline-none border appearance-none bg-transparent flex items-center justify-between ${isDark
+                    ? "border-white/10 text-white"
+                    : "border-gray-200 text-[#111827]"
+                    }`}
                 >
                   <div className="flex items-center gap-3">
                     {selectedToPaymentDetail?.provider_logo ||
-                    selectedToPaymentDetail?.logo ? (
+                      selectedToPaymentDetail?.logo ? (
                       <img
                         src={
                           selectedToPaymentDetail.provider_logo ||
@@ -908,31 +895,29 @@ const MoneyXRates = () => {
                         {toPaymentMethod?.charAt(0) || "P"}
                       </div>
                     )}
-                    <span>{toPaymentMethod || "Select provider"}</span>
+                    <span>{toPaymentMethod || t("rates.selectProviderPlaceholder", "Select provider")}</span>
                   </div>
                   <FiChevronDown className="w-5 h-5" />
                 </button>
 
                 {isToDropdownOpen && (
                   <div
-                    className={`absolute z-50 w-full mt-1 rounded-xl shadow-lg border ${
-                      isDark
-                        ? "bg-[#1D1D23] border-[#35353E]"
-                        : "bg-white border-[#E2E8F0]"
-                    } max-h-60 overflow-y-auto`}
+                    className={`absolute z-50 w-full mt-1 rounded-xl shadow-lg border ${isDark
+                      ? "bg-[#1D1D23] border-[#35353E]"
+                      : "bg-white border-[#E2E8F0]"
+                      } max-h-60 overflow-y-auto`}
                   >
                     <div className="p-2">
                       <div className="relative mb-2">
                         <input
                           type="text"
-                          placeholder="Search..."
+                          placeholder={t("rates.searchPlaceholder", "Search...")}
                           value={toSearchTerm}
                           onChange={(e) => setToSearchTerm(e.target.value)}
-                          className={`w-full px-3 py-2 rounded-lg border ${
-                            isDark
-                              ? "bg-[#18181D] border-[#35353E] text-white"
-                              : "bg-white border-[#E2E8F0] text-gray-900"
-                          } focus:outline-none`}
+                          className={`w-full px-3 py-2 rounded-lg border ${isDark
+                            ? "bg-[#18181D] border-[#35353E] text-white"
+                            : "bg-white border-[#E2E8F0] text-gray-900"
+                            } focus:outline-none`}
                         />
                       </div>
                       {filteredToMethods.map((method: any, index: number) => (
@@ -946,9 +931,8 @@ const MoneyXRates = () => {
                             setIsToDropdownOpen(false);
                             setToSearchTerm("");
                           }}
-                          className={`w-full px-3 py-2 rounded-lg flex items-center gap-3 hover:bg-opacity-50 ${
-                            isDark ? "hover:bg-[#2F2F3A]" : "hover:bg-gray-100"
-                          }`}
+                          className={`w-full px-3 py-2 rounded-lg flex items-center gap-3 hover:bg-opacity-50 ${isDark ? "hover:bg-[#2F2F3A]" : "hover:bg-gray-100"
+                            }`}
                         >
                           {method.provider_logo || method.logo ? (
                             <img
@@ -1068,11 +1052,10 @@ const MoneyXRates = () => {
           <button
             onClick={handleExchange}
             disabled={isSubmitting}
-            className={`w-full py-3 px-4 rounded-xl font-semibold text-white bg-[#1D8751] hover:bg-[#0f8f4d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-              isSubmitting ? "opacity-50 cursor-not-allowed" : ""
-            }`}
+            className={`w-full py-3 px-4 rounded-xl font-semibold text-white bg-[#1D8751] hover:bg-[#0f8f4d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""
+              }`}
           >
-            {isSubmitting ? "Processing..." : "Exchange Now"}
+            {isSubmitting ? t("rates.processing", "Processing...") : t("rates.exchangeNow", "Exchange Now")}
           </button>
         )}
 
@@ -1096,7 +1079,7 @@ const MoneyXRates = () => {
               <label
                 className={`block text-base ${isDark ? "text-[#788099]" : "text-[#475569]"} mb-2 font-semibold`}
               >
-                Bank Account Address
+                {t("rates.bankAccountAddress", "Bank Account Address")}
               </label>
 
               {/* Input group */}
@@ -1135,14 +1118,13 @@ const MoneyXRates = () => {
                     setIsAddressConfirmed(false);
                     setBankAddressError(null);
                   }}
-                  placeholder="Paste here your Bank Account Address"
-                  className={`flex-1 min-w-0 bg-transparent border-none outline-none ${isDark ? "text-[#788099]" : "text-[#475569]"} placeholder-[#788099] text-sm sm:text-base ${
-                    bankAddressError
-                      ? "border-red-500"
-                      : bankAccountAddress.trim() && !bankAddressError
-                        ? "border-green-500"
-                        : ""
-                  }`}
+                  placeholder={t("rates.pasteAccountAddressPlaceholder", "Paste here your Bank Account Address")}
+                  className={`flex-1 min-w-0 bg-transparent border-none outline-none ${isDark ? "text-[#788099]" : "text-[#475569]"} placeholder-[#788099] text-sm sm:text-base ${bankAddressError
+                    ? "border-red-500"
+                    : bankAccountAddress.trim() && !bankAddressError
+                      ? "border-green-500"
+                      : ""
+                    }`}
                 />
                 {/* Paste button */}
                 <button
@@ -1166,7 +1148,7 @@ const MoneyXRates = () => {
                       strokeLinejoin="round"
                     />
                   </svg>
-                  <span className="hidden sm:inline">Paste</span>
+                  <span className="hidden sm:inline">{t("rates.paste", "Paste")}</span>
                 </button>
               </div>
 
@@ -1190,7 +1172,7 @@ const MoneyXRates = () => {
                   className="w-4 h-4 rounded border-[#1D8751] text-[#1D8751] focus:ring-[#1D8751]"
                 />
                 <span>
-                  I confirm that this bank account address is correct.
+                  {t("rates.confirmAddress", "I confirm that this bank account address is correct.")}
                 </span>
               </label>
 
@@ -1220,13 +1202,12 @@ const MoneyXRates = () => {
                 <span
                   className={`text-base font-semibold ${isDark ? "text-[#788099]" : "text-[#475569]"}`}
                 >
-                  Terms and Conditions Summary
+                  {t("rates.termsSummary", "Terms and Conditions Summary")}
                 </span>
               </div>
               <div
-                className={`border border-[#1D8751] rounded-xl p-4 ${
-                  isDark ? "bg-[#1D1D23]" : "bg-[#F8FAFF]"
-                }`}
+                className={`border border-[#1D8751] rounded-xl p-4 ${isDark ? "bg-[#1D1D23]" : "bg-[#F8FAFF]"
+                  }`}
               >
                 <ul className="list-none space-y-2">
                   <li className="flex items-start">
@@ -1234,7 +1215,7 @@ const MoneyXRates = () => {
                     <span
                       className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm`}
                     >
-                      Please send the money from your own account Only
+                      {t("rates.termsOwnAccount", "Please send the money from your own account Only")}
                     </span>
                   </li>
                   <li className="flex items-start">
@@ -1242,7 +1223,7 @@ const MoneyXRates = () => {
                     <span
                       className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm`}
                     >
-                      Put transaction ID in the description field of the bank
+                      {t("rates.termsTransactionId", "Put transaction ID in the description field of the bank")}
                     </span>
                   </li>
                   <li className="flex items-start">
@@ -1250,8 +1231,7 @@ const MoneyXRates = () => {
                     <span
                       className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm`}
                     >
-                      Please note, If you do not follow above conditions, we
-                      will reject your transaction and send you back your money.
+                      {t("rates.termsReject", "Please note, If you do not follow above conditions, we will reject your transaction and send you back your money.")}
                     </span>
                   </li>
                 </ul>
@@ -1260,14 +1240,13 @@ const MoneyXRates = () => {
 
             {/* Final Submit Button */}
             <button
-              className={`w-full text-base font-medium py-1.5 rounded-full flex items-center justify-center gap-2 transition-colors text-white ${
-                !bankAccountAddress.trim() ||
+              className={`w-full text-base font-medium py-3 rounded-xl flex items-center justify-center gap-2 transition-colors text-white ${!bankAccountAddress.trim() ||
                 bankAddressError ||
                 !isAddressConfirmed ||
                 isUpdatingTransaction
-                  ? "bg-gray-500 cursor-not-allowed"
-                  : "bg-[#1D8751] hover:bg-[#1D8751]/80"
-              }`}
+                ? "bg-gray-500 cursor-not-allowed"
+                : "bg-[#1D8751] hover:bg-[#166b3e]"
+                }`}
               onClick={handleBankAccountSubmit}
               disabled={
                 !bankAccountAddress.trim() ||
@@ -1279,12 +1258,12 @@ const MoneyXRates = () => {
               {isUpdatingTransaction ? (
                 <div className="flex items-center gap-2">
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                  <span>Processing...</span>
+                  <span>{t("rates.processing", "Processing...")}</span>
                 </div>
               ) : (
                 <span className="flex items-center justify-center gap-2">
                   <span className="text-base font-medium text-white">
-                    Express
+                    {t("rates.express", "Express")}
                   </span>
                   <img
                     className="h-5 w-auto"

@@ -229,11 +229,11 @@ export const Chats = ({ data, symbol = 'BTC/USD', timeRange = '1', height = '100
           size: 1,
           color: '#35353E',
         },
-      });
+      } as any);
 
       // Process and apply data to chart
       const days = Number(timeRange);
-      
+
       if (data?.prices && Array.isArray(data.prices) && data.prices.length > 0) {
         // Convert price data to OHLCV format
         const ohlcvData: Array<{
@@ -312,7 +312,7 @@ export const Chats = ({ data, symbol = 'BTC/USD', timeRange = '1', height = '100
     return () => {
       clearTimeout(resizeTimeout);
       window.removeEventListener('resize', handleResize);
-      if (resizeObserver && containerElement) {
+      if (containerElement) {
         resizeObserver.unobserve(containerElement);
       }
       if (chartInstanceRef.current) {

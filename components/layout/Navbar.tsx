@@ -46,10 +46,10 @@ const NavLink = ({
     <Link
       href={href}
       className={`${active
-          ? "text-[#1D8751]" // Active link in green
-          : isTransparent
-            ? "text-gray-900 dark:text-white" // Dark in light mode, white in dark mode when navbar is transparent
-            : "dark:text-white text-gray-900" // Theme-based when navbar has background
+        ? "text-[#1D8751]" // Active link in green
+        : isTransparent
+          ? "text-gray-900 dark:text-white" // Dark in light mode, white in dark mode when navbar is transparent
+          : "dark:text-white text-gray-900" // Theme-based when navbar has background
         } hover:text-[#1D8751] transition-colors duration-200 text-[11px] md:text-sm xl:text-base 2xl:text-lg whitespace-nowrap`}
     >
       {children}
@@ -82,8 +82,8 @@ const MobileNavLink = ({
     <Link
       href={href}
       className={`block py-2 transition-colors duration-200 text-lg ${active
-          ? "text-[#1D8751]"
-          : "dark:text-white text-gray-900 hover:text-[#1D8751]"
+        ? "text-[#1D8751]"
+        : "dark:text-white text-gray-900 hover:text-[#1D8751]"
         }`}
       onClick={onClick}
     >
@@ -103,8 +103,8 @@ const AuthButton = ({
 }) => (
   <button
     className={`${variant === "primary"
-        ? "bg-[#0E5531] hover:bg-[#13B562] text-white" // Primary button always has white text
-        : "bg-transparent border border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751] hover:text-white" // Secondary button with brand colors
+      ? "bg-[#0E5531] hover:bg-[#13B562] text-white" // Primary button always has white text
+      : "bg-transparent border border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751] hover:text-white" // Secondary button with brand colors
       } 
     px-2 py-1 md:px-3 md:py-1.5 lg:px-4 lg:py-2 rounded-[22px] transition-colors duration-200 text-xs md:text-sm lg:text-base xl:text-base 2xl:text-lg whitespace-nowrap
     ${fullWidth ? "w-full" : ""}`}
@@ -321,10 +321,10 @@ const ThemeSelector = ({
       <button
         type="button"
         className={`flex items-center justify-center cursor-pointer min-h-[44px] sm:min-h-0 lg:min-h-0 px-1 sm:px-0 lg:px-0 border-none bg-transparent p-0 ${isTransparentNavbar
-            ? isDark
-              ? "text-white"
-              : "text-gray-900"
-            : "dark:text-white text-gray-900"
+          ? isDark
+            ? "text-white"
+            : "text-gray-900"
+          : "dark:text-white text-gray-900"
           }`}
         onClick={toggleDropdown}
       >
@@ -681,8 +681,8 @@ export default function Navbar() {
     return (
       <nav
         className={`fixed top-0 left-0 right-0 z-50 w-full transition-all duration-300 ${isTransparentNavbar
-            ? "bg-transparent"
-            : "bg-white dark:bg-gray-900 shadow-lg"
+          ? "bg-transparent"
+          : "bg-white dark:bg-gray-900 shadow-lg"
           }`}
       >
         <div className="w-full px-4 sm:px-6 lg:px-8">
@@ -844,8 +844,8 @@ export default function Navbar() {
                       >
                         <div
                           className={`flex items-center rounded-lg transition-colors duration-200 group p-3 -m-3 ${pathname === "/dashboard/express-exchange"
-                              ? "dark:bg-[#35353E] bg-[#e8f5ee]"
-                              : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
+                            ? "dark:bg-[#35353E] bg-[#e8f5ee]"
+                            : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
                             }`}
                         >
                           <div className="w-10 h-10 flex items-center justify-center mr-4">
@@ -858,8 +858,15 @@ export default function Navbar() {
                           <div className="flex-1">
                             <h4 className="dark:text-white flex flex-row text-gray-900 font-medium text-base mb-1">
                               <span>E</span>
+                              {/* Light mode image */}
                               <img
-                                className="mt-[4.5px]"
+                                className="mt-[4.5px] block dark:hidden"
+                                src="https://res.cloudinary.com/pitz/image/upload/v1764698096/Group_9_momvgo.png"
+                                alt=""
+                              />
+                              {/* Dark mode image */}
+                              <img
+                                className="mt-[4.5px] hidden dark:block"
                                 src="https://res.cloudinary.com/pitz/image/upload/v1764698106/Group_8_hjhlxe.png"
                                 alt=""
                               />
@@ -896,8 +903,8 @@ export default function Navbar() {
                       >
                         <div
                           className={`flex items-center transition-colors duration-200 group rounded-lg p-3 -m-3 ${pathname === "/dashboard/exchange"
-                              ? "dark:bg-[#35353E] bg-[#e8f5ee]"
-                              : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
+                            ? "dark:bg-[#35353E] bg-[#e8f5ee]"
+                            : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
                             }`}
                         >
                           <div className="w-10 h-10 flex items-center justify-center mr-4">
@@ -905,7 +912,19 @@ export default function Navbar() {
                           </div>
                           <div className="flex-1">
                             <h4 className="dark:text-white flex flex-row text-gray-900 font-medium text-base mb-1">
-                              <span>Money</span> <img className="mt-[4.5px]" src="https://res.cloudinary.com/pitz/image/upload/v1764663236/Group_7_ichuyz.png" alt="" />
+                              <span>Money</span>
+                              {/* Light mode image */}
+                              <img
+                                className="mt-[4.5px] block dark:hidden"
+                                src="https://res.cloudinary.com/pitz/image/upload/v1764661972/Group_6_ohph9q.png"
+                                alt=""
+                              />
+                              {/* Dark mode image */}
+                              <img
+                                className="mt-[4.5px] hidden dark:block"
+                                src="https://res.cloudinary.com/pitz/image/upload/v1764663236/Group_7_ichuyz.png"
+                                alt=""
+                              />
                             </h4>
                             <p className="dark:text-gray-400 text-gray-600 text-sm">
                               Transfer money between different payment methods
@@ -938,9 +957,9 @@ export default function Navbar() {
                       >
                         <div
                           className={`flex items-center rounded-lg transition-colors duration-200 group p-3 -m-3 ${pathname === "/dashboard/p2p" ||
-                              pathname?.startsWith("/dashboard/p2p/")
-                              ? "dark:bg-[#35353E] bg-[#e8f5ee]"
-                              : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
+                            pathname?.startsWith("/dashboard/p2p/")
+                            ? "dark:bg-[#35353E] bg-[#e8f5ee]"
+                            : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
                             }`}
                         >
                           <div className="w-10 h-10 flex items-center justify-center mr-4">
@@ -981,9 +1000,9 @@ export default function Navbar() {
                       >
                         <div
                           className={`flex items-center transition-colors duration-200 group rounded-lg p-3 -m-3 ${pathname === "/dashboard/swap" ||
-                              pathname?.startsWith("/dashboard/swap/")
-                              ? "dark:bg-[#35353E] bg-[#e8f5ee]"
-                              : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
+                            pathname?.startsWith("/dashboard/swap/")
+                            ? "dark:bg-[#35353E] bg-[#e8f5ee]"
+                            : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
                             }`}
                         >
                           <div className="w-10 h-10 flex items-center justify-center mr-4">
@@ -1239,8 +1258,8 @@ export default function Navbar() {
         {/* Mobile Menu Button */}
         <button
           className={`md:hidden p-1.5 sm:p-2 rounded-md focus:outline-none ${isTransparentNavbar
-              ? "text-white" // White when navbar is transparent
-              : "dark:text-white text-gray-900" // Theme-based when navbar has background
+            ? "text-white" // White when navbar is transparent
+            : "dark:text-white text-gray-900" // Theme-based when navbar has background
             }`}
           onClick={toggleMobileMenu}
         >
@@ -1377,8 +1396,8 @@ export default function Navbar() {
                             >
                               <div
                                 className={`flex items-center rounded-lg transition-colors duration-200 group p-3 ${pathname === "/dashboard/express-exchange"
-                                    ? "dark:bg-[#35353E] bg-[#e8f5ee]"
-                                    : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
+                                  ? "dark:bg-[#35353E] bg-[#e8f5ee]"
+                                  : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
                                   }`}
                               >
                                 <div className="flex items-center justify-center mr-4 flex-shrink-0">
@@ -1442,9 +1461,9 @@ export default function Navbar() {
                             >
                               <div
                                 className={`flex items-center rounded-lg transition-colors duration-200 group p-3 ${pathname === "/dashboard/p2p" ||
-                                    pathname?.startsWith("/dashboard/p2p/")
-                                    ? "dark:bg-[#35353E] bg-[#e8f5ee]"
-                                    : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
+                                  pathname?.startsWith("/dashboard/p2p/")
+                                  ? "dark:bg-[#35353E] bg-[#e8f5ee]"
+                                  : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
                                   }`}
                               >
                                 <div className="w-10 h-10 flex items-center justify-center mr-4 flex-shrink-0">
@@ -1540,9 +1559,9 @@ export default function Navbar() {
                             >
                               <div
                                 className={`flex items-center rounded-lg transition-colors duration-200 group p-3 ${pathname === "/dashboard/swap" ||
-                                    pathname?.startsWith("/dashboard/swap/")
-                                    ? "dark:bg-[#35353E] bg-[#e8f5ee]"
-                                    : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
+                                  pathname?.startsWith("/dashboard/swap/")
+                                  ? "dark:bg-[#35353E] bg-[#e8f5ee]"
+                                  : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
                                   }`}
                               >
                                 <div className="w-10 h-10 flex items-center justify-center mr-4 flex-shrink-0">
@@ -1614,8 +1633,8 @@ export default function Navbar() {
                             >
                               <div
                                 className={`flex items-center rounded-lg transition-colors duration-200 group p-3 ${pathname === "/dashboard/exchange"
-                                    ? "dark:bg-[#35353E] bg-[#e8f5ee]"
-                                    : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
+                                  ? "dark:bg-[#35353E] bg-[#e8f5ee]"
+                                  : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
                                   }`}
                               >
                                 <div className="w-10 h-10 flex items-center justify-center mr-4 flex-shrink-0">

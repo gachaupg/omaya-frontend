@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { SupportedAsset, SwapEstimate } from "../types";
 import { useTheme } from "@/context/theme";
 import { FaSearch } from "react-icons/fa";
+import { useSwapI18n } from "@/lib/useSwapI18n";
 
 interface TransactionInfoStepProps {
   fromAsset: SupportedAsset | null;
@@ -43,6 +44,7 @@ const inputBase =
 
 const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
   const { isDark } = useTheme();
+  const { t } = useSwapI18n();
   const {
     fromAsset,
     toAsset,
@@ -78,7 +80,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
   const toAssetDropdownContentRef = useRef<HTMLDivElement | null>(null);
   const [isComponentMounted, setIsComponentMounted] = useState(false);
 
-  
+
 
   useEffect(() => {
     setIsComponentMounted(true);
@@ -241,7 +243,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
         >
           {/* Dropdown Title */}
           <div className="flex items-center justify-between px-2 sm:px-3 md:px-4 py-2 sm:py-3 border-b border-gray-200 dark:border-gray-600">
-            <h3 className="text-base font-semibold text-gray-900 dark:text-white">Currency from</h3>
+            <h3 className="text-base font-semibold text-gray-900 dark:text-white">{t("swap.currencyFrom", "Currency from")}</h3>
             <button
               onClick={toggle}
               className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
@@ -259,7 +261,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
               <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#7e7e8f] w-4 h-4" />
               <input
                 type="text"
-                placeholder="Type a currency"
+                placeholder={t("swap.typeCurrency", "Type a currency")}
                 value={searchValue}
                 onChange={(e) => onSearchChange(e.target.value)}
                 className="w-full text-gray-900 dark:text-white dark:bg-gray-800 bg-gray-50 rounded-lg px-10 py-1.5 sm:py-2 text-xs sm:text-sm focus:outline-none border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400"
@@ -271,7 +273,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
           <div className="flex-1 overflow-y-auto p-0.5 sm:p-1">
             {filtered.length === 0 ? (
               <div className="p-4 text-center text-sm text-gray-500 dark:text-gray-400">
-                {searchValue ? "No assets found" : "No assets available"}
+                {searchValue ? t("swap.noAssetsFound", "No assets found") : t("swap.noAssetsAvailable", "No assets available")}
               </div>
             ) : (
               <>
@@ -369,7 +371,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
                 ? asset.ticker?.toUpperCase() ||
                 asset.symbol?.toUpperCase() ||
                 asset.name
-                : "Select Asset"}
+                : t("swap.selectAsset", "Select Asset")}
             </p>
           </div>
           <svg
@@ -395,43 +397,43 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
     isActive: boolean,
     isYouSend: boolean = false
   ) => {
-    const inputClassName = isYouSend 
-      ? inputBase 
+    const inputClassName = isYouSend
+      ? inputBase
       : inputBase.replace('bg-transparent dark:bg-transparent', 'bg-white dark:bg-[#35353E]');
-    
+
     // Show loader on the OPPOSITE input (the one receiving calculated value)
     // If user is typing in "from" (isYouSend=true, activeInputField="from"), show loader on "to" (isYouSend=false)
     // If user is typing in "to" (isYouSend=false, activeInputField="to"), show loader on "from" (isYouSend=true)
     const showLoader = estimateLoading && (
-      (activeInputField === "from" && !isYouSend) || 
+      (activeInputField === "from" && !isYouSend) ||
       (activeInputField === "to" && isYouSend)
     );
-    
+
     return (
-    <div className="space-y-2">
-      {label && <p className={labelCopy}>{label}</p>}
-      <div className="relative">
-        <input
-          type="text"
-          inputMode="decimal"
-          value={showLoader ? "" : value}
-          onChange={onChange}
-          placeholder={showLoader ? "Calculating..." : "Enter amount"}
-          className={`${inputClassName} ${showLoader ? "opacity-70" : ""}`}
-          disabled={showLoader}
-        />
-        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-[#35353e] dark:text-white/80">
-          {asset?.ticker?.toUpperCase() ||
-            asset?.symbol?.toUpperCase() ||
-            "USDT"}
-        </span>
-        {showLoader && (
-          <span className="absolute left-4 top-1/2 -translate-y-1/2">
-            <span className="inline-block h-4 w-4 rounded-full border-2 border-[#1D8751] border-t-transparent animate-spin" />
+      <div className="space-y-2">
+        {label && <p className={labelCopy}>{label}</p>}
+        <div className="relative">
+          <input
+            type="text"
+            inputMode="decimal"
+            value={showLoader ? "" : value}
+            onChange={onChange}
+            placeholder={showLoader ? t("swap.calculating", "Calculating...") : t("swap.enterAmount", "Enter amount")}
+            className={`${inputClassName} ${showLoader ? "opacity-70" : ""}`}
+            disabled={showLoader}
+          />
+          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-[#35353e] dark:text-white/80">
+            {asset?.ticker?.toUpperCase() ||
+              asset?.symbol?.toUpperCase() ||
+              "USDT"}
           </span>
-        )}
+          {showLoader && (
+            <span className="absolute left-4 top-1/2 -translate-y-1/2">
+              <span className="inline-block h-4 w-4 rounded-full border-2 border-[#1D8751] border-t-transparent animate-spin" />
+            </span>
+          )}
+        </div>
       </div>
-    </div>
     );
   };
 
@@ -439,7 +441,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
     <div className="w-full flex flex-col dark:text-white text-gray-900">
       <h2 className="text-base sm:text-lg md:text-xl font-semibold mb-2 sm:mb-3 md:mb-4 dark:text-[#9ba3c5] text-gray-700">
         <span className="dark:text-[#7e7e8f] text-gray-500 mr-1">1-</span>
-        Transaction Info
+        {t("swap.transactionInfo", "Transaction Info")}
       </h2>
 
       {/* You Send */}
@@ -447,13 +449,13 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
         <div className={`${baseCard} p-2 sm:p-3 md:p-6 space-y-2 sm:space-y-2.5`} data-swap-card="true">
           <div className="flex flex-col sm:flex-row sm:items-end gap-2 sm:gap-3 md:gap-4">
             <div className="space-y-0.5 sm:flex-1">
-              <p className="text-sm sm:text-base font-semibold">You Send</p>
+              <p className="text-sm sm:text-base font-semibold">{t("swap.youSend", "You Send")}</p>
               <p className="text-xs dark:text-[#7d7f95] text-gray-500">
-                I want to Send
+                {t("swap.iWantToSend", "I want to Send")}
               </p>
             </div>
             <p className={`${labelCopy} ml-2 sm:ml-0 sm:flex-1`}>
-              Asset
+              {t("swap.asset", "Asset")}
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 md:gap-4">
@@ -505,13 +507,13 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
         <div className={`${baseCard} p-2 sm:p-3 md:p-6 space-y-2 sm:space-y-2.5`} data-swap-card="true">
           <div className="flex flex-col sm:flex-row sm:items-end gap-2 sm:gap-3 md:gap-4">
             <div className="space-y-0.5 sm:flex-1">
-              <p className="text-sm sm:text-base font-semibold">You Receive</p>
+              <p className="text-sm sm:text-base font-semibold">{t("swap.youReceive", "You Receive")}</p>
               <p className="text-xs dark:text-[#7d7f95] text-gray-500">
-                I want to Receive
+                {t("swap.iWantToReceive", "I want to Receive")}
               </p>
             </div>
             <p className={`${labelCopy} ml-4 sm:ml-0 sm:flex-1`}>
-              Asset
+              {t("swap.asset", "Asset")}
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 md:gap-4">
@@ -545,8 +547,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
           <span className="text-[#1D8751] text-[10px] font-bold">i</span>
         </div>
         <p>
-          This is only an estimated price based on current market rates. The final price will be
-          confirmed when we receive the funds.
+          {t("swap.disclaimer", "This is only an estimated price based on current market rates. The final price will be confirmed when we receive the funds.")}
         </p>
       </div>
 
@@ -591,17 +592,17 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
           {swapLoading ? (
             <>
               <span className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
-              Loading...
+              {t("swap.loading", "Loading...")}
             </>
           ) : (
-            "Submit"
+            t("swap.submit", "Submit")
           )}
         </button>
       )}
 
       {localSwapError && (
         <div className="mt-4 bg-red-500/10 dark:bg-red-500/10 border border-red-500 rounded-2xl p-3 sm:p-4 dark:text-red-200 text-red-700">
-          <h3 className="font-semibold mb-1 text-sm sm:text-base">Error</h3>
+          <h3 className="font-semibold mb-1 text-sm sm:text-base">{t("swap.error.genericTitle", "Error")}</h3>
           <p className="text-xs sm:text-sm break-words">{localSwapError}</p>
         </div>
       )}

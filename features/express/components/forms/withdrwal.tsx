@@ -38,6 +38,7 @@ import {
   buildExpressRedirectPath,
   setAuthRedirectPath,
 } from "@/lib/utils/authRedirect";
+import { useExpressI18n } from "@/lib/useExpressI18n";
 import {
   ASSET_ICON_BASE_CLASS,
   ASSET_ICON_SIZE,
@@ -273,6 +274,7 @@ export default function WithdrawalForm({
 }: DepositFormProps) {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
+  const { t } = useExpressI18n();
   const [transactionMode, setTransactionMode] = useState<"crypto" | "forex">("crypto");
 
   // Declare all refs early to avoid initialization errors
@@ -3250,7 +3252,7 @@ export default function WithdrawalForm({
                         <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
                       )}
                   </label>
-                  <div className="text-xs text-[#788099] dark:text-[#788099] mb-1">Amount</div>
+                  <div className="text-xs text-[#788099] dark:text-[#788099] mb-1">{t("express.amount", "Amount")}</div>
                   <div className="relative">
                     <input
                       type="text"
@@ -3386,7 +3388,7 @@ export default function WithdrawalForm({
 
                 {/* You Get Section */}
                 <div className="flex-1 sm:pl-4 border-t sm:border-t-0 sm:border-l border-[#35353E] dark:border-[#35353E] pt-3 sm:pt-0 sm:border-none" data-select-card="true">
-                  <div className="text-xs text-[#788099] dark:text-[#788099] mb-1 mt-[30px] sm:mt-[34px]">You Get</div>
+                  <div className="text-xs text-[#788099] dark:text-[#788099] mb-1 mt-[30px] sm:mt-[34px]">{t("express.youGet", "You Get")}</div>
                   <div className="relative" ref={assetDropdownRef}>
                     <div
                       className={`w-full h-[48px] bg-transparent dark:bg-transparent text-[#35353e] dark:text-white rounded-2xl px-4 text-lg focus:outline-none border border-[#39394A] dark:border-[#35353E] hover:border-blue-400 dark:hover:border-blue-400 flex items-center justify-between cursor-pointer transition-colors duration-200`}
@@ -3515,7 +3517,7 @@ export default function WithdrawalForm({
                         <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
                       )}
                   </label>
-                  <div className="text-xs text-[#788099] dark:text-[#788099] mb-1">Amount</div>
+                  <div className="text-xs text-[#788099] dark:text-[#788099] mb-1">{t("express.amount", "Amount")}</div>
                   <div className="relative">
                     <input
                       type="text"

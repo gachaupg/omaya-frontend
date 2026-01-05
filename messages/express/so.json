@@ -1,4 +1,9 @@
 {
+  "express.amount": "Qadarka",
+  "express.youWillReceive": "Waxaad Heli Doontaa",
+  "express.youGet": "Waxaad Helaysaa",
+  "express.fromPaymentMethod": "Habka Bixinta ee Laga Dirayo",
+  "express.toPaymentMethod": "Habka Bixinta ee Loo Dirayo",
   "express.mode.deposit": "gelin",
   "express.mode.withdrawal": "ka-bixid",
   "express.switchMode": "U beddel habka {{mode}}",

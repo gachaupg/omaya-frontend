@@ -8,7 +8,7 @@ import { useRatesI18n } from "@/lib/useRatesI18n";
 const Rates = () => {
   const [activeTab, setActiveTab] = React.useState<'crypto' | 'moneyx'>('crypto');
   const { t } = useRatesI18n();
-  
+
   // Debug
   React.useEffect(() => {
     console.log('Rates component - activeTab changed to:', activeTab);
@@ -23,7 +23,7 @@ const Rates = () => {
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
         </svg>
-        <span className="text-sm sm:text-base font-medium">Back</span>
+        <span className="text-sm sm:text-base font-medium">{t("rates.back", "Back")}</span>
       </Link>
 
       <h1 className="text-xl sm:text-2xl lg:text-2xl font-bold mb-2">
@@ -47,7 +47,7 @@ const Rates = () => {
               : 'bg-transparent text-gray-600 dark:text-[#788099]'
             }`}
         >
-          Crypto
+          {t("rates.crypto", "Crypto")}
         </button>
 
         {/* MoneyX with image */}
@@ -59,7 +59,7 @@ const Rates = () => {
               : 'bg-transparent text-gray-600 dark:text-[#788099]'
             }`}
         >
-          <span>Money</span>
+          <span>{t("rates.money", "Money")}</span>
           <img
             src={
               activeTab === 'moneyx'
@@ -82,7 +82,7 @@ const Rates = () => {
           href="/market/live-transactions"
           className="text-secondary hover:text-[#0f8f4d] font-medium text-sm sm:text-base flex items-center gap-1 transition-colors"
         >
-          Live Transactions →
+          {t("rates.liveTransactions", "Live Transactions →")}
         </Link>
       </div>
       <RatesTransactionHistory />
