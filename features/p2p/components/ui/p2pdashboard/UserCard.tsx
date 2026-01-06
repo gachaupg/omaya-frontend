@@ -371,7 +371,7 @@ const UserCard = () => {
           <div className="flex flex-wrap gap-2 justify-start sm:justify-center lg:justify-end w-full lg:w-auto">
             <Button
               borderRadius={24}
-              className="w-full sm:w-[130px]"
+              className="sm:w-[130px]"
               height={36}
               variant="primary"
               size="sm"
@@ -381,7 +381,7 @@ const UserCard = () => {
             </Button>
             <Button
               borderRadius={24}
-              className="w-full sm:w-[130px]"
+              className="sm:w-[130px]"
               height={36}
               variant="secondary"
               size="sm"
