@@ -171,7 +171,7 @@ const LanguageSelector = () => {
             className="fixed inset-0 z-40 sm:hidden"
             onClick={() => setDropdownOpen(false)}
           />
-          <div className="fixed sm:absolute right-3 sm:right-0 top-14 sm:top-auto sm:mt-2 w-[180px] sm:w-[200px] lg:w-[250px] dark:bg-[var(--card-color)] bg-white dark:border-[#35353E] border-gray-200 rounded-lg shadow-lg z-50 max-w-[calc(100vw-1.5rem)] sm:max-w-none">
+          <div className="absolute right-0 bottom-full mb-2 sm:mb-0 sm:bottom-auto sm:top-full sm:mt-2 w-[180px] sm:w-[200px] lg:w-[250px] dark:bg-[var(--card-color)] bg-white dark:border-[#35353E] border-gray-200 rounded-lg shadow-lg z-50 max-w-[calc(100vw-1.5rem)] sm:max-w-none origin-bottom sm:origin-top">
             <button
               className="block w-full text-left px-3 sm:px-4 lg:px-4 py-2.5 sm:py-2 lg:py-2 dark:text-white text-gray-900 dark:hover:bg-[#35353E] hover:bg-gray-100 min-h-[44px] sm:min-h-0 lg:min-h-0 flex items-center transition-colors"
               onClick={() => selectLanguage("English")}
@@ -347,7 +347,7 @@ const ThemeSelector = ({
             className="fixed inset-0 z-40"
             onClick={() => setDropdownOpen(false)}
           />
-          <div className="fixed sm:absolute right-3 sm:right-0 top-14 sm:top-auto sm:mt-2 w-[180px] sm:w-[200px] lg:w-[250px] dark:bg-[var(--card-color)] bg-white dark:border-[#35353E] border-gray-200 rounded-lg shadow-lg z-50 max-w-[calc(100vw-1.5rem)] sm:max-w-none">
+          <div className="absolute right-0 bottom-full mb-2 sm:mb-0 sm:bottom-auto sm:top-full sm:mt-2 w-[180px] sm:w-[200px] lg:w-[250px] dark:bg-[var(--card-color)] bg-white dark:border-[#35353E] border-gray-200 rounded-lg shadow-lg z-50 max-w-[calc(100vw-1.5rem)] sm:max-w-none origin-bottom sm:origin-top">
             <button
               className="block w-full text-left px-3 sm:px-4 lg:px-4 py-2.5 sm:py-2 lg:py-2 dark:text-white text-gray-900 dark:hover:bg-[#35353E] hover:bg-gray-100 min-h-[44px] sm:min-h-0 lg:min-h-0 flex items-center transition-colors"
               onClick={() => selectTheme("light")}
@@ -704,12 +704,12 @@ export default function Navbar() {
   return (
     <div>
       <nav
-        className={`fixed top-0 left-0 right-0 z-50 w-full flex items-center justify-between px-3 py-3 sm:px-4 sm:py-4 md:px-4 md:py-2.5 lg:px-8 lg:py-4 xl:px-12 2xl:px-20 transition-all duration-300 ${getNavbarBackground()}`}
+        className={`fixed top-0 left-0 right-0 z-50 w-full flex items-center justify-between px-3 py-4 md:h-20 lg:h-auto md:px-4 md:py-2.5 lg:px-8 lg:py-4 xl:px-12 2xl:px-20 transition-all duration-300 ${getNavbarBackground()}`}
       >
         <div className="flex items-center min-w-0 flex-1">
           <Link
             href="/"
-            className="mr-4 sm:mr-8 md:mr-6 lg:mr-12 xl:mr-20 shrink-0"
+            className="mr-4 sm:mr-8 md:mr-6 lg:mr-12 xl:mr-20 shrink-0 flex items-center h-full"
           >
             {/* Optimized logo selection using memoized config */}
             {logoConfig && (
@@ -718,7 +718,7 @@ export default function Navbar() {
                 alt={logoConfig.alt}
                 width={150}
                 height={40}
-                className="h-auto w-16 sm:w-24 md:w-28 lg:w-36 xl:w-40 2xl:w-48 dark:brightness-0 dark:invert"
+                className="h-8 w-24 sm:h-auto md:w-28 lg:w-36 xl:w-40 2xl:w-48 dark:brightness-0 dark:invert object-contain"
                 priority
               />
             )}
@@ -1257,7 +1257,7 @@ export default function Navbar() {
 
         {/* Mobile Menu Button */}
         <button
-          className={`md:hidden p-1.5 sm:p-2 rounded-md focus:outline-none ${isTransparentNavbar
+          className={`md:hidden p-1.5 sm:p-2 flex items-center justify-center rounded-md focus:outline-none ${isTransparentNavbar
             ? "text-white" // White when navbar is transparent
             : "dark:text-white text-gray-900" // Theme-based when navbar has background
             }`}
@@ -1280,7 +1280,7 @@ export default function Navbar() {
             onClick={toggleMobileMenu}
           />
           <div
-            className={`fixed top-14 sm:top-16 left-0 right-0 z-50 md:hidden p-4 sm:p-6 space-y-4 sm:space-y-6 shadow-lg transition-all duration-300 dark:bg-[var(--bg-color)] bg-white max-h-[calc(100vh-3.5rem)] sm:max-h-[calc(100vh-4rem)] overflow-y-auto`}
+            className={`fixed top-16 left-0 right-0 z-50 md:hidden p-4 sm:p-6 space-y-4 sm:space-y-6 shadow-lg transition-all duration-300 dark:bg-[var(--bg-color)] bg-white max-h-[calc(100vh-4rem)] overflow-y-auto`}
           >
             <MobileNavLink
               href="/"
