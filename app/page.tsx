@@ -2027,7 +2027,7 @@ export default function MarketingPage() {
           <div className="text-center mb-12">
             {/* FAQ Pill */}
             <div className="flex justify-center mb-6 -mt-4">
-              <span className="bg-[#1D8751]/10 border border-[#1D8751] text-[#1D8751] px-4 py-1.5 rounded-full text-sm font-medium flex items-center gap-2">
+              <span className="bg-[#1D8751]/10 border border-[#1D8751]/30 text-[#1D8751] px-4 py-1.5 rounded-full text-sm font-medium flex items-center gap-2">
                 <HelpCircle className="w-4 h-4" />
                 FAQ
               </span>
@@ -2039,7 +2039,7 @@ export default function MarketingPage() {
             </h2>
 
             {/* Subtitle */}
-            <p className="text-gray-700 dark:text-white/70 text-base md:text-lg max-w-2xl mx-auto">
+            <p className="text-gray-700 dark:text-[#788099] text-base md:text-lg max-w-3xl mx-auto">
               Find answers to common questions about OMAYA Exchange, trading, security, and more
             </p>
           </div>
@@ -2107,7 +2107,7 @@ export default function MarketingPage() {
                     <div key={item.id || item._id || index} className="relative">
                       <div
                         className={`bg-gray-50 dark:bg-[#18181D] border rounded-xl overflow-hidden ${isOpen
-                          ? "border-[#1D8751]"
+                          ? "dark:border-accent border-border"
                           : "border-gray-200 dark:border-[#2A2A2A]"
                           }`}
                       >
@@ -2124,7 +2124,7 @@ export default function MarketingPage() {
                               {item.question}
                             </span>
                           </div>
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ml-4 transition-colors ${isOpen
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ml-4 transition-colors ${isOpen
                             ? "bg-[#1D8751]"
                             : "bg-gray-200 dark:bg-[#2A2A2A]"
                             }`}>
@@ -2140,7 +2140,7 @@ export default function MarketingPage() {
                         {isOpen && (
                           <div className="bg-gray-50 dark:bg-[#18181D]">
                             <div className="px-5 pt-4 pb-4">
-                              <div className="border-t border-[#35353E] dark:border-[#2A2A2A] pt-5 -mt-4">
+                              <div className="border-t border-accent dark:border-[#2A2A2A] pt-5 -mt-4">
                                 <p className="text-gray-700 dark:text-white/80 text-sm md:text-base leading-relaxed">
                                   {item.answer}
                                 </p>
@@ -2181,16 +2181,16 @@ export default function MarketingPage() {
           </div>
 
           {/* Bottom Support Section */}
-          <div className="bg-gray-50 dark:bg-[#1D1D23] rounded-2xl p-8 md:p-12 text-center border border-gray-200 dark:border-[#2A2A2A]">
+          <div className="bg-gray-50 dark:bg-[#1D1D23] rounded-2xl p-8 md:p-12 text-center border border-border dark:border-accent">
             <div className="flex justify-center mb-4">
-              <div className="w-16 h-16 bg-[#1D8751] rounded-full flex items-center justify-center">
-                <MessageCircle className="w-8 h-8 text-white" />
+              <div className="w-16 h-16 flex items-center justify-center">
+                <MessageCircle className="w-13 h-13 text-[#1D8751]" />
               </div>
             </div>
             <h3 className="text-gray-900 dark:text-white text-xl md:text-2xl font-bold mb-2">
               Still have questions?
             </h3>
-            <p className="text-gray-700 dark:text-white/70 text-sm md:text-base mb-6">
+            <p className="text-gray-700 dark:text-[#788099]  text-sm md:text-base mb-6">
               Our support team is available 24/7 to assist you
             </p>
             <a
