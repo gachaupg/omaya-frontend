@@ -2979,7 +2979,7 @@ export default function DepositForm({
                   <span className="text-xs text-[#1D8751] font-medium">(Active)</span>
                 )} */}
               </label>
-              <div className="text-xs text-[#788099] dark:text-[#788099] mb-1">Amount</div>
+              <div className="text-xs text-[#788099] dark:text-[#788099] mb-1">{t("express.amount", "Amount")}</div>
               <div className="relative">
                 {/* <input
                   type="text"
@@ -3409,7 +3409,7 @@ export default function DepositForm({
                   </span>
                 )}
               </label>
-              <div className="text-xs text-[#788099] dark:text-[#788099] mb-1">Amount</div>
+              <div className="text-xs text-[#788099] dark:text-[#788099] mb-1">{t("express.amount", "Amount")}</div>
               <div className="relative">
                 <input
                   type="text"

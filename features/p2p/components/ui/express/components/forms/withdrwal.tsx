@@ -31,6 +31,7 @@ import { debugAssetFetching } from "@/lib/utils/debugAssets";
 import OTPModal from "./OTPModal";
 
 import { logger } from '@/lib/utils/logger';
+import { useExpressI18n } from "@/lib/useExpressI18n";
 
 // Success Modal Component
 const SuccessModal = ({
@@ -46,6 +47,7 @@ const SuccessModal = ({
   asset: any;
   onNavigateToP2P: () => void;
 }) => {
+  const { t } = useExpressI18n();
   if (!isOpen) return null;
 
   return (
@@ -73,7 +75,7 @@ const SuccessModal = ({
 
         {/* Amount Info */}
         <div className="mb-6">
-          <p className="text-gray-400 text-sm mb-2">You Will Receive</p>
+          <p className="text-gray-400 text-sm mb-2">{t("express.youWillReceive", "You Will Receive")}</p>
           <p className="text-white text-2xl font-bold">
             {amount}{" "}
             {asset?.ticker?.toUpperCase() ||
@@ -143,11 +145,10 @@ const UserPaymentSelector = ({
             return (
               <div
                 key={detail.id}
-                className={`flex items-center justify-between p-3 rounded-xl border ${
-                  isSelected
-                    ? "border-[#1D8751] bg-[#1D8751]/10"
-                    : "border-[#A2A4A9FF] bg-[#A2A4A9FF]"
-                }`}
+                className={`flex items-center justify-between p-3 rounded-xl border ${isSelected
+                  ? "border-[#1D8751] bg-[#1D8751]/10"
+                  : "border-[#A2A4A9FF] bg-[#A2A4A9FF]"
+                  }`}
               >
                 <div className="flex-1">
                   <div className="text-white font-medium">
@@ -168,11 +169,10 @@ const UserPaymentSelector = ({
                       onSelect(detail);
                     }
                   }}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    isSelected
-                      ? "bg-red-500 text-white hover:bg-red-600"
-                      : "bg-[#1D8751] text-white hover:bg-[#166b3e]"
-                  }`}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${isSelected
+                    ? "bg-red-500 text-white hover:bg-red-600"
+                    : "bg-[#1D8751] text-white hover:bg-[#166b3e]"
+                    }`}
                 >
                   {isSelected ? "Remove" : "Select"}
                 </button>
@@ -231,9 +231,10 @@ export default function WithdrawalForm({
 }: DepositFormProps) {
   // Debug logging for balance
   logger.debug('p2p', "WithdrawalForm - Received balance:", balance);
-  
+
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
+  const { t } = useExpressI18n();
   const { adminPaymentDetails, loading, error } = useSelector(
     (state: any) => state.payment
   );
@@ -459,7 +460,7 @@ export default function WithdrawalForm({
   }, [isTransactionSubmitted, withdrawalAddress, qrCodeUrl, responseMessage]);
 
   // Monitor wallet section visibility
-  useEffect(() => {}, [
+  useEffect(() => { }, [
     isTransactionSubmitted,
     withdrawalAddress,
     qrCodeUrl,
@@ -618,7 +619,7 @@ export default function WithdrawalForm({
     // Only handle forward calculations (when calculating from pay amount)
     if (estimate && !estimateLoading && isCalculatingFromPay && payAmount > 0) {
       const estimateAmount = estimate.toAmount || estimate.estimated_amount;
-      logger.debug('p2p', 
+      logger.debug('p2p',
         "Estimate received, updating receive amount:",
         estimateAmount
       );
@@ -892,7 +893,7 @@ export default function WithdrawalForm({
       const debounceTimeout = setTimeout(() => {
         // Set a timeout to prevent infinite loading
         const timeoutId = setTimeout(() => {
-          logger.debug('p2p', 
+          logger.debug('p2p',
             "DEBUG: Estimate request timed out, keeping loading state"
           );
           setEstimateLoading(false);
@@ -977,7 +978,7 @@ export default function WithdrawalForm({
                     err.includes("decimal places")
                   )
                 ) {
-                  logger.debug('p2p', 
+                  logger.debug('p2p',
                     "API ERROR: Decimal places validation error detected"
                   );
                   setApiValidationError(
@@ -990,7 +991,7 @@ export default function WithdrawalForm({
                   setEstimateLoading(false);
                   setIsCalculating(false);
                   setIsCalculatingReceive(false);
-                  logger.debug('p2p', 
+                  logger.debug('p2p',
                     "API ERROR: Loading states cleared for decimal places error"
                   );
                   // Don't clear the input - let user see their value and fix it
@@ -1001,7 +1002,7 @@ export default function WithdrawalForm({
                     err.includes("12 digits before the decimal point")
                   )
                 ) {
-                  logger.debug('p2p', 
+                  logger.debug('p2p',
                     "API ERROR: 12 digits before decimal point validation error detected"
                   );
                   setApiValidationError(
@@ -1014,7 +1015,7 @@ export default function WithdrawalForm({
                   setEstimateLoading(false);
                   setIsCalculating(false);
                   setIsCalculatingReceive(false);
-                  logger.debug('p2p', 
+                  logger.debug('p2p',
                     "API ERROR: Loading states cleared for 12 digits error"
                   );
                   // Don't clear the input - let user see their value and fix it
@@ -1023,7 +1024,7 @@ export default function WithdrawalForm({
                 if (
                   amountErrors.some((err: string) => err.includes("too small"))
                 ) {
-                  logger.debug('p2p', 
+                  logger.debug('p2p',
                     "API ERROR: Amount too small validation error detected"
                   );
                   setApiValidationError(
@@ -1036,7 +1037,7 @@ export default function WithdrawalForm({
                   setEstimateLoading(false);
                   setIsCalculating(false);
                   setIsCalculatingReceive(false);
-                  logger.debug('p2p', 
+                  logger.debug('p2p',
                     "API ERROR: Loading states cleared for too small error"
                   );
                   // Don't clear the input - let user see their value and fix it
@@ -1085,7 +1086,7 @@ export default function WithdrawalForm({
                 setEstimateLoading(false);
                 setIsCalculating(false);
                 setIsCalculatingReceive(false);
-                logger.debug('p2p', 
+                logger.debug('p2p',
                   "API ERROR: Loading states cleared for deposit too small error"
                 );
                 return;
@@ -1117,7 +1118,7 @@ export default function WithdrawalForm({
             }
 
             // Fallback: Handle any other error formats that weren't caught above
-            logger.debug('p2p', 
+            logger.debug('p2p',
               "FALLBACK ERROR HANDLING - No specific error format matched"
             );
             logger.debug('p2p', "Raw error data:", error.response?.data);
@@ -1139,7 +1140,7 @@ export default function WithdrawalForm({
               }
             }
 
-            logger.debug('p2p', 
+            logger.debug('p2p',
               "FALLBACK: Setting error message:",
               fallbackErrorMessage
             );
@@ -1251,7 +1252,7 @@ export default function WithdrawalForm({
             setIsCalculating(false);
             setIsCalculatingReceive(false);
             setEstimateLoading(false);
-            logger.debug('p2p', 
+            logger.debug('p2p',
               "Reverse calculation completed successfully - loading states cleared"
             );
           } else {
@@ -1316,7 +1317,7 @@ export default function WithdrawalForm({
                   err.includes("12 digits before the decimal point")
                 )
               ) {
-                logger.debug('p2p', 
+                logger.debug('p2p',
                   "REVERSE API ERROR: 12 digits before decimal point validation error detected"
                 );
                 setApiValidationError(
@@ -1329,7 +1330,7 @@ export default function WithdrawalForm({
                 setEstimateLoading(false);
                 setIsCalculating(false);
                 setIsCalculatingReceive(false);
-                logger.debug('p2p', 
+                logger.debug('p2p',
                   "REVERSE API ERROR: Loading states cleared for 12 digits error"
                 );
                 return;
@@ -1381,7 +1382,7 @@ export default function WithdrawalForm({
               errorData?.error === "deposit_too_small" ||
               responseData?.error === "deposit_too_small"
             ) {
-              logger.debug('p2p', 
+              logger.debug('p2p',
                 "REVERSE API ERROR: Deposit too small error detected"
               );
               const errorMessage =
@@ -1393,7 +1394,7 @@ export default function WithdrawalForm({
               setEstimateLoading(false);
               setIsCalculating(false);
               setIsCalculatingReceive(false);
-              logger.debug('p2p', 
+              logger.debug('p2p',
                 "REVERSE API ERROR: Loading states cleared for deposit too small error"
               );
               return;
@@ -1424,7 +1425,7 @@ export default function WithdrawalForm({
             }
 
             // Fallback: Handle any other error formats that weren't caught above
-            logger.debug('p2p', 
+            logger.debug('p2p',
               "REVERSE FALLBACK ERROR HANDLING - No specific error format matched"
             );
             logger.debug('p2p', "Reverse raw error data:", error.response?.data);
@@ -1446,7 +1447,7 @@ export default function WithdrawalForm({
               }
             }
 
-            logger.debug('p2p', 
+            logger.debug('p2p',
               "REVERSE FALLBACK: Setting error message:",
               fallbackErrorMessage
             );
@@ -1540,17 +1541,17 @@ export default function WithdrawalForm({
   // Filter based on search term if provided
   const filteredSwapAssets = assetSearchTerm.trim()
     ? exactAssets.filter((asset) => {
-        const searchTerm = assetSearchTerm.toUpperCase();
-        return (
-          asset.ticker.includes(searchTerm) ||
-          asset.name.toUpperCase().includes(searchTerm) ||
-          "TETHER".includes(searchTerm) ||
-          "USD COIN".includes(searchTerm) ||
-          "BSC".includes(searchTerm) ||
-          "BEP20".includes(searchTerm) ||
-          "BINANCE SMART CHAIN".includes(searchTerm)
-        );
-      })
+      const searchTerm = assetSearchTerm.toUpperCase();
+      return (
+        asset.ticker.includes(searchTerm) ||
+        asset.name.toUpperCase().includes(searchTerm) ||
+        "TETHER".includes(searchTerm) ||
+        "USD COIN".includes(searchTerm) ||
+        "BSC".includes(searchTerm) ||
+        "BEP20".includes(searchTerm) ||
+        "BINANCE SMART CHAIN".includes(searchTerm)
+      );
+    })
     : exactAssets;
 
   // Sort assets: USDT Tether first
@@ -2185,7 +2186,7 @@ export default function WithdrawalForm({
           })
         ).unwrap()) as unknown as DepositResponse;
 
-        logger.debug('p2p', 
+        logger.debug('p2p',
           "DEBUG: Deposit code from response:",
           depositResponse.deposit_code
         );
@@ -2247,7 +2248,7 @@ export default function WithdrawalForm({
       setIsTransactionSubmitted(false);
       setWithdrawalAddress("");
       setPayoutAddress("");
-      setQrCodeUrl(""); 
+      setQrCodeUrl("");
       setResponseMessage("");
     } finally {
       setIsSubmitting(false);
@@ -2295,7 +2296,7 @@ export default function WithdrawalForm({
                           }
                           className="w-6 h-6 rounded-full"
                           onError={(e) => {
-                            logger.debug('p2p', 
+                            logger.debug('p2p',
                               "Image failed to load for asset:",
                               selectedAsset
                             );
@@ -2331,9 +2332,8 @@ export default function WithdrawalForm({
                     )}
                   </div>
                   <svg
-                    className={`w-5 h-5 text-[#7e7e8f] transition-transform ${
-                      isAssetDropdownOpen ? "rotate-180" : ""
-                    }`}
+                    className={`w-5 h-5 text-[#7e7e8f] transition-transform ${isAssetDropdownOpen ? "rotate-180" : ""
+                      }`}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -2504,11 +2504,10 @@ export default function WithdrawalForm({
                       {availableNetworks.map((network, index) => (
                         <div
                           key={`${network.network_id}-${index}`}
-                              className={`flex items-center gap-3 p-2 sm:p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer rounded-xl transition-colors min-h-[44px] sm:min-h-0 ${
-                            selectedNetwork?.network_id === network.network_id
-                              ? "bg-[#1D8751]/10 dark:bg-[#1D8751]/20 border border-[#1D8751]/30"
-                              : ""
-                          }`}
+                          className={`flex items-center gap-3 p-2 sm:p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer rounded-xl transition-colors min-h-[44px] sm:min-h-0 ${selectedNetwork?.network_id === network.network_id
+                            ? "bg-[#1D8751]/10 dark:bg-[#1D8751]/20 border border-[#1D8751]/30"
+                            : ""
+                            }`}
                           onClick={() => {
                             setSelectedNetwork(network);
                             setIsNetworkDropdownOpen(false);
@@ -2534,20 +2533,20 @@ export default function WithdrawalForm({
                           )}
                           {selectedNetwork?.network_id ===
                             network.network_id && (
-                            <svg
-                              className="w-5 h-5 text-[#1D8751]"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M5 13l4 4L19 7"
-                              />
-                            </svg>
-                          )}
+                              <svg
+                                className="w-5 h-5 text-[#1D8751]"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M5 13l4 4L19 7"
+                                />
+                              </svg>
+                            )}
                         </div>
                       ))}
                     </div>
@@ -2623,22 +2622,21 @@ export default function WithdrawalForm({
                   }}
                   onFocus={() => setIsCalculatingFromPay(true)}
                   placeholder="Enter amount"
-                  className={`w-full text-[#35353e] dark:bg-[var(--card-color)] dark:text-[#ffffff] rounded-xl sm:rounded-2xl px-3 sm:px-4 py-2.5 sm:py-2 pr-12 sm:pr-16 text-sm sm:text-lg focus:outline-none border appearance-none min-h-[44px] sm:min-h-0 ${
-                    apiValidationError
-                      ? "border-red-500"
-                      : isCalculating || isCalculatingReceive
-                        ? "border-[#1D8751]"
-                        : "border-[#A2A4A9FF] dark:border-[#35353E]"
-                  }`}
+                  className={`w-full text-[#35353e] dark:bg-[var(--card-color)] dark:text-[#ffffff] rounded-xl sm:rounded-2xl px-3 sm:px-4 py-2.5 sm:py-2 pr-12 sm:pr-16 text-sm sm:text-lg focus:outline-none border appearance-none min-h-[44px] sm:min-h-0 ${apiValidationError
+                    ? "border-red-500"
+                    : isCalculating || isCalculatingReceive
+                      ? "border-[#1D8751]"
+                      : "border-[#A2A4A9FF] dark:border-[#35353E]"
+                    }`}
                 />
                 <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
                   <span className="text-[#35353e] dark:text-[#ffffff] text-sm font-medium">
                     {selectedAsset
                       ? (
-                          selectedAsset.ticker ||
-                          selectedAsset.symbol ||
-                          "USDT"
-                        ).toUpperCase()
+                        selectedAsset.ticker ||
+                        selectedAsset.symbol ||
+                        "USDT"
+                      ).toUpperCase()
                       : "USDT"}
                   </span>
                 </div>
@@ -2678,13 +2676,12 @@ export default function WithdrawalForm({
                     setWalletAddress(pastedText); // Set the pasted text directly
                   }}
                   placeholder="Enter BEP20 wallet address (0x...)"
-                  className={`w-full text-[#35353e] dark:bg-[var(--card-color)] dark:text-[#ffffff] rounded-xl sm:rounded-2xl px-8 sm:px-9 py-2.5 sm:py-2 text-sm sm:text-lg focus:outline-none border min-h-[44px] sm:min-h-0 ${
-                    walletError
-                      ? "border-red-500"
-                      : walletAddress.trim() && !walletError
-                        ? "border-green-500"
-                        : "border-[#A2A4A9FF] dark:border-[#35353E]"
-                  }`}
+                  className={`w-full text-[#35353e] dark:bg-[var(--card-color)] dark:text-[#ffffff] rounded-xl sm:rounded-2xl px-8 sm:px-9 py-2.5 sm:py-2 text-sm sm:text-lg focus:outline-none border min-h-[44px] sm:min-h-0 ${walletError
+                    ? "border-red-500"
+                    : walletAddress.trim() && !walletError
+                      ? "border-green-500"
+                      : "border-[#A2A4A9FF] dark:border-[#35353E]"
+                    }`}
                 />
               </div>
               {walletError && (
@@ -2731,7 +2728,7 @@ export default function WithdrawalForm({
               </ul>
             </div>
           </div>
-       
+
         </div>
 
         {/* Submit Button for First Card */}
@@ -2751,15 +2748,14 @@ export default function WithdrawalForm({
               )}
               <button
                 type="button"
-                className={`w-full text-white dark:text-white text-sm sm:text-base font-medium py-3 sm:py-2 rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 transition-colors min-h-[44px] sm:min-h-0 ${
-                  isSubmitting ||
+                className={`w-full text-white dark:text-white text-sm sm:text-base font-medium py-3 sm:py-2 rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 transition-colors min-h-[44px] sm:min-h-0 ${isSubmitting ||
                   isTransactionSubmitted ||
                   isInfoModalOpen ||
                   getAmount > 15000 ||
                   !!balanceError
-                    ? "bg-gray-500 cursor-not-allowed"
-                    : "bg-[#1D8751] hover:bg-[#166b3e]"
-                }`}
+                  ? "bg-gray-500 cursor-not-allowed"
+                  : "bg-[#1D8751] hover:bg-[#166b3e]"
+                  }`}
                 onClick={handleFirstCardSubmit}
                 disabled={
                   isSubmitting ||
@@ -3005,7 +3001,7 @@ export default function WithdrawalForm({
           </div>
           {/* Disclaimer and Button outside the card */}
           <div className="flex flex-col gap-3 max-w-4xl mx-auto w-full px-2">
-            
+
 
             {/* Warning message for amounts over $15,000 */}
             {getAmount > 15000 && (
@@ -3018,11 +3014,10 @@ export default function WithdrawalForm({
               </div>
             )}
             <button
-              className={`w-full text-[#35353e] dark:text-[#788099] text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${
-                isSubmitting || isInfoModalOpen || getAmount > 15000
-                  ? "bg-gray-500 cursor-not-allowed"
-                  : "bg-[#1D8751] hover:bg-[#166b3e]"
-              }`}
+              className={`w-full text-[#35353e] dark:text-[#788099] text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${isSubmitting || isInfoModalOpen || getAmount > 15000
+                ? "bg-gray-500 cursor-not-allowed"
+                : "bg-[#1D8751] hover:bg-[#166b3e]"
+                }`}
               onClick={() => {
                 // Show OTP modal first, then success modal after verification
                 setSuccessAmount(payAmount);

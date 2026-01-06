@@ -940,13 +940,13 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
 
         {/* Submit Button for First Card */}
         {!isFirstCardSubmitted && (
-          <div className="mt-4 relative">
+          <div className="relative">
             <button
               type="button"
-              className={`w-full text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors text-white ${
+              className={`w-full text-base font-medium py-1.5 rounded-full flex items-center justify-center gap-2 transition-colors text-white ${
                 isTransferDisabled
                   ? "bg-gray-500 cursor-not-allowed"
-                  : "bg-[#1D8751] hover:bg-[#166b3e]"
+                  : "bg-[#1D8751] hover:bg-[#1D8751]/80"
               }`}
               onClick={handleFirstCardSubmit}
               disabled={isTransferDisabled}
@@ -1158,10 +1158,10 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
           {/* Final Submit Button */}
           <div className="flex flex-col gap-3 w-full px-2">
             <button
-              className={`w-full text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors text-white ${
+              className={`w-full text-base font-medium py-1.5 rounded-full flex items-center justify-center gap-2 transition-colors text-white ${
                 !bankAccountAddress.trim() || bankAddressError || !isAddressConfirmed
                   ? "bg-gray-500 cursor-not-allowed"
-                  : "bg-[#1D8751] hover:bg-[#166b3e]"
+                  : "bg-[#1D8751] hover:bg-[#1D8751]/80"
               }`}
               onClick={async () => {
                 if (!bankAccountAddress.trim()) {

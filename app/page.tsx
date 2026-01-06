@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useMarketingI18n } from "@/lib/useMarketingI18n";
 import Image from "next/image";
 import Link from "next/link";
@@ -154,6 +154,45 @@ interface Article {
   slug: string;
   createdAt?: string;
 }
+
+const FloatingParticles = ({ count = 12, delay = 1000 }) => {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setMounted(true), delay);
+    return () => clearTimeout(timer);
+  }, [delay]);
+
+  const particles = useMemo(() => {
+    return Array.from({ length: count }).map((_, i) => ({
+      id: i,
+      size: Math.random() * 6 + 5, // Size between 5px and 11px
+      duration: Math.random() * 20 + 10, // Duration between 10s and 30s
+      left: Math.random() * 100, // Random position from 0 to 100%
+      top: Math.random() * 100, // Random position from 0 to 100%
+    }));
+  }, [count]);
+
+  if (!mounted) return null;
+
+  return (
+    <div className="pointer-events-none absolute inset-0 overflow-hidden transition-opacity duration-1000 opacity-100">
+      {particles.map((p) => (
+        <span
+          key={p.id}
+          className="absolute rounded-full bg-[#1D8751]/50 animate-floatSlow"
+          style={{
+            width: `${p.size}px`,
+            height: `${p.size}px`,
+            left: `${p.left}%`,
+            top: `${p.top}%`,
+            animationDuration: `${p.duration}s`,
+          }}
+        />
+      ))}
+    </div>
+  );
+};
 
 export default function MarketingPage() {
   const { t } = useMarketingI18n();
@@ -368,30 +407,6 @@ export default function MarketingPage() {
     }, 5000);
   };
 
-  const FloatingParticles = ({ count = 12 }) => {
-    return (
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        {Array.from({ length: count }).map((_, i) => {
-          const size = Math.random() * 4 + 6 // Size between 6px and 10px
-          const duration = Math.random() * 20 + 10
-
-          return (
-            <span
-              key={i}
-              className="absolute rounded-full bg-[#1D8751]/50  animate-floatSlow"
-              style={{
-                width: `${size}px`,
-                height: `${size}px`,
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                animationDuration: `${duration}s`,
-              }}
-            />
-          )
-        })}
-      </div>
-    )
-  }
 
 
   return (
@@ -1185,7 +1200,7 @@ export default function MarketingPage() {
         {/* Dark gradient background with green dots */}
         <div className="absolute inset-0 overflow-hidden">
           {/* Green glowing particles background */}
-          <FloatingParticles count={7} />
+          <FloatingParticles count={6} />
 
           {/* <div className="absolute top-20 left-10 w-2 h-2 bg-[#1D8751] rounded-full opacity-60 blur-sm animate-pulse"></div>
           <div className="absolute top-40 right-20 w-3 h-3 bg-[#1D8751] rounded-full opacity-40 blur-md animate-pulse" style={{ animationDelay: '0.5s' }}></div>

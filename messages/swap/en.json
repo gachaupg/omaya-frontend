@@ -15,5 +15,10 @@
   "swap.error.loadingSwap": "Error Loading Swap",
   "swap.error.tryAgain": "Try Again",
   "swap.error.estimateTitle": "Estimate Error",
-  "swap.error.genericTitle": "Error"
+  "swap.error.genericTitle": "Error",
+  "swap.currencyFrom": "Currency from",
+  "swap.typeCurrency": "Type a currency",
+  "swap.calculating": "Calculating...",
+  "swap.iWantToSend": "I want to Send",
+  "swap.iWantToReceive": "I want to Receive"
 }

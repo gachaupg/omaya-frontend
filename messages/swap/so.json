@@ -15,5 +15,10 @@
   "swap.error.loadingSwap": "Khalad ku yimid soo dejinta Swap",
   "swap.error.tryAgain": "Isku day mar kale",
   "swap.error.estimateTitle": "Khalad Qiyaasta",
-  "swap.error.genericTitle": "Khalad"
+  "swap.error.genericTitle": "Khalad",
+  "swap.currencyFrom": "Lacagta laga dirayo",
+  "swap.typeCurrency": "Ku qor lacagta",
+  "swap.calculating": "Waa la xisaabinnayaa...",
+  "swap.iWantToSend": "Waxaan rabaa inaan diro",
+  "swap.iWantToReceive": "Waxaan rabaa inaan helo"
 }

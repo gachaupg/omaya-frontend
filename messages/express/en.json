@@ -1,4 +1,8 @@
 {
+  "express.amount": "Amount",
+  "express.youWillReceive": "You Will Receive",
+  "express.fromPaymentMethod": "From Payment Method",
+  "express.toPaymentMethod": "To Payment Method",
   "express.mode.deposit": "deposit",
   "express.mode.withdrawal": "withdrawal",
   "express.switchMode": "Switch to {{mode}} mode",
