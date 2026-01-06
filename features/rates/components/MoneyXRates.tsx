@@ -1137,7 +1137,7 @@ const MoneyXRates = () => {
                       showToast.error("Failed to paste from clipboard");
                     }
                   }}
-                  className={`flex items-center gap-1 ${isDark ? "bg-[#1D1D23]" : "bg-white"} border border-[#1D8751] text-[#1D8751] rounded-full px-3 py-2 ml-2 font-semibold text-sm hover:bg-[#1D8751] hover:text-white transition-colors flex-shrink-0 whitespace-nowrap`}
+                  className={`flex items-center justify-center gap-1 ${isDark ? "bg-[#1D1D23]" : "bg-white"} border border-[#1D8751] text-[#1D8751] rounded-full p-0 w-9 h-9 sm:w-auto sm:h-auto sm:px-3 sm:py-2 ml-2 font-semibold text-sm hover:bg-[#1D8751] hover:text-white transition-colors flex-shrink-0 whitespace-nowrap`}
                 >
                   <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
                     <path

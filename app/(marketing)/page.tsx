@@ -1215,16 +1215,16 @@ export default function MarketingPage() {
             <div className="relative space-y-8">
               {/* Green gradient background behind text & cards */}
               <div className="pointer-events-none absolute inset-0 -z-10">
-                <div className="absolute inset-0 bg-gradient-to-br from-[#1D8751]/25 via-[#0E5531]/20 to-transparent rounded-[40px] blur-3xl opacity-70"></div>
-                <div className="absolute -top-10 -right-10 w-56 h-56 bg-[#13B562]/25 rounded-full blur-3xl opacity-80"></div>
-                <div className="absolute bottom-[-40px] left-0 w-64 h-64 bg-[#1D8751]/20 rounded-full blur-3xl opacity-60"></div>
+                <div className="absolute inset-0 bg-gradient-to-br from-[#10B981]/25 via-[#059669]/20 to-transparent rounded-[40px] blur-3xl opacity-70"></div>
+                <div className="absolute -top-10 -right-10 w-56 h-56 bg-[#10B981]/30 rounded-full blur-3xl opacity-90"></div>
+                <div className="absolute bottom-[-40px] left-0 w-64 h-64 bg-[#10B981]/30 rounded-full blur-3xl opacity-80"></div>
               </div>
 
               {/* Main Heading */}
               <div>
                 <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 text-left">
                   <span className="text-white">Fast and </span>
-                  <span className="text-[#1D8751]">Secure</span>
+                  <span className="text-[#10B981]">Secure</span>
                   <span className="text-white"> Crypto Exchange</span>
                 </h3>
                 <p className="text-sm sm:text-base md:text-lg text-gray-300 max-w-xl">
@@ -1236,9 +1236,12 @@ export default function MarketingPage() {
               <div className="grid grid-cols-2 gap-4 md:gap-5">
                 {/* Low Transaction Fee */}
                 <div className="bg-gray-50/5 dark:bg-white/5 backdrop-blur-sm rounded-2xl p-5 border border-gray-200/10 dark:border-white/10">
-                  <div className="w-12 h-12 bg-[#1D8751] rounded-lg flex items-center justify-center mb-4">
-                    <DollarSign className="w-6 h-6 text-white" />
-                  </div>
+<div className="w-12 h-12 bg-[#34D399]/15 rounded-lg flex items-center justify-center mb-4">
+  <DollarSign className="w-6 h-6 text-[#34D399]/80" />
+</div>
+
+
+
                   <h4 className="text-gray-900 dark:text-white font-bold text-lg mb-2">Low Transaction Fee</h4>
                   <p className="text-gray-600 dark:text-white/70 text-sm">Industry-leading fees starting from 0.1%</p>
                 </div>
