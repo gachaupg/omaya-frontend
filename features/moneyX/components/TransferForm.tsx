@@ -899,7 +899,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
     !selectedToPaymentDetail;
 
   return (
-    <div className="flex flex-col dark:bg-[var(--bg-color)] pl-0 sm:pl-4 pr-2 sm:pr-0 mr-0 sm:mr-40 w-full sm:w-[calc(100%-12rem)]">
+    <div className="flex flex-col dark:bg-(--bg-color) pl-0 sm:pl-4 pr-2 sm:pr-0 mr-0 sm:mr-40 w-full sm:max-w-5xl">
       <h2 className="text-lg sm:text-xl font-bold mb-1 sm:mb-2 text-[#788099] dark:text-[#788099] inline-flex items-center gap-2">
         <span className="text-[#7e7e8f] dark:text-[#788099]">1-</span>
         Transfer Information
@@ -1212,7 +1212,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
                   }`}
               />
               {/* Bookmark icon - hidden on small screens */}
-              <span className="hidden sm:block mx-1 sm:mx-2 text-[#788099] cursor-pointer flex-shrink-0">
+              <span className="hidden sm:block mx-1 sm:mx-2 text-[#788099] cursor-pointer hrink-0">
                 <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
                   <path
                     d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"
@@ -1246,7 +1246,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
                     strokeLinejoin="round"
                   />
                 </svg>
-                <span className="hidden sm:inline">Paste</span>
+                <span className="sm:inline">Paste</span>
               </button>
             </div>
 

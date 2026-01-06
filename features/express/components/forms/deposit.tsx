@@ -2952,7 +2952,7 @@ export default function DepositForm({
   }, [selectedPaymentDetail]);
 
   return (
-    <div className="flex flex-col dark:bg-[var(--bg-color)] pl-0 sm:pl-4 pr-2 sm:pr-0 mr-0 sm:mr-40 w-full sm:w-[calc(100%-12rem)]">
+    <div className="flex flex-col dark:bg-[var(--bg-color)] pl-0 sm:pl-4 pr-2 sm:pr-0 mr-0 sm:mr-40 w-full sm:max-w-5xl">
       <h2 className="text-xl font-bold mb-2 text-[#788099] dark:text-[#788099] inline-flex items-center gap-2">
         <span className="text-[#7e7e8f] dark:text-[#788099]">1-</span>{" "}
         {t("express.transactionInfo", "Transaction Info")}
@@ -4251,7 +4251,7 @@ export default function DepositForm({
                     <div className="bg-white dark:bg-[#18181D] border border-[#1D8751] rounded-xl p-2 sm:p-3">
                       <ul className="list-none space-y-1">
                         <li className="flex items-start">
-                          <span className="w-2 h-2 mt-1 rounded-full bg-[#1D8751] inline-block mr-2"></span>
+                          <span className=" "></span>
                           <span className="text-[#35353e] dark:text-[#788099] text-xs">
                             Please write this Transaction Code in the bank
                             message or note section.
