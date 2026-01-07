@@ -1082,7 +1082,7 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
                 onChange={(event) =>
                   setIsAddressConfirmed(event.target.checked)
                 }
-                className="w-4 h-4 rounded border-[#1D8751] text-[#1D8751] focus:ring-[#1D8751]"
+                className="w-4 h-4 rounded border-[#1D8751] text-[#1D8751] focus:ring-[#1D8751] accent-[#1D8751]"
               />
               <span>I confirm that this bank account address is correct.</span>
             </label>

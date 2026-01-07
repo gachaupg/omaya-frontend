@@ -664,88 +664,61 @@ export default function MarketingPage() {
                       return (
                         <div
                           key={asset.id}
-                          className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4 border border-gray-200 dark:border-[#2A2A2A] hover:border-[#1D8751]/40 transition-colors relative overflow-visible"
+                          className="bg-gray-50 dark:bg-[#1D1D23] rounded-xl border border-gray-200 dark:border-[#2A2A2A] hover:border-[#1D8751]/40 transition-all duration-300 relative overflow-hidden flex flex-col group shadow-sm hover:shadow-md h-full"
                         >
-                          {/* Dark mode gradient background */}
-                          <div 
-                            className="hidden dark:block absolute inset-0 rounded-lg"
-                            style={{
-                              background: 'linear-gradient(to bottom, rgba(29, 29, 35, 0.95), rgba(29, 29, 35, 1))',
-                              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.3)'
-                            }}
-                          ></div>
-                          
-                          {/* Greenish radial gradient from top-right corner - lighter in light mode */}
-                          <div 
-                            className="absolute top-0 right-0 w-3/4 h-3/4 opacity-20 dark:opacity-30 pointer-events-none rounded-lg"
-                            style={{
-                              background: 'radial-gradient(circle at top right, rgba(29, 135, 81, 0.15) 0%, transparent 70%)'
-                            }}
-                          ></div>
-                          
-                          {/* Content wrapper with relative positioning */}
-                          <div className="relative z-10">
-                          {/* Icon header with colored bar cutting across */}
-                          <div className="relative mb-3 w-full -mx-4">
-                            {/* Colored horizontal bar cutting across - faded, edge to edge, no padding, full right coverage */}
-                            <div 
-                              className={`absolute top-1/2 left-0 h-16 ${iconBgColor} transform -translate-y-1/2 opacity-30`}
-                              style={{
-                                right: '-1rem',
-                                width: 'calc(100% + 2rem)'
-                              }}
-                            ></div>
-                            {/* Centered asset image */}
-                            <div className="relative z-10 flex items-center justify-center">
-                              <div className="w-14 h-14 rounded-full flex items-center justify-center">
+                          {/* Colored Header Background */}
+                          <div className={`h-24 w-full ${iconBgColor} bg-opacity-10 dark:bg-opacity-15 relative flex items-center justify-center transition-opacity group-hover:bg-opacity-20`}>
+                             {/* Logo Circle - Centered */}
+                             <div className="w-14 h-14 bg-white dark:bg-white rounded-full flex items-center justify-center shadow-lg transform group-hover:scale-105 transition-transform duration-300">
                                 <Image
                                   src={asset.image}
                                   alt={asset.name}
-                                  width={48}
-                                  height={48}
-                                  className="object-contain w-full h-full"
+                                  width={36}
+                                  height={36}
+                                  className="object-contain w-9 h-9"
                                   unoptimized
+                                  onError={(e) => {
+                                    (e.target as any).src = 'https://res.cloudinary.com/pitz/image/upload/v1764667057/salam_vizvxy.svg';
+                                  }}
                                 />
-                              </div>
-                            </div>
-                          </div>
-                          
-                          {/* Cryptocurrency Name - Left aligned */}
-                          <div className="text-gray-900 dark:text-white font-bold text-sm sm:text-base mb-1">
-                            {asset.name}
+                             </div>
                           </div>
 
-                          {/* Ticker Symbol - Left aligned */}
-                          <div className="text-gray-700 dark:text-white text-xs sm:text-sm mb-1 opacity-80">
-                            {asset.symbol}
-                          </div>
+                          {/* Card Body */}
+                          <div className="p-5 flex flex-col flex-grow">
+                             {/* Name and Symbol */}
+                             <div className="mb-6">
+                               <h3 className="font-bold text-gray-900 dark:text-white text-lg tracking-tight">{asset.name}</h3>
+                               <p className="text-gray-500 dark:text-gray-400 text-sm font-medium uppercase tracking-wide opacity-80">{asset.symbol}</p>
+                             </div>
 
-                          {/* Network Badge (e.g., BSC) - Responsive and dark mode */}
-                          {/* Removed asset.network as it does not exist */}
-                          
-                          {/* Price and Percentage Change - Left aligned */}
-                          <div className="flex items-baseline gap-2 mb-2">
-                            <div className="text-gray-900 dark:text-white font-bold text-base sm:text-lg">
-                              ${formattedPrice}
-                            </div>
-                            <div className={`text-xs sm:text-sm font-medium ${change >= 0 ? 'text-[#13B562]' : 'text-red-500'}`}>
-                              {change >= 0 ? '+' : ''}{change.toFixed(2)}%
-                            </div>
-                          </div>
-                          
-                          {/* Mini Line Chart */}
-                          <div className="h-8 w-full mt-2">
-                            <svg width="100%" height="100%" viewBox="0 0 100 30" preserveAspectRatio="none" className="overflow-visible">
-                              <polyline
-                                points="0,25 10,22 20,20 30,18 40,15 50,12 60,10 70,8 80,6 90,4 100,2"
-                                fill="none"
-                                stroke="#1D8751"
-                                strokeWidth="2"
-                                strokeDasharray="2,2"
-                                strokeLinecap="round"
-                              />
-                            </svg>
-                          </div>
+                             {/* Price Info and Chart */}
+                             <div className="mt-auto">
+                               <div className="flex justify-between items-end">
+                                 <div>
+                                   <div className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">
+                                     ${formattedPrice}
+                                   </div>
+                                   <div className={`text-xs font-bold px-2.5 py-1 rounded-md inline-block mt-1.5 ${change >= 0 ? 'bg-green-500/10 text-[#13B562]' : 'bg-red-500/10 text-red-500'}`}>
+                                     {change >= 0 ? '+' : ''}{change.toFixed(2)}%
+                                   </div>
+                                 </div>
+                                 
+                                 {/* Mini Chart */}
+                                 <div className="w-24 h-10 opacity-70 mb-1">
+                                   <svg width="100%" height="100%" viewBox="0 0 100 30" preserveAspectRatio="none" className="overflow-visible">
+                                      <polyline
+                                        points="0,25 10,22 20,20 30,18 40,15 50,12 60,10 70,8 80,6 90,4 100,2"
+                                        fill="none"
+                                        stroke={change >= 0 ? '#13B562' : '#EF4444'}
+                                        strokeWidth="2.5"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                      />
+                                    </svg>
+                                 </div>
+                               </div>
+                             </div>
                           </div>
                         </div>
                       );

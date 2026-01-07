@@ -108,7 +108,7 @@ const ForgetPassword = () => {
       </div>
 
       {/* Right side - Forgot password flow */}
-      <div className="w-1/2 p-8 flex flex-col justify-center">
+      <div className="w-full md:w-1/2 p-8 flex flex-col justify-center">
         <div className="max-w-md mx-auto w-full 2xl:max-w-3/4">
           <h1 className="text-2xl font-semibold dark:text-white text-gray-900 mb-2">
             {t("auth.forgot.title", "Forgot Password")}

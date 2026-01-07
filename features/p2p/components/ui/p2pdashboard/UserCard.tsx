@@ -182,14 +182,14 @@ const UserCard = () => {
           <div className="flex items-center gap-3 w-full sm:w-auto">
             {/* User Avatar with Edit Button */}
             <div className="relative">
-              <div className="h-14 w-14 rounded-full overflow-hidden relative bg-[#0F172A] flex items-center justify-center">
+              <div className="h-14 w-14 rounded-full overflow-hidden relative bg-gray-200 dark:bg-[#35353E] flex items-center justify-center">
                 {profileImage ? (
                   <Image
                     src={profileImage}
                     alt="User avatar"
                     width={56}
                     height={56}
-                    className="h-12 w-12 rounded-full object-cover object-center"
+                    className="h-14 w-14 rounded-full object-cover object-center"
                     unoptimized={true}
                     onError={(
                       e: React.SyntheticEvent<HTMLImageElement, Event>

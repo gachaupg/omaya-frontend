@@ -4456,7 +4456,7 @@ export default function DepositForm({
                 onChange={(event) =>
                   setIsAddressConfirmed(event.target.checked)
                 }
-                className="w-4 h-4 rounded border-[#1D8751] text-[#1D8751] focus:ring-[#1D8751]"
+                className="w-4 h-4 rounded border-[#1D8751] text-[#1D8751] focus:ring-[#1D8751] accent-[#1D8751]"
               />
               <span>{t("express.confirmWalletAddress", "I confirm that this wallet address is correct.")}</span>
             </label>
@@ -4542,7 +4542,7 @@ export default function DepositForm({
                 type="checkbox"
                 checked={termsAccepted}
                 onChange={(e) => setTermsAccepted(e.target.checked)}
-                className="mt-0.5 w-5 h-5 rounded-none border-2 border-[#F79330] text-[#F79330] focus:ring-[#F79330] appearance-none bg-transparent checked:bg-[#F79330] checked:border-[#F79330] flex-shrink-0"
+                className="mt-0.5 w-5 h-5 rounded border-2 border-[#1D8751] text-white focus:ring-[#1D8751] appearance-none bg-transparent checked:bg-[#1D8751] checked:border-[#1D8751] flex-shrink-0 accent-[#1D8751]"
               />
               <span className="text-[#35353e] dark:text-[#788099]">
                 I've read and agree to the OMAYA EXCHANGE{" "}

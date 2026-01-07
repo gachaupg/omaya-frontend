@@ -69,12 +69,12 @@ const P2pProfile = ({
         <div className="flex flex-col gap-3">
           <div className="flex items-center gap-3 sm:gap-4">
             {/* User Avatar */}
-            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full overflow-hidden bg-[#1D8751] dark:bg-[#1D8751] flex items-center justify-center">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full overflow-hidden bg-gray-200 dark:bg-[#35353E] flex items-center justify-center">
               {userProfile?.photo ? (
                 <img  
                   src={userProfile.photo}
                   alt="User Avatar"
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover rounded-full"
                   onError={(e) => {
                     // Fallback to initials if image fails to load
                     const target = e.target as HTMLImageElement;

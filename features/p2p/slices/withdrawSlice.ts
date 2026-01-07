@@ -27,9 +27,31 @@ export const fetchWithdrawals = createAsyncThunk(
 
 export const createWithdrawal = createAsyncThunk(
   "withdrawals/createWithdrawal",
-  async (data: CreateP2PWithdrawRequest) => {
-    const response = await api.createWithdrawal(data);
-    return response;
+  async (data: CreateP2PWithdrawRequest, { rejectWithValue }) => {
+    try {
+      const response = await api.createWithdrawal(data);
+      return response;
+    } catch (error: any) {
+      // Parse error response to get user-friendly message
+      let errorMessage = "Failed to submit withdrawal";
+      
+      if (error.response?.data) {
+        const responseData = error.response.data;
+        if (responseData.error) {
+          errorMessage = responseData.error;
+        } else if (responseData.message) {
+          errorMessage = responseData.message;
+        } else if (responseData.detail) {
+          errorMessage = responseData.detail;
+        } else if (typeof responseData === "string") {
+          errorMessage = responseData;
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      return rejectWithValue(errorMessage);
+    }
   }
 );
 
@@ -87,7 +109,7 @@ const withdrawSlice = createSlice({
       })
       .addCase(createWithdrawal.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || "Failed to create withdrawal";
+        state.error = (action.payload as string) || action.error.message || "Failed to create withdrawal";
       })
       // Verify Withdrawal
       .addCase(verifyWithdrawal.pending, (state) => {
