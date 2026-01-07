@@ -369,7 +369,7 @@ export default function MarketingPage() {
     },
     {
       label: "Countries",
-      value: "150+",
+      value: "50+",
       icon: Globe,
       gradient: "from-[#AD46FF] to-[#F6339A]",
     },
