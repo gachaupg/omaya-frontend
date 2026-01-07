@@ -1208,41 +1208,31 @@ export default function ExchangeForm({
       "relative flex w-full items-center justify-center overflow-hidden transition-all duration-200",
       "px-3 sm:px-4 md:px-5 lg:px-6 xl:px-7 py-2 sm:py-2.5 md:py-3 lg:py-3.5 min-h-[44px] sm:min-h-[48px] md:min-h-[52px] lg:min-h-[56px]",
       isActive
-        ? "bg-transparent text-white"
+        ? "bg-transparent"
         : isDark
-          ? "bg-[#0e1018] text-[#7C8A97]"
-          : "bg-gray-300 text-[#627180]"
+          ? "bg-[#0e1018]"
+          : "bg-gray-300",
+      // Text Alignment and Transformations to match Sidebar
+      "capitalize font-bold"
     ].join(" ");
 
     // We don't use the normal border to draw the joint; it's all done with
     // the small slanted segments below.
     const borderColors = "transparent";
 
+    // Text Color Logic to match Sidebar
+    // Sidebar Active: Light Mode = text-[#727272] (Grey), Dark Mode = text-white.
+    // Sidebar Inactive: text-[#727272] (Grey) for both.
+    const textColorClass = isActive
+      ? (isDark ? "text-white" : "text-[#727272]")
+      : "text-[#727272]";
+
     const labelWrapperClasses = [
-      "relative z-[1] flex items-center",
-      label?.trim() && variant !== "moneyx" ? "gap-1 sm:gap-2" : "gap-0",
-      "text-[10px] sm:text-xs md:text-sm lg:text-base font-semibold tracking-wide transition-colors whitespace-nowrap"
+      "relative z-[1] flex items-center justify-center",
+      "gap-0", // Gap handled inside specific labels
+      "text-[10px] sm:text-xs md:text-sm lg:text-base transition-colors whitespace-nowrap",
+      textColorClass
     ].join(" ");
-
-    // Uniform text color for all tabs in light mode (same color for active and inactive)
-    const expressTextColorClass = isDark
-      ? "text-white" // Dark mode: always white for consistency
-      : "text-[#727272]"; // Light mode: always grey
-
-    const textColorClass = expressTextColorClass;
-
-    // Use Group_9_momvgo.png for active express tab in light mode
-    const expressActiveIconSrc = variant === "express" && isActive && !isDark
-      ? "https://res.cloudinary.com/pitz/image/upload/v1764698096/Group_9_momvgo.png"
-      : "https://res.cloudinary.com/pitz/image/upload/v1764698106/Group_8_hjhlxe.png";
-    const expressInactiveIconSrc =
-      "https://res.cloudinary.com/pitz/image/upload/v1764698096/Group_9_momvgo.png";
-
-    // MoneyX icon: use green X when active in dark mode, dark X for active in light mode
-    // For inactive state in dark mode, also use green X to maintain consistent color and visibility
-    const moneyXIconSrc = isDark
-      ? "https://res.cloudinary.com/pitz/image/upload/v1764663236/Group_7_ichuyz.png" // Green X for dark mode (both active and inactive)
-      : "https://res.cloudinary.com/pitz/image/upload/v1764661972/Group_6_ohph9q.png"; // Dark X for light mode
 
     const ariaLabel =
       variant === "express"
@@ -1251,33 +1241,65 @@ export default function ExchangeForm({
           ? t("marketing.exchange.tabs.moneyx", "Money X")
           : label || t("marketing.exchange.tabs.swap", "Swap");
 
-    // Process label for moneyx variant - replace "X" with icon
+    // Icon Sources
+    // Express / Exchange Icons (from Sidebar)
+    // Light Mode / Inactive: Group_9 (Usually Dark/Grey X)
+    // Dark Mode Active: Group_8 (Usually White/Green X)
+    const exchangeIconSrc1 = "https://res.cloudinary.com/pitz/image/upload/v1764698096/Group_9_momvgo.png";
+    const exchangeIconSrc2 = "https://res.cloudinary.com/pitz/image/upload/v1764698106/Group_8_hjhlxe.png";
+
+    // MoneyX Icons (from Sidebar)
+    // Light Mode / Inactive: Group_6 (Dark X)
+    // Dark Mode Active: Group_7 (Green/White X)
+    const moneyXIconSrc1 = "https://res.cloudinary.com/pitz/image/upload/v1764661972/Group_6_ohph9q.png";
+    const moneyXIconSrc2 = "https://res.cloudinary.com/pitz/image/upload/v1764663236/Group_7_ichuyz.png";
+
+    // Process label rendering
     const renderLabel = () => {
-      if (variant === "moneyx" && label) {
-        // Replace "X" with icon (case insensitive, handles "Money X" or "Money x")
-        const parts = label.split(/[Xx]/);
-        if (parts.length === 2) {
-          // Split into "Money" and everything after X
-          return (
-            <>
-              <span className={`${textColorClass} text-[10px] sm:text-xs md:text-sm lg:text-base xl:text-lg font-semibold`}>{parts[0].trim()}</span>
+      if (variant === "express") {
+        // "E(Icon)" Style
+        return (
+          <span className="flex items-center gap-0.5">
+            <span className={textColorClass}>E</span>
+            <span className="relative flex items-center mt-1 sm:mt-1.5 md:mt-2">
               <img
-                src={moneyXIconSrc}
+                src={exchangeIconSrc1}
+                className={`h-4.5 -mt-0.5 -ml-0.5 w-auto object-contain ${isActive && isDark ? "hidden" : "block"}`}
                 alt="X"
-                className="inline-block w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 object-contain -ml-0.5 mt-2 sm:mt-2.5 md:mt-3 lg:mt-3.5"
-                style={{ verticalAlign: 'middle' }}
-                onError={(e) => {
-                  // Fallback if image fails to load
-                  console.error('MoneyX icon failed to load:', moneyXIconSrc);
-                }}
               />
-            </>
-          );
-        }
-        // Fallback if pattern doesn't match
-        return <span className={textColorClass}>{label}</span>;
+              {isActive && isDark && (
+                <img
+                  src={exchangeIconSrc2}
+                  className="h-4.5 -mt-0.5 -ml-0.5 w-auto object-contain block"
+                  alt="X"
+                />
+              )}
+            </span>
+          </span>
+        );
+      } else if (variant === "moneyx") {
+        // "MONEY(Icon)" Style
+        return (
+          <span className="flex items-center gap-0.5">
+            <span className={textColorClass}>Money</span>
+            <span className="relative flex items-center mt-1 sm:mt-1.5 md:mt-2">
+              <img
+                src={moneyXIconSrc1}
+                className={`h-4.5 -mt-0.5 object-contain ${isActive && isDark ? "hidden" : "block"}`}
+                alt="X"
+              />
+              {isActive && isDark && (
+                <img
+                  src={moneyXIconSrc2}
+                  className="h-4.5 -mt-0.5 w-auto object-contain block"
+                  alt="X"
+                />
+              )}
+            </span>
+          </span>
+        );
       }
-      // Default rendering for other variants
+      // Default rendering for Swap 
       return label?.trim() ? <span className={textColorClass}>{label}</span> : null;
     };
 
@@ -1397,18 +1419,13 @@ export default function ExchangeForm({
         <div className={buttonClasses}>
           <span className={labelWrapperClasses}>
             {renderLabel()}
-            {variant === "express" && (
-              <img
-                src={isActive ? expressActiveIconSrc : expressInactiveIconSrc}
-                alt="Express Exchange"
-                className="mt-1 sm:mt-1.5 md:mt-2 ml-0 h-[1em] w-auto object-contain flex-shrink-0"
-              />
-            )}
           </span>
         </div>
       </button>
     );
   };
+
+
 
   const AmountInput: React.FC<{
     amount: string;
