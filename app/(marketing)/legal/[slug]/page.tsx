@@ -180,7 +180,7 @@ export default async function LegalPolicyPage({ params }: PolicyPageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-[#EEF1F4] dark:bg-[#0A0A0A] pt-32 pb-16 px-4">
+    <div className="min-h-screen bg-[#EEF1F4] dark:bg-background pt-32 pb-16 px-4">
       <div className="max-w-4xl mx-auto bg-white dark:bg-[#1D1D23] rounded-3xl shadow-xl border border-gray-200 dark:border-[#2A2A30] p-8 md:p-12">
         <header className="mb-8">
           <p className="text-sm text-[#1D8751] font-semibold uppercase tracking-wide">
