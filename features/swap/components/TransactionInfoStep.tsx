@@ -543,8 +543,8 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
 
       {/* Disclaimer */}
       <div className="flex items-center gap-2 text-xs sm:text-sm dark:text-[#d5d7e2] text-gray-600 mb-3">
-        <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-[#1D8751] rounded-full flex items-center justify-center flex-shrink-0">
-          <span className="text-[#1D8751] text-[10px] font-bold">i</span>
+        <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-[#E23D3A] rounded-full flex items-center justify-center flex-shrink-0">
+          <span className="text-[#E23D3A] text-[10px] font-bold">i</span>
         </div>
         <p>
           {t("swap.disclaimer", "This is only an estimated price based on current market rates. The final price will be confirmed when we receive the funds.")}
