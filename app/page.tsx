@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
 import type { RootState } from "@/store/rootReducer";
 import { tokens } from "@/styles/tokens";
-import { Play, MessageCircle, Plus, BarChart, Globe, Lock, DollarSign, Users, TrendingUp, Shield, Zap, Gift, UserPlus, ArrowRight, Building2, Calendar, Clock, MapPin, Phone, Mail, Send, ChevronDown, ChevronUp, ArrowLeftRight, HelpCircle, Wallet, BarChart3 } from "lucide-react";
+import { Play, MessageCircle, Plus, BarChart, Globe, Lock, DollarSign, Users, TrendingUp, Shield, Zap, Gift, UserPlus, ArrowRight, Building2, Calendar, Clock, MapPin, Phone, Mail, Send, ChevronDown, ChevronUp, ArrowLeftRight, HelpCircle, Wallet, BarChart3, Award } from "lucide-react";
 import ExchangeForm from "@/components/ExchangeForm";
 import { useBlog } from "@/features/blogs/hooks/blog";
 import { BlogPost } from "@/features/blogs/types";
@@ -18,9 +18,8 @@ import { useSimpleMarkets } from "@/features/markets/hooks/useSimpleMarkets";
 
 import { HiOutlineDeviceMobile } from "react-icons/hi";
 import { FaRegStar } from "react-icons/fa";
-import { Sparkles } from "lucide-react"
 import { MdCurrencyBitcoin } from "react-icons/md";
-import { ShieldCheck } from "lucide-react";
+import { ShieldCheck, CircleCheckBig, Sparkles, Earth } from "lucide-react";
 
 import { GoDotFill } from "react-icons/go";
 
@@ -1047,7 +1046,10 @@ export default function MarketingPage() {
             {/* Content wrapper without visible border */}
             <div className="rounded-b-3xl">
               {/* Inner content card (flat top, rounded bottom) */}
-              <div className="relative bg-gray-50 dark:bg-[var(--card-color)] rounded-b-3xl p-5 sm:p-6 md:p-8 shadow-sm overflow-hidden">
+              <div className="relative bg-gray-50 dark:bg-(--card-color) rounded-b-3xl p-5 sm:p-6 md:p-8 shadow-sm overflow-hidden">
+               {/* green glow bg */}
+               <div className="absolute bg-[#1D8751] blur-3xl w-90 h-70 bottom-30 right-40 opacity-20 z-1" />
+               
                 {/* Overlay to fade card background to page background at bottom */}
                 <div
                   className="absolute inset-x-0 bottom-0 h-3/4 rounded-b-3xl pointer-events-none dark:hidden"
@@ -1102,26 +1104,25 @@ export default function MarketingPage() {
                   {/* Right Section - Text and Feature Cards */}
                   <div className="space-y-6">
                     {/* ABOUT OMAYA Header */}
-                    <div className="bg-[#1D8751]/10 dark:bg-[#1D8751]/20 border border-[#1D8751] rounded-3xl px-4 py-2 inline-block">
+                    <div className="bg-[#1D8751]/15 border border-[#1D8751]/25 rounded-3xl px-4 py-2 inline-block">
                       <div className="text-[#1D8751] text-sm font-medium uppercase tracking-wide">
                         ABOUT OMAYA
                       </div>
                     </div>
 
                     {/* Title */}
-                    <h2 className="text-3xl md:text-4xl 2xl:text-5xl font-bold text-gray-900 dark:text-white">
+                    <h2 className="text-3xl md:text-4xl 2xl:text-5xl font-semibold text-gray-900 dark:text-white">
                       <span className="text-[#1D8751]">Safe & Reliable</span>{" "}
                       <span className="text-gray-900 dark:text-white">Cryptocurrency Exchange Platform</span>
                     </h2>
 
                     {/* Descriptive Text */}
-                    <p className="text-gray-700 dark:text-white/80 text-sm md:text-base leading-relaxed">
+                    <p className="text-[#788099] text-sm md:text-base leading-relaxed">
                       Established in 2019, OMAYA.io is a leading digital asset and cryptocurrency trading platform in Somalia,
                       licensed by the{" "}
                       <span className="text-[#1D8751] font-semibold">Central Bank of Somalia</span>.
                       With a team deeply rooted in East Africa, OMAYA.io is built to serve the region&apos;s unique financial
                       landscape by delivering secure, compliant, and localized trading and exchange solutions.
-                      <br />
                       <br />
                       At OMAYA.io, we go beyond transactions. We are committed to empowering our users through education,
                       transparency, and access to expert insights that support informed financial decision-making. Backed by
@@ -1130,62 +1131,68 @@ export default function MarketingPage() {
                     </p>
 
                     {/* Feature Boxes - 2x2 Grid */}
-                    <div className="grid grid-cols-2 gap-4 mt-8">
-                      {/* Bank-Grade Security */}
-                      <div className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4">
-                        <div className="w-10 h-10 bg-blue-400/20 rounded-lg flex items-center justify-center mb-3">
-                          <Shield className="w-6 h-6 text-blue-400" />
+                    <div className="grid grid-cols-2 gap-4 mt-3">
+                      {[
+                        {
+                          icon: Shield,
+                          title: "Bank-Grade Security",
+                          desc: "Advanced encryption & multi-layer protection",
+                          bgColor: "bg-linear-to-br from-[#2B7FFF] to-[#00B8DB]",
+                        },
+                        {
+                          icon: Award,
+                          title: "Licensed & Regulated",
+                          desc: "Approved by Central Bank of Somalia",
+                          bgColor: "bg-linear-to-br from-[#AD46FF] to-[#F6339A]",
+                        },
+                        {
+                          icon: Users,
+                          title: "100K+ Active Users",
+                          desc: "Trusted by traders across East Africa",
+                          bgColor: "bg-linear-to-br from-[#1D8751] to-[#309A64]",
+                        },
+                        {
+                          icon: TrendingUp,
+                          title: "99.9% Uptime",
+                          desc: "Reliable trading 24/7/365",
+                          bgColor: "bg-linear-to-br from-[#FF6900] to-[#FB2C36]",
+                        },
+                      ].map((feature, index) => (
+                        <div
+                          key={index}
+                          className="flex items-start gap-3 sm:gap-4 bg-gray-50 dark:bg-[#18181D] rounded-2xl p-4 border border-border dark:border-secondary/15"
+                        >
+                          <div className={`w-10 h-10 ${feature.bgColor} rounded-xl flex items-center justify-center mb-3 shrink-0`}>
+                            <feature.icon className={`w-6 h-6`} />
+                          </div>
+                          <div>
+                            <div className="text-gray-900 dark:text-white font-bold text-sm mb-1">
+                              {feature.title}
+                            </div>
+                            <div className="text-gray-700 dark:text-white/70 text-xs leading-relaxed">
+                              {feature.desc}
+                            </div>
+                          </div>
                         </div>
-                        <div className="text-gray-900 dark:text-white font-bold text-sm mb-1">Bank-Grade Security</div>
-                        <div className="text-gray-700 dark:text-white text-xs">Advanced encryption & multi-layer protection</div>
-                      </div>
-
-                      {/* Licensed & Regulated */}
-                      <div className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4">
-                        <div className="w-10 h-10 bg-pink-400/20 rounded-lg flex items-center justify-center mb-3">
-                          <Lock className="w-6 h-6 text-pink-400" />
-                        </div>
-                        <div className="text-gray-900 dark:text-white font-bold text-sm mb-1">Licensed & Regulated</div>
-                        <div className="text-gray-700 dark:text-white text-xs">Approved by Central Bank of Somalia</div>
-                      </div>
-
-                      {/* 10K Active users */}
-                      <div className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4">
-                        <div className="w-10 h-10 bg-green-400/20 rounded-lg flex items-center justify-center mb-3">
-                          <Users className="w-6 h-6 text-green-400" />
-                        </div>
-                        <div className="text-gray-900 dark:text-white font-bold text-sm mb-1">10K Active users</div>
-                        <div className="text-gray-700 dark:text-white/70 text-xs">Trusted by traders across East Africa</div>
-                      </div>
-
-                      {/* 99.9% Uptime */}
-                      <div className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4">
-                        <div className="w-10 h-10 bg-orange-400/20 rounded-lg flex items-center justify-center mb-3">
-                          <TrendingUp className="w-6 h-6 text-orange-400" />
-                        </div>
-                        <div className="text-gray-900 dark:text-white font-bold text-sm mb-1">99.9% Uptime</div>
-                        <div className="text-gray-700 dark:text-white/70 text-xs">Reliable trading 24/7/365</div>
-                      </div>
+                      ))}
                     </div>
 
                     {/* Bottom Tags/Buttons */}
                     <div className="flex flex-wrap gap-3 mt-6">
-                      <div className="border border-[#1D8751] rounded-full px-4 py-2 flex items-center gap-2 bg-gray-50 dark:bg-transparent">
-                        <Lock className="w-4 h-4 text-[#1D8751]" />
-                        <span className="text-gray-900 dark:text-white text-xs font-medium">Licensed Exchange</span>
-                      </div>
-                      <div className="border border-[#1D8751] rounded-full px-4 py-2 flex items-center gap-2 bg-gray-50 dark:bg-transparent">
-                        <Globe className="w-4 h-4 text-[#1D8751]" />
-                        <span className="text-gray-900 dark:text-white text-xs font-medium">Global Reach</span>
-                      </div>
-                      <div className="border border-[#1D8751] rounded-full px-4 py-2 flex items-center gap-2 bg-gray-50 dark:bg-transparent">
-                        <Zap className="w-4 h-4 text-[#1D8751]" />
-                        <span className="text-gray-900 dark:text-white text-xs font-medium">Fast Execution</span>
-                      </div>
-                      <div className="border border-[#1D8751] rounded-full px-4 py-2 flex items-center gap-2 bg-gray-50 dark:bg-transparent">
-                        <Shield className="w-4 h-4 text-[#1D8751]" />
-                        <span className="text-gray-900 dark:text-white text-xs font-medium">Verified Platform</span>
-                      </div>
+                      {[
+                        { icon: Lock, label: "Licensed Exchange" },
+                        { icon: Earth, label: "Global Reach" },
+                        { icon: Zap, label: "Fast Execution" },
+                        { icon: CircleCheckBig, label: "Verified Platform" },
+                      ].map((item, index) => (
+                        <div
+                          key={index}
+                          className="border border-[#1D8751]/25 bg-[#1D8751]/15 rounded-full px-4 py-2 flex items-center gap-2"
+                        >
+                          <item.icon className="w-4 h-4 text-[#1D8751]" />
+                          <span className="text-[#1D8751] text-xs font-medium">{item.label}</span>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>
