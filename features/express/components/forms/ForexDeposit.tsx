@@ -97,7 +97,7 @@ export default function ForexDeposit() {
   );
 
   return (
-    <div className="flex flex-col dark:bg-[#18181D] pl-0 sm:pl-4 pr-2 sm:pr-0 mr-0 sm:mr-40 w-full sm:w-[calc(100%-12rem)]">
+    <div className="flex flex-col dark:bg-[#18181D] pl-0 sm:pl-4 pr-2 sm:pr-0 mr-0 sm:mr-40 w-full sm:max-w-5xl">
       <form onSubmit={handleSubmit}>
         <h2 className="text-lg font-semibold mb-3 text-[#788099] inline-flex items-center gap-2">
           <span className="text-[#7e7e8f] dark:text-[#788099]">1-</span> Forex Exchange Info
