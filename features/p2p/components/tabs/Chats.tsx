@@ -519,10 +519,10 @@ export const Chats: React.FC = () => {
     // Use displayedMessages which includes optimistic messages
     const allMessages = displayedMessages;
     
-    // Check if chat is closed - only show if status is "Complete"/"completed" or "Responded"/"responded"
+    // Check if chat is closed - disable if status is "Complete"/"completed", "Responded"/"responded", or "Cancelled"/"cancelled"
     const chatStatus = selectedUser ? (selectedUser as any).status : null;
     const normalizedStatus = chatStatus ? String(chatStatus).toLowerCase() : null;
-    const isChatClosed = normalizedStatus === "complete" || normalizedStatus === "responded";
+    const isChatClosed = normalizedStatus === "complete" || normalizedStatus === "completed" || normalizedStatus === "responded" || normalizedStatus === "cancelled";
     
     if (allMessages.length === 0) {
       return (
@@ -627,7 +627,7 @@ export const Chats: React.FC = () => {
               <div className="flex-1">
                 <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">Chat Closed</h3>
                 <p className="text-xs text-gray-600 dark:text-gray-500 leading-relaxed">
-                  This chat is now closed as there are no active or pending orders.
+                  This chat is now closed as the trade has been {normalizedStatus === "cancelled" ? "cancelled" : "completed"}.
                 </p>
                 <p className="text-xs text-gray-600 dark:text-gray-500 leading-relaxed mt-1">
                   Please note that the chat will automatically reopen only when there is a new order between you and this user.
@@ -885,8 +885,8 @@ export const Chats: React.FC = () => {
                       : (() => {
                           const status = selectedUser ? (selectedUser as any).status : null;
                           const normalizedStatus = status ? String(status).toLowerCase() : null;
-                          const isClosed = normalizedStatus === "complete" || normalizedStatus === "responded";
-                          return isClosed ? "Chat is closed - No active orders" : "Type your message...";
+                          const isClosed = normalizedStatus === "complete" || normalizedStatus === "completed" || normalizedStatus === "responded" || normalizedStatus === "cancelled";
+                          return isClosed ? "Chat is closed - Trade completed or cancelled" : "Type your message...";
                         })()
                   }
                   value={messageInput}
@@ -898,7 +898,7 @@ export const Chats: React.FC = () => {
                     (() => {
                       const status = selectedUser ? (selectedUser as any).status : null;
                       const normalizedStatus = status ? String(status).toLowerCase() : null;
-                      return normalizedStatus === "complete" || normalizedStatus === "responded";
+                      return normalizedStatus === "complete" || normalizedStatus === "completed" || normalizedStatus === "responded" || normalizedStatus === "cancelled";
                     })()
                   }
                   className="w-full rounded-full bg-white dark:bg-[#111827] border border-gray-300 dark:border-[#374151] px-4 py-2 text-xs sm:text-sm text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-[#6B7280] focus:outline-none focus:border-[#1D8751] disabled:opacity-50 disabled:cursor-not-allowed"
@@ -941,14 +941,14 @@ export const Chats: React.FC = () => {
                   (() => {
                     const status = selectedUser ? (selectedUser as any).status : null;
                     const normalizedStatus = status ? String(status).toLowerCase() : null;
-                    return normalizedStatus === "complete" || normalizedStatus === "responded";
+                    return normalizedStatus === "complete" || normalizedStatus === "completed" || normalizedStatus === "responded" || normalizedStatus === "cancelled";
                   })()
                 }
                 className={`w-8 h-8 rounded-full bg-[#1D8751] text-white flex items-center justify-center transition-opacity ${
                   (() => {
                     const status = selectedUser ? (selectedUser as any).status : null;
                     const normalizedStatus = status ? String(status).toLowerCase() : null;
-                    const isClosed = normalizedStatus === "complete" || normalizedStatus === "responded";
+                    const isClosed = normalizedStatus === "complete" || normalizedStatus === "completed" || normalizedStatus === "responded" || normalizedStatus === "cancelled";
                     return termsAccepted && 
                            (messageInput.trim() || uploadedImages.length > 0) && 
                            !isSending &&
@@ -963,7 +963,7 @@ export const Chats: React.FC = () => {
                     : (() => {
                         const status = selectedUser ? (selectedUser as any).status : null;
                         const normalizedStatus = status ? String(status).toLowerCase() : null;
-                        const isClosed = normalizedStatus === "complete" || normalizedStatus === "responded";
+                        const isClosed = normalizedStatus === "complete" || normalizedStatus === "completed" || normalizedStatus === "responded" || normalizedStatus === "cancelled";
                         return isClosed ? "Chat is closed" : (isSending ? "Sending..." : "Send message");
                       })()
                 }

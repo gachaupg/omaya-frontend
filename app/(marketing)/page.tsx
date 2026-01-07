@@ -1215,16 +1215,16 @@ export default function MarketingPage() {
             <div className="relative space-y-8">
               {/* Green gradient background behind text & cards */}
               <div className="pointer-events-none absolute inset-0 -z-10">
-                <div className="absolute inset-0 bg-gradient-to-br from-[#1D8751]/25 via-[#0E5531]/20 to-transparent rounded-[40px] blur-3xl opacity-70"></div>
-                <div className="absolute -top-10 -right-10 w-56 h-56 bg-[#13B562]/25 rounded-full blur-3xl opacity-80"></div>
-                <div className="absolute bottom-[-40px] left-0 w-64 h-64 bg-[#1D8751]/20 rounded-full blur-3xl opacity-60"></div>
+                <div className="absolute inset-0 bg-gradient-to-br from-[#10B981]/25 via-[#059669]/20 to-transparent rounded-[40px] blur-3xl opacity-70"></div>
+                <div className="absolute -top-10 -right-10 w-56 h-56 bg-[#10B981]/30 rounded-full blur-3xl opacity-90"></div>
+                <div className="absolute bottom-[-40px] left-0 w-64 h-64 bg-[#10B981]/30 rounded-full blur-3xl opacity-80"></div>
               </div>
 
               {/* Main Heading */}
               <div>
                 <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 text-left">
                   <span className="text-white">Fast and </span>
-                  <span className="text-[#1D8751]">Secure</span>
+                  <span className="text-[#10B981]">Secure</span>
                   <span className="text-white"> Crypto Exchange</span>
                 </h3>
                 <p className="text-sm sm:text-base md:text-lg text-gray-300 max-w-xl">
@@ -1236,9 +1236,12 @@ export default function MarketingPage() {
               <div className="grid grid-cols-2 gap-4 md:gap-5">
                 {/* Low Transaction Fee */}
                 <div className="bg-gray-50/5 dark:bg-white/5 backdrop-blur-sm rounded-2xl p-5 border border-gray-200/10 dark:border-white/10">
-                  <div className="w-12 h-12 bg-[#1D8751] rounded-lg flex items-center justify-center mb-4">
-                    <DollarSign className="w-6 h-6 text-white" />
-                  </div>
+<div className="w-12 h-12 bg-[#34D399]/15 rounded-lg flex items-center justify-center mb-4">
+  <DollarSign className="w-6 h-6 text-[#34D399]/80" />
+</div>
+
+
+
                   <h4 className="text-gray-900 dark:text-white font-bold text-lg mb-2">Low Transaction Fee</h4>
                   <p className="text-gray-600 dark:text-white/70 text-sm">Industry-leading fees starting from 0.1%</p>
                 </div>
@@ -1305,10 +1308,93 @@ export default function MarketingPage() {
         </div>
       </section>
 
-    {/* Benefits Section*/}
-   <div className="w-full bg-white dark:bg-[var(--bg-color)]">
-    <img className="w-full h-auto object-contain" src="https://res.cloudinary.com/pitz/image/upload/v1765800227/Screenshot_2025-12-15_150329_l1z3zp.png" alt="" />
-   </div>
+    {/* Benefits Section - Redesigned */}
+    <section className="w-full bg-gradient-to-br from-[#0B4A2C] via-[#0E5531] to-[#0B4A2C] dark:from-[#0B4A2C] dark:via-[#0E5531] dark:to-[#0B4A2C] py-12 md:py-16 lg:py-20 relative overflow-hidden">
+      {/* Decorative background elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-[#1D8751]/20 rounded-full blur-3xl opacity-40"></div>
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-[#13B562]/15 rounded-full blur-3xl opacity-30"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-white/5 rounded-full blur-3xl opacity-20"></div>
+      </div>
+
+      <div className="container mx-auto px-4 md:px-6 lg:px-8 xl:px-12 2xl:px-16 relative z-10">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 lg:gap-10 max-w-7xl mx-auto">
+          
+          {/* Card 1: Absolute Safety */}
+          <div className="group">
+            <div className="flex flex-col items-start gap-4 p-6 md:p-8 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-300">
+              {/* Icon */}
+              <div className="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2L3 7V11C3 16.55 6.84 21.74 12 23C17.16 21.74 21 16.55 21 11V7L12 2Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M9 12L11 14L15 10" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+              
+              {/* Content */}
+              <div className="flex flex-col gap-2">
+                <h3 className="text-white text-xl md:text-2xl font-bold">
+                  Absolute Safety
+                </h3>
+                <p className="text-white/70 text-sm md:text-base leading-relaxed">
+                  Exchange confidently with OMAYA, where safety is our top priority.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Card 2: Fast Deposits & Withdrawals */}
+          <div className="group">
+            <div className="flex flex-col items-start gap-4 p-6 md:p-8 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-300">
+              {/* Icon */}
+              <div className="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2"/>
+                  <path d="M12 6V12L16 14" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                  <path d="M16 8C17.5 9.5 18 11 18 12C18 15.31 15.31 18 12 18C8.69 18 6 15.31 6 12C6 8.69 8.69 6 12 6" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+              </div>
+              
+              {/* Content */}
+              <div className="flex flex-col gap-2">
+                <h3 className="text-white text-xl md:text-2xl font-bold">
+                  Fast Deposits & Withdrawals
+                </h3>
+                <p className="text-white/70 text-sm md:text-base leading-relaxed">
+                  Enjoy swift and seamless deposits and withdrawals
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Card 3: Invite your friend and earn */}
+          <div className="group">
+            <div className="flex flex-col items-start gap-4 p-6 md:p-8 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-300">
+              {/* Icon */}
+              <div className="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M17 21V19C17 17.9391 16.5786 16.9217 15.8284 16.1716C15.0783 15.4214 14.0609 15 13 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <circle cx="9" cy="7" r="4" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M23 21V19C22.9993 18.1137 22.7044 17.2528 22.1614 16.5523C21.6184 15.8519 20.8581 15.3516 20 15.13" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M16 3.13C16.8604 3.35031 17.623 3.85071 18.1676 4.55232C18.7122 5.25392 19.0078 6.11683 19.0078 7.005C19.0078 7.89318 18.7122 8.75608 18.1676 9.45769C17.623 10.1593 16.8604 10.6597 16 10.88" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+              
+              {/* Content */}
+              <div className="flex flex-col gap-2">
+                <h3 className="text-white text-xl md:text-2xl font-bold">
+                  Invite your friend and earn
+                </h3>
+                <p className="text-white/70 text-sm md:text-base leading-relaxed">
+                  Refer and invite your friends and earn commission on each transaction they make with us!
+                </p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
       {/* Refer and Invite Section */}
       <div className="w-full bg-white dark:bg-transparent py-4 md:py-8 my-4 md:my-6">
         <div className="w-full md:container md:mx-auto md:max-w-7xl md:px-4 md:px-6 lg:px-8 xl:px-12 2xl:px-16">

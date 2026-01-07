@@ -254,7 +254,7 @@ const Withdraw = () => {
           {activeTab === "usdt" ? (
           <form onSubmit={handleWithdraw}>
             {/* 1- Transaction Info */}
-            <div className="text-md font-bold mb-2">1- Transaction Info</div>
+            <div className="text-md font-bold mb-2 text-[#788099] dark:text-[#788099]">1- Transaction Info</div>
 
             <div className="mb-3 p-3 border border-[#E8EFF5] dark:border-[#35353F] bg-white dark:bg-[#1A1A1F] rounded-[18px] shadow-sm">
               <div className="flex  flex-col md:flex-row gap-4 mb-2">
@@ -420,7 +420,7 @@ const Withdraw = () => {
 
             {/* 2- Wallet Address */}
             <div>
-              <div className="text-md font-bold mb-2">
+              <div className="text-md font-bold mb-2 text-[#788099] dark:text-[#788099]">
                 2- Your Wallet Address
               </div>
               <div className="mb-2 border border-[#E8EFF5] dark:border-[#35353F] bg-white dark:bg-[#1A1A1F] p-3 rounded-[18px] shadow-sm">

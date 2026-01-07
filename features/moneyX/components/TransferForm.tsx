@@ -1212,7 +1212,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
                   }`}
               />
               {/* Bookmark icon - hidden on small screens */}
-              <span className="hidden sm:block mx-1 sm:mx-2 text-[#788099] cursor-pointer flex-shrink-0">
+              <span className="hidden md:block mx-1 sm:mx-2 text-[#788099] cursor-pointer flex-shrink-0">
                 <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
                   <path
                     d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"
@@ -1234,8 +1234,8 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
                     showToast.error("Failed to paste from clipboard");
                   }
                 }}
-                className="flex items-center gap-1 bg-white dark:bg-[#18181D] border border-[#1D8751] 
-                text-[#1D8751] rounded-full px-2 sm:px-3 py-1.5 sm:py-2 ml-1 sm:ml-2 font-semibold text-xs sm:text-sm hover:bg-[#1D8751] hover:text-white transition-colors min-h-[36px] sm:min-h-[44px] touch-manipulation flex-shrink-0 whitespace-nowrap"
+                className="flex items-center justify-center gap-1 bg-white dark:bg-[#18181D] border border-[#1D8751] 
+                text-[#1D8751] rounded-full p-0 w-9 h-9 sm:w-auto sm:h-auto sm:px-3 sm:py-2 ml-1 sm:ml-2 font-semibold text-xs sm:text-sm hover:bg-[#1D8751] hover:text-white transition-colors sm:min-h-[44px] touch-manipulation flex-shrink-0 whitespace-nowrap"
               >
                 <svg width="16" height="16" fill="none" viewBox="0 0 24 24" className="w-4 h-4 sm:w-[18px] sm:h-[18px]">
                   <path
@@ -1246,7 +1246,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
                     strokeLinejoin="round"
                   />
                 </svg>
-                <span className="hidden sm:inline">Paste</span>
+                <span className="hidden md:inline">Paste</span>
               </button>
             </div>
 
