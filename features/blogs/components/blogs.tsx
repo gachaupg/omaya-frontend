@@ -133,8 +133,8 @@ const BlogPage = () => {
                   <span className="text-[#1D8751]">
                     Latest
                     <br />
-                    {afterLatest.trim()}
                   </span>
+                    {afterLatest.trim()}
                 </>
               );
             })()}
