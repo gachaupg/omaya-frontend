@@ -133,12 +133,18 @@ const ReferralUsersList: React.FC<Props> = ({ referredUsers, loading }) => {
       {!loading && referredUsers.length > 0 && (
         <div className="space-y-0 border border-[#35353F] rounded-[18px] pl-2 pr-3 w-full">
           {referredUsers.map((u, index) => (
-            <div key={u.id} className="w-full">
+            <div
+              key={u.id}
+              className={`w-full ${
+                index !== referredUsers.length - 1
+                  ? "border-b border-[#35353F]"
+                  : ""
+              }`}
+            >
               {/* User Row */}
               <div
-                className={`flex items-center gap-4 w-full px-6 py-4
-                           bg-white dark:bg-[var(--card-color)]
-                           ${index !== referredUsers.length - 1 ? "border-b border-[#35353F]" : ""}`}
+                className="flex items-center gap-4 w-full px-6 py-4
+                           bg-white dark:bg-[var(--card-color)]"
               >
                 {/* OA Avatar */}
                 <div

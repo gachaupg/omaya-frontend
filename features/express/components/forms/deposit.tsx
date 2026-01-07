@@ -3739,8 +3739,8 @@ export default function DepositForm({
         {/* Disclaimer Banner */}
         <div className="flex items-center rounded-2xl px-2 sm:px-3 md:px-4 py-2 sm:py-3 mb-2 sm:mb-4 bg-white dark:bg-[#18181D]">
           <div className="flex items-center gap-3">
-            <div className="w-5 h-5 border-2 border-[#1D8751] rounded-full flex items-center justify-center flex-shrink-0">
-              <span className="text-[#1D8751] text-xs font-bold">i</span>
+            <div className="w-5 h-5 border-2 border-[#E23D3A] rounded-full flex items-center justify-center flex-shrink-0">
+              <span className="text-[#E23D3A] text-xs font-bold">i</span>
             </div>
             <span className="text-[#35353e] dark:text-[#788099] text-sm font-medium">
               {t("express.estimate.notice", "This is only an estimated price based on current market rates. The final price will be confirmed when we receive the funds.")}
@@ -4251,14 +4251,14 @@ export default function DepositForm({
                     <div className="bg-white dark:bg-[#18181D] border border-[#1D8751] rounded-xl p-2 sm:p-3">
                       <ul className="list-none space-y-1">
                         <li className="flex items-start">
-                          <span className=" "></span>
+                          <span className="w-2 h-2 mt-1 rounded-full bg-[#1D8751] inline-block mr-2 shrink-0"></span>
                           <span className="text-[#35353e] dark:text-[#788099] text-xs">
                             Please write this Transaction Code in the bank
                             message or note section.
                           </span>
                         </li>
                         <li className="flex items-start">
-                          <span className="w-2 h-2 mt-1 rounded-full bg-[#1D8751] inline-block mr-2"></span>
+                          <span className="w-2 h-2 mt-1 rounded-full bg-[#1D8751] inline-block mr-2 shrink-0"></span>
                           <span className="text-[#35353e] dark:text-[#788099] text-xs">
                             This helps us process your payment quickly and
                             accurately.

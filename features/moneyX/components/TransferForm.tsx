@@ -1105,8 +1105,8 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
         {/* Disclaimer Banner */}
         <div className="flex items-center rounded-2xl px-2 sm:px-3 md:px-4 py-2 sm:py-3 mb-2 sm:mb-4 bg-white dark:bg-[#18181D]">
           <div className="flex items-center gap-3">
-            <div className="w-5 h-5 border-2 border-[#1D8751] rounded-full flex items-center justify-center flex-shrink-0">
-              <span className="text-[#1D8751] text-xs font-bold">i</span>
+            <div className="w-5 h-5 border-2 border-[#E23D3A] rounded-full flex items-center justify-center flex-shrink-0">
+              <span className="text-[#E23D3A] text-xs font-bold">i</span>
             </div>
             <span className="text-[#35353e] dark:text-[#788099] text-sm font-medium">
               This is only an estimated price based on current market rates. The final price will be confirmed when we receive the funds.
@@ -1234,8 +1234,8 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
                     showToast.error("Failed to paste from clipboard");
                   }
                 }}
-                className="flex items-center gap-1 bg-white dark:bg-[#18181D] border border-[#1D8751] 
-                text-[#1D8751] rounded-full px-2 sm:px-3 py-1.5 sm:py-2 ml-1 sm:ml-2 font-semibold text-xs sm:text-sm hover:bg-[#1D8751] hover:text-white transition-colors min-h-[36px] sm:min-h-[44px] touch-manipulation flex-shrink-0 whitespace-nowrap"
+                className="flex items-center justify-center gap-1 bg-white dark:bg-[#18181D] border border-[#1D8751] 
+                text-[#1D8751] rounded-full p-0 w-9 h-9 sm:w-auto sm:h-auto sm:px-3 sm:py-2 ml-1 sm:ml-2 font-semibold text-xs sm:text-sm hover:bg-[#1D8751] hover:text-white transition-colors sm:min-h-[44px] touch-manipulation flex-shrink-0 whitespace-nowrap"
               >
                 <svg width="16" height="16" fill="none" viewBox="0 0 24 24" className="w-4 h-4 sm:w-[18px] sm:h-[18px]">
                   <path

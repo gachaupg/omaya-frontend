@@ -216,7 +216,7 @@ function Cash({ sharedFeesError }: CashProps) {
 
       <form onSubmit={handleSubmit}>
           {/* 1- Transaction Info */}
-          <div className="text-md font-bold mb-2">1- Transaction Info</div>
+          <div className="text-md font-bold mb-2 text-[#788099] dark:text-[#788099]">1- Transaction Info</div>
 
           <div className="mb-3 p-3 border border-[#E8EFF5] dark:border-[#35353F] bg-white dark:bg-[var(--card-color)] rounded-lg">
             <div className="flex flex-col md:flex-row gap-4 mb-2">
@@ -388,7 +388,7 @@ function Cash({ sharedFeesError }: CashProps) {
 
           {/* 2- Your Bank / Mobile Payment Details */}
           <div>
-            <div className="text-md font-bold mb-2">
+            <div className="text-md font-bold mb-2 text-[#788099] dark:text-[#788099]">
               2- Your Bank / Mobile Payment Details
             </div>
             <div className="mb-2 border border-[#E8EFF5] dark:border-[#35353F] text_highbg-dark bg-[white] dark:bg-[var(--card-color)] p-3 rounded-[18px]">

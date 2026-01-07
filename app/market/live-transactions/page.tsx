@@ -213,7 +213,7 @@ const LiveTransactionsPage = () => {
           Live Transactions
         </h1>
         <p className="mt-2 text-xs sm:text-sm lg:text-sm text-gray-600 dark:text-[#A3A7BF] max-w-4xl">
-          See all OMAYA MoneyX and P2P activity streaming in real time. This feed updates automatically as new transactions are completed across the platform.
+          See all OMAYA system transactions streaming in real time. This feed updates automatically as new transactions are completed across the platform.
         </p>
       </div>
 
