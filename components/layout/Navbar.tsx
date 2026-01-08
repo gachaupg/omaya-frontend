@@ -718,7 +718,7 @@ export default function Navbar() {
                 alt={logoConfig.alt}
                 width={150}
                 height={40}
-                className="h-8 w-24 sm:h-auto md:w-28 lg:w-36 xl:w-40 2xl:w-48 dark:brightness-0 dark:invert object-contain"
+                className="h-8 w-28 sm:h-auto sm:w-32 md:w-28 lg:w-36 xl:w-40 2xl:w-48 dark:brightness-0 dark:invert object-contain"
                 priority
               />
             )}

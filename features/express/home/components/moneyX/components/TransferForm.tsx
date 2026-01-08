@@ -1075,19 +1075,7 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
               </p>
             )}
 
-            <label className="flex mb-4 items-center gap-2 mt-4 text-sm text-[#35353e] dark:text-[#788099]">
-              <input
-                type="checkbox"
-                checked={isAddressConfirmed}
-                onChange={(event) =>
-                  setIsAddressConfirmed(event.target.checked)
-                }
-                className="w-4 h-4 rounded border-[#1D8751] text-[#1D8751] focus:ring-[#1D8751] accent-[#1D8751]"
-              />
-              <span>I confirm that this bank account address is correct.</span>
-            </label>
-
-            {/* Terms and Conditions Summary */}
+            {/* MoneyX Terms and Conditions */}
             <div className="flex items-center mb-2 mt-4">
               <span className="mr-2 text-[#1D8751]">
                 <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
@@ -1111,7 +1099,7 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
                 </svg>
               </span>
               <span className="text-base font-semibold text-[#7e7e8f] dark:text-[#788099]">
-                Terms and Conditions Summary
+                MoneyX – Terms & Conditions
               </span>
             </div>
             <div
@@ -1119,25 +1107,54 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
                 isDark ? "bg-[#1D1D23]" : "bg-[#F8FAFF]"
               }`}
             >
-              <ul className="list-none space-y-2">
+              <p className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm mb-3`}>
+                Before proceeding, please carefully read and agree to the following terms:
+              </p>
+              <ul className="list-none space-y-3">
                 <li className="flex items-start">
-                  <span className="w-2 h-2 mt-1 rounded-full bg-[#1D8751] inline-block mr-3 shrink-0"></span>
-                  <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm`}>
-                    Please send the money from your own account Only
-                  </span>
+                  <span className="w-2 h-2 mt-1.5 rounded-full bg-[#1D8751] inline-block mr-3 shrink-0"></span>
+                  <div>
+                    <span className={`${isDark ? "text-white" : "text-gray-900"} text-sm font-semibold block`}>Ownership of sending and receiving accounts</span>
+                    <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm`}>
+                      You must use a wallet, bank account, or mobile money number that you personally own and control. Third-party accounts are not allowed.
+                    </span>
+                  </div>
                 </li>
                 <li className="flex items-start">
-                  <span className="w-2 h-2 mt-1 rounded-full bg-[#1D8751] inline-block mr-3 shrink-0"></span>
-                  <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm`}>
-                    Put transaction ID in the description field of the bank
-                  </span>
+                  <span className="w-2 h-2 mt-1.5 rounded-full bg-[#1D8751] inline-block mr-3 shrink-0"></span>
+                  <div>
+                    <span className={`${isDark ? "text-white" : "text-gray-900"} text-sm font-semibold block`}>Provide correct sending and receiving details</span>
+                    <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm`}>
+                      You must enter the correct details for the transaction. Always verify all details before confirming.
+                    </span>
+                  </div>
                 </li>
                 <li className="flex items-start">
-                  <span className="w-2 h-2 mt-1 rounded-full bg-[#1D8751] inline-block mr-3 shrink-0"></span>
-                  <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm`}>
-                    Please note, If you do not follow above conditions, we will
-                    reject your transaction and send you back your money.
-                  </span>
+                  <span className="w-2 h-2 mt-1.5 rounded-full bg-[#1D8751] inline-block mr-3 shrink-0"></span>
+                  <div>
+                    <span className={`${isDark ? "text-white" : "text-gray-900"} text-sm font-semibold block`}>Send funds only to our official accounts</span>
+                    <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm`}>
+                      You must send funds only to the OMAYA account displayed in the app. Sending to any other account is at your own risk.
+                    </span>
+                  </div>
+                </li>
+                <li className="flex items-start">
+                  <span className="w-2 h-2 mt-1.5 rounded-full bg-[#1D8751] inline-block mr-3 shrink-0"></span>
+                  <div>
+                    <span className={`${isDark ? "text-white" : "text-gray-900"} text-sm font-semibold block`}>Irreversible transactions & user responsibility</span>
+                    <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm`}>
+                      Transactions are irreversible. If you enter incorrect details, funds may be permanently lost.
+                    </span>
+                  </div>
+                </li>
+                <li className="flex items-start">
+                  <span className="w-2 h-2 mt-1.5 rounded-full bg-[#1D8751] inline-block mr-3 shrink-0"></span>
+                  <div>
+                    <span className={`${isDark ? "text-white" : "text-gray-900"} text-sm font-semibold block`}>Transaction time limit</span>
+                    <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm`}>
+                      You must send funds only while the transaction timer is active. Transactions sent after timer expiry may be rejected or lost.
+                    </span>
+                  </div>
                 </li>
               </ul>
             </div>

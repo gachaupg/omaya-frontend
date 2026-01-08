@@ -213,14 +213,14 @@ const Filters = () => {
       </div>
 
       {/* Content area */}
-      <div className="flex flex-col lg:flex-row gap-3 sm:gap-4 lg:gap-6 mt-3">
-        <div className="w-full lg:flex-1 min-w-0">
+      <div className="flex flex-col xl:flex-row gap-3 sm:gap-4 xl:gap-6 mt-3">
+        <div className="w-full xl:flex-1 min-w-0">
           <div className="w-full">
             {renderActiveContent()}
           </div>
         </div>
         {!isReferralWithdrawActive && (
-          <div className="w-full lg:w-sm lg:flex-shrink-0">
+          <div className="w-full xl:w-sm xl:flex-shrink-0">
             <Stats onSupportClick={() => setShowHelpSupport((prev) => !prev)} />
           </div>
         )}

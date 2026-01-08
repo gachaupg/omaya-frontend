@@ -1297,8 +1297,8 @@ export default function MarketingPage() {
           <div className="group">
             <div className="flex flex-col items-start gap-4 p-6 md:p-8 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-300">
               {/* Icon */}
-              <div className="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                <svg width="28" height="28" className="sm:w-8 sm:h-8" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M12 2L3 7V11C3 16.55 6.84 21.74 12 23C17.16 21.74 21 16.55 21 11V7L12 2Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   <path d="M9 12L11 14L15 10" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
@@ -1306,10 +1306,10 @@ export default function MarketingPage() {
               
               {/* Content */}
               <div className="flex flex-col gap-2">
-                <h3 className="text-white text-xl md:text-2xl font-bold">
+                <h3 className="text-white text-lg sm:text-xl md:text-2xl font-bold">
                   Absolute Safety
                 </h3>
-                <p className="text-white/70 text-sm md:text-base leading-relaxed">
+                <p className="text-white/70 text-sm sm:text-base leading-relaxed">
                   Exchange confidently with OMAYA, where safety is our top priority.
                 </p>
               </div>
@@ -1320,8 +1320,8 @@ export default function MarketingPage() {
           <div className="group">
             <div className="flex flex-col items-start gap-4 p-6 md:p-8 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-300">
               {/* Icon */}
-              <div className="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                <svg width="28" height="28" className="sm:w-8 sm:h-8" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2"/>
                   <path d="M12 6V12L16 14" stroke="white" strokeWidth="2" strokeLinecap="round"/>
                   <path d="M16 8C17.5 9.5 18 11 18 12C18 15.31 15.31 18 12 18C8.69 18 6 15.31 6 12C6 8.69 8.69 6 12 6" stroke="white" strokeWidth="2" strokeLinecap="round"/>
@@ -1330,10 +1330,10 @@ export default function MarketingPage() {
               
               {/* Content */}
               <div className="flex flex-col gap-2">
-                <h3 className="text-white text-xl md:text-2xl font-bold">
+                <h3 className="text-white text-lg sm:text-xl md:text-2xl font-bold">
                   Fast Deposits & Withdrawals
                 </h3>
-                <p className="text-white/70 text-sm md:text-base leading-relaxed">
+                <p className="text-white/70 text-sm sm:text-base leading-relaxed">
                   Enjoy swift and seamless deposits and withdrawals
                 </p>
               </div>
@@ -1344,8 +1344,8 @@ export default function MarketingPage() {
           <div className="group">
             <div className="flex flex-col items-start gap-4 p-6 md:p-8 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-300">
               {/* Icon */}
-              <div className="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                <svg width="28" height="28" className="sm:w-8 sm:h-8" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M17 21V19C17 17.9391 16.5786 16.9217 15.8284 16.1716C15.0783 15.4214 14.0609 15 13 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   <circle cx="9" cy="7" r="4" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   <path d="M23 21V19C22.9993 18.1137 22.7044 17.2528 22.1614 16.5523C21.6184 15.8519 20.8581 15.3516 20 15.13" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -1355,10 +1355,10 @@ export default function MarketingPage() {
               
               {/* Content */}
               <div className="flex flex-col gap-2">
-                <h3 className="text-white text-xl md:text-2xl font-bold">
+                <h3 className="text-white text-lg sm:text-xl md:text-2xl font-bold">
                   Invite your friend and earn
                 </h3>
-                <p className="text-white/70 text-sm md:text-base leading-relaxed">
+                <p className="text-white/70 text-sm sm:text-base leading-relaxed">
                   Refer and invite your friends and earn commission on each transaction they make with us!
                 </p>
               </div>
