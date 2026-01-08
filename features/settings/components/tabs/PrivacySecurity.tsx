@@ -980,36 +980,62 @@ const PrivacySecurity = () => {
             </div>
           )}
           {totalPages > 1 && (
-            <div className="flex justify-center items-center gap-2 mt-4">
-              <button
-                className="px-2 py-1 rounded dark:bg-[#35353E] bg-gray-400 dark:text-white text-gray-900 disabled:opacity-50"
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-              >
-                Prev
-              </button>
-              {[...Array(totalPages)].map((_, idx) => (
+            <div className="flex flex-col sm:flex-row justify-center items-center gap-2 mt-4">
+              {/* Mobile: Show only Prev/Next with page indicator */}
+              <div className="flex items-center gap-2 sm:hidden w-full">
                 <button
-                  key={idx}
-                  className={`px-2 py-1 rounded ${
-                    currentPage === idx + 1
-                      ? "bg-[#1D8751] text-white"
-                      : "dark:bg-[#35353E] bg-gray-400 dark:text-[#8C8CA1] text-gray-600"
-                  }`}
-                  onClick={() => setCurrentPage(idx + 1)}
+                  className="flex-1 px-3 py-2 rounded dark:bg-[#35353E] bg-gray-400 dark:text-white text-gray-900 disabled:opacity-50 text-sm font-medium"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
                 >
-                  {idx + 1}
+                  Prev
                 </button>
-              ))}
-              <button
-                className="px-2 py-1 rounded dark:bg-[#35353E] bg-gray-400 dark:text-white text-gray-900 disabled:opacity-50"
-                onClick={() =>
-                  setCurrentPage((p) => Math.min(totalPages, p + 1))
-                }
-                disabled={currentPage === totalPages}
-              >
-                Next
-              </button>
+                <span className="text-sm dark:text-[#8C8CA1] text-gray-600 font-medium px-2">
+                  {currentPage} / {totalPages}
+                </span>
+                <button
+                  className="flex-1 px-3 py-2 rounded dark:bg-[#35353E] bg-gray-400 dark:text-white text-gray-900 disabled:opacity-50 text-sm font-medium"
+                  onClick={() =>
+                    setCurrentPage((p) => Math.min(totalPages, p + 1))
+                  }
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </button>
+              </div>
+              
+              {/* Desktop: Show all page numbers */}
+              <div className="hidden sm:flex justify-center items-center gap-2">
+                <button
+                  className="px-2 py-1 rounded dark:bg-[#35353E] bg-gray-400 dark:text-white text-gray-900 disabled:opacity-50 text-sm"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                >
+                  Prev
+                </button>
+                {[...Array(totalPages)].map((_, idx) => (
+                  <button
+                    key={idx}
+                    className={`px-2 py-1 rounded text-sm ${
+                      currentPage === idx + 1
+                        ? "bg-[#1D8751] text-white"
+                        : "dark:bg-[#35353E] bg-gray-400 dark:text-[#8C8CA1] text-gray-600"
+                    }`}
+                    onClick={() => setCurrentPage(idx + 1)}
+                  >
+                    {idx + 1}
+                  </button>
+                ))}
+                <button
+                  className="px-2 py-1 rounded dark:bg-[#35353E] bg-gray-400 dark:text-white text-gray-900 disabled:opacity-50 text-sm"
+                  onClick={() =>
+                    setCurrentPage((p) => Math.min(totalPages, p + 1))
+                  }
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </button>
+              </div>
             </div>
           )}
         </div>

@@ -22,6 +22,8 @@ import {
   ShieldCheck,
   Clock,
   Building2,
+  ArrowRight,
+  Rocket,
 } from "lucide-react";
 
 const AboutPage = () => {
@@ -518,7 +520,9 @@ const AboutPage = () => {
                   key={index}
                   className="p-6 rounded-2xl bg-gray-50 dark:bg-[#23232B] border border-gray-200 dark:border-[#35353E] hover:border-[#1D8751] transition-colors"
                 >
-                  <Icon className="w-10 h-10 text-[#1D8751] mb-4" />
+                  <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-gradient-to-br from-[#1D8751] to-[#166b3e] mb-4">
+                    <Icon className="w-6 h-6 text-white" />
+                  </div>
                   <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">
                     {value.title}
                   </h3>
@@ -889,11 +893,11 @@ const AboutPage = () => {
                 </span>
               </div>
 
-              {/* Heading - Italic style */}
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-1 leading-tight italic">
+              {/* Heading */}
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-1 leading-tight">
                 Your Assets Are Always
               </h2>
-              <h2 className="text-3xl md:text-4xl font-bold text-[#1D8751] mb-4 italic">
+              <h2 className="text-3xl md:text-4xl font-bold text-black dark:text-white mb-4">
                 Safe
               </h2>
               
@@ -1226,28 +1230,59 @@ const AboutPage = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-16 px-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="bg-gradient-to-br from-[#1D8751] to-[#166b3e] rounded-2xl p-12 text-center text-white">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Ready to Start Trading?
+      <section className="py-16 px-4 bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-black dark:via-gray-900 dark:to-black relative overflow-hidden">
+        {/* Glowing green light effect from top-left */}
+        <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-br from-[#1D8751]/10 via-[#22c55e]/5 to-transparent dark:from-[#1D8751]/20 dark:via-[#22c55e]/10 dark:to-transparent rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+        
+        <div className="max-w-4xl mx-auto relative z-10">
+          <div className="text-center">
+            {/* Join the Revolution Badge */}
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-[#1D8751] bg-[#1D8751]/5 dark:bg-[#1D8751]/10 mb-8">
+              <Rocket className="w-4 h-4 text-[#1D8751]" />
+              <span className="text-sm font-medium text-[#1D8751]">Join the Revolution</span>
+            </div>
+            {/* Main Headline - "Trading?" in green */}
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 text-gray-900 dark:text-white">
+              <span className="text-gray-900 dark:text-white">Ready to Start </span>
+              <span className="bg-gradient-to-r from-[#1D8751] via-[#22c55e] to-[#1D8751] bg-clip-text text-transparent">Trading?</span>
             </h2>
-            <p className="text-lg mb-8 opacity-90">
+
+            {/* Description */}
+            <p className="text-lg md:text-xl mb-10 text-gray-700 dark:text-white/90 max-w-2xl mx-auto">
               Join thousands of traders who trust OMAYA Exchange for their digital asset needs
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+
+            {/* CTA Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
               <a
                 href="/auth/register"
-                className="px-8 py-3 bg-white text-[#1D8751] rounded-xl font-semibold hover:bg-gray-100 transition-colors"
+                className="group relative px-8 py-3 bg-gradient-to-r from-[#1D8751] via-[#22c55e] to-[#1D8751] text-white rounded-xl font-semibold hover:from-[#22c55e] hover:via-[#1D8751] hover:to-[#166b3e] transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl hover:shadow-[#1D8751]/25 dark:shadow-[#1D8751]/20 dark:hover:shadow-[#1D8751]/30"
               >
-                Create Account
+                Get Started Now
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </a>
               <a
                 href="/contactUs"
-                className="px-8 py-3 bg-transparent border-2 border-white text-white rounded-xl font-semibold hover:bg-white/10 transition-colors"
+                className="px-8 py-3 bg-transparent border-2 border-[#1D8751] text-[#1D8751] dark:text-white rounded-xl font-semibold hover:bg-[#1D8751]/10 dark:hover:bg-[#1D8751]/20 transition-colors"
               >
-                Contact Us
+                Learn More
               </a>
+            </div>
+
+            {/* Trust Indicators */}
+            <div className="flex flex-wrap items-center justify-center gap-6 text-gray-700 dark:text-white">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-gradient-to-r from-[#1D8751] to-[#22c55e]" />
+                <span className="text-sm md:text-base">50K+ Active Users</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-gradient-to-r from-[#1D8751] to-[#22c55e]" />
+                <span className="text-sm md:text-base">$10M+ Daily Volume</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-gradient-to-r from-[#1D8751] to-[#22c55e]" />
+                <span className="text-sm md:text-base">24/7 Support</span>
+              </div>
             </div>
           </div>
         </div>

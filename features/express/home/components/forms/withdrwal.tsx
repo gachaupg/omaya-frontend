@@ -2840,6 +2840,26 @@ export default function WithdrawalForm({
     }
   }, [selectedAsset, walletAddress]);
 
+  // Clear validation errors when amount is cleared or form is reset
+  useEffect(() => {
+    if (!payAmount || payAmount === 0 || payAmountInput === "" || payAmountInput === "0") {
+      setApiValidationError(null);
+      setReceiveAmountError(null);
+      setEstimateError(null);
+      setCalculationError(null);
+    }
+  }, [payAmount, payAmountInput]);
+
+  // Clear validation errors on component unmount
+  useEffect(() => {
+    return () => {
+      setApiValidationError(null);
+      setReceiveAmountError(null);
+      setEstimateError(null);
+      setCalculationError(null);
+    };
+  }, []);
+
   // Validate first card data
   const validateFirstCard = () => {
     const errors: string[] = [];
@@ -3061,6 +3081,13 @@ export default function WithdrawalForm({
   const handleSubmit = async () => {
     // Clear previous errors
     setValidationErrors([]);
+
+    // Prevent submission if amount exceeds $15,000
+    if (payAmount > 15000 || getAmount > 15000) {
+      showToast.error("Amount cannot exceed $15,000. Please contact OTC Desk for larger amounts.");
+      setIsInfoModalOpen(true);
+      return;
+    }
 
     // Validate form
     const errors = validateForm();
@@ -4293,11 +4320,14 @@ export default function WithdrawalForm({
                 <button
                   type="button"
                   className={`w-full text-[#35353e] dark:text-[#788099] text-base font-medium py-1.5 rounded-full flex items-center justify-center gap-2 transition-colors ${isHomePage
-                    ? "bg-[#1D8751] hover:bg-[#1D8751]/80 cursor-pointer"
+                    ? payAmount >= 15000 || getAmount >= 15000
+                      ? "bg-gray-500 cursor-not-allowed"
+                      : "bg-[#1D8751] hover:bg-[#1D8751]/80 cursor-pointer"
                     : isSubmitting ||
                       isTransactionSubmitted ||
                       isInfoModalOpen ||
-                      getAmount > 15000
+                      payAmount >= 15000 ||
+                      getAmount >= 15000
                       ? "bg-gray-500 cursor-not-allowed"
                       : "bg-[#1D8751] hover:bg-[#1D8751]/80"
                     }`}
@@ -4341,11 +4371,12 @@ export default function WithdrawalForm({
                   }}
                   disabled={
                     requiresLoginRedirect
-                      ? false
+                      ? payAmount >= 15000 || getAmount >= 15000
                       : isSubmitting ||
                       isTransactionSubmitted ||
                       isInfoModalOpen ||
-                      getAmount > 15000
+                      payAmount >= 15000 ||
+                      getAmount >= 15000
                   }
                 >
                   {isSubmitting ? (
@@ -4730,12 +4761,29 @@ export default function WithdrawalForm({
           <InfoModal
             isOpen={isInfoModalOpen}
             onClose={() => {
+              // When modal closes, reset amount to maximum allowed (15000)
+              if (payAmount > 15000) {
+                setPayAmount(15000);
+                setPayAmountInput("15000");
+              }
+              if (getAmount > 15000) {
+                setGetAmount(15000);
+                setGetAmountInput("15000");
+              }
               setIsInfoModalOpen(false);
-              // Don't automatically acknowledge when just closing - user must reduce amount
             }}
             onContactUs={() => {
               // Handle contact us action - you can customize this
               window.open("https://wa.me/your-whatsapp-number", "_blank");
+              // When modal closes, reset amount to maximum allowed (15000)
+              if (payAmount > 15000) {
+                setPayAmount(15000);
+                setPayAmountInput("15000");
+              }
+              if (getAmount > 15000) {
+                setGetAmount(15000);
+                setGetAmountInput("15000");
+              }
               setIsInfoModalOpen(false);
             }}
           />
