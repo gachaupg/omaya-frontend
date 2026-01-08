@@ -83,11 +83,11 @@ const DepositModal: React.FC<DepositModalProps> = ({
                 Deposit
               </button>
               <button
-                className={`px-4 py-2 rounded-full font-semibold text-sm border flex items-center gap-2 text-white ${
+                className={`px-4 py-2 rounded-full font-semibold text-sm border flex items-center gap-2 ${
                   logic.showWithdraw
-                    ? "bg-transparent border-[#E23D3A] text-[#E23D3A]"
+                    ? "bg-[#E23D3A] text-white border-[#E23D3A]"
                     : "bg-transparent border-[#E23D3A] text-[#E23D3A]"
-                }${logic.showWithdraw ? " bg-[#E23D3A] text-white" : ""}`}
+                }`}
                 onClick={() => logic.setShowWithdraw(true)}
               >
                 <svg

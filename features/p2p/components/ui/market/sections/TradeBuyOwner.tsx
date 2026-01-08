@@ -389,13 +389,13 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
 
   logger.debug("p2p", "Confirm order:", confirmOrder);
   return (
-    <div className="md:mt-20">
+    <div className="min-[900px]:mt-20">
       {/* Breadcrumb */}
       <nav
         aria-label="Breadcrumb"
-        className="flex items-center text-sm text-gray-500 dark:text-[#A3A3C2] mt-1"
+        className="flex items-center text-xs sm:text-sm text-gray-500 dark:text-[#A3A3C2] mt-1 overflow-x-auto pb-2"
       >
-        <ol className="inline-flex items-center md:space-x-2">
+        <ol className="inline-flex items-center space-x-1 sm:space-x-2 min-w-max">
 
           <li className="inline-flex items-center">
             <a 
@@ -438,17 +438,17 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
 
         </ol>
       </nav>
-      <div className="grid grid-cols-1 mt-10 md:grid-cols-3 gap-6 p-6 min-h-screen bg-[#EEF1F4] dark:bg-[var(--bg-color)]">
+      <div className="grid grid-cols-1 mt-6 sm:mt-10 min-[900px]:grid-cols-3 gap-4 sm:gap-6 p-3 sm:p-4 min-[900px]:p-6 min-h-screen bg-[#EEF1F4] dark:bg-[var(--bg-color)]">
         {/* Left: Timeline/Steps */}
-        <div className="md:col-span-2 flex flex-col gap-4">
+        <div className="min-[900px]:col-span-2 flex flex-col gap-4">
           {/* Step 1: Order Created */}
-          <div className="relative pl-8 pb-4 border-l-2 border-gray-200 dark:border-[#35353E]">
-            <div className="absolute -left-4 top-0 w-8 h-8 rounded-full bg-gray-100 dark:bg-[var(--card-color)] border-2 border-[#1D8751] flex items-center justify-center text-[#1D8751] font-bold text-lg">
+          <div className="relative pl-6 sm:pl-8 pb-4 border-l-2 border-gray-200 dark:border-[#35353E]">
+            <div className="absolute -left-3 sm:-left-4 top-0 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gray-100 dark:bg-[var(--card-color)] border-2 border-[#1D8751] flex items-center justify-center text-[#1D8751] font-bold text-sm sm:text-lg">
               1
             </div>
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-3">
-                <span className="text-gray-900 dark:text-white font-semibold text-lg">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-0">
+              <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                <span className="text-gray-900 dark:text-white font-semibold text-base sm:text-lg">
                   Order Created
                 </span>
                 {statusWsConnected && (
@@ -461,10 +461,11 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap">
                 <svg
-                  width="24"
-                  height="24"
+                  width="20"
+                  height="20"
+                  className="sm:w-6 sm:h-6"
                   viewBox="0 0 64 64"
                   xmlns="http://www.w3.org/2000/svg"
                 >
@@ -505,28 +506,28 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                   />
                 </svg>
 
-                <span className="text-[14px] text-gray-500 dark:text-[#A3A3C2]">
+                <span className="text-xs sm:text-sm text-gray-500 dark:text-[#A3A3C2]">
                   Order Number :
                   <button
-                    className="text-[#1D8751] underline ml-1"
+                    className="text-[#1D8751] underline ml-1 break-all"
                     onClick={() => handleCopy(confirmOrder?.id?.toString())}
                   >
                     {confirmOrder?.id}
                   </button>
                 </span>
                 <CopyIcon
-                  className="w-4 h-4 text-[#1D8751] ml-1 cursor-pointer"
+                  className="w-3 h-3 sm:w-4 sm:h-4 text-[#1D8751] ml-1 cursor-pointer flex-shrink-0"
                   onClick={() => handleCopy(confirmOrder?.id?.toString())}
                 />
 
               </div>
             </div>
-            <div className="flex gap-4 border border-gray-200 dark:border-[#35353E] p-4 rounded-xl mt-4 bg-white dark:bg-[var(--card-color)]">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 border border-gray-200 dark:border-[#35353E] p-3 sm:p-4 rounded-xl mt-4 bg-white dark:bg-[var(--card-color)]">
               <div className="flex flex-col gap-2 w-full">
-                <p className="text-[#788099] text-sm">Fiat USD</p>
-                <div className="flex flex-row items-center justify-between w-full  bg-[#EEF1F4] dark:bg-[#35353E] rounded-xl px-6 py-2">
-                  <span className="text-[#F79330] text-lg font-bold">
-                    <span className="text-[#1D8751] text-xl">$</span>{" "}
+                <p className="text-[#788099] text-xs sm:text-sm">Fiat USD</p>
+                <div className="flex flex-row items-center justify-between w-full bg-[#EEF1F4] dark:bg-[#35353E] rounded-xl px-4 sm:px-6 py-2">
+                  <span className="text-[#F79330] text-base sm:text-lg font-bold">
+                    <span className="text-[#1D8751] text-lg sm:text-xl">$</span>{" "}
                     {formatAmount(Math.round(Number(sendAmount) * Number(commissionRate)))}
                   </span>
                   <span className="text-xs text-[#F79330]">USD</span>
@@ -534,28 +535,29 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
               </div>
 
               <div className="flex flex-col gap-2 w-full">
-                <p className="text-[#788099] text-sm">Rate</p>
-                <div className="flex f w-full flex-row  justify-between items-center bg-[#EEF1F4] dark:bg-[#35353E] rounded-xl px-6 py-2">
-                  <span className="text-[#1D8751] text-xl">
+                <p className="text-[#788099] text-xs sm:text-sm">Rate</p>
+                <div className="flex w-full flex-row justify-between items-center bg-[#EEF1F4] dark:bg-[#35353E] rounded-xl px-4 sm:px-6 py-2">
+                  <span className="text-[#1D8751] text-lg sm:text-xl">
                     $ {commissionRate}%
                   </span>
-                  <span className="text-sm text-[#051015] dark:text-[#F79330]">
+                  <span className="text-xs sm:text-sm text-[#051015] dark:text-[#F79330]">
                     USD
                   </span>
                 </div>
               </div>
 
               <div className="flex flex-col gap-2 w-full">
-                <p className="text-[#788099] text-sm">Total Quantity</p>
-                <div className="flex flex-row justify-between w-full items-center bg-[#EEF1F4] dark:bg-[#35353E] rounded-xl px-6 py-2">
+                <p className="text-[#788099] text-xs sm:text-sm">Total Quantity</p>
+                <div className="flex flex-row justify-between w-full items-center bg-[#EEF1F4] dark:bg-[#35353E] rounded-xl px-4 sm:px-6 py-2">
                   <div className="flex flex-row items-center gap-2">
                     <Image
                       src="https://res.cloudinary.com/pitz/image/upload/v1750918504/tether_1_yim48g.png"
                       alt="USDT"
                       width={20}
                       height={20}
+                      className="w-4 h-4 sm:w-5 sm:h-5"
                     />
-                    <span className="text-[#1D8751] text-lg font-bold">
+                    <span className="text-[#1D8751] text-base sm:text-lg font-bold">
                       {formatAmount(Math.ceil(Number(saveOrder?.amount ?? 0)))}
                     </span>
                   </div>
@@ -568,80 +570,82 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
           </div>
 
           {/* Step 2: Confirm Payment From Buyer */}
-          <div className="relative pl-8 pb-4 border-l-2 border-gray-200 dark:border-[#35353E]">
-            <div className="absolute -left-4 top-0 w-8 h-8 rounded-full bg-gray-100 dark:bg-[var(--card-color)] border-2 border-[#1D8751] flex items-center justify-center text-[#1D8751] font-bold text-lg">
+          <div className="relative pl-6 sm:pl-8 pb-4 border-l-2 border-gray-200 dark:border-[#35353E]">
+            <div className="absolute -left-3 sm:-left-4 top-0 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gray-100 dark:bg-[var(--card-color)] border-2 border-[#1D8751] flex items-center justify-center text-[#1D8751] font-bold text-sm sm:text-lg">
               2
             </div>
-            <span className="text-gray-900 dark:text-white font-semibold text-lg">
+            <span className="text-gray-900 dark:text-white font-semibold text-base sm:text-lg block pr-2">
               Confirm Payment is from{" "}
-              {singleOrder?.advertiser_first_name || user?.first_name}{" "}
-              {singleOrder?.advertiser_last_name ||
-                user?.last_name ||
-                "Mohammed Zyad Yousef"}
+              <span className="break-words">
+                {singleOrder?.advertiser_first_name || user?.first_name}{" "}
+                {singleOrder?.advertiser_last_name ||
+                  user?.last_name ||
+                  "Mohammed Zyad Yousef"}
+              </span>
             </span>
-            <div className="bg-white dark:bg-[var(--card-color)] rounded-2xl p-6 mt-4 flex flex-col gap-6 border border-gray-200 dark:border-[#35353E]">
+            <div className="bg-white dark:bg-[var(--card-color)] rounded-2xl p-4 sm:p-6 mt-4 flex flex-col gap-4 sm:gap-6 border border-gray-200 dark:border-[#35353E]">
               {/* Bank Info */}
-              <div className="flex items-center bg-white dark:bg-[var(--card-color)] gap-4 border border-gray-200 dark:border-[#35353E] rounded-xl px-4 py-3 w-fit mb-2">
-                <div className="w-10 h-10 rounded-full text-black bg-white flex items-center justify-center overflow-hidden">
+              <div className="flex items-center bg-white dark:bg-[var(--card-color)] gap-3 sm:gap-4 border border-gray-200 dark:border-[#35353E] rounded-xl px-3 sm:px-4 py-2 sm:py-3 w-fit mb-2">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full text-black bg-white flex items-center justify-center overflow-hidden text-sm sm:text-base">
                   {/* Use logo mapped from provider */}
                   {paymentDetails?.provider[0]}
                 </div>
-                <span className="text-gray-900 dark:text-white font-medium text-lg">
+                <span className="text-gray-900 dark:text-white font-medium text-sm sm:text-lg">
                   {paymentDetails?.provider}
                 </span>
               </div>
               {/* Account Name */}
-              <div className="flex items-center gap-4">
-                <div className="text-gray-600 dark:text-[#A3A3C2] text-base mb-1 w-1/4 min-w-[100px]">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                <div className="text-gray-600 dark:text-[#A3A3C2] text-sm sm:text-base sm:mb-1 sm:w-1/4 sm:min-w-[100px]">
                   Account Name
                 </div>
-                <div className="flex items-center bg-gray-100 dark:bg-[#35353E] border border-[#1D8751] rounded-full px-6 py-2 flex-1">
-                  <span className="w-3 h-3 rounded-full bg-[#1D8751] mr-3 inline-block"></span>
-                  <span className="text-[#1D8751] font-semibold text-lg">
+                <div className="flex items-center bg-gray-100 dark:bg-[#35353E] border border-[#1D8751] rounded-full px-4 sm:px-6 py-2 flex-1 min-w-0">
+                  <span className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-[#1D8751] mr-2 sm:mr-3 inline-block flex-shrink-0"></span>
+                  <span className="text-[#1D8751] font-semibold text-sm sm:text-lg truncate">
                     {paymentDetails?.account_name || "Omar Ali"}
                   </span>
                   <div className="flex-1" />
                   <button
-                    className="ml-3 text-[#1D8751] hover:text-[#F79330] focus:outline-none"
+                    className="ml-2 sm:ml-3 text-[#1D8751] hover:text-[#F79330] focus:outline-none flex-shrink-0"
                     onClick={() =>
                       handleCopy(paymentDetails?.account_name || "Omar Ali")
                     }
                     title="Copy Account Name"
                   >
-                    <FileIcon size={18} />
+                    <FileIcon size={16} className="sm:w-[18px] sm:h-[18px]" />
                   </button>
                 </div>
               </div>
               {/* Account Number */}
-              <div className="flex items-center gap-4">
-                <div className="text-gray-600 dark:text-[#A3A3C2] text-base mb-1 w-1/4 min-w-[100px]">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                <div className="text-gray-600 dark:text-[#A3A3C2] text-sm sm:text-base sm:mb-1 sm:w-1/4 sm:min-w-[100px]">
                   Account Number
                 </div>
-                <div className="flex items-center bg-gray-100 dark:bg-[#35353E] border border-[#1D8751] rounded-full px-6 py-2 flex-1">
-                  <span className="w-3 h-3 rounded-full bg-[#1D8751] mr-3 inline-block"></span>
-                  <span className="text-[#1D8751] font-semibold text-lg">
+                <div className="flex items-center bg-gray-100 dark:bg-[#35353E] border border-[#1D8751] rounded-full px-4 sm:px-6 py-2 flex-1 min-w-0">
+                  <span className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-[#1D8751] mr-2 sm:mr-3 inline-block flex-shrink-0"></span>
+                  <span className="text-[#1D8751] font-semibold text-sm sm:text-lg truncate">
                     {paymentDetails?.account_number || "123456789"}
                   </span>
                   <div className="flex-1" />
                   <button
-                    className="ml-3 text-[#1D8751] hover:text-[#F79330] focus:outline-none"
+                    className="ml-2 sm:ml-3 text-[#1D8751] hover:text-[#F79330] focus:outline-none flex-shrink-0"
                     onClick={() =>
                       handleCopy(paymentDetails?.account_number || "123456789")
                     }
                     title="Copy Account Number"
                   >
-                    <FileIcon size={18} />
+                    <FileIcon size={16} className="sm:w-[18px] sm:h-[18px]" />
                   </button>
                 </div>
               </div>
               {/* Buyer's Name */}
-              <div className="border border-[#F79330] rounded-2xl px-2 md:px-8 py-6 flex items-center justify-between mt-2 bg-white dark:bg-[var(--card-color)]">
-                <p className="text-[#F79330] font-semibold text-lg mr-6">
+              <div className="border border-[#F79330] rounded-2xl px-3 sm:px-4 min-[900px]:px-8 py-4 sm:py-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mt-2 bg-white dark:bg-[var(--card-color)]">
+                <p className="text-[#F79330] font-semibold text-sm sm:text-lg sm:mr-6">
                   Buyer&apos;s Name
                 </p>
-                <div>
-                  <span className="w-3 h-3 rounded-full bg-[#051015] dark:bg-white mr-3 inline-block"></span>
-                  <span className="text-gray-900 dark:text-white font-semibold text-lg">
+                <div className="flex items-center flex-wrap">
+                  <span className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-[#051015] dark:bg-white mr-2 sm:mr-3 inline-block flex-shrink-0"></span>
+                  <span className="text-gray-900 dark:text-white font-semibold text-sm sm:text-lg break-words">
                     {singleOrder?.advertiser_first_name || user?.first_name}{" "}
                     {singleOrder?.advertiser_last_name ||
                       user?.last_name ||
@@ -653,26 +657,26 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
           </div>
 
           {/* Step 3: Confirm Payment Received */}
-          <div className="relative pl-8">
-            <div className="absolute -left-4 top-0 w-8 h-8 rounded-full bg-gray-100 dark:bg-[var(--card-color)] border-2 border-[#1D8751] flex items-center justify-center text-[#1D8751] font-bold text-lg">
+          <div className="relative pl-6 sm:pl-8">
+            <div className="absolute -left-3 sm:-left-4 top-0 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gray-100 dark:bg-[var(--card-color)] border-2 border-[#1D8751] flex items-center justify-center text-[#1D8751] font-bold text-sm sm:text-lg">
               3
             </div>
-            <span className="text-gray-900 dark:text-white font-semibold text-lg">
+            <span className="text-gray-900 dark:text-white font-semibold text-base sm:text-lg block pr-2">
               Confirm payment is received.
             </span>
-            <div className="text-md text-gray-500 dark:text-[#A3A3C2] mt-2">
+            <div className="text-sm sm:text-base text-gray-500 dark:text-[#A3A3C2] mt-2 pr-2">
               After confirming the payment, be sure to click Payment Received
               button below
             </div>
-            <div className="flex gap-4 mt-6">
-              <button className="bg-gray-100 dark:bg-[var(--card-color)] text-gray-600 dark:text-[#A3A3C2] rounded-lg px-6 py-2 border border-gray-200 dark:border-[#35353E]">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-4 sm:mt-6">
+              <button className="bg-gray-100 dark:bg-[var(--card-color)] text-gray-600 dark:text-[#A3A3C2] rounded-lg px-4 sm:px-6 py-2 text-sm sm:text-base border border-gray-200 dark:border-[#35353E] w-full sm:w-auto">
                 Appeal After 9:45
               </button>
               <button
                 className={`${confirmOrder?.status === "matched"
                     ? "bg-gray-100 dark:bg-[var(--card-color)]"
                     : "bg-[#1D8751] text-white"
-                  }  dark:text-white rounded-lg px-6 py-2 font-semibold ${(() => {
+                  } dark:text-white rounded-lg px-4 sm:px-6 py-2 text-sm sm:text-base font-semibold w-full sm:w-auto ${(() => {
                     const isThisTradeLoading =
                       confirmTradeLoading &&
                       !!confirmOrder?.id &&
@@ -701,7 +705,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
         </div>
 
         {/* Right: Chat */}
-        <div className="md:col-span-1 pt-10 flex flex-col gap-6 mt-6 md:mt-0">
+        <div className="min-[900px]:col-span-1 pt-6 sm:pt-10 flex flex-col gap-4 sm:gap-6 mt-6 min-[900px]:mt-0">
           <ChatBox
             tradeId={confirmOrder?.id || ""}
             userId={user?.id.toString() || ""}
@@ -743,13 +747,13 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
             }
           />
           {/* Advertiser's Terms */}
-          <section className="advertiser-terms rounded-lg p-4 bg-gray-50 dark:bg-[var(--card-color)]">
-            <div className="font-semibold text-lg mb-2 text-gray-900 dark:text-white flex items-center gap-2">
+          <section className="advertiser-terms rounded-lg p-3 sm:p-4 bg-gray-50 dark:bg-[var(--card-color)]">
+            <div className="font-semibold text-base sm:text-lg mb-2 text-gray-900 dark:text-white flex items-center gap-2">
               Advertiser's Terms
-              <AlertCircle className="w-5 h-5 text-[#E23D3A]" />
+              <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-[#E23D3A]" />
             </div>
-            <div className="text-xs flex flex-col gap-2">
-              <div className="text-[#1D8751]">
+            <div className="text-xs sm:text-sm flex flex-col gap-2">
+              <div className="text-[#1D8751] break-words">
                 {saveOrder?.terms_and_conditions}
               </div>
             </div>
@@ -758,13 +762,13 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
 
         {/* Success Modal */}
         {showSuccessModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-[var(--card-color)] rounded-2xl p-8 max-w-md w-full mx-4 border border-gray-200 dark:border-[#35353E]">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-[var(--card-color)] rounded-2xl p-4 sm:p-6 min-[900px]:p-8 max-w-md w-full mx-4 border border-gray-200 dark:border-[#35353E] max-h-[90vh] overflow-y-auto">
               <div className="text-center">
                 {/* Success Icon */}
-                <div className="w-16 h-16 bg-[#1D8751] rounded-full flex items-center justify-center mx-auto mb-6">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-[#1D8751] rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
                   <svg
-                    className="w-8 h-8 text-white"
+                    className="w-6 h-6 sm:w-8 sm:h-8 text-white"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -779,21 +783,21 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                 </div>
 
                 {/* Success Title */}
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-3 sm:mb-4">
                   Trade Completed Successfully!
                 </h2>
 
                 {/* Trade Details */}
-                <div className="bg-gray-50 dark:bg-[var(--bg-color)] rounded-xl p-4 mb-6 border border-gray-200 dark:border-[#35353E]">
-                  <div className="flex justify-between items-center mb-2">
+                <div className="bg-gray-50 dark:bg-[var(--bg-color)] rounded-xl p-3 sm:p-4 mb-4 sm:mb-6 border border-gray-200 dark:border-[#35353E]">
+                  <div className="flex justify-between items-center mb-2 text-sm sm:text-base">
                     <span className="text-gray-600 dark:text-[#A3A3C2]">
                       Amount Sent:
                     </span>
-                    <span className="text-[#F79330] font-semibold">
+                    <span className="text-[#F79330] font-semibold break-words ml-2">
                       ${formatAmount(sendAmount)} USD
                     </span>
                   </div>
-                  <div className="flex justify-between items-center mb-2">
+                  <div className="flex justify-between items-center mb-2 text-sm sm:text-base">
                     <span className="text-gray-600 dark:text-[#A3A3C2]">
                       Rate:
                     </span>
@@ -801,21 +805,21 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                       {commissionRate}%
                     </span>
                   </div>
-                  <div className="flex justify-between items-center">
+                  <div className="flex justify-between items-center text-sm sm:text-base">
                     <span className="text-gray-600 dark:text-[#A3A3C2]">
                       Amount Received:
                     </span>
-                    <span className="text-[#1D8751] font-semibold">
+                    <span className="text-[#1D8751] font-semibold break-words ml-2">
                       {formatAmount(receiveAmount)} USDT
                     </span>
                   </div>
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-2 sm:gap-3">
                   <button
                     onClick={() => setShowFeedbackModal(true)}
-                    className="w-full bg-[#F79330] text-white rounded-lg px-6 py-3 font-semibold hover:bg-[#e6821a] transition-colors"
+                    className="w-full bg-[#F79330] text-white rounded-lg px-4 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base font-semibold hover:bg-[#e6821a] transition-colors"
                   >
                     Provide Feedback
                   </button>
@@ -829,7 +833,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                       // router.push("/dashboard");
                       window.location.href = "/dashboard/p2p/";
                     }}
-                    className="w-full bg-[#1D8751] text-white rounded-lg px-6 py-3 font-semibold hover:bg-[#167a45] transition-colors"
+                    className="w-full bg-[#1D8751] text-white rounded-lg px-4 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base font-semibold hover:bg-[#167a45] transition-colors"
                   >
                     Go to Dashboard
                   </button>
@@ -841,13 +845,13 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
 
         {/* Feedback Modal */}
         {showFeedbackModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-[var(--card-color)] rounded-2xl p-8 max-w-md w-full mx-4 border border-gray-200 dark:border-[#35353E]">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-[var(--card-color)] rounded-2xl p-4 sm:p-6 min-[900px]:p-8 max-w-md w-full mx-4 border border-gray-200 dark:border-[#35353E] max-h-[90vh] overflow-y-auto">
               <div className="text-center">
                 {/* Feedback Icon */}
-                <div className="w-16 h-16 bg-[#F79330] rounded-full flex items-center justify-center mx-auto mb-6">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-[#F79330] rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
                   <svg
-                    className="w-8 h-8 text-white"
+                    className="w-6 h-6 sm:w-8 sm:h-8 text-white"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -862,32 +866,32 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                 </div>
 
                 {/* Feedback Title */}
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-3 sm:mb-4">
                   Rate Your Experience
                 </h2>
 
                 {/* Rating Buttons */}
-                <div className="flex gap-4 justify-center mb-6">
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mb-4 sm:mb-6">
                   <button
                     onClick={() => setFeedbackRating(true)}
-                    className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${feedbackRating === true
+                    className={`flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg text-sm sm:text-base font-semibold transition-all duration-200 ${feedbackRating === true
                         ? "bg-[#1D8751] text-white shadow-lg scale-105"
                         : "bg-gray-100 dark:bg-[#35353E] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-[#404040] hover:scale-105"
                       }`}
                   >
-                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M7.493 18.75c-.425 0-.82-.236-.975-.632A7.48 7.48 0 016 15.375c0-1.75.599-3.358 1.602-4.634.151-.192.373-.309.6-.397.473-.183.89-.514 1.212-.924a9.042 9.042 0 012.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 00.322-1.672V3a.75.75 0 01.75-.75 2.25 2.25 0 012.25 2.25c0 1.152-.26 2.243-.723 3.218-.266.558-.107 1.282.725 1.282h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 01-2.649 7.521c-.388.482-.987.729-1.605.729H14.23c-.483 0-.964-.078-1.423-.23l-3.114-1.04a4.501 4.501 0 00-1.423-.23h-.777zM2.331 10.977a11.969 11.969 0 00-.831 4.398 12 12 0 00.52 3.507c.26.85 1.084 1.368 1.973 1.368H4.9c.445 0 .72-.498.523-.898a8.963 8.963 0 01-.924-3.977c0-1.708.476-3.305 1.302-4.666.245-.403-.028-.959-.5-.959H4.25c-.833 0-1.612.453-1.918 1.227z" />
                     </svg>
                     Positive
                   </button>
                   <button
                     onClick={() => setFeedbackRating(false)}
-                    className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${feedbackRating === false
+                    className={`flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg text-sm sm:text-base font-semibold transition-all duration-200 ${feedbackRating === false
                         ? "bg-[#E23D3A] text-white shadow-lg scale-105"
                         : "bg-gray-100 dark:bg-[#35353E] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-[#404040] hover:scale-105"
                       }`}
                   >
-                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M15.73 5.25h1.035A7.465 7.465 0 0118 9.375a7.465 7.465 0 01-1.235 4.125h-.148c-.806 0-1.534.446-2.031 1.08a9.04 9.04 0 01-2.861 2.4c-.723.384-1.35.956-1.653 1.715a4.498 4.498 0 00-.322 1.672V21a.75.75 0 01-.75.75 2.25 2.25 0 01-2.25-2.25c0-1.152.26-2.243.723-3.218C7.74 15.724 7.366 15 8.25 15h3.126c.618 0 .991.724.725 1.282A7.471 7.471 0 0012 19.5a7.471 7.471 0 00-.1-3.218c-.266-.558.107-1.282.725-1.282H12.75c-.445 0-.72-.498-.523-.898a8.963 8.963 0 01.924-3.977c0-1.708-.476-3.305-1.302-4.666-.245-.403.028-.959.5-.959H15.73zM2.331 10.977a11.969 11.969 0 00-.831 4.398 12 12 0 00.52 3.507c.26.85 1.084 1.368 1.973 1.368H4.9c.445 0 .72-.498.523-.898a8.963 8.963 0 01-.924-3.977c0-1.708.476-3.305 1.302-4.666.245-.403-.028-.959-.5-.959H4.25c-.833 0-1.612.453-1.918 1.227z" />
                     </svg>
                     Negative
@@ -895,7 +899,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                 </div>
 
                 {/* Comment Input */}
-                <div className="mb-6">
+                <div className="mb-4 sm:mb-6">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 text-left">
                     Comment (Optional)
                   </label>
@@ -903,27 +907,27 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                     value={feedbackComment}
                     onChange={(e) => setFeedbackComment(e.target.value)}
                     placeholder="Share your experience..."
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-[#35353E] rounded-lg bg-white dark:bg-[var(--card-color)] text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-[#1D8751] focus:border-transparent resize-none"
+                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border border-gray-300 dark:border-[#35353E] rounded-lg bg-white dark:bg-[var(--card-color)] text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-[#1D8751] focus:border-transparent resize-none"
                     rows={3}
                   />
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex gap-3">
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                   <button
                     onClick={() => {
                       setShowFeedbackModal(false);
                       setFeedbackRating(null);
                       setFeedbackComment("");
                     }}
-                    className="flex-1 bg-gray-100 dark:bg-[#35353E] text-gray-700 dark:text-gray-300 rounded-lg px-6 py-3 font-semibold hover:bg-gray-200 dark:hover:bg-[#404040] transition-colors"
+                    className="flex-1 bg-gray-100 dark:bg-[#35353E] text-gray-700 dark:text-gray-300 rounded-lg px-4 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base font-semibold hover:bg-gray-200 dark:hover:bg-[#404040] transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleFeedbackSubmit}
                     disabled={feedbackLoading || feedbackRating === null}
-                    className="flex-1 bg-[#1D8751] text-white rounded-lg px-6 py-3 font-semibold hover:bg-[#167a45] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 bg-[#1D8751] text-white rounded-lg px-4 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base font-semibold hover:bg-[#167a45] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {feedbackLoading ? "Submitting..." : "Submit Feedback"}
                   </button>

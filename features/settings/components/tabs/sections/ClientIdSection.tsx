@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { showToast } from "@/lib/utils/toast";
 import QRCode from "qrcode";
 import { X } from "lucide-react";
 
@@ -18,7 +17,6 @@ const ClientIdSection: React.FC<ClientIdSectionProps> = ({ user }) => {
       navigator.clipboard.writeText(user.user_id);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
-      showToast.success("Copied to clipboard");
     }
   };
 
