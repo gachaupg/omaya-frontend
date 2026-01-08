@@ -369,7 +369,7 @@ export default function MarketingPage() {
     },
     {
       label: "Countries",
-      value: "150+",
+      value: "50+",
       icon: Globe,
       gradient: "from-[#AD46FF] to-[#F6339A]",
     },
@@ -691,14 +691,14 @@ export default function MarketingPage() {
             })}
           </div>
 
-          {/* Bottom Feature Cards Row - Matching Figma Design */}
-          <div className="relative mt-6 sm:mt-8 md:mt-10">
+          {/* Bottom Feature Cards Row */}
+          <div className="relative mt-6 sm:mt-8 md:mt-10 max-w-7xl mx-auto">
             {/* Dark background container with green gradient */}
-            <div className="bg-gray-100 dark:bg-[#1D1D23] rounded-2xl p-4 sm:p-6 md:p-8 border border-gray-200 dark:border-[#2A2A2A]">
+            <div className="bg-gray-100 dark:bg-[#1D8751]/7 rounded-2xl p-4 md:p-6 border border-border dark:border-[#1D8751]/10">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 md:gap-8">
                 {/* Lowest Trading Fee */}
                 <div className="flex flex-col items-center justify-center py-2">
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-orange-400 to-orange-500 flex items-center justify-center mb-3 shadow-lg">
+                  <div className="w-12 h-12 sm:w-13 sm:h-13 rounded-2xl bg-linear-to-br from-orange-400 to-orange-500 flex items-center justify-center mb-3 shadow-lg">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
                     </svg>
@@ -708,7 +708,7 @@ export default function MarketingPage() {
 
                 {/* Bank-Grade Security */}
                 <div className="flex flex-col items-center justify-center py-2">
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-[#1D8751] to-[#13B562] flex items-center justify-center mb-3 shadow-lg">
+                  <div className="w-12 h-12 sm:w-13 sm:h-13 rounded-2xl bg-linear-to-br from-[#1D8751] to-[#13B562] flex items-center justify-center mb-3 shadow-lg">
                     <Shield className="w-6 h-6 text-white" />
                   </div>
                   <span className="text-gray-900 dark:text-white text-xs sm:text-sm md:text-base font-medium text-center">Bank-Grade Security</span>
@@ -716,7 +716,7 @@ export default function MarketingPage() {
 
                 {/* 24/7 Support */}
                 <div className="flex flex-col items-center justify-center py-2">
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-pink-400 to-pink-500 flex items-center justify-center mb-3 shadow-lg">
+                  <div className="w-12 h-12 sm:w-13 sm:h-13 rounded-2xl bg-linear-to-br from-pink-400 to-pink-500 flex items-center justify-center mb-3 shadow-lg">
                     <Globe className="w-6 h-6 text-white" />
                   </div>
                   <span className="text-gray-900 dark:text-white text-xs sm:text-sm md:text-base font-medium text-center">24/7 Support</span>
@@ -724,7 +724,7 @@ export default function MarketingPage() {
 
                 {/* Real-Time Charts */}
                 <div className="flex flex-col items-center justify-center py-2">
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-[#1D8751] to-[#13B562] flex items-center justify-center mb-3 shadow-lg">
+                  <div className="w-12 h-12 sm:w-13 sm:h-13 rounded-2xl bg-linear-to-br from-[#1D8751] to-[#13B562] flex items-center justify-center mb-3 shadow-lg">
                     <TrendingUp className="w-6 h-6 text-white" />
                   </div>
                   <span className="text-gray-900 dark:text-white text-xs sm:text-sm md:text-base font-medium text-center">Real-Time Charts</span>
