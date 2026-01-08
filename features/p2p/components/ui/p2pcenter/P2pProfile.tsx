@@ -99,19 +99,25 @@ const P2pProfile = ({
                 {user?.first_name || 'User Name'}
               </span>
               {/* Edit Icon */}
-              <svg
-                className="w-4 h-4 sm:w-5 sm:h-5 text-[#1D8751] cursor-pointer"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                viewBox="0 0 24 24"
+              <button
+                onClick={() => router.push("/dashboard/account")}
+                className="p-1.5 sm:p-2 rounded-full hover:bg-gray-100 dark:hover:bg-[#35353E] transition-colors cursor-pointer active:scale-95"
+                title="Edit Profile"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                />
-              </svg>
+                <svg
+                  className="w-4 h-4 sm:w-5 sm:h-5 text-[#1D8751]"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                  />
+                </svg>
+              </button>
             </div>
 
           </div>

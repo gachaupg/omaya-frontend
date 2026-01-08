@@ -43,13 +43,15 @@ const ForgetPassword = () => {
       storage.setUserEmail(email);
       showToast.success(
         "Password Reset Email Sent",
-        "Check your email for a password reset link."
+        "Check your email for a password reset link.",
+        { position: "top-center" }
       );
     } catch (err: any) {
       setEmailError(err?.message || "Failed to send reset email");
       showToast.error(
         "Password Reset Failed",
-        err?.message || "Failed to send reset email"
+        err?.message || "Failed to send reset email",
+        { position: "top-center" }
       );
     } finally {
       setIsLoading(false);

@@ -1,28 +1,34 @@
 import { toast } from "sonner";
 
+type ToastPosition = "top-center" | "top-right" | "top-left" | "bottom-center" | "bottom-right" | "bottom-left";
+
 export const showToast = {
-  success: (message: string, description?: string) => {
+  success: (message: string, description?: string, options?: { position?: ToastPosition }) => {
     toast.success(message, {
       description,
       duration: 3000,
+      position: options?.position || "top-right",
     });
   },
-  error: (message: string, description?: string) => {
+  error: (message: string, description?: string, options?: { position?: ToastPosition }) => {
     toast.error(message, {
       description,
       duration: 4000,
+      position: options?.position || "top-right",
     });
   },
-  warning: (message: string, description?: string) => {
+  warning: (message: string, description?: string, options?: { position?: ToastPosition }) => {
     toast.warning(message, {
       description,
       duration: 3000,
+      position: options?.position || "top-right",
     });
   },
-  info: (message: string, description?: string) => {
+  info: (message: string, description?: string, options?: { position?: ToastPosition }) => {
     toast.info(message, {
       description,
       duration: 3000,
+      position: options?.position || "top-right",
     });
   },
   loading: (

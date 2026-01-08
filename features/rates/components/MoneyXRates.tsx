@@ -1159,23 +1159,6 @@ const MoneyXRates = () => {
                 </p>
               )}
 
-              {/* Confirmation checkbox */}
-              <label
-                className={`flex mb-4 items-center gap-2 mt-4 text-sm ${isDark ? "text-[#788099]" : "text-[#475569]"}`}
-              >
-                <input
-                  type="checkbox"
-                  checked={isAddressConfirmed}
-                  onChange={(event) =>
-                    setIsAddressConfirmed(event.target.checked)
-                  }
-                  className="w-4 h-4 rounded border-[#1D8751] text-[#1D8751] focus:ring-[#1D8751] accent-[#1D8751]"
-                />
-                <span>
-                  {t("rates.confirmAddress", "I confirm that this bank account address is correct.")}
-                </span>
-              </label>
-
               {/* Terms and Conditions Summary */}
               <div className="flex items-center mb-2 mt-4">
                 <span className="mr-2 text-[#1D8751]">
@@ -1209,33 +1192,48 @@ const MoneyXRates = () => {
                 className={`border border-[#1D8751] rounded-xl p-4 ${isDark ? "bg-[#1D1D23]" : "bg-[#F8FAFF]"
                   }`}
               >
-                <ul className="list-none space-y-2">
+                <ul className="list-none space-y-3">
                   <li className="flex items-start">
-                    <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
-                    <span
-                      className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm`}
-                    >
-                      {t("rates.termsOwnAccount", "Please send the money from your own account Only")}
+                    <span className="w-2 h-2 mt-1.5 rounded-full bg-[#1D8751] inline-block mr-3 shrink-0"></span>
+                    <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm`}>
+                      <strong>Ownership:</strong> Use only wallets, bank accounts, or mobile money numbers you personally own. Third-party accounts are not allowed.
                     </span>
                   </li>
                   <li className="flex items-start">
-                    <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
-                    <span
-                      className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm`}
-                    >
-                      {t("rates.termsTransactionId", "Put transaction ID in the description field of the bank")}
+                    <span className="w-2 h-2 mt-1.5 rounded-full bg-[#1D8751] inline-block mr-3 shrink-0"></span>
+                    <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm`}>
+                      <strong>Correct Details:</strong> Enter correct receiving wallet, bank account, or mobile money number. Send funds only to our officially provided accounts.
                     </span>
                   </li>
                   <li className="flex items-start">
-                    <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
-                    <span
-                      className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm`}
-                    >
-                      {t("rates.termsReject", "Please note, If you do not follow above conditions, we will reject your transaction and send you back your money.")}
+                    <span className="w-2 h-2 mt-1.5 rounded-full bg-[#1D8751] inline-block mr-3 shrink-0"></span>
+                    <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm`}>
+                      <strong>Irreversible:</strong> Transactions are irreversible. Incorrect details may result in permanent fund loss—we cannot recover them.
+                    </span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="w-2 h-2 mt-1.5 rounded-full bg-[#1D8751] inline-block mr-3 shrink-0"></span>
+                    <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm`}>
+                      <strong>Time Limit:</strong> Send funds only while the transaction timer is active. Transactions after timer expiry may be rejected.
                     </span>
                   </li>
                 </ul>
               </div>
+
+              {/* Acceptance checkbox */}
+              <label
+                className={`flex mb-4 items-start gap-2 mt-4 text-sm cursor-pointer ${isDark ? "text-[#788099]" : "text-[#475569]"}`}
+              >
+                <input
+                  type="checkbox"
+                  checked={isAddressConfirmed}
+                  onChange={(event) =>
+                    setIsAddressConfirmed(event.target.checked)
+                  }
+                  className="w-4 h-4 mt-0.5 rounded border-[#1D8751] text-[#1D8751] focus:ring-[#1D8751] accent-[#1D8751]"
+                />
+                <span>I have read and agreed to Omaya Exchange <a href="/terms" className="text-[#1D8751] underline">Terms of Use</a>, <a href="/privacy" className="text-[#1D8751] underline">Privacy Policy</a></span>
+              </label>
             </div>
 
             {/* Final Submit Button */}
