@@ -22,6 +22,7 @@ import { MdCurrencyBitcoin } from "react-icons/md";
 import { ShieldCheck, CircleCheckBig, Sparkles, Earth } from "lucide-react";
 
 import { GoDotFill } from "react-icons/go";
+import FloatingParticles from "@/components/ui/floating-particles";
 
 const steps = [
   {
@@ -154,44 +155,7 @@ interface Article {
   createdAt?: string;
 }
 
-const FloatingParticles = ({ count = 12, delay = 1000 }) => {
-  const [mounted, setMounted] = useState(false);
 
-  useEffect(() => {
-    const timer = setTimeout(() => setMounted(true), delay);
-    return () => clearTimeout(timer);
-  }, [delay]);
-
-  const particles = useMemo(() => {
-    return Array.from({ length: count }).map((_, i) => ({
-      id: i,
-      size: Math.random() * 6 + 5, // Size between 5px and 11px
-      duration: Math.random() * 20 + 10, // Duration between 10s and 30s
-      left: Math.random() * 100, // Random position from 0 to 100%
-      top: Math.random() * 100, // Random position from 0 to 100%
-    }));
-  }, [count]);
-
-  if (!mounted) return null;
-
-  return (
-    <div className="pointer-events-none absolute inset-0 overflow-hidden transition-opacity duration-1000 opacity-100">
-      {particles.map((p) => (
-        <span
-          key={p.id}
-          className="absolute rounded-full bg-[#1D8751]/50 animate-floatSlow"
-          style={{
-            width: `${p.size}px`,
-            height: `${p.size}px`,
-            left: `${p.left}%`,
-            top: `${p.top}%`,
-            animationDuration: `${p.duration}s`,
-          }}
-        />
-      ))}
-    </div>
-  );
-};
 
 export default function MarketingPage() {
   const { t } = useMarketingI18n();
@@ -448,7 +412,7 @@ export default function MarketingPage() {
           <div className="absolute top-[600px] right-1/3 w-2 h-2 bg-[#13B562] rounded-full opacity-5 dark:opacity-10 blur-sm animate-pulse" style={{ animationDelay: '0.4s' }}></div>
           <div className="absolute bottom-1/4 right-1/4 w-1.5 h-1.5 bg-[#1D8751] rounded-full opacity-7 dark:opacity-12 blur-sm animate-pulse" style={{ animationDelay: '1.2s' }}></div>
           <div className="absolute top-[700px] left-1/2 w-2 h-2 bg-[#13B562] rounded-full opacity-6 dark:opacity-11 blur-sm animate-pulse" style={{ animationDelay: '0.6s' }}></div>
-          <FloatingParticles count={4} />
+          <FloatingParticles count={4} size={{ min: 5, max: 11 }} />
 
         </div>
 
@@ -1047,9 +1011,9 @@ export default function MarketingPage() {
             <div className="rounded-b-3xl">
               {/* Inner content card (flat top, rounded bottom) */}
               <div className="relative bg-gray-50 dark:bg-(--card-color) rounded-b-3xl p-5 sm:p-6 md:p-8 shadow-sm overflow-hidden">
-               {/* green glow bg */}
-               <div className="absolute bg-[#1D8751] blur-3xl w-90 h-70 bottom-30 right-40 opacity-20 z-1" />
-               
+                {/* green glow bg */}
+                <div className="absolute bg-[#1D8751] blur-3xl w-90 h-70 bottom-30 right-40 opacity-20 z-1" />
+
                 {/* Overlay to fade card background to page background at bottom */}
                 <div
                   className="absolute inset-x-0 bottom-0 h-3/4 rounded-b-3xl pointer-events-none dark:hidden"
@@ -1207,7 +1171,7 @@ export default function MarketingPage() {
         {/* Dark gradient background with green dots */}
         <div className="absolute inset-0 overflow-hidden">
           {/* Green glowing particles background */}
-          <FloatingParticles count={6} />
+          <FloatingParticles count={6} size={{ min: 5, max: 11 }} />
 
           {/* <div className="absolute top-20 left-10 w-2 h-2 bg-[#1D8751] rounded-full opacity-60 blur-sm animate-pulse"></div>
           <div className="absolute top-40 right-20 w-3 h-3 bg-[#1D8751] rounded-full opacity-40 blur-md animate-pulse" style={{ animationDelay: '0.5s' }}></div>
@@ -1408,7 +1372,7 @@ export default function MarketingPage() {
   relative overflow-hidden
 ">
         {/* Subtle floating particles */}
-        <FloatingParticles count={8} />
+        <FloatingParticles count={8} size={{ min: 5, max: 11 }} />
         {/* <div className="pointer-events-none absolute inset-0 hidden sm:block">
           <div className="absolute top-16 left-1/4 w-2 h-2 bg-[#1D8751] rounded-full opacity-60"></div>
           <div className="absolute top-32 right-1/3 w-3 h-3 bg-[#13B562] rounded-full opacity-40 "></div>
