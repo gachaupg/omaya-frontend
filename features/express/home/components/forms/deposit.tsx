@@ -1207,6 +1207,24 @@ export default function DepositForm({
     return () => clearTimeout(safetyTimeout);
   }, [isCalculating, isCalculatingReceive, estimateLoading]);
 
+  // Clear validation errors when amount is cleared or form is reset
+  useEffect(() => {
+    if (!payAmount || payAmount === 0 || payAmountInput === "" || payAmountInput === "0") {
+      setApiValidationError(null);
+      setReceiveAmountError(null);
+      setEstimateError(null);
+    }
+  }, [payAmount, payAmountInput]);
+
+  // Clear validation errors on component unmount
+  useEffect(() => {
+    return () => {
+      setApiValidationError(null);
+      setReceiveAmountError(null);
+      setEstimateError(null);
+    };
+  }, []);
+
   // Filter assets based on search term - search by ticker and name
   const filteredSwapAssets =
     assetsDisplay.displayData?.filter((asset: SupportedAsset) => {
@@ -2286,6 +2304,12 @@ export default function DepositForm({
 
   // Handle form submission
   const handleSubmit = async () => {
+    // Prevent submission if amount exceeds $15,000
+    if (payAmount > 15000 || getAmount > 15000) {
+      showToast.error("Amount cannot exceed $15,000. Please contact OTC Desk for larger amounts.");
+      setIsInfoModalOpen(true);
+      return;
+    }
     // Clear previous errors
     setValidationErrors([]);
 
@@ -3152,10 +3176,14 @@ export default function DepositForm({
                 type="button"
                 className={`w-full text-base font-medium py-1.5 rounded-full flex items-center justify-center gap-2 transition-colors text-white ${
                   isHomePage
-                    ? "bg-[#1D8751] hover:bg-[#1D8751]/80 cursor-pointer"
+                    ? payAmount >= 15000 || getAmount >= 15000
+                      ? "bg-gray-500 cursor-not-allowed"
+                      : "bg-[#1D8751] hover:bg-[#1D8751]/80 cursor-pointer"
                     : isSubmitting ||
                       !selectedAsset ||
                       !payBank ||
+                      payAmount >= 15000 ||
+                      getAmount >= 15000 ||
                       (selectedAsset &&
                         !isSimpleCalculationAsset(selectedAsset) &&
                         !isForexAsset(selectedAsset) &&
@@ -3204,7 +3232,7 @@ export default function DepositForm({
               }}
                 disabled={
                   requiresLoginRedirect
-                    ? false
+                    ? payAmount >= 15000 || getAmount >= 15000
                     : isSubmitting ||
                       !selectedAsset ||
                       !payBank ||
@@ -3857,12 +3885,12 @@ export default function DepositForm({
           <div className="flex flex-col gap-3 w-full px-2">
             <button
               className={`w-full text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors text-white ${
-                isSubmitting
+                isSubmitting || payAmount >= 15000 || getAmount >= 15000
                   ? "bg-gray-500 cursor-not-allowed"
                   : "bg-[#1D8751] hover:bg-[#166b3e]"
               }`}
               onClick={handleProceedToNext}
-              disabled={isSubmitting || !walletAddress.trim() || !!walletError}
+              disabled={isSubmitting || !walletAddress.trim() || !!walletError || payAmount >= 15000 || getAmount >= 15000}
             >
               {isSubmitting ? (
                 <div className="flex items-center gap-2">
@@ -3887,10 +3915,30 @@ export default function DepositForm({
       {/* InfoModal */}
       <InfoModal
         isOpen={isInfoModalOpen}
-        onClose={() => setIsInfoModalOpen(false)}
+        onClose={() => {
+          // When modal closes, reset amount to maximum allowed (15000)
+          if (payAmount > 15000) {
+            setPayAmount(15000);
+            setPayAmountInput("15000");
+          }
+          if (getAmount > 15000) {
+            setGetAmount(15000);
+            setGetAmountInput("15000");
+          }
+          setIsInfoModalOpen(false);
+        }}
         onContactUs={() => {
           // Handle contact us action - you can customize this
           window.open('https://wa.me/your-whatsapp-number', '_blank');
+          // When modal closes, reset amount to maximum allowed (15000)
+          if (payAmount > 15000) {
+            setPayAmount(15000);
+            setPayAmountInput("15000");
+          }
+          if (getAmount > 15000) {
+            setGetAmount(15000);
+            setGetAmountInput("15000");
+          }
           setIsInfoModalOpen(false);
         }}
       />

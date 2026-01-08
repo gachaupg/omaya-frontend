@@ -843,7 +843,8 @@ export default function Navbar() {
                         }}
                       >
                         <div
-                          className={`flex items-center rounded-lg transition-colors duration-200 group p-3 -m-3 ${pathname === "/dashboard/express-exchange"
+                          className={`flex items-center rounded-lg transition-colors duration-200 group p-3 -m-3 ${pathname === "/dashboard/express-exchange" ||
+                            pathname?.startsWith("/dashboard/express-exchange/")
                             ? "dark:bg-[#35353E] bg-[#e8f5ee]"
                             : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
                             }`}
@@ -902,7 +903,8 @@ export default function Navbar() {
                         }}
                       >
                         <div
-                          className={`flex items-center transition-colors duration-200 group rounded-lg p-3 -m-3 ${pathname === "/dashboard/exchange"
+                          className={`flex items-center transition-colors duration-200 group rounded-lg p-3 -m-3 ${pathname === "/dashboard/exchange" ||
+                            pathname?.startsWith("/dashboard/exchange/")
                             ? "dark:bg-[#35353E] bg-[#e8f5ee]"
                             : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
                             }`}
@@ -1395,7 +1397,8 @@ export default function Navbar() {
                               }}
                             >
                               <div
-                                className={`flex items-center rounded-lg transition-colors duration-200 group p-3 ${pathname === "/dashboard/express-exchange"
+                                className={`flex items-center rounded-lg transition-colors duration-200 group p-3 ${pathname === "/dashboard/express-exchange" ||
+                                  pathname?.startsWith("/dashboard/express-exchange/")
                                   ? "dark:bg-[#35353E] bg-[#e8f5ee]"
                                   : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
                                   }`}
@@ -1632,7 +1635,8 @@ export default function Navbar() {
                               }}
                             >
                               <div
-                                className={`flex items-center rounded-lg transition-colors duration-200 group p-3 ${pathname === "/dashboard/exchange"
+                                className={`flex items-center rounded-lg transition-colors duration-200 group p-3 ${pathname === "/dashboard/exchange" ||
+                                  pathname?.startsWith("/dashboard/exchange/")
                                   ? "dark:bg-[#35353E] bg-[#e8f5ee]"
                                   : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
                                   }`}
