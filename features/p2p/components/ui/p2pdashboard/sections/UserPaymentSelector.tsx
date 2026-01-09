@@ -170,16 +170,16 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
                   />
                   <div>
                     <p className="text-xs text-gray-500 dark:text-[#788099] mb-1">
-                      Account Name
-                    </p>
-                    <p className="font-semibold text-gray-900 dark:text-white mb-2">
-                      {detail.account_name}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-[#788099] mb-1">
                       Account Number
                     </p>
-                    <p className="font-semibold text-gray-900 dark:text-white">
+                    <p className="font-semibold text-gray-900 dark:text-white mb-2">
                       {detail.account_number}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-[#788099] mb-1">
+                      Account Name
+                    </p>
+                    <p className="font-semibold text-gray-900 dark:text-white">
+                      {detail.account_name}
                     </p>
                   </div>
                 </div>

@@ -3,7 +3,7 @@
  */
 import { createSlice, PayloadAction, createAsyncThunk } from "@reduxjs/toolkit";
 import { API_CONFIG } from "@/lib/appConfig";
-import { post, patch, AxiosError } from "@/lib/apiClient";
+import { post, patch, get, AxiosError } from "@/lib/apiClient";
 import { logger } from '@/lib/utils/logger';
 
 import {
@@ -13,8 +13,13 @@ import {
   MoneyXState,
 } from "../types";
 
-const initialState: MoneyXState = {
+interface ExtendedMoneyXState extends MoneyXState {
+  transactions: MoneyXTransaction[] | null;
+}
+
+const initialState: ExtendedMoneyXState = {
   transaction: null,
+  transactions: null,
   loading: false,
   error: null,
 };
@@ -49,6 +54,30 @@ const handleApiError = (error: unknown): string => {
 };
 
 // Async thunks
+export const fetchMoneyXTransactions = createAsyncThunk<
+  MoneyXTransaction[],
+  void
+>(
+  "moneyX/fetchTransactions",
+  async (_, { rejectWithValue }) => {
+    try {
+      logger.debug('moneyX', "Fetching MoneyX transactions");
+      const response = await get<MoneyXTransaction[] | { results: MoneyXTransaction[] }>(
+        API_CONFIG.MONEYX.TRANSACTIONS
+      );
+      logger.debug('moneyX', "MoneyX transactions fetched:", response.data);
+      // Handle both array response and paginated response
+      const transactions = Array.isArray(response.data) 
+        ? response.data 
+        : response.data?.results || [];
+      return transactions;
+    } catch (error) {
+      logger.error('moneyX', "Failed to fetch MoneyX transactions:", error);
+      return rejectWithValue(handleApiError(error));
+    }
+  }
+);
+
 export const createMoneyXTransaction = createAsyncThunk<
   MoneyXTransaction,
   CreateMoneyXTransactionPayload
@@ -106,6 +135,23 @@ const moneyXSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
+    // Fetch Transactions
+    builder.addCase(fetchMoneyXTransactions.pending, (state) => {
+      state.loading = true;
+      state.error = null;
+    });
+    builder.addCase(
+      fetchMoneyXTransactions.fulfilled,
+      (state, action: PayloadAction<MoneyXTransaction[]>) => {
+        state.loading = false;
+        state.transactions = action.payload;
+      }
+    );
+    builder.addCase(fetchMoneyXTransactions.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.payload as string;
+    });
+
     // Create Transaction
     builder.addCase(createMoneyXTransaction.pending, (state) => {
       state.loading = true;

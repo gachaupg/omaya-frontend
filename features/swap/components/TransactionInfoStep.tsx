@@ -40,7 +40,7 @@ const baseCard =
   `rounded-2xl ${strongBorder} bg-white dark:bg-[#18181D] dark:text-white text-gray-900`;
 const labelCopy = "text-[12px] tracking-wide dark:text-[#7d7f95] text-gray-600";
 const inputBase =
-  `rounded-lg sm:rounded-2xl bg-transparent dark:bg-transparent ${strongBorder} dark:text-white text-[#35353e] px-2 sm:px-4 py-2 w-full text-sm sm:text-lg dark:placeholder:text-[#5f6070] placeholder:text-gray-400 focus:outline-none h-[42px] sm:h-[48px]`;
+  `rounded-lg sm:rounded-xl md:rounded-2xl bg-transparent dark:bg-transparent ${strongBorder} dark:text-white text-[#35353e] px-2 sm:px-3 md:px-4 py-2 w-full text-sm sm:text-base md:text-lg dark:placeholder:text-[#5f6070] placeholder:text-gray-400 focus:outline-none h-[42px] sm:h-[46px] md:h-[48px]`;
 
 const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
   const { isDark } = useTheme();
@@ -348,9 +348,9 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
         <button
           type="button"
           onClick={toggle}
-          className={`flex items-center justify-between w-full rounded-2xl ${strongBorder} bg-transparent dark:bg-transparent px-4 py-2 text-lg h-[48px] transition-opacity ${isLoadingEstimate ? "opacity-80" : ""}`}
+          className={`flex items-center justify-between w-full rounded-xl sm:rounded-2xl ${strongBorder} bg-transparent dark:bg-transparent px-3 sm:px-4 py-2 text-base sm:text-lg h-[42px] sm:h-[46px] md:h-[48px] transition-opacity ${isLoadingEstimate ? "opacity-80" : ""}`}
         >
-          <div className="flex items-center gap-3 text-left min-w-0">
+          <div className="flex items-center gap-2 sm:gap-3 text-left min-w-0">
             <img
               src={
                 asset?.image ||
@@ -359,14 +359,14 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
                 "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
               }
               alt={asset?.name || "asset icon"}
-              className="w-6 h-6 rounded-full object-cover flex-shrink-0"
+              className="w-5 h-5 sm:w-6 sm:h-6 rounded-full object-cover flex-shrink-0"
               loading="lazy"
               onError={(e) => {
                 e.currentTarget.src =
                   "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
               }}
             />
-            <p className="text-lg dark:text-white text-gray-900 font-semibold truncate">
+            <p className="text-base sm:text-lg dark:text-white text-gray-900 font-semibold truncate">
               {asset
                 ? asset.ticker?.toUpperCase() ||
                 asset.symbol?.toUpperCase() ||
@@ -446,11 +446,11 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
 
       {/* You Send */}
       <div className="relative mb-1 sm:mb-2 md:mb-3">
-        <div className={`${baseCard} p-2 sm:p-3 md:p-6 space-y-2 sm:space-y-2.5`} data-swap-card="true">
+        <div className={`${baseCard} p-3 sm:p-4 md:p-5 lg:p-6 space-y-2 sm:space-y-3 md:space-y-4`} data-swap-card="true">
           <div className="flex flex-col sm:flex-row sm:items-end gap-2 sm:gap-3 md:gap-4">
-            <div className="space-y-0.5 sm:flex-1">
-              <p className="text-sm sm:text-base font-semibold">{t("swap.youSend", "You Send")}</p>
-              <p className="text-xs dark:text-[#7d7f95] text-gray-500">
+            <div className="space-y-1 sm:flex-1">
+              <p className="text-sm sm:text-base md:text-lg font-semibold">{t("swap.youSend", "You Send")}</p>
+              <p className="text-xs sm:text-sm dark:text-[#7d7f95] text-gray-500">
                 {t("swap.iWantToSend", "I want to Send")}
               </p>
             </div>
@@ -504,11 +504,11 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
 
       {/* You Receive */}
       <div className="mb-1 sm:mb-2 md:mb-3">
-        <div className={`${baseCard} p-2 sm:p-3 md:p-6 space-y-2 sm:space-y-2.5`} data-swap-card="true">
+        <div className={`${baseCard} p-3 sm:p-4 md:p-5 lg:p-6 space-y-2 sm:space-y-3 md:space-y-4`} data-swap-card="true">
           <div className="flex flex-col sm:flex-row sm:items-end gap-2 sm:gap-3 md:gap-4">
-            <div className="space-y-0.5 sm:flex-1">
-              <p className="text-sm sm:text-base font-semibold">{t("swap.youReceive", "You Receive")}</p>
-              <p className="text-xs dark:text-[#7d7f95] text-gray-500">
+            <div className="space-y-1 sm:flex-1">
+              <p className="text-sm sm:text-base md:text-lg font-semibold">{t("swap.youReceive", "You Receive")}</p>
+              <p className="text-xs sm:text-sm dark:text-[#7d7f95] text-gray-500">
                 {t("swap.iWantToReceive", "I want to Receive")}
               </p>
             </div>

@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { showToast } from "@/lib/utils/toast";
 import QRCode from "qrcode";
 import { X } from "lucide-react";
 
@@ -18,7 +17,6 @@ const ClientIdSection: React.FC<ClientIdSectionProps> = ({ user }) => {
       navigator.clipboard.writeText(user.user_id);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
-      showToast.success("Copied to clipboard");
     }
   };
 
@@ -77,64 +75,64 @@ const ClientIdSection: React.FC<ClientIdSectionProps> = ({ user }) => {
               <span className="text-[#1D8751] text-xs sm:text-sm font-semibold truncate min-w-0">
                 {user?.user_id || ""}
               </span>
-              <button
-                type="button"
-                onClick={handleQRCodeClick}
-                className="ml-auto flex-shrink-0 hover:opacity-70 transition-opacity cursor-pointer"
-                title="Show QR Code"
-              >
-                {/* QR icon */}
-                <svg
-                  width="16"
-                  height="16"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="#1D8751"
-                  className="flex-shrink-0"
-                >
-                  <rect
-                    x="3"
-                    y="3"
-                    width="6"
-                    height="6"
-                    rx="1.5"
-                    strokeWidth="2"
-                  />
-                  <rect
-                    x="15"
-                    y="3"
-                    width="6"
-                    height="6"
-                    rx="1.5"
-                    strokeWidth="2"
-                  />
-                  <rect
-                    x="3"
-                    y="15"
-                    width="6"
-                    height="6"
-                    rx="1.5"
-                    strokeWidth="2"
-                  />
-                  <rect
-                    x="15"
-                    y="15"
-                    width="2"
-                    height="2"
-                    rx="1"
-                    strokeWidth="2"
-                  />
-                  <rect
-                    x="19"
-                    y="19"
-                    width="2"
-                    height="2"
-                    rx="1"
-                    strokeWidth="2"
-                  />
-                </svg>
-              </button>
             </div>
+            <button
+              type="button"
+              onClick={handleQRCodeClick}
+              className="flex items-center justify-center gap-1 px-3 py-2 rounded-xl dark:bg-[var(--card-color)] bg-gray-200 text-[#1D8751] font-semibold hover:bg-[#1D8751] hover:text-white transition text-sm whitespace-nowrap flex-shrink-0"
+              title="Show QR Code"
+            >
+              <span>QR</span>
+              <svg
+                width="14"
+                height="14"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                className="flex-shrink-0"
+              >
+                <rect
+                  x="3"
+                  y="3"
+                  width="6"
+                  height="6"
+                  rx="1.5"
+                  strokeWidth="2"
+                />
+                <rect
+                  x="15"
+                  y="3"
+                  width="6"
+                  height="6"
+                  rx="1.5"
+                  strokeWidth="2"
+                />
+                <rect
+                  x="3"
+                  y="15"
+                  width="6"
+                  height="6"
+                  rx="1.5"
+                  strokeWidth="2"
+                />
+                <rect
+                  x="15"
+                  y="15"
+                  width="2"
+                  height="2"
+                  rx="1"
+                  strokeWidth="2"
+                />
+                <rect
+                  x="19"
+                  y="19"
+                  width="2"
+                  height="2"
+                  rx="1"
+                  strokeWidth="2"
+                />
+              </svg>
+            </button>
             <button
               className={`flex items-center justify-center gap-1 px-3 py-2 rounded-xl dark:bg-[var(--card-color)] bg-gray-200 text-[#1D8751] font-semibold hover:bg-[#1D8751] hover:text-white transition text-sm whitespace-nowrap flex-shrink-0 ${copied ? "bg-[#1D8751] text-white" : ""
                 }`}

@@ -664,88 +664,61 @@ export default function MarketingPage() {
                       return (
                         <div
                           key={asset.id}
-                          className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4 border border-gray-200 dark:border-[#2A2A2A] hover:border-[#1D8751]/40 transition-colors relative overflow-visible"
+                          className="bg-gray-50 dark:bg-[#1D1D23] rounded-xl border border-gray-200 dark:border-[#2A2A2A] hover:border-[#1D8751]/40 transition-all duration-300 relative overflow-hidden flex flex-col group shadow-sm hover:shadow-md h-full"
                         >
-                          {/* Dark mode gradient background */}
-                          <div 
-                            className="hidden dark:block absolute inset-0 rounded-lg"
-                            style={{
-                              background: 'linear-gradient(to bottom, rgba(29, 29, 35, 0.95), rgba(29, 29, 35, 1))',
-                              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.3)'
-                            }}
-                          ></div>
-                          
-                          {/* Greenish radial gradient from top-right corner - lighter in light mode */}
-                          <div 
-                            className="absolute top-0 right-0 w-3/4 h-3/4 opacity-20 dark:opacity-30 pointer-events-none rounded-lg"
-                            style={{
-                              background: 'radial-gradient(circle at top right, rgba(29, 135, 81, 0.15) 0%, transparent 70%)'
-                            }}
-                          ></div>
-                          
-                          {/* Content wrapper with relative positioning */}
-                          <div className="relative z-10">
-                          {/* Icon header with colored bar cutting across */}
-                          <div className="relative mb-3 w-full -mx-4">
-                            {/* Colored horizontal bar cutting across - faded, edge to edge, no padding, full right coverage */}
-                            <div 
-                              className={`absolute top-1/2 left-0 h-16 ${iconBgColor} transform -translate-y-1/2 opacity-30`}
-                              style={{
-                                right: '-1rem',
-                                width: 'calc(100% + 2rem)'
-                              }}
-                            ></div>
-                            {/* Centered asset image */}
-                            <div className="relative z-10 flex items-center justify-center">
-                              <div className="w-14 h-14 rounded-full flex items-center justify-center">
+                          {/* Colored Header Background */}
+                          <div className={`h-24 w-full ${iconBgColor} bg-opacity-10 dark:bg-opacity-15 relative flex items-center justify-center transition-opacity group-hover:bg-opacity-20`}>
+                             {/* Logo Circle - Centered */}
+                             <div className="w-14 h-14 bg-white dark:bg-white rounded-full flex items-center justify-center shadow-lg transform group-hover:scale-105 transition-transform duration-300">
                                 <Image
                                   src={asset.image}
                                   alt={asset.name}
-                                  width={48}
-                                  height={48}
-                                  className="object-contain w-full h-full"
+                                  width={36}
+                                  height={36}
+                                  className="object-contain w-9 h-9"
                                   unoptimized
+                                  onError={(e) => {
+                                    (e.target as any).src = 'https://res.cloudinary.com/pitz/image/upload/v1764667057/salam_vizvxy.svg';
+                                  }}
                                 />
-                              </div>
-                            </div>
-                          </div>
-                          
-                          {/* Cryptocurrency Name - Left aligned */}
-                          <div className="text-gray-900 dark:text-white font-bold text-sm sm:text-base mb-1">
-                            {asset.name}
+                             </div>
                           </div>
 
-                          {/* Ticker Symbol - Left aligned */}
-                          <div className="text-gray-700 dark:text-white text-xs sm:text-sm mb-1 opacity-80">
-                            {asset.symbol}
-                          </div>
+                          {/* Card Body */}
+                          <div className="p-5 flex flex-col flex-grow">
+                             {/* Name and Symbol */}
+                             <div className="mb-6">
+                               <h3 className="font-bold text-gray-900 dark:text-white text-lg tracking-tight">{asset.name}</h3>
+                               <p className="text-gray-500 dark:text-gray-400 text-sm font-medium uppercase tracking-wide opacity-80">{asset.symbol}</p>
+                             </div>
 
-                          {/* Network Badge (e.g., BSC) - Responsive and dark mode */}
-                          {/* Removed asset.network as it does not exist */}
-                          
-                          {/* Price and Percentage Change - Left aligned */}
-                          <div className="flex items-baseline gap-2 mb-2">
-                            <div className="text-gray-900 dark:text-white font-bold text-base sm:text-lg">
-                              ${formattedPrice}
-                            </div>
-                            <div className={`text-xs sm:text-sm font-medium ${change >= 0 ? 'text-[#13B562]' : 'text-red-500'}`}>
-                              {change >= 0 ? '+' : ''}{change.toFixed(2)}%
-                            </div>
-                          </div>
-                          
-                          {/* Mini Line Chart */}
-                          <div className="h-8 w-full mt-2">
-                            <svg width="100%" height="100%" viewBox="0 0 100 30" preserveAspectRatio="none" className="overflow-visible">
-                              <polyline
-                                points="0,25 10,22 20,20 30,18 40,15 50,12 60,10 70,8 80,6 90,4 100,2"
-                                fill="none"
-                                stroke="#1D8751"
-                                strokeWidth="2"
-                                strokeDasharray="2,2"
-                                strokeLinecap="round"
-                              />
-                            </svg>
-                          </div>
+                             {/* Price Info and Chart */}
+                             <div className="mt-auto">
+                               <div className="flex justify-between items-end">
+                                 <div>
+                                   <div className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">
+                                     ${formattedPrice}
+                                   </div>
+                                   <div className={`text-xs font-bold px-2.5 py-1 rounded-md inline-block mt-1.5 ${change >= 0 ? 'bg-green-500/10 text-[#13B562]' : 'bg-red-500/10 text-red-500'}`}>
+                                     {change >= 0 ? '+' : ''}{change.toFixed(2)}%
+                                   </div>
+                                 </div>
+                                 
+                                 {/* Mini Chart */}
+                                 <div className="w-24 h-10 opacity-70 mb-1">
+                                   <svg width="100%" height="100%" viewBox="0 0 100 30" preserveAspectRatio="none" className="overflow-visible">
+                                      <polyline
+                                        points="0,25 10,22 20,20 30,18 40,15 50,12 60,10 70,8 80,6 90,4 100,2"
+                                        fill="none"
+                                        stroke={change >= 0 ? '#13B562' : '#EF4444'}
+                                        strokeWidth="2.5"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                      />
+                                    </svg>
+                                 </div>
+                               </div>
+                             </div>
                           </div>
                         </div>
                       );
@@ -1308,87 +1281,92 @@ export default function MarketingPage() {
         </div>
       </section>
 
-    {/* Benefits Section - Redesigned */}
-    <section className="w-full bg-gradient-to-br from-[#0B4A2C] via-[#0E5531] to-[#0B4A2C] dark:from-[#0B4A2C] dark:via-[#0E5531] dark:to-[#0B4A2C] py-12 md:py-16 lg:py-20 relative overflow-hidden">
-      {/* Decorative background elements */}
+    {/* Benefits Section - Horizontal Layout with Hexagon Icons */}
+    <section className="w-full bg-gradient-to-r from-[#0A3D24] via-[#0D4A2D] to-[#0A3D24] py-20 md:py-24 lg:py-28 relative overflow-hidden">
+      {/* Decorative background circles - subtle glow behind each benefit */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-[#1D8751]/20 rounded-full blur-3xl opacity-40"></div>
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-[#13B562]/15 rounded-full blur-3xl opacity-30"></div>
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-white/5 rounded-full blur-3xl opacity-20"></div>
+        <div className="absolute top-1/2 left-[10%] -translate-y-1/2 w-[250px] h-[250px] bg-[#1D8751]/8 rounded-full blur-[100px]"></div>
+        <div className="absolute top-1/2 left-[50%] -translate-y-1/2 -translate-x-1/2 w-[300px] h-[300px] bg-[#1D8751]/6 rounded-full blur-[100px]"></div>
+        <div className="absolute top-1/2 right-[10%] -translate-y-1/2 w-[250px] h-[250px] bg-[#1D8751]/8 rounded-full blur-[100px]"></div>
       </div>
 
-      <div className="container mx-auto px-4 md:px-6 lg:px-8 xl:px-12 2xl:px-16 relative z-10">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 lg:gap-10 max-w-7xl mx-auto">
+      <div className="container mx-auto px-6 md:px-8 lg:px-12 xl:px-20 relative z-10">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-16 md:gap-10 lg:gap-20 max-w-7xl mx-auto">
           
-          {/* Card 1: Absolute Safety */}
-          <div className="group">
-            <div className="flex flex-col items-start gap-4 p-6 md:p-8 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-300">
-              {/* Icon */}
-              <div className="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 2L3 7V11C3 16.55 6.84 21.74 12 23C17.16 21.74 21 16.55 21 11V7L12 2Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M9 12L11 14L15 10" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </div>
-              
-              {/* Content */}
-              <div className="flex flex-col gap-2">
-                <h3 className="text-white text-xl md:text-2xl font-bold">
-                  Absolute Safety
-                </h3>
-                <p className="text-white/70 text-sm md:text-base leading-relaxed">
-                  Exchange confidently with OMAYA, where safety is our top priority.
-                </p>
-              </div>
+          {/* Benefit 1: Absolute Safety */}
+          <div className="flex items-start gap-6 flex-1">
+            {/* Hexagon Icon Container */}
+            <div className="flex-shrink-0 relative">
+              {/* Outer hexagon border */}
+              <svg width="72" height="82" viewBox="0 0 72 82" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M36 1L70.6458 20.5V61.5L36 81L1.35418 61.5V20.5L36 1Z" stroke="#1D8751" strokeWidth="1.5" strokeOpacity="0.4"/>
+                {/* Inner filled hexagon */}
+                <path d="M36 12L58 24.5V49.5L36 62L14 49.5V24.5L36 12Z" fill="#1D8751" fillOpacity="0.15"/>
+                {/* Shield icon */}
+                <path d="M36 24L26 29V39C26 44.5 30.5 49.5 36 51C41.5 49.5 46 44.5 46 39V29L36 24Z" stroke="#1D8751" strokeWidth="2" fill="none"/>
+                <path d="M32 37L35 40L41 34" stroke="#1D8751" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            {/* Content */}
+            <div className="flex flex-col gap-3">
+              <h3 className="text-white text-xl md:text-[22px] lg:text-2xl font-bold leading-tight">
+                Absolute Safety
+              </h3>
+              <p className="text-white/70 text-sm md:text-[15px] lg:text-base leading-relaxed max-w-[260px]">
+                Exchange confidently with OMAYA, where safety is our top priority.
+              </p>
             </div>
           </div>
 
-          {/* Card 2: Fast Deposits & Withdrawals */}
-          <div className="group">
-            <div className="flex flex-col items-start gap-4 p-6 md:p-8 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-300">
-              {/* Icon */}
-              <div className="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2"/>
-                  <path d="M12 6V12L16 14" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-                  <path d="M16 8C17.5 9.5 18 11 18 12C18 15.31 15.31 18 12 18C8.69 18 6 15.31 6 12C6 8.69 8.69 6 12 6" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-                </svg>
-              </div>
-              
-              {/* Content */}
-              <div className="flex flex-col gap-2">
-                <h3 className="text-white text-xl md:text-2xl font-bold">
-                  Fast Deposits & Withdrawals
-                </h3>
-                <p className="text-white/70 text-sm md:text-base leading-relaxed">
-                  Enjoy swift and seamless deposits and withdrawals
-                </p>
-              </div>
+          {/* Benefit 2: Fast Deposits & Withdrawals */}
+          <div className="flex items-start gap-6 flex-1">
+            {/* Hexagon Icon Container */}
+            <div className="flex-shrink-0 relative">
+              {/* Outer hexagon border */}
+              <svg width="72" height="82" viewBox="0 0 72 82" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M36 1L70.6458 20.5V61.5L36 81L1.35418 61.5V20.5L36 1Z" stroke="#1D8751" strokeWidth="1.5" strokeOpacity="0.4"/>
+                {/* Inner filled hexagon */}
+                <path d="M36 12L58 24.5V49.5L36 62L14 49.5V24.5L36 12Z" fill="#1D8751" fillOpacity="0.15"/>
+                {/* Dollar/coin icon */}
+                <circle cx="36" cy="41" r="12" stroke="#1D8751" strokeWidth="2" fill="none"/>
+                <path d="M36 35V47M33 38C33 36.5 34.3 35.5 36 35.5C37.7 35.5 39 36.5 39 38C39 39.5 37.7 40.5 36 40.5C34.3 40.5 33 41.5 33 43C33 44.5 34.3 45.5 36 45.5C37.7 45.5 39 44.5 39 43" stroke="#1D8751" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+            </div>
+            {/* Content */}
+            <div className="flex flex-col gap-3">
+              <h3 className="text-white text-xl md:text-[22px] lg:text-2xl font-bold leading-tight">
+                Fast Deposits & Withdrawals
+              </h3>
+              <p className="text-white/70 text-sm md:text-[15px] lg:text-base leading-relaxed max-w-[260px]">
+                Enjoy swift and seamless deposits and withdrawals
+              </p>
             </div>
           </div>
 
-          {/* Card 3: Invite your friend and earn */}
-          <div className="group">
-            <div className="flex flex-col items-start gap-4 p-6 md:p-8 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-300">
-              {/* Icon */}
-              <div className="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M17 21V19C17 17.9391 16.5786 16.9217 15.8284 16.1716C15.0783 15.4214 14.0609 15 13 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <circle cx="9" cy="7" r="4" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M23 21V19C22.9993 18.1137 22.7044 17.2528 22.1614 16.5523C21.6184 15.8519 20.8581 15.3516 20 15.13" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M16 3.13C16.8604 3.35031 17.623 3.85071 18.1676 4.55232C18.7122 5.25392 19.0078 6.11683 19.0078 7.005C19.0078 7.89318 18.7122 8.75608 18.1676 9.45769C17.623 10.1593 16.8604 10.6597 16 10.88" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </div>
-              
-              {/* Content */}
-              <div className="flex flex-col gap-2">
-                <h3 className="text-white text-xl md:text-2xl font-bold">
-                  Invite your friend and earn
-                </h3>
-                <p className="text-white/70 text-sm md:text-base leading-relaxed">
-                  Refer and invite your friends and earn commission on each transaction they make with us!
-                </p>
-              </div>
+          {/* Benefit 3: Invite your friend and earn */}
+          <div className="flex items-start gap-6 flex-1">
+            {/* Hexagon Icon Container */}
+            <div className="flex-shrink-0 relative">
+              {/* Outer hexagon border */}
+              <svg width="72" height="82" viewBox="0 0 72 82" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M36 1L70.6458 20.5V61.5L36 81L1.35418 61.5V20.5L36 1Z" stroke="#1D8751" strokeWidth="1.5" strokeOpacity="0.4"/>
+                {/* Inner filled hexagon */}
+                <path d="M36 12L58 24.5V49.5L36 62L14 49.5V24.5L36 12Z" fill="#1D8751" fillOpacity="0.15"/>
+                {/* People/users icon */}
+                <circle cx="36" cy="34" r="5" stroke="#1D8751" strokeWidth="2" fill="none"/>
+                <path d="M26 52C26 46.5 30.5 42 36 42C41.5 42 46 46.5 46 52" stroke="#1D8751" strokeWidth="2" strokeLinecap="round"/>
+                <circle cx="48" cy="36" r="3.5" stroke="#1D8751" strokeWidth="1.5" fill="none"/>
+                <path d="M44 48C44 44 46.5 41 50 41" stroke="#1D8751" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+            </div>
+            {/* Content */}
+            <div className="flex flex-col gap-3">
+              <h3 className="text-white text-xl md:text-[22px] lg:text-2xl font-bold leading-tight">
+                Invite your friend and earn
+              </h3>
+              <p className="text-white/70 text-sm md:text-[15px] lg:text-base leading-relaxed max-w-[260px]">
+                Refer and invite your friends and earn commission on each transaction they make with us!
+              </p>
             </div>
           </div>
 

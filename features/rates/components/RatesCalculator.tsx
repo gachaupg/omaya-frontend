@@ -1122,8 +1122,16 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                 "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
             }}
           />
-          <div className="flex-1">
-            <div className="text-[#35353e] dark:text-[#ffffff] font-medium flex items-center gap-2">
+          <div className="flex-1 min-w-0">
+            <div
+              className="text-[#35353e] dark:text-[#ffffff] font-medium flex items-center gap-2"
+              title={(
+                asset.ticker ||
+                asset.symbol ||
+                asset.name ||
+                "Unknown"
+              ).toUpperCase()}
+            >
               {(
                 asset.ticker ||
                 asset.symbol ||
@@ -1134,7 +1142,13 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                 {getNetworkDisplayName(getAssetNetwork(asset))}
               </span>
             </div>
-            <div className="text-[#35353e] dark:text-[#788099] text-sm">
+            <div
+              className="text-[#35353e] dark:text-[#788099] text-sm truncate"
+              title={asset.name ||
+                (asset.ticker || "").toUpperCase() ||
+                (asset.symbol || "").toUpperCase() ||
+                "Unknown Asset"}
+            >
               {asset.name ||
                 (asset.ticker || "").toUpperCase() ||
                 (asset.symbol || "").toUpperCase() ||
@@ -1671,18 +1685,23 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
           <div
             data-asset-card="true"
             data-select-card="true"
-            className={`relative flex flex-col sm:flex-row gap-6 rounded-2xl p-4 sm:p-6 overflow-visible border-[1.5px] ${isDark ? "border-[#2F2F3A]" : "border-[#E2E8F0] shadow-sm"
+            className={`relative rounded-2xl p-4 sm:p-6 overflow-visible border-[1.5px] ${isDark ? "border-[#2F2F3A]" : "border-[#E2E8F0] shadow-sm"
               } bg-transparent`}
           >
-            {/* Amount Section */}
-            <div className="flex-1 min-w-0">
-              <label
-                className={`block text-sm mb-2 font-semibold flex items-center gap-2 ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"
-                  }`}
-              >
-                {t("rates.youSend", "You Send")}
-                <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
-              </label>
+            <div className={`text-sm mb-4 font-semibold flex items-center gap-2 ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"}`}>
+              {t("rates.youSend", "You Send")}
+              <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-6">
+              {/* Amount Section */}
+              <div className="flex-1 min-w-0">
+                <label
+                  className={`block text-[15px] mb-2 font-semibold ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"
+                    }`}
+                >
+                  {t("rates.amount", "Amount")}
+                </label>
               <div className="relative">
                 <input
                   type="text"
@@ -1724,7 +1743,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                     }
                   }}
                   placeholder={t("rates.enterAmount", "Enter amount")}
-                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${(isCalculating || isCalculatingReceive) &&
+                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-base sm:text-lg focus:outline-none border appearance-none bg-transparent ${(isCalculating || isCalculatingReceive) &&
                     isCalculatingFromPay &&
                     selectedAsset &&
                     !isSimpleCalculationAsset(selectedAsset)
@@ -1756,7 +1775,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                 </label>
                 <div className="relative" ref={methodDropdownRef}>
                   <div
-                    className={`w-full rounded-2xl px-4 py-2 text-lg focus:outline-none border flex items-center justify-between gap-3 cursor-pointer bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
+                    className={`w-full rounded-2xl px-4 py-2 text-base sm:text-lg focus:outline-none border flex items-center justify-between gap-3 cursor-pointer bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
                       }`}
                     onClick={() =>
                       setIsMethodDropdownOpen(!isMethodDropdownOpen)
@@ -1772,7 +1791,13 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                       ) : (
                         <FaUniversity className="w-8 h-8 flex-shrink-0" />
                       )}
-                      <span className={`${isDark ? "text-white" : "text-[#1F2937]"}`}>
+                      <span
+                        className={`block truncate max-w-[140px] sm:max-w-xs ${isDark ? "text-white" : "text-[#1F2937]"}`}
+                        title={selectedPaymentDetail?.payment_provider_name ||
+                          selectedPaymentDetail?.provider_name ||
+                          selectedPaymentMethod ||
+                          t("rates.selectMethod", "Select Method")}
+                      >
                         {selectedPaymentDetail?.payment_provider_name ||
                           selectedPaymentDetail?.provider_name ||
                           selectedPaymentMethod ||
@@ -1808,7 +1833,10 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                             ) : (
                               <FaUniversity className="w-10 h-10 mr-3 flex-shrink-0" />
                             )}
-                            <span className={`${isDark ? "text-white" : "text-gray-900"}`}>
+                            <span
+                              className={`truncate text-sm sm:text-base ${isDark ? "text-white" : "text-gray-900"}`}
+                              title={provider.provider_name || 'Unknown Provider'}
+                            >
                               {provider.provider_name || 'Unknown Provider'}
                             </span>
                           </div>
@@ -1821,7 +1849,10 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                             onClick={() => handlePaymentMethodSelect(method)}
                           >
                             <FaUniversity className="w-10 h-10 mr-3 flex-shrink-0" />
-                            <span className={`${isDark ? "text-white" : "text-gray-900"}`}>
+                            <span
+                              className={`truncate text-sm sm:text-base ${isDark ? "text-white" : "text-gray-900"}`}
+                              title={method}
+                            >
                               {method}
                             </span>
                           </div>
@@ -1846,7 +1877,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                 </label>
                 <div className="relative" ref={assetDropdownRef}>
                   <div
-                    className={`w-full rounded-2xl px-4 py-2 text-lg focus:outline-none border flex items-center justify-between gap-3 cursor-pointer bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
+                    className={`w-full rounded-2xl px-4 py-2 text-base sm:text-lg focus:outline-none border flex items-center justify-between gap-3 cursor-pointer bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
                       }`}
                     onClick={() => setIsAssetDropdownOpen(!isAssetDropdownOpen)}
                   >
@@ -1870,7 +1901,15 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                           />
                           <div className="flex flex-col">
                             <div className="flex items-center gap-2">
-                              <span className={`font-semibold ${isDark ? "text-white" : "text-[#111827]"}`}>
+                              <span
+                                className={`font-semibold ${isDark ? "text-white" : "text-[#111827]"}`}
+                                title={(
+                                  selectedAsset.ticker ||
+                                  selectedAsset.symbol ||
+                                  selectedAsset.name ||
+                                  "Unknown"
+                                ).toUpperCase()}
+                              >
                                 {(
                                   selectedAsset.ticker ||
                                   selectedAsset.symbol ||
@@ -1878,7 +1917,12 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                                   "Unknown"
                                 ).toUpperCase()}
                               </span>
-                              <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
+                              <span
+                                className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full"
+                                title={getNetworkDisplayName(
+                                  getAssetNetwork(selectedAsset)
+                                )}
+                              >
                                 {getNetworkDisplayName(
                                   getAssetNetwork(selectedAsset)
                                 )}
@@ -1933,6 +1977,8 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                 </div>
               </div>
             )}
+            {/* Close inner flex container */}
+            </div>
           </div>
         </div>
 
@@ -1940,17 +1986,22 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
         <div className="relative mb-0 pb-2">
           <div
             data-asset-card="true"
-            className={`relative flex flex-col sm:flex-row gap-6 rounded-2xl p-4 sm:p-6 overflow-visible border-[1.5px] ${isDark ? "border-[#2F2F3A]" : "border-[#E2E8F0] shadow-sm"
+            className={`relative rounded-2xl p-4 sm:p-6 overflow-visible border-[1.5px] ${isDark ? "border-[#2F2F3A]" : "border-[#E2E8F0] shadow-sm"
               } bg-transparent`}
           >
+            <div className={`text-sm mb-4 font-semibold flex items-center gap-2 ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"}`}>
+              {t("rates.youGet", "You Get")}
+              <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-6">
             {/* You Get Section */}
             <div className="flex-1 min-w-0">
               <label
-                className={`block text-sm mb-2 font-semibold flex items-center gap-2 ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"
+                className={`block text-[15px] mb-2 font-semibold ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"
                   }`}
               >
-                {t("rates.youGet", "You Get")}
-                <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
+                {t("rates.amount", "Amount")}
               </label>
               <div className="relative">
                 <input
@@ -1989,7 +2040,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                     }
                   }}
                   placeholder={t("rates.enterAmount", "Enter amount")}
-                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${(isCalculating || isCalculatingReceive) &&
+                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-base sm:text-lg focus:outline-none border appearance-none bg-transparent ${(isCalculating || isCalculatingReceive) &&
                     !isCalculatingFromPay &&
                     selectedAsset &&
                     !isSimpleCalculationAsset(selectedAsset)
@@ -2021,7 +2072,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                 </label>
                 <div className="relative" ref={assetDropdownRef}>
                   <div
-                    className={`w-full rounded-2xl px-4 py-2 text-lg focus:outline-none border flex items-center justify-between gap-3 cursor-pointer bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
+                    className={`w-full rounded-2xl px-4 py-2 text-base sm:text-lg focus:outline-none border flex items-center justify-between gap-3 cursor-pointer bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
                       }`}
                     onClick={() => setIsAssetDropdownOpen(!isAssetDropdownOpen)}
                   >
@@ -2045,7 +2096,15 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                           />
                           <div className="flex flex-col">
                             <div className="flex items-center gap-2">
-                              <span className={`font-semibold ${isDark ? "text-white" : "text-[#111827]"}`}>
+                              <span
+                                className={`font-semibold ${isDark ? "text-white" : "text-[#111827]"}`}
+                                title={(
+                                  selectedAsset.ticker ||
+                                  selectedAsset.symbol ||
+                                  selectedAsset.name ||
+                                  "Unknown"
+                                ).toUpperCase()}
+                              >
                                 {(
                                   selectedAsset.ticker ||
                                   selectedAsset.symbol ||
@@ -2053,7 +2112,12 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                                   "Unknown"
                                 ).toUpperCase()}
                               </span>
-                              <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
+                              <span
+                                className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full"
+                                title={getNetworkDisplayName(
+                                  getAssetNetwork(selectedAsset)
+                                )}
+                              >
                                 {getNetworkDisplayName(
                                   getAssetNetwork(selectedAsset)
                                 )}
@@ -2118,7 +2182,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                 </label>
                 <div className="relative" ref={methodDropdownRef}>
                   <div
-                    className={`w-full rounded-2xl px-4 py-2 text-lg focus:outline-none border flex items-center justify-between gap-3 cursor-pointer bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
+                    className={`w-full rounded-2xl px-4 py-2 text-base sm:text-lg focus:outline-none border flex items-center justify-between gap-3 cursor-pointer bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
                       }`}
                     onClick={() =>
                       setIsMethodDropdownOpen(!isMethodDropdownOpen)
@@ -2134,7 +2198,13 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                       ) : (
                         <FaUniversity className="w-8 h-8 flex-shrink-0" />
                       )}
-                      <span className={`${isDark ? "text-white" : "text-[#1F2937]"}`}>
+                      <span
+                        className={`block truncate max-w-[140px] sm:max-w-xs ${isDark ? "text-white" : "text-[#1F2937]"}`}
+                        title={selectedPaymentDetail?.payment_provider_name ||
+                          selectedPaymentDetail?.provider_name ||
+                          selectedPaymentMethod ||
+                          t("rates.selectMethod", "Select Method")}
+                      >
                         {selectedPaymentDetail?.payment_provider_name ||
                           selectedPaymentDetail?.provider_name ||
                           selectedPaymentMethod ||
@@ -2170,7 +2240,10 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                             ) : (
                               <FaUniversity className="w-10 h-10 mr-3 flex-shrink-0" />
                             )}
-                            <span className={`${isDark ? "text-white" : "text-gray-900"}`}>
+                            <span
+                              className={`truncate text-sm sm:text-base ${isDark ? "text-white" : "text-gray-900"}`}
+                              title={provider.provider_name || 'Unknown Provider'}
+                            >
                               {provider.provider_name || 'Unknown Provider'}
                             </span>
                           </div>
@@ -2183,7 +2256,10 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                             onClick={() => handlePaymentMethodSelect(method)}
                           >
                             <FaUniversity className="w-10 h-10 mr-3 flex-shrink-0" />
-                            <span className={`${isDark ? "text-white" : "text-gray-900"}`}>
+                            <span
+                              className={`truncate text-sm sm:text-base ${isDark ? "text-white" : "text-gray-900"}`}
+                              title={method}
+                            >
                               {method}
                             </span>
                           </div>
@@ -2199,6 +2275,8 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
               </div>
             )}
           </div>
+            {/* Close inner flex container */}
+            </div>
         </div>
       </div>
 
@@ -2625,8 +2703,9 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
             )}
           </div>
         </>
-      )}
+      )} 
     </div>
+    
   );
 };
 
