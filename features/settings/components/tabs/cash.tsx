@@ -135,11 +135,25 @@ function Cash({ sharedFeesError }: CashProps) {
     }
   }, [success, withdrawalData])
 
-  // Handle errors - show toast
+  // Handle errors - show toast with better error message
   useEffect(() => {
     if (error) {
       console.error("Cash withdrawal error:", error)
-      showToast.error(typeof error === "string" ? error : "Failed to submit withdrawal")
+      // Extract meaningful error message
+      let errorMessage = "Failed to submit withdrawal";
+      if (typeof error === "string") {
+        errorMessage = error;
+      } else if (error && typeof error === "object") {
+        // Handle different error formats
+        if ('error' in error && typeof error.error === 'string') {
+          errorMessage = error.error;
+        } else if ('message' in error && typeof error.message === 'string') {
+          errorMessage = error.message;
+        } else if ('detail' in error && typeof error.detail === 'string') {
+          errorMessage = error.detail;
+        }
+      }
+      showToast.error(errorMessage)
       setIsSubmitting(false)
     }
   }, [error])

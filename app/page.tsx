@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
 import type { RootState } from "@/store/rootReducer";
 import { tokens } from "@/styles/tokens";
-import { Play, MessageCircle, Plus, BarChart, Globe, Lock, DollarSign, Users, TrendingUp, Shield, Zap, Gift, UserPlus, ArrowRight, Building2, Calendar, Clock, MapPin, Phone, Mail, Send, ChevronDown, ChevronUp, ArrowLeftRight, HelpCircle, Wallet, BarChart3, Award } from "lucide-react";
+import { Play, MessageCircle, Plus, BarChart, Globe, Lock, DollarSign, Users, TrendingUp, Shield, Zap, Gift, UserPlus, ArrowRight, Building2, Calendar, Clock, MapPin, Phone, Mail, Send, ChevronDown, ChevronUp, ArrowLeftRight, HelpCircle, Wallet, BarChart3, Award, Rocket } from "lucide-react";
 import ExchangeForm from "@/components/ExchangeForm";
 import { useBlog } from "@/features/blogs/hooks/blog";
 import { BlogPost } from "@/features/blogs/types";
@@ -410,7 +410,7 @@ export default function MarketingPage() {
 
   return (
     <div>
-      <section
+     <section
         className="relative min-h-screen pt-18 pb-16 mx-auto overflow-visible bg-gradient-to-br from-gray-50 to-white dark:bg-[var(--bg-color)]"
       >
         {/* Background styling - different for light and dark modes */}
@@ -1090,13 +1090,13 @@ export default function MarketingPage() {
                       />
                     </div>
 
-                    {/* Badge - Since 2019 (above image card, clearly visible) */}
-                    <div className="absolute -top-3 right-4 md:-top-4 md:right-8 bg-[#1D8751] rounded-full px-3 md:px-4 py-1 md:py-1.5 z-20 shadow-md">
+                    {/* Badge - Since 2019 (positioned slightly below top edge) */}
+                    <div className="absolute top-2 right-4 md:top-3 md:right-8 bg-[#1D8751] rounded-full px-3 md:px-4 py-1 md:py-1.5 z-20 shadow-md">
                       <span className="text-white text-xs font-medium">Since 2019</span>
                     </div>
 
                     {/* Badge - 10K+ Users (inside image card, raised above bottom edge) */}
-                    <div className="absolute bottom-6 left-4 md:bottom-8 md:left-8 bg-[#1D8751] rounded-full px-3 md:px-4 py-1 md:py-1.5 z-20 shadow-md">
+                    <div className="absolute bottom-14 left-4 md:bottom-16 md:left-8 bg-[#1D8751] rounded-full px-3 md:px-4 py-1 md:py-1.5 z-20 shadow-md">
                       <span className="text-white text-xs font-medium">10K+ Users</span>
                     </div>
                   </div>

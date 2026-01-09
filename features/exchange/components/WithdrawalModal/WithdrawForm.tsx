@@ -184,8 +184,8 @@ const WithdrawForm: React.FC<WithdrawFormProps> = (props) => {
                 <div className="flex justify-between items-center">
                   <div>
                     <h3 className="text-white text-sm font-medium mb-2">Selected Payment Method</h3>
-                    <p className="text-white text-sm"><span className="text-[#788099]">Account Name:</span> {selectedUserPaymentDetail.account_name}</p>
                     <p className="text-white text-sm"><span className="text-[#788099]">Account Number:</span> {selectedUserPaymentDetail.account_number}</p>
+                    <p className="text-white text-sm"><span className="text-[#788099]">Account Name:</span> {selectedUserPaymentDetail.account_name}</p>
                   </div>
                   <button
                     onClick={() => handleRemovePaymentDetail(selectedUserPaymentDetail.id)}
@@ -209,8 +209,8 @@ const WithdrawForm: React.FC<WithdrawFormProps> = (props) => {
                       onClick={() => setSelectedUserPaymentDetail(detail)}
                     >
                       <div>
-                        <p className="text-white text-sm"><span className="text-[#788099]">Account Name:</span> {detail.account_name}</p>
                         <p className="text-white text-sm"><span className="text-[#788099]">Account Number:</span> {detail.account_number}</p>
+                        <p className="text-white text-sm"><span className="text-[#788099]">Account Name:</span> {detail.account_name}</p>
                       </div>
                       <button
                         onClick={(e) => {

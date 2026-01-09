@@ -1055,7 +1055,7 @@ const MoneyXRates = () => {
             className={`w-full py-3 px-4 rounded-xl font-semibold text-white bg-[#1D8751] hover:bg-[#0f8f4d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""
               }`}
           >
-            {isSubmitting ? t("rates.processing", "Processing...") : t("rates.exchangeNow", "Exchange Now")}
+            {isSubmitting ? t("rates.processing", "Processing...") : "Submit"}
           </button>
         )}
 
@@ -1177,9 +1177,9 @@ const MoneyXRates = () => {
               </label>
 
               {/* Terms and Conditions Summary */}
-              <div className="flex items-center mb-2 mt-4">
-                <span className="mr-2 text-[#1D8751]">
-                  <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
+              <div className="flex items-center mb-2 mt-4 gap-2">
+                <span className="text-[#1D8751] flex-shrink-0">
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24">
                     <circle
                       cx="12"
                       cy="12"
@@ -1200,36 +1200,36 @@ const MoneyXRates = () => {
                   </svg>
                 </span>
                 <span
-                  className={`text-base font-semibold ${isDark ? "text-[#788099]" : "text-[#475569]"}`}
+                  className={`text-sm sm:text-base font-semibold ${isDark ? "text-[#788099]" : "text-[#475569]"}`}
                 >
                   {t("rates.termsSummary", "Terms and Conditions Summary")}
                 </span>
               </div>
               <div
-                className={`border border-[#1D8751] rounded-xl p-4 ${isDark ? "bg-[#1D1D23]" : "bg-[#F8FAFF]"
+                className={`border border-[#1D8751] rounded-xl p-3 sm:p-4 ${isDark ? "bg-[#1D1D23]" : "bg-[#F8FAFF]"
                   }`}
               >
-                <ul className="list-none space-y-2">
-                  <li className="flex items-start">
-                    <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
+                <ul className="list-none space-y-1.5 sm:space-y-2">
+                  <li className="flex items-start gap-2 sm:gap-3">
+                    <span className="w-2 h-2 sm:w-3 sm:h-3 mt-0.5 sm:mt-1 rounded-full bg-[#1D8751] inline-block flex-shrink-0"></span>
                     <span
-                      className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm`}
+                      className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-xs sm:text-sm leading-relaxed`}
                     >
                       {t("rates.termsOwnAccount", "Please send the money from your own account Only")}
                     </span>
                   </li>
-                  <li className="flex items-start">
-                    <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
+                  <li className="flex items-start gap-2 sm:gap-3">
+                    <span className="w-2 h-2 sm:w-3 sm:h-3 mt-0.5 sm:mt-1 rounded-full bg-[#1D8751] inline-block flex-shrink-0"></span>
                     <span
-                      className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm`}
+                      className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-xs sm:text-sm leading-relaxed`}
                     >
                       {t("rates.termsTransactionId", "Put transaction ID in the description field of the bank")}
                     </span>
                   </li>
-                  <li className="flex items-start">
-                    <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
+                  <li className="flex items-start gap-2 sm:gap-3">
+                    <span className="w-2 h-2 sm:w-3 sm:h-3 mt-0.5 sm:mt-1 rounded-full bg-[#1D8751] inline-block flex-shrink-0"></span>
                     <span
-                      className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm`}
+                      className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-xs sm:text-sm leading-relaxed`}
                     >
                       {t("rates.termsReject", "Please note, If you do not follow above conditions, we will reject your transaction and send you back your money.")}
                     </span>
@@ -1261,15 +1261,8 @@ const MoneyXRates = () => {
                   <span>{t("rates.processing", "Processing...")}</span>
                 </div>
               ) : (
-                <span className="flex items-center justify-center gap-2">
-                  <span className="text-base font-medium text-white">
-                    {t("rates.express", "Express")}
-                  </span>
-                  <img
-                    className="h-5 w-auto"
-                    src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
-                    alt="Express icon"
-                  />
+                <span className="text-base font-medium text-white">
+                  Submit
                 </span>
               )}
             </button>

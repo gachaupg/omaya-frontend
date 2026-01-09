@@ -11,14 +11,48 @@ import clsx from "clsx";
 import { navItems } from "@/utils/data";
 import { useTheme } from "@/context/theme";
 import { useDashboardI18n } from "@/lib/useDashboardI18n";
+import { useSelector, useDispatch } from "react-redux";
+import { RootState } from "@/store/rootReducer";
+import { AppDispatch } from "@/store";
+import { openKYCModal } from "@/features/auth/slices/authSlice";
 
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { t } = useDashboardI18n();
-
-  const handleNavClick = undefined as any; // rely on <Link> client navigation entirely
+  const dispatch = useDispatch<AppDispatch>();
+  const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const kycState = useSelector((state: RootState) => state.kyc);
+  
+  // Check verification status from both auth.user.is_verified and kyc.isVerified
+  // If verification status is undefined (not checked yet), treat as verified to allow navigation
+  // Only block if we explicitly know the user is unverified (isVerified === false)
+  const isVerified = kycState.isVerified !== undefined 
+    ? kycState.isVerified 
+    : (user?.is_verified !== undefined ? user.is_verified : true); // Default to true if undefined
+    
   const { isDark } = useTheme();
+
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    // Allow dashboard access for all users (verified and unverified)
+    if (href === "/dashboard/" || href === "/dashboard") {
+      return; // Allow navigation
+    }
+
+    // ONLY block unverified authenticated users from accessing other routes
+    // Block only if: authenticated, user exists, and explicitly not verified (isVerified === false)
+    // Allow navigation if verification status is undefined (hasn't been checked yet)
+    const isUnverifiedUser = isAuthenticated && user && isVerified === false;
+    
+    if (isUnverifiedUser) {
+      e.preventDefault();
+      e.stopPropagation();
+      dispatch(openKYCModal());
+      return false;
+    }
+    
+    // Allow navigation for verified users, unauthenticated users, and users with undefined verification status
+  };
 
   return (
     <React.Fragment>
@@ -42,17 +76,23 @@ export default function Sidebar() {
                   (normalizedPathname &&
                     normalizedPathname.startsWith(normalizedHref + "/"));
               const label = t(item.labelKey, item.labelKey);
+              // Only disable for unverified authenticated users (explicitly false, not undefined)
+              const isUnverifiedUser = isAuthenticated && user && isVerified === false;
+              const isDisabled = isUnverifiedUser && item.href !== "/dashboard/" && item.href !== "/dashboard";
               return (
                 <li key={item.labelKey}>
                   <Link
                     prefetch={true}
                     href={item.href}
+                    onClick={(e) => handleNavClick(e, item.href)}
+                    title={isDisabled ? "Please verify your identity to access this feature" : undefined}
                     className={clsx(
                       "flex items-center px-3 md:px-4 lg:px-6 py-3 rounded-lg text-sm md:text-base font-medium gap-2 md:gap-3 lg:gap-4 transition",
                       "w-full",
                       isActive
                         ? "bg-[#E1E1E1] dark:bg-[#303038] text-muted-foreground dark:text-white"
-                        : "text-[#727272] dark:hover:text-white hover:bg-white dark:hover:bg-[#23262F]"
+                        : "text-[#727272] dark:hover:text-white hover:bg-white dark:hover:bg-[#23262F]",
+                      isDisabled && "opacity-60 cursor-not-allowed"
                     )}
                   >
                     {item.labelKey === "navigation.exchange" ? (
@@ -173,15 +213,21 @@ export default function Sidebar() {
                   (normalizedPathname &&
                     normalizedPathname.startsWith(normalizedHref + "/"));
               const label = t(item.labelKey, item.labelKey);
+              // Only disable for unverified authenticated users (explicitly false, not undefined)
+              const isUnverifiedUser = isAuthenticated && user && isVerified === false;
+              const isDisabled = isUnverifiedUser && item.href !== "/dashboard/" && item.href !== "/dashboard";
               return (
                 <li key={item.labelKey} className="snap-start">
                   <Link
                     href={item.href}
+                    onClick={(e) => handleNavClick(e, item.href)}
+                    title={isDisabled ? "Please verify your identity to access this feature" : undefined}
                     className={clsx(
                       "flex items-center justify-center px-2.5 sm:px-3 py-2.5 rounded-lg text-xs sm:text-sm font-medium gap-1.5 sm:gap-2 whitespace-nowrap transition min-h-[44px]",
                       isActive
                         ? "dark:bg-[#303038] bg-[#E1E1E1] dark:text-white text-muted-foreground"
-                        : "text-[#727272] dark:hover:text-white hover:text-[#051015] dark:hover:bg-[#23262F] hover:bg-gray-100"
+                        : "text-[#727272] dark:hover:text-white hover:text-[#051015] dark:hover:bg-[#23262F] hover:bg-gray-100",
+                      isDisabled && "opacity-60 cursor-not-allowed"
                     )}
                   >
                     {item.labelKey === "navigation.exchange" ? (
@@ -245,6 +291,7 @@ export default function Sidebar() {
                                     : "https://res.cloudinary.com/pitz/image/upload/v1764698096/Group_9_momvgo.png"
                                   : "https://res.cloudinary.com/pitz/image/upload/v1764698096/Group_9_momvgo.png"
                               }
+                              alt="Express"
                             />
                           </span>
 

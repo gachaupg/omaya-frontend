@@ -127,9 +127,51 @@ const PasswordSection: React.FC = () => {
   const handleVerifyOTP = async () => {
     if (!validateOtp()) return;
 
+    // Validate password form before verifying OTP (since we'll immediately change password)
+    if (!validatePasswordForm()) {
+      showToast.error("Please fill in all password fields correctly before verifying OTP");
+      return;
+    }
+
     try {
+      // Step 1: Verify OTP
       await dispatch(verifyPasswordResetOTP(otp)).unwrap();
       setOtpVerified(true);
+
+      // Step 2: Immediately change password after OTP verification
+      try {
+        await dispatch(
+          changePasswordWithOTP({
+            new_password: formData.new_password,
+            confirm_password: formData.confirm_password,
+          })
+        ).unwrap();
+
+        // Clear form on success
+        setFormData({
+          new_password: "",
+          confirm_password: "",
+        });
+        setOtp("");
+        setOtpSent(false);
+        setOtpVerified(false);
+        setMaskedEmail(null);
+        setBackendError(null);
+        setShowPasswords({
+          new: false,
+          confirm: false,
+        });
+      } catch (passwordError: any) {
+        // Store backend error to display it in the UI
+        const errorMessage = passwordError || "Failed to change password";
+        setBackendError(errorMessage);
+        // Also set it in the errors object for the new_password field
+        setErrors((prev) => ({
+          ...prev,
+          new_password: errorMessage,
+        }));
+        // Don't reset OTP verified state since OTP was successfully verified
+      }
     } catch (error: any) {
       // Error is handled by the slice and toast
       console.error("Verify OTP error:", error);
@@ -221,7 +263,7 @@ const PasswordSection: React.FC = () => {
 
       <section className="dark:bg-card bg-card rounded-xl dark:border-[#35353E] border-[#E8EFF5] border p-3 sm:p-4">
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3">
+        <div className="flex flex-col sm:grid sm:grid-cols-2 gap-2 sm:gap-3">
 
           <div>
             <label className="block text-xs dark:text-white text-[#051015] mb-1">
@@ -344,22 +386,13 @@ const PasswordSection: React.FC = () => {
             {errors.otp && (
               <div className="text-red-500 text-xs mt-1">{errors.otp}</div>
             )}
-            {!otpVerified && (
-              <button
-                className="w-full mt-2 py-2 sm:py-2.5 rounded-[18px] border border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751] hover:text-white transition text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
-                onClick={handleVerifyOTP}
-                disabled={updating || otp.length !== 6}
-              >
-                {updating ? "Verifying..." : "Verify OTP"}
-              </button>
-            )}
             {otpVerified && (
               <div className="mt-2 text-xs text-green-600 dark:text-green-400 flex items-center">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="mr-1">
                   <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
                   <path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-                OTP Verified
+                OTP Verified & Password Changed
               </div>
             )}
           </div>
@@ -375,15 +408,19 @@ const PasswordSection: React.FC = () => {
             >
               {updating ? "Sending..." : "Send OTP"}
             </button>
-          ) : otpVerified ? (
+          ) : !otpVerified ? (
             <button
               className="w-full py-2 sm:py-2.5 rounded-[18px] border border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751] hover:text-white transition text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
-              onClick={handleChangePassword}
-              disabled={updating}
+              onClick={handleVerifyOTP}
+              disabled={updating || otp.length !== 6}
             >
-              {updating ? "Updating..." : "Update Password"}
+              {updating ? "Verifying & Changing Password..." : "Verify OTP & Change Password"}
             </button>
-          ) : null}
+          ) : (
+            <div className="w-full py-2 sm:py-2.5 rounded-[18px] border border-green-500 bg-green-500/10 text-green-600 dark:text-green-400 text-sm sm:text-base text-center">
+              ✓ Password Changed Successfully
+            </div>
+          )}
           
           {otpSent && !otpVerified && (
             <button

@@ -770,7 +770,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
 
             {/* Replace old payment method/provider dropdowns with UserPaymentSelector */}
             {isClient && (
-              <div className="my-6 gap-10 flex flex-col lg:flex-row p-2">
+              <div className="my-4 sm:my-6 gap-6 sm:gap-10 flex flex-col lg:flex-row p-2">
                 <div className="flex-1">
                   <UserPaymentSelector
                     userPaymentDetails={userPaymentDetails || []}
@@ -782,10 +782,10 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                   {/* Display Selected Payment Methods */}
                   {selectedPaymentDetails.length > 0 && (
                     <div className="mt-4">
-                      <label className="text-sm text-gray-600 dark:text-[#788099] mb-2 block">
+                      <label className="text-xs sm:text-sm text-gray-600 dark:text-[#788099] mb-2 block">
                         Selected Payment Methods ({selectedPaymentDetails.length})
                       </label>
-                      <div className="space-y-3">
+                      <div className="space-y-2 sm:space-y-3">
                         {selectedPaymentDetails.map((detail) => {
                           // Get logo URL with priority: logo_url > logo > provider_logo
                           const logoUrl = detail.logo_url || detail.logo || detail.provider_logo || "/default-provider-logo.svg";
@@ -793,15 +793,15 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                           return (
                             <div
                               key={detail.id}
-                              className="flex items-center justify-between p-4 rounded-[16px] bg-[#1D8751]/10 dark:bg-[#1D8751]/20 border border-[#1D8751]/30"
+                              className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 sm:p-4 rounded-[12px] sm:rounded-[16px] bg-[#1D8751]/10 dark:bg-[#1D8751]/20 border border-[#1D8751]/30"
                             >
-                              <div className="flex items-center gap-3 flex-1">
+                              <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0 w-full sm:w-auto">
                                 {/* Logo */}
                                 <div className="flex-shrink-0">
                                   <img
                                     src={logoUrl}
                                     alt={`${detail.payment_provider_name} logo`}
-                                    className="w-12 h-12 rounded-full object-cover border-2 border-white dark:border-card"
+                                    className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-white dark:border-card"
                                     onError={(e) => {
                                       e.currentTarget.src = "/default-provider-logo.svg";
                                     }}
@@ -810,28 +810,28 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
 
                                 {/* Details */}
                                 <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                    <span className="text-xs font-semibold text-[#1D8751] dark:text-[#1D8751] uppercase bg-white dark:bg-card px-2 py-1 rounded">
+                                  <div className="flex items-center gap-1.5 sm:gap-2 mb-1 flex-wrap">
+                                    <span className="text-[10px] sm:text-xs font-semibold text-[#1D8751] dark:text-[#1D8751] uppercase bg-white dark:bg-card px-1.5 sm:px-2 py-0.5 sm:py-1 rounded">
                                       {detail.payment_method_name}
                                     </span>
-                                    <span className="text-xs text-gray-600 dark:text-[#788099]">
+                                    <span className="text-xs text-gray-600 dark:text-[#788099] hidden sm:inline">
                                       •
                                     </span>
-                                    <span className="text-xs text-gray-900 dark:text-white font-medium">
+                                    <span className="text-xs text-gray-900 dark:text-white font-medium truncate">
                                       {detail.payment_provider_name}
                                     </span>
                                   </div>
 
                                   {/* Account Name - Prominent Display */}
-                                  <div className="mb-1">
-                                    <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                                  <div className="mb-0.5 sm:mb-1">
+                                    <span className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white truncate block">
                                       {detail.account_name || 'N/A'}
                                     </span>
                                   </div>
 
                                   {/* Account Number */}
                                   <div>
-                                    <span className="text-xs text-gray-500 dark:text-[#788099]">
+                                    <span className="text-[10px] sm:text-xs text-gray-500 dark:text-[#788099]">
                                       •••• {detail.account_number?.slice(-4) || 'N/A'}
                                     </span>
                                   </div>
@@ -840,12 +840,12 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
 
                               {/* Remove Button */}
                               <button
-                                className="ml-3 flex-shrink-0 p-2 text-[#E23D3A] hover:bg-[#E23D3A]/10 rounded-full transition"
+                                className="w-full sm:w-auto sm:ml-3 flex-shrink-0 p-2 text-[#E23D3A] hover:bg-[#E23D3A]/10 rounded-full transition flex items-center justify-center gap-1.5 sm:gap-0"
                                 onClick={() => handleRemovePaymentDetail(detail)}
                                 title="Remove payment method"
                               >
                                 <svg
-                                  className="w-5 h-5"
+                                  className="w-4 h-4 sm:w-5 sm:h-5"
                                   fill="none"
                                   stroke="currentColor"
                                   viewBox="0 0 24 24"
@@ -857,12 +857,13 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                                     d="M6 18L18 6M6 6l12 12"
                                   />
                                 </svg>
+                                <span className="text-xs sm:hidden">Remove</span>
                               </button>
                             </div>
                           );
                         })}
                       </div>
-                      <p className="text-xs text-gray-500 dark:text-[#788099] mt-2">
+                      <p className="text-[10px] sm:text-xs text-gray-500 dark:text-[#788099] mt-2">
                         💡 You can add multiple payment methods from different types (Bank, Mobile Money, etc.)
                       </p>
                     </div>
@@ -870,17 +871,16 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                 </div>
 
                 {/* Time Limit */}
-                <div className="flex flex-col md:flex-row gap-4 mb-4">
-                  {/* Time Limit */}
-                  <div className="flex-1 flex flex-col">
-                    <label className="text-sm text-gray-600 dark:text-[#788099] mb-1">
+                <div className="w-full lg:w-auto lg:min-w-[200px]">
+                  <div className="flex flex-col">
+                    <label className="text-xs sm:text-sm text-gray-600 dark:text-[#788099] mb-1.5 sm:mb-1">
                       Time Limit
                     </label>
                     <select
                       className={`bg-card border ${errors.timeLimit
                           ? "border-red-500"
                           : "border-gray-200 dark:border-[#35353E]"
-                        } rounded-[20px] px-4 py-3 text-gray-900 dark:text-white text-base focus:outline-none`}
+                        } rounded-[16px] sm:rounded-[20px] px-3 sm:px-4 py-2.5 sm:py-3 text-gray-900 dark:text-white text-sm sm:text-base focus:outline-none w-full`}
                       value={timeLimit}
                       onChange={(e) => {
                         setTimeLimit(Number(e.target.value));
@@ -894,7 +894,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                       ))}
                     </select>
                     {errors.timeLimit && (
-                      <span className="text-red-500 text-sm mt-1">
+                      <span className="text-red-500 text-xs sm:text-sm mt-1">
                         {errors.timeLimit}
                       </span>
                     )}

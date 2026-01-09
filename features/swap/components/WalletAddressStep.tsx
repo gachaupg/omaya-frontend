@@ -175,11 +175,11 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
 
               {/* Input Field with Paste Button */}
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
-                <div className="flex-1 relative">
+                <div className="flex-1 relative min-w-0">
                   <div className={`flex items-center bg-white dark:bg-[var(--card-color)] ${strongBorder} rounded-2xl px-2 sm:px-3 md:px-4 py-2 sm:py-3 min-h-[48px]`}>
                     {/* Wallet Icon */}
                     <svg
-                      className="w-5 h-5 text-[#1D8751] mr-3"
+                      className="w-4 h-4 sm:w-5 sm:h-5 text-[#1D8751] mr-2 sm:mr-3 flex-shrink-0"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -208,18 +208,18 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                           validateAddress(e.target.value, currentCurrency);
                         }
                       }}
-                      className={`flex-1 bg-transparent outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-[#7e7e8f] text-sm sm:text-base ${walletError ? "text-red-500" : ""
+                      className={`flex-1 bg-transparent outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-[#7e7e8f] text-xs sm:text-sm md:text-base min-w-0 pr-2 sm:pr-1 ${walletError ? "text-red-500" : ""
                         }`}
-                      placeholder={`Paste your ${toAsset?.name || toAsset?.symbol || ""} address here`}
+                      placeholder={`Paste ${toAsset?.name || toAsset?.symbol || ""} address`}
                       disabled={isLoading}
                     />
                     {/* Validation status indicator - show based on API validation only */}
                     {walletAddress.trim() && (
-                      <div className="absolute right-12 top-1/2 -translate-y-1/2 flex items-center">
+                      <div className="absolute right-8 sm:right-10 top-1/2 -translate-y-1/2 flex items-center flex-shrink-0">
                         {isAddressValidating ? (
-                          <div className="w-4 h-4 border-2 border-[#1D8751] border-t-transparent rounded-full animate-spin"></div>
+                          <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-[#1D8751] border-t-transparent rounded-full animate-spin"></div>
                         ) : addressValidationResult?.isValid ? (
-                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-[#1D8751]">
+                          <svg className="w-4 h-4 sm:w-5 sm:h-5 text-[#1D8751] flex-shrink-0" viewBox="0 0 24 24" fill="none">
                             <path
                               d="M9 12l2 2 4-4"
                               stroke="currentColor"
@@ -230,7 +230,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                             <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
                           </svg>
                         ) : walletError ? (
-                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-[#E23D3A]">
+                          <svg className="w-4 h-4 sm:w-5 sm:h-5 text-[#E23D3A] flex-shrink-0" viewBox="0 0 24 24" fill="none">
                             <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
                             <path
                               d="M12 8v4M12 16h.01"
@@ -245,7 +245,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
 
                     {/* Bookmark Icon */}
                     <svg
-                      className="w-4 h-4 text-gray-400 dark:text-[#7e7e8f] ml-2"
+                      className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 dark:text-[#7e7e8f] ml-auto flex-shrink-0"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -264,7 +264,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                 <button
                   onClick={handlePaste}
                   disabled={isLoading}
-                  className="bg-[#1D8751] hover:bg-[#166b3e] disabled:bg-gray-500 disabled:cursor-not-allowed text-white px-4 sm:px-5 py-3 rounded-xl flex items-center justify-center gap-2 transition-colors min-h-[48px] w-full sm:w-auto"
+                  className="bg-[#1D8751] hover:bg-[#166b3e] disabled:bg-gray-500 disabled:cursor-not-allowed text-white px-3 sm:px-4 md:px-5 py-2.5 sm:py-3 rounded-xl flex items-center justify-center gap-1.5 sm:gap-2 transition-colors min-h-[48px] w-full sm:w-auto sm:flex-shrink-0"
                 >
                   <svg
                     className="w-4 h-4 sm:w-5 sm:h-5 text-white flex-shrink-0"
@@ -279,7 +279,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                       d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
                     />
                   </svg>
-                  <span className="text-xs sm:text-sm font-medium">Paste</span>
+                  <span className="text-xs sm:text-sm font-medium whitespace-nowrap">Paste</span>
                 </button>
               </div>
 
