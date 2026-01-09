@@ -45,7 +45,7 @@ export default function DashboardLayout({
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 w-full h-full max-w-full overflow-x-hidden box-border bg-gray-50 dark:bg-[var(--bg-color)]">
+      <div className=" w-full h-full max-w-full overflow-x-hidden box-border bg-gray-50 dark:bg-[var(--bg-color)]">
         <AnimatePresence mode="wait">
           <motion.div
             key={pathname} // Use pathname for proper React reconciliation (fixes performance issue)
