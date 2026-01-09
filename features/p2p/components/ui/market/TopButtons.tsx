@@ -26,17 +26,17 @@ const TopButtons = ({
   return (
     <div className="flex items-center justify-between gap-4 w-full">
       <div 
-        className={`flex rounded-lg overflow-hidden p-1 w-fit transition-all duration-200 ${
+        className={`flex rounded-full overflow-hidden p-0.5 w-fit transition-all duration-200 ${
           isBuyActive 
-            ? "border-2 border border-[#1D8751]" 
+            ? "border border-[#1D8751]" 
             : isSellActive 
-            ? "border-2 border border-[#E23D3A]" 
-            : "border-2 border border-[#B71C1C]"
+            ? "border border-[#E23D3A]" 
+            : "border border-[#35353E]"
         }`}
       >
         <button
           onClick={() => setActiveTab("buy")}
-          className={`px-2 py-1 font-bold text-sm min-w-[90px] h-10 transition-all duration-200 rounded-l-lg ${
+          className={`px-4 py-2 font-semibold text-sm min-w-[80px] h-9 transition-all duration-200 rounded-full ${
             isBuyActive
               ? "bg-[#1D8751] text-white"
               : "bg-transparent text-gray-800 dark:text-white"
@@ -46,7 +46,7 @@ const TopButtons = ({
         </button>
         <button
           onClick={() => setActiveTab("sell")}
-          className={`px-2 py-1 font-bold text-sm min-w-[90px] h-10 transition-all duration-200 rounded-r-lg ${
+          className={`px-4 py-2 font-semibold text-sm min-w-[80px] h-9 transition-all duration-200 rounded-full ${
             isSellActive
               ? "bg-[#E23D3A] text-white"
               : "bg-transparent text-gray-800 dark:text-white"

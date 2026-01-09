@@ -177,19 +177,19 @@ const UserCard = () => {
           <HelpSupportForm />
         </div>
       ) : (
-        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between w-full gap-4 lg:gap-6">
+        <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between w-full gap-4 xl:gap-6">
           {/* Left Section: Avatar and Greeting */}
-          <div className="flex items-center gap-3 w-full sm:w-auto">
+          <div className="flex items-center gap-3 w-full md:w-auto">
             {/* User Avatar with Edit Button */}
             <div className="relative">
-              <div className="h-14 w-14 rounded-full overflow-hidden relative bg-[#0F172A] flex items-center justify-center">
+              <div className="h-14 w-14 rounded-full overflow-hidden relative bg-gray-200 dark:bg-[#35353E] flex items-center justify-center">
                 {profileImage ? (
                   <Image
                     src={profileImage}
                     alt="User avatar"
                     width={56}
                     height={56}
-                    className="h-12 w-12 rounded-full object-cover object-center"
+                    className="h-14 w-14 rounded-full object-cover object-center"
                     unoptimized={true}
                     onError={(
                       e: React.SyntheticEvent<HTMLImageElement, Event>
@@ -328,7 +328,7 @@ const UserCard = () => {
           </div>
 
           {/* Center Section: User ID and User Type */}
-          <div className="flex flex-row items-start gap-4 sm:gap-6 w-full lg:flex-1 lg:justify-center">
+          <div className="flex flex-row items-start gap-4 sm:gap-6 w-full xl:flex-1 xl:justify-center">
             {/* User ID */}
             <div className="text-left flex-1">
               <p className="text-xs dark:text-[#788099] text-[#788099] mb-1">User ID</p>
@@ -368,7 +368,7 @@ const UserCard = () => {
           </div>
 
           {/* Right Section: Action Buttons */}
-          <div className="flex flex-wrap gap-2 justify-start sm:justify-center lg:justify-end w-full lg:w-auto">
+          <div className="flex flex-wrap gap-2 justify-start md:justify-center xl:justify-end w-full xl:w-auto">
             <Button
               borderRadius={24}
               className="sm:w-[130px]"

@@ -263,7 +263,7 @@ const PasswordSection: React.FC = () => {
 
       <section className="dark:bg-card bg-card rounded-xl dark:border-[#35353E] border-[#E8EFF5] border p-3 sm:p-4">
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3">
+        <div className="flex flex-col sm:grid sm:grid-cols-2 gap-2 sm:gap-3">
 
           <div>
             <label className="block text-xs dark:text-white text-[#051015] mb-1">

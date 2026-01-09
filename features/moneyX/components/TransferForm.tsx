@@ -1246,7 +1246,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
                     strokeLinejoin="round"
                   />
                 </svg>
-                <span className="sm:inline">Paste</span>
+                <span className="hidden sm:inline">Paste</span>
               </button>
             </div>
 
@@ -1256,18 +1256,6 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
                 ❌ {bankAddressError}
               </p>
             )}
-
-            <label className="flex mb-4 items-center gap-2 mt-4 text-sm text-[#35353e] dark:text-[#788099]">
-              <input
-                type="checkbox"
-                checked={isAddressConfirmed}
-                onChange={(event) =>
-                  setIsAddressConfirmed(event.target.checked)
-                }
-                className="w-4 h-4 rounded border-[#1D8751] text-[#1D8751] focus:ring-[#1D8751] accent-[#1D8751] cursor-pointer"
-              />
-              <span>I confirm that this bank account address is correct.</span>
-            </label>
 
             {/* Terms and Conditions Summary */}
             <div className="flex items-center mb-2 mt-4">
@@ -1297,28 +1285,52 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
               </span>
             </div>
             <div className="dark:bg-[var(--card-color)] border border-[#1D8751] rounded-xl p-4">
-              <ul className="list-none space-y-2">
+              <ul className="list-none space-y-3">
                 <li className="flex items-start">
-                  <span className="w-2 h-2 mt-1 rounded-full bg-[#1D8751] inline-block mr-3 shrink-0"></span>
+                  <span className="w-2 h-2 mt-1.5 rounded-full bg-[#1D8751] inline-block mr-3 shrink-0"></span>
                   <span className="text-[#35353e] dark:text-[#788099] text-sm">
-                    Please send the money from your own account Only
+                    <strong>Ownership:</strong> Use only wallets, bank accounts, or mobile money numbers you personally own and control. Third-party accounts are not allowed.
                   </span>
                 </li>
                 <li className="flex items-start">
-                  <span className="w-2 h-2 mt-1 rounded-full bg-[#1D8751] inline-block mr-3 shrink-0"></span>
+                  <span className="w-2 h-2 mt-1.5 rounded-full bg-[#1D8751] inline-block mr-3 shrink-0"></span>
                   <span className="text-[#35353e] dark:text-[#788099] text-sm">
-                    Put transaction ID in the description field of the bank
+                    <strong>Correct Details:</strong> Enter correct receiving wallet, bank account, or mobile money number. Send funds only to our officially provided accounts shown in the app.
                   </span>
                 </li>
                 <li className="flex items-start">
-                  <span className="w-2 h-2 mt-1 rounded-full bg-[#1D8751] inline-block mr-3 shrink-0"></span>
+                  <span className="w-2 h-2 mt-1.5 rounded-full bg-[#1D8751] inline-block mr-3 shrink-0"></span>
                   <span className="text-[#35353e] dark:text-[#788099] text-sm">
-                    Please note, If you do not follow above conditions, we will
-                    reject your transaction and send you back your money.
+                    <strong>Official Accounts Only:</strong> Send funds only to OMAYA accounts, mobile numbers, or merchants displayed in the app. Sending to other accounts is at your own risk.
+                  </span>
+                </li>
+                <li className="flex items-start">
+                  <span className="w-2 h-2 mt-1.5 rounded-full bg-[#1D8751] inline-block mr-3 shrink-0"></span>
+                  <span className="text-[#35353e] dark:text-[#788099] text-sm">
+                    <strong>Irreversible:</strong> Transactions are irreversible. Incorrect details or wrong accounts may result in permanent fund loss—we cannot recover them.
+                  </span>
+                </li>
+                <li className="flex items-start">
+                  <span className="w-2 h-2 mt-1.5 rounded-full bg-[#1D8751] inline-block mr-3 shrink-0"></span>
+                  <span className="text-[#35353e] dark:text-[#788099] text-sm">
+                    <strong>Time Limit:</strong> Send funds only while the transaction timer is active. Transactions sent after timer expiry may be rejected or lost.
                   </span>
                 </li>
               </ul>
             </div>
+
+            {/* Acceptance checkbox */}
+            <label className="flex mb-4 items-start gap-2 mt-4 text-sm text-[#35353e] dark:text-[#788099] cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isAddressConfirmed}
+                onChange={(event) =>
+                  setIsAddressConfirmed(event.target.checked)
+                }
+                className="w-4 h-4 mt-0.5 rounded border-[#1D8751] text-[#1D8751] focus:ring-[#1D8751] accent-[#1D8751]"
+              />
+              <span>I have read and agreed to Omaya Exchange <a href="/terms" className="text-[#1D8751] underline">Terms of Use</a>, <a href="/privacy" className="text-[#1D8751] underline">Privacy Policy</a></span>
+            </label>
           </div>
 
           {/* Final Submit Button */}

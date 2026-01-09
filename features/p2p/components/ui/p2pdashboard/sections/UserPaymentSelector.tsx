@@ -104,10 +104,10 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
       
       
       {/* dropdowns */}
-      <div className="flex flex-col gap-3 sm:gap-2 sm:flex-row mb-4 w-full" data-select-card="true">
+      <div className="flex flex-col sm:flex-row gap-2 mb-4 w-full" data-select-card="true">
         {/* payment-method */}
         <div className="flex-1 w-full">
-          <label className="block mb-1.5 sm:mb-1 text-xs sm:text-sm text-gray-700 dark:text-[#788099]">
+          <label className="block mb-1 text-sm text-gray-700 dark:text-[#788099]">
             Payment Method Type
           </label>
           <div data-select-card="true" className="w-full">
@@ -130,7 +130,7 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
         {/* provider */}
         {selectedMethod && (
           <div className="flex-1 w-full">
-            <label className="block mb-1.5 sm:mb-1 text-xs sm:text-sm text-gray-700 dark:text-[#788099]">
+            <label className="block mb-1 text-sm text-gray-700 dark:text-[#788099]">
               Provider
             </label>
             <div data-select-card="true" className="w-full">
@@ -156,44 +156,44 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
             filteredDetails.map((detail) => (
               <div
                 key={detail.id}
-                className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 rounded-[16px] sm:rounded-[24px] bg-gray-50 dark:bg-[#23232B] border border-gray-200 dark:border-[#35353E]"
+                className="flex items-center justify-between p-3 rounded-[24px] bg-gray-50 dark:bg-[#23232B] border border-gray-200 dark:border-[#35353E]"
               >
-                <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                <div className="flex items-center gap-3">
                   {/* Logo with priority: logo_url > logo > provider_logo */}
                   <img
                     src={detail.logo_url || detail.logo || detail.provider_logo || "/default-provider-logo.svg"}
                     alt={`${detail.payment_provider_name} logo`}
-                    className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover border border-gray-200 dark:border-[#35353E] flex-shrink-0"
+                    className="w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-[#35353E]"
                     onError={(e) => {
                       e.currentTarget.src = "/default-provider-logo.svg";
                     }}
                   />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs text-gray-500 dark:text-[#788099] mb-0.5 sm:mb-1">
-                      Account Name
-                    </p>
-                    <p className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white mb-1.5 sm:mb-2 truncate">
-                      {detail.account_name}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-[#788099] mb-0.5 sm:mb-1">
+                  <div>
+                    <p className="text-xs text-gray-500 dark:text-[#788099] mb-1">
                       Account Number
                     </p>
-                    <p className="font-semibold text-xs sm:text-sm text-gray-900 dark:text-white truncate">
+                    <p className="font-semibold text-gray-900 dark:text-white mb-2">
                       {detail.account_number}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-[#788099] mb-1">
+                      Account Name
+                    </p>
+                    <p className="font-semibold text-gray-900 dark:text-white">
+                      {detail.account_name}
                     </p>
                   </div>
                 </div>
 
                 {isSelected(detail) ? (
                   <button
-                    className="w-full sm:w-auto px-3 sm:px-4 py-2 text-xs sm:text-sm text-white rounded-[12px] sm:rounded-[16px] bg-[#E23D3A] hover:opacity-90 transition flex-shrink-0"
+                    className="px-4 py-2 ml-4 text-white rounded-[16px] bg-[#E23D3A] hover:opacity-90"
                     onClick={() => onRemove(detail)}
                   >
                     Remove
                   </button>
                 ) : (
                   <button
-                    className="w-full sm:w-auto px-3 sm:px-4 py-2 text-xs sm:text-sm text-white rounded-[12px] sm:rounded-[16px] bg-[#1D8751] hover:opacity-90 transition flex-shrink-0"
+                    className="px-4 py-2 ml-4 text-white rounded-[16px] bg-[#1D8751] hover:opacity-90"
                     onClick={() => onSelect(detail)}
                   >
                     Select
@@ -202,7 +202,7 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
               </div>
             ))
           ) : (
-            <div className="p-3 sm:p-4 text-xs sm:text-sm text-center text-gray-500 dark:text-[#788099] bg-gray-50 dark:bg-[#23232B] rounded-[16px] border border-gray-200 dark:border-[#35353E]">
+            <div className="p-4 text-center text-gray-500 dark:text-[#788099] bg-gray-50 dark:bg-[#23232B] rounded-[16px] border border-gray-200 dark:border-[#35353E]">
               No payment details found for this combination. Please add a payment method first.
             </div>
           )}
