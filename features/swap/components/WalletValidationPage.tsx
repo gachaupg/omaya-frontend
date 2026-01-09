@@ -227,25 +227,25 @@ const WalletValidationPage: React.FC<WalletValidationPageProps> = ({
 
         {/* Wallet Address Input */}
         <div className="mb-4">
-          <label className="block text-sm dark:text-[#8C8CA1] text-gray-600 mb-2">
+          <label className="block text-xs sm:text-sm dark:text-[#8C8CA1] text-gray-600 mb-2">
             Wallet/Account Address
           </label>
           <div className="relative">
             {/* Wallet Icon */}
-            <span className="absolute left-4 top-1/2 -translate-y-1/2">
+            <span className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 flex-shrink-0 z-10">
               <img
                 src="https://res.cloudinary.com/pitz/image/upload/v1749724441/wallet-01_hugnf4.png"
                 alt="Wallet Icon"
-                className="w-4 h-4"
+                className="w-3 h-3 sm:w-4 sm:h-4"
               />
             </span>
 
             <input
               type="text"
-              placeholder="Paste your crypto address"
+              placeholder="Paste crypto address"
               value={walletAddress}
               onChange={handleWalletAddressChange}
-              className={`w-full dark:bg-[var(--card-color)] bg-gray-100 border rounded-[18px] px-12 py-3 dark:text-white text-gray-900 outline-none dark:placeholder-[#8C8CA1] placeholder-gray-500 text-sm sm:text-base transition-colors ${
+              className={`w-full dark:bg-[var(--card-color)] bg-gray-100 border rounded-[18px] pl-9 sm:pl-12 pr-16 sm:pr-24 py-2.5 sm:py-3 dark:text-white text-gray-900 outline-none dark:placeholder-[#8C8CA1] placeholder-gray-500 text-xs sm:text-sm md:text-base transition-colors ${
                 validationError
                   ? "border-red-500 focus:border-red-400"
                   : "dark:border-[#35353E] border-gray-300 focus:border-[#1D8751]"
@@ -254,15 +254,15 @@ const WalletValidationPage: React.FC<WalletValidationPageProps> = ({
 
             {/* Paste Button */}
             <button
-              className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1 dark:bg-[#35353E] bg-gray-200 dark:text-[#8C8CA1] text-gray-600 px-4 py-2 rounded-[18px] font-medium dark:hover:bg-[#45454E] hover:bg-gray-300 transition-colors"
+              className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 flex items-center gap-0.5 sm:gap-1 dark:bg-[#35353E] bg-gray-200 dark:text-[#8C8CA1] text-gray-600 px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-[14px] sm:rounded-[18px] text-xs sm:text-sm font-medium dark:hover:bg-[#45454E] hover:bg-gray-300 transition-colors flex-shrink-0"
               onClick={handlePasteAddress}
               type="button"
             >
-              Paste
+              <span className="hidden sm:inline">Paste</span>
               <img
                 src="https://res.cloudinary.com/pitz/image/upload/v1749724441/wallet-01_hugnf4.png"
                 alt="Paste Icon"
-                className="w-4 h-4 ml-1"
+                className="w-3 h-3 sm:w-4 sm:h-4"
               />
             </button>
           </div>

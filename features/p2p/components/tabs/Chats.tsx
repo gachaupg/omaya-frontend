@@ -136,6 +136,8 @@ export const Chats: React.FC = () => {
   const [isSending, setIsSending] = useState(false);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [uploadedImages, setUploadedImages] = useState<File[]>([]);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const emojiPickerRef = useRef<HTMLDivElement>(null);
 
   // Check localStorage for terms acceptance on mount
   useEffect(() => {
@@ -154,6 +156,44 @@ export const Chats: React.FC = () => {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const prevSelectedUserIdRef = useRef<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Close emoji picker when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target as Node)) {
+        setShowEmojiPicker(false);
+      }
+    };
+
+    if (showEmojiPicker) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showEmojiPicker]);
+
+  // Common emojis
+  const commonEmojis = [
+    "😀", "😃", "😄", "😁", "😆", "😅", "😂", "🤣", "😊", "😇",
+    "🙂", "🙃", "😉", "😌", "😍", "🥰", "😘", "😗", "😙", "😚",
+    "😋", "😛", "😝", "😜", "🤪", "🤨", "🧐", "🤓", "😎", "🤩",
+    "🥳", "😏", "😒", "😞", "😔", "😟", "😕", "🙁", "☹️", "😣",
+    "😖", "😫", "😩", "🥺", "😢", "😭", "😤", "😠", "😡", "🤬",
+    "🤯", "😳", "🥵", "🥶", "😱", "😨", "😰", "😥", "😓", "🤗",
+    "🤔", "🤭", "🤫", "🤥", "😶", "😐", "😑", "😬", "🙄", "😯",
+    "😦", "😧", "😮", "😲", "🥱", "😴", "🤤", "😪", "😵", "🤐",
+    "👍", "👎", "👌", "✌️", "🤞", "🤟", "🤘", "🤙", "👋", "👏",
+    "🙌", "👐", "🤲", "🤝", "🙏", "✍️", "💪", "🦾", "🦿", "🦵",
+    "❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "🤎", "💔",
+    "❣️", "💕", "💞", "💓", "💗", "💖", "💘", "💝", "💟", "☮️"
+  ];
+
+  const handleEmojiClick = (emoji: string) => {
+    setMessageInput((prev) => prev + emoji);
+    setShowEmojiPicker(false);
+  };
 
   // Track when initial data has been loaded at least once so we don't "reload"
   // the whole page with a spinner on subsequent background fetches.
@@ -793,8 +833,9 @@ export const Chats: React.FC = () => {
           {/* Terms banner (only visible if not accepted) */}
           {!termsAccepted && (
             <div className="px-4 pt-4">
-              <div className="rounded-2xl border border-[#1D8751] bg-green-50 dark:bg-[#042417] text-gray-900 dark:text-white px-4 py-3 sm:px-6 sm:py-4 flex flex-col gap-3">
-                <div className="flex items-center gap-2">
+              <div className="rounded-2xl border border-[#1D8751] bg-green-100 dark:bg-[#042417] text-gray-900 dark:text-white px-4 py-3 sm:px-6 sm:py-4 flex flex-col gap-3 relative overflow-hidden">
+                <div className="absolute inset-y-0 right-0 w-1/3 bg-gradient-to-l from-gray-400/70 to-transparent pointer-events-none"></div>
+                <div className="flex items-center gap-2 relative z-10">
                   <div className="w-8 h-8 rounded-full bg-[#1D8751] flex items-center justify-center text-white text-sm font-bold">
                     P2P
                   </div>
@@ -809,10 +850,10 @@ export const Chats: React.FC = () => {
                     </p>
                   </div>
                 </div>
-                <div className="flex flex-wrap gap-2 mt-1">
+                <div className="flex flex-wrap gap-2 mt-1 relative z-10">
                   <Link
                     href="/p2p/terms"
-                    className="px-3 py-1.5 rounded-full border border-[#1D8751] text-[11px] sm:text-xs text-[#1D8751] dark:text-[#D1FAE5] bg-transparent hover:bg-green-100 dark:hover:bg-[#064E3B] transition-colors inline-block"
+                    className="px-3 py-1.5 rounded-full border border-[#1D8751] text-[11px] sm:text-xs text-[#1D8751] dark:text-[#D1FAE5] bg-transparent hover:bg-green-200 dark:hover:bg-[#064E3B] transition-colors inline-block"
                   >
                     Read Terms &amp; Conditions
                   </Link>
@@ -876,7 +917,26 @@ export const Chats: React.FC = () => {
             )}
 
             <div className="flex items-center gap-2">
-              <div className="flex-1">
+              {/* Attach image - Left side */}
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={!termsAccepted || isSending}
+                className="w-8 h-8 flex-shrink-0 rounded-md bg-gray-300 dark:bg-[#374151] text-gray-600 dark:text-gray-400 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-400 dark:hover:bg-[#4B5563] transition-colors"
+                title="Attach image"
+                aria-label="Attach image"
+              >
+                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
+                  />
+                </svg>
+              </button>
+              
+              {/* Input field */}
+              <div className="flex-1 relative">
                 <input
                   type="text"
                   placeholder={
@@ -901,29 +961,10 @@ export const Chats: React.FC = () => {
                       return normalizedStatus === "complete" || normalizedStatus === "completed" || normalizedStatus === "responded" || normalizedStatus === "cancelled";
                     })()
                   }
-                  className="w-full rounded-full bg-white dark:bg-[#111827] border border-gray-300 dark:border-[#374151] px-4 py-2 text-xs sm:text-sm text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-[#6B7280] focus:outline-none focus:border-[#1D8751] disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full rounded-lg bg-black dark:bg-[#374151] border-0 px-4 py-2.5 text-xs sm:text-sm text-white dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1D8751]/50 disabled:opacity-50 disabled:cursor-not-allowed"
                 />
               </div>
-              {/* Attach image */}
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={!termsAccepted || isSending}
-                className="w-8 h-8 rounded-full border border-gray-300 dark:border-[#374151] bg-white dark:bg-[#111827] text-[#1D8751] flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-                title="Attach image"
-                aria-label="Attach image"
-              >
-                <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
-                  <path
-                    d="M16.5 6.5l-7.8 7.8a3 3 0 104.2 4.2l7.1-7.1a5 5 0 00-7.1-7.1l-8.5 8.5"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    fill="none"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </button>
+              
               <input
                 type="file"
                 ref={fileInputRef}
@@ -932,6 +973,43 @@ export const Chats: React.FC = () => {
                 multiple
                 onChange={handleImageChange}
               />
+              
+              {/* Emoji picker button */}
+              <div className="relative" ref={emojiPickerRef}>
+                <button
+                  type="button"
+                  disabled={!termsAccepted || isSending}
+                  className="w-8 h-8 flex-shrink-0 rounded-full bg-gray-300 dark:bg-[#374151] text-gray-600 dark:text-gray-400 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-400 dark:hover:bg-[#4B5563] transition-colors"
+                  title="Pick emoji"
+                  aria-label="Pick emoji"
+                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                >
+                  <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </button>
+                
+                {/* Emoji picker dropdown */}
+                {showEmojiPicker && (
+                  <div className="absolute bottom-full right-0 mb-2 w-64 h-48 bg-white dark:bg-[#1F2937] border border-gray-300 dark:border-[#374151] rounded-lg shadow-lg p-3 overflow-y-auto z-50">
+                    <div className="grid grid-cols-8 gap-1">
+                      {commonEmojis.map((emoji, index) => (
+                        <button
+                          key={index}
+                          type="button"
+                          onClick={() => handleEmojiClick(emoji)}
+                          className="w-8 h-8 flex items-center justify-center text-lg hover:bg-gray-100 dark:hover:bg-[#374151] rounded transition-colors cursor-pointer"
+                          title={emoji}
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              {/* Send button - Rectangular green */}
               <button
                 onClick={handleSendMessage}
                 disabled={
@@ -944,7 +1022,7 @@ export const Chats: React.FC = () => {
                     return normalizedStatus === "complete" || normalizedStatus === "completed" || normalizedStatus === "responded" || normalizedStatus === "cancelled";
                   })()
                 }
-                className={`w-8 h-8 rounded-full bg-[#1D8751] text-white flex items-center justify-center transition-opacity ${
+                className={`w-10 h-8 flex-shrink-0 rounded-lg bg-[#1D8751] text-white flex items-center justify-center transition-all ${
                   (() => {
                     const status = selectedUser ? (selectedUser as any).status : null;
                     const normalizedStatus = status ? String(status).toLowerCase() : null;

@@ -241,9 +241,9 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center py-2 sm:py-4 md:py-8 w-full pr-2 sm:pr-0">
+    <div className="min-h-screen flex flex-col items-center py-2 sm:py-4 md:py-6 lg:py-8 w-full px-2 sm:px-4 md:px-6 lg:px-8">
       {/* Top Card */}
-      <div className="flex flex-col md:flex-row justify-between items-stretch bg-white dark:bg-[var(--card-color)] border-2 border-gray-200 dark:border-[#35353E] rounded-2xl p-2 sm:p-3 md:p-4 shadow-lg w-full sm:max-w-4xl mb-2 sm:mb-4 min-h-[160px] sm:min-h-[180px]">
+      <div className="flex flex-col sm:flex-row justify-between items-stretch bg-white dark:bg-[var(--card-color)] border-2 border-gray-200 dark:border-[#35353E] rounded-2xl p-3 sm:p-4 md:p-5 lg:p-6 shadow-lg w-full max-w-4xl mb-3 sm:mb-4 md:mb-6 min-h-[160px] sm:min-h-[180px] md:min-h-[200px]">
         <div className="flex-1 flex flex-col justify-between py-2 pr-2">
                       <div>
               <div className="text-gray-600 dark:text-[#7e7e8f] text-xs font-semibold mb-0.5">
@@ -287,20 +287,20 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
             </div>
           </div>
         </div>
-        <div className="flex-shrink-0 ml-0 md:ml-6 flex items-center justify-center py-2">
+        <div className="flex-shrink-0 ml-0 sm:ml-4 md:ml-6 flex items-center justify-center py-2 sm:py-0">
           {/* QR code */}
-          <div className="w-24 h-24 sm:w-36 sm:h-36 bg-white rounded-lg flex items-center justify-center">
+          <div className="w-24 h-24 sm:w-32 sm:h-32 md:w-36 md:h-36 bg-white rounded-lg flex items-center justify-center">
             <img
               src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${swapResponse.payinAddress}`}
               alt="QR Code"
-              className="w-20 h-20 sm:w-32 sm:h-32"
+              className="w-20 h-20 sm:w-28 sm:h-28 md:w-32 md:h-32"
             />
           </div>
         </div>
       </div>
 
       {/* Stepper */}
-      <div className="w-full sm:max-w-4xl mb-3 overflow-x-auto">
+      <div className="w-full max-w-4xl mb-3 sm:mb-4 md:mb-6 overflow-x-auto px-2 sm:px-0">
         {/* Circle and connecting line row */}
         <div className="flex items-center mb-2 min-w-max sm:min-w-0">
           {statusSteps.map((step, idx) => {

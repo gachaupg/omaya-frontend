@@ -303,8 +303,34 @@ export const Chats = ({ data, symbol = 'BTC/USD', timeRange = '1', height = '100
           });
 
         // Apply data directly to the chart
+        // Using type assertion since klinecharts types may not be complete
         if (ohlcvData.length > 0) {
-          chart.applyNewData(ohlcvData);
+          const chartAny = chart as any;
+          
+          // Try multiple methods to apply data (klinecharts API variations)
+          if (typeof chartAny.applyNewData === 'function') {
+            chartAny.applyNewData(ohlcvData);
+          } else if (typeof chartAny.updateData === 'function') {
+            chartAny.updateData(ohlcvData);
+          } else if (typeof chartAny.setData === 'function') {
+            chartAny.setData(ohlcvData);
+          } else {
+            // Try to get/create series and set data
+            try {
+              let series = chartAny.getSeries?.();
+              if (!series || (Array.isArray(series) && series.length === 0)) {
+                series = chartAny.createCandleStickSeries?.() || chartAny.createSeries?.('candle');
+              }
+              if (series) {
+                const targetSeries = Array.isArray(series) ? series[0] : series;
+                if (targetSeries && typeof targetSeries.setData === 'function') {
+                  targetSeries.setData(ohlcvData);
+                }
+              }
+            } catch (error) {
+              console.warn('Failed to update chart data:', error);
+            }
+          }
         }
       }
     }

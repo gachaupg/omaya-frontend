@@ -43,7 +43,7 @@ const Rates = () => {
           onClick={() => setActiveTab('crypto')}
           className={`px-6 py-2.5 rounded-lg transition-all
       ${activeTab === 'crypto'
-              ? 'bg-[#1D8751] text-white'
+              ? 'bg-[#155836] text-white'
               : 'bg-transparent text-gray-600 dark:text-[#788099]'
             }`}
         >
@@ -55,7 +55,7 @@ const Rates = () => {
           onClick={() => setActiveTab('moneyx')}
           className={`px-4 sm:px-6 py-1 md:py-2 rounded-lg transition-all flex items-center gap-1 
       ${activeTab === 'moneyx'
-              ? 'bg-[#1D8751] text-white'
+              ? 'bg-[#155836] text-white'
               : 'bg-transparent text-gray-600 dark:text-[#788099]'
             }`}
         >
