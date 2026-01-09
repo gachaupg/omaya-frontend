@@ -105,40 +105,40 @@ const MoneyXTransactions = () => {
                 </td>
                 <td className="py-4 px-4">
                   <div className="flex items-center gap-2">
-                    {tx.from_provider_logo && (
+                    {tx.sender_provider?.logo && (
                       <img
-                        src={tx.from_provider_logo}
-                        alt=""
+                        src={tx.sender_provider.logo}
+                        alt={tx.sender_provider.provider_name || ""}
                         className="w-6 h-6 rounded-full object-cover"
                       />
                     )}
                     <span className="text-sm dark:text-[#788099] text-gray-600">
-                      {tx.from_payment_provider || tx.from_provider || "-"}
+                      {tx.sender_provider?.provider_name || tx.from_payment_provider || tx.from_provider || "-"}
                     </span>
                   </div>
                 </td>
                 <td className="py-4 px-4">
                   <div className="flex items-center gap-2">
-                    {tx.to_provider_logo && (
+                    {tx.receiver_provider?.logo && (
                       <img
-                        src={tx.to_provider_logo}
-                        alt=""
+                        src={tx.receiver_provider.logo}
+                        alt={tx.receiver_provider.provider_name || ""}
                         className="w-6 h-6 rounded-full object-cover"
                       />
                     )}
                     <span className="text-sm dark:text-[#788099] text-gray-600">
-                      {tx.to_payment_provider || tx.to_provider || "-"}
+                      {tx.receiver_provider?.provider_name || tx.to_payment_provider || tx.to_provider || "-"}
                     </span>
                   </div>
                 </td>
                 <td className="py-4 px-4">
                   <span className="text-sm font-medium dark:text-white text-gray-900">
-                    {formatCurrency(tx.send_amount || tx.amount || 0, tx.from_currency || "USD")}
+                    {formatCurrency(tx.send_amount || tx.amount || 0, tx.from_currency || tx.currency || "USD")}
                   </span>
                 </td>
                 <td className="py-4 px-4">
                   <span className="text-sm font-medium text-[#1D8751]">
-                    {formatCurrency(tx.receive_amount || 0, tx.to_currency || "USD")}
+                    {formatCurrency(tx.receive_amount || tx.net_amount || 0, tx.to_currency || tx.currency || "USD")}
                   </span>
                 </td>
                 <td className="py-4 px-4">
@@ -190,26 +190,44 @@ const MoneyXTransactions = () => {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <p className="text-xs dark:text-[#788099] text-gray-500">From</p>
-                <p className="text-sm dark:text-white text-gray-900">
-                  {tx.from_payment_provider || tx.from_provider || "-"}
-                </p>
+                <div className="flex items-center gap-2">
+                  {tx.sender_provider?.logo && (
+                    <img
+                      src={tx.sender_provider.logo}
+                      alt={tx.sender_provider.provider_name || ""}
+                      className="w-4 h-4 rounded-full object-cover"
+                    />
+                  )}
+                  <p className="text-sm dark:text-white text-gray-900">
+                    {tx.sender_provider?.provider_name || tx.from_payment_provider || tx.from_provider || "-"}
+                  </p>
+                </div>
               </div>
               <div>
                 <p className="text-xs dark:text-[#788099] text-gray-500">To</p>
-                <p className="text-sm dark:text-white text-gray-900">
-                  {tx.to_payment_provider || tx.to_provider || "-"}
-                </p>
+                <div className="flex items-center gap-2">
+                  {tx.receiver_provider?.logo && (
+                    <img
+                      src={tx.receiver_provider.logo}
+                      alt={tx.receiver_provider.provider_name || ""}
+                      className="w-4 h-4 rounded-full object-cover"
+                    />
+                  )}
+                  <p className="text-sm dark:text-white text-gray-900">
+                    {tx.receiver_provider?.provider_name || tx.to_payment_provider || tx.to_provider || "-"}
+                  </p>
+                </div>
               </div>
               <div>
                 <p className="text-xs dark:text-[#788099] text-gray-500">Sent</p>
                 <p className="text-sm font-medium dark:text-white text-gray-900">
-                  {formatCurrency(tx.send_amount || tx.amount || 0, tx.from_currency || "USD")}
+                  {formatCurrency(tx.send_amount || tx.amount || 0, tx.from_currency || tx.currency || "USD")}
                 </p>
               </div>
               <div>
                 <p className="text-xs dark:text-[#788099] text-gray-500">Received</p>
                 <p className="text-sm font-medium text-[#1D8751]">
-                  {formatCurrency(tx.receive_amount || 0, tx.to_currency || "USD")}
+                  {formatCurrency(tx.receive_amount || tx.net_amount || 0, tx.to_currency || tx.currency || "USD")}
                 </p>
               </div>
             </div>
