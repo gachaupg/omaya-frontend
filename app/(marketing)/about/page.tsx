@@ -179,9 +179,9 @@ const AboutPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[var(--bg-color)]">
+    <div className="min-h-screen bg-white dark:bg-(--bg-color)">
       {/* Hero Section */}
-      <section className="relative pt-24 md:pt-32 pb-20 px-4 overflow-hidden bg-gradient-to-br from-[#1D8751] via-[#16864a] to-[#0e5c33] dark:from-[#0A0A0F] dark:via-[#0A0A0F]/5 dark:to-[#0A0A0F]">
+      <section className="relative pt-24 md:pt-32 pb-20 px-4 overflow-hidden bg-linear-to-br from-[#1D8751] via-[#16864a] to-[#0e5c33] dark:from-[#0A0A0F] dark:via-[#0A0A0F]/5 dark:to-[#0A0A0F]">
         <FloatingParticles count={15} size={4} />
 
         <div className="max-w-7xl mx-auto relative z-10">
@@ -462,20 +462,20 @@ const AboutPage = () => {
               {/* Vision Feature Boxes */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-gray-50 dark:bg-[#18181D] rounded-2xl p-6 border border-gray-200 dark:border-[#20202A]">
-                  <h3 className="text-xl font-bold text-purple-500 mb-2">Innovation</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Cutting-Edge Tech</p>
+                  <h3 className="text-xl font-bold text-[#C27AFF] mb-2">Innovation</h3>
+                  <p className="text-sm text-muted-foreground">Cutting-Edge Tech</p>
                 </div>
                 <div className="bg-gray-50 dark:bg-[#18181D] rounded-2xl p-6 border border-gray-200 dark:border-[#20202A]">
-                  <h3 className="text-xl font-bold text-purple-500 mb-2">Trust</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Transparent</p>
+                  <h3 className="text-xl font-bold text-[#C27AFF] mb-2">Trust</h3>
+                  <p className="text-sm text-muted-foreground">Transparent</p>
                 </div>
                 <div className="bg-gray-50 dark:bg-[#18181D] rounded-xl p-5 border border-border dark:border-accent">
                   <h3 className="text-xl font-bold text-[#C27AFF] mb-2">Integration</h3>
-                  <p className="text-sm text-[#788099]">Seamless</p>
+                  <p className="text-sm text-muted-foreground">Seamless</p>
                 </div>
                 <div className="bg-gray-50 dark:bg-[#18181D] rounded-xl p-5 border border-border dark:border-accent">
                   <h3 className="text-xl font-bold text-[#C27AFF] mb-2">Freedom</h3>
-                  <p className="text-sm text-[#788099]">Financial Liberty</p>
+                  <p className="text-sm text-muted-foreground">Financial Liberty</p>
                 </div>
               </div>
             </div>
