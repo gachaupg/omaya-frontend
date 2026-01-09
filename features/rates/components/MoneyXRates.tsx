@@ -34,6 +34,7 @@ const MoneyXRates = () => {
   const router = useRouter();
   const { isDark } = useTheme();
   const { t } = useRatesI18n();
+  const { user } = useSelector((state: RootState) => state.auth);
 
   const {
     adminMethods,
@@ -1224,14 +1225,34 @@ const MoneyXRates = () => {
               <label
                 className={`flex mb-4 items-start gap-2 mt-4 text-sm cursor-pointer ${isDark ? "text-[#788099]" : "text-[#475569]"}`}
               >
-                <input
-                  type="checkbox"
-                  checked={isAddressConfirmed}
-                  onChange={(event) =>
-                    setIsAddressConfirmed(event.target.checked)
-                  }
-                  className="w-4 h-4 mt-0.5 rounded border-[#1D8751] text-[#1D8751] focus:ring-[#1D8751] accent-[#1D8751]"
-                />
+                <div className="relative flex items-center pr-2">
+                  <input
+                    type="checkbox"
+                    checked={isAddressConfirmed}
+                    onChange={(event) =>
+                      setIsAddressConfirmed(event.target.checked)
+                    }
+                    className="
+                      peer appearance-none w-5 h-5 rounded border border-gray-300 dark:border-gray-500 bg-transparent
+                      checked:bg-[#1D8751] checked:border-[#1D8751]
+                      focus:outline-none transition-colors cursor-pointer mt-0.5
+                    "
+                  />
+                  <svg
+                    className="absolute w-3.5 h-3.5 mt-0.5 left-[3px] pointer-events-none opacity-0 peer-checked:opacity-100 text-white transition-opacity duration-200"
+                    viewBox="0 0 14 14"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M11.6666 3.5L5.24992 9.91667L2.33325 7"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
                 <span>I have read and agreed to Omaya Exchange <a href="/terms" className="text-[#1D8751] underline">Terms of Use</a>, <a href="/privacy" className="text-[#1D8751] underline">Privacy Policy</a></span>
               </label>
             </div>
@@ -1241,7 +1262,8 @@ const MoneyXRates = () => {
               className={`w-full text-base font-medium py-3 rounded-xl flex items-center justify-center gap-2 transition-colors text-white ${!bankAccountAddress.trim() ||
                 bankAddressError ||
                 !isAddressConfirmed ||
-                isUpdatingTransaction
+                isUpdatingTransaction ||
+                !user?.is_verified
                 ? "bg-gray-500 cursor-not-allowed"
                 : "bg-[#1D8751] hover:bg-[#166b3e]"
                 }`}
@@ -1250,7 +1272,8 @@ const MoneyXRates = () => {
                 !bankAccountAddress.trim() ||
                 !!bankAddressError ||
                 !isAddressConfirmed ||
-                isUpdatingTransaction
+                isUpdatingTransaction ||
+                !user?.is_verified
               }
             >
               {isUpdatingTransaction ? (

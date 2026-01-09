@@ -701,7 +701,7 @@ const AboutPage = () => {
               <div className="flex items-center justify-center gap-3 mb-1">
                   <span className="text-4xl md:text-5xl font-bold text-[#1D8751]">2023</span>
                   <div className="w-10 h-10 rounded-xl bg-[#1D8751] flex items-center justify-center">
-                    <Globe className="w-5 h-5 text-white" />
+                    <Award className="w-5 h-5 text-white" />
                   </div>
                 </div>
                 <span className="text-gray-600 dark:text-gray-500 text-sm text-center mb-6">Q4</span>

@@ -755,11 +755,11 @@ export default function MarketingPage() {
                     return (
                       <div
                         key={asset.id}
-                        className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4 border border-gray-200 dark:border-[#2A2A2A] hover:border-[#1D8751]/40 transition-colors relative overflow-visible"
+                        className="bg-gray-50 dark:bg-[#1D1D23] rounded-xl p-0 border border-gray-200 dark:border-[#2A2A2A] hover:border-[#1D8751]/40 transition-colors relative overflow-hidden"
                       >
                         {/* Dark mode gradient background */}
                         <div
-                          className="hidden dark:block absolute inset-0 rounded-lg"
+                          className="hidden dark:block absolute inset-0 rounded-xl"
                           style={{
                             background: 'linear-gradient(to bottom, rgba(29, 29, 35, 0.95), rgba(29, 29, 35, 1))',
                             boxShadow: '0 1px 3px rgba(0, 0, 0, 0.3)'
@@ -768,7 +768,7 @@ export default function MarketingPage() {
 
                         {/* Greenish radial gradient from top-right corner - lighter in light mode */}
                         <div
-                          className="absolute top-0 right-0 w-3/4 h-3/4 opacity-20 dark:opacity-30 pointer-events-none rounded-lg"
+                          className="absolute top-0 right-0 w-3/4 h-3/4 opacity-20 dark:opacity-30 pointer-events-none rounded-xl"
                           style={{
                             background: 'radial-gradient(circle at top right, rgba(29, 135, 81, 0.15) 0%, transparent 70%)'
                           }}
@@ -776,63 +776,56 @@ export default function MarketingPage() {
 
                         {/* Content wrapper with relative positioning */}
                         <div className="relative z-10">
-                          {/* Icon header with colored bar cutting across */}
-                          <div className="relative mb-3 w-full -mx-4">
-                            {/* Colored horizontal bar cutting across - faded, edge to edge, no padding, full right coverage */}
-                            <div
-                              className={`absolute top-1/2 left-0 h-16 sm:h-20 md:h-24 ${iconBgColor} transform -translate-y-1/2 opacity-40`}
-                              style={{
-                                right: '-1rem',
-                                width: 'calc(100% + 2rem)'
-                              }}
-                            ></div>
-                            {/* Centered asset image - Larger to match Figma */}
-                            <div className="relative z-10 flex items-center justify-center">
-                              <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 bg-white dark:bg-[#1D1D23] rounded-full flex items-center justify-center border border-gray-200 dark:border-transparent shadow-lg">
-                                <Image
-                                  src={asset.image}
-                                  alt={asset.name}
-                                  width={80}
-                                  height={80}
-                                  className="object-contain w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20"
-                                  unoptimized
-                                />
+                          {/* Logo header section - colored rounded rectangle matching Figma */}
+                          <div className={`relative w-full h-20 sm:h-24 md:h-28 ${iconBgColor} rounded-t-xl flex items-center justify-center`}>
+                            {/* Asset logo - centered in the colored area */}
+                            <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 bg-white dark:bg-[#1D1D23] rounded-xl flex items-center justify-center shadow-lg">
+                              <Image
+                                src={asset.image}
+                                alt={asset.name}
+                                width={56}
+                                height={56}
+                                className="object-contain w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12"
+                                unoptimized
+                              />
+                            </div>
+                          </div>
+
+                          {/* Text content with padding */}
+                          <div className="p-4">
+                            {/* Cryptocurrency Name - Left aligned */}
+                            <div className="text-gray-900 dark:text-white font-bold text-sm sm:text-base mb-1">
+                              {asset.name}
+                            </div>
+
+                            {/* Ticker Symbol - Left aligned */}
+                            <div className="text-gray-700 dark:text-white text-xs sm:text-sm mb-3 opacity-80">
+                              {asset.symbol}
+                            </div>
+
+                            {/* Price and Percentage Change - Left aligned */}
+                            <div className="flex items-baseline gap-2 mb-2">
+                              <div className="text-gray-900 dark:text-white font-bold text-base sm:text-lg">
+                                ${formattedPrice}
+                              </div>
+                              <div className={`text-xs sm:text-sm font-medium ${change >= 0 ? 'text-secondary' : 'text-red-500'}`}>
+                                {change >= 0 ? '+' : ''}{change.toFixed(2)}%
                               </div>
                             </div>
-                          </div>
 
-                          {/* Cryptocurrency Name - Left aligned */}
-                          <div className="text-gray-900 dark:text-white font-bold text-sm sm:text-base mb-1">
-                            {asset.name}
-                          </div>
-
-                          {/* Ticker Symbol - Left aligned */}
-                          <div className="text-gray-700 dark:text-white text-xs sm:text-sm mb-3 opacity-80">
-                            {asset.symbol}
-                          </div>
-
-                          {/* Price and Percentage Change - Left aligned */}
-                          <div className="flex items-baseline gap-2 mb-2">
-                            <div className="text-gray-900 dark:text-white font-bold text-base sm:text-lg">
-                              ${formattedPrice}
+                            {/* Mini Line Chart */}
+                            <div className="h-8 w-full mt-2">
+                              <svg width="100%" height="100%" viewBox="0 0 100 30" preserveAspectRatio="none" className="overflow-visible">
+                                <polyline
+                                  points="0,25 10,22 20,20 30,18 40,15 50,12 60,10 70,8 80,6 90,4 100,2"
+                                  fill="none"
+                                  stroke="#1D8751"
+                                  strokeWidth="2"
+                                  strokeDasharray="2,2"
+                                  strokeLinecap="round"
+                                />
+                              </svg>
                             </div>
-                            <div className={`text-xs sm:text-sm font-medium ${change >= 0 ? 'text-secondary' : 'text-red-500'}`}>
-                              {change >= 0 ? '+' : ''}{change.toFixed(2)}%
-                            </div>
-                          </div>
-
-                          {/* Mini Line Chart */}
-                          <div className="h-8 w-full mt-2">
-                            <svg width="100%" height="100%" viewBox="0 0 100 30" preserveAspectRatio="none" className="overflow-visible">
-                              <polyline
-                                points="0,25 10,22 20,20 30,18 40,15 50,12 60,10 70,8 80,6 90,4 100,2"
-                                fill="none"
-                                stroke="#1D8751"
-                                strokeWidth="2"
-                                strokeDasharray="2,2"
-                                strokeLinecap="round"
-                              />
-                            </svg>
                           </div>
                         </div>
                       </div>
