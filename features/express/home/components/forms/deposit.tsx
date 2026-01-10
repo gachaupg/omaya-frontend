@@ -1749,9 +1749,10 @@ export default function DepositForm({
           } else {
             // For non-USDT assets, we need to fetch estimate
             // The estimate fetching is handled in the useEffect above
-            if (estimate && estimate.estimated_amount) {
-              setGetAmount(estimate.estimated_amount);
-              setGetAmountInput(estimate.estimated_amount.toString());
+            if (estimate && (estimate.user_amount || estimate.estimated_amount)) {
+              const amount = estimate.user_amount || estimate.estimated_amount;
+              setGetAmount(amount);
+              setGetAmountInput(amount.toString());
               setReceiveAmountError(null);
             } else if (estimateLoading) {
               // Show loading state while estimate is being fetched
