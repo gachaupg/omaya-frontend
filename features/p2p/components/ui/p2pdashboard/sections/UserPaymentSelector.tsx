@@ -122,7 +122,6 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
             />
           </div>
         </div>
-
         {/* provider */}
         {selectedMethod && (
           <div className="flex-1 w-full">
