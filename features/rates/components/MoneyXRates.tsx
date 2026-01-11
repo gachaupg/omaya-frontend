@@ -1160,6 +1160,23 @@ const MoneyXRates = () => {
                 </p>
               )}
 
+              {/* Confirmation checkbox */}
+              <label
+                className={`flex mb-4 items-center gap-2 mt-4 text-sm ${isDark ? "text-[#788099]" : "text-[#475569]"}`}
+              >
+                <input
+                  type="checkbox"
+                  checked={isAddressConfirmed}
+                  onChange={(event) =>
+                    setIsAddressConfirmed(event.target.checked)
+                  }
+                  className="w-4 h-4 rounded border-[#1D8751] text-[#1D8751] focus:ring-[#1D8751]"
+                />
+                <span>
+                  {t("rates.confirmAddress", "I confirm that this bank account address is correct.")}
+                </span>
+              </label>
+
               {/* Terms and Conditions Summary */}
               <div className="flex items-center mb-2 mt-4 gap-2">
                 <span className="text-[#1D8751] flex-shrink-0">

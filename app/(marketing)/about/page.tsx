@@ -2,13 +2,13 @@
 
 import React from "react";
 import Image from "next/image";
-import { 
-  Target, 
-  Eye, 
-  Users, 
-  Shield, 
-  Zap, 
-  Globe, 
+import {
+  Target,
+  Eye,
+  Users,
+  Shield,
+  Zap,
+  Globe,
   Award,
   Star,
   MapPin,
@@ -24,45 +24,75 @@ import {
   Building2,
   ArrowRight,
   Rocket,
+  DollarSign,
+  TrendingUp,
+  ArrowLeftRight,
+  LineChart,
+  Wallet,
+  RefreshCcw,
 } from "lucide-react";
+import FloatingParticles from "@/components/ui/floating-particles";
 
 const AboutPage = () => {
+  const stats = [
+    {
+      icon: Users,
+      value: "50,000+",
+      label: "Active Users",
+    },
+    {
+      icon: DollarSign,
+      value: "$10M+",
+      label: "Daily Transactions",
+    },
+    {
+      icon: Globe,
+      value: "150+",
+      label: "Countries Served",
+    },
+    {
+      icon: Shield,
+      value: "99.9%",
+      label: "Security Rate",
+    },
+  ];
+
   const tradingSolutions = [
     {
-      title: "Money X",
+      title: "Spot Trading",
       description:
-        "Direct peer-to-peer trading with multiple payment methods and currencies.",
-      icon: Zap,
+        "Trade digital assets with advanced charting tools and real-time market data",
+      icon: TrendingUp,
     },
     {
       title: "P2P Exchange",
       description:
-        "Direct peer-to-peer trading with multiple payment methods and currencies.",
-      icon: Users,
+        "Direct peer-to-peer trading with multiple payment methods and currencies",
+      icon: ArrowLeftRight,
     },
     {
       title: "Forex Trading",
       description:
-        "Access global forex markets with competitive spreads and leverage.",
-      icon: Globe,
+        "Access global forex markets with competitive spreads and leverage",
+      icon: LineChart,
     },
     {
       title: "Express Swap",
       description:
-        "Instant cryptocurrency swaps with the best available exchange rates.",
+        "Instant cryptocurrency swaps with the best exchange rates",
       icon: Zap,
     },
     {
       title: "Secure Wallet",
       description:
-        "Multi-signature wallets with cold storage for maximum security.",
-      icon: Shield,
+        "Multi-signature wallets with cold storage for maximum security",
+      icon: Wallet,
     },
     {
       title: "Staking & Rewards",
       description:
-        "Earn passive income through staking and liquidity provision.",
-      icon: Award,
+        "Earn passive income through staking and liquidity provision",
+      icon: RefreshCcw,
     },
   ];
 
@@ -149,37 +179,38 @@ const AboutPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[var(--bg-color)]">
+    <div className="min-h-screen bg-white dark:bg-(--bg-color)">
       {/* Hero Section */}
-      <section className="relative pt-24 md:pt-32 pb-20 px-4 overflow-hidden bg-gradient-to-br from-[#1D8751] via-[#16864a] to-[#0e5c33] dark:from-[#0F0F11] dark:via-[#0F0F11] dark:to-[#0F0F11]">
-        
+      <section className="relative pt-24 md:pt-32 pb-20 px-4 overflow-hidden bg-linear-to-br from-[#1D8751] via-[#16864a] to-[#0e5c33] dark:from-[#0A0A0F] dark:via-[#0A0A0F]/5 dark:to-[#0A0A0F]">
+        <FloatingParticles count={15} size={4} />
+
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="text-center">
             {/* Welcome Banner */}
             <div className="inline-block mb-8">
-              <div className="px-4 py-2 rounded-3xl bg-white/20 border border-white/30 dark:bg-[#1D8751]/20 dark:border-[#1D8751]/30">
-                <p className="text-sm md:text-base text-white dark:text-[#1D8751] font-medium">
+              <div className="px-4 py-1.5 rounded-3xl bg-white/20 border border-white/30 dark:bg-[#1D8751]/10 dark:border-[#1D8751]/30">
+                <p className="text-sm md:text-sm text-white dark:text-[#1D8751] font-medium">
                   Welcome to OMAYA Exchange
                 </p>
               </div>
             </div>
-            
+
             {/* Main Heading */}
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6">
               <div className="text-white dark:text-white">About</div>
               <div className="text-white dark:text-[#1D8751]">OMAYA Exchange</div>
             </h1>
-            
+
             {/* Tagline */}
-            <p className="text-xl text-white/90 dark:text-gray-400 max-w-3xl mx-auto mb-10">
+            <p className="text-xl text-[#788099] max-w-3xl mx-auto mb-10">
               Leading the future of digital asset exchange with innovation, security, and trust
             </p>
-            
+
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <a
                 href="#story"
-                className="relative px-8 py-3 bg-white text-[#1D8751] font-semibold hover:bg-white/90 transition-all duration-300 shadow-lg dark:bg-[#1D8751] dark:text-white dark:hover:bg-[#166b3e]"
+                className="relative px-8 py-3 bg-white text-[#1D8751] hover:bg-white/90 transition-all duration-300 shadow-lg dark:bg-[#1D8751] dark:text-white dark:hover:bg-[#166b3e]"
                 style={{ borderRadius: '2rem' }}
               >
                 Explore Our Journey
@@ -197,17 +228,17 @@ const AboutPage = () => {
       </section>
 
       {/* Trusted by Millions Worldwide Section */}
-      <section className="py-16 px-4 bg-white dark:bg-[var(--bg-color)]">
+      <section className="py-16 px-4 bg-white dark:bg-linear-to-b via-[#18181D] via-40% from-[#0A0A0F] to-[#0A0A0F]" >
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-3">
               Trusted by Millions Worldwide
             </h2>
-            <p className="text-gray-600 dark:text-gray-400 text-base md:text-lg">
+            <p className="text-gray-600 dark:text-[#788099] text-base md:text-lg">
               Leading the digital asset revolution with proven results
             </p>
           </div>
-          
+
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             <div className="text-center p-6 rounded-2xl bg-white dark:bg-[#14141A] border border-gray-100 dark:border-[#20202A] shadow-sm">
               <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-[#1D8751]/10 mb-4">
@@ -220,7 +251,7 @@ const AboutPage = () => {
                 Active Users
               </div>
             </div>
-            
+
             <div className="text-center p-6 rounded-2xl bg-white dark:bg-[#14141A] border border-gray-100 dark:border-[#20202A] shadow-sm">
               <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-[#1D8751]/10 mb-4">
                 <Zap className="w-6 h-6 text-[#1D8751]" />
@@ -232,7 +263,7 @@ const AboutPage = () => {
                 Daily Transactions
               </div>
             </div>
-            
+
             <div className="text-center p-6 rounded-2xl bg-white dark:bg-[#14141A] border border-gray-100 dark:border-[#20202A] shadow-sm">
               <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-[#1D8751]/10 mb-4">
                 <Globe className="w-6 h-6 text-[#1D8751]" />
@@ -244,7 +275,7 @@ const AboutPage = () => {
                 Countries Served
               </div>
             </div>
-            
+
             <div className="text-center p-6 rounded-2xl bg-white dark:bg-[#14141A] border border-gray-100 dark:border-[#20202A] shadow-sm">
               <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-[#1D8751]/10 mb-4">
                 <Shield className="w-6 h-6 text-[#1D8751]" />
@@ -261,7 +292,11 @@ const AboutPage = () => {
       </section>
 
       {/* Trading Solutions Section */}
-      <section className="relative py-20 px-4 bg-gradient-to-b from-gray-50 via-white to-gray-50 dark:from-[#0F0F11] dark:via-[#060608] dark:to-[#050507]">
+      <section className="relative py-20 px-4 bg-gray-50 dark:bg-[#0A0A0F]">
+
+        {/* Blur floating background */}
+        <div className="absolute bottom-10 left-1 w-90 h-70 blur-3xl rounded-full bg-[#1D8751]/15 "></div>
+
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
             <div className="inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-[#1D8751]/10 border border-[#1D8751]/30 mb-5">
@@ -272,7 +307,7 @@ const AboutPage = () => {
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-4">
               Comprehensive Trading Platform
             </h2>
-            <p className="text-sm md:text-base text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+            <p className="text-sm md:text-base text-gray-600 dark:text-[#788099] max-w-2xl mx-auto">
               Everything you need to trade, invest, and earn in the digital
               economy.
             </p>
@@ -284,13 +319,13 @@ const AboutPage = () => {
               return (
                 <div
                   key={index}
-                  className="group relative overflow-hidden rounded-3xl bg-white dark:bg-[#14141A] border border-gray-200 dark:border-[#20202A] hover:border-[#1D8751] transition-all duration-300 hover:-translate-y-1"
+                  className="group relative overflow-hidden rounded-2xl bg-white dark:bg-white/5 backdrop-blur-3xl border border-border dark:border-accent"
                 >
                   <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-gradient-to-br from-[#1D8751]/10 via-transparent to-[#1D8751]/5 transition-opacity duration-300" />
                   <div className="relative p-6 flex flex-col h-full">
                     <div className="w-12 h-12 rounded-2xl bg-[#1D8751]/10 flex items-center justify-center mb-4">
                       <Icon className="w-6 h-6 text-[#1D8751]" />
-                  </div>
+                    </div>
                     <h3 className="text-lg md:text-xl font-semibold text-gray-900 dark:text-white mb-2">
                       {solution.title}
                     </h3>
@@ -299,7 +334,7 @@ const AboutPage = () => {
                     </p>
                     <div className="mt-6">
                       <div className="h-1 w-10 rounded-full bg-[#1D8751] group-hover:w-16 transition-all duration-300" />
-                  </div>
+                    </div>
                   </div>
                 </div>
               );
@@ -315,11 +350,11 @@ const AboutPage = () => {
             {/* Left Column - Mission Content */}
             <div>
               {/* Mission Banner */}
-              <div className="inline-flex items-center gap-3 px-4 py-2 bg-gray-100 dark:bg-[#18181D] border border-[#1D8751]/30 mb-8" style={{ borderRadius: '2rem' }}>
+              <div className="inline-flex items-center gap-3 px-4 py-2 bg-gray-100 dark:bg-[#1D8751]/10 border border-[#1D8751]/30 mb-8" style={{ borderRadius: '2rem' }}>
                 <div className="w-8 h-8 rounded-full bg-[#1D8751]/20 flex items-center justify-center">
                   <Target className="w-4 h-4 text-[#1D8751]" />
                 </div>
-                <span className="text-lg font-bold text-[#1D8751]">Our Mission</span>
+                <span className="text-lg text-[#1D8751]">Our Mission</span>
               </div>
 
               {/* Main Heading */}
@@ -330,32 +365,32 @@ const AboutPage = () => {
 
               {/* Description Paragraphs */}
               <p className="text-lg text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
-                To democratize access to digital asset trading by providing a secure, 
-                efficient, and user-friendly platform that empowers individuals and 
+                To democratize access to digital asset trading by providing a secure,
+                efficient, and user-friendly platform that empowers individuals and
                 businesses worldwide to participate in the digital economy.
               </p>
               <p className="text-lg text-gray-700 dark:text-gray-300 mb-8 leading-relaxed">
-                We strive to break down barriers and make cryptocurrency trading accessible to 
+                We strive to break down barriers and make cryptocurrency trading accessible to
                 everyone, regardless of their location or experience level.
               </p>
 
               {/* Feature Boxes Grid */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-gray-50 dark:bg-[#18181D] rounded-2xl p-6 border border-gray-200 dark:border-[#20202A]">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-gray-50 dark:bg-[#18181D] rounded-xl p-4 border border-border dark:border-accent">
                   <h3 className="text-xl font-bold text-[#1D8751] mb-2">Accessible</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">For Everyone</p>
+                  <p className="text-sm text-gray-600 dark:text-[#788099]">For Everyone</p>
                 </div>
-                <div className="bg-gray-50 dark:bg-[#18181D] rounded-2xl p-6 border border-gray-200 dark:border-[#20202A]">
-                  <h3 className="text-xl font-bold text-[#1D8751] mb-2">Secure</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Bank-Grade</p>
+                <div className="bg-gray-50 dark:bg-[#18181D] rounded-xl p-4 border border-border dark:border-accent">
+                  <h3 className="text-xl font-bold text-[#1D8751] mb-2">Secure</h3> 
+                  <p className="text-sm text-gray-600 dark:text-[#788099]">Bank-Grade</p>
                 </div>
-                <div className="bg-gray-50 dark:bg-[#18181D] rounded-2xl p-6 border border-gray-200 dark:border-[#20202A]">
+                <div className="bg-gray-50 dark:bg-[#18181D] rounded-xl p-4 border border-border dark:border-accent">
                   <h3 className="text-xl font-bold text-[#1D8751] mb-2">Efficient</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Lightning Fast</p>
+                  <p className="text-sm text-gray-600 dark:text-[#788099]">Lightning Fast</p>
                 </div>
-                <div className="bg-gray-50 dark:bg-[#18181D] rounded-2xl p-6 border border-gray-200 dark:border-[#20202A]">
+                <div className="bg-gray-50 dark:bg-[#18181D] rounded-xl p-4 border border-border dark:border-accent">
                   <h3 className="text-xl font-bold text-[#1D8751] mb-2">Global</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">150+ Countries</p>
+                  <p className="text-sm text-gray-600 dark:text-[#788099]">150+ Countries</p>
                 </div>
               </div>
             </div>
@@ -370,7 +405,7 @@ const AboutPage = () => {
                   className="object-cover"
                   sizes="(max-width: 768px) 100vw, 50vw"
                 />
-                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -397,28 +432,28 @@ const AboutPage = () => {
             <div className="order-1 md:order-2">
               {/* Vision Banner */}
               <div
-                className="inline-flex items-center gap-3 px-4 py-2 bg-gray-100 dark:bg-[#18181D] border border-purple-500/30 mb-8"
+                className="inline-flex items-center gap-1 px-4 py-1 bg-gray-100 dark:bg-[#AD46FF]/10 border border-[#AD46FF]/30 mb-8"
                 style={{ borderRadius: "2rem" }}
               >
-                <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center">
-                  <Eye className="w-4 h-4 text-purple-500" />
+                <div className="w-8 h-8 rounded-full flex items-center justify-center">
+                  <Eye className="w-4 h-4 text-[#C27AFF]" />
                 </div>
-                <span className="text-lg font-bold text-purple-500">Our Vision</span>
+                <span className="text-lg text-[#C27AFF]">Our Vision</span>
               </div>
 
               {/* Main Heading */}
               <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-6 leading-tight">
                 <span className="block">The Future of Digital</span>
                 <span className="block">Finance</span>
-                </h2>
+              </h2>
 
               {/* Description Paragraphs */}
-              <p className="text-lg text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
+              <p className="text-lg text-[#788099] mb-4 leading-relaxed">
                 To become the world's most trusted and innovative digital asset exchange
                 platform, setting new standards for security, transparency, and user
                 experience.
               </p>
-              <p className="text-lg text-gray-700 dark:text-gray-300 mb-8 leading-relaxed">
+              <p className="text-lg text-[#788099] mb-8 leading-relaxed">
                 We envision a future where blockchain technology and traditional finance
                 seamlessly integrate, creating unprecedented opportunities for wealth
                 creation and financial freedom.
@@ -427,20 +462,20 @@ const AboutPage = () => {
               {/* Vision Feature Boxes */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-gray-50 dark:bg-[#18181D] rounded-2xl p-6 border border-gray-200 dark:border-[#20202A]">
-                  <h3 className="text-xl font-bold text-purple-500 mb-2">Innovation</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Cutting-Edge Tech</p>
-              </div>
-                <div className="bg-gray-50 dark:bg-[#18181D] rounded-2xl p-6 border border-gray-200 dark:border-[#20202A]">
-                  <h3 className="text-xl font-bold text-purple-500 mb-2">Trust</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Transparent</p>
+                  <h3 className="text-xl font-bold text-[#C27AFF] mb-2">Innovation</h3>
+                  <p className="text-sm text-muted-foreground">Cutting-Edge Tech</p>
                 </div>
                 <div className="bg-gray-50 dark:bg-[#18181D] rounded-2xl p-6 border border-gray-200 dark:border-[#20202A]">
-                  <h3 className="text-xl font-bold text-purple-500 mb-2">Integration</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Seamless</p>
+                  <h3 className="text-xl font-bold text-[#C27AFF] mb-2">Trust</h3>
+                  <p className="text-sm text-muted-foreground">Transparent</p>
                 </div>
-                <div className="bg-gray-50 dark:bg-[#18181D] rounded-2xl p-6 border border-gray-200 dark:border-[#20202A]">
-                  <h3 className="text-xl font-bold text-purple-500 mb-2">Freedom</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Financial Liberty</p>
+                <div className="bg-gray-50 dark:bg-[#18181D] rounded-xl p-5 border border-border dark:border-accent">
+                  <h3 className="text-xl font-bold text-[#C27AFF] mb-2">Integration</h3>
+                  <p className="text-sm text-muted-foreground">Seamless</p>
+                </div>
+                <div className="bg-gray-50 dark:bg-[#18181D] rounded-xl p-5 border border-border dark:border-accent">
+                  <h3 className="text-xl font-bold text-[#C27AFF] mb-2">Freedom</h3>
+                  <p className="text-sm text-muted-foreground">Financial Liberty</p>
                 </div>
               </div>
             </div>
@@ -449,7 +484,7 @@ const AboutPage = () => {
       </section>
 
       {/* Platform Features Section */}
-      <section className="py-20 px-4 bg-gradient-to-b from-gray-50 via-white to-gray-50 dark:from-[#0F0F11] dark:via-[#060608] dark:to-[#050507]">
+      <section className="py-20 px-4 bg-linear-to-b from-gray-50 via-white to-gray-50 dark:from-[#0A0A0F] dark:via-[#18181D] dark:to-[##0A0A0F]">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <div className="inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-[#1D8751]/10 border border-[#1D8751]/30 mb-5">
@@ -462,8 +497,8 @@ const AboutPage = () => {
             </h2>
             <p className="text-sm md:text-base text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
               Industry-leading features designed for traders of all levels.
-              </p>
-            </div>
+            </p>
+          </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {platformFeatures.map((feature, index) => {
@@ -471,10 +506,10 @@ const AboutPage = () => {
               return (
                 <div
                   key={index}
-                  className="group relative rounded-3xl bg-white dark:bg-[#14141A] border border-gray-200 dark:border-[#20202A] hover:border-[#1D8751] transition-all duration-300 p-6 flex flex-col"
+                  className="group relative rounded-2xl bg-white dark:bg-linear-to-b dark:from-[#18181D] dark:to-[#0F0F13] to-40% border border-border dark:border-accent hover:border-[#1D8751]/90 transition-all duration-300 px-6 pb-9 pt-5 flex flex-col"
                 >
-                  <div className="w-10 h-10 rounded-2xl bg-[#1D8751]/10 flex items-center justify-center mb-4">
-                    <Icon className="w-5 h-5 text-[#1D8751]" />
+                  <div className="w-12 h-12 rounded-xl bg-linear-to-br from-[#1D8751] to-[#309A64] flex items-center justify-center mb-4">
+                    <Icon className="w-6 h-6 text-white" />
                   </div>
                   <h3 className="text-lg md:text-xl font-semibold text-gray-900 dark:text-white mb-1">
                     {feature.title}
@@ -535,13 +570,13 @@ const AboutPage = () => {
           </div>
         </div>
       </section>
-      {/* Our Story Section */} 
+      {/* Our Story Section */}
 
       <section id="story" className="py-20 px-4 bg-white dark:bg-[var(--bg-color)]">
         <div className="max-w-6xl mx-auto">
           {/* Section Header */}
           <div className="text-center mb-16">
-          <div className="inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-[#1D8751]/10 border border-[#1D8751]/30 mb-5">
+            <div className="inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-[#1D8751]/10 border border-[#1D8751]/30 mb-5">
               <span className="text-xs md:text-sm font-medium text-[#1D8751]">
                 Our Journey
               </span>
@@ -698,7 +733,7 @@ const AboutPage = () => {
 
               {/* Right - Text Card */}
               <div className="bg-white dark:bg-[#14141A] border border-gray-200 dark:border-[#1E1E26] rounded-3xl p-8 flex flex-col min-h-[320px] order-1 md:order-2">
-              <div className="flex items-center justify-center gap-3 mb-1">
+                <div className="flex items-center justify-center gap-3 mb-1">
                   <span className="text-4xl md:text-5xl font-bold text-[#1D8751]">2023</span>
                   <div className="w-10 h-10 rounded-xl bg-[#1D8751] flex items-center justify-center">
                     <Award className="w-5 h-5 text-white" />
@@ -719,7 +754,7 @@ const AboutPage = () => {
           </div>
         </div>
       </section>
-    {/* Achievements Section - Figma Match */}
+      {/* Achievements Section - Figma Match */}
 
       {/* Achievements Section */}
       <section className="py-20 px-4 bg-white dark:bg-[var(--bg-color)]">
@@ -860,12 +895,12 @@ const AboutPage = () => {
       </section>
 
       {/* Security Section */}
-{/* Security Section - Figma Match */}
+      {/* Security Section - Figma Match */}
 
 
 
       {/* Security Section - Figma Match */}
-     
+
       {/* Security Section */}
       <section className="py-20 px-4 bg-white dark:bg-[var(--bg-color)]">
         <div className="max-w-6xl mx-auto">
@@ -900,7 +935,7 @@ const AboutPage = () => {
               <h2 className="text-3xl md:text-4xl font-bold text-black dark:text-white mb-4">
                 Safe
               </h2>
-              
+
               <p className="text-gray-600 dark:text-gray-400 mb-8 text-sm leading-relaxed">
                 We employ industry-leading security measures to protect your digital assets and personal information.
               </p>
@@ -988,8 +1023,8 @@ const AboutPage = () => {
       <section className="py-20 px-4 bg-white dark:bg-[var(--bg-color)] relative overflow-hidden">
         <div className="max-w-7xl mx-auto relative z-10">
           {/* Header */}
-          <div className="text-center mb-12">      
-           <div className="inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-[#1D8751]/10 border border-[#1D8751]/30 mb-5 gap-2">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-[#1D8751]/10 border border-[#1D8751]/30 mb-5 gap-2">
               <Globe className="w-4 h-4 text-[#1D8751]" />
               <span className="text-xs md:text-sm font-medium text-[#1D8751]">
                 Global Network
@@ -1017,7 +1052,7 @@ const AboutPage = () => {
                   <div className="text-sm text-gray-600 dark:text-gray-400">Countries</div>
                 </div>
               </div>
-              
+
               {/* Team Members - PURPLE */}
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center">
@@ -1028,7 +1063,7 @@ const AboutPage = () => {
                   <div className="text-sm text-gray-600 dark:text-gray-400">Team Members</div>
                 </div>
               </div>
-              
+
               {/* Support Hours - GREEN */}
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-xl bg-[#1D8751]/10 flex items-center justify-center">
@@ -1197,7 +1232,7 @@ const AboutPage = () => {
                 Advanced Security
               </h3>
               <p className="text-gray-600 dark:text-[#788099]">
-                Multi-signature wallets, cold storage, and 2FA protection keep your 
+                Multi-signature wallets, cold storage, and 2FA protection keep your
                 assets safe with industry-leading security measures.
               </p>
             </div>
@@ -1209,7 +1244,7 @@ const AboutPage = () => {
                 Lightning Speed
               </h3>
               <p className="text-gray-600 dark:text-[#788099]">
-                Experience instant deposits, withdrawals, and trades with our 
+                Experience instant deposits, withdrawals, and trades with our
                 high-performance infrastructure and optimized transaction processing.
               </p>
             </div>
@@ -1221,7 +1256,7 @@ const AboutPage = () => {
                 24/7 Support
               </h3>
               <p className="text-gray-600 dark:text-[#788099]">
-                Our dedicated support team is always available to help you with 
+                Our dedicated support team is always available to help you with
                 any questions or issues, ensuring smooth trading experience.
               </p>
             </div>
@@ -1233,7 +1268,7 @@ const AboutPage = () => {
       <section className="py-16 px-4 bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-black dark:via-gray-900 dark:to-black relative overflow-hidden">
         {/* Glowing green light effect from top-left */}
         <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-br from-[#1D8751]/10 via-[#22c55e]/5 to-transparent dark:from-[#1D8751]/20 dark:via-[#22c55e]/10 dark:to-transparent rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
-        
+
         <div className="max-w-4xl mx-auto relative z-10">
           <div className="text-center">
             {/* Join the Revolution Badge */}

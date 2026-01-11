@@ -13,7 +13,7 @@
   --background: #0A0A0A;
   --foreground: #ededed;
   /* Reusable background and card colors for dark mode */
-  --bg-color: #0A0A0A;
+  --bg-color: #0A0A0F;
   --card-color: #18181D;
 }
 
@@ -58,7 +58,7 @@
   --color-input: #2A2A2A;
   --color-ring: #13b562;
   --color-muted: #262626;
-  --color-muted-foreground: #9ca3af;
+  --color-muted-foreground: #788099;
   --color-popover: #1E1E1E;
   --color-popover-foreground: #ededed;
 }

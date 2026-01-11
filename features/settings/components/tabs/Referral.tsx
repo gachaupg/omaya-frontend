@@ -134,7 +134,7 @@ const Referral: React.FC<ReferralProps> = ({ onWithdrawStateChange }) => {
   /* ───────────────────────────── early exit ───────────────────────── */
   if (showWithdraw) {
     return (
-      <div className="min-h-screen flex flex-col items-center bg-gray-50 text-gray-900 dark:bg-[var(--bg-color)] dark:text-white px-0 sm:px-2 md:px-4 pr-2 sm:pr-0 pt-1 sm:pt-2 w-full">
+      <div className="min-h-screen flex flex-col bg-gray-50 text-gray-900 dark:bg-[var(--bg-color)] dark:text-white px-0 sm:px-2 md:px-4 pt-1 sm:pt-2 w-full">
         <Withdraw />
       </div>
     );
@@ -142,7 +142,7 @@ const Referral: React.FC<ReferralProps> = ({ onWithdrawStateChange }) => {
 
   /* ─────────────────────────────── render ─────────────────────────── */
   return (
-    <div className={`min-h-screen text-gray-900 dark:bg-[var(--bg-color)] dark:text-white w-full px-0 sm:px-2 md:px-4 pr-2 sm:pr-0 pt-1 sm:pt-2 ${ activeTab === "Referral" || activeTab === "History" ? 'bg-gray-50': 'bg-white' }` }>
+    <div className={`min-h-screen text-gray-900 dark:bg-[var(--bg-color)] dark:text-white w-full px-0 sm:px-2 md:px-4 pr-2 sm:pr-0 pt-1 sm:pt-2 ${activeTab === "Referral" || activeTab === "History" ? 'bg-gray-50' : 'bg-white'}`}>
       <ReferralTabs
         tab={activeTab}
         setTab={setActiveTab as (tab: string) => void}
@@ -172,7 +172,7 @@ const Referral: React.FC<ReferralProps> = ({ onWithdrawStateChange }) => {
         </div>
       )}
 
-      
+
 
       {/* Application Submitted Success Modal */}
       <ApplicationSubmittedModal
