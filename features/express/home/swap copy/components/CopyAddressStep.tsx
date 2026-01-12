@@ -13,6 +13,7 @@ interface CopyAddressStepProps {
   onCopyAddress: () => void;
   onBack: () => void;
   onNext: () => void;
+  isHomePage?: boolean;
 }
 
 // Status mapping for stepper
@@ -96,6 +97,7 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
   onCopyAddress,
   onBack,
   onNext,
+  isHomePage = false,
 }) => {
   const [status, setStatus] = useState<string>("pending");
   const [statusObj, setStatusObj] = useState<any>(null);
@@ -241,10 +243,10 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center py-4 sm:py-8 px-3 sm:px-4 w-full overflow-x-hidden">
+    <div className={`${isHomePage ? 'min-h-0' : 'min-h-screen'} flex flex-col items-center ${isHomePage ? 'py-2 sm:py-3' : 'py-4 sm:py-8'} px-2 sm:px-4 w-full overflow-x-hidden`}>
       {/* Top Card */}
-      <div className="flex flex-col md:flex-row justify-between items-stretch bg-white dark:bg-[#23232b] border-2 border-gray-200 dark:border-[#35353E] rounded-2xl p-3 sm:p-4 shadow-lg w-full max-w-4xl mb-4 min-h-[180px] overflow-hidden">
-        <div className="flex-1 flex flex-col justify-between py-2 pr-0 sm:pr-2 min-w-0">
+      <div className={`flex flex-col md:flex-row justify-between items-stretch bg-white dark:bg-[#23232b] border-2 border-gray-200 dark:border-[#35353E] rounded-2xl ${isHomePage ? 'p-2 sm:p-3' : 'p-3 sm:p-4'} shadow-lg w-full ${isHomePage ? '' : 'max-w-4xl'} ${isHomePage ? 'mb-2 sm:mb-3' : 'mb-4'} ${isHomePage ? 'min-h-[120px] sm:min-h-[140px]' : 'min-h-[180px]'} overflow-hidden`}>
+        <div className={`flex-1 flex flex-col justify-between ${isHomePage ? 'py-1 sm:py-2 pr-0 sm:pr-2' : 'py-2 pr-0 sm:pr-2'} min-w-0`}>
           <div>
             <div className="text-gray-600 dark:text-[#7e7e8f] text-xs font-semibold mb-0.5">
               Amount:
@@ -286,31 +288,31 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
             </div>
           </div>
         </div>
-        <div className="flex-shrink-0 ml-0 md:ml-6 flex items-center justify-center py-2 mt-3 md:mt-0">
+        <div className={`flex-shrink-0 ${isHomePage ? 'ml-0 mt-2 md:mt-0 md:ml-3' : 'ml-0 md:ml-6'} flex items-center justify-center ${isHomePage ? 'py-1 sm:py-2' : 'py-2'} mt-3 md:mt-0`}>
           {/* QR code */}
-          <div className="w-28 h-28 sm:w-36 sm:h-36 bg-white rounded-lg flex items-center justify-center">
+          <div className={`${isHomePage ? 'w-20 h-20 sm:w-24 sm:h-24' : 'w-28 h-28 sm:w-36 sm:h-36'} bg-white rounded-lg flex items-center justify-center flex-shrink-0`}>
             <img
-              src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${swapResponse.payinAddress}`}
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=${isHomePage ? '96' : '180'}x${isHomePage ? '96' : '180'}&data=${swapResponse.payinAddress}`}
               alt="QR Code"
-              className="w-24 h-24 sm:w-32 sm:h-32"
+              className={isHomePage ? "w-16 h-16 sm:w-20 sm:h-20" : "w-24 h-24 sm:w-32 sm:h-32"}
             />
           </div>
         </div>
       </div>
 
       {/* Stepper */}
-      <div className="w-full max-w-4xl mb-3 px-2 sm:px-0 overflow-x-auto">
+      <div className={`w-full ${isHomePage ? '' : 'max-w-4xl'} ${isHomePage ? 'mb-2 sm:mb-3' : 'mb-3'} px-2 sm:px-0 overflow-x-auto`}>
         {/* Circle and connecting line row */}
-        <div className="flex items-center mb-2 min-w-[320px]">
+        <div className={`flex items-center ${isHomePage ? 'mb-1 sm:mb-2' : 'mb-2'} ${isHomePage ? 'min-w-[280px]' : 'min-w-[320px]'}`}>
           {statusSteps.map((step, idx) => {
             const isActive = idx === currentStepIndex;
             const isCompleted = idx < currentStepIndex;
             
             return (
               <React.Fragment key={step.key}>
-                <div className="flex items-center flex-shrink-0">
+                <div className={`flex items-center flex-shrink-0 ${isHomePage ? 'min-w-[50px] sm:min-w-[56px]' : ''}`}>
                   <div
-                    className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center p-1 ${
+                    className={`${isHomePage ? 'w-6 h-6 sm:w-7 sm:h-7' : 'w-8 h-8 sm:w-10 sm:h-10'} rounded-full flex items-center justify-center p-1 ${
                       isActive
                         ? "bg-[#F79330] dark:bg-[#F79330]"
                         : isCompleted
@@ -326,7 +328,7 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
                 </div>
                 {/* Connecting line at circle center */}
                 {idx < statusSteps.length - 1 && (
-                  <div className="flex-1 h-0.5 sm:h-1 mx-1 sm:mx-2 rounded-full min-w-[20px]">
+                  <div className={`flex-1 ${isHomePage ? 'h-0.5' : 'h-0.5 sm:h-1'} ${isHomePage ? 'mx-0.5 sm:mx-1' : 'mx-1 sm:mx-2'} rounded-full ${isHomePage ? 'min-w-[12px]' : 'min-w-[20px]'}`}>
                     <div
                       className={`h-full rounded-full transition-all duration-300 ${
                         idx < currentStepIndex
@@ -344,16 +346,16 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
         </div>
         
         {/* Text and dots row */}
-        <div className="flex items-center min-w-[320px]">
+        <div className={`flex items-center ${isHomePage ? 'min-w-[280px]' : 'min-w-[320px]'}`}>
           {statusSteps.map((step, idx) => {
             const isActive = idx === currentStepIndex;
             const isCompleted = idx < currentStepIndex;
             
             return (
               <React.Fragment key={`text-${step.key}`}>
-                <div className="flex flex-col items-center w-8 sm:w-10 flex-shrink-0">
+                <div className={`flex flex-col items-center ${isHomePage ? 'w-6 sm:w-7' : 'w-8 sm:w-10'} flex-shrink-0`}>
                   <span
-                    className={`font-medium text-[10px] sm:text-xs text-center leading-tight ${
+                    className={`font-medium ${isHomePage ? 'text-[9px] sm:text-[10px]' : 'text-[10px] sm:text-xs'} text-center leading-tight ${
                       isActive
                         ? "text-[#F79330] dark:text-[#F79330]"
                         : isCompleted
@@ -373,7 +375,7 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
                 </div>
                 {/* Spacer for connecting line area */}
                 {idx < statusSteps.length - 1 && (
-                  <div className="flex-1 mx-1 sm:mx-2 min-w-[20px]"></div>
+                  <div className={`flex-1 ${isHomePage ? 'mx-0.5 sm:mx-1' : 'mx-1 sm:mx-2'} ${isHomePage ? 'min-w-[12px]' : 'min-w-[20px]'}`}></div>
                 )}
               </React.Fragment>
             );
@@ -382,9 +384,9 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
       </div>
 
       {/* Transaction Details Card */}
-      <div className="bg-white dark:bg-[#23232b] border-2 border-gray-200 dark:border-[#35353E] rounded-2xl p-4 sm:p-6 shadow-lg w-full max-w-4xl mb-3">
+      <div className={`bg-white dark:bg-[#23232b] border-2 border-gray-200 dark:border-[#35353E] rounded-2xl ${isHomePage ? 'p-3 sm:p-4' : 'p-4 sm:p-6'} shadow-lg w-full ${isHomePage ? '' : 'max-w-4xl'} ${isHomePage ? 'mb-2 sm:mb-3' : 'mb-3'} overflow-hidden`}>
         {/* Title */}
-        <div className="text-gray-900 dark:text-white text-xl sm:text-2xl font-semibold mb-4">
+        <div className={`text-gray-900 dark:text-white ${isHomePage ? 'text-lg sm:text-xl' : 'text-xl sm:text-2xl'} font-semibold ${isHomePage ? 'mb-2 sm:mb-3' : 'mb-4'}`}>
           Transaction Details
         </div>
         {/* Transaction ID Row */}
@@ -432,10 +434,10 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
 
       {/* View Results Button - shown when transaction is finished */}
       {mappedStatus === "finished" && (
-        <div className="w-full max-w-4xl mb-4 px-2 sm:px-0">
-          <div className="bg-[#1D8751] dark:bg-[#1D8751] border border-[#1D8751] dark:border-[#1D8751] rounded-2xl p-3 sm:p-4 shadow-lg text-center">
-            <h3 className="text-white dark:text-white text-base sm:text-lg font-semibold mb-2">🎉 Transaction Completed!</h3>
-            <p className="text-white/90 dark:text-white/90 text-xs sm:text-sm mb-3 sm:mb-4">Your swap has been processed successfully.</p>
+        <div className={`w-full ${isHomePage ? '' : 'max-w-4xl'} ${isHomePage ? 'mb-2 sm:mb-3' : 'mb-4'} px-2 sm:px-0`}>
+          <div className={`bg-[#1D8751] dark:bg-[#1D8751] border border-[#1D8751] dark:border-[#1D8751] rounded-2xl ${isHomePage ? 'p-2 sm:p-3' : 'p-3 sm:p-4'} shadow-lg text-center`}>
+            <h3 className={`text-white dark:text-white ${isHomePage ? 'text-sm sm:text-base' : 'text-base sm:text-lg'} font-semibold ${isHomePage ? 'mb-1 sm:mb-2' : 'mb-2'}`}>🎉 Transaction Completed!</h3>
+            <p className={`text-white/90 dark:text-white/90 ${isHomePage ? 'text-xs' : 'text-xs sm:text-sm'} ${isHomePage ? 'mb-2 sm:mb-3' : 'mb-3 sm:mb-4'}`}>Your swap has been processed successfully.</p>
             <button
               className="bg-white hover:bg-gray-100 dark:bg-white dark:hover:bg-gray-100 text-[#1D8751] dark:text-[#1D8751] font-semibold py-2 sm:py-3 px-6 sm:px-8 rounded-xl text-base sm:text-lg transition w-full sm:w-auto"
               onClick={onNext}
@@ -447,7 +449,7 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
       )}
 
       {/* Terms and Conditions Summary - always at the very bottom */}
-      <div className="flex items-center justify-center mb-2 mt-2 w-full max-w-4xl px-2 sm:px-0">
+      <div className={`flex items-center justify-center ${isHomePage ? 'mb-1 sm:mb-2 mt-1 sm:mt-2' : 'mb-2 mt-2'} w-full ${isHomePage ? '' : 'max-w-4xl'} px-2 sm:px-0`}>
         <img
           src="https://res.cloudinary.com/pitz/image/upload/v1752248844/Frame_34947_hxlr7o.png"
           alt="Terms and Conditions"

@@ -82,35 +82,36 @@ const ResetPassword = () => {
             priority
           />
           {/* App store badges */}
-          <div className="flex space-x-1 mt-4 justify-center">
-            <div className="rounded px-2 flex items-center border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)]">
-              <Image
-                src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746787514/Google_Play-Icon-Logo.wine_dqxxk7.svg"
-                alt="Google Play Store"
-                width={40}
-                height={13}
-                className="mr-2"
-              />
-              <div>
-                <p className="text-gray-900 dark:text-white text-xs">Download on the</p>
-                <span className="text-gray-900 dark:text-white text-sm font-bold">
-                  Google Play
-                </span>
+          <div className="flex flex-wrap items-center justify-center gap-3 mt-6">
+            {/* Google Play Badge */}
+            <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] hover:bg-gray-50 dark:hover:bg-[#2A2A32] transition-colors cursor-pointer min-w-[140px]">
+              <div className="relative w-6 h-6 shrink-0">
+                <Image
+                  src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746787514/Google_Play-Icon-Logo.wine_dqxxk7.svg"
+                  alt="Google Play"
+                  fill
+                  className="object-contain"
+                />
+              </div>
+              <div className="flex flex-col leading-tight">
+                <span className="text-[10px] text-gray-500 dark:text-gray-400">Download on the</span>
+                <span className="text-sm font-semibold text-gray-900 dark:text-white">Google Play</span>
               </div>
             </div>
-            <div className="rounded px-2 flex items-center border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)]">
-              <Image
-                src="https://res.cloudinary.com/dam1sxczj/image/upload/v1747288173/dark_apple_rwpgwi.png"
-                alt="Apple App Store"
-                width={20}
-                height={20}
-                className="mr-2"
-              />
-              <div>
-                <p className="text-gray-900 dark:text-white text-xs">Download on the</p>
-                <span className="text-gray-900 dark:text-white text-sm font-bold">
-                  App Store
-                </span>
+
+            {/* App Store Badge */}
+            <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] hover:bg-gray-50 dark:hover:bg-[#2A2A32] transition-colors cursor-pointer min-w-[140px]">
+              <div className="relative w-6 h-6 shrink-0">
+                <Image
+                  src="https://res.cloudinary.com/dam1sxczj/image/upload/v1747288173/dark_apple_rwpgwi.png"
+                  alt="App Store"
+                  fill
+                  className="object-contain brightness-0 dark:brightness-100"
+                />
+              </div>
+              <div className="flex flex-col leading-tight">
+                <span className="text-[10px] text-gray-500 dark:text-gray-400">Download on the</span>
+                <span className="text-sm font-semibold text-gray-900 dark:text-white">App Store</span>
               </div>
             </div>
           </div>
@@ -318,9 +319,8 @@ const ResetPassword = () => {
             <div className="flex flex-col space-y-1 ml-1 mt-2">
               <div className="flex items-center space-x-2">
                 <div
-                  className={`h-2 w-2 rounded-full ${
-                    hasMinChars ? "bg-[#1D8751]" : "bg-[#1D8751]"
-                  }`}
+                  className={`h-2 w-2 rounded-full ${hasMinChars ? "bg-[#1D8751]" : "bg-[#1D8751]"
+                    }`}
                 ></div>
                 <span className="text-sm text-white">
                   {t(
@@ -331,9 +331,8 @@ const ResetPassword = () => {
               </div>
               <div className="flex items-center space-x-2">
                 <div
-                  className={`h-2 w-2 rounded-full ${
-                    hasNumberOrSymbol ? "bg-[#1D8751]" : "bg-[#1D8751]"
-                  }`}
+                  className={`h-2 w-2 rounded-full ${hasNumberOrSymbol ? "bg-[#1D8751]" : "bg-[#1D8751]"
+                    }`}
                 ></div>
                 <span className="text-sm text-white">
                   {t(
@@ -344,9 +343,8 @@ const ResetPassword = () => {
               </div>
               <div className="flex items-center space-x-2">
                 <div
-                  className={`h-2 w-2 rounded-full ${
-                    hasMixedCase ? "bg-[#1D8751]" : "bg-[#1D8751]"
-                  }`}
+                  className={`h-2 w-2 rounded-full ${hasMixedCase ? "bg-[#1D8751]" : "bg-[#1D8751]"
+                    }`}
                 ></div>
                 <span className="text-sm text-white">
                   {t(

@@ -8,6 +8,7 @@ import {
   postUserPaymentDetail,
   clearPostStatus,
 } from "@/features/p2p/slices/paymentMethodsSlice";
+import EditPaymentMethodModal from "./EditPaymentMethodModal";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/store/rootReducer";
 import { showToast } from "@/lib/utils/toast";
@@ -45,6 +46,10 @@ const PaymentMethods = () => {
   const [accountName, setAccountName] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
   const [isClient, setIsClient] = useState(false);
+
+  // Edit modal states
+  const [editingPaymentMethod, setEditingPaymentMethod] = useState<PaymentMethod | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   /** Store */
   const dispatch = useDispatch<AppDispatch>();
@@ -234,19 +239,20 @@ const PaymentMethods = () => {
         <td className="px-4 py-4 text-sm sm:text-base text-gray-900 dark:text-white font-mono">
           {method?.account_number || '—'}
         </td>
-        <td className="px-4 py-4 text-right">
+        <td className="px-4 py-4">
+          <div className="flex items-center justify-end gap-2">
+            {/* Edit Button */}
           <button
-            disabled={deletingMethodId === method.id.toString()}
-            className="text-[#1D8751] hover:text-red-500 transition-colors flex items-center justify-end"
-            title="Delete"
-            onClick={() => handleDeleteMethod(method.id.toString())}
-          >
-            {deletingMethodId === method.id.toString() ? (
-              <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-[#1D8751]"></div>
-            ) : (
+              onClick={() => {
+                setEditingPaymentMethod(method);
+                setIsEditModalOpen(true);
+              }}
+              className="p-2 hover:bg-gray-100 dark:hover:bg-[#2A2A2A] rounded-full transition-colors"
+              title="Edit"
+            >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="w-5 h-5 cursor-pointer"
+                className="w-5 h-5 text-[#1D8751] cursor-pointer"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -255,11 +261,37 @@ const PaymentMethods = () => {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"
+                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                />
+              </svg>
+            </button>
+            {/* Delete Button */}
+            <button
+              disabled={deletingMethodId === method.id.toString()}
+              className="p-2 hover:bg-gray-100 dark:hover:bg-[#2A2A2A] rounded-full transition-colors disabled:opacity-50"
+              title="Delete"
+              onClick={() => handleDeleteMethod(method.id.toString())}
+            >
+              {deletingMethodId === method.id.toString() ? (
+                <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-[#1D8751]"></div>
+              ) : (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-5 h-5 text-red-500 cursor-pointer"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"
                 />
               </svg>
             )}
           </button>
+          </div>
         </td>
       </tr>
     );
@@ -295,19 +327,20 @@ const PaymentMethods = () => {
         <td className="px-4 py-4 text-sm sm:text-base text-gray-900 dark:text-white font-mono">
           {method?.account_number || '—'}
         </td>
-        <td className="px-4 py-4 text-right">
+        <td className="px-4 py-4">
+          <div className="flex items-center justify-end gap-2">
+            {/* Edit Button */}
           <button
-            disabled={deletingMethodId === method?.id?.toString()}
-            className="text-[#1D8751] hover:text-red-500 transition-colors flex items-center justify-end"
-            title="Delete"
-            onClick={() => handleDeleteMethod(method?.id?.toString() || '')}
-          >
-            {deletingMethodId === method?.id?.toString() ? (
-              <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-[#1D8751]"></div>
-            ) : (
+              onClick={() => {
+                setEditingPaymentMethod(method);
+                setIsEditModalOpen(true);
+              }}
+              className="p-2 hover:bg-gray-100 dark:hover:bg-[#2A2A2A] rounded-full transition-colors"
+              title="Edit"
+            >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="w-5 h-5 cursor-pointer"
+                className="w-5 h-5 text-[#1D8751] cursor-pointer"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -316,11 +349,37 @@ const PaymentMethods = () => {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"
+                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                />
+              </svg>
+            </button>
+            {/* Delete Button */}
+            <button
+              disabled={deletingMethodId === method?.id?.toString()}
+              className="p-2 hover:bg-gray-100 dark:hover:bg-[#2A2A2A] rounded-full transition-colors disabled:opacity-50"
+              title="Delete"
+              onClick={() => handleDeleteMethod(method?.id?.toString() || '')}
+            >
+              {deletingMethodId === method?.id?.toString() ? (
+                <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-[#1D8751]"></div>
+              ) : (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-5 h-5 text-red-500 cursor-pointer"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"
                 />
               </svg>
             )}
           </button>
+          </div>
         </td>
       </tr>
     );
@@ -709,6 +768,16 @@ const PaymentMethods = () => {
           <p className="text-sm sm:text-base font-semibold">Update</p>
         </Button>
       </div>
+
+      {/* Edit Payment Method Modal */}
+      <EditPaymentMethodModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setEditingPaymentMethod(null);
+        }}
+        paymentMethod={editingPaymentMethod}
+      />
     </div>
   );
 };
