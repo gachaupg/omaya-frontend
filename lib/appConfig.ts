@@ -164,6 +164,17 @@ export const API_CONFIG = {
   CONTACT: {
     SUBMIT_CONTACT: "/trading_engine/support-requests/create/",
   },
+  LIVE_CHAT: {
+    BASE: "/api/live-chat/",
+    CREATE_SESSION: "/api/live-chat/sessions/",
+    GET_SESSION: (sessionId: string) => `/api/live-chat/sessions/${sessionId}/`,
+    GET_MESSAGES: (sessionId: string) => `/api/live-chat/sessions/${sessionId}/messages/`,
+    QUEUE_STATUS: "/api/live-chat/queue/status/",
+    SOCKETS: {
+      CHAT: (sessionId: string, token: string) =>
+        `${getWebSocketBaseUrl()}/ws/live-chat/${sessionId}/?token=${token}`,
+    },
+  },
   MARKETING: {
     HIGHLIGHT_STATISTICS: "/trading_engine/highlight-statistics/",
   },

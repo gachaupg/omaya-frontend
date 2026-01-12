@@ -50,6 +50,29 @@ export default function Sidebar() {
       dispatch(openKYCModal());
       return false;
     }
+
+    // Check if clicking on an already active section - reset to default/base route
+    const normalizedPathname = pathname?.replace(/\/$/, "") || "";
+    const normalizedHref = href.replace(/\/$/, "");
+    const isActive = normalizedHref === "/dashboard"
+      ? normalizedPathname === normalizedHref
+      : normalizedPathname === normalizedHref ||
+        (normalizedPathname && normalizedPathname.startsWith(normalizedHref + "/"));
+
+    // If the clicked item is already active, navigate to its base/default route
+    if (isActive && normalizedHref !== "/dashboard") {
+      // Check if we're already on the base route
+      if (normalizedPathname !== normalizedHref) {
+        // We're on a sub-route, navigate to the base route
+        e.preventDefault();
+        router.push(href);
+        return false;
+      }
+      // If already on base route, force a reset by doing a hard navigation
+      e.preventDefault();
+      window.location.href = href;
+      return false;
+    }
     
     // Allow navigation for verified users, unauthenticated users, and users with undefined verification status
   };
