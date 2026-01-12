@@ -4493,7 +4493,7 @@ export default function DepositForm({
                 onChange={(event) =>
                   setIsAddressConfirmed(event.target.checked)
                 }
-                className="w-4 h-4 rounded border-[#1D8751] text-[#1D8751] focus:ring-[#1D8751] accent-[#1D8751] accent-[#1D8751] cursor-pointer"
+                className="w-4 h-4 rounded border-[#1D8751] text-[#1D8751] focus:ring-[#1D8751] accent-[#1D8751] cursor-pointer"
               />
               <span>{t("express.confirmWalletAddress", "I confirm that this wallet address is correct.")}</span>
             </label>
@@ -4574,12 +4574,22 @@ export default function DepositForm({
 
           {/* Agreement checkbox before final button */}
           <div className="flex flex-col gap-3 w-full px-2 pb-3 mb-3 border-b border-[#35353E]">
+            <style dangerouslySetInnerHTML={{
+              __html: `
+                input[type="checkbox"].terms-checkbox-green:checked {
+                  background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-3.5-3.5a1 1 0 011.414-1.414L4.5 10.586l6.293-6.293a1 1 0 011.414 0z'/%3e%3c/svg%3e") !important;
+                  background-size: 14px 14px !important;
+                  background-repeat: no-repeat !important;
+                  background-position: center !important;
+                }
+              `
+            }} />
             <label className="flex items-start gap-2 text-xs sm:text-sm text-[#35353e] dark:text-[#788099] mb-1">
               <input
                 type="checkbox"
                 checked={termsAccepted}
                 onChange={(e) => setTermsAccepted(e.target.checked)}
-                className="mt-0.5 w-5 h-5 rounded border-2 border-[#1D8751] text-white focus:ring-[#1D8751] appearance-none bg-transparent checked:bg-[#1D8751] checked:border-[#1D8751] flex-shrink-0 accent-[#1D8751]"
+                className="terms-checkbox-green mt-0.5 w-5 h-5 rounded border-2 border-[#1D8751] focus:ring-[#1D8751] appearance-none bg-transparent checked:bg-[#1D8751] checked:border-[#1D8751] flex-shrink-0"
               />
               <span className="text-[#35353e] dark:text-[#788099]">
                 I've read and agree to the OMAYA EXCHANGE{" "}

@@ -237,35 +237,36 @@ export default function LoginPage() {
             priority
           />
           {/* App store badges */}
-          <div className="flex space-x-1 mt-4 justify-center">
-            <div className="rounded px-2 flex items-center border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)]">
-              <Image
-                src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746787514/Google_Play-Icon-Logo.wine_dqxxk7.svg"
-                alt="Google Play Store"
-                width={40}
-                height={13}
-                className="mr-2"
-              />
-              <div>
-                <p className="text-gray-900 dark:text-white text-xs">Download on the</p>
-                <span className="text-gray-900 dark:text-white text-sm font-bold">
-                  Google Play
-                </span>
+          <div className="flex flex-wrap items-center justify-center gap-3 mt-6">
+            {/* Google Play Badge */}
+            <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] hover:bg-gray-50 dark:hover:bg-[#2A2A32] transition-colors cursor-pointer min-w-[140px]">
+              <div className="relative w-6 h-6 shrink-0">
+                <Image
+                  src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746787514/Google_Play-Icon-Logo.wine_dqxxk7.svg"
+                  alt="Google Play"
+                  fill
+                  className="object-contain"
+                />
+              </div>
+              <div className="flex flex-col leading-tight">
+                <span className="text-[10px] text-gray-500 dark:text-gray-400">Download on the</span>
+                <span className="text-sm font-semibold text-gray-900 dark:text-white">Google Play</span>
               </div>
             </div>
-            <div className="rounded px-2 flex items-center border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)]">
-              <Image
-                src="https://res.cloudinary.com/dam1sxczj/image/upload/v1747288173/dark_apple_rwpgwi.png"
-                alt="Apple App Store"
-                width={20}
-                height={20}
-                className="mr-2"
-              />
-              <div>
-                <p className="text-gray-900 dark:text-white text-xs">Download on the</p>
-                <span className="text-gray-900 dark:text-white text-sm font-bold">
-                  App Store
-                </span>
+
+            {/* App Store Badge */}
+            <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] hover:bg-gray-50 dark:hover:bg-[#2A2A32] transition-colors cursor-pointer min-w-[140px]">
+              <div className="relative w-6 h-6 shrink-0">
+                <Image
+                  src="https://res.cloudinary.com/dam1sxczj/image/upload/v1747288173/dark_apple_rwpgwi.png"
+                  alt="App Store"
+                  fill
+                  className="object-contain brightness-0 dark:brightness-100"
+                />
+              </div>
+              <div className="flex flex-col leading-tight">
+                <span className="text-[10px] text-gray-500 dark:text-gray-400">Download on the</span>
+                <span className="text-sm font-semibold text-gray-900 dark:text-white">App Store</span>
               </div>
             </div>
           </div>
@@ -299,11 +300,10 @@ export default function LoginPage() {
                   id="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className={`w-full py-3 px-4 pl-10 rounded-full bg-white dark:bg-[var(--card-color)] border ${
-                    errors.email
+                  className={`w-full py-3 px-4 pl-10 rounded-full bg-white dark:bg-[var(--card-color)] border ${errors.email
                       ? "border-[#FDA29B]"
                       : "border-gray-300 dark:border-[#35353E]"
-                  } text-gray-900 dark:text-white focus:outline-none focus:border-[#13B562]`}
+                    } text-gray-900 dark:text-white focus:outline-none focus:border-[#13B562]`}
                   placeholder={t(
                     "auth.login.email.placeholder",
                     "Email Address"
@@ -371,11 +371,10 @@ export default function LoginPage() {
                   id="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className={`w-full py-3 px-4 pl-10 pr-12 rounded-full bg-white dark:bg-[var(--card-color)] border ${
-                    errors.password
+                  className={`w-full py-3 px-4 pl-10 pr-12 rounded-full bg-white dark:bg-[var(--card-color)] border ${errors.password
                       ? "border-[#FDA29B]"
                       : "border-gray-300 dark:border-[#35353E]"
-                  } text-gray-900 dark:text-white focus:outline-none focus:border-[#13B562]`}
+                    } text-gray-900 dark:text-white focus:outline-none focus:border-[#13B562]`}
                   placeholder={t(
                     "auth.login.password.placeholder",
                     "****************"
@@ -473,18 +472,15 @@ export default function LoginPage() {
                         setErrors((prev) => ({ ...prev, rememberMe: "" }));
                       }
                     }}
-                    className={`opacity-0 absolute h-4 w-4 cursor-pointer ${
-                      errors.rememberMe ? "ring-2 ring-[#F04438] rounded" : ""
-                    }`}
+                    className={`opacity-0 absolute h-4 w-4 cursor-pointer ${errors.rememberMe ? "ring-2 ring-[#F04438] rounded" : ""
+                      }`}
                   />
                   <div
-                    className={`border ${
-                      errors.rememberMe
+                    className={`border ${errors.rememberMe
                         ? "border-[#F04438]"
                         : "border-[#1D8751]"
-                    } rounded h-4 w-4 flex flex-shrink-0 justify-center items-center mr-2 ${
-                      rememberMe ? "bg-[#1D8751]" : "bg-transparent"
-                    }`}
+                      } rounded h-4 w-4 flex flex-shrink-0 justify-center items-center mr-2 ${rememberMe ? "bg-[#1D8751]" : "bg-transparent"
+                      }`}
                   >
                     {rememberMe && (
                       <svg
@@ -497,11 +493,10 @@ export default function LoginPage() {
                   </div>
                   <label
                     htmlFor="remember-me"
-                    className={`text-sm cursor-pointer ${
-                      errors.rememberMe
+                    className={`text-sm cursor-pointer ${errors.rememberMe
                         ? "text-[#F04438]"
                         : "dark:text-white text-gray-900"
-                    }`}
+                      }`}
                   >
                     {t("auth.login.remember", "Remember me")}
                   </label>
@@ -524,9 +519,8 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className={`w-full bg-[#1D8751] text-white py-3 px-4 rounded-full hover:bg-[#0E5531] transition-colors duration-300 ${
-                isSubmitting ? "opacity-70 cursor-not-allowed" : ""
-              }`}
+              className={`w-full bg-[#1D8751] text-white py-3 px-4 rounded-full hover:bg-[#0E5531] transition-colors duration-300 ${isSubmitting ? "opacity-70 cursor-not-allowed" : ""
+                }`}
             >
               {isSubmitting ? (
                 <div className="flex items-center justify-center">
@@ -596,7 +590,7 @@ export default function LoginPage() {
       {showCaptchaModal && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none">
           {/* Modal */}
-          <div 
+          <div
             className="relative bg-white dark:bg-[var(--card-color)] rounded-2xl shadow-2xl max-w-md w-full mx-4 p-6 pointer-events-auto border border-gray-200 dark:border-[#35353E]"
             onClick={(e) => e.stopPropagation()}
           >

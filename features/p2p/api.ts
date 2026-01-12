@@ -720,6 +720,27 @@ export const deletePaymentMethod = async (id: string): Promise<P2PResponse> => {
   });
 };
 
+export const updateUserPaymentDetail = async (
+  id: string | number,
+  data: {
+    account_name?: string;
+    account_number?: string;
+    wallet_address?: string | null;
+    allow_auto_send?: boolean;
+    provider_name?: string;
+  }
+): Promise<P2PResponse> => {
+  logger.debug('p2p', "API: updateUserPaymentDetail called with id:", id, "data:", data);
+  return withRetry(async () => {
+    const response = await patch<P2PResponse>(
+      `${API_CONFIG.P2P.USER_PAYMENT_DETAILS}${id}/`,
+      data
+    );
+    logger.debug('p2p', "API: Update response received:", response);
+    return response.data;
+  });
+};
+
 export const updateProfile = async (data: FormData): Promise<P2PResponse> => {
   return withRetry(async () => {
     const response = await patch<P2PResponse>(

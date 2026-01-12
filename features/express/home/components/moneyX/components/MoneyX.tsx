@@ -50,6 +50,7 @@ const MoneyX = ({ isHomePage = false, onTransferComplete }: MoneyXProps) => {
       moneyxTransactionId: data.moneyxTransactionId || "", // MoneyX transaction ID
       isMoneyX: true, // Flag to identify MoneyX transactions
       moneyXTransaction: data.moneyXTransaction, // Full MoneyX transaction data
+      createdAt: Date.now(), // Store transaction creation timestamp for timer
     };
 
     // Store in localStorage

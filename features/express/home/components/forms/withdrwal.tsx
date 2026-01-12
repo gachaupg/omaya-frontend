@@ -4382,7 +4382,7 @@ export default function WithdrawalForm({
                   {isSubmitting ? (
                     <div className="flex items-center gap-2">
                       <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#A2A4A9FF] dark:border-[#35353E]"></div>
-                      <span>Getting Withdrawal Addresses...</span>
+                      <span>Submitting...</span>
                     </div>
                   ) : isTransactionSubmitted ? (
                     <div className="flex items-center gap-2">
@@ -4619,10 +4619,20 @@ export default function WithdrawalForm({
 
                 {/* Terms Checkbox */}
                 <div className="mt-4">
+                  <style dangerouslySetInnerHTML={{
+                    __html: `
+                      input[type="checkbox"].terms-checkbox-green:checked {
+                        background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-3.5-3.5a1 1 0 011.414-1.414L4.5 10.586l6.293-6.293a1 1 0 011.414 0z'/%3e%3c/svg%3e") !important;
+                        background-size: 14px 14px !important;
+                        background-repeat: no-repeat !important;
+                        background-position: center !important;
+                      }
+                    `
+                  }} />
                   <label className="flex items-start cursor-pointer">
                     <input
                       type="checkbox"
-                      className="mt-1 mr-3 w-4 h-4 text-[#1D8751] bg-[#1D1D23] dark:bg-[#35353E] border-[#A2A4A9FF] dark:border-[#35353E ] rounded focus:ring-[#1D8751] focus:ring-2"
+                      className="terms-checkbox-green mt-1 mr-3 w-4 h-4 rounded border-2 border-[#1D8751] focus:ring-[#1D8751] appearance-none bg-transparent checked:bg-[#1D8751] checked:border-[#1D8751] flex-shrink-0"
                     />
                     <span className="text-[#35353e] dark:text-[#788099] text-sm">
                       I've read and agree to the{" "}

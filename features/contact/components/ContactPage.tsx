@@ -74,7 +74,7 @@ const ContactPage: React.FC<ContactPageProps> = ({ showFileUpload = true }) => {
   };
 
   return (
-    <div className="w-full relative z-10 min-h-screen p-0 sm:p-6 lg:p-8 bg-white dark:bg-[var(--bg-color)]">
+    <div className="w-full relative z-10 min-h-screen p-0 sm:p-6 lg:p-8">
       <div className="w-full max-w-3xl mx-auto px-4 sm:px-0">
         <h1 className="text-base sm:text-lg font-medium text-gray-700 dark:text-[#788099] mb-3 sm:mb-4">
           {t("contact.title", "Help & Support")}
@@ -116,7 +116,7 @@ const ContactPage: React.FC<ContactPageProps> = ({ showFileUpload = true }) => {
           <div className="border-t border-[#E8EFF5] dark:border-[#35353E] pt-4 sm:pt-5 lg:pt-6">
             <button
               onClick={handleConnectLiveChat}
-              className="w-full bg-[#1D8751] text-white font-medium py-2.5 sm:py-3 lg:py-3 px-6 rounded-full transition-colors hover:bg-[#166b42] text-sm sm:text-base lg:text-base min-h-[44px] sm:min-h-0 lg:min-h-0"
+              className="w-full bg-[#1D8751] text-white font-medium py-2.5 sm:py-3 lg:py-3 px-6 rounded-xl transition-colors hover:bg-[#166b42] text-sm sm:text-base lg:text-base min-h-[44px] sm:min-h-0 lg:min-h-0"
             >
               {t("contact.liveChat", "Connect with Live Chat")}
             </button>

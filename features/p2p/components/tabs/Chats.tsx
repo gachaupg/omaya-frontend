@@ -138,6 +138,7 @@ export const Chats: React.FC = () => {
   const [uploadedImages, setUploadedImages] = useState<File[]>([]);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
+  const [showChatView, setShowChatView] = useState(false); // For mobile/tablet: true = show conversation, false = show list
 
   // Check localStorage for terms acceptance on mount
   useEffect(() => {
@@ -722,9 +723,9 @@ export const Chats: React.FC = () => {
         </p>
       </div>
 
-      <div className="flex-1 flex flex-col md:flex-row gap-3 sm:gap-4 min-h-0">
-        {/* Conversations list - Left Card */}
-        <div className="w-full md:w-72 lg:w-80 rounded-2xl border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#15161D] overflow-hidden flex flex-col min-h-0">
+      <div className="flex-1 flex flex-col lg:flex-row gap-3 sm:gap-4 min-h-0">
+        {/* Conversations list - Left Card - Hidden on mobile/tablet when chat is open */}
+        <div className={`w-full lg:w-72 xl:w-80 rounded-2xl border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#15161D] overflow-hidden flex flex-col min-h-0 ${showChatView ? 'hidden lg:flex' : 'flex'}`}>
           <div className="px-3 py-2">
             <div className="relative">
               <input
@@ -737,7 +738,7 @@ export const Chats: React.FC = () => {
             </div>
           </div>
 
-          <div className="px-2 pb-2 space-y-1 flex-1 overflow-y-auto max-h-[30dvh] md:max-h-[calc(100vh-200px)]">
+          <div className="px-2 pb-2 space-y-1 flex-1 overflow-y-auto max-h-[30dvh] lg:max-h-[calc(100vh-200px)]">
             {filteredConversations.length === 0 && (
               <div className="px-3 py-4 text-xs text-gray-600 dark:text-[#9CA3AF]">
                 No conversations yet.
@@ -761,18 +762,43 @@ export const Chats: React.FC = () => {
                   latestMessage={latestMessage}
                   isActive={isActive}
                   unreadCount={unreadCount}
-                  onSelect={() => setSelectedUser(group)}
+                  onSelect={() => {
+                    setSelectedUser(group);
+                    // On mobile/tablet, show chat view when a conversation is selected
+                    setShowChatView(true);
+                  }}
                 />
               );
             })}
           </div>
         </div>
 
-        {/* Chat panel - Right Card */}
-        <div className="flex-1 flex flex-col rounded-2xl border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#111217] overflow-hidden min-h-0">
+        {/* Chat panel - Right Card - Hidden on mobile/tablet when list is shown */}
+        <div className={`flex-1 flex flex-col rounded-2xl border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#111217] overflow-hidden min-h-0 ${showChatView ? 'flex' : 'hidden lg:flex'}`}>
           {/* Chat header */}
           <div className="px-4 py-3 border-b border-gray-200 dark:border-[#1F2937] flex items-center justify-between">
             <div className="flex items-center gap-3">
+              {/* Back button for mobile/tablet */}
+              <button
+                onClick={() => setShowChatView(false)}
+                className="lg:hidden flex-shrink-0 w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-[#1F2937] flex items-center justify-center transition-colors"
+                aria-label="Back to conversations"
+              >
+                <svg
+                  className="w-5 h-5 text-gray-600 dark:text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 19l-7-7 7-7"
+                  />
+                </svg>
+              </button>
+              
               {selectedUser && (() => {
                 const latestMessage = selectedUser.messages?.[0];
                 const photoUrl = getPhotoUrl(selectedUser, latestMessage);
