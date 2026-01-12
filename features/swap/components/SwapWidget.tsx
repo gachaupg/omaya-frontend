@@ -733,8 +733,6 @@ const SwapWidget = () => {
   }
 
   return (
-    <div className="flex flex-col dark:text-white text-gray-900 w-full px-2 sm:px-4 md:px-6 lg:px-8 max-w-6xl mx-auto">
-      <h2 className="text-base sm:text-lg md:text-xl font-semibold mb-2 sm:mb-4 md:mb-6 text-gray-900 dark:text-white">
     <div className="flex flex-col dark:text-white text-gray-900 w-full sm:pl-4 pr-2 sm:pr-0 sm:mr-40 sm:max-w-5xl">
       <h2 className="text-base sm:text-lg font-semibold mb-2 sm:mb-4 md:mb-6 text-gray-900 dark:text-white">
         Swap Crypto
