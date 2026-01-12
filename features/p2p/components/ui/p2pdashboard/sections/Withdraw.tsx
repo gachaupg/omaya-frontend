@@ -65,6 +65,13 @@ const Withdraw: React.FC = () => {
     if (!assetsData && !assetsLoading) dispatch(fetchAssets());
   }, [assetsData, assetsLoading, dispatch]);
 
+  // Debug: Log errors when they change (can be removed in production)
+  useEffect(() => {
+    if (errors.length > 0) {
+      console.log("Validation errors:", errors);
+    }
+  }, [errors]);
+
   /* --------------------------------------------------------------------- */
   /*                           Derived select data                         */
   /* --------------------------------------------------------------------- */
@@ -111,11 +118,23 @@ const Withdraw: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Validate wallet address is not empty first
+    const trimmedAddress = usdtAddress?.trim() || "";
+    if (!trimmedAddress) {
+      const emptyAddressError: ValidationError = {
+        field: "walletAddress",
+        message: "Wallet address is required",
+      };
+      setErrors([emptyAddressError]);
+      showToast.error("Wallet address is required");
+      return;
+    }
+
     const formData: WithdrawalFormData = {
       amount,
       file: null,
       confirmPayment,
-      walletAddress: usdtAddress,
+      walletAddress: trimmedAddress,
     };
 
     const validationErrors = validateWithdrawalForm(
@@ -145,7 +164,7 @@ const Withdraw: React.FC = () => {
         currency: "USDT",
         network: selectedNetwork?.network_type as Network,
         wallet_type: "withdraw",
-        receiver_wallet: usdtAddress,
+        receiver_wallet: trimmedAddress,
       };
 
       const res = await dispatch(createWithdrawal(payload));
@@ -419,11 +438,16 @@ const Withdraw: React.FC = () => {
                 <Copy className="w-4 h-4" />
               </button>
             </div>
-            {getFieldError("walletAddress", errors) && (
-              <span className="text-red-500 text-sm mt-1">
-                {getFieldError("walletAddress", errors)}
-              </span>
-            )}
+            {(() => {
+              const walletError = getFieldError("walletAddress", errors);
+              return walletError ? (
+                <div className="mt-1 min-h-[20px]">
+                  <span className="text-red-500 text-sm font-medium block">
+                    {walletError}
+                  </span>
+                </div>
+              ) : null;
+            })()}
           </div>
 
           {/* ----------------------------------------------------------------- */}

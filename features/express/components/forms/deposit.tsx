@@ -2082,6 +2082,24 @@ export default function DepositForm({
     setIsAddressConfirmed(false);
   }, [walletAddress]);
 
+  // Clear validation errors when amount is cleared or form is reset
+  useEffect(() => {
+    if (!payAmount || payAmount === 0 || payAmountInput === "" || payAmountInput === "0") {
+      setApiValidationError(null);
+      setReceiveAmountError(null);
+      setEstimateError(null);
+    }
+  }, [payAmount, payAmountInput]);
+
+  // Clear validation errors on component unmount
+  useEffect(() => {
+    return () => {
+      setApiValidationError(null);
+      setReceiveAmountError(null);
+      setEstimateError(null);
+    };
+  }, []);
+
   // Terms & Conditions acceptance
   const [termsAccepted, setTermsAccepted] = useState(false);
 
@@ -2090,7 +2108,9 @@ export default function DepositForm({
     !walletAddress.trim() ||
     !!walletError ||
     !isAddressConfirmed ||
-    !termsAccepted;
+    !termsAccepted ||
+    payAmount >= 15000 ||
+    getAmount >= 15000;
 
   // Auto-validate receive amount whenever it changes
   useEffect(() => {
@@ -2665,6 +2685,13 @@ export default function DepositForm({
   const handleSubmit = async () => {
     // Clear previous errors
     setValidationErrors([]);
+
+    // Prevent submission if amount exceeds $15,000
+    if (payAmount > 15000 || getAmount > 15000) {
+      showToast.error("Amount cannot exceed $15,000. Please contact OTC Desk for larger amounts.");
+      setIsInfoModalOpen(true);
+      return;
+    }
 
     // Validate form
     const errors = validateForm();
@@ -3753,10 +3780,14 @@ export default function DepositForm({
           <div className="mt-2 sm:mt-3 md:mt-4 relative">
             <button
               className={`w-full text-white dark:text-white text-sm sm:text-base font-medium py-3 sm:py-2 rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 transition-colors min-h-[44px] sm:min-h-0 ${isHomePage
-                ? "bg-[#1D8751] hover:bg-[#166b3e] cursor-pointer"
+                ? payAmount >= 15000 || getAmount >= 15000
+                  ? "bg-gray-500 cursor-not-allowed"
+                  : "bg-[#1D8751] hover:bg-[#166b3e] cursor-pointer"
                 : isSubmitting ||
                   !selectedAsset ||
                   !payBank ||
+                  payAmount >= 15000 ||
+                  getAmount >= 15000 ||
                   (selectedAsset &&
                     !isSimpleCalculationAsset(selectedAsset) &&
                     !isForexAsset(selectedAsset) &&
@@ -3764,7 +3795,25 @@ export default function DepositForm({
                   ? "bg-gray-500 cursor-not-allowed"
                   : "bg-[#1D8751] hover:bg-[#166b3e]"
                 }`}
+              disabled={isHomePage 
+                ? payAmount >= 15000 || getAmount >= 15000
+                : isSubmitting ||
+                  !selectedAsset ||
+                  !payBank ||
+                  payAmount >= 15000 ||
+                  getAmount >= 15000 ||
+                  (selectedAsset &&
+                    !isSimpleCalculationAsset(selectedAsset) &&
+                    !isForexAsset(selectedAsset) &&
+                    estimateLoading)
+              }
               onClick={() => {
+                // Prevent submission if amount is >= 15000
+                if (payAmount >= 15000 || getAmount >= 15000) {
+                  showToast.error("Amount cannot exceed $15,000. Please contact OTC Desk for larger amounts.");
+                  return;
+                }
+
                 if (isHomePage) {
                   const state = {
                     mode,
@@ -3795,18 +3844,6 @@ export default function DepositForm({
                   handleFirstCardSubmit();
                 }
               }}
-              disabled={
-                isHomePage
-                  ? false
-                  : isSubmitting ||
-                  !selectedAsset ||
-                  !payBank ||
-                  (walletAddress.trim() && !!walletError) ||
-                  (selectedAsset &&
-                    !isSimpleCalculationAsset(selectedAsset) &&
-                    !isForexAsset(selectedAsset) &&
-                    estimateLoading)
-              }
             >
               {isSubmitting ? (
                 <div className="flex items-center gap-2">
@@ -4456,7 +4493,7 @@ export default function DepositForm({
                 onChange={(event) =>
                   setIsAddressConfirmed(event.target.checked)
                 }
-                className="w-4 h-4 rounded border-[#1D8751] text-[#1D8751] focus:ring-[#1D8751] accent-[#1D8751]"
+                className="w-4 h-4 rounded border-[#1D8751] text-[#1D8751] focus:ring-[#1D8751] accent-[#1D8751] cursor-pointer"
               />
               <span>{t("express.confirmWalletAddress", "I confirm that this wallet address is correct.")}</span>
             </label>
@@ -4537,12 +4574,22 @@ export default function DepositForm({
 
           {/* Agreement checkbox before final button */}
           <div className="flex flex-col gap-3 w-full px-2 pb-3 mb-3 border-b border-[#35353E]">
+            <style dangerouslySetInnerHTML={{
+              __html: `
+                input[type="checkbox"].terms-checkbox-green:checked {
+                  background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-3.5-3.5a1 1 0 011.414-1.414L4.5 10.586l6.293-6.293a1 1 0 011.414 0z'/%3e%3c/svg%3e") !important;
+                  background-size: 14px 14px !important;
+                  background-repeat: no-repeat !important;
+                  background-position: center !important;
+                }
+              `
+            }} />
             <label className="flex items-start gap-2 text-xs sm:text-sm text-[#35353e] dark:text-[#788099] mb-1">
               <input
                 type="checkbox"
                 checked={termsAccepted}
                 onChange={(e) => setTermsAccepted(e.target.checked)}
-                className="mt-0.5 w-5 h-5 rounded border-2 border-[#1D8751] text-white focus:ring-[#1D8751] appearance-none bg-transparent checked:bg-[#1D8751] checked:border-[#1D8751] flex-shrink-0 accent-[#1D8751]"
+                className="terms-checkbox-green mt-0.5 w-5 h-5 rounded border-2 border-[#1D8751] focus:ring-[#1D8751] appearance-none bg-transparent checked:bg-[#1D8751] checked:border-[#1D8751] flex-shrink-0"
               />
               <span className="text-[#35353e] dark:text-[#788099]">
                 I've read and agree to the OMAYA EXCHANGE{" "}
@@ -4623,10 +4670,30 @@ export default function DepositForm({
       {/* InfoModal */}
       <InfoModal
         isOpen={isInfoModalOpen}
-        onClose={() => setIsInfoModalOpen(false)}
+        onClose={() => {
+          // When modal closes, reset amount to maximum allowed (15000)
+          if (payAmount > 15000) {
+            setPayAmount(15000);
+            setPayAmountInput("15000");
+          }
+          if (getAmount > 15000) {
+            setGetAmount(15000);
+            setGetAmountInput("15000");
+          }
+          setIsInfoModalOpen(false);
+        }}
         onContactUs={() => {
           // Handle contact us action - you can customize this
           window.open("https://wa.me/your-whatsapp-number", "_blank");
+          // When modal closes, reset amount to maximum allowed (15000)
+          if (payAmount > 15000) {
+            setPayAmount(15000);
+            setPayAmountInput("15000");
+          }
+          if (getAmount > 15000) {
+            setGetAmount(15000);
+            setGetAmountInput("15000");
+          }
           setIsInfoModalOpen(false);
         }}
       />

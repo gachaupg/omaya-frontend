@@ -37,6 +37,7 @@ import {
   buildExpressRedirectPath,
   setAuthRedirectPath,
 } from "@/lib/utils/authRedirect";
+import { useValidateAddress } from "@/hooks/useValidateAddress";
 
 interface DepositFormProps {
   onExchange?: (transactionData: {
@@ -525,6 +526,7 @@ export default function DepositForm({
   const [isCalculatingFromPay, setIsCalculatingFromPay] = useState(true);
   const [walletAddress, setWalletAddress] = useState("");
   const [walletError, setWalletError] = useState<string | null>(null);
+  const [isAddressConfirmed, setIsAddressConfirmed] = useState(false);
   const [forceUpdate, setForceUpdate] = useState(0);
   const [selectedPaymentDetail, setSelectedPaymentDetail] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -663,6 +665,93 @@ export default function DepositForm({
       calculateAmounts(payAmount, true);
     }
   };
+
+  // Get currency from selectedAsset for validation
+  const getCurrencyFromAsset = useCallback((asset: any): string | undefined => {
+    if (!asset) return undefined;
+
+    // Try different properties in order of preference
+    if (asset.ticker) {
+      return asset.ticker.toUpperCase();
+    } else if (asset.symbol) {
+      // Handle special case for USDT Tether
+      return asset.symbol === "USDT Tether" ? "USDT" : asset.symbol.toUpperCase();
+    } else if (asset.name) {
+      return asset.name.toUpperCase();
+    }
+
+    return undefined;
+  }, []);
+
+  const currentCurrency = getCurrencyFromAsset(selectedAsset);
+
+  // Address validation hook
+  const {
+    result: addressValidationResult,
+    isValidating: isAddressValidating,
+    error: addressValidationError,
+    validate: validateAddress,
+    reset: resetAddressValidation,
+  } = useValidateAddress({
+    currency: currentCurrency,
+    debounceMs: 500,
+    minLength: 10,
+    validateEmpty: false,
+  });
+
+  // Update wallet error based on validation result
+  useEffect(() => {
+    if (walletAddress.trim() === "") {
+      setWalletError(null);
+      setIsAddressConfirmed(false);
+      return;
+    }
+
+    if (!currentCurrency) {
+      setWalletError("Please select an asset first");
+      setIsAddressConfirmed(false);
+      return;
+    }
+
+    if (isAddressValidating) {
+      // Don't show error while validating
+      return;
+    }
+
+    if (addressValidationResult) {
+      if (!addressValidationResult.isValid) {
+        setWalletError(
+          addressValidationResult.message ||
+          addressValidationResult.error ||
+          "Invalid address"
+        );
+        setIsAddressConfirmed(false);
+      } else {
+        setWalletError(null);
+        setIsAddressConfirmed(true);
+      }
+    } else if (addressValidationError) {
+      setWalletError(addressValidationError);
+      setIsAddressConfirmed(false);
+    }
+  }, [
+    addressValidationResult,
+    addressValidationError,
+    isAddressValidating,
+    walletAddress,
+    currentCurrency,
+  ]);
+
+  // Reset validation when asset changes
+  useEffect(() => {
+    if (walletAddress.trim() && selectedAsset) {
+      validateAddress(walletAddress, currentCurrency);
+    } else {
+      resetAddressValidation();
+      setWalletError(null);
+      setIsAddressConfirmed(false);
+    }
+  }, [selectedAsset, currentCurrency, validateAddress, resetAddressValidation]);
 
   // Forex-specific state
   const [forexAccountNumber, setForexAccountNumber] = useState<string>("");
@@ -2239,6 +2328,7 @@ export default function DepositForm({
         depositCode: finalResponse.deposit_code,
         status: updateResponse.status,
         websocket_url: finalResponse.websocket_url, // Use the appropriate websocket URL
+        createdAt: Date.now(), // Store transaction creation timestamp for timer
         // Add additional fields from the final response for complex assets
         ...(finalResponse.expected_amount && { expectedAmount: finalResponse.expected_amount }),
         ...(finalResponse.net_amount && { netAmount: finalResponse.net_amount }),
@@ -2507,6 +2597,7 @@ export default function DepositForm({
           networkFee: depositResponse.network_fee,
           currency: depositResponse.currency,
           websocketUrl: depositResponse.websocket_url,
+          createdAt: Date.now(), // Store transaction creation timestamp for timer
         };
         onExchange(transactionData);
       }
@@ -3718,20 +3809,17 @@ export default function DepositForm({
                   const value = e.target.value;
                   setWalletAddress(value);
 
-                  // Validate immediately as user types (wallet address is optional for initial submission)
+                  // Validate using API if asset is selected
                   if (value.trim() === "") {
                     setWalletError(null); // No error when empty - address is optional
-                  } else if (!selectedAsset) {
+                    setIsAddressConfirmed(false);
+                    resetAddressValidation();
+                  } else if (!selectedAsset || !currentCurrency) {
                     setWalletError("Please select an asset first");
+                    setIsAddressConfirmed(false);
                   } else {
-                    // Allow all address types - no specific network validation
-                    if (value.trim().length < 10) {
-                      setWalletError("Address seems too short");
-                      setForceUpdate((prev) => prev + 1);
-                    } else {
-                      setWalletError(null);
-                      setForceUpdate((prev) => prev + 1);
-                    }
+                    // Use API validation hook
+                    validateAddress(value, currentCurrency);
                   }
                 }}
                 placeholder="Paste your crypto address"
@@ -3761,6 +3849,10 @@ export default function DepositForm({
                   try {
                     const text = await navigator.clipboard.readText();
                     setWalletAddress(text);
+                    // Validate pasted address using API
+                    if (text.trim() && selectedAsset && currentCurrency) {
+                      validateAddress(text, currentCurrency);
+                    }
                   } catch (err) {
                     console.error("Failed to read clipboard:", err);
                     showToast.error("Failed to paste from clipboard");
@@ -3782,15 +3874,43 @@ export default function DepositForm({
             </div>
 
             {/* Show validation messages below the wallet address input */}
-            {walletError && (
-              <p className="text-red-500 text-sm mt-2 font-medium">
-                ❌ {walletError}
+            {isAddressValidating && walletAddress.trim() && selectedAsset && currentCurrency && (
+              <div className="flex items-center gap-2 mt-2">
+                <div className="w-4 h-4 border-2 border-[#1D8751] border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-[#1D8751] text-sm font-medium">
+                  Validating address...
+                </p>
+              </div>
+            )}
+
+            {!isAddressValidating && walletError && (
+              <p className="text-red-500 text-sm mt-2 font-medium flex items-center gap-1">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="flex-shrink-0">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+                  <path
+                    d="M12 8v4M12 16h.01"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                </svg>
+                {walletError}
               </p>
             )}
 
-            {walletAddress.trim() && !walletError && selectedAsset && (
-              <p className="text-[#1D8751] text-sm mt-2 font-medium">
-                ✅ Valid address
+            {!isAddressValidating && walletAddress.trim() && !walletError && selectedAsset && isAddressConfirmed && (
+              <p className="text-[#1D8751] text-sm mt-2 font-medium flex items-center gap-1">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="flex-shrink-0">
+                  <path
+                    d="M9 12l2 2 4-4"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+                </svg>
+                Valid address
               </p>
             )}
 

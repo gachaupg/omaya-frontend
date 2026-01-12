@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/store";
 import { updateProfile } from "@/features/settings/slices/settingsSlice";
@@ -13,6 +13,7 @@ interface BasicInfoSectionProps {
 const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ user }) => {
   const dispatch = useDispatch<AppDispatch>();
   const [isUpdating, setIsUpdating] = useState(false);
+  const isMountedRef = useRef(true);
   const [formData, setFormData] = useState({
     first_name: "",
     last_name: "",
@@ -32,6 +33,14 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ user }) => {
     }
   }, [user]);
 
+  // Cleanup on unmount - prevent any PATCH requests during navigation
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({
       ...prev,
@@ -40,6 +49,11 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ user }) => {
   };
 
   const handleUpdate = async () => {
+    // Prevent update if component is unmounting (navigation in progress)
+    if (!isMountedRef.current) {
+      return;
+    }
+
     // Validate required fields
     if (!formData.first_name.trim() || !formData.last_name.trim()) {
       showToast.error("First name and last name are required");
@@ -49,6 +63,11 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ user }) => {
     setIsUpdating(true);
     try {
       // Only send editable fields (exclude email as it's typically not editable)
+      // Double-check mounted state before making request
+      if (!isMountedRef.current) {
+        return;
+      }
+      
       await dispatch(
         updateProfile({
           first_name: formData.first_name.trim(),
@@ -56,11 +75,20 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ user }) => {
           phone_number: formData.phone_number.trim(),
         })
       ).unwrap();
-      showToast.success("Profile updated successfully");
+      
+      // Only show success if still mounted
+      if (isMountedRef.current) {
+        showToast.success("Profile updated successfully");
+      }
     } catch (error: any) {
-      showToast.error(error?.message || "Failed to update profile");
+      // Only show error if still mounted
+      if (isMountedRef.current) {
+        showToast.error(error?.message || "Failed to update profile");
+      }
     } finally {
-      setIsUpdating(false);
+      if (isMountedRef.current) {
+        setIsUpdating(false);
+      }
     }
   };
 
