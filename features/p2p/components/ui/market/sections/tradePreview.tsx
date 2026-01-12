@@ -435,7 +435,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
               <span className="text-[#1D8751]">{advertiserData.commission}</span>
             </div>
             {/* I Want to Send */}
-            <div className="rounded-xl p-3 sm:p-3 flex flex-col gap-2 sm:gap-2 border border-gray-300 dark:border-[#35353E] bg-gray-100 dark:bg-transparent">
+            <div className="flex flex-col gap-2 sm:gap-2">
               <div className="text-sm sm:text-base text-gray-500 dark:text-[#788099] font-semibold">
                 I Want to Send
               </div>
@@ -461,7 +461,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                   />
                   <div className="relative w-full sm:w-auto">
                     <select
-                      className="rounded px-3 py-2 text-sm sm:text-base font-semibold min-w-[90px] sm:min-w-[100px] w-full bg-white dark:bg-transparent text-gray-900 dark:text-white border border-gray-300 dark:border-[#35353E]"
+                      className="rounded px-3 py-2 text-sm sm:text-base font-semibold min-w-[90px] sm:min-w-[100px] w-full bg-white dark:bg-transparent text-gray-900 dark:text-white"
                       value={tradeType === "buy" ? "USD" : "USDT"}
                       disabled
                     >
@@ -482,9 +482,6 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                 I Want to Receive
               </div>
               <div className="flex flex-col gap-2 sm:gap-2">
-                <div className="text-sm text-gray-500 dark:text-[#788099] pl-0 sm:pl-2 font-medium">
-                  Available: {advertiserData.available}
-                </div>
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                   <span className="text-2xl sm:text-3xl text-[#1D8751] font-semibold flex-shrink-0">
                     <img src="https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png" alt="" />
@@ -514,7 +511,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsPaymentDropdownOpen((prev) => !prev)}
-                  className="w-full rounded-xl px-3 sm:px-4 py-2.5 pr-12 text-sm sm:text-base font-semibold border border-gray-300 dark:border-[#35353E] bg-white dark:bg-transparent text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1D8751] flex items-center justify-between"
+                  className="w-full rounded-xl px-3 sm:px-4 py-2.5 pr-12 text-sm sm:text-base font-semibold border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1D8751] flex items-center justify-between"
                 >
                   <span className="truncate text-left">
                     {selectedPaymentSummary}
@@ -536,7 +533,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                   </svg>
                 </button>
                 {isPaymentDropdownOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-2 rounded-xl border border-gray-300 dark:border-[#35353E] bg-white dark:bg-transparent shadow-lg z-20 max-h-60 overflow-y-auto">
+                  <div className="absolute top-full left-0 right-0 mt-2 rounded-xl border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] shadow-lg z-20 max-h-60 overflow-y-auto">
                     {paymentOptions.length === 0 ? (
                       <div className="px-4 py-3 text-sm text-gray-500 dark:text-[#788099]">
                         No payment methods available
@@ -561,6 +558,12 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                                 : "text-gray-700 dark:text-[#C7CAD1]"
                             }`}
                           >
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              readOnly
+                              className="w-4 h-4 text-[#1D8751] border-gray-300 rounded focus:ring-[#1D8751] cursor-pointer"
+                            />
                             <span className="text-sm sm:text-base font-semibold">{opt.label}</span>
                           </button>
                         );

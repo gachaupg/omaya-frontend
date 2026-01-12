@@ -133,12 +133,12 @@ const MoneyXTransactions = () => {
                 </td>
                 <td className="py-4 px-4">
                   <span className="text-sm font-medium dark:text-white text-gray-900">
-                    {formatCurrency(tx.send_amount || tx.amount || 0, tx.from_currency || tx.currency || "USD")}
+                    {formatCurrency(tx.send_amount || tx.amount || 0, tx.from_currency || tx.currency || "USDT")}
                   </span>
                 </td>
                 <td className="py-4 px-4">
                   <span className="text-sm font-medium text-[#1D8751]">
-                    {formatCurrency(tx.receive_amount || tx.net_amount || 0, tx.to_currency || tx.currency || "USD")}
+                    {formatCurrency(tx.receive_amount || tx.net_amount || 0, tx.to_currency || tx.currency || "USDT")}
                   </span>
                 </td>
                 <td className="py-4 px-4">

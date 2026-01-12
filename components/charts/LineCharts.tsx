@@ -457,7 +457,7 @@ function DonutChartWithCenter({
         className="dark:fill-white fill-black"
         style={{ textRendering: "geometricPrecision" }}
       >
-        {allZero ? "0 USD" : `${formatLargeNumber(displayTotal)} USD`}
+        {allZero ? "0 USDT" : `${formatLargeNumber(displayTotal)} USDT`}
       </text>
       <text
         x={center}
@@ -563,7 +563,7 @@ const Legend = ({ data }: { data: DonutChartData[] }) => (
           {d.label}
         </span>
         <span className="dark:text-white text-[#051015] font-medium ml-auto min-w-[60px] sm:min-w-[60px] text-right tracking-tight shrink-0 text-[11px] md:text-sm lg:text-base">
-          {formatLargeNumber(d.value)} USD
+          {formatLargeNumber(d.value)} USDT
         </span>
       </div>
     ))}
@@ -845,7 +845,7 @@ const LineCharts = React.memo(
           {/* Exchange Overview */}
           <Card className="w-full rounded-none lg:rounded-2xl bg-card border border-[#35353E]">
             <h3 className="text-black dark:text-white text-xs sm:text-sm md:text-[14px] mb-2 font-semibold">
-              Exchange Overview (USD)
+              Exchange Overview (USDT)
             </h3>
             <div className="flex flex-wrap justify-between items-center mb-4 sm:mb-6 gap-2">
               <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
@@ -895,7 +895,7 @@ const LineCharts = React.memo(
           {/* P2P Overview */}
           <Card className="w-full rounded-none lg:rounded-2xl bg-card border border-[#35353E]">
             <h3 className="dark:text-wh text-[#051015] dark:text-white text-xs sm:text-sm md:text-[14px] mb-2 font-semibold">
-              P2P Overview (USD)
+              P2P Overview (USDT)
             </h3>
             <div className="flex flex-wrap justify-between items-center mb-4 sm:mb-6 gap-2">
               <div className="flex flex-wrap items-center justify-between gap-2 w-full sm:w-auto">

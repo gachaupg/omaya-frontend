@@ -712,12 +712,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                 </div>
               ) : (
                 <span className="flex items-center justify-center gap-2">
-                  <span className="text-base font-medium text-white">Express</span>
-                  <img
-                    className="h-5 w-auto mt-3"
-                    src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
-                    alt="Express icon"
-                  />
+                  <span className="text-base font-medium text-white">Swap</span>
                 </span>
               )}
             </button>

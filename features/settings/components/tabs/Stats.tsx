@@ -281,7 +281,7 @@ const Stats = ({ onSupportClick }: StatsProps) => {
           {formatCurrency(
             (summary?.total_approved_p2p_combined || 0) +
             (summary?.total_p2p_orders || 0),
-            "USDT"
+            "USD"
           )}
         </div>
         <div className="border-b dark:border-accent border-border mt-2" />
