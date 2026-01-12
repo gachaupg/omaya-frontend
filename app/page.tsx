@@ -1548,8 +1548,86 @@ export default function MarketingPage() {
 
 
       {/* Benefits Section*/}
-      <div className="w-full bg-white dark:bg-[var(--bg-color)]">
-        <img className="w-full h-auto object-contain" src="https://res.cloudinary.com/pitz/image/upload/v1765800227/Screenshot_2025-12-15_150329_l1z3zp.png" alt="" />
+      <div className="w-full bg-[#0A2818] dark:bg-[#0A2818] py-12 sm:py-16 md:py-20 relative overflow-hidden">
+        {/* Decorative wave lines */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          {/* Top wave */}
+          <svg className="absolute top-0 left-0 w-full h-32 sm:h-40 opacity-30" viewBox="0 0 1440 200" preserveAspectRatio="none">
+            <path d="M0,100 C300,180 600,20 900,100 C1200,180 1440,60 1440,100 L1440,0 L0,0 Z" fill="none" stroke="#1D8751" strokeWidth="2"/>
+          </svg>
+          {/* Bottom wave */}
+          <svg className="absolute bottom-0 left-0 w-full h-32 sm:h-40 opacity-30" viewBox="0 0 1440 200" preserveAspectRatio="none">
+            <path d="M0,100 C240,20 480,180 720,100 C960,20 1200,180 1440,100 L1440,200 L0,200 Z" fill="none" stroke="#1D8751" strokeWidth="2"/>
+          </svg>
+          {/* Middle decorative elements */}
+          <div className="absolute top-1/4 right-10 w-3 h-3 bg-[#1D8751] rounded-full opacity-60"></div>
+          <div className="absolute bottom-1/4 left-20 w-2 h-2 bg-[#1D8751] rounded-full opacity-40"></div>
+          <div className="absolute top-1/2 right-1/4 w-2 h-2 bg-[#1D8751] rounded-full opacity-50"></div>
+        </div>
+
+        <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 lg:gap-12">
+            {/* Benefit 1: Absolute Safety */}
+            <div className="flex flex-col sm:flex-row md:flex-col items-center sm:items-start md:items-center text-center sm:text-left md:text-center gap-4 sm:gap-5">
+              <div className="relative">
+                {/* Hexagonal icon container */}
+                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-[#1D8751]/20 rounded-2xl rotate-45 flex items-center justify-center border border-[#1D8751]/30">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 bg-[#1D8751] rounded-xl flex items-center justify-center -rotate-45">
+                    <Shield className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
+                  </div>
+                </div>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-white font-bold text-lg sm:text-xl mb-2">
+                  Absolute Safety
+                </h3>
+                <p className="text-white/70 text-sm sm:text-base leading-relaxed">
+                  Exchange confidently with OMAYA, where safety is our top priority.
+                </p>
+              </div>
+            </div>
+
+            {/* Benefit 2: Fast Deposits & Withdrawals */}
+            <div className="flex flex-col sm:flex-row md:flex-col items-center sm:items-start md:items-center text-center sm:text-left md:text-center gap-4 sm:gap-5">
+              <div className="relative">
+                {/* Hexagonal icon container */}
+                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-[#1D8751]/20 rounded-2xl rotate-45 flex items-center justify-center border border-[#1D8751]/30">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 bg-[#1D8751] rounded-xl flex items-center justify-center -rotate-45">
+                    <DollarSign className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
+                  </div>
+                </div>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-white font-bold text-lg sm:text-xl mb-2">
+                  Fast Deposits & Withdrawals
+                </h3>
+                <p className="text-white/70 text-sm sm:text-base leading-relaxed">
+                  Enjoy swift and seamless deposits and withdrawals.
+                </p>
+              </div>
+            </div>
+
+            {/* Benefit 3: Invite your friend and earn */}
+            <div className="flex flex-col sm:flex-row md:flex-col items-center sm:items-start md:items-center text-center sm:text-left md:text-center gap-4 sm:gap-5">
+              <div className="relative">
+                {/* Hexagonal icon container */}
+                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-[#1D8751]/20 rounded-2xl rotate-45 flex items-center justify-center border border-[#1D8751]/30">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 bg-[#1D8751] rounded-xl flex items-center justify-center -rotate-45">
+                    <Users className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
+                  </div>
+                </div>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-white font-bold text-lg sm:text-xl mb-2">
+                  Invite your friend and earn
+                </h3>
+                <p className="text-white/70 text-sm sm:text-base leading-relaxed">
+                  Refer and invite your friends and earn commission on each transaction they make with us!
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
       {/* Refer and Invite Section */}
       <div className="w-full bg-white dark:bg-transparent py-4 md:py-8 my-4 md:my-6">

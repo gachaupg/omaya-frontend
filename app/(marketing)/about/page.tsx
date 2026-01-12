@@ -598,15 +598,19 @@ const AboutPage = () => {
             <div className="grid md:grid-cols-2 gap-6 mb-6 relative">
               {/* Left - Text Card */}
               <div className="bg-white dark:bg-[#14141A] border border-gray-200 dark:border-[#1E1E26] rounded-3xl p-8 flex flex-col min-h-[320px]">
-                <div className="flex items-center justify-center gap-3 mb-1">
-                  <span className="text-4xl md:text-5xl font-bold text-[#1D8751]">2020</span>
+                <div className="flex items-center justify-start gap-3 mb-4">
+                  <div className="flex flex-col leading-none">
+                    <span className="text-4xl md:text-5xl font-bold text-[#1D8751]">2020</span>
+                    <span className="text-xs md:text-sm text-gray-600 dark:text-gray-500 mt-1">
+                      Q1
+                    </span>
+                  </div>
                   <div className="w-10 h-10 rounded-xl bg-[#1D8751] flex items-center justify-center">
                     <Target className="w-5 h-5 text-white" />
                   </div>
                 </div>
-                <span className="text-gray-600 dark:text-gray-500 text-sm text-center mb-6">Q1</span>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white text-center mb-3">Foundation</h3>
-                <p className="text-gray-700 dark:text-gray-400 text-sm leading-relaxed text-center mb-6 flex-1">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">Foundation</h3>
+                <p className="text-gray-700 dark:text-gray-400 text-sm leading-relaxed mb-6 flex-1">
                   OMAYA Exchange was founded by crypto pioneers and fintech experts with a vision to revolutionize digital asset trading.
                 </p>
                 <div className="flex flex-wrap gap-2 justify-center">
@@ -651,7 +655,7 @@ const AboutPage = () => {
 
               {/* Right - Text Card */}
               <div className="bg-white dark:bg-[#14141A] border border-gray-200 dark:border-[#1E1E26] rounded-3xl p-8 flex flex-col min-h-[320px] order-1 md:order-2">
-                <div className="flex items-center justify-start gap-3 mb-2">
+                <div className="flex items-center justify-start gap-3 mb-4">
                   <img
                     src="https://res.cloudinary.com/pitz/image/upload/v1765800834/Container_3_quuszd.png"
                     alt=""
@@ -659,13 +663,13 @@ const AboutPage = () => {
                   />
                   <div className="flex flex-col leading-none">
                     <span className="text-4xl md:text-5xl font-bold text-[#1D8751]">2021</span>
-                    <span className="text-xs md:text-sm text-gray-600 dark:text-gray-500 mt-0.5">
+                    <span className="text-xs md:text-sm text-gray-600 dark:text-gray-500 mt-1">
                       Q3
                     </span>
                   </div>
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white text-center mb-3">Rapid Growth</h3>
-                <p className="text-gray-700 dark:text-gray-400 text-sm leading-relaxed text-center mb-6 flex-1">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">Rapid Growth</h3>
+                <p className="text-gray-700 dark:text-gray-400 text-sm leading-relaxed mb-6 flex-1">
                   Expanded to 50 countries and reached 10,000 active users with enhanced trading features and mobile app launch.
                 </p>
                 <div className="flex flex-wrap gap-2 justify-center">
@@ -680,15 +684,19 @@ const AboutPage = () => {
             <div className="grid md:grid-cols-2 gap-6 mb-6 relative">
               {/* Left - Text Card */}
               <div className="bg-white dark:bg-[#14141A] border border-gray-200 dark:border-[#1E1E26] rounded-3xl p-8 flex flex-col min-h-[320px]">
-                <div className="flex items-center justify-center gap-3 mb-1">
-                  <span className="text-4xl md:text-5xl font-bold text-[#1D8751]">2022</span>
+                <div className="flex items-center justify-start gap-3 mb-4">
+                  <div className="flex flex-col leading-none">
+                    <span className="text-4xl md:text-5xl font-bold text-[#1D8751]">2022</span>
+                    <span className="text-xs md:text-sm text-gray-600 dark:text-gray-500 mt-1">
+                      Q2
+                    </span>
+                  </div>
                   <div className="w-10 h-10 rounded-xl bg-[#1D8751] flex items-center justify-center">
                     <Globe className="w-5 h-5 text-white" />
                   </div>
                 </div>
-                <span className="text-gray-600 dark:text-gray-500 text-sm text-center mb-6">Q2</span>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white text-center mb-3">Global Expansion</h3>
-                <p className="text-gray-700 dark:text-gray-400 text-sm leading-relaxed text-center mb-6 flex-1">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">Global Expansion</h3>
+                <p className="text-gray-700 dark:text-gray-400 text-sm leading-relaxed mb-6 flex-1">
                   Reached 150+ countries with 24/7 multilingual support and introduced P2P trading and staking features.
                 </p>
                 <div className="flex flex-wrap gap-2 justify-center">
@@ -733,15 +741,19 @@ const AboutPage = () => {
 
               {/* Right - Text Card */}
               <div className="bg-white dark:bg-[#14141A] border border-gray-200 dark:border-[#1E1E26] rounded-3xl p-8 flex flex-col min-h-[320px] order-1 md:order-2">
-                <div className="flex items-center justify-center gap-3 mb-1">
-                  <span className="text-4xl md:text-5xl font-bold text-[#1D8751]">2023</span>
+                <div className="flex items-center justify-start gap-3 mb-4">
                   <div className="w-10 h-10 rounded-xl bg-[#1D8751] flex items-center justify-center">
                     <Award className="w-5 h-5 text-white" />
                   </div>
+                  <div className="flex flex-col leading-none">
+                    <span className="text-4xl md:text-5xl font-bold text-[#1D8751]">2023</span>
+                    <span className="text-xs md:text-sm text-gray-600 dark:text-gray-500 mt-1">
+                      Q4
+                    </span>
+                  </div>
                 </div>
-                <span className="text-gray-600 dark:text-gray-500 text-sm text-center mb-6">Q4</span>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white text-center mb-3">Industry Recognition</h3>
-                <p className="text-gray-700 dark:text-gray-400 text-sm leading-relaxed text-center mb-6 flex-1">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">Industry Recognition</h3>
+                <p className="text-gray-700 dark:text-gray-400 text-sm leading-relaxed mb-6 flex-1">
                   Won Best Crypto Exchange Award and achieved ISO 27001 certification for information security management.
                 </p>
                 <div className="flex flex-wrap gap-2 justify-center">

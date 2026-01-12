@@ -646,8 +646,8 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
 
   return (
     <div className="flex flex-col gap-1 w-full">
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-1">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full md:w-auto">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-1 overflow-visible">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full md:w-auto overflow-visible">
           <div className="flex items-center w-full sm:w-auto bg-gray-100 dark:bg-[#18181D] border border-gray-200 dark:border-[#35353E] rounded-[22px] px-4 py-2.5 gap-3 min-h-[48px]">
             <div className="flex items-center gap-3 w-full">
               <Input
@@ -849,7 +849,7 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
               )}
             </div>
           </div>
-          <div className="relative w-full sm:w-auto" ref={filterDropdownRef}>
+          <div className="relative w-full sm:w-auto overflow-visible" ref={filterDropdownRef}>
             <button
               type="button"
               onClick={() => setIsFilterDropdownOpen((prev) => !prev)}
@@ -858,7 +858,9 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
               <FaFilter className="text-[#1D8751]" size={20} />
             </button>
             {isFilterDropdownOpen && (
-              <div className="absolute top-full mt-3 border border-gray-200 dark:border-[#35353E] rounded-2xl bg-white dark:bg-[var(--bg-color)] text-gray-900 dark:text-white shadow-2xl z-40 w-[280px] sm:w-[300px] p-4 space-y-4 overflow-hidden right-0" style={{ maxWidth: 'calc(100vw - 2rem)', transform: 'translateX(0)' }}>
+              <div 
+                className="absolute top-full left-0 sm:left-auto sm:right-0 mt-3 border border-gray-200 dark:border-[#35353E] rounded-2xl bg-white dark:bg-[#18181D] text-gray-900 dark:text-white shadow-2xl z-[100] w-[calc(100vw-2rem)] sm:w-[300px] max-w-[300px] p-4 space-y-4 overflow-y-auto max-h-[60vh]"
+              >
                 <div className="space-y-1">
                   <span className="text-xs uppercase tracking-wide text-gray-500 dark:text-[#7B7F92] font-semibold">Visibility</span>
                   <div className="space-y-2.5">
