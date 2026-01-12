@@ -79,6 +79,7 @@ export default function DepositForm({
 }: DepositFormProps) {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
+  const { user } = useSelector((state: any) => state.auth);
   const { adminPaymentDetails, userPaymentDetails, loading, error } = useSelector(
     (state: any) => state.payment
   );
@@ -2211,7 +2212,7 @@ export default function DepositForm({
             <>
 
               {/* Transaction Code Card - below Payment Details, before Wallet Address */}
-              {apiResponse && apiResponse.deposit_code && (
+              {user?.is_verified && apiResponse && apiResponse.deposit_code && (
                 <div className="mb-4 sm:mb-6 flex flex-col gap-3 max-w-4xl mx-auto w-full px-2">
                   <h2 className="text-lg sm:text-xl font-bold mb-2 text-[#788099]">
                     <span className="text-[#7e7e8f] dark:text-[#788099]">2-</span> Transaction Code
@@ -2743,12 +2744,12 @@ export default function DepositForm({
               )}
               <button
                 type="button"
-                className={`w-full text-white text-sm sm:text-base font-medium py-3 sm:py-3 rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 transition-colors min-h-[44px] sm:min-h-0 ${isSubmitting
+                className={`w-full text-white text-sm sm:text-base font-medium py-3 sm:py-3 rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 transition-colors min-h-[44px] sm:min-h-0 ${isSubmitting || !user?.is_verified
                   ? "bg-gray-500 cursor-not-allowed"
                   : "bg-[#1D8751] hover:bg-[#166b3e]"
                   }`}
                 onClick={handleSubmit}
-                disabled={isSubmitting || !selectedAsset || !selectedNetwork || !confirmPayment}
+                disabled={isSubmitting || !selectedAsset || !selectedNetwork || !confirmPayment || !user?.is_verified}
               >
                 {isSubmitting ? (
                   <div className="flex items-center gap-2">

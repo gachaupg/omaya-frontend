@@ -78,7 +78,7 @@ const extractPaymentInfo = (tx: any) => {
   };
 };
 
-const P2PTransactions = () => {
+const ExchangeTransactions = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { t } = useDashboardI18n();
   const { transactions, loading, error } = useSelector(
@@ -86,6 +86,7 @@ const P2PTransactions = () => {
   );
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+  const containerRef = React.useRef<HTMLDivElement>(null);
 
   /* -------------------------- fetch data ----------------------------- */
   useEffect(() => {
@@ -160,7 +161,14 @@ const P2PTransactions = () => {
 
   const handlePageChange = (pageNumber: number) => {
     setCurrentPage(pageNumber);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Scroll to the top of the container
+    if (containerRef.current) {
+      // Calculate offset to account for fixed headers if any (approx 100px)
+      const yOffset = -100; 
+      const element = containerRef.current;
+      const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+      window.scrollTo({ top: y, behavior: 'smooth' });
+    }
   };
 
   const renderPagination = () => {
@@ -237,7 +245,7 @@ const P2PTransactions = () => {
 
   /* ------------------------------ table ------------------------------ */
   return (
-    <div className="w-full">
+    <div className="w-full" ref={containerRef}>
       {/* Mobile Card Layout */}
       <div className="block sm:hidden space-y-3">
         {filteredResults.map((tx: any, index: number) => {
@@ -484,4 +492,4 @@ const P2PTransactions = () => {
   );
 };
 
-export default P2PTransactions;
+export default ExchangeTransactions;

@@ -8,6 +8,7 @@ import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/store";
 import { verifyWithdrawal, resendWithdrawalOTP } from "@/features/p2p/slices/withdrawSlice";
 import { useRouter } from "next/navigation";
+import { useTheme } from "@/context/theme";
 
 import { logger } from '@/lib/utils/logger';
 
@@ -28,6 +29,7 @@ const OTPModal: React.FC<OTPModalProps> = ({
 }) => {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
+  const { isDark } = useTheme();
   const [isRouterReady, setIsRouterReady] = useState(false);
 
   const [otp, setOtp] = useState<string[]>(["", "", "", "", "", ""]);
@@ -155,13 +157,13 @@ const OTPModal: React.FC<OTPModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <Card className="w-full max-w-md dark:bg-[#1D1D23] bg-white dark:border-[#35353E] border-gray-200 rounded-[24px] p-6">
         <div className="text-center mb-6">
           <h2 className="text-xl font-semibold dark:text-white text-gray-900 mb-2">
             Verify Withdrawal
           </h2>
-          <p className="text-gray-400 text-sm">
+          <p className="dark:text-gray-400 text-gray-600 text-sm">
             Enter the 6-digit code sent to your email/phone
           </p>
           <div className="mt-3 p-3 dark:bg-[#35353E] bg-gray-100 rounded-lg">
@@ -174,7 +176,7 @@ const OTPModal: React.FC<OTPModalProps> = ({
 
         <form onSubmit={handleSubmit}>
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-400 mb-3">
+            <label className="block text-sm font-medium dark:text-gray-400 text-gray-600 mb-3">
               Enter OTP Code
             </label>
             <div className="flex gap-2 justify-center">
@@ -220,14 +222,14 @@ const OTPModal: React.FC<OTPModalProps> = ({
           </div>
 
           <div className="text-center">
-            <p className="text-gray-400 text-sm mb-3">
+            <p className="dark:text-gray-400 text-gray-600 text-sm mb-3">
               Didn't receive the code?
             </p>
             <button
               type="button"
               onClick={handleResendOTP}
               disabled={isResending || countdown > 0}
-              className="text-[#1D8751] hover:text-[#1D8751]/80 disabled:text-gray-500 disabled:cursor-not-allowed text-sm font-medium"
+              className="text-[#1D8751] hover:text-[#1D8751]/80 disabled:dark:text-gray-500 disabled:text-gray-400 disabled:cursor-not-allowed text-sm font-medium"
             >
               {isResending ? (
                 <>
@@ -242,7 +244,7 @@ const OTPModal: React.FC<OTPModalProps> = ({
             </button>
           </div>
 
-          <div className="mt-6 pt-4 border-t border-[#35353E]">
+          <div className="mt-6 pt-4 border-t dark:border-[#35353E] border-gray-200">
             <Button
               type="button"
               variant="outline"
