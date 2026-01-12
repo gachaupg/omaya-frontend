@@ -328,9 +328,9 @@ const UserCard = () => {
           </div>
 
           {/* Center Section: User ID and User Type */}
-          <div className="flex flex-row items-start gap-4 sm:gap-6 w-full xl:flex-1 xl:justify-center">
+          <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6 w-full xl:flex-1 xl:justify-center">
             {/* User ID */}
-            <div className="text-left flex-1">
+            <div className="text-left flex-1 w-full sm:w-auto">
               <p className="text-xs dark:text-[#788099] text-[#788099] mb-1">User ID</p>
               <div className="flex items-center gap-2 justify-start">
                 <p className="text-base font-bold dark:text-[#FFFFFF] text-[#1D1D23]">{user?.user_id}</p>
@@ -359,7 +359,7 @@ const UserCard = () => {
             </div>
 
             {/* User Type */}
-            <div className="text-left flex-1">
+            <div className="text-left flex-1 w-full sm:w-auto">
               <p className="text-xs text-[#788099] mb-1">User Type</p>
               <p className="text-base font-bold dark:text-[#FFFFFF] text-[#1D1D23]">
                 {user?.user_type ? user.user_type.charAt(0).toUpperCase() + user.user_type.slice(1) : ''}

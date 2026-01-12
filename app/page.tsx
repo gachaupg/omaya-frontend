@@ -374,7 +374,7 @@ export default function MarketingPage() {
 
   return (
     <div>
-      <section
+     <section
         className="relative min-h-screen pt-18 pb-16 mx-auto overflow-visible bg-gradient-to-br from-gray-50 to-white dark:bg-[var(--bg-color)]"
       >
         {/* Background styling - different for light and dark modes */}
@@ -1862,26 +1862,26 @@ export default function MarketingPage() {
       {/* Contact Us Section */}
       <section
         id="contact"
-        className="w-full bg-white dark:bg-(--bg-color) text-gray-900 dark:text-white py-16 px-4  md:px-[100px]"
+        className="w-full bg-white dark:bg-[var(--bg-color)] text-gray-900 dark:text-white py-16 px-4 md:px-[100px]"
       >
-        <div className="max-w-7xl 2xl:max-w-screen-xl mx-auto">
+        <div className="max-w-7xl 2xl:max-w-screen-2xl mx-auto">
           {/* Header Section */}
           <div className="text-center mb-12">
             {/* Get In Touch Pill */}
-            <div className="flex justify-center items-center mb-6">
-              <span className="bg-[#1D8751]/10 border border-[#1D8751]/30 text-[#1D8751] px-4 py-2 rounded-full text-sm font-medium">
+            <div className="flex justify-center mb-6">
+              <span className="bg-[#1D8751]/10 border border-[#1D8751] text-[#1D8751] px-4 py-2 rounded-2xl text-sm font-medium">
                 Get In Touch
               </span>
             </div>
 
             {/* Main Title */}
-            <h2 className="text-3xl sm:text-4xl md:text-5xl 2xl:text-6xl font-bold mb-4 tracking-tight">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl 2xl:text-6xl font-bold mb-4">
               Need Answers to Your Questions?{" "}
               <span className="text-[#1D8751]">Contact Us</span>
             </h2>
 
             {/* Subtitle */}
-            <p className="text-[#788099] text-base md:text-lg max-w-2xl mx-auto">
+            <p className="text-gray-700 dark:text-white/70 text-base md:text-lg max-w-2xl mx-auto">
               Our dedicated support team is here to help you with any questions or concerns
             </p>
           </div>
@@ -1893,58 +1893,71 @@ export default function MarketingPage() {
                 <h3 className="text-gray-900 dark:text-white font-bold text-xl md:text-2xl mb-2">
                   Contact Information
                 </h3>
-                <p className="text-[#788099] text-sm md:text-base">
+                <p className="text-gray-700 dark:text-white/70 text-sm md:text-base">
                   Fill out the form and our team will get back to you within 24 hours
                 </p>
               </div>
 
               {/* Contact Cards */}
               <div className="space-y-4">
-                {[
-                  {
-                    title: "Our Office",
-                    info: "KM4, Taleh, Hodan District, Mogadishu, Somalia",
-                    icon: <MapPin className="w-6 h-6 text-white" />,
-                    bg: "bg-linear-to-br from-[#2B7FFF] to-[#00B8DB]"
-                  },
-                  {
-                    title: "Phone Number",
-                    info: "+252 771 000777",
-                    icon: <Phone className="w-6 h-6 text-white" />,
-                    bg: "bg-linear-to-br from-[#1D8751] to-[#309A64]"
-                  },
-                  {
-                    title: "Email Address",
-                    info: "info@omaya.io",
-                    icon: <Mail className="w-6 h-6 text-white" />,
-                    bg: "bg-linear-to-br from-[#AD46FF] to-[#F6339A]"
-                  },
-                  {
-                    title: "Working Hours",
-                    info: "Mon - Fri: 9:00 AM - 6:00 PM",
-                    icon: <Clock className="w-6 h-6 text-white" />,
-                    bg: "bg-linear-to-br from-[#FF6900] to-[#FB2C36]"
-                  }
-                ].map((item, index) => (
-                  <div key={index} className="bg-(--card-color) rounded-2xl p-5 sm:p-6 border border-border dark:border-accent">
-                    <div className="flex items-start gap-4">
-                      <div className={`w-12 h-12 ${item.bg} rounded-lg flex items-center justify-center shrink-0 shadow-lg shadow-black/5`}>
-                        {item.icon}
-                      </div>
-                      <div>
-                        <h4 className="text-gray-900 dark:text-white font-bold text-base mb-1">{item.title}</h4>
-                        <p className="text-muted-foreground text-sm">
-                          {item.info}
-                        </p>
-                      </div>
+                {/* Our Office */}
+                <div className="bg-gray-50 dark:bg-[#1D1D23] rounded-xl p-5 border border-gray-200 dark:border-[#2A2A2A]">
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <MapPin className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h4 className="text-gray-900 dark:text-white font-bold text-base mb-1">Our Office</h4>
+                      <p className="text-gray-700 dark:text-white/80 text-sm">
+                        KM4, Taleh, Hodan District, Mogadishu, Somalia
+                      </p>
                     </div>
                   </div>
-                ))}
+                </div>
+
+                {/* Phone Number */}
+                <div className="bg-gray-50 dark:bg-[#1D1D23] rounded-xl p-5 border border-gray-200 dark:border-[#2A2A2A]">
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 bg-[#1D8751] rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Phone className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h4 className="text-gray-900 dark:text-white font-bold text-base mb-1">Phone Number</h4>
+                      <p className="text-gray-700 dark:text-white/80 text-sm">+252 771 000777</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Email Address */}
+                <div className="bg-gray-50 dark:bg-[#1D1D23] rounded-xl p-5 border border-gray-200 dark:border-[#2A2A2A]">
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Mail className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h4 className="text-gray-900 dark:text-white font-bold text-base mb-1">Email Address</h4>
+                      <p className="text-gray-700 dark:text-white/80 text-sm">info@omaya.io</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Working Hours */}
+                <div className="bg-gray-50 dark:bg-[#1D1D23] rounded-xl p-5 border border-gray-200 dark:border-[#2A2A2A]">
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Clock className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h4 className="text-gray-900 dark:text-white font-bold text-base mb-1">Working Hours</h4>
+                      <p className="text-gray-700 dark:text-white/80 text-sm">Mon - Fri: 9:00 AM - 6:00 PM</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
             {/* Right Column - Contact Form */}
-            <div className="bg-(--card-color) rounded-2xl p-6 md:p-8 border border-border dark:border-accent">
+            <div className="bg-gray-50 dark:bg-[#1D1D23] rounded-xl p-6 md:p-8 border border-gray-200 dark:border-[#2A2A2A]">
               {/* Success Message */}
               {showContactSuccess && (
                 <div className="mb-6 p-4 bg-green-900/20 border border-green-800 rounded-xl">

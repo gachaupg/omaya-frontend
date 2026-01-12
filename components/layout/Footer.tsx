@@ -130,10 +130,10 @@ export default function Footer() {
         }`}
     >
       <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-20 pt-8 sm:pt-12 pb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-8 pb-8 border-b border-border dark:border-accent">
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-x-4 gap-y-6 sm:gap-8 pb-8 border-b border-border dark:border-accent">
 
           {/* Logo and Social Media Column */}
-          <div className="space-y-5  lg:col-span-1">
+          <div className="space-y-5 col-span-2 md:col-span-1 lg:col-span-1">
             <Link href="/">
               <Image
                 src="https://res.cloudinary.com/pitz/image/upload/v1764572384/bad9edd9da5201cb8f8f9cea35bf46f4fb541bd6_lplbyc.png"

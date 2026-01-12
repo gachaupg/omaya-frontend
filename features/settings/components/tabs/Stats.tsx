@@ -255,19 +255,22 @@ const Stats = ({ onSupportClick }: StatsProps) => {
             className="p-2 rounded-full border border-[#1D8751] flex items-center justify-center cursor-pointer"
             onClick={() => router.push("/contactUs/")}
           >
-            <svg xmlns="http://www.w3.org/2000/svg"
-             width="16" 
-             height="16" 
-             viewBox="0 0 24 24" 
-             fill="none" 
-             stroke="currentColor" 
-             strokeWidth="1" 
-             strokeLinecap="round" 
-             strokeLinejoin="round" 
-             className="text-[#1D8751]"
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="text-[#1D8751]"
             >
-              <path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"/>
-              </svg>
+              <circle cx="12" cy="12" r="10" />
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+              <path d="M12 17h.01" />
+            </svg>
           </div>
         </div>
       </div>

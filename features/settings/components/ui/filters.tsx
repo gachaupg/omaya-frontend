@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import ProfileSettings from "../tabs/ProfileSettings";
 import KYC from "../tabs/KYC";
 import PrivacySecurity from "../tabs/PrivacySecurity";
@@ -12,6 +13,7 @@ import { useSettingsI18n } from "@/lib/useSettingsI18n";
 
 const tabs = [
   {
+    id: "profile",
     label: "settings.tabs.profile",
     icon: (
       <Settings
@@ -25,6 +27,7 @@ const tabs = [
     component: <ProfileSettings />,
   },
   {
+    id: "kyc",
     label: "settings.tabs.kyc",
     icon: (
       <svg
@@ -48,6 +51,7 @@ const tabs = [
     component: <KYC />,
   },
   {
+    id: "privacy",
     label: "settings.tabs.privacy",
     icon: (
       // <svg
@@ -79,6 +83,7 @@ const tabs = [
     component: <PrivacySecurity />,
   },
   {
+    id: "payment",
     label: "settings.tabs.paymentMethods",
     icon: (
       <svg
@@ -101,6 +106,7 @@ const tabs = [
     component: <PaymentMethods />,
   },
   {
+    id: "referral",
     label: "settings.tabs.referral",
     icon: (
       <svg
@@ -125,15 +131,45 @@ const tabs = [
   },
 ];
 
-const REFERRAL_TAB_INDEX = tabs.findIndex(
-  (tab) => tab.label === "settings.tabs.referral"
-);
+const REFERRAL_TAB_INDEX = 4; // Manual index since we're using dynamic logic below
 
 const Filters = () => {
-  const [activeIdx, setActiveIdx] = useState(0);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { t } = useSettingsI18n();
+
+  // Get active tab from URL or default to 0 (profile)
+  const tabParam = searchParams?.get("tab") || null;
+  const initialActiveIdx = Math.max(0, tabs.findIndex(t => t.id === tabParam));
+  
+  const [activeIdx, setActiveIdx] = useState(initialActiveIdx !== -1 ? initialActiveIdx : 0);
   const [showHelpSupport, setShowHelpSupport] = useState(false);
   const [isReferralWithdrawActive, setIsReferralWithdrawActive] = useState(false);
-  const { t } = useSettingsI18n();
+
+  // Sync state with URL changes
+  useEffect(() => {
+    if (!searchParams) return;
+    const tabParam = searchParams.get("tab");
+    const idx = tabs.findIndex(t => t.id === tabParam);
+    if (idx !== -1 && idx !== activeIdx) {
+      setActiveIdx(idx);
+    }
+  }, [searchParams, activeIdx]);
+
+  // Handle tab change
+  const handleTabChange = (idx: number) => {
+    setActiveIdx(idx);
+    setShowHelpSupport(false);
+    
+    // Update URL
+    const params = new URLSearchParams(searchParams?.toString() || "");
+    if (tabs[idx]?.id) {
+      params.set("tab", tabs[idx].id);
+    } else {
+      params.delete("tab");
+    }
+    router.push(`?${params.toString()}`);
+  };
 
   useEffect(() => {
     if (activeIdx !== REFERRAL_TAB_INDEX && isReferralWithdrawActive) {
@@ -176,8 +212,7 @@ const Filters = () => {
                 }
               `}
               onClick={() => {
-                setActiveIdx(idx);
-                setShowHelpSupport(false);
+                handleTabChange(idx);
               }}
               type="button"
             >
@@ -198,7 +233,7 @@ const Filters = () => {
           <button
             key={tab.label}
             className="flex flex-row items-center justify-center transition-colors duration-150 focus:outline-none h-full bg-transparent dark:text-white text-[#0D0D0D] hover:dark:bg-[#23232a] hover:bg-gray-100 font-normal"
-            onClick={() => setActiveIdx(idx)}
+            onClick={() => handleTabChange(idx)}
             type="button"
           >
             <span className={`inline-flex flex-row items-center justify-center gap-1.5 px-3 py-2 rounded-3xl min-w-32 w-max transition-colors duration-150 ${activeIdx === idx
