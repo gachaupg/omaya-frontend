@@ -949,8 +949,9 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
               data-select-card="true"
               className="flex-1 sm:pl-4 border-t sm:border-t-0 sm:border-l border-[#35353E] dark:border-[#35353E] pt-3 sm:pt-0 sm:border-none"
             >
-              <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
+              <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
                 {t("express.fromPaymentMethod", "From Payment Method")}
+                <div className="w-2 h-2 opacity-0"></div>
               </label>
               <div className="relative w-full">
                 <CustomSelect
@@ -1054,8 +1055,14 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
 
             {/* To Payment Method Section */}
             <div className="flex-1 sm:pl-4 border-t sm:border-t-0 sm:border-l border-[#35353E] dark:border-[#35353E] pt-3 sm:pt-0 sm:border-none">
-              <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
+              <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
                 {t("express.toPaymentMethod", "To Payment Method")}
+                <div className="w-2 h-2 opacity-0"></div>
+                {!isCalculatingFromPay && (
+                  <span className="text-xs opacity-0 font-medium hidden sm:inline">
+                    (Active)
+                  </span>
+                )}
               </label>
               <div className="relative w-full">
                 <CustomSelect

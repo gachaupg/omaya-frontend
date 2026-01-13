@@ -3415,7 +3415,10 @@ export default function WithdrawalForm({
 
                 {/* You Get Section */}
                 <div className="flex-1 sm:pl-4 border-t sm:border-t-0 sm:border-l border-[#35353E] dark:border-[#35353E] pt-3 sm:pt-0 sm:border-none" data-select-card="true">
-                  <div className="text-xs text-[#788099] dark:text-[#788099] mb-1 mt-[30px] sm:mt-[34px]">{t("express.youGet", "You Get")}</div>
+                  <div className="hidden sm:block text-sm sm:text-[17px] mb-2 font-semibold">
+                    <span className="opacity-0">Placeholder</span>
+                  </div>
+                  <div className="text-xs text-[#788099] dark:text-[#788099] mb-1">{t("express.youGet", "You Get")}</div>
                   <div className="relative" ref={assetDropdownRef}>
                     <div
                       className={`w-full h-[48px] bg-transparent dark:bg-transparent text-[#35353e] dark:text-white rounded-2xl px-3 sm:px-4 text-base sm:text-lg focus:outline-none border border-[#39394A] dark:border-[#35353E] hover:border-blue-400 dark:hover:border-blue-400 flex items-center justify-between cursor-pointer transition-colors duration-200`}
@@ -3815,7 +3818,10 @@ export default function WithdrawalForm({
 
                 {/* Payment Method Section */}
                 <div className="flex-1 sm:pl-4 border-t sm:border-t-0 sm:border-l border-[#35353E] dark:border-[#35353E] pt-3 sm:pt-0 sm:border-none" data-select-card="true">
-                  <div className="text-xs text-[#788099] dark:text-[#788099] mb-1 mt-[30px] sm:mt-[34px]">Bank/Payment Method</div>
+                  <div className="hidden sm:block text-sm sm:text-[17px] mb-2 font-semibold">
+                    <span className="opacity-0">Placeholder</span>
+                  </div>
+                  <div className="text-xs text-[#788099] dark:text-[#788099] mb-1">Bank/Payment Method</div>
                   <div className="relative">
                     {(() => {
                       // PRIORITY: If we have initialState paymentDetails, use EXACT payment method from there - NO MATCHING

@@ -2693,8 +2693,9 @@ export default function WithdrawalForm({
 
             {/* Wallet Address Section */}
             <div className="flex-1 sm:pl-4 border-t sm:border-t-0 sm:border-l border-[#D1D2D4FF] dark:border-[#35353E] pt-4 sm:pt-0 sm:border-none">
-              <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
+              <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
                 Wallet Address
+                <div className="w-2 h-2 opacity-0"></div>
               </label>
               <div className="relative">
                 <FaWallet className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-[#7e7e8f] dark:text-[#788099] pointer-events-none z-10" />
