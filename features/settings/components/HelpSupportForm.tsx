@@ -2,6 +2,7 @@
 
 import { Upload } from 'lucide-react'
 import React, { useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useDispatch, useSelector } from 'react-redux'
 import { createSupportRequest } from '../slices/settingsSlice'
 import { AppDispatch, RootState } from '@/store'
@@ -16,6 +17,7 @@ interface FormData {
 
 const HelpSupportForm: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>()
+  const router = useRouter()
   const { supportRequestLoading, supportRequestError } = useSelector(
     (state: RootState) => state.settings
   )
@@ -74,7 +76,7 @@ const HelpSupportForm: React.FC = () => {
 
   const handleConnectLiveChat = () => {
     logger.debug('dashboard', 'Connect with Live Chat clicked')
-    // Handle live chat connection logic here
+    router.push("/live-chat");
   }
 
   return (

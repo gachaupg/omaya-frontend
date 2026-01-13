@@ -25,8 +25,8 @@ interface Option {
 }
 
 const formatCurrencyLabel = (currency?: string | null) => {
-  if (!currency) return "USD";
-  return currency.toUpperCase() === "USDT" ? "USD" : currency;
+  if (!currency) return "USDT";
+  return currency.toUpperCase();
 };
 
 const formatLimitDuration = (duration: string): string => {
@@ -62,7 +62,7 @@ const formatLimitDuration = (duration: string): string => {
 
 const getCurrencyOptions = (orders: any): Option[] => {
   if (!orders?.buy_orders?.results)
-    return [{ label: "USD", value: "USDT" }];
+    return [{ label: "USDT", value: "USDT" }];
 
   const currencies = new Set(
     orders.buy_orders.results.map((order: any) => order.currency)

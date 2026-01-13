@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
-import { Menu, X, Check, Settings, LogOut, User } from "lucide-react";
+import { Menu, X, Check, Settings, LogOut, User, ChevronDown, ChevronRight } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState, AppDispatch } from "@/features/auth/store";
 import {
@@ -92,6 +92,13 @@ const MobileNavLink = ({
     </Link>
   );
 };
+
+interface DropdownItem {
+  href: string;
+  icon: string;
+  title: string | React.ReactNode;
+  description: string;
+}
 
 const AuthButton = ({
   variant,
@@ -451,6 +458,62 @@ export default function Navbar() {
   const [mobileDepositDropdownOpen, setMobileDepositDropdownOpen] =
     useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
+
+  const depositItems: DropdownItem[] = [
+    {
+      href: "/dashboard/express-exchange",
+      icon: "https://res.cloudinary.com/pitz/image/upload/v1752243765/Vector_2_xauedx.png",
+      title: (
+        <>
+          <span>E</span>
+          <img
+            className="mt-[4.5px] block dark:hidden"
+            src="https://res.cloudinary.com/pitz/image/upload/v1764698096/Group_9_momvgo.png"
+            alt=""
+          />
+          <img
+            className="mt-[4.5px] hidden dark:block"
+            src="https://res.cloudinary.com/pitz/image/upload/v1764698106/Group_8_hjhlxe.png"
+            alt=""
+          />
+        </>
+      ),
+      description: "Trade cryptocurrencies on the exchange with advanced tools and features for optimal transactions",
+    },
+    {
+      href: "/dashboard/exchange",
+      icon: "https://res.cloudinary.com/pitz/image/upload/v1764568507/uil_exchange_1_okxkvb.png",
+      title: (
+        <>
+          <span>Money</span>
+          <img
+            className="mt-[4.5px] block dark:hidden"
+            src="https://res.cloudinary.com/pitz/image/upload/v1764661972/Group_6_ohph9q.png"
+            alt=""
+          />
+          <img
+            className="mt-[4.5px] hidden dark:block"
+            src="https://res.cloudinary.com/pitz/image/upload/v1764663236/Group_7_ichuyz.png"
+            alt=""
+          />
+        </>
+      ),
+      description: "Transfer money between different payment methods quickly and securely",
+    },
+    {
+      href: "/dashboard/p2p",
+      icon: "https://res.cloudinary.com/pitz/image/upload/v1747237692/users-profiles-left_e2oejc.png",
+      title: "P2P",
+      description: "Buy and sell cryptocurrencies directly with flexible payment methods",
+    },
+    {
+      href: "/dashboard/swap",
+      icon: "https://res.cloudinary.com/pitz/image/upload/v1747237691/Group_164002_fgt2kf.png",
+      title: "Swap",
+      description: "Exchange one cryptocurrency for another instantly and securely within your wallet",
+    },
+  ];
+
   const [profileImageError, setProfileImageError] = useState(false);
   const [cachedProfilePhoto, setCachedProfilePhoto] = useState<string | null>(
     null
@@ -811,239 +874,48 @@ export default function Navbar() {
                   onClick={toggleDepositDropdown}
                   className="flex items-center bg-[#1D8751] hover:bg-[#13B562] text-white px-2 py-1 md:px-2.5 md:py-1.5 lg:px-4 lg:py-2 xl:px-5 xl:py-2.5 rounded-[10px] transition-colors duration-200 text-xs md:text-xs lg:text-sm xl:text-base 2xl:text-lg whitespace-nowrap"
                 >
-                  <svg
-                    className="mr-0.5 md:mr-1 lg:mr-2 w-3 h-3 md:w-3.5 md:h-3.5 lg:w-5 lg:h-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"
-                      stroke="#FFB800"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <path
-                      d="M7 10l5 5 5-5"
-                      stroke="#FFB800"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <path
-                      d="M12 15V3"
-                      stroke="#FFB800"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
                   Deposit
+                  <ChevronDown className={`ml-1 md:ml-2 w-3 h-3 md:w-3.5 md:h-3.5 lg:w-5 lg:h-5 transition-transform duration-200 ${depositDropdownOpen ? "rotate-180" : ""}`} />
                 </button>
                 {/* Deposit Dropdown */}
                 {depositDropdownOpen && (
-                  <div className="absolute top-full right-0 mt-2 w-md dark:bg-[#1E2329] bg-white dark:border-[#35353E] border-gray-200 border rounded shadow-xl z-[9999]">
-                    <div className="p-6">
-                      {/* Exchange Option */}
-                      <Link
-                        href="/dashboard/express-exchange"
-                        className="block mb-3"
-                        onClick={() => {
-                          setDepositDropdownOpen(false);
-                        }}
-                      >
-                        <div
-                          className={`flex items-center rounded-lg transition-colors duration-200 group p-3 -m-3 ${pathname === "/dashboard/express-exchange" ||
-                            pathname?.startsWith("/dashboard/express-exchange/")
-                            ? "dark:bg-[#35353E] bg-[#e8f5ee]"
-                            : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
-                            }`}
-                        >
-                          <div className="w-10 h-10 flex items-center justify-center mr-4">
-                            <img
-                              className=""
-                              src="https://res.cloudinary.com/pitz/image/upload/v1752243765/Vector_2_xauedx.png"
-                              alt=""
-                            />
-                          </div>
-                          <div className="flex-1">
-                            <h4 className="dark:text-white flex flex-row text-gray-900 font-medium text-base mb-1">
-                              <span>E</span>
-                              {/* Light mode image */}
-                              <img
-                                className="mt-[4.5px] block dark:hidden"
-                                src="https://res.cloudinary.com/pitz/image/upload/v1764698096/Group_9_momvgo.png"
-                                alt=""
-                              />
-                              {/* Dark mode image */}
-                              <img
-                                className="mt-[4.5px] hidden dark:block"
-                                src="https://res.cloudinary.com/pitz/image/upload/v1764698106/Group_8_hjhlxe.png"
-                                alt=""
-                              />
-                            </h4>
-                            <p className="dark:text-gray-400 text-gray-600 text-sm">
-                              Trade cryptocurrencies on the exchange with
-                              advanced tools and features for optimal
-                              transactions
-                            </p>
-                          </div>
-                          <svg
-                            className="w-5 h-5 dark:text-gray-400 text-gray-500 group-hover:text-[#1D8751] transition-colors"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
+                  <div className="absolute top-full right-0 mt-2 w-[400px] dark:bg-[#1E2329] bg-white dark:border-[#35353E] border-gray-200 border rounded shadow-xl z-[9999]">
+                    <div className="p-4">
+                      {depositItems.map((item, index) => {
+                        const isActive = pathname === item.href || pathname?.startsWith(item.href + "/");
+                        return (
+                          <Link
+                            key={index}
+                            href={item.href}
+                            className="block mb-1 last:mb-0"
+                            onClick={() => setDepositDropdownOpen(false)}
                           >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M9 5l7 7-7 7"
-                            />
-                          </svg>
-                        </div>
-                      </Link>
-
-                      {/* MoneyX Option */}
-                      <Link
-                        href="/dashboard/exchange"
-                        className="block mb-3"
-                        onClick={() => {
-                          setDepositDropdownOpen(false);
-                        }}
-                      >
-                        <div
-                          className={`flex items-center transition-colors duration-200 group rounded-lg p-3 -m-3 ${pathname === "/dashboard/exchange" ||
-                            pathname?.startsWith("/dashboard/exchange/")
-                            ? "dark:bg-[#35353E] bg-[#e8f5ee]"
-                            : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
-                            }`}
-                        >
-                          <div className="w-10 h-10 flex items-center justify-center mr-4">
-                            <img className="w-10 h-10" src="https://res.cloudinary.com/pitz/image/upload/v1764568507/uil_exchange_1_okxkvb.png" alt="" />
-                          </div>
-                          <div className="flex-1">
-                            <h4 className="dark:text-white flex flex-row text-gray-900 font-medium text-base mb-1">
-                              <span>Money</span>
-                              {/* Light mode image */}
-                              <img
-                                className="mt-[4.5px] block dark:hidden"
-                                src="https://res.cloudinary.com/pitz/image/upload/v1764661972/Group_6_ohph9q.png"
-                                alt=""
-                              />
-                              {/* Dark mode image */}
-                              <img
-                                className="mt-[4.5px] hidden dark:block"
-                                src="https://res.cloudinary.com/pitz/image/upload/v1764663236/Group_7_ichuyz.png"
-                                alt=""
-                              />
-                            </h4>
-                            <p className="dark:text-gray-400 text-gray-600 text-sm">
-                              Transfer money between different payment methods
-                              quickly and securely
-                            </p>
-                          </div>
-                          <svg
-                            className="w-5 h-5 dark:text-gray-400 text-gray-500 group-hover:text-[#1D8751] transition-colors"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M9 5l7 7-7 7"
-                            />
-                          </svg>
-                        </div>
-                      </Link>
-
-                      {/* P2P Option */}
-                      <Link
-                        href="/dashboard/p2p"
-                        className="block mb-3"
-                        onClick={() => {
-                          setDepositDropdownOpen(false);
-                        }}
-                      >
-                        <div
-                          className={`flex items-center rounded-lg transition-colors duration-200 group p-3 -m-3 ${pathname === "/dashboard/p2p" ||
-                            pathname?.startsWith("/dashboard/p2p/")
-                            ? "dark:bg-[#35353E] bg-[#e8f5ee]"
-                            : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
-                            }`}
-                        >
-                          <div className="w-10 h-10 flex items-center justify-center mr-4">
-                            <img src="https://res.cloudinary.com/pitz/image/upload/v1747237692/users-profiles-left_e2oejc.png" alt="" />
-                          </div>
-                          <div className="flex-1">
-                            <h4 className="dark:text-white text-gray-900 font-medium text-base mb-1">
-                              P2P
-                            </h4>
-                            <p className="dark:text-gray-400 text-gray-600 text-sm">
-                              Buy and sell cryptocurrencies directly with
-                              flexible payment methods
-                            </p>
-                          </div>
-                          <svg
-                            className="w-5 h-5 dark:text-gray-400 text-gray-500 group-hover:text-[#1D8751] transition-colors"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M9 5l7 7-7 7"
-                            />
-                          </svg>
-                        </div>
-                      </Link>
-
-                      {/* Swap Option */}
-                      <Link
-                        href="/dashboard/swap"
-                        className="block"
-                        onClick={() => {
-                          setDepositDropdownOpen(false);
-                        }}
-                      >
-                        <div
-                          className={`flex items-center transition-colors duration-200 group rounded-lg p-3 -m-3 ${pathname === "/dashboard/swap" ||
-                            pathname?.startsWith("/dashboard/swap/")
-                            ? "dark:bg-[#35353E] bg-[#e8f5ee]"
-                            : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
-                            }`}
-                        >
-                          <div className="w-10 h-10 flex items-center justify-center mr-4">
-                            <img src="https://res.cloudinary.com/pitz/image/upload/v1747237691/Group_164002_fgt2kf.png" alt="" />
-                          </div>
-                          <div className="flex-1">
-                            <h4 className="dark:text-white text-gray-900 font-medium text-base mb-1">
-                              Swap
-                            </h4>
-                            <p className="dark:text-gray-400 text-gray-600 text-sm">
-                              Exchange one cryptocurrency for another instantly
-                              and securely within your wallet
-                            </p>
-                          </div>
-                          <svg
-                            className="w-5 h-5 dark:text-gray-400 text-gray-500 group-hover:text-[#1D8751] transition-colors"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M9 5l7 7-7 7"
-                            />
-                          </svg>
-                        </div>
-                      </Link>
+                            <div
+                              className={`flex items-center rounded-lg transition-colors duration-200 group p-3 ${isActive
+                                ? "dark:bg-[#35353E] bg-gray-100"
+                                : "dark:hover:bg-[#35353E] hover:bg-gray-50"
+                                }`}
+                            >
+                              <div className="w-10 h-10 flex items-center justify-center mr-4 shrink-0">
+                                <img
+                                  className="w-8 h-8 object-contain"
+                                  src={item.icon}
+                                  alt=""
+                                />
+                              </div>
+                              <div className="flex-1">
+                                <h4 className="dark:text-white flex flex-row items-center text-gray-900 font-medium text-base mb-0.5">
+                                  {item.title}
+                                </h4>
+                                <p className="dark:text-gray-400 text-gray-500 text-xs leading-relaxed">
+                                  {item.description}
+                                </p>
+                              </div>
+                              <ChevronRight className="w-4 h-4 dark:text-gray-500 text-gray-400 group-hover:text-[#1D8751] transition-colors shrink-0 ml-2" />
+                            </div>
+                          </Link>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -1355,36 +1227,8 @@ export default function Navbar() {
                       onClick={toggleMobileDepositDropdown}
                       className="flex items-center justify-center w-full bg-[#1D8751] hover:bg-[#13B562] text-white px-6 py-2 rounded-full transition-colors duration-200 text-base min-h-[44px]"
                     >
-                      <svg
-                        className="mr-2"
-                        width="20"
-                        height="20"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"
-                          stroke="#FFB800"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                        <path
-                          d="M7 10l5 5 5-5"
-                          stroke="#FFB800"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                        <path
-                          d="M12 15V3"
-                          stroke="#FFB800"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
                       Deposit
+                      <ChevronDown className={`ml-2 w-5 h-5 transition-transform duration-200 ${mobileDepositDropdownOpen ? "rotate-180" : ""}`} />
                     </button>
 
                     {/* Mobile Deposit Dropdown */}
@@ -1398,323 +1242,44 @@ export default function Navbar() {
                         {/* Dropdown Menu */}
                         <div className="fixed inset-x-4 top-20 sm:top-24 z-[70] md:hidden dark:bg-[var(--card-color)] bg-white dark:border-[#35353E] border-gray-200 rounded-xl shadow-xl overflow-hidden">
                           <div className="p-4 sm:p-6">
-                            {/* Exchange Option */}
-                            <Link
-                              href="/dashboard/express-exchange"
-                              className="block mb-4 last:mb-0"
-                              onClick={() => {
-                                setMobileDepositDropdownOpen(false);
-                                toggleMobileMenu();
-                              }}
-                            >
-                              <div
-                                className={`flex items-center rounded-lg transition-colors duration-200 group p-3 ${pathname === "/dashboard/express-exchange" ||
-                                  pathname?.startsWith("/dashboard/express-exchange/")
-                                  ? "dark:bg-[#35353E] bg-[#e8f5ee]"
-                                  : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
-                                  }`}
-                              >
-                                <div className="flex items-center justify-center mr-4 flex-shrink-0">
-                                  <svg
-                                    width="45"
-                                    height="40"
-                                    viewBox="0 0 45 40"
-                                    fill="none"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                  >
-                                    <path
-                                      d="M28 12 L14 12 L18 8"
-                                      stroke="#F79330"
-                                      strokeWidth="4"
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                    />
-                                    <path
-                                      d="M17 20 L31 20 L27 24"
-                                      stroke="#1D8751"
-                                      strokeWidth="4"
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                    />
-                                  </svg>
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <h4 className="dark:text-white text-gray-900 font-medium text-base mb-1">
-                                    Exchange
-                                  </h4>
-                                  <p className="dark:text-gray-400 text-gray-600 text-sm leading-relaxed">
-                                    Trade cryptocurrencies on the exchange with
-                                    advanced tools and features for optimal
-                                    transactions
-                                  </p>
-                                </div>
-                                <svg
-                                  className="w-5 h-5 dark:text-gray-400 text-gray-500 group-hover:text-[#1D8751] transition-colors flex-shrink-0 ml-2"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
+                            {depositItems.map((item, index) => {
+                              const isActive = pathname === item.href || pathname?.startsWith(item.href + "/");
+                              return (
+                                <Link
+                                  key={index}
+                                  href={item.href}
+                                  className="block mb-4 last:mb-0"
+                                  onClick={() => {
+                                    setMobileDepositDropdownOpen(false);
+                                    toggleMobileMenu();
+                                  }}
                                 >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M9 5l7 7-7 7"
-                                  />
-                                </svg>
-                              </div>
-                            </Link>
-
-                            {/* P2P Option */}
-                            <Link
-                              href="/dashboard/p2p"
-                              className="block mb-4 last:mb-0"
-                              onClick={() => {
-                                setMobileDepositDropdownOpen(false);
-                                toggleMobileMenu();
-                              }}
-                            >
-                              <div
-                                className={`flex items-center rounded-lg transition-colors duration-200 group p-3 ${pathname === "/dashboard/p2p" ||
-                                  pathname?.startsWith("/dashboard/p2p/")
-                                  ? "dark:bg-[#35353E] bg-[#e8f5ee]"
-                                  : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
-                                  }`}
-                              >
-                                <div className="w-10 h-10 flex items-center justify-center mr-4 flex-shrink-0">
-                                  <svg
-                                    width="120"
-                                    height="120"
-                                    viewBox="0 0 120 120"
-                                    xmlns="http://www.w3.org/2000/svg"
+                                  <div
+                                    className={`flex items-center rounded-lg transition-colors duration-200 group p-3 ${isActive
+                                      ? "dark:bg-[#35353E] bg-gray-100"
+                                      : "dark:hover:bg-[#35353E] hover:bg-gray-50"
+                                      }`}
                                   >
-                                    <circle
-                                      cx="40"
-                                      cy="30"
-                                      r="10"
-                                      stroke="#1C8F4D"
-                                      strokeWidth="6"
-                                      fill="none"
-                                    />
-                                    <path
-                                      d="M58 22 A22 22 0 0 1 58 38"
-                                      fill="none"
-                                      stroke="#1C8F4D"
-                                      strokeWidth="6"
-                                      strokeLinecap="round"
-                                    />
-                                    <path
-                                      d="M20 90 Q20 65 45 65"
-                                      fill="none"
-                                      stroke="#1C8F4D"
-                                      strokeWidth="6"
-                                      strokeLinecap="round"
-                                    />
-                                    <path
-                                      d="M70 85 A20 20 0 0 1 110 85"
-                                      fill="none"
-                                      stroke="#F49A29"
-                                      strokeWidth="6"
-                                      strokeLinecap="round"
-                                    />
-                                    <path
-                                      d="M110 85 L104 80 M110 85 L108 77"
-                                      stroke="#F49A29"
-                                      strokeWidth="6"
-                                      strokeLinecap="round"
-                                    />
-                                    <path
-                                      d="M110 85 A20 20 0 0 1 70 85"
-                                      fill="none"
-                                      stroke="#F49A29"
-                                      strokeWidth="6"
-                                      strokeLinecap="round"
-                                    />
-                                    <path
-                                      d="M70 85 L75 90 M70 85 L67 93"
-                                      stroke="#F49A29"
-                                      strokeWidth="6"
-                                      strokeLinecap="round"
-                                    />
-                                  </svg>
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <h4 className="dark:text-white text-gray-900 font-medium text-base mb-1">
-                                    P2P
-                                  </h4>
-                                  <p className="dark:text-gray-400 text-gray-600 text-sm leading-relaxed">
-                                    Buy and sell cryptocurrencies directly with
-                                    flexible payment methods
-                                  </p>
-                                </div>
-                                <svg
-                                  className="w-5 h-5 dark:text-gray-400 text-gray-500 group-hover:text-[#1D8751] transition-colors flex-shrink-0 ml-2"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M9 5l7 7-7 7"
-                                  />
-                                </svg>
-                              </div>
-                            </Link>
-
-                            {/* Swap Option */}
-                            <Link
-                              href="/dashboard/swap"
-                              className="block mb-4 last:mb-0"
-                              onClick={() => {
-                                setMobileDepositDropdownOpen(false);
-                                toggleMobileMenu();
-                              }}
-                            >
-                              <div
-                                className={`flex items-center rounded-lg transition-colors duration-200 group p-3 ${pathname === "/dashboard/swap" ||
-                                  pathname?.startsWith("/dashboard/swap/")
-                                  ? "dark:bg-[#35353E] bg-[#e8f5ee]"
-                                  : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
-                                  }`}
-                              >
-                                <div className="w-10 h-10 flex items-center justify-center mr-4 flex-shrink-0">
-                                  <svg
-                                    width="100"
-                                    height="100"
-                                    viewBox="0 0 100 100"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                  >
-                                    <path
-                                      d="M30 70H20V30H60V40"
-                                      fill="none"
-                                      stroke="#1C8F4D"
-                                      strokeWidth="5"
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                    />
-                                    <polygon
-                                      points="30,60 20,70 30,80"
-                                      fill="#1D8751"
-                                    />
-                                    <path
-                                      d="M70 30H80V70H40V60"
-                                      fill="none"
-                                      stroke="#F49A29"
-                                      strokeWidth="5"
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                    />
-                                    <polygon
-                                      points="70,40 80,30 70,20"
-                                      fill="#F79330"
-                                    />
-                                  </svg>
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <h4 className="dark:text-white text-gray-900 font-medium text-base mb-1">
-                                    Swap
-                                  </h4>
-                                  <p className="dark:text-gray-400 text-gray-600 text-sm leading-relaxed">
-                                    Exchange one cryptocurrency for another
-                                    instantly and securely within your wallet
-                                  </p>
-                                </div>
-                                <svg
-                                  className="w-5 h-5 dark:text-gray-400 text-gray-500 group-hover:text-[#1D8751] transition-colors flex-shrink-0 ml-2"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M9 5l7 7-7 7"
-                                  />
-                                </svg>
-                              </div>
-                            </Link>
-
-                            {/* MoneyX Option */}
-                            <Link
-                              href="/dashboard/exchange"
-                              className="block mb-4 last:mb-0"
-                              onClick={() => {
-                                setMobileDepositDropdownOpen(false);
-                                toggleMobileMenu();
-                              }}
-                            >
-                              <div
-                                className={`flex items-center rounded-lg transition-colors duration-200 group p-3 ${pathname === "/dashboard/exchange" ||
-                                  pathname?.startsWith("/dashboard/exchange/")
-                                  ? "dark:bg-[#35353E] bg-[#e8f5ee]"
-                                  : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
-                                  }`}
-                              >
-                                <div className="w-10 h-10 flex items-center justify-center mr-4 flex-shrink-0">
-                                  <svg
-                                    width="100"
-                                    height="100"
-                                    viewBox="0 0 100 100"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                  >
-                                    <rect
-                                      x="20"
-                                      y="25"
-                                      width="60"
-                                      height="40"
-                                      rx="5"
-                                      fill="none"
-                                      stroke="#1D8751"
-                                      strokeWidth="4"
-                                    />
-                                    <path
-                                      d="M30 45 L40 55 L70 25"
-                                      stroke="#1D8751"
-                                      strokeWidth="4"
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      fill="none"
-                                    />
-                                    <circle
-                                      cx="50"
-                                      cy="70"
-                                      r="8"
-                                      fill="#1D8751"
-                                    />
-                                    <path
-                                      d="M50 65 L50 75 M45 70 L55 70"
-                                      stroke="white"
-                                      strokeWidth="2"
-                                      strokeLinecap="round"
-                                    />
-                                  </svg>
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <h4 className="dark:text-white text-gray-900 font-medium text-base mb-1">
-                                    MoneyX
-                                  </h4>
-                                  <p className="dark:text-gray-400 text-gray-600 text-sm leading-relaxed">
-                                    Transfer money between different payment
-                                    methods quickly and securely
-                                  </p>
-                                </div>
-                                <svg
-                                  className="w-5 h-5 dark:text-gray-400 text-gray-500 group-hover:text-[#1D8751] transition-colors flex-shrink-0 ml-2"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M9 5l7 7-7 7"
-                                  />
-                                </svg>
-                              </div>
-                            </Link>
+                                    <div className="w-10 h-10 flex items-center justify-center mr-4 shrink-0">
+                                      <img
+                                        className="w-8 h-8 object-contain"
+                                        src={item.icon}
+                                        alt=""
+                                      />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <h4 className="dark:text-white flex flex-row items-center text-gray-900 font-medium text-base mb-1">
+                                        {item.title}
+                                      </h4>
+                                      <p className="dark:text-gray-400 text-gray-600 text-sm leading-relaxed">
+                                        {item.description}
+                                      </p>
+                                    </div>
+                                    <ChevronRight className="w-5 h-5 dark:text-gray-400 text-gray-500 group-hover:text-[#1D8751] transition-colors shrink-0 ml-2" />
+                                  </div>
+                                </Link>
+                              );
+                            })}
                           </div>
                         </div>
                       </>

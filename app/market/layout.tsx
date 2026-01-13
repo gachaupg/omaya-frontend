@@ -44,8 +44,7 @@ export default function DashboardLayout({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
-            className="max-md:mt-40 md:mt-28 md:pl-[222.28px] px-4 md:px-6"
-          >
+            className="max-md:mt-40 md:mt-28 md:pl-[222.28px] px-2 md:px-6">
             {children}
           </motion.div>
         </AnimatePresence>

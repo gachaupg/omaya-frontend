@@ -1801,7 +1801,7 @@ export default function WithdrawalForm({
   // Validate BEP20 wallet address
   const validateBEP20Address = (address: string) => {
     if (!address || address.trim() === "") {
-      return { isValid: false, message: "Wallet address is required" };
+      return { isValid: false, message: "Please add an address" };
     }
 
     // Remove whitespace
@@ -1875,6 +1875,11 @@ export default function WithdrawalForm({
       return false;
     }
 
+    // Check if amount is greater than 0
+    if (payAmount <= 0) {
+      return false;
+    }
+
     // Check if amount exceeds available balance
     if (balance !== undefined && payAmount > balance) {
       return false;
@@ -1904,6 +1909,28 @@ export default function WithdrawalForm({
   };
 
   const handleFirstCardSubmit = async () => {
+    // Validate amount first
+    if (!payAmount || payAmount <= 0) {
+      setBalanceError("Amount should be more than 0");
+      showToast.error("Validation Error", "Amount should be more than 0");
+      return;
+    }
+
+    // Validate wallet address
+    if (!walletAddress || !walletAddress.trim()) {
+      setWalletError("Please add an address");
+      showToast.error("Validation Error", "Please add an address");
+      return;
+    }
+
+    // Validate BEP20 format
+    const addressValidation = validateBEP20Address(walletAddress);
+    if (!addressValidation.isValid) {
+      setWalletError(addressValidation.message || "Please add an address");
+      showToast.error("Validation Error", addressValidation.message || "Please add an address");
+      return;
+    }
+
     if (validateFirstCard()) {
       setIsSubmitting(true);
       setIsTransactionSubmitted(false);
@@ -2601,9 +2628,14 @@ export default function WithdrawalForm({
                       // Mark that user has manually modified the amount
                       setIsUserModifiedAmount(true);
 
-                      // Validate balance in real-time
-                      const balanceValidationError = validateBalance(newValue);
-                      setBalanceError(balanceValidationError);
+                      // Validate amount is greater than 0
+                      if (newValue <= 0) {
+                        setBalanceError("Amount should be more than 0");
+                      } else {
+                        // Validate balance in real-time
+                        const balanceValidationError = validateBalance(newValue);
+                        setBalanceError(balanceValidationError);
+                      }
 
                       // Clear any previous errors when user starts typing
                       setReceiveAmountError(null);
@@ -2677,7 +2709,7 @@ export default function WithdrawalForm({
                   }}
                   placeholder="Enter BEP20 wallet address (0x...)"
                   className={`w-full text-[#35353e] dark:bg-[var(--card-color)] dark:text-[#ffffff] rounded-xl sm:rounded-2xl px-8 sm:px-9 py-2.5 sm:py-2 text-sm sm:text-lg focus:outline-none border min-h-[44px] sm:min-h-0 ${walletError
-                    ? "border-red-500"
+                    ? "border-red-500 focus:border-red-500"
                     : walletAddress.trim() && !walletError
                       ? "border-green-500"
                       : "border-[#A2A4A9FF] dark:border-[#35353E]"
@@ -2752,6 +2784,7 @@ export default function WithdrawalForm({
                   isTransactionSubmitted ||
                   isInfoModalOpen ||
                   getAmount > 15000 ||
+                  payAmount <= 0 ||
                   !!balanceError
                   ? "bg-gray-500 cursor-not-allowed"
                   : "bg-[#1D8751] hover:bg-[#166b3e]"
@@ -2762,6 +2795,7 @@ export default function WithdrawalForm({
                   isTransactionSubmitted ||
                   isInfoModalOpen ||
                   getAmount > 15000 ||
+                  payAmount <= 0 ||
                   !!balanceError
                 }
               >
@@ -2769,7 +2803,7 @@ export default function WithdrawalForm({
                   <div className="flex items-center gap-2">
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                     <span className="text-white">
-                      Getting Withdrawal Addresses...
+                      Submitting...
                     </span>
                   </div>
                 ) : isTransactionSubmitted ? (
@@ -2969,10 +3003,20 @@ export default function WithdrawalForm({
 
             {/* Terms Checkbox */}
             <div className="mt-4">
+              <style dangerouslySetInnerHTML={{
+                __html: `
+                  input[type="checkbox"].terms-checkbox-green:checked {
+                    background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-3.5-3.5a1 1 0 011.414-1.414L4.5 10.586l6.293-6.293a1 1 0 011.414 0z'/%3e%3c/svg%3e") !important;
+                    background-size: 14px 14px !important;
+                    background-repeat: no-repeat !important;
+                    background-position: center !important;
+                  }
+                `
+              }} />
               <label className="flex items-start cursor-pointer">
                 <input
                   type="checkbox"
-                  className="mt-1 mr-3 w-4 h-4 text-[#1D8751] bg-[var(--card-color)] dark:bg-[#35353E] border-[#A2A4A9FF] dark:border-[#35353E ] rounded focus:ring-[#1D8751] focus:ring-2"
+                  className="terms-checkbox-green mt-1 mr-3 w-4 h-4 rounded border-2 border-[#1D8751] focus:ring-[#1D8751] appearance-none bg-transparent checked:bg-[#1D8751] checked:border-[#1D8751] flex-shrink-0"
                 />
                 <span className="text-[#35353e] dark:text-[#788099] text-sm">
                   I've read and agree to the{" "}
