@@ -1396,13 +1396,32 @@ export default function Navbar() {
                           )}
                         </Link>
                       </div>
-                      <div className="text-left">
-                        <h4 className="text-white font-medium text-sm">
-                          {user?.first_name && user?.last_name
-                            ? `${user.first_name} ${user.last_name}`
-                            : user?.email}
-                        </h4>
-                        <p className="text-gray-400 text-xs">{user?.email}</p>
+                      <div className="text-left flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <h4 className="text-white font-medium text-sm truncate">
+                            {user?.first_name && user?.last_name
+                              ? `${user.first_name} ${user.last_name}`
+                              : user?.email}
+                          </h4>
+                          {isKycVerified && (
+                            <span className="inline-flex items-center justify-center w-4 h-4 shrink-0">
+                              <svg width="16" height="16" viewBox="0 0 20 20" className="absolute">
+                                <circle cx="10" cy="10" r="9" fill="white" />
+                                <circle cx="10" cy="10" r="7.5" fill="#1D8751" />
+                                {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map(angle => {
+                                  const rad = (angle * Math.PI) / 180;
+                                  const x = 10 + 8.5 * Math.cos(rad);
+                                  const y = 10 + 8.5 * Math.sin(rad);
+                                  return <circle key={angle} cx={x} cy={y} r="1" fill="white" />;
+                                })}
+                              </svg>
+                              <svg width="8" height="8" viewBox="0 0 10 10" fill="none" className="relative z-10">
+                                <path d="M2 5L4 7L8 3" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                              </svg>
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-gray-400 text-xs truncate">{user?.email}</p>
                       </div>
                     </div>
                   </div>
@@ -1527,8 +1546,8 @@ export default function Navbar() {
                               className="flex items-center w-full px-4 py-3 text-gray-300 hover:text-white hover:bg-[#35353E] rounded-lg transition-colors duration-200"
                               onClick={() => setProfileModalOpen(false)}
                             >
-                              <User size={20} className="mr-4" />
-                              <span className="text-base">Account</span>
+                              <User size={20} className="mr-3" />
+                              <span className="text-base whitespace-nowrap">Account</span>
                             </Link>
 
                             <Link

@@ -480,9 +480,9 @@ const AboutPage = () => {
                 style={{ borderRadius: "2rem" }}
               >
                 <div className="w-8 h-8 rounded-full flex items-center justify-center">
-                  <Eye className="w-4 h-4 text-[#C27AFF]" />
+                  <Eye className="w-4 h-4 text-[#1D8751]" />
                 </div>
-                <span className="text-lg text-[#C27AFF]">Our Vision</span>
+                <span className="text-lg font-bold text-[#1D8751]">Our Vision</span>
               </div>
 
               {/* Main Heading */}
@@ -505,21 +505,21 @@ const AboutPage = () => {
 
               {/* Vision Feature Boxes */}
               <div className="grid grid-cols-2 gap-4">
-                <div className="bg-gray-50 dark:bg-[#18181D] rounded-2xl p-6 border border-gray-200 dark:border-[#20202A]">
-                  <h3 className="text-xl font-bold text-[#C27AFF] mb-2">Innovation</h3>
-                  <p className="text-sm text-muted-foreground">Cutting-Edge Tech</p>
+                <div className="bg-white dark:bg-[#18181D] rounded-2xl p-6 border border-gray-200 dark:border-[#20202A]">
+                  <h3 className="text-xl font-bold text-[#1D8751] mb-2">Innovation</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Cutting-Edge Tech</p>
                 </div>
-                <div className="bg-gray-50 dark:bg-[#18181D] rounded-2xl p-6 border border-gray-200 dark:border-[#20202A]">
-                  <h3 className="text-xl font-bold text-[#C27AFF] mb-2">Trust</h3>
-                  <p className="text-sm text-muted-foreground">Transparent</p>
+                <div className="bg-white dark:bg-[#18181D] rounded-2xl p-6 border border-gray-200 dark:border-[#20202A]">
+                  <h3 className="text-xl font-bold text-[#1D8751] mb-2">Trust</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Transparent</p>
                 </div>
-                <div className="bg-gray-50 dark:bg-[#18181D] rounded-xl p-5 border border-border dark:border-accent">
-                  <h3 className="text-xl font-bold text-[#C27AFF] mb-2">Integration</h3>
-                  <p className="text-sm text-muted-foreground">Seamless</p>
+                <div className="bg-white dark:bg-[#18181D] rounded-xl p-5 border border-gray-200 dark:border-[#20202A]">
+                  <h3 className="text-xl font-bold text-[#1D8751] mb-2">Integration</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Seamless</p>
                 </div>
-                <div className="bg-gray-50 dark:bg-[#18181D] rounded-xl p-5 border border-border dark:border-accent">
-                  <h3 className="text-xl font-bold text-[#C27AFF] mb-2">Freedom</h3>
-                  <p className="text-sm text-muted-foreground">Financial Liberty</p>
+                <div className="bg-white dark:bg-[#18181D] rounded-xl p-5 border border-gray-200 dark:border-[#20202A]">
+                  <h3 className="text-xl font-bold text-[#1D8751] mb-2">Freedom</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Financial Liberty</p>
                 </div>
               </div>
             </div>

@@ -661,14 +661,14 @@ export default function MarketingPage() {
             {/* Dark background container with green gradient */}
             <div className="bg-gray-100 dark:bg-[#1D8751]/7 rounded-2xl p-4 md:p-6 border border-border dark:border-[#1D8751]/10">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 md:gap-8">
-                {/* Lowest Trading Fee */}
+                {/* 0.1% Trading Fee */}
                 <div className="flex flex-col items-center justify-center py-2">
                   <div className="w-12 h-12 sm:w-13 sm:h-13 rounded-2xl bg-linear-to-br from-orange-400 to-orange-500 flex items-center justify-center mb-3 shadow-lg">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
                     </svg>
                   </div>
-                  <span className="text-gray-900 dark:text-white text-xs sm:text-sm md:text-base font-medium text-center">Lowest Trading Fee</span>
+                  <span className="text-gray-900 dark:text-white text-xs sm:text-sm md:text-base font-medium text-center">0.1% Trading Fee</span>
                 </div>
 
                 {/* Bank-Grade Security */}
