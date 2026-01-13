@@ -24,7 +24,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [captchaVerified, setCaptchaVerified] = useState(false);
-  const [showCaptchaModal, setShowCaptchaModal] = useState(false);
+  const [showCaptchaModal, setShowCaptchaModal] = useState(true);
   const [errors, setErrors] = useState({
     email: "",
     password: "",
@@ -188,12 +188,6 @@ export default function LoginPage() {
     clearCaptchaSuccessState();
   };
 
-  const handleCloseCaptchaModal = () => {
-    clearCaptchaSuccessState();
-    setShowCaptchaModal(false);
-    setCaptchaVerified(false);
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -211,6 +205,12 @@ export default function LoginPage() {
     // Otherwise, show captcha modal
     clearCaptchaSuccessState();
     setShowCaptchaModal(true);
+  };
+
+  const handleCloseCaptchaModal = () => {
+    clearCaptchaSuccessState();
+    setShowCaptchaModal(false);
+    setCaptchaVerified(false);
   };
 
   useEffect(() => {
@@ -586,12 +586,14 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Captcha Modal */}
+      {/* Captcha Modal - On top of form */}
       {showCaptchaModal && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-end pointer-events-none pr-14 md:pr-18 lg:pr-26">
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-black/50 dark:bg-black/70 pointer-events-auto" onClick={handleCloseCaptchaModal}></div>
           {/* Modal */}
           <div
-            className="relative bg-white dark:bg-[var(--card-color)] rounded-2xl shadow-2xl max-w-md w-full mx-4 p-6 pointer-events-auto border border-gray-200 dark:border-[#35353E]"
+            className="relative bg-white dark:bg-[var(--card-color)] rounded-2xl shadow-2xl max-w-md w-full p-6 pointer-events-auto border border-gray-200 dark:border-[#35353E] z-10"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
@@ -673,6 +675,7 @@ export default function LoginPage() {
           </div>
         </div>
       )}
+
     </div>
   );
 }

@@ -575,7 +575,7 @@ const P2PCharts = () => {
       />
 
       {/* Orders Table */}
-      <div className="mt-8">
+      <div className="mt-8 w-full pb-4">
         {!displayData || displayData.length === 0 ? (
           <div className="text-center py-12 px-4">
             <NoDataFound
