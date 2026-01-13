@@ -736,7 +736,7 @@ const AboutPage = () => {
                 <div className="flex items-center justify-center gap-3 mb-1">
                   <span className="text-4xl md:text-5xl font-bold text-[#1D8751]">2023</span>
                   <div className="w-10 h-10 rounded-xl bg-[#1D8751] flex items-center justify-center">
-                    <Globe className="w-5 h-5 text-white" />
+                    <Award className="w-5 h-5 text-white" />
                   </div>
                 </div>
                 <span className="text-gray-600 dark:text-gray-500 text-sm text-center mb-6">Q4</span>
@@ -1268,6 +1268,7 @@ const AboutPage = () => {
       <section className="py-16 px-4 bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-black dark:via-gray-900 dark:to-black relative overflow-hidden">
         {/* Glowing green light effect from top-left */}
         <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-br from-[#1D8751]/10 via-[#22c55e]/5 to-transparent dark:from-[#1D8751]/20 dark:via-[#22c55e]/10 dark:to-transparent rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+        
 
         <div className="max-w-4xl mx-auto relative z-10">
           <div className="text-center">
