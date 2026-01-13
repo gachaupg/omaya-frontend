@@ -24,7 +24,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [captchaVerified, setCaptchaVerified] = useState(false);
-  const [showCaptchaModal, setShowCaptchaModal] = useState(true);
+  const [showCaptchaModal, setShowCaptchaModal] = useState(false);
   const [errors, setErrors] = useState({
     email: "",
     password: "",
