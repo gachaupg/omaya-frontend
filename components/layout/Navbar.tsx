@@ -6,7 +6,7 @@ import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
 import { Menu, X, Check, Settings, LogOut, User } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
-import { RootState, AppDispatch } from "@/features/auth/store";
+import { RootState, AppDispatch } from "@/store";
 import {
   initializeAuth,
   getUserProfile,

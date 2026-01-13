@@ -139,7 +139,7 @@ const Filters = () => {
   const { t } = useSettingsI18n();
 
   // Get active tab from URL or default to 0 (profile)
-  const tabParam = searchParams.get("tab");
+  const tabParam = searchParams?.get("tab");
   const initialActiveIdx = Math.max(0, tabs.findIndex(t => t.id === tabParam));
   
   const [activeIdx, setActiveIdx] = useState(initialActiveIdx !== -1 ? initialActiveIdx : 0);
@@ -148,7 +148,7 @@ const Filters = () => {
 
   // Sync state with URL changes
   useEffect(() => {
-    const tabParam = searchParams.get("tab");
+    const tabParam = searchParams?.get("tab");
     const idx = tabs.findIndex(t => t.id === tabParam);
     if (idx !== -1 && idx !== activeIdx) {
       setActiveIdx(idx);
@@ -161,7 +161,7 @@ const Filters = () => {
     setShowHelpSupport(false);
     
     // Update URL
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(searchParams?.toString() || "");
     if (tabs[idx]?.id) {
       params.set("tab", tabs[idx].id);
     } else {
