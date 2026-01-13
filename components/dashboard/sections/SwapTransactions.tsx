@@ -240,14 +240,22 @@ const SwapTransactions = () => {
           </div>
           <div className="flex gap-2">
             <button
-              onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setPage((prev) => Math.max(1, prev - 1));
+              }}
               disabled={page === 1}
               className="px-3 sm:px-4 py-2 rounded-lg border border-[#E8EFF5] dark:border-[#35353E] text-xs sm:text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#F5F5F5] dark:hover:bg-[#23232B] transition-colors min-h-[44px] sm:min-h-0 lg:min-h-0"
             >
               Previous
             </button>
             <button
-              onClick={() => setPage((prev) => Math.min(data.pages, prev + 1))}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setPage((prev) => Math.min(data.pages, prev + 1));
+              }}
               disabled={page === data.pages}
               className="px-3 sm:px-4 py-2 rounded-lg border border-[#E8EFF5] dark:border-[#35353E] text-xs sm:text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#F5F5F5] dark:hover:bg-[#23232B] transition-colors min-h-[44px] sm:min-h-0 lg:min-h-0"
             >

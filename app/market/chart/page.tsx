@@ -98,7 +98,7 @@ const MarketChartContent = () => {
     assets: allAvailableAssets,
     favoriteAssets,
   } = useSelector((state: RootState) => state.exchange);
-  
+
   const [coinDetails, setCoinDetails] = useState<any>(null);
   const [chartData, setChartData] = useState<{ prices?: [number, number][]; total_volumes?: [number, number][] } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -148,7 +148,7 @@ const MarketChartContent = () => {
         ]);
 
         setCoinDetails(details);
-        
+
         if (chart?.prices && Array.isArray(chart.prices)) {
           setChartData({
             prices: chart.prices,
@@ -172,7 +172,7 @@ const MarketChartContent = () => {
   const isFavorited = (symbol: string, name: string): boolean => {
     const normalizedSymbol = symbol.toUpperCase();
     const normalizedName = name.toUpperCase();
-    
+
     if (
       localFavorites.some(
         (fav) =>
@@ -181,13 +181,13 @@ const MarketChartContent = () => {
     ) {
       return true;
     }
-    
+
     const isInRedux = favoriteAssets?.some(
       (fav: any) =>
         fav.asset_symbol?.toLowerCase() === symbol.toLowerCase() ||
         fav.asset_symbol?.toLowerCase() === name.toLowerCase()
     );
-    
+
     if (isInRedux) return true;
 
     if (typeof window !== "undefined") {
@@ -205,32 +205,32 @@ const MarketChartContent = () => {
         console.warn("Error reading favorites from localStorage:", error);
       }
     }
-    
+
     return false;
   };
 
   // Get asset ID from symbol/name
   const getAssetIdFromCoin = (symbol: string, name: string): string | null => {
     if (!allAvailableAssets?.assets) return null;
-    
+
     let asset = allAvailableAssets.assets.find(
       (asset: Asset) => asset.symbol.toLowerCase() === symbol.toLowerCase()
     );
-    
+
     if (!asset) {
       asset = allAvailableAssets.assets.find(
         (asset: Asset) => asset.name.toLowerCase() === name.toLowerCase()
       );
     }
-    
+
     if (!asset) {
       asset = allAvailableAssets.assets.find(
-        (asset: Asset) => 
+        (asset: Asset) =>
           asset.symbol.toLowerCase().includes(symbol.toLowerCase()) ||
           symbol.toLowerCase().includes(asset.symbol.toLowerCase())
       );
     }
-    
+
     return asset?.asset_id || null;
   };
 
@@ -265,9 +265,9 @@ const MarketChartContent = () => {
   // Toggle favorite
   const handleToggleFavorite = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    
+
     if (!coinDetails) return;
-    
+
     const symbol = coinDetails.symbol;
     const name = coinDetails.name;
     const assetId = getAssetIdFromCoin(symbol, name);
@@ -308,9 +308,9 @@ const MarketChartContent = () => {
   if (!coinId) {
     return (
       <div className="bg-white dark:bg-[#18181D] min-h-screen py-4 sm:py-6 lg:py-8">
-        <div className="max-w-[1400px] mx-auto px-3 sm:px-4 lg:px-6">
+        <div className="max-w-[1400px] mx-auto">
           <div className="p-4 text-red-500 text-sm sm:text-base lg:text-base">
-        No coin ID provided. Please go back and select a coin.
+            No coin ID provided. Please go back and select a coin.
           </div>
         </div>
       </div>
@@ -320,7 +320,7 @@ const MarketChartContent = () => {
   if (loading) {
     return (
       <div className="bg-white dark:bg-[#18181D] min-h-screen py-4 sm:py-6 lg:py-8">
-        <div className="max-w-[1400px] mx-auto px-3 sm:px-4 lg:px-6">
+        <div className="max-w-[1400px] mx-auto">
           <div className="flex items-center gap-2 text-[#13B562] mb-4 sm:mb-6 lg:mb-6 text-sm sm:text-base lg:text-base">
             <div className="animate-spin rounded-full h-5 w-5 sm:h-6 sm:w-6 lg:h-6 lg:w-6 border-b-2 border-[#13B562]"></div>
             Loading chart data...
@@ -333,7 +333,7 @@ const MarketChartContent = () => {
   if (error) {
     return (
       <div className="bg-white dark:bg-[#18181D] min-h-screen py-4 sm:py-6 lg:py-8">
-        <div className="max-w-[1400px] mx-auto px-3 sm:px-4 lg:px-6">
+        <div className="max-w-[1400px] mx-auto">
           <div className="text-red-500 mb-4 text-sm sm:text-base lg:text-base">{error}</div>
           <button
             onClick={() => window.location.reload()}
@@ -348,9 +348,9 @@ const MarketChartContent = () => {
 
   return (
     <div className="bg-white dark:bg-[#18181D] min-h-screen py-4 sm:py-6 lg:py-8 text-gray-900 dark:text-[#788099]">
-      <div className="max-w-[1400px] mx-auto px-3 sm:px-4 lg:px-6">
-        <Link 
-          href="/market" 
+      <div className="max-w-[1400px] mx-auto">
+        <Link
+          href="/market"
           className="flex items-center gap-2 text-[#13B562] mb-4 sm:mb-6 lg:mb-6 hover:underline text-sm sm:text-base lg:text-base"
         >
           <ArrowLeft size={16} className="sm:w-[18px] sm:h-[18px] lg:w-[18px] lg:h-[18px]" />
@@ -394,22 +394,21 @@ const MarketChartContent = () => {
               <div className="flex items-center gap-4 sm:gap-6 lg:gap-8">
                 <div className="text-center px-3 sm:px-4 py-2 border-r border-[#E8EFF5] dark:border-[#35353E]">
                   <p className="text-gray-600 dark:text-[#788099] text-xs sm:text-sm">24h Change</p>
-                  <p className={`font-bold text-base sm:text-lg lg:text-xl ${
-                    coinDetails.market_data?.price_change_percentage_24h >= 0 
-                      ? "text-[#13B562]" 
+                  <p className={`font-bold text-base sm:text-lg lg:text-xl ${coinDetails.market_data?.price_change_percentage_24h >= 0
+                      ? "text-[#13B562]"
                       : "text-[#FF6B6B]"
-                  }`}>
+                    }`}>
                     {formatPercentage(coinDetails.market_data?.price_change_percentage_24h || 0)}
                   </p>
                 </div>
-                
+
                 <div className="text-center px-3 sm:px-4 py-2 border-r border-[#E8EFF5] dark:border-[#35353E]">
                   <p className="text-gray-600 dark:text-[#788099] text-xs sm:text-sm">Market Cap</p>
                   <p className="font-bold text-[#051015] dark:text-white text-base sm:text-lg lg:text-xl">
                     {formatMarketCap(coinDetails.market_data?.market_cap?.usd || 0)}
                   </p>
                 </div>
-                
+
                 <div className="text-center px-3 sm:px-4 py-2 border-r border-[#E8EFF5] dark:border-[#35353E]">
                   <p className="text-gray-600 dark:text-[#788099] text-xs sm:text-sm">24h Volume</p>
                   <p className="font-bold text-[#051015] dark:text-white text-base sm:text-lg lg:text-xl">
@@ -440,20 +439,19 @@ const MarketChartContent = () => {
               <button
                 key={range}
                 onClick={() => setTimeRange(range)}
-                className={`px-3 sm:px-4 lg:px-4 py-2 rounded-md text-xs sm:text-sm lg:text-sm font-medium transition-colors min-h-[44px] sm:min-h-0 lg:min-h-0 ${
-                  timeRange === range
+                className={`px-3 sm:px-4 lg:px-4 py-2 rounded-md text-xs sm:text-sm lg:text-sm font-medium transition-colors min-h-[44px] sm:min-h-0 lg:min-h-0 ${timeRange === range
                     ? "bg-[#13B562] text-white"
                     : "bg-gray-100 dark:bg-[#2D2D33] text-gray-700 dark:text-[#788099] hover:bg-gray-200 dark:hover:bg-[#3D3D43]"
-                }`}
+                  }`}
               >
                 {range === "1" ? "24h" : `${range}d`}
               </button>
             ))}
           </div>
 
-          <div 
+          <div
             className="w-full"
-            style={{ 
+            style={{
               height: "400px",
               minHeight: "400px"
             }}
@@ -478,19 +476,19 @@ const MarketChartContent = () => {
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 lg:gap-4 justify-center mt-6 sm:mt-7 lg:mt-8">
             <Link href="/dashboard/express-exchange" className="w-full sm:w-auto lg:w-auto">
               <Button className="w-full sm:w-auto lg:w-auto border border-[#1D8751] rounded-full p-2.5 sm:p-2.5 lg:p-3 px-5 sm:px-5 lg:px-6 text-[#1D8751] flex gap-2 items-center justify-center cursor-pointer hover:bg-[#1D8751] hover:text-white transition-colors text-sm sm:text-base lg:text-base min-h-[44px] sm:min-h-0 lg:min-h-0">
-                <ArrowLeftRight className="w-4 h-4 sm:w-5 sm:h-5 lg:w-5 lg:h-5"/>
+                <ArrowLeftRight className="w-4 h-4 sm:w-5 sm:h-5 lg:w-5 lg:h-5" />
                 <span>Exchange</span>
               </Button>
             </Link>
             <Link href="/dashboard/p2p" className="w-full sm:w-auto lg:w-auto">
               <Button className="w-full sm:w-auto lg:w-auto border border-[#1D8751] rounded-full p-2.5 sm:p-2.5 lg:p-3 px-5 sm:px-5 lg:px-6 text-[#1D8751] flex gap-2 items-center justify-center cursor-pointer hover:bg-[#1D8751] hover:text-white transition-colors text-sm sm:text-base lg:text-base min-h-[44px] sm:min-h-0 lg:min-h-0">
-                <Users className="w-4 h-4 sm:w-5 sm:h-5 lg:w-5 lg:h-5"/>
+                <Users className="w-4 h-4 sm:w-5 sm:h-5 lg:w-5 lg:h-5" />
                 <span>P2P</span>
               </Button>
             </Link>
             <Link href="/dashboard/swap" className="w-full sm:w-auto lg:w-auto">
               <Button className="w-full sm:w-auto lg:w-auto border border-[#1D8751] rounded-full p-2.5 sm:p-2.5 lg:p-3 px-5 sm:px-5 lg:px-6 text-[#1D8751] flex gap-2 items-center justify-center cursor-pointer hover:bg-[#1D8751] hover:text-white transition-colors text-sm sm:text-base lg:text-base min-h-[44px] sm:min-h-0 lg:min-h-0">
-                <Repeat className="w-4 h-4 sm:w-5 sm:h-5 lg:w-5 lg:h-5"/>
+                <Repeat className="w-4 h-4 sm:w-5 sm:h-5 lg:w-5 lg:h-5" />
                 <span>Swap</span>
               </Button>
             </Link>
@@ -499,17 +497,17 @@ const MarketChartContent = () => {
 
         <div className="mt-8 sm:mt-10 lg:mt-12">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-4 sm:mb-6 lg:mb-8">
-              <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-[#051015] dark:text-white">
-                Omaya Transactions
-              </h2>
-            <Link 
+            <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-[#051015] dark:text-white">
+              Omaya Transactions
+            </h2>
+            <Link
               href="/market/live-transactions"
               className="text-[#13B562] hover:text-[#0f8f4d] font-medium text-sm sm:text-base flex items-center gap-1 transition-colors"
             >
               Live Transactions →
             </Link>
           </div>
-          <RatesTransactionHistory/>
+          <RatesTransactionHistory />
           {/* <MarketTable showFullLayout={false} /> */}
         </div>
       </div>

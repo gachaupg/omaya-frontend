@@ -49,7 +49,7 @@ const DefaultProfileIcon = () => (
 );
 
 interface StatsProps {
-  onSupportClick: () => void;
+  onSupportClick?: () => void;
 }
 
 const Stats = ({ onSupportClick }: StatsProps) => {
@@ -253,7 +253,7 @@ const Stats = ({ onSupportClick }: StatsProps) => {
           </div>
           <div
             className="p-2 rounded-full border border-[#1D8751] flex items-center justify-center cursor-pointer"
-            onClick={onSupportClick}
+            onClick={() => router.push("/contactUs/")}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -284,7 +284,7 @@ const Stats = ({ onSupportClick }: StatsProps) => {
           {formatCurrency(
             (summary?.total_approved_p2p_combined || 0) +
             (summary?.total_p2p_orders || 0),
-            "USDT"
+            "USD"
           )}
         </div>
         <div className="border-b dark:border-accent border-border mt-2" />

@@ -3151,7 +3151,7 @@ export default function WithdrawalForm({
               <input
                 type="text"
                 placeholder="Search assets..."
-                className="w-full text-gray-900 dark:text-white dark:bg-[#18181D] bg-white rounded-xl px-8 sm:px-10 py-1.5 sm:py-2 text-xs sm:text-sm focus:outline-none border dark:border-[#35353E] border-[#35353E] placeholder-gray-500 dark:placeholder-gray-400"
+                className="w-full text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 rounded-xl px-8 sm:px-10 py-1.5 sm:py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400"
                 value={assetSearchTerm}
                 onChange={(e) => setAssetSearchTerm(e.target.value)}
               />
@@ -3243,7 +3243,7 @@ export default function WithdrawalForm({
   };
 
   return (
-    <div className="flex flex-col dark:bg-[var(--bg-color)] pl-0 sm:pl-4 pr-2 sm:pr-0 mr-0 sm:mr-40 w-full sm:w-[calc(100%-12rem)]">
+    <div className="flex flex-col dark:bg-[var(--bg-color)] pl-0 sm:pl-4 pr-2 sm:pr-0 mr-0 sm:mr-40 w-full sm:max-w-5xl">
       {/* Crypto/Forex Toggle Buttons Removed */}
 
       {transactionMode === "forex" ? (
@@ -3269,7 +3269,7 @@ export default function WithdrawalForm({
             {/* Top Section - You Send and You Get in one card */}
             <div className="relative mb-2 sm:mb-3 md:mb-4">
               {/* Top Card Container */}
-              <div className="relative flex flex-col sm:flex-row border border-[#35353E] dark:border-[#35353E] rounded-2xl p-2 sm:p-3 md:p-4 gap-2 sm:gap-3 md:gap-0 overflow-visible bg-white dark:bg-[#18181D]">
+              <div className="relative flex flex-col sm:flex-row border border-[#35353E] dark:border-[#35353E] rounded-xl sm:rounded-2xl p-2 sm:p-3 md:p-4 gap-2 sm:gap-3 md:gap-0 overflow-visible bg-white dark:bg-[#18181D]">
                 {/* You Send Section */}
                 <div className="flex-1">
                   <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
@@ -3418,7 +3418,7 @@ export default function WithdrawalForm({
                   <div className="text-xs text-[#788099] dark:text-[#788099] mb-1 mt-[30px] sm:mt-[34px]">{t("express.youGet", "You Get")}</div>
                   <div className="relative" ref={assetDropdownRef}>
                     <div
-                      className={`w-full h-[48px] bg-transparent dark:bg-transparent text-[#35353e] dark:text-white rounded-2xl px-4 text-lg focus:outline-none border border-[#39394A] dark:border-[#35353E] hover:border-blue-400 dark:hover:border-blue-400 flex items-center justify-between cursor-pointer transition-colors duration-200`}
+                      className={`w-full h-[48px] bg-transparent dark:bg-transparent text-[#35353e] dark:text-white rounded-2xl px-3 sm:px-4 text-base sm:text-lg focus:outline-none border border-[#39394A] dark:border-[#35353E] hover:border-blue-400 dark:hover:border-blue-400 flex items-center justify-between cursor-pointer transition-colors duration-200`}
                       onClick={() => {
                         if (!isAssetDropdownOpen) {
                           updateAssetDropdownPosition();
@@ -3534,7 +3534,7 @@ export default function WithdrawalForm({
 
             {/* Bottom Section - You Receive and Bank/Payment Method in one card */}
             <div className="relative mb-2 sm:mb-3">
-              <div className="relative flex flex-col sm:flex-row border border-[#35353E] dark:border-[#35353E] rounded-2xl p-2 sm:p-3 md:p-4 gap-2 sm:gap-3 md:gap-4 overflow-visible bg-white dark:bg-[#18181D]">
+              <div className="relative flex flex-col sm:flex-row border border-[#35353E] dark:border-[#35353E] rounded-xl sm:rounded-2xl p-2 sm:p-3 md:p-4 gap-2 sm:gap-3 md:gap-4 overflow-visible bg-white dark:bg-[#18181D]">
                 {/* You Receive Section */}
                 <div className="flex-1">
                   <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
@@ -4154,7 +4154,7 @@ export default function WithdrawalForm({
                       selectedPaymentDetails.length === 0;
                   return (
                     <button
-                      className={`w-full text-[#35353e] dark:text-[#788099] text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${isHomePage
+                      className={`w-full text-white dark:text-white text-sm sm:text-base font-medium py-3 sm:py-2 rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 transition-colors min-h-[44px] sm:min-h-0 ${isHomePage
                         ? payAmount >= 15000 || getAmount >= 15000
                           ? "bg-gray-500 cursor-not-allowed"
                           : "bg-[#1D8751] hover:bg-[#166b3e] cursor-pointer"
@@ -4201,7 +4201,7 @@ export default function WithdrawalForm({
                       {isSubmitting ? (
                         <div className="flex items-center gap-2">
                           <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#A2A4A9FF] dark:border-[#35353E]"></div>
-                          <span>Getting Withdrawal Addresses...</span>
+                          <span>Submitting...</span>
                         </div>
                       ) : isTransactionSubmitted ? (
                         <div className="flex items-center gap-2">
@@ -4439,10 +4439,20 @@ export default function WithdrawalForm({
 
                 {/* Terms Checkbox */}
                 <div className="mt-4">
+                  <style dangerouslySetInnerHTML={{
+                    __html: `
+                      input[type="checkbox"].terms-checkbox-green:checked {
+                        background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-3.5-3.5a1 1 0 011.414-1.414L4.5 10.586l6.293-6.293a1 1 0 011.414 0z'/%3e%3c/svg%3e") !important;
+                        background-size: 14px 14px !important;
+                        background-repeat: no-repeat !important;
+                        background-position: center !important;
+                      }
+                    `
+                  }} />
                   <label className="flex items-start cursor-pointer">
                     <input
                       type="checkbox"
-                      className="mt-1 mr-3 w-5 h-5 text-[#1D8751] bg-[#1D1D23] dark:bg-[#35353E] border-[#A2A4A9FF] dark:border-[#35353E ] rounded-none focus:ring-[#1D8751] focus:ring-2 flex-shrink-0"
+                      className="terms-checkbox-green mt-1 mr-3 w-5 h-5 rounded border-2 border-[#1D8751] focus:ring-[#1D8751] appearance-none bg-transparent checked:bg-[#1D8751] checked:border-[#1D8751] flex-shrink-0"
                     />
                     <span className="text-[#35353e] dark:text-[#788099] text-sm">
                       I've read and agree to the{" "}
@@ -4492,7 +4502,7 @@ export default function WithdrawalForm({
                   </div>
                 )}
                 <button
-                  className={`w-full text-[#35353e] dark:text-[#788099] text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${isSubmitting || isInfoModalOpen || getAmount > 15000 || !withdrawalAddress
+                  className={`w-full text-white dark:text-white text-sm sm:text-base font-medium py-3 sm:py-2 rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 transition-colors min-h-[44px] sm:min-h-0 ${isSubmitting || isInfoModalOpen || getAmount > 15000 || !withdrawalAddress
                     ? "bg-gray-500 cursor-not-allowed"
                     : "bg-[#1D8751] hover:bg-[#166b3e]"
                     }`}

@@ -30,6 +30,7 @@ import {
   LineChart,
   Wallet,
   RefreshCcw,
+  Trophy,
 } from "lucide-react";
 import FloatingParticles from "@/components/ui/floating-particles";
 
@@ -175,6 +176,49 @@ const AboutPage = () => {
       icon: Globe,
       title: "Global Reach",
       description: "Trade from anywhere in the world with support for multiple currencies and payment methods.",
+    },
+  ];
+
+  const journeySteps = [
+    {
+      year: "2020",
+      quarter: "Q1",
+      title: "Foundation",
+      description: "OMAYA Exchange was founded by crypto pioneers and fintech experts with a vision to revolutionize digital asset trading.",
+      icon: Rocket,
+      pills: ["10 Cryptocurrencies", "Beta Launch", "1,000+ Users"],
+      image: "https://res.cloudinary.com/pitz/image/upload/v1764575266/Container_9_e1cnzo.png",
+      align: "right",
+    },
+    {
+      year: "2021",
+      quarter: "Q3",
+      title: "Rapid Growth",
+      description: "Expanded to 50 countries and reached 10,000 active users with enhanced trading features and mobile app launch.",
+      icon: TrendingUp,
+      pills: ["50 Countries", "$100M+ Volume", "10K+ Users"],
+      image: "https://res.cloudinary.com/pitz/image/upload/v1764575158/Container_5_aj1cpq.png",
+      align: "left",
+    },
+    {
+      year: "2022",
+      quarter: "Q2",
+      title: "Global Expansion",
+      description: "Reached 150+ countries with 24/7 multilingual support and introduced P2P trading and staking features.",
+      icon: Globe,
+      pills: ["150+ Countries", "200+ Coins", "15 Languages"],
+      image: "https://res.cloudinary.com/pitz/image/upload/v1764575266/Container_8_c6iouu.png",
+      align: "right",
+    },
+    {
+      year: "2023",
+      quarter: "Q4",
+      title: "Industry Recognition",
+      description: "Won Best Crypto Exchange Award and achieved ISO 27001 certification for information security management.",
+      icon: Trophy,
+      pills: ["50K+ Traders", "ISO Certified", "Best Exchange"],
+      image: "https://res.cloudinary.com/pitz/image/upload/v1764575156/Container_7_ffwiyh.png",
+      align: "left",
     },
   ];
 
@@ -381,7 +425,7 @@ const AboutPage = () => {
                   <p className="text-sm text-gray-600 dark:text-[#788099]">For Everyone</p>
                 </div>
                 <div className="bg-gray-50 dark:bg-[#18181D] rounded-xl p-4 border border-border dark:border-accent">
-                  <h3 className="text-xl font-bold text-[#1D8751] mb-2">Secure</h3> 
+                  <h3 className="text-xl font-bold text-[#1D8751] mb-2">Secure</h3>
                   <p className="text-sm text-gray-600 dark:text-[#788099]">Bank-Grade</p>
                 </div>
                 <div className="bg-gray-50 dark:bg-[#18181D] rounded-xl p-4 border border-border dark:border-accent">
@@ -590,180 +634,91 @@ const AboutPage = () => {
           </div>
 
           {/* Bento Grid Timeline */}
-          <div className="relative">
-            {/* Center vertical line */}
-            <div className="absolute left-1/2 top-0 bottom-0 w-[2px] bg-gray-300 dark:bg-[#25252F] transform -translate-x-1/2 hidden md:block" />
+        <div className="relative">
+          {/* Center vertical line */}
+          <div className="absolute left-1/2 top-0 bottom-0 w-[2px] bg-gray-300 dark:bg-[#25252F] transform -translate-x-1/2 hidden md:block" />
 
-            {/* 2020 Row */}
-            <div className="grid md:grid-cols-2 gap-6 mb-6 relative">
-              {/* Left - Text Card */}
-              <div className="bg-white dark:bg-[#14141A] border border-gray-200 dark:border-[#1E1E26] rounded-3xl p-8 flex flex-col min-h-[320px]">
-                <div className="flex items-center justify-start gap-3 mb-4">
-                  <div className="flex flex-col leading-none">
-                    <span className="text-4xl md:text-5xl font-bold text-[#1D8751]">2020</span>
-                    <span className="text-xs md:text-sm text-gray-600 dark:text-gray-500 mt-1">
-                      Q1
-                    </span>
-                  </div>
-                  <div className="w-10 h-10 rounded-xl bg-[#1D8751] flex items-center justify-center">
-                    <Target className="w-5 h-5 text-white" />
-                  </div>
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">Foundation</h3>
-                <p className="text-gray-700 dark:text-gray-400 text-sm leading-relaxed mb-6 flex-1">
-                  OMAYA Exchange was founded by crypto pioneers and fintech experts with a vision to revolutionize digital asset trading.
-                </p>
-                <div className="flex flex-wrap gap-2 justify-center">
-                  <span className="px-4 py-2 rounded-full bg-[#1D8751] text-white text-xs font-medium">10 Cryptocurrencies</span>
-                  <span className="px-4 py-2 rounded-full border border-gray-300 dark:border-[#2A2A35] text-gray-900 dark:text-white text-xs font-medium">Beta Launch</span>
-                  <span className="px-4 py-2 rounded-full bg-[#1D8751] text-white text-xs font-medium">1,000+ Users</span>
-                </div>
-              </div>
-
+          {/* Timeline Rows - Use journeySteps.map for all steps */}
+          {journeySteps.map((step, index) => (
+            <div key={step.year} className="grid md:grid-cols-2 gap-6 mb-6 relative">
               {/* Center dot */}
               <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-[#1D8751] z-10 hidden md:block" />
-
-              {/* Right - Image Card - NO OVERLAY BADGE (image already has it) */}
-              <div className="relative rounded-3xl overflow-hidden min-h-[320px]">
-                <Image
-                  src="https://res.cloudinary.com/pitz/image/upload/v1764575266/Container_9_e1cnzo.png"
-                  alt="OMAYA Exchange foundation"
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                />
-                {/* NO BADGE HERE - image already contains year badge */}
-              </div>
+              {step.align === "right" ? (
+                <>
+                  {/* Left - Text Card (Aligned Right) */}
+                  <div className="group bg-white dark:bg-linear-to-b dark:from-[#18181D] dark:to-[#0F0F13] border border-border dark:border-accent rounded-2xl p-7 flex flex-col min-h-[200px] max-h-80 items-end text-right transition-all duration-300">
+                    <div className="grid grid-cols-[1fr_auto] gap-x-3 mb-3 items-center justify-items-end">
+                      <span className="text-4xl md:text-5xl font-bold bg-linear-to-b from-[#1D8751] to-[#309A64] group-hover:from-[#00C950] group-hover:to-[#00BC7D] bg-clip-text text-transparent transition-all duration-300 leading-none">
+                        {step.year}
+                      </span>
+                      <div className="row-span-2 w-15 h-15 rounded-2xl bg-linear-to-b from-[#1D8751] to-[#309A64] group-hover:from-[#00C950] group-hover:to-[#00BC7D] flex items-center justify-center transition-all duration-300 shadow-md">
+                        <step.icon className="w-7 h-7 text-white" />
+                      </div>
+                      <span className="text-muted-foreground text-sm leading-none">{step.quarter}</span>
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">{step.title}</h3>
+                    <p className="text-muted-foreground text-sm leading-relaxed mb-6 flex-1 max-w-md">
+                      {step.description}
+                    </p>
+                    <div className="flex flex-wrap gap-2 justify-end">
+                      {step.pills.map((pill) => (
+                        <span key={pill} className="px-4 py-2 rounded-full bg-linear-to-b from-[#1D8751] to-[#309A64] group-hover:from-[#00C950] group-hover:to-[#00BC7D] text-white text-xs font-medium transition-all duration-300">
+                          {pill}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  {/* Right - Image Card */}
+                  <div className="relative rounded-3xl overflow-hidden min-h-[320px]">
+                    <Image
+                      src={step.image}
+                      alt={step.title}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, 50vw"
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* Left - Image Card */}
+                  <div className="relative rounded-3xl overflow-hidden min-h-[320px] order-2 md:order-1">
+                    <Image
+                      src={step.image}
+                      alt={step.title}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, 50vw"
+                    />
+                  </div>
+                  {/* Right - Text Card */}
+                  <div className="group bg-white dark:bg-linear-to-b dark:from-[#18181D] dark:to-[#0F0F13] border border-border dark:border-accent rounded-2xl p-7 flex flex-col min-h-[200px] max-h-80 items-start text-left transition-all duration-300 order-1 md:order-2">
+                    <div className="grid grid-cols-[auto_1fr] gap-x-3 mb-3 items-center justify-items-start">
+                      <div className="row-span-2 w-15 h-15 rounded-2xl bg-linear-to-b from-[#1D8751] to-[#309A64] group-hover:from-[#00C950] group-hover:to-[#00BC7D] flex items-center justify-center transition-all duration-300 shadow-md">
+                        <step.icon className="w-7 h-7 text-white" />
+                      </div>
+                      <span className="text-4xl md:text-5xl font-bold bg-linear-to-b from-[#1D8751] to-[#309A64] group-hover:from-[#00C950] group-hover:to-[#00BC7D] bg-clip-text text-transparent transition-all duration-300 leading-none">
+                        {step.year}
+                      </span>
+                      <span className="text-muted-foreground text-sm leading-none">{step.quarter}</span>
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">{step.title}</h3>
+                    <p className="text-muted-foreground text-sm leading-relaxed mb-6 flex-1 max-w-md">
+                      {step.description}
+                    </p>
+                    <div className="flex flex-wrap gap-2 justify-start">
+                      {step.pills.map((pill) => (
+                        <span key={pill} className="px-4 py-2 rounded-full bg-linear-to-b from-[#1D8751] to-[#309A64] group-hover:from-[#00C950] group-hover:to-[#00BC7D] text-white text-xs font-medium transition-all duration-300">
+                          {pill}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
-
-            {/* 2021 Row */}
-            <div className="grid md:grid-cols-2 gap-6 mb-6 relative">
-              {/* Left - Image Card - NO OVERLAY BADGE */}
-              <div className="relative rounded-3xl overflow-hidden min-h-[320px] order-2 md:order-1">
-                <Image
-                  src="https://res.cloudinary.com/pitz/image/upload/v1764575158/Container_5_aj1cpq.png"
-                  alt="Global growth"
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                />
-                {/* NO BADGE HERE - image already contains year badge */}
-              </div>
-
-              {/* Center dot */}
-              <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-[#1D8751] z-10 hidden md:block" />
-
-              {/* Right - Text Card */}
-              <div className="bg-white dark:bg-[#14141A] border border-gray-200 dark:border-[#1E1E26] rounded-3xl p-8 flex flex-col min-h-[320px] order-1 md:order-2">
-                <div className="flex items-center justify-start gap-3 mb-4">
-                  <img
-                    src="https://res.cloudinary.com/pitz/image/upload/v1765800834/Container_3_quuszd.png"
-                    alt=""
-                    className="w-20 h-20"
-                  />
-                  <div className="flex flex-col leading-none">
-                    <span className="text-4xl md:text-5xl font-bold text-[#1D8751]">2021</span>
-                    <span className="text-xs md:text-sm text-gray-600 dark:text-gray-500 mt-1">
-                      Q3
-                    </span>
-                  </div>
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">Rapid Growth</h3>
-                <p className="text-gray-700 dark:text-gray-400 text-sm leading-relaxed mb-6 flex-1">
-                  Expanded to 50 countries and reached 10,000 active users with enhanced trading features and mobile app launch.
-                </p>
-                <div className="flex flex-wrap gap-2 justify-center">
-                  <span className="px-4 py-2 rounded-full bg-[#1D8751] text-white text-xs font-medium">50 Countries</span>
-                  <span className="px-4 py-2 rounded-full border border-gray-300 dark:border-[#2A2A35] text-gray-900 dark:text-white text-xs font-medium">$100M+ Volume</span>
-                  <span className="px-4 py-2 rounded-full bg-[#1D8751] text-white text-xs font-medium">10K+ Users</span>
-                </div>
-              </div>
-            </div>
-
-            {/* 2022 Row */}
-            <div className="grid md:grid-cols-2 gap-6 mb-6 relative">
-              {/* Left - Text Card */}
-              <div className="bg-white dark:bg-[#14141A] border border-gray-200 dark:border-[#1E1E26] rounded-3xl p-8 flex flex-col min-h-[320px]">
-                <div className="flex items-center justify-start gap-3 mb-4">
-                  <div className="flex flex-col leading-none">
-                    <span className="text-4xl md:text-5xl font-bold text-[#1D8751]">2022</span>
-                    <span className="text-xs md:text-sm text-gray-600 dark:text-gray-500 mt-1">
-                      Q2
-                    </span>
-                  </div>
-                  <div className="w-10 h-10 rounded-xl bg-[#1D8751] flex items-center justify-center">
-                    <Globe className="w-5 h-5 text-white" />
-                  </div>
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">Global Expansion</h3>
-                <p className="text-gray-700 dark:text-gray-400 text-sm leading-relaxed mb-6 flex-1">
-                  Reached 150+ countries with 24/7 multilingual support and introduced P2P trading and staking features.
-                </p>
-                <div className="flex flex-wrap gap-2 justify-center">
-                  <span className="px-4 py-2 rounded-full bg-[#1D8751] text-white text-xs font-medium">150+ Countries</span>
-                  <span className="px-4 py-2 rounded-full border border-gray-300 dark:border-[#2A2A35] text-gray-900 dark:text-white text-xs font-medium">200+ Coins</span>
-                  <span className="px-4 py-2 rounded-full bg-[#1D8751] text-white text-xs font-medium">15 Languages</span>
-                </div>
-              </div>
-
-              {/* Center dot */}
-              <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-[#1D8751] z-10 hidden md:block" />
-
-              {/* Right - Image Card - NO OVERLAY BADGE */}
-              <div className="relative rounded-3xl overflow-hidden min-h-[320px]">
-                <Image
-                  src="https://res.cloudinary.com/pitz/image/upload/v1764575156/Container_7_ffwiyh.png"
-                  alt="Blockchain expansion"
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                />
-                {/* NO BADGE HERE - image already contains year badge */}
-              </div>
-            </div>
-
-            {/* 2023 Row */}
-            <div className="grid md:grid-cols-2 gap-6 relative">
-              {/* Left - Image Card - NO OVERLAY BADGE */}
-              <div className="relative rounded-3xl overflow-hidden min-h-[320px] order-2 md:order-1">
-                <Image
-                  src="https://res.cloudinary.com/pitz/image/upload/v1764575266/Container_8_c6iouu.png"
-                  alt="Industry recognition"
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                />
-                {/* NO BADGE HERE - image already contains year badge */}
-              </div>
-
-              {/* Center dot */}
-              <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-[#1D8751] z-10 hidden md:block" />
-
-              {/* Right - Text Card */}
-              <div className="bg-white dark:bg-[#14141A] border border-gray-200 dark:border-[#1E1E26] rounded-3xl p-8 flex flex-col min-h-[320px] order-1 md:order-2">
-                <div className="flex items-center justify-start gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-xl bg-[#1D8751] flex items-center justify-center">
-                    <Award className="w-5 h-5 text-white" />
-                  </div>
-                  <div className="flex flex-col leading-none">
-                    <span className="text-4xl md:text-5xl font-bold text-[#1D8751]">2023</span>
-                    <span className="text-xs md:text-sm text-gray-600 dark:text-gray-500 mt-1">
-                      Q4
-                    </span>
-                  </div>
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">Industry Recognition</h3>
-                <p className="text-gray-700 dark:text-gray-400 text-sm leading-relaxed mb-6 flex-1">
-                  Won Best Crypto Exchange Award and achieved ISO 27001 certification for information security management.
-                </p>
-                <div className="flex flex-wrap gap-2 justify-center">
-                  <span className="px-4 py-2 rounded-full bg-[#1D8751] text-white text-xs font-medium">50K+ Traders</span>
-                  <span className="px-4 py-2 rounded-full border border-gray-300 dark:border-[#2A2A35] text-gray-900 dark:text-white text-xs font-medium">ISO Certified</span>
-                  <span className="px-4 py-2 rounded-full bg-[#1D8751] text-white text-xs font-medium">Best Exchange</span>
-                </div>
-              </div>
-            </div>
-          </div>
+          ))}
+        </div>
         </div>
       </section>
       {/* Achievements Section - Figma Match */}
@@ -1280,6 +1235,7 @@ const AboutPage = () => {
       <section className="py-16 px-4 bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-black dark:via-gray-900 dark:to-black relative overflow-hidden">
         {/* Glowing green light effect from top-left */}
         <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-br from-[#1D8751]/10 via-[#22c55e]/5 to-transparent dark:from-[#1D8751]/20 dark:via-[#22c55e]/10 dark:to-transparent rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+        
 
         <div className="max-w-4xl mx-auto relative z-10">
           <div className="text-center">

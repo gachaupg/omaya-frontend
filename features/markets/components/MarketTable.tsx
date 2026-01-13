@@ -745,7 +745,7 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
         showFullLayout ? "bg-[#EEF1F4] dark:bg-background min-h-screen py-4 sm:py-6 lg:py-8" : ""
       }`}
     >
-      <div className={showFullLayout ? "max-w-[1400px] mx-auto px-3 sm:px-4 lg:px-6" : ""}>
+      <div className={showFullLayout ? "max-w-[1400px] mx-auto" : ""}>
         {showFullLayout ? (
           <>
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-3 sm:gap-0">

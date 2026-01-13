@@ -84,7 +84,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
 
 
   const [type, setType] = useState<"buy" | "sell">(queryType || filterType);
-  const [asset] = useState("Tether USDT TRC20");
+  const [asset] = useState("USDT Tether");
   const [commission, setCommission] = useState("1.00");
   const [amount, setAmount] = useState("");
   const [orderMin, setOrderMin] = useState("");
@@ -389,7 +389,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                bg-card border border-gray-200 dark:border-[#35353E] rounded-[19px] px-2 py-2 min-h-[40px]"
                 >
                   <img
-                    src="https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png"
+                    src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
                     alt="USDT"
                     className="w-6 h-6 rounded-full"
                   />
@@ -484,14 +484,30 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                 <label className="text-xs text-gray-600 dark:text-[#788099] mb-1 flex justify-between items-center">
                   <span>I want to {type.charAt(0).toUpperCase() + type.slice(1)}</span>
                   {type === "sell" && (
-                    <span className="text-xs text-[#1D8751] dark:text-[#1D8751]">
-                      Available: {availableBalance.toFixed(2)} USDT
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-[#1D8751] dark:text-[#1D8751]">
+                        Available: {availableBalance.toFixed(2)} USDT
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (availableBalance > 0) {
+                            setAmount(availableBalance.toFixed(2));
+                            // Clear any existing amount errors when using max
+                            setErrors((prev) => ({ ...prev, amount: undefined }));
+                          }
+                        }}
+                        className="text-xs px-2 py-0.5 rounded bg-[#1D8751] text-white hover:bg-[#166b3e] transition-colors font-medium"
+                        title={`Set maximum available balance: ${availableBalance.toFixed(2)} USDT`}
+                      >
+                        Max
+                      </button>
+                    </div>
                   )}
                 </label>
                 <div className="flex items-center bg-card border border-gray-200 dark:border-[#35353E] rounded-[19px] px-2 py-2 min-h-[40px]">
                   <img
-                    src="https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png"
+                    src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
                     alt="USDT"
                     className="w-6 h-6 rounded-full mr-2"
                   />

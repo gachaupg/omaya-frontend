@@ -54,10 +54,12 @@ interface ExchangingProps {
       estimated_amount?: number;
       changenow_id?: string;
     };
+    createdAt?: number;
   };
+  isHomePage?: boolean;
 }
 
-export default function Exchanging({ transactionData }: ExchangingProps) {
+export default function Exchanging({ transactionData, isHomePage = false }: ExchangingProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
@@ -69,7 +71,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
   const [wsError, setWsError] = useState<string | null>(null);
   const [connectionAttempts, setConnectionAttempts] = useState<number>(0);
 
-  // Timer state - 15 minutes in seconds
+  // Timer state - 15 minutes in seconds (will be updated when transaction data is loaded)
   const [timeRemaining, setTimeRemaining] = useState<number>(15 * 60);
   const [timerActive, setTimerActive] = useState<boolean>(true);
 
@@ -245,12 +247,39 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
   // Use persisted data if no transactionData is provided (page reload scenario)
   const effectiveTransactionData = transactionData || persistedTransactionData;
 
-  // Store transaction data in localStorage when it's provided
+  // Initialize timer based on transaction creation time
+  useEffect(() => {
+    if (effectiveTransactionData?.createdAt && typeof effectiveTransactionData.createdAt === 'number') {
+      const TIMER_DURATION = 15 * 60 * 1000; // 15 minutes in milliseconds
+      const elapsed = Date.now() - effectiveTransactionData.createdAt;
+      const remaining = Math.max(0, TIMER_DURATION - elapsed);
+      const remainingSeconds = Math.floor(remaining / 1000);
+      setTimeRemaining(remainingSeconds);
+      
+      // If timer has already expired, set to 0 and disable timer
+      if (remainingSeconds <= 0) {
+        setTimerActive(false);
+      } else {
+        setTimerActive(true);
+      }
+    } else {
+      // If no creation time, start with full 15 minutes
+      setTimeRemaining(15 * 60);
+      setTimerActive(true);
+    }
+  }, [effectiveTransactionData?.createdAt, effectiveTransactionData?.transactionId]);
+
+  // Store transaction data in localStorage when it's provided (include createdAt if missing)
   useEffect(() => {
     if (transactionData && transactionData.transactionId) {
+      // Ensure createdAt is stored if not already present
+      const dataToStore = {
+        ...transactionData,
+        createdAt: transactionData.createdAt || Date.now(),
+      };
       localStorage.setItem(
         "express_transaction_data",
-        JSON.stringify(transactionData)
+        JSON.stringify(dataToStore)
       );
     }
   }, [transactionData]);
@@ -732,17 +761,17 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
   }
 
   return (
-    <div className={`w-full min-h-screen flex flex-col items-center pt-2`}>
+    <div className={`w-full ${isHomePage ? 'min-h-0' : 'min-h-screen'} flex flex-col items-center ${isHomePage ? 'pt-0 px-2 sm:px-4' : 'pt-2'}`}>
       {/* Timer Banner */}
       {timerActive && timeRemaining > 0 && (
         <div
-          className={`w-full max-w-4xl mb-4 ${
+          className={`w-full ${isHomePage ? 'mb-2 sm:mb-3' : 'max-w-4xl mb-4'} ${
             timeRemaining <= 60
               ? "bg-red-500/20 border-red-500"
               : timeRemaining <= 300
                 ? "bg-orange-500/20 border-orange-500"
                 : "bg-[#1D8751]/20 border-[#1D8751]"
-          } border-2 rounded-2xl p-4 flex items-center justify-between`}
+          } border-2 rounded-2xl ${isHomePage ? 'p-2 sm:p-3' : 'p-4'} flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2`}
         >
           <div className="flex items-center gap-3">
             <svg
@@ -784,13 +813,13 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
             </div>
           </div>
           <div
-            className={`text-2xl font-bold ${
+            className={`${isHomePage ? 'text-lg sm:text-xl' : 'text-2xl'} font-bold ${
               timeRemaining <= 60
                 ? "text-red-500"
                 : timeRemaining <= 300
                   ? "text-orange-500"
                   : "text-[#1D8751]"
-            }`}
+            } self-start sm:self-auto`}
           >
             {formatTime(timeRemaining)}
           </div>
@@ -803,9 +832,9 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
           isDark
             ? "bg-[#23232B]  border:[#E8EFF5] dark:border-[#35353E]"
             : "bg-white border-gray-200"
-        } border-2 rounded-2xl p-4 shadow-lg w-full max-w-4xl mb-4 min-h-[180px]`}
+        } border-2 rounded-2xl ${isHomePage ? 'p-2 sm:p-3' : 'p-4'} shadow-lg w-full ${isHomePage ? '' : 'max-w-4xl'} ${isHomePage ? 'mb-2 sm:mb-3' : 'mb-4'} ${isHomePage ? 'min-h-[120px] sm:min-h-[140px]' : 'min-h-[180px]'} overflow-hidden`}
       >
-        <div className="flex-1 flex flex-col justify-between py-2 pr-2">
+        <div className={`flex-1 flex flex-col justify-between ${isHomePage ? 'py-1 sm:py-2 pr-0 sm:pr-2' : 'py-2 pr-2'} min-w-0`}>
           <div>
             <div
               className={`${
@@ -1061,26 +1090,26 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
             )}
           </div>
         </div>
-        <div className="flex-shrink-0 ml-0 md:ml-6 flex items-center justify-center py-2">
+        <div className={`flex-shrink-0 ${isHomePage ? 'ml-0 mt-2 md:mt-0 md:ml-3' : 'ml-0 md:ml-6'} flex items-center justify-center ${isHomePage ? 'py-1 sm:py-2' : 'py-2'}`}>
           {/* QR code */}
-          <div className="w-36 h-36 bg-white rounded-lg flex items-center justify-center">
+          <div className={`${isHomePage ? 'w-24 h-24 sm:w-28 sm:h-28' : 'w-36 h-36'} bg-white rounded-lg flex items-center justify-center flex-shrink-0`}>
             <img
-              src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=${isHomePage ? '112' : '180'}x${isHomePage ? '112' : '180'}&data=${
                 effectiveTransactionData?.type === "deposit" &&
                 effectiveTransactionData?.paymentDetail
                   ? effectiveTransactionData.paymentDetail.account_number
                   : effectiveTransactionData?.walletAddress || ""
               }`}
               alt="QR Code"
-              className="w-32 h-32"
+              className={isHomePage ? "w-20 h-20 sm:w-24 sm:h-24" : "w-32 h-32"}
             />
           </div>
         </div>
       </div>
 
-      <div className="flex items-center justify-between w-full max-w-4xl mb-4 relative">
+      <div className={`flex items-center justify-between w-full ${isHomePage ? '' : 'max-w-4xl'} ${isHomePage ? 'mb-2 sm:mb-3 px-1' : 'mb-4'} relative overflow-x-auto`}>
         {/* Connecting Lines */}
-        <div className="absolute top-5 left-[12.5%] right-[12.5%] h-0.5 z-0">
+        <div className={`absolute ${isHomePage ? 'top-3 sm:top-4' : 'top-5'} left-[12.5%] right-[12.5%] h-0.5 z-0 hidden sm:block`}>
           <div
             className={`h-0.5 transition-all duration-500 ${
               currentStatus === "completed" || currentStatus === "finished"
@@ -1100,9 +1129,9 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
         </div>
 
         {/* Step 1: Awaiting Deposit */}
-        <div className="flex flex-col items-center flex-1 relative z-10">
+        <div className={`flex flex-col items-center ${isHomePage ? 'flex-shrink-0 min-w-[70px] sm:min-w-[80px]' : 'flex-1'} relative z-10`}>
           <div
-            className={`w-10 h-10 rounded-full flex items-center justify-center mb-1 border-4 ${
+            className={`${isHomePage ? 'w-7 h-7 sm:w-8 sm:h-8' : 'w-10 h-10'} rounded-full flex items-center justify-center ${isHomePage ? 'mb-0.5 sm:mb-1' : 'mb-1'} border-4 ${
               currentStatus === "pending" ||
               currentStatus === "waiting" ||
               !shouldUseWebSocket
@@ -1212,9 +1241,9 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
           </div>
         </div>
         {/* Step 2: Confirming */}
-        <div className="flex flex-col items-center flex-1 relative z-10">
+        <div className={`flex flex-col items-center ${isHomePage ? 'flex-shrink-0 min-w-[70px] sm:min-w-[80px]' : 'flex-1'} relative z-10`}>
           <div
-            className={`w-10 h-10 rounded-full flex items-center justify-center mb-1 border-4 ${
+            className={`${isHomePage ? 'w-7 h-7 sm:w-8 sm:h-8' : 'w-10 h-10'} rounded-full flex items-center justify-center ${isHomePage ? 'mb-0.5 sm:mb-1' : 'mb-1'} border-4 ${
               currentStatus === "confirming"
                 ? "bg-[#FF9500] border-[#FF95001A]"
                 : currentStatus === "exchanging" ||
@@ -1258,9 +1287,9 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               />
             </svg>
           </div>
-          <div className="flex items-center gap-1">
+          <div className={`flex items-center gap-1 ${isHomePage ? 'flex-wrap justify-center' : ''}`}>
             <span
-              className={`font-semibold text-base ${
+              className={`font-semibold ${isHomePage ? 'text-xs sm:text-sm' : 'text-base'} ${
                 currentStatus === "confirming"
                   ? "text-[#FF9500]"
                   : currentStatus === "exchanging" ||
@@ -1308,9 +1337,9 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
           </div>
         </div>
         {/* Step 3: Exchanging */}
-        <div className="flex flex-col items-center flex-1 relative z-10">
+        <div className={`flex flex-col items-center ${isHomePage ? 'flex-shrink-0 min-w-[70px] sm:min-w-[80px]' : 'flex-1'} relative z-10`}>
           <div
-            className={`w-10 h-10 rounded-full flex items-center justify-center mb-1 border-4 ${
+            className={`${isHomePage ? 'w-7 h-7 sm:w-8 sm:h-8' : 'w-10 h-10'} rounded-full flex items-center justify-center ${isHomePage ? 'mb-0.5 sm:mb-1' : 'mb-1'} border-4 ${
               currentStatus === "exchanging"
                 ? "bg-[#FF9500] border-[#FF95001A]"
                 : currentStatus === "sending" ||
@@ -1398,9 +1427,9 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
           </div>
         </div>
         {/* Step 4: Sending to you */}
-        <div className="flex flex-col items-center flex-1 relative z-10">
+        <div className={`flex flex-col items-center ${isHomePage ? 'flex-shrink-0 min-w-[70px] sm:min-w-[80px]' : 'flex-1'} relative z-10`}>
           <div
-            className={`w-10 h-10 rounded-full flex items-center justify-center mb-1 border-4 ${
+            className={`${isHomePage ? 'w-7 h-7 sm:w-8 sm:h-8' : 'w-10 h-10'} rounded-full flex items-center justify-center ${isHomePage ? 'mb-0.5 sm:mb-1' : 'mb-1'} border-4 ${
               currentStatus === "sending"
                 ? "bg-[#FF9500] border-[#FF95001A]"
                 : currentStatus === "completed" || currentStatus === "finished"
@@ -1508,30 +1537,30 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
       <div
         className={`${
           isDark ? "bg-[#23232B] border-[#35353E]" : "bg-white border-gray-200"
-        } border-2 rounded-2xl p-6 shadow-lg w-full max-w-4xl mb-4`}
+        } border-2 rounded-2xl ${isHomePage ? 'p-3 sm:p-4' : 'p-6'} shadow-lg w-full ${isHomePage ? '' : 'max-w-4xl'} ${isHomePage ? 'mb-2 sm:mb-3' : 'mb-4'} overflow-hidden`}
       >
         {/* Title */}
         <div
           className={`${
             isDark ? "text-white" : "text-gray-900"
-          } text-2xl font-semibold mb-4`}
+          } ${isHomePage ? 'text-lg sm:text-xl' : 'text-2xl'} font-semibold ${isHomePage ? 'mb-2 sm:mb-3' : 'mb-4'}`}
         >
           Transaction Details
         </div>
         {/* Transaction ID Row */}
-        <div className="flex items-center justify-between mb-1">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mb-1 min-w-0">
           <div
             className={`${
               isDark ? "text-[#7B7B7B]" : "text-gray-600"
-            } text-base font-medium`}
+            } text-sm sm:text-base font-medium flex-shrink-0`}
           >
             Transaction ID
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 min-w-0 flex-1 sm:flex-initial sm:justify-end">
             <span
               className={`${
                 isDark ? "text-white" : "text-gray-900"
-              } text-base font-mono font-semibold`}
+              } text-xs sm:text-sm md:text-base font-mono font-semibold truncate min-w-0`}
             >
               {liveTransactionId || effectiveTransactionData?.transactionId}
             </span>
@@ -1541,7 +1570,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                 effectiveTransactionData?.transactionId ||
                 ""
               }
-              className="text-[#FFA200] hover:text-[#FFB833] transition-colors"
+              className="text-[#FFA200] hover:text-[#FFB833] transition-colors flex-shrink-0"
               showIcon={true}
             />
           </div>
@@ -1557,42 +1586,42 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
           <div
             className={`${
               isDark ? "text-[#7B7B7B]" : "text-gray-600"
-            } text-base font-medium`}
+            } text-sm sm:text-base font-medium`}
           >
             From
           </div>
           <div
             className={`${
               isDark ? "text-[#7B7B7B]" : "text-gray-600"
-            } text-base font-medium`}
+            } text-sm sm:text-base font-medium`}
           >
             To
           </div>
         </div>
         {/* From/To Content Row */}
-        <div className="flex items-center justify-between mt-2">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-2 mt-2 min-w-0">
           {/* From */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 min-w-0 flex-1 sm:flex-initial">
             {effectiveTransactionData?.type === "deposit" &&
             effectiveTransactionData?.paymentDetail ? (
               <>
                 <img
                   src="https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
                   alt={effectiveTransactionData.paymentDetail.provider_name}
-                  className="w-8 h-8 rounded-full"
+                  className="w-8 h-8 rounded-full flex-shrink-0"
                 />
-                <div>
+                <div className="min-w-0 flex-1">
                   <div
                     className={`${
                       isDark ? "text-white" : "text-gray-900"
-                    } text-base font-semibold`}
+                    } text-sm sm:text-base font-semibold truncate`}
                   >
                     {effectiveTransactionData.paymentDetail.provider_name}
                   </div>
                   <div
                     className={`${
                       isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                    } text-sm font-mono`}
+                    } text-xs sm:text-sm font-mono truncate`}
                   >
                     {effectiveTransactionData.paymentDetail.account_number}
                   </div>
@@ -1616,17 +1645,17 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                         ? "USD"
                         : "USDT")
                   }
-                  className="w-8 h-8 rounded-full"
+                  className="w-8 h-8 rounded-full flex-shrink-0"
                   onError={(e) => {
                     e.currentTarget.src =
                       "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
                   }}
                 />
-                <div>
+                <div className="min-w-0 flex-1">
                   <div
                     className={`${
                       isDark ? "text-white" : "text-gray-900"
-                    } text-base font-semibold`}
+                    } text-sm sm:text-base font-semibold truncate`}
                   >
                     {effectiveTransactionData?.asset?.ticker ||
                       effectiveTransactionData?.asset?.symbol ||
@@ -1640,7 +1669,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                   <div
                     className={`${
                       isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                    } text-sm font-mono`}
+                    } text-xs sm:text-sm font-mono break-all`}
                   >
                     {effectiveTransactionData?.walletAddress ||
                       "TQn9Y2khEsLJW1ChVWFM...RDow5oRP7bX"}
@@ -1650,7 +1679,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
             )}
           </div>
           {/* To */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 min-w-0 flex-1 sm:flex-initial sm:justify-end">
             {effectiveTransactionData?.type === "deposit" ? (
               <>
                 <img
@@ -1669,17 +1698,17 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                         ? "USD"
                         : "USDT")
                   }
-                  className="w-8 h-8 rounded-full"
+                  className="w-8 h-8 rounded-full flex-shrink-0"
                   onError={(e) => {
                     e.currentTarget.src =
                       "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
                   }}
                 />
-                <div className="text-right">
+                <div className="text-left sm:text-right min-w-0 flex-1">
                   <div
                     className={`${
                       isDark ? "text-white" : "text-gray-900"
-                    } text-base font-semibold inline-block align-middle`}
+                    } text-sm sm:text-base font-semibold truncate`}
                   >
                     {effectiveTransactionData?.asset?.ticker ||
                       effectiveTransactionData?.asset?.symbol ||
@@ -1690,17 +1719,19 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                           ? "USD"
                           : "USDT")}
                   </div>
-                  <span
-                    className={`${
-                      isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                    } text-base font-normal ml-1 align-middle`}
-                  >
-                    {effectiveTransactionData?.asset?.description || ""}
-                  </span>
+                  {effectiveTransactionData?.asset?.description && (
+                    <span
+                      className={`${
+                        isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                      } text-xs sm:text-sm font-normal block sm:inline sm:ml-1 truncate`}
+                    >
+                      {effectiveTransactionData?.asset?.description}
+                    </span>
+                  )}
                   <div
                     className={`${
                       isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                    } text-sm font-mono break-all`}
+                    } text-xs sm:text-sm font-mono break-all mt-1`}
                   >
                     {effectiveTransactionData?.walletAddress ||
                       "TQn9Y2khEsLJW1ChVWFM...RDow5oRP7bX"}
@@ -1712,27 +1743,27 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                 <img
                   src="https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
                   alt="Bank"
-                  className="w-8 h-8 rounded-full"
+                  className="w-8 h-8 rounded-full flex-shrink-0"
                 />
-                <div className="text-right">
+                <div className="text-left sm:text-right min-w-0 flex-1">
                   <div
                     className={`${
                       isDark ? "text-white" : "text-gray-900"
-                    } text-base font-semibold inline-block align-middle`}
+                    } text-sm sm:text-base font-semibold truncate`}
                   >
                     Bank Transfer
                   </div>
                   <span
                     className={`${
                       isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                    } text-base font-normal ml-1 align-middle`}
+                    } text-xs sm:text-sm font-normal block sm:inline sm:ml-1 truncate`}
                   >
                     To your account
                   </span>
                   <div
                     className={`${
                       isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                    } text-sm font-mono`}
+                    } text-xs sm:text-sm font-mono break-all mt-1`}
                   >
                     {effectiveTransactionData?.paymentDetails?.[0]
                       ?.account_number || "Account Number"}
@@ -1744,13 +1775,13 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
         </div>
       </div>
 
-      <div className="w-full max-w-4xl rounded-2xl flex ">
-        <div className="w-full bg-[#FF9500]/50 border-2 border-solid border-[#FF9500]/50 rounded-[18px] flex flex-col gap-2 p-3">
-          <h2 className="text-white text-base font-semibold">
+      <div className={`w-full ${isHomePage ? '' : 'max-w-4xl'} rounded-2xl flex`}>
+        <div className={`w-full bg-[#FF9500]/50 border-2 border-solid border-[#FF9500]/50 rounded-[18px] flex flex-col ${isHomePage ? 'gap-1 sm:gap-2 p-2 sm:p-3' : 'gap-2 p-3'}`}>
+          <h2 className={`text-white ${isHomePage ? 'text-sm sm:text-base' : 'text-base'} font-semibold`}>
             Terms and Conditions Summary
           </h2>
-          <ul className="list-disc list-inside space-y-1">
-            <li className="text-white text-sm">
+          <ul className={`list-disc list-inside ${isHomePage ? 'space-y-0.5 sm:space-y-1' : 'space-y-1'}`}>
+            <li className={`text-white ${isHomePage ? 'text-xs sm:text-sm' : 'text-sm'}`}>
               Only send
               {`${transactionData?.asset?.ticker || transactionData?.asset?.symbol || transactionData?.asset?.name || (transactionData?.type === "deposit" ? "USD" : transactionData?.type === "withdrawal" ? "USD" : "USDT")} (${transactionData?.asset?.network})`}{" "}
               to this address{" "}

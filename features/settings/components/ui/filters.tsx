@@ -135,11 +135,11 @@ const REFERRAL_TAB_INDEX = 4; // Manual index since we're using dynamic logic be
 
 const Filters = () => {
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const searchParams: ReturnType<typeof useSearchParams> = useSearchParams();
   const { t } = useSettingsI18n();
 
   // Get active tab from URL or default to 0 (profile)
-  const tabParam = searchParams?.get("tab");
+  const tabParam = searchParams?.get("tab") || null;
   const initialActiveIdx = Math.max(0, tabs.findIndex(t => t.id === tabParam));
   
   const [activeIdx, setActiveIdx] = useState(initialActiveIdx !== -1 ? initialActiveIdx : 0);
@@ -148,12 +148,13 @@ const Filters = () => {
 
   // Sync state with URL changes
   useEffect(() => {
+    if (!searchParams) return;
     const tabParam = searchParams?.get("tab");
     const idx = tabs.findIndex(t => t.id === tabParam);
     if (idx !== -1 && idx !== activeIdx) {
       setActiveIdx(idx);
     }
-  }, [searchParams]);
+  }, [searchParams, activeIdx]);
 
   // Handle tab change
   const handleTabChange = (idx: number) => {

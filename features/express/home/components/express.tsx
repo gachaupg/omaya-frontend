@@ -85,7 +85,7 @@ const Express = ({ isHomePage = false }: ExpressProps) => {
         </div>
       )}
       {showExchanging ? (
-        <Exchanging transactionData={transactionData} />
+        <Exchanging transactionData={transactionData} isHomePage={isHomePage} />
       ) : (
         <ExpressExchangeForm
           onExchange={(data) => {

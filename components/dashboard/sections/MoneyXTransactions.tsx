@@ -133,12 +133,12 @@ const MoneyXTransactions = () => {
                 </td>
                 <td className="py-4 px-4">
                   <span className="text-sm font-medium dark:text-white text-gray-900">
-                    {formatCurrency(tx.send_amount || tx.amount || 0, tx.from_currency || tx.currency || "USD")}
+                    {formatCurrency(tx.send_amount || tx.amount || 0, tx.from_currency || tx.currency || "USDT")}
                   </span>
                 </td>
                 <td className="py-4 px-4">
                   <span className="text-sm font-medium text-[#1D8751]">
-                    {formatCurrency(tx.receive_amount || tx.net_amount || 0, tx.to_currency || tx.currency || "USD")}
+                    {formatCurrency(tx.receive_amount || tx.net_amount || 0, tx.to_currency || tx.currency || "USDT")}
                   </span>
                 </td>
                 <td className="py-4 px-4">
@@ -246,7 +246,11 @@ const MoneyXTransactions = () => {
       {totalPages > 1 && (
         <div className="flex justify-center items-center gap-2 mt-4">
           <button
-            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setCurrentPage((p) => Math.max(1, p - 1));
+            }}
             disabled={currentPage === 1}
             className="px-3 py-1 rounded-lg bg-gray-100 dark:bg-[#35353E] text-gray-700 dark:text-white disabled:opacity-50"
           >
@@ -256,7 +260,11 @@ const MoneyXTransactions = () => {
             Page {currentPage} of {totalPages}
           </span>
           <button
-            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setCurrentPage((p) => Math.min(totalPages, p + 1));
+            }}
             disabled={currentPage === totalPages}
             className="px-3 py-1 rounded-lg bg-gray-100 dark:bg-[#35353E] text-gray-700 dark:text-white disabled:opacity-50"
           >

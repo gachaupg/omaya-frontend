@@ -322,7 +322,11 @@ const P2PTransactions = () => {
       {totalPages > 1 && (
         <div className="flex justify-center items-center gap-1 sm:gap-2 mt-4 flex-wrap">
           <button
-            onClick={() => setPage(page - 1)}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setPage(page - 1);
+            }}
             disabled={page === 1}
             className="px-2 sm:px-3 py-1.5 sm:py-1 rounded-full border border-[#35353E] text-gray-900 dark:text-white bg-white dark:bg-[#23232b] hover:bg-gray-100 dark:hover:bg-[#35353E] transition disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm min-h-[44px] sm:min-h-0 lg:min-h-0"
           >
@@ -331,7 +335,11 @@ const P2PTransactions = () => {
           {[...Array(totalPages)].map((_, idx) => (
             <button
               key={idx}
-              onClick={() => setPage(idx + 1)}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setPage(idx + 1);
+              }}
               className={`px-2 sm:px-3 py-1.5 sm:py-1 rounded-full border text-xs sm:text-sm min-h-[44px] sm:min-h-0 lg:min-h-0 ${
                 page === idx + 1
                   ? "bg-[#1D8751] text-white border-[#1D8751]"
@@ -342,7 +350,11 @@ const P2PTransactions = () => {
             </button>
           ))}
           <button
-            onClick={() => setPage(page + 1)}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setPage(page + 1);
+            }}
             disabled={page === totalPages}
             className="px-2 sm:px-3 py-1.5 sm:py-1 rounded-full border border-[#35353E] text-gray-900 dark:text-white bg-white dark:bg-[#23232b] hover:bg-gray-100 dark:hover:bg-[#35353E] transition disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm min-h-[44px] sm:min-h-0 lg:min-h-0"
           >

@@ -5,6 +5,7 @@ import {
   getUserPaymentDetails,
   deletePaymentMethod,
   getPublicPaymentMethods,
+  updateUserPaymentDetail,
 } from "../api";
 import { AdminPaymentMethod } from "../types/paymentMethods";
 import { P2PResponse } from "../types";
@@ -136,6 +137,30 @@ export const deleteUserPaymentDetail = createAsyncThunk<
   }
 );
 
+export const patchUserPaymentDetail = createAsyncThunk<
+  unknown,
+  {
+    id: string | number;
+    data: {
+      account_name?: string;
+      account_number?: string;
+      wallet_address?: string | null;
+      allow_auto_send?: boolean;
+      provider_name?: string;
+    };
+  },
+  { rejectValue: string }
+>(
+  "paymentMethods/patchUserPaymentDetail",
+  async ({ id, data }, { rejectWithValue }) => {
+    try {
+      return await updateUserPaymentDetail(id, data);
+    } catch (err: any) {
+      return rejectWithValue(extractPaymentDetailError(err));
+    }
+  }
+);
+
 interface PaymentMethodsState {
   adminMethods: AdminPaymentMethod[];
   publicPaymentMethods: any[];
@@ -151,6 +176,9 @@ interface PaymentMethodsState {
   deleteError: string | null;
   publicMethodsLoading: boolean;
   publicMethodsError: string | null;
+  patchLoading: boolean;
+  patchError: string | null;
+  patchSuccess: boolean;
 }
 
 const initialState: PaymentMethodsState = {
@@ -168,6 +196,9 @@ const initialState: PaymentMethodsState = {
   deleteError: null,
   publicMethodsLoading: false,
   publicMethodsError: null,
+  patchLoading: false,
+  patchError: null,
+  patchSuccess: false,
 };
 
 const paymentMethodsSlice = createSlice({
@@ -178,6 +209,11 @@ const paymentMethodsSlice = createSlice({
       state.postLoading = false;
       state.postError = null;
       state.postSuccess = false;
+    },
+    clearPatchStatus(state) {
+      state.patchLoading = false;
+      state.patchError = null;
+      state.patchSuccess = false;
     },
   },
   extraReducers: (builder) => {
@@ -243,9 +279,23 @@ const paymentMethodsSlice = createSlice({
       .addCase(fetchPublicPaymentMethods.rejected, (state, action) => {
         state.publicMethodsLoading = false;
         state.publicMethodsError = action.payload ?? null;
+      })
+      .addCase(patchUserPaymentDetail.pending, (state) => {
+        state.patchLoading = true;
+        state.patchError = null;
+        state.patchSuccess = false;
+      })
+      .addCase(patchUserPaymentDetail.fulfilled, (state) => {
+        state.patchLoading = false;
+        state.patchSuccess = true;
+      })
+      .addCase(patchUserPaymentDetail.rejected, (state, action) => {
+        state.patchLoading = false;
+        state.patchError = action.payload ?? null;
+        state.patchSuccess = false;
       });
   },
 });
 
-export const { clearPostStatus } = paymentMethodsSlice.actions;
+export const { clearPostStatus, clearPatchStatus } = paymentMethodsSlice.actions;
 export default paymentMethodsSlice.reducer;
