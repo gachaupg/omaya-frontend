@@ -9,12 +9,14 @@ export const client = config.isConfigured ? createClient({
   projectId: config.projectId!,
   dataset: config.dataset,
   apiVersion: config.apiVersion,
-  useCdn: true, // Use CDN for better performance and reliability
+  useCdn: false, // Must be false for live subscriptions to work
   token: config.token, // Optional: for private datasets
   // Add timeout configuration
   requestTagPrefix: 'omaya-blog',
   timeout: 10000, // 10 second timeout
   ignoreBrowserTokenWarning: true,
+  // Enable real-time subscriptions
+  withCredentials: false,
 }) : null;
 
 // Enhanced image URL builder
