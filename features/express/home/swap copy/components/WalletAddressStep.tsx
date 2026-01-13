@@ -198,12 +198,8 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                 <span className="text-sm sm:text-base">Processing...</span>
               </div>
             ) : (
-              <span className="flex items-center justify-center">
-                <img
-                  className="mt-2 h-auto max-w-[200px] sm:max-w-none"
-                  src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
-                  alt=""
-                />
+              <span className="flex items-center justify-center gap-2">
+                <span className="text-sm sm:text-base font-medium text-white">Swap</span>
               </span>
             )}
           </button>

@@ -38,6 +38,7 @@ import {
   setAuthRedirectPath,
 } from "@/lib/utils/authRedirect";
 import { useValidateAddress } from "@/hooks/useValidateAddress";
+import { openKYCModal } from "@/features/auth/slices/authSlice";
 
 interface DepositFormProps {
   onExchange?: (transactionData: {
@@ -237,7 +238,7 @@ export default function DepositForm({
   // Add swap assets state
   const { supportedAssets: swapAssets, loading: swapAssetsLoading } =
     useSelector((state: any) => state.swap);
-  const { isAuthenticated } = useSelector((state: any) => state.auth);
+  const { isAuthenticated, user } = useSelector((state: any) => state.auth);
   const { isDark } = useTheme();
 
   const {
@@ -3305,6 +3306,12 @@ export default function DepositForm({
                     buildExpressRedirectPath(mode, state)
                   );
                   router.push("/auth/login");
+                  return;
+                }
+
+                // Check if user is verified (KYC check)
+                if (isAuthenticated && user && !user.is_verified) {
+                  dispatch(openKYCModal());
                   return;
                 }
 

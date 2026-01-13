@@ -121,9 +121,10 @@ const P2PWithdrawalDepositTransactions = () => {
   // Use the results directly from API (already paginated)
   const paginatedResults = sortedResults;
 
-  const handlePageChange = (pageNumber: number) => {
+  const handlePageChange = (pageNumber: number, e?: React.MouseEvent) => {
+    e?.preventDefault();
+    e?.stopPropagation();
     dispatch(setCurrentPage(pageNumber));
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const renderPagination = () => {
@@ -152,7 +153,7 @@ const P2PWithdrawalDepositTransactions = () => {
         {/* Pagination controls */}
         <div className="flex items-center gap-1 sm:gap-2 flex-wrap justify-center">
           <button
-            onClick={() => handlePageChange(currentPage - 1)}
+            onClick={(e) => handlePageChange(currentPage - 1, e)}
             disabled={currentPage === 1}
             className={`px-2 sm:px-3 py-1.5 sm:py-1 rounded-md border transition-colors duration-150 text-xs sm:text-sm min-h-[44px] sm:min-h-0 lg:min-h-0
               ${
@@ -168,7 +169,7 @@ const P2PWithdrawalDepositTransactions = () => {
           {pageNumbers.map((pageNum) => (
             <button
               key={pageNum}
-              onClick={() => handlePageChange(pageNum)}
+              onClick={(e) => handlePageChange(pageNum, e)}
               className={`mx-0.5 sm:mx-1 px-2 sm:px-3 py-1.5 sm:py-1 rounded-md border transition-colors duration-150 text-xs sm:text-sm min-h-[44px] sm:min-h-0 lg:min-h-0
                 ${
                   pageNum === currentPage
@@ -182,7 +183,7 @@ const P2PWithdrawalDepositTransactions = () => {
           {endPage < totalPages && <span className="text-gray-500 text-xs sm:text-sm">…</span>}
           
           <button
-            onClick={() => handlePageChange(currentPage + 1)}
+            onClick={(e) => handlePageChange(currentPage + 1, e)}
             disabled={currentPage >= totalPages}
             className={`px-2 sm:px-3 py-1.5 sm:py-1 rounded-md border transition-colors duration-150 text-xs sm:text-sm min-h-[44px] sm:min-h-0 lg:min-h-0
               ${

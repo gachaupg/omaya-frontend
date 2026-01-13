@@ -3151,7 +3151,7 @@ export default function WithdrawalForm({
               <input
                 type="text"
                 placeholder="Search assets..."
-                className="w-full text-gray-900 dark:text-white dark:bg-[#18181D] bg-white rounded-xl px-8 sm:px-10 py-1.5 sm:py-2 text-xs sm:text-sm focus:outline-none border dark:border-[#35353E] border-[#35353E] placeholder-gray-500 dark:placeholder-gray-400"
+                className="w-full text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 rounded-xl px-8 sm:px-10 py-1.5 sm:py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400"
                 value={assetSearchTerm}
                 onChange={(e) => setAssetSearchTerm(e.target.value)}
               />

@@ -15,6 +15,7 @@ import { useFAQ } from "@/features/faq/hooks/useFAQ";
 import { ContactForm } from "@/features/contact/components";
 import { useHighlightStatistics } from "@/features/contact/hooks/useHighlightStatistics";
 import { useSimpleMarkets } from "@/features/markets/hooks/useSimpleMarkets";
+import KYCVerificationModal from "@/features/auth/components/KYCVerificationModal";
 
 import { HiOutlineDeviceMobile } from "react-icons/hi";
 import { FaRegStar } from "react-icons/fa";
@@ -1055,12 +1056,12 @@ export default function MarketingPage() {
                     </div>
 
                     {/* Badge - Since 2019 (positioned slightly below top edge) */}
-                    <div className="absolute top-2 right-4 md:top-3 md:right-8 bg-[#1D8751] rounded-full px-3 md:px-4 py-1 md:py-1.5 z-20 shadow-md">
+                    <div className="absolute -top-6 right-4 md:-top-6 md:right-8 bg-[#1D8751] rounded-full px-3 md:px-4 py-1 md:py-1.5 z-20 shadow-md">
                       <span className="text-white text-xs font-medium">Since 2019</span>
                     </div>
 
                     {/* Badge - 10K+ Users (inside image card, raised above bottom edge) */}
-                    <div className="absolute bottom-14 left-4 md:bottom-16 md:left-8 bg-[#1D8751] rounded-full px-3 md:px-4 py-1 md:py-1.5 z-20 shadow-md">
+                    <div className="absolute bottom-2 left-4 md:bottom-3 md:left-8 bg-[#1D8751] rounded-full px-3 md:px-4 py-1 md:py-1.5 z-20 shadow-md">
                       <span className="text-white text-xs font-medium">10K+ Users</span>
                     </div>
                   </div>
@@ -2173,6 +2174,9 @@ export default function MarketingPage() {
           </div>
         </div>
       </section>
+
+      {/* KYC Verification Modal */}
+      <KYCVerificationModal />
     </div>
   );
 }

@@ -654,9 +654,9 @@ export const Table: React.FC<TableProps> = ({
           </div>
         </div>
 
-        <div className="mt-3 overflow-x-auto">
+        <div className="mt-3 overflow-x-auto w-full pb-4 scroll-smooth">
           <div
-            className={`w-full border-2 bg-white dark:bg-[var(--card-color)] border-gray-200 dark:border-[#35353E] shadow-lg rounded-[24px]`}
+            className={`w-full min-w-max border-2 bg-white dark:bg-[var(--card-color)] border-gray-200 dark:border-[#35353E] shadow-lg rounded-[24px] overflow-hidden`}
           >
             {/* Desktop Table Header - Hidden on mobile */}
             <div
@@ -708,7 +708,7 @@ export const Table: React.FC<TableProps> = ({
             </div>
 
             {/* Table Body */}
-            <div className="bg-white dark:bg-[var(--card-color)]">
+            <div className={`bg-white dark:bg-[var(--card-color)] ${totalPages <= 1 ? 'rounded-b-[24px]' : ''}`}>
               {filteredData.length === 0 && data.length > 0 ? (
                 <div className="w-full text-center py-12 px-4 bg-white dark:bg-[var(--card-color)]">
                   <div className="flex flex-col items-center justify-center">
@@ -965,7 +965,7 @@ export const Table: React.FC<TableProps> = ({
             </div>
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex justify-center items-center gap-2 py-4 bg-white dark:bg-[var(--card-color)] rounded-b-[24px]">
+              <div className="flex justify-center items-center gap-2 py-4 pb-6 bg-white dark:bg-[var(--card-color)] rounded-b-[24px]">
                 <button
                   onClick={() => {
                     logger.debug('p2p', "Previous page clicked, current:", currentPage);

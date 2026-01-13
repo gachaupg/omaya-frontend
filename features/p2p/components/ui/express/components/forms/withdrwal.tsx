@@ -1801,7 +1801,7 @@ export default function WithdrawalForm({
   // Validate BEP20 wallet address
   const validateBEP20Address = (address: string) => {
     if (!address || address.trim() === "") {
-      return { isValid: false, message: "Wallet address is required" };
+      return { isValid: false, message: "Please add an address" };
     }
 
     // Remove whitespace
@@ -1875,6 +1875,11 @@ export default function WithdrawalForm({
       return false;
     }
 
+    // Check if amount is greater than 0
+    if (payAmount <= 0) {
+      return false;
+    }
+
     // Check if amount exceeds available balance
     if (balance !== undefined && payAmount > balance) {
       return false;
@@ -1904,6 +1909,28 @@ export default function WithdrawalForm({
   };
 
   const handleFirstCardSubmit = async () => {
+    // Validate amount first
+    if (!payAmount || payAmount <= 0) {
+      setBalanceError("Amount should be more than 0");
+      showToast.error("Validation Error", "Amount should be more than 0");
+      return;
+    }
+
+    // Validate wallet address
+    if (!walletAddress || !walletAddress.trim()) {
+      setWalletError("Please add an address");
+      showToast.error("Validation Error", "Please add an address");
+      return;
+    }
+
+    // Validate BEP20 format
+    const addressValidation = validateBEP20Address(walletAddress);
+    if (!addressValidation.isValid) {
+      setWalletError(addressValidation.message || "Please add an address");
+      showToast.error("Validation Error", addressValidation.message || "Please add an address");
+      return;
+    }
+
     if (validateFirstCard()) {
       setIsSubmitting(true);
       setIsTransactionSubmitted(false);
@@ -2601,9 +2628,14 @@ export default function WithdrawalForm({
                       // Mark that user has manually modified the amount
                       setIsUserModifiedAmount(true);
 
-                      // Validate balance in real-time
-                      const balanceValidationError = validateBalance(newValue);
-                      setBalanceError(balanceValidationError);
+                      // Validate amount is greater than 0
+                      if (newValue <= 0) {
+                        setBalanceError("Amount should be more than 0");
+                      } else {
+                        // Validate balance in real-time
+                        const balanceValidationError = validateBalance(newValue);
+                        setBalanceError(balanceValidationError);
+                      }
 
                       // Clear any previous errors when user starts typing
                       setReceiveAmountError(null);
@@ -2677,7 +2709,7 @@ export default function WithdrawalForm({
                   }}
                   placeholder="Enter BEP20 wallet address (0x...)"
                   className={`w-full text-[#35353e] dark:bg-[var(--card-color)] dark:text-[#ffffff] rounded-xl sm:rounded-2xl px-8 sm:px-9 py-2.5 sm:py-2 text-sm sm:text-lg focus:outline-none border min-h-[44px] sm:min-h-0 ${walletError
-                    ? "border-red-500"
+                    ? "border-red-500 focus:border-red-500"
                     : walletAddress.trim() && !walletError
                       ? "border-green-500"
                       : "border-[#A2A4A9FF] dark:border-[#35353E]"
@@ -2752,6 +2784,7 @@ export default function WithdrawalForm({
                   isTransactionSubmitted ||
                   isInfoModalOpen ||
                   getAmount > 15000 ||
+                  payAmount <= 0 ||
                   !!balanceError
                   ? "bg-gray-500 cursor-not-allowed"
                   : "bg-[#1D8751] hover:bg-[#166b3e]"
@@ -2762,6 +2795,7 @@ export default function WithdrawalForm({
                   isTransactionSubmitted ||
                   isInfoModalOpen ||
                   getAmount > 15000 ||
+                  payAmount <= 0 ||
                   !!balanceError
                 }
               >
