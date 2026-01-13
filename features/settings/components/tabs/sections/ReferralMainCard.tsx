@@ -33,6 +33,7 @@ const ReferralMainCard: React.FC<Props> = ({
   const deposits = walletData?.total_earned ?? 0;
   const withdrawals = walletData?.total_withdrawn ?? 0;
   const balance = walletData?.balance ?? 0;
+  const commissions = walletData?.total_commissions ?? balance; // Use total_commissions if available
   const total = deposits + withdrawals;
 
   const chartData =
@@ -129,7 +130,7 @@ const ReferralMainCard: React.FC<Props> = ({
                     data={chartData}
                     total={total}
                     label="Commissions"
-                    centerValue={balance}
+                    centerValue={commissions}
                   />
                 </div>
                 <div className="flex flex-col gap-3 mt-2 w-full max-w-[280px]">
@@ -159,35 +160,64 @@ const ReferralMainCard: React.FC<Props> = ({
         </div>
       </div>
 
-      <div className="mb-4 mt-10">
-        <div className="text-sm font-medium text-[#1D8751] mb-3">
-          Your Referral Code
-        </div>
-        <div className="flex items-center gap-3 flex-wrap">
-          <div
-            className="flex items-center gap-3 rounded-[28px] border border-[#1D8751]
-                       bg-transparent px-4 py-3 min-w-[260px] flex-1 w-full"
-          >
-            <span className="w-3 h-3 rounded-full bg-[#1D8751] flex-shrink-0" />
-            <span className="font-mono text-sm sm:text-base tracking-[0.4em] text-[#1D8751] uppercase truncate flex-1">
-              {referralCode}
-            </span>
-            <button
-              onClick={handleQRCodeClick}
-              className="flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
-              aria-label="Show QR Code"
-            >
-              <QrCode size={18} className="text-[#1D8751]" strokeWidth={2} />
-            </button>
+      <div className="mb-4 mt-10 space-y-6">
+        {/* Referral Code Section */}
+        <div>
+          <div className="text-sm font-medium text-[#1D8751] mb-3">
+            Your Referral Code
           </div>
-          <CopyButton
-            value={user?.referral_code ?? ""}
-            className="bg-gray-200 dark:bg-[#1A1A1F] text-[#1D8751] font-semibold border border-[#E2E8F0] dark:border-[#35353e]
-                       hover:opacity-80 rounded-[999px] px-4 py-3 text-sm transition-opacity flex-shrink-0"
-            showIcon={true}
-          >
-            Copy
-          </CopyButton>
+          <div className="flex items-center gap-3 flex-wrap">
+            <div
+              className="flex items-center gap-3 rounded-[28px] border border-[#1D8751]
+                         bg-transparent px-4 py-3 min-w-[260px] flex-1 w-full"
+            >
+              <span className="w-3 h-3 rounded-full bg-[#1D8751] flex-shrink-0" />
+              <span className="font-mono text-sm sm:text-base tracking-[0.4em] text-[#1D8751] uppercase truncate flex-1">
+                {referralCode}
+              </span>
+              <button
+                onClick={handleQRCodeClick}
+                className="flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+                aria-label="Show QR Code"
+              >
+                <QrCode size={18} className="text-[#1D8751]" strokeWidth={2} />
+              </button>
+            </div>
+            <CopyButton
+              value={user?.referral_code ?? ""}
+              className="bg-gray-200 dark:bg-[#1A1A1F] text-[#1D8751] font-semibold border border-[#E2E8F0] dark:border-[#35353e]
+                         hover:opacity-80 rounded-[999px] px-4 py-3 text-sm transition-opacity flex-shrink-0"
+              showIcon={true}
+            >
+              Copy
+            </CopyButton>
+          </div>
+        </div>
+
+        {/* Referral Link Section */}
+        <div>
+          <div className="text-sm font-medium text-[#1D8751] mb-3">
+            Your Referral Link
+          </div>
+          <div className="flex items-center gap-3 flex-wrap">
+            <div
+              className="flex items-center gap-3 rounded-[28px] border border-[#1D8751]
+                         bg-transparent px-4 py-3 min-w-[260px] flex-1 w-full"
+            >
+              <span className="w-3 h-3 rounded-full bg-[#1D8751] flex-shrink-0" />
+              <span className="text-sm sm:text-base text-[#1D8751] truncate flex-1">
+                {typeof window !== 'undefined' ? `${window.location.origin}/auth/register?ref=${referralCode}` : `https://omaya.io/auth/register?ref=${referralCode}`}
+              </span>
+            </div>
+            <CopyButton
+              value={typeof window !== 'undefined' ? `${window.location.origin}/auth/register?ref=${referralCode}` : `https://omaya.io/auth/register?ref=${referralCode}`}
+              className="bg-gray-200 dark:bg-[#1A1A1F] text-[#1D8751] font-semibold border border-[#E2E8F0] dark:border-[#35353e]
+                         hover:opacity-80 rounded-[999px] px-4 py-3 text-sm transition-opacity flex-shrink-0"
+              showIcon={true}
+            >
+              Copy
+            </CopyButton>
+          </div>
         </div>
       </div>
 

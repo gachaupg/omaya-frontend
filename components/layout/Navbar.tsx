@@ -6,12 +6,13 @@ import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
 import { Menu, X, Check, Settings, LogOut, User, ChevronDown, ChevronRight } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
-import { RootState, AppDispatch } from "@/features/auth/store";
+import { RootState, AppDispatch } from "@/store";
 import {
   initializeAuth,
   getUserProfile,
   logout,
 } from "@/features/auth/slices/authSlice";
+import { checkKYCStatus } from "@/features/kyc/slices/kycSlice";
 import { useLanguageOptional } from "@/context/language";
 import { useTheme } from "@/context/theme";
 
@@ -523,13 +524,19 @@ export default function Navbar() {
     profile: userProfile,
     user,
   } = useSelector((state: RootState) => state.auth);
+  const kycState = useSelector((state: RootState) => state.kyc);
+  const isKycVerified = kycState?.isVerified ?? false;
   const dispatch = useDispatch<AppDispatch>();
   const depositDropdownRef = useRef<HTMLDivElement>(null);
   const profileModalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     dispatch(initializeAuth());
-  }, [dispatch]);
+    // Fetch KYC status to know if user is verified
+    if (isAuthenticated) {
+      dispatch(checkKYCStatus());
+    }
+  }, [dispatch, isAuthenticated]);
 
   // Load cached profile photo from localStorage on mount
   useEffect(() => {
@@ -553,12 +560,15 @@ export default function Navbar() {
     if (userProfile?.photo && typeof window !== "undefined") {
       localStorage.setItem("profile_photo", userProfile.photo);
       setCachedProfilePhoto(userProfile.photo);
+      setProfileImageError(false); // Reset error when we have a valid photo
     }
   }, [userProfile?.photo]);
 
   // Reset image error when profile photo changes
   useEffect(() => {
-    setProfileImageError(false);
+    if (userProfile?.photo || cachedProfilePhoto) {
+      setProfileImageError(false);
+    }
   }, [userProfile?.photo, cachedProfilePhoto]);
 
   // Profile data available for rendering
@@ -919,67 +929,68 @@ export default function Navbar() {
                   {(userProfile?.photo || cachedProfilePhoto) &&
                     !profileImageError ? (
                     <img
+                      key={userProfile?.photo || cachedProfilePhoto} // Force re-render when photo changes
                       src={userProfile?.photo || cachedProfilePhoto || ""}
                       alt="Profile"
-                      className="w-8 h-8 md:w-9 md:h-9 lg:w-10 lg:h-10 rounded-full object-cover"
-                      onError={() => {
+                      className="w-8 h-8 md:w-9 md:h-9 lg:w-10 lg:h-10 rounded-full object-cover border-2 border-white"
+                      onError={(e) => {
+                        console.error("Profile image failed to load");
                         setProfileImageError(true);
-                        if (typeof window !== "undefined") {
-                          localStorage.removeItem("profile_photo");
-                          setCachedProfilePhoto(null);
-                        }
                       }}
+                      loading="eager"
                     />
                   ) : (
                     <div className="w-8 h-8 md:w-9 md:h-9 lg:w-10 lg:h-10 rounded-full flex items-center justify-center bg-[#1D8751] border-2 border-white">
                       <User className="w-4 h-4 md:w-5 md:h-5 lg:w-6 lg:h-6 text-white" />
                     </div>
                   )}
-                  {/* Verification Badge - positioned on top of profile image */}
-                  <span className="absolute -top-0.5 -right-0.5 md:-top-0.5 md:-right-0.5 lg:-top-1 lg:-right-1 inline-flex items-center justify-center w-4 h-4 md:w-4 md:h-4 lg:w-5 lg:h-5 z-10">
-                    <svg
-                      width="20"
-                      height="20"
-                      viewBox="0 0 20 20"
-                      className="absolute w-4 h-4 md:w-4 md:h-4 lg:w-5 lg:h-5"
-                    >
-                      <circle cx="10" cy="10" r="9" fill="white" />
-                      <circle cx="10" cy="10" r="7.5" fill="#1D8751" />
-                      {/* Serrated edge using small circles */}
-                      {[
-                        0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330,
-                      ].map((angle) => {
-                        const rad = (angle * Math.PI) / 180;
-                        const x = 10 + 8.5 * Math.cos(rad);
-                        const y = 10 + 8.5 * Math.sin(rad);
-                        return (
-                          <circle
-                            key={angle}
-                            cx={x}
-                            cy={y}
-                            r="1"
-                            fill="white"
-                          />
-                        );
-                      })}
-                    </svg>
-                    <svg
-                      width="10"
-                      height="10"
-                      viewBox="0 0 10 10"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="relative z-10 w-2 h-2 md:w-2.5 md:h-2.5 lg:w-2.5 lg:h-2.5"
-                    >
-                      <path
-                        d="M2 5L4 7L8 3"
-                        stroke="#FFFFFF"
-                        strokeWidth="1.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </span>
+                  {/* Verification Badge - positioned on top of profile image - only show if KYC verified */}
+                  {isKycVerified && (
+                    <span className="absolute -top-0.5 -right-0.5 md:-top-0.5 md:-right-0.5 lg:-top-1 lg:-right-1 inline-flex items-center justify-center w-4 h-4 md:w-4 md:h-4 lg:w-5 lg:h-5 z-10">
+                      <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 20 20"
+                        className="absolute w-4 h-4 md:w-4 md:h-4 lg:w-5 lg:h-5"
+                      >
+                        <circle cx="10" cy="10" r="9" fill="white" />
+                        <circle cx="10" cy="10" r="7.5" fill="#1D8751" />
+                        {/* Serrated edge using small circles */}
+                        {[
+                          0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330,
+                        ].map((angle) => {
+                          const rad = (angle * Math.PI) / 180;
+                          const x = 10 + 8.5 * Math.cos(rad);
+                          const y = 10 + 8.5 * Math.sin(rad);
+                          return (
+                            <circle
+                              key={angle}
+                              cx={x}
+                              cy={y}
+                              r="1"
+                              fill="white"
+                            />
+                          );
+                        })}
+                      </svg>
+                      <svg
+                        width="10"
+                        height="10"
+                        viewBox="0 0 10 10"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="relative z-10 w-2 h-2 md:w-2.5 md:h-2.5 lg:w-2.5 lg:h-2.5"
+                      >
+                        <path
+                          d="M2 5L4 7L8 3"
+                          stroke="#FFFFFF"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </span>
+                  )}
                 </button>
 
                 {/* Profile Modal */}
@@ -998,78 +1009,78 @@ export default function Navbar() {
                               !profileImageError ? (
                               <>
                                 <img
+                                  key={userProfile?.photo || cachedProfilePhoto} // Force re-render
                                   src={
                                     userProfile?.photo ||
                                     cachedProfilePhoto ||
                                     ""
                                   }
                                   alt="Profile"
-                                  className="w-12 h-12 rounded-full object-cover"
-                                  onError={() => {
+                                  className="w-12 h-12 rounded-full object-cover border-2 border-transparent"
+                                  onError={(e) => {
+                                    console.error("Dropdown profile image failed to load");
                                     setProfileImageError(true);
-                                    // Clear invalid cached photo
-                                    if (typeof window !== "undefined") {
-                                      localStorage.removeItem("profile_photo");
-                                      setCachedProfilePhoto(null);
-                                    }
                                   }}
+                                  loading="eager"
                                 />
-                                {/* Verification Badge */}
-                                <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 z-10">
-                                  <svg
-                                    width="20"
-                                    height="20"
-                                    viewBox="0 0 20 20"
-                                    className="absolute"
-                                  >
-                                    <circle
-                                      cx="10"
-                                      cy="10"
-                                      r="9"
-                                      fill="white"
-                                    />
-                                    <circle
-                                      cx="10"
-                                      cy="10"
-                                      r="7.5"
-                                      fill="#1D8751"
-                                    />
-                                    {/* Serrated edge using small circles */}
-                                    {[
-                                      0, 30, 60, 90, 120, 150, 180, 210, 240,
-                                      270, 300, 330,
-                                    ].map((angle) => {
-                                      const rad = (angle * Math.PI) / 180;
-                                      const x = 10 + 8.5 * Math.cos(rad);
-                                      const y = 10 + 8.5 * Math.sin(rad);
-                                      return (
-                                        <circle
-                                          key={angle}
-                                          cx={x}
-                                          cy={y}
-                                          r="1"
-                                          fill="white"
-                                        />
-                                      );
-                                    })}
-                                  </svg>
-                                  <svg
-                                    width="10"
-                                    height="10"
-                                    viewBox="0 0 10 10"
-                                    fill="none"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    className="relative z-10"
-                                  >
-                                    <path
-                                      d="M2 5L4 7L8 3"
-                                      stroke="#FFFFFF"
-                                      strokeWidth="1.5"
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                    />
-                                  </svg>
-                                </span>
+                                {/* Verification Badge - only show if KYC verified */}
+                                {isKycVerified && (
+                                  <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 z-10">
+                                    <svg
+                                      width="20"
+                                      height="20"
+                                      viewBox="0 0 20 20"
+                                      className="absolute"
+                                    >
+                                      <circle
+                                        cx="10"
+                                        cy="10"
+                                        r="9"
+                                        fill="white"
+                                      />
+                                      <circle
+                                        cx="10"
+                                        cy="10"
+                                        r="7.5"
+                                        fill="#1D8751"
+                                      />
+                                      {/* Serrated edge using small circles */}
+                                      {[
+                                        0, 30, 60, 90, 120, 150, 180, 210, 240,
+                                        270, 300, 330,
+                                      ].map((angle) => {
+                                        const rad = (angle * Math.PI) / 180;
+                                        const x = 10 + 8.5 * Math.cos(rad);
+                                        const y = 10 + 8.5 * Math.sin(rad);
+                                        return (
+                                          <circle
+                                            key={angle}
+                                            cx={x}
+                                            cy={y}
+                                            r="1"
+                                            fill="white"
+                                          />
+                                        );
+                                      })}
+                                    </svg>
+                                    <svg
+                                      width="10"
+                                      height="10"
+                                      viewBox="0 0 10 10"
+                                      fill="none"
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      className="relative z-10"
+                                    >
+                                      <path
+                                        d="M2 5L4 7L8 3"
+                                        stroke="#FFFFFF"
+                                        strokeWidth="1.5"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                      />
+                                    </svg>
+                                  </span>
+                                )}
                               </>
                             ) : (
                               <div className="w-12 h-12 rounded-full flex items-center justify-center bg-[#1D8751] border-2 border-white">

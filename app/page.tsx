@@ -811,11 +811,11 @@ export default function MarketingPage() {
                     return (
                       <div
                         key={asset.id}
-                        className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4 border border-gray-200 dark:border-[#2A2A2A] hover:border-[#1D8751]/40 transition-colors relative overflow-visible"
+                        className="bg-gray-50 dark:bg-[#1D1D23] rounded-xl p-0 border border-gray-200 dark:border-[#2A2A2A] hover:border-[#1D8751]/40 transition-colors relative overflow-hidden"
                       >
                         {/* Dark mode gradient background */}
                         <div
-                          className="hidden dark:block absolute inset-0 rounded-lg"
+                          className="hidden dark:block absolute inset-0 rounded-xl"
                           style={{
                             background: 'linear-gradient(to bottom, rgba(29, 29, 35, 0.95), rgba(29, 29, 35, 1))',
                             boxShadow: '0 1px 3px rgba(0, 0, 0, 0.3)'
@@ -824,7 +824,7 @@ export default function MarketingPage() {
 
                         {/* Greenish radial gradient from top-right corner - lighter in light mode */}
                         <div
-                          className="absolute top-0 right-0 w-3/4 h-3/4 opacity-20 dark:opacity-30 pointer-events-none rounded-lg"
+                          className="absolute top-0 right-0 w-3/4 h-3/4 opacity-20 dark:opacity-30 pointer-events-none rounded-xl"
                           style={{
                             background: 'radial-gradient(circle at top right, rgba(29, 135, 81, 0.15) 0%, transparent 70%)'
                           }}
@@ -832,63 +832,56 @@ export default function MarketingPage() {
 
                         {/* Content wrapper with relative positioning */}
                         <div className="relative z-10">
-                          {/* Icon header with colored bar cutting across */}
-                          <div className="relative mb-3 w-full -mx-4">
-                            {/* Colored horizontal bar cutting across - faded, edge to edge, no padding, full right coverage */}
-                            <div
-                              className={`absolute top-1/2 left-0 h-16 sm:h-20 md:h-24 ${iconBgColor} transform -translate-y-1/2 opacity-40`}
-                              style={{
-                                right: '-1rem',
-                                width: 'calc(100% + 2rem)'
-                              }}
-                            ></div>
-                            {/* Centered asset image - Larger to match Figma */}
-                            <div className="relative z-10 flex items-center justify-center">
-                              <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 bg-white dark:bg-[#1D1D23] rounded-full flex items-center justify-center border border-gray-200 dark:border-transparent shadow-lg">
-                                <Image
-                                  src={asset.image}
-                                  alt={asset.name}
-                                  width={80}
-                                  height={80}
-                                  className="object-contain w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20"
-                                  unoptimized
-                                />
+                          {/* Logo header section - colored rounded rectangle matching Figma */}
+                          <div className={`relative w-full h-20 sm:h-24 md:h-28 ${iconBgColor} rounded-t-xl flex items-center justify-center`}>
+                            {/* Asset logo - centered in the colored area */}
+                            <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 bg-white dark:bg-[#1D1D23] rounded-xl flex items-center justify-center shadow-lg">
+                              <Image
+                                src={asset.image}
+                                alt={asset.name}
+                                width={56}
+                                height={56}
+                                className="object-contain w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12"
+                                unoptimized
+                              />
+                            </div>
+                          </div>
+
+                          {/* Text content with padding */}
+                          <div className="p-4">
+                            {/* Cryptocurrency Name - Left aligned */}
+                            <div className="text-gray-900 dark:text-white font-bold text-sm sm:text-base mb-1">
+                              {asset.name}
+                            </div>
+
+                            {/* Ticker Symbol - Left aligned */}
+                            <div className="text-gray-700 dark:text-white text-xs sm:text-sm mb-3 opacity-80">
+                              {asset.symbol}
+                            </div>
+
+                            {/* Price and Percentage Change - Left aligned */}
+                            <div className="flex items-baseline gap-2 mb-2">
+                              <div className="text-gray-900 dark:text-white font-bold text-base sm:text-lg">
+                                ${formattedPrice}
+                              </div>
+                              <div className={`text-xs sm:text-sm font-medium ${change >= 0 ? 'text-secondary' : 'text-red-500'}`}>
+                                {change >= 0 ? '+' : ''}{change.toFixed(2)}%
                               </div>
                             </div>
-                          </div>
 
-                          {/* Cryptocurrency Name - Left aligned */}
-                          <div className="text-gray-900 dark:text-white font-bold text-sm sm:text-base mb-1">
-                            {asset.name}
-                          </div>
-
-                          {/* Ticker Symbol - Left aligned */}
-                          <div className="text-gray-700 dark:text-white text-xs sm:text-sm mb-3 opacity-80">
-                            {asset.symbol}
-                          </div>
-
-                          {/* Price and Percentage Change - Left aligned */}
-                          <div className="flex items-baseline gap-2 mb-2">
-                            <div className="text-gray-900 dark:text-white font-bold text-base sm:text-lg">
-                              ${formattedPrice}
+                            {/* Mini Line Chart */}
+                            <div className="h-8 w-full mt-2">
+                              <svg width="100%" height="100%" viewBox="0 0 100 30" preserveAspectRatio="none" className="overflow-visible">
+                                <polyline
+                                  points="0,25 10,22 20,20 30,18 40,15 50,12 60,10 70,8 80,6 90,4 100,2"
+                                  fill="none"
+                                  stroke="#1D8751"
+                                  strokeWidth="2"
+                                  strokeDasharray="2,2"
+                                  strokeLinecap="round"
+                                />
+                              </svg>
                             </div>
-                            <div className={`text-xs sm:text-sm font-medium ${change >= 0 ? 'text-secondary' : 'text-red-500'}`}>
-                              {change >= 0 ? '+' : ''}{change.toFixed(2)}%
-                            </div>
-                          </div>
-
-                          {/* Mini Line Chart */}
-                          <div className="h-8 w-full mt-2">
-                            <svg width="100%" height="100%" viewBox="0 0 100 30" preserveAspectRatio="none" className="overflow-visible">
-                              <polyline
-                                points="0,25 10,22 20,20 30,18 40,15 50,12 60,10 70,8 80,6 90,4 100,2"
-                                fill="none"
-                                stroke="#1D8751"
-                                strokeWidth="2"
-                                strokeDasharray="2,2"
-                                strokeLinecap="round"
-                              />
-                            </svg>
                           </div>
                         </div>
                       </div>
@@ -1556,8 +1549,86 @@ export default function MarketingPage() {
 
 
       {/* Benefits Section*/}
-      <div className="w-full bg-white dark:bg-[var(--bg-color)]">
-        <img className="w-full h-auto object-contain" src="https://res.cloudinary.com/pitz/image/upload/v1765800227/Screenshot_2025-12-15_150329_l1z3zp.png" alt="" />
+      <div className="w-full bg-[#0A2818] dark:bg-[#0A2818] py-12 sm:py-16 md:py-20 relative overflow-hidden">
+        {/* Decorative wave lines */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          {/* Top wave */}
+          <svg className="absolute top-0 left-0 w-full h-32 sm:h-40 opacity-30" viewBox="0 0 1440 200" preserveAspectRatio="none">
+            <path d="M0,100 C300,180 600,20 900,100 C1200,180 1440,60 1440,100 L1440,0 L0,0 Z" fill="none" stroke="#1D8751" strokeWidth="2"/>
+          </svg>
+          {/* Bottom wave */}
+          <svg className="absolute bottom-0 left-0 w-full h-32 sm:h-40 opacity-30" viewBox="0 0 1440 200" preserveAspectRatio="none">
+            <path d="M0,100 C240,20 480,180 720,100 C960,20 1200,180 1440,100 L1440,200 L0,200 Z" fill="none" stroke="#1D8751" strokeWidth="2"/>
+          </svg>
+          {/* Middle decorative elements */}
+          <div className="absolute top-1/4 right-10 w-3 h-3 bg-[#1D8751] rounded-full opacity-60"></div>
+          <div className="absolute bottom-1/4 left-20 w-2 h-2 bg-[#1D8751] rounded-full opacity-40"></div>
+          <div className="absolute top-1/2 right-1/4 w-2 h-2 bg-[#1D8751] rounded-full opacity-50"></div>
+        </div>
+
+        <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 lg:gap-12">
+            {/* Benefit 1: Absolute Safety */}
+            <div className="flex flex-col sm:flex-row md:flex-col items-center sm:items-start md:items-center text-center sm:text-left md:text-center gap-4 sm:gap-5">
+              <div className="relative">
+                {/* Hexagonal icon container */}
+                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-[#1D8751]/20 rounded-2xl rotate-45 flex items-center justify-center border border-[#1D8751]/30">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 bg-[#1D8751] rounded-xl flex items-center justify-center -rotate-45">
+                    <Shield className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
+                  </div>
+                </div>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-white font-bold text-lg sm:text-xl mb-2">
+                  Absolute Safety
+                </h3>
+                <p className="text-white/70 text-sm sm:text-base leading-relaxed">
+                  Exchange confidently with OMAYA, where safety is our top priority.
+                </p>
+              </div>
+            </div>
+
+            {/* Benefit 2: Fast Deposits & Withdrawals */}
+            <div className="flex flex-col sm:flex-row md:flex-col items-center sm:items-start md:items-center text-center sm:text-left md:text-center gap-4 sm:gap-5">
+              <div className="relative">
+                {/* Hexagonal icon container */}
+                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-[#1D8751]/20 rounded-2xl rotate-45 flex items-center justify-center border border-[#1D8751]/30">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 bg-[#1D8751] rounded-xl flex items-center justify-center -rotate-45">
+                    <DollarSign className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
+                  </div>
+                </div>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-white font-bold text-lg sm:text-xl mb-2">
+                  Fast Deposits & Withdrawals
+                </h3>
+                <p className="text-white/70 text-sm sm:text-base leading-relaxed">
+                  Enjoy swift and seamless deposits and withdrawals.
+                </p>
+              </div>
+            </div>
+
+            {/* Benefit 3: Invite your friend and earn */}
+            <div className="flex flex-col sm:flex-row md:flex-col items-center sm:items-start md:items-center text-center sm:text-left md:text-center gap-4 sm:gap-5">
+              <div className="relative">
+                {/* Hexagonal icon container */}
+                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-[#1D8751]/20 rounded-2xl rotate-45 flex items-center justify-center border border-[#1D8751]/30">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 bg-[#1D8751] rounded-xl flex items-center justify-center -rotate-45">
+                    <Users className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
+                  </div>
+                </div>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-white font-bold text-lg sm:text-xl mb-2">
+                  Invite your friend and earn
+                </h3>
+                <p className="text-white/70 text-sm sm:text-base leading-relaxed">
+                  Refer and invite your friends and earn commission on each transaction they make with us!
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
       {/* Refer and Invite Section */}
       <div className="w-full bg-white dark:bg-transparent py-4 md:py-8 my-4 md:my-6">
