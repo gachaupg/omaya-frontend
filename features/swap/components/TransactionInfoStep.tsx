@@ -123,6 +123,40 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
     };
   }, [isFromAssetOpen, isToAssetOpen, onFromAssetToggle, onToAssetToggle]);
 
+  // Close dropdowns when scrolling the page (but NOT when scrolling inside the dropdown lists)
+  useEffect(() => {
+    const handleScroll = (event: Event) => {
+      const target = event.target as HTMLElement | null;
+
+      // If the scroll originated from inside an asset dropdown, ignore it
+      if (
+        target &&
+        target.closest &&
+        target.closest("[data-asset-dropdown='true']")
+      ) {
+        return;
+      }
+
+      // Close any open dropdowns when page is scrolled
+      if (isFromAssetOpen) {
+        onFromAssetToggle();
+      }
+      if (isToAssetOpen) {
+        onToAssetToggle();
+      }
+    };
+
+    if (isFromAssetOpen || isToAssetOpen) {
+      window.addEventListener("scroll", handleScroll, true);
+      document.addEventListener("scroll", handleScroll, true);
+    }
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll, true);
+      document.removeEventListener("scroll", handleScroll, true);
+    };
+  }, [isFromAssetOpen, isToAssetOpen, onFromAssetToggle, onToAssetToggle]);
+
   const updateDropdownPosition = (isFrom: boolean): React.CSSProperties => {
     if (typeof window === "undefined") {
       return {
@@ -238,6 +272,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
       (
         <div
           ref={isFrom ? fromAssetDropdownContentRef : toAssetDropdownContentRef}
+          data-asset-dropdown="true"
           className="flex flex-col bg-white dark:bg-[#18181D] border border-gray-300 dark:border-accent rounded-2xl shadow-xl z-45 max-h-[70vh] sm:max-h-[60vh]"
           style={dropdownStyle}
         >
