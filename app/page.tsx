@@ -1631,7 +1631,7 @@ export default function MarketingPage() {
         </div>
       </div>
       {/* Refer and Invite Section */}
-      <div className="w-full bg-white dark:bg-transparent py-4 md:py-8 my-4 md:my-6">
+      <div id="referral" className="w-full bg-white dark:bg-transparent py-4 md:py-8 my-4 md:my-6">
         <div className="w-full md:container md:mx-auto md:max-w-8xl md:px-4 md:px-6 lg:px-8 xl:px-12 2xl:px-16">
           <div className="w-full md:mx-auto md:max-w-7xl rounded-3xl overflow-hidden bg-[#1D8751] relative">
 
