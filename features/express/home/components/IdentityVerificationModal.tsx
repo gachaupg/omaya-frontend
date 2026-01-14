@@ -21,7 +21,6 @@
  *         onClose={closeModal}
  *         onVerify={() => router.push("/dashboard/kyc")}
  *       />
- *       {/* Your component content */}
  *     </>
  *   );
  * }
