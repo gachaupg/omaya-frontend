@@ -235,8 +235,8 @@ export default function Footer() {
 
 
           {/* Quick Links Column */}
-          <div className="text-base font-semibold text-gray-900 dark:text-white mb-4">
-            <h3 className="text-base md:text-lg font-semibold mb-3 text-gray-900 dark:text-white">
+          <div className="text-base text-gray-900 dark:text-white mb-4">
+            <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-4">
               Quick Links
             </h3>
             <ul className="space-y-2">
