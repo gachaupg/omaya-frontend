@@ -3933,15 +3933,15 @@ export default function WithdrawalForm({
 
                   {/* Registered Account Section */}
                   {payBank && (
-                    <div className="mt-2 sm:mt-3">
-                      <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
+                    <div className="mt-2 sm:mt-3 w-full overflow-hidden">
+                      <label className="block text-sm sm:text-base lg:text-[17px] text-[#7e7e8f] mb-2 font-semibold">
                         Registered Account
                       </label>
                       {/* If we have selectedPaymentDetails from initialState, show ONLY those - EXACT objects from home page */}
                       {initialState?.paymentDetails && Array.isArray(initialState.paymentDetails) && initialState.paymentDetails.length > 0 ? (
-                        <div className="relative">
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="text-sm text-gray-600 dark:text-gray-400">
+                        <div className="relative w-full overflow-hidden">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
+                            <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 break-words">
                               {initialState.paymentDetails.length} account(s) found
                             </span>
                             <button
@@ -3954,23 +3954,30 @@ export default function WithdrawalForm({
                                   showToast.error("Failed to refresh payment details");
                                 }
                               }}
-                              className="text-xs text-[#1D8751] hover:text-[#166b3e] underline"
+                              className="text-xs text-[#1D8751] hover:text-[#166b3e] underline self-start sm:self-auto"
                             >
                               Refresh
                             </button>
                           </div>
-                          <div className="space-y-2">
+                          <div className="space-y-2 w-full overflow-hidden">
                             {initialState.paymentDetails.map((detail: any, index: number) => (
                               <div
                                 key={index}
-                                className="flex items-center justify-between p-3 rounded-xl border border-[#1D8751] bg-[#1D8751]/10 dark:bg-[#1D8751]/10"
+                                className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-lg sm:rounded-xl border border-[#1D8751] bg-[#1D8751]/10 dark:bg-[#1D8751]/10 w-full overflow-hidden"
                               >
-                                <div className="flex-1">
-                                  <div className="text-gray-900 dark:text-white font-medium text-base sm:text-lg">
-                                    {detail.payment_provider_name || detail.provider_name || "Unknown Provider"} - {detail.account_name || detail.account_number}
+                                <div className="flex-1 min-w-0 w-full sm:w-auto overflow-hidden">
+                                  <div className="text-gray-900 dark:text-white font-medium text-sm sm:text-base lg:text-lg break-words">
+                                    <span className="break-words inline-block max-w-full">
+                                      {detail.payment_provider_name || detail.provider_name || "Unknown Provider"}
+                                    </span>
+                                    <span className="hidden sm:inline"> - </span>
+                                    <span className="block sm:inline break-words max-w-full">
+                                      {detail.account_name || detail.account_number}
+                                    </span>
                                   </div>
-                                  <div className="text-gray-600 dark:text-[#788099] text-sm sm:text-base">
-                                    {detail.account_name} ({detail.account_number})
+                                  <div className="text-gray-600 dark:text-[#788099] text-xs sm:text-sm break-words mt-1">
+                                    <span className="break-words inline-block max-w-full">{detail.account_name}</span>
+                                    <span className="break-words inline-block max-w-full"> ({detail.account_number})</span>
                                   </div>
                                 </div>
                               </div>
@@ -3978,9 +3985,9 @@ export default function WithdrawalForm({
                           </div>
                         </div>
                       ) : selectedPaymentDetails.length > 0 ? (
-                        <div className="relative">
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="text-sm text-gray-600 dark:text-gray-400">
+                        <div className="relative w-full overflow-hidden">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
+                            <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 break-words">
                               {selectedPaymentDetails.length} account(s) selected
                             </span>
                             <button
@@ -3993,23 +4000,30 @@ export default function WithdrawalForm({
                                   showToast.error("Failed to refresh payment details");
                                 }
                               }}
-                              className="text-xs text-[#1D8751] hover:text-[#166b3e] underline"
+                              className="text-xs text-[#1D8751] hover:text-[#166b3e] underline self-start sm:self-auto"
                             >
                               Refresh
                             </button>
                           </div>
-                          <div className="space-y-2">
+                          <div className="space-y-2 w-full overflow-hidden">
                             {selectedPaymentDetails.map((detail: UserPaymentDetail, index: number) => (
                               <div
                                 key={detail.id || detail.user_payment_detail_id || index}
-                                className="flex items-center justify-between p-3 rounded-xl border border-[#1D8751] bg-[#1D8751]/10 dark:bg-[#1D8751]/10"
+                                className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-lg sm:rounded-xl border border-[#1D8751] bg-[#1D8751]/10 dark:bg-[#1D8751]/10 w-full overflow-hidden"
                               >
-                                <div className="flex-1">
-                                  <div className="text-gray-900 dark:text-white font-medium text-base sm:text-lg">
-                                    {detail.payment_provider_name || detail.provider_name || "Unknown Provider"} - {detail.account_name || detail.account_number}
+                                <div className="flex-1 min-w-0 w-full sm:w-auto overflow-hidden">
+                                  <div className="text-gray-900 dark:text-white font-medium text-sm sm:text-base lg:text-lg break-words">
+                                    <span className="break-words inline-block max-w-full">
+                                      {detail.payment_provider_name || detail.provider_name || "Unknown Provider"}
+                                    </span>
+                                    <span className="hidden sm:inline"> - </span>
+                                    <span className="block sm:inline break-words max-w-full">
+                                      {detail.account_name || detail.account_number}
+                                    </span>
                                   </div>
-                                  <div className="text-gray-600 dark:text-[#788099] text-sm sm:text-base">
-                                    {detail.account_name || "N/A"} ({detail.account_number || detail.wallet_address || "N/A"})
+                                  <div className="text-gray-600 dark:text-[#788099] text-xs sm:text-sm break-words mt-1">
+                                    <span className="break-words inline-block max-w-full">{detail.account_name || "N/A"}</span>
+                                    <span className="break-words inline-block max-w-full"> ({detail.account_number || detail.wallet_address || "N/A"})</span>
                                   </div>
                                 </div>
                               </div>
@@ -4017,9 +4031,9 @@ export default function WithdrawalForm({
                           </div>
                         </div>
                       ) : enhancedFilteredUserPaymentDetails.length > 0 ? (
-                        <div className="relative">
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="text-sm text-gray-600 dark:text-gray-400">
+                        <div className="relative w-full overflow-hidden">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
+                            <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 break-words">
                               {enhancedFilteredUserPaymentDetails.length} account(s) found
                             </span>
                             <button
@@ -4032,7 +4046,7 @@ export default function WithdrawalForm({
                                   showToast.error("Failed to refresh payment details");
                                 }
                               }}
-                              className="text-xs text-[#1D8751] hover:text-[#166b3e] underline"
+                              className="text-xs text-[#1D8751] hover:text-[#166b3e] underline self-start sm:self-auto"
                             >
                               Refresh
                             </button>

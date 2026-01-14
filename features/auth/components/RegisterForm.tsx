@@ -756,7 +756,7 @@ export default function RegistrationPage() {
 
   return (
     <>
-      <div className="min-h-screen bg-app dark:bg-app flex flex-col md:flex-row items-start justify-center relative overflow-hidden px-6 py-16 md:pt-24 md:pb-24">
+      <div className="min-h-screen bg-app dark:bg-app flex flex-col md:flex-row items-start justify-center relative overflow-hidden px-4 sm:px-6 md:px-8 lg:px-12 py-12 sm:py-16 md:pt-24 md:pb-24">
         {/* Left Side - Mobile App Preview */}
         <div className="w-full md:w-1/2 flex justify-center mb-8 md:mb-0 relative z-10">
           {/* Background Glow Effect */}
@@ -809,8 +809,8 @@ export default function RegistrationPage() {
         </div>
 
         {/* Right Side - Registration Form */}
-        <div className="w-full md:w-1/2 relative z-10">
-          <div className="max-w-md mx-auto 2xl:max-w-3/4">
+        <div className="w-full md:w-1/2 relative z-10 px-4 sm:px-6 md:px-8 lg:px-0">
+          <div className="max-w-md mx-auto 2xl:max-w-3/4 w-full">
             <div className="mb-6">
               <h1 className="dark:text-white text-gray-900 text-2xl font-semibold">
                 {t("auth.register.title", "Registration")}
@@ -1203,6 +1203,7 @@ export default function RegistrationPage() {
                         setPassword(e.target.value);
                         if (submitAttempted) setSubmitAttempted(false);
                       }}
+                      autoComplete="new-password"
                       className={`w-full py-2 px-4 pl-9 rounded-full bg-white dark:bg-[var(--card-color)] border ${errors.password ? "border-[#FDA29B]" : "border-gray-300 dark:border-[#35353E]"
                         } text-gray-900 dark:text-white focus:outline-none focus:border-[#13B562]`}
                       placeholder={t(
@@ -1338,6 +1339,7 @@ export default function RegistrationPage() {
                       id="confirm-password"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
+                      autoComplete="new-password"
                       className={`w-full py-2 px-4 pl-9 rounded-full bg-white dark:bg-[var(--card-color)] border ${errors.confirmPassword
                         ? "border-[#FDA29B]"
                         : "border-gray-300 dark:border-[#35353E]"
@@ -1652,7 +1654,7 @@ export default function RegistrationPage() {
                       className="opacity-0 absolute h-5 w-5 sm:h-4 sm:w-4 cursor-pointer"
                     />
                     <div
-                      className={`border ${!agreeToTerms && (submitAttempted || errors.terms) ? "border-[#F04438]" : "border-[#871D1DFF]"} rounded h-5 w-5 sm:h-4 sm:w-4 flex flex-shrink-0 justify-center items-center ${agreeToTerms ? "bg-[#1D8751]" : "bg-transparent"}`}
+                      className={`border ${!agreeToTerms && (submitAttempted || errors.terms) ? "border-[#F04438]" : "border-[#1D8751]"} rounded h-5 w-5 sm:h-4 sm:w-4 flex flex-shrink-0 justify-center items-center ${agreeToTerms ? "bg-[#1D8751]" : "bg-transparent"}`}
                     >
                       {agreeToTerms && (
                         <svg

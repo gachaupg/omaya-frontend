@@ -433,7 +433,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                           setErrors((prev) => ({ ...prev, commission: undefined }));
                         }
                       }}
-                      className="bg-transparent border-none text-gray-900 dark:text-white text-base focus:outline-none w-16"
+                      className="bg-transparent border-none text-gray-900 dark:text-white text-base focus:outline-none w-20"
                       placeholder="1.00"
                     />
                   </div>
@@ -442,8 +442,10 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                       className="text-[#1D8751] text-xl w-8 h-8 rounded-full hover:bg-[#1D8751]/10 flex items-center justify-center transition mr-2"
                       onClick={() => {
                         setCommission((c) => {
-                          const current = parseFloat(c) || 0;
-                          return Number((current + 0.1).toFixed(1)).toString();
+                          // Parse decimal format like "1.00" or "1.01"
+                          const current = parseFloat(c) || 1.00;
+                          const incremented = current + 0.01;
+                          return incremented.toFixed(2);
                         });
                         setErrors((prev) => ({ ...prev, commission: undefined }));
                       }}
@@ -454,8 +456,10 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                       className="text-[#1D8751] text-xl w-8 h-8 rounded-full hover:bg-[#1D8751]/10 flex items-center justify-center transition"
                       onClick={() => {
                         setCommission((c) => {
-                          const current = parseFloat(c) || 0;
-                          return Math.max(0, Number((current - 0.1).toFixed(1))).toString();
+                          // Parse decimal format like "1.00" or "1.01"
+                          const current = parseFloat(c) || 1.00;
+                          const decremented = Math.max(0.01, current - 0.01);
+                          return decremented.toFixed(2);
                         });
                         setErrors((prev) => ({ ...prev, commission: undefined }));
                       }}

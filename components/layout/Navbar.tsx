@@ -6,7 +6,8 @@ import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
 import { Menu, X, Check, Settings, LogOut, User, ChevronDown, ChevronRight } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
-import { RootState, AppDispatch } from "@/store";
+import { RootState } from "@/store/rootReducer";
+import { AppDispatch } from "@/store";
 import {
   initializeAuth,
   getUserProfile,
@@ -15,6 +16,7 @@ import {
 import { checkKYCStatus } from "@/features/kyc/slices/kycSlice";
 import { useLanguageOptional } from "@/context/language";
 import { useTheme } from "@/context/theme";
+import { checkKYCStatus } from "@/features/kyc/slices/kycSlice";
 
 const DefaultProfileIcon = () => (
   <div className="w-10 h-10 rounded-full flex items-center justify-center bg-[#1D8751] border-2 border-white">
@@ -525,15 +527,26 @@ export default function Navbar() {
     user,
   } = useSelector((state: RootState) => state.auth);
   const kycState = useSelector((state: RootState) => state.kyc);
-  const isKycVerified = kycState?.isVerified ?? false;
   const dispatch = useDispatch<AppDispatch>();
   const depositDropdownRef = useRef<HTMLDivElement>(null);
   const profileModalRef = useRef<HTMLDivElement>(null);
+
+  // Use KYC state for verification status, fallback to user.is_verified
+  const isVerified = kycState.isVerified !== undefined 
+    ? kycState.isVerified 
+    : (user?.is_verified ?? false);
 
   useEffect(() => {
     dispatch(initializeAuth());
     // Fetch KYC status to know if user is verified
     if (isAuthenticated) {
+      dispatch(checkKYCStatus());
+    }
+  }, [dispatch, isAuthenticated]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      // Ensure KYC status is up to date
       dispatch(checkKYCStatus());
     }
   }, [dispatch, isAuthenticated]);
@@ -944,35 +957,35 @@ export default function Navbar() {
                       <User className="w-4 h-4 md:w-5 md:h-5 lg:w-6 lg:h-6 text-white" />
                     </div>
                   )}
-                  {/* Verification Badge - positioned on top of profile image - only show if KYC verified */}
-                  {isKycVerified && (
-                    <span className="absolute -top-0.5 -right-0.5 md:-top-0.5 md:-right-0.5 lg:-top-1 lg:-right-1 inline-flex items-center justify-center w-4 h-4 md:w-4 md:h-4 lg:w-5 lg:h-5 z-10">
-                      <svg
-                        width="20"
-                        height="20"
-                        viewBox="0 0 20 20"
-                        className="absolute w-4 h-4 md:w-4 md:h-4 lg:w-5 lg:h-5"
-                      >
-                        <circle cx="10" cy="10" r="9" fill="white" />
-                        <circle cx="10" cy="10" r="7.5" fill="#1D8751" />
-                        {/* Serrated edge using small circles */}
-                        {[
-                          0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330,
-                        ].map((angle) => {
-                          const rad = (angle * Math.PI) / 180;
-                          const x = 10 + 8.5 * Math.cos(rad);
-                          const y = 10 + 8.5 * Math.sin(rad);
-                          return (
-                            <circle
-                              key={angle}
-                              cx={x}
-                              cy={y}
-                              r="1"
-                              fill="white"
-                            />
-                          );
-                        })}
-                      </svg>
+                  {/* Verification Badge - positioned on top of profile image */}
+                  <span className="absolute -top-0.5 -right-0.5 md:-top-0.5 md:-right-0.5 lg:-top-1 lg:-right-1 inline-flex items-center justify-center w-4 h-4 md:w-4 md:h-4 lg:w-5 lg:h-5 z-10">
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 20 20"
+                      className="absolute w-4 h-4 md:w-4 md:h-4 lg:w-5 lg:h-5"
+                    >
+                      <circle cx="10" cy="10" r="9" fill="white" />
+                      <circle cx="10" cy="10" r="7.5" fill={isVerified ? "#1D8751" : "#FCD34D"} />
+                      {/* Serrated edge using small circles */}
+                      {[
+                        0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330,
+                      ].map((angle) => {
+                        const rad = (angle * Math.PI) / 180;
+                        const x = 10 + 8.5 * Math.cos(rad);
+                        const y = 10 + 8.5 * Math.sin(rad);
+                        return (
+                          <circle
+                            key={angle}
+                            cx={x}
+                            cy={y}
+                            r="1"
+                            fill="white"
+                          />
+                        );
+                      })}
+                    </svg>
+                    {isVerified && (
                       <svg
                         width="10"
                         height="10"
@@ -989,8 +1002,8 @@ export default function Navbar() {
                           strokeLinejoin="round"
                         />
                       </svg>
-                    </span>
-                  )}
+                    )}
+                  </span>
                 </button>
 
                 {/* Profile Modal */}
@@ -1023,46 +1036,46 @@ export default function Navbar() {
                                   }}
                                   loading="eager"
                                 />
-                                {/* Verification Badge - only show if KYC verified */}
-                                {isKycVerified && (
-                                  <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 z-10">
-                                    <svg
-                                      width="20"
-                                      height="20"
-                                      viewBox="0 0 20 20"
-                                      className="absolute"
-                                    >
-                                      <circle
-                                        cx="10"
-                                        cy="10"
-                                        r="9"
-                                        fill="white"
-                                      />
-                                      <circle
-                                        cx="10"
-                                        cy="10"
-                                        r="7.5"
-                                        fill="#1D8751"
-                                      />
-                                      {/* Serrated edge using small circles */}
-                                      {[
-                                        0, 30, 60, 90, 120, 150, 180, 210, 240,
-                                        270, 300, 330,
-                                      ].map((angle) => {
-                                        const rad = (angle * Math.PI) / 180;
-                                        const x = 10 + 8.5 * Math.cos(rad);
-                                        const y = 10 + 8.5 * Math.sin(rad);
-                                        return (
-                                          <circle
-                                            key={angle}
-                                            cx={x}
-                                            cy={y}
-                                            r="1"
-                                            fill="white"
-                                          />
-                                        );
-                                      })}
-                                    </svg>
+                                {/* Verification Badge */}
+                                <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 z-10">
+                                  <svg
+                                    width="20"
+                                    height="20"
+                                    viewBox="0 0 20 20"
+                                    className="absolute"
+                                  >
+                                    <circle
+                                      cx="10"
+                                      cy="10"
+                                      r="9"
+                                      fill="white"
+                                    />
+                                    <circle
+                                      cx="10"
+                                      cy="10"
+                                      r="7.5"
+                                      fill={isVerified ? "#1D8751" : "#FCD34D"}
+                                    />
+                                    {/* Serrated edge using small circles */}
+                                    {[
+                                      0, 30, 60, 90, 120, 150, 180, 210, 240,
+                                      270, 300, 330,
+                                    ].map((angle) => {
+                                      const rad = (angle * Math.PI) / 180;
+                                      const x = 10 + 8.5 * Math.cos(rad);
+                                      const y = 10 + 8.5 * Math.sin(rad);
+                                      return (
+                                        <circle
+                                          key={angle}
+                                          cx={x}
+                                          cy={y}
+                                          r="1"
+                                          fill="white"
+                                        />
+                                      );
+                                    })}
+                                  </svg>
+                                  {isVerified && (
                                     <svg
                                       width="10"
                                       height="10"
@@ -1079,8 +1092,8 @@ export default function Navbar() {
                                         strokeLinejoin="round"
                                       />
                                     </svg>
-                                  </span>
-                                )}
+                                  )}
+                                </span>
                               </>
                             ) : (
                               <div className="w-12 h-12 rounded-full flex items-center justify-center bg-[#1D8751] border-2 border-white">
@@ -1352,7 +1365,7 @@ export default function Navbar() {
                                     cx="10"
                                     cy="10"
                                     r="7.5"
-                                    fill="#1D8751"
+                                    fill={isVerified ? "#1D8751" : "#FCD34D"}
                                   />
                                   {/* Serrated edge using small circles */}
                                   {[
@@ -1373,22 +1386,24 @@ export default function Navbar() {
                                     );
                                   })}
                                 </svg>
-                                <svg
-                                  width="10"
-                                  height="10"
-                                  viewBox="0 0 10 10"
-                                  fill="none"
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  className="relative z-10"
-                                >
-                                  <path
-                                    d="M2 5L4 7L8 3"
-                                    stroke="#FFFFFF"
-                                    strokeWidth="1.5"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                  />
-                                </svg>
+                                {isVerified && (
+                                  <svg
+                                    width="10"
+                                    height="10"
+                                    viewBox="0 0 10 10"
+                                    fill="none"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="relative z-10"
+                                  >
+                                    <path
+                                      d="M2 5L4 7L8 3"
+                                      stroke="#FFFFFF"
+                                      strokeWidth="1.5"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                    />
+                                  </svg>
+                                )}
                               </span>
                             </>
                           ) : (
@@ -1483,7 +1498,7 @@ export default function Navbar() {
                                           cx="12"
                                           cy="12"
                                           r="9"
-                                          fill="#1D8751"
+                                          fill={isVerified ? "#1D8751" : "#FCD34D"}
                                         />
                                         {/* Serrated edge using small circles */}
                                         {[
@@ -1504,22 +1519,24 @@ export default function Navbar() {
                                           );
                                         })}
                                       </svg>
-                                      <svg
-                                        width="12"
-                                        height="12"
-                                        viewBox="0 0 12 12"
-                                        fill="none"
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        className="relative z-10"
-                                      >
-                                        <path
-                                          d="M2.5 6L5 8.5L9.5 4"
-                                          stroke="#FFFFFF"
-                                          strokeWidth="1.8"
-                                          strokeLinecap="round"
-                                          strokeLinejoin="round"
-                                        />
-                                      </svg>
+                                      {isVerified && (
+                                        <svg
+                                          width="12"
+                                          height="12"
+                                          viewBox="0 0 12 12"
+                                          fill="none"
+                                          xmlns="http://www.w3.org/2000/svg"
+                                          className="relative z-10"
+                                        >
+                                          <path
+                                            d="M2.5 6L5 8.5L9.5 4"
+                                            stroke="#FFFFFF"
+                                            strokeWidth="1.8"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                          />
+                                        </svg>
+                                      )}
                                     </span>
                                   </>
                                 ) : (

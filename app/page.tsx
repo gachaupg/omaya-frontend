@@ -1698,7 +1698,7 @@ export default function MarketingPage() {
 
                 {/* Button */}
                 <div className="pt-2">
-                  <Link href="/dashboard/referrals" className="inline-flex items-center gap-2 bg-white text-[#1D8751] px-8 py-3.5 rounded-full font-bold text-sm md:text-base hover:bg-gray-100 transition-colors shadow-xl shadow-black/10">
+                  <Link href="/dashboard/account?tab=referral" className="inline-flex items-center gap-2 bg-white text-[#1D8751] px-8 py-3.5 rounded-full font-bold text-sm md:text-base hover:bg-gray-100 transition-colors shadow-xl shadow-black/10">
                     Start Referring
                     <ArrowRight className="w-4 h-4" />
                   </Link>

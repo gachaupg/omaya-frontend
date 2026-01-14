@@ -65,19 +65,19 @@ import { tokens } from "../../../styles/tokens";
   if (!twoFAModalOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/60">
-      <div className="w-full max-w-md mx-4">
-        <Card className="p-6">
-          <div className="text-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/60 p-4">
+      <div className="w-full max-w-md">
+        <Card className="bg-white dark:bg-[#18181D] border border-gray-200 dark:border-[#35353E] rounded-2xl shadow-xl p-4 sm:p-6 md:p-8">
+          <div className="text-center mb-4 sm:mb-6">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-2">
               Two-Factor Authentication
             </h2>
-            <p className="text-gray-600 dark:text-gray-400 text-sm">
+            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
               Enter the 6-digit code from your authenticator app
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
             <div>
               <label
                 htmlFor="2fa-code"
@@ -92,24 +92,24 @@ import { tokens } from "../../../styles/tokens";
                 onChange={handleCodeChange}
                 placeholder="Enter 6-digit code"
                 maxLength={6}
-                className="w-full px-4 py-3 bg-white dark:bg-[var(--card-color)] border border-gray-300 dark:border-[#35353E] rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1D8751] focus:border-transparent"
+                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white dark:bg-[#1D1D23] border border-gray-300 dark:border-[#35353E] rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1D8751] focus:border-transparent text-base sm:text-lg"
                 autoComplete="one-time-code"
                 autoFocus
               />
             </div>
 
             {(localError || error) && (
-              <div className="text-red-500 text-sm text-center">
+              <div className="text-red-500 text-sm text-center px-2">
                 {localError || error}
               </div>
             )}
 
-            <div className="flex space-x-3 pt-4">
+            <div className="flex flex-col sm:flex-row gap-3 sm:space-x-3 pt-2 sm:pt-4">
               <Button
                 type="button"
                 variant="outline"
                 onClick={handleClose}
-                className="flex-1"
+                className="flex-1 w-full sm:w-auto"
                 disabled={loading}
               >
                 Cancel
@@ -117,7 +117,7 @@ import { tokens } from "../../../styles/tokens";
               <Button
                 type="submit"
                 variant="primary"
-                className="flex-1"
+                className="flex-1 w-full sm:w-auto"
                 disabled={loading || !code.trim()}
               >
                 {loading ? "Verifying..." : "Verify"}
@@ -125,8 +125,8 @@ import { tokens } from "../../../styles/tokens";
             </div>
           </form>
 
-          <div className="mt-6 text-center">
-            <p className="text-xs text-gray-600 dark:text-gray-400">
+          <div className="mt-4 sm:mt-6 text-center">
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 px-2">
               Don't have access to your authenticator? Contact support for assistance.
             </p>
           </div>

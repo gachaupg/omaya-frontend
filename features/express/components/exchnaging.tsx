@@ -1064,7 +1064,25 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
         <div className="flex-shrink-0 ml-0 md:ml-6 flex items-center justify-center py-2">
           {/* QR code */}
           {(() => {
-            const qrData = liveTransactionId || effectiveTransactionData?.transactionId || "";
+            // For deposits, use account number; for withdrawals, use wallet address
+            let qrData = "";
+            
+            if (effectiveTransactionData?.type === "deposit" && effectiveTransactionData?.paymentDetail?.account_number) {
+              // For deposits, show account number in QR code
+              qrData = effectiveTransactionData.paymentDetail.account_number;
+            } else if (effectiveTransactionData?.type === "withdrawal" && effectiveTransactionData?.walletAddress) {
+              // For withdrawals, show wallet address
+              qrData = effectiveTransactionData.walletAddress;
+            } else if (effectiveTransactionData?.type === "deposit" && effectiveTransactionData?.paymentDetail) {
+              // Fallback: try to get account_number from payment_details array if not at root level
+              const firstDetail = effectiveTransactionData.paymentDetail.payment_details?.[0];
+              if (firstDetail?.account_number || firstDetail?.mobile_number) {
+                qrData = firstDetail.account_number || firstDetail.mobile_number;
+              }
+            } else {
+              // Final fallback to transaction ID
+              qrData = liveTransactionId || effectiveTransactionData?.transactionId || "";
+            }
             
             if (!qrData) {
               return (

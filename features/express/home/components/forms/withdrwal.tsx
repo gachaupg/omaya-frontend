@@ -48,6 +48,7 @@ import {
   buildExpressRedirectPath,
   setAuthRedirectPath,
 } from "@/lib/utils/authRedirect";
+import { openKYCModal, checkKYCStatus } from "@/features/auth/slices/authSlice";
 
 // Add UserPaymentDetail interface
 interface UserPaymentDetail {
@@ -240,7 +241,7 @@ export default function WithdrawalForm({
     loading: swapAssetsLoading,
     error: swapAssetsError,
   } = useSelector((state: any) => state.swap);
-  const { isAuthenticated } = useSelector((state: any) => state.auth);
+  const { isAuthenticated, user } = useSelector((state: any) => state.auth);
   const { isDark } = useTheme();
 
   const {
@@ -2911,6 +2912,31 @@ export default function WithdrawalForm({
 
   const handleFirstCardSubmit = async () => {
     if (validateFirstCard()) {
+      // Check if user is verified (KYC check) - verify with API
+      if (isAuthenticated && user) {
+        // Check KYC status from API to get the latest status
+        try {
+          const kycResult = await dispatch(checkKYCStatus()).unwrap();
+          const kycStatus = kycResult as any;
+          
+          // Only open modal if API confirms user is NOT verified
+          if (kycStatus && kycStatus.is_verified === false) {
+            dispatch(openKYCModal());
+            return;
+          }
+          // If verified (is_verified === true), continue with the flow
+        } catch (error) {
+          // If API check fails, fallback to user.is_verified
+          // But only open modal if explicitly false (not undefined/null)
+          if (user.is_verified === false) {
+            dispatch(openKYCModal());
+            return;
+          }
+          // If verification status is unknown, allow the action to proceed
+          console.warn("KYC status check failed, proceeding with caution:", error);
+        }
+      }
+
       setIsSubmitting(true);
       setIsTransactionSubmitted(false);
 
@@ -3095,6 +3121,31 @@ export default function WithdrawalForm({
       setValidationErrors(errors);
       showToast.error("Please fix the following errors: " + errors.join(", "));
       return;
+    }
+
+    // Check if user is verified (KYC check) - verify with API
+    if (isAuthenticated && user) {
+      // Check KYC status from API to get the latest status
+      try {
+        const kycResult = await dispatch(checkKYCStatus()).unwrap();
+        const kycStatus = kycResult as any;
+        
+        // Only open modal if API confirms user is NOT verified
+        if (kycStatus && kycStatus.is_verified === false) {
+          dispatch(openKYCModal());
+          return;
+        }
+        // If verified (is_verified === true), continue with the flow
+      } catch (error) {
+        // If API check fails, fallback to user.is_verified
+        // But only open modal if explicitly false (not undefined/null)
+        if (user.is_verified === false) {
+          dispatch(openKYCModal());
+          return;
+        }
+        // If verification status is unknown, allow the action to proceed
+        console.warn("KYC status check failed, proceeding with caution:", error);
+      }
     }
 
     setIsSubmitting(true);

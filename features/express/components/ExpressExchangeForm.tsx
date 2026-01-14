@@ -44,8 +44,14 @@ const ExpressExchangeForm: React.FC<ExpressExchangeFormProps> = ({
 }) => {
   const [mode, setMode] = useState<"deposit" | "withdrawal">(initialMode);
   const [prefillState, setPrefillState] = useState<any>(null);
+  // Preserve state when switching modes
+  const [preservedState, setPreservedState] = useState<any>(null);
 
-  const handleModeChange = (newMode: "deposit" | "withdrawal") => {
+  const handleModeChange = (newMode: "deposit" | "withdrawal", currentState?: any) => {
+    // Save current state before switching
+    if (currentState) {
+      setPreservedState(currentState);
+    }
     setMode(newMode);
   };
 
@@ -79,7 +85,7 @@ const ExpressExchangeForm: React.FC<ExpressExchangeFormProps> = ({
           mode={mode}
           onModeChange={handleModeChange}
           isHomePage={isHomePage}
-          initialState={prefillState}
+          initialState={preservedState || prefillState}
         />
       ) : (
         <WithdrawalForm
@@ -87,7 +93,7 @@ const ExpressExchangeForm: React.FC<ExpressExchangeFormProps> = ({
           mode={mode}
           onModeChange={handleModeChange}
           isHomePage={isHomePage}
-          initialState={prefillState}
+          initialState={preservedState || prefillState}
         />
       )}
     </div>

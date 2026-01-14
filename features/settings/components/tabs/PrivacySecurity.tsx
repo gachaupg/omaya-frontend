@@ -980,34 +980,36 @@ const PrivacySecurity = () => {
             </div>
           )}
           {totalPages > 1 && (
-            <div className="flex flex-col sm:flex-row justify-center items-center gap-2 mt-4">
+            <div className="flex flex-col sm:flex-row justify-center items-center gap-2 sm:gap-2 mt-4 w-full overflow-hidden">
               {/* Mobile: Show only Prev/Next with page indicator */}
-              <div className="flex items-center gap-2 sm:hidden w-full">
+              <div className="flex items-center gap-2 sm:hidden w-full px-1">
                 <button
-                  className="flex-1 px-3 py-2 rounded dark:bg-[#35353E] bg-gray-400 dark:text-white text-gray-900 disabled:opacity-50 text-sm font-medium"
+                  className="flex-1 px-4 py-3 rounded-lg dark:bg-[#35353E] bg-gray-400 dark:text-white text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base font-medium min-h-[44px] flex items-center justify-center transition-colors active:opacity-70"
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
                 >
-                  Prev
+                  ← Prev
                 </button>
-                <span className="text-sm dark:text-[#8C8CA1] text-gray-600 font-medium px-2">
-                  {currentPage} / {totalPages}
-                </span>
+                <div className="flex-shrink-0 px-3 py-2 rounded-lg dark:bg-[var(--card-color)] bg-gray-100 border dark:border-[#35353E] border-gray-300">
+                  <span className="text-sm sm:text-base dark:text-[#8C8CA1] text-gray-600 font-semibold whitespace-nowrap">
+                    {currentPage} / {totalPages}
+                  </span>
+                </div>
                 <button
-                  className="flex-1 px-3 py-2 rounded dark:bg-[#35353E] bg-gray-400 dark:text-white text-gray-900 disabled:opacity-50 text-sm font-medium"
+                  className="flex-1 px-4 py-3 rounded-lg dark:bg-[#35353E] bg-gray-400 dark:text-white text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base font-medium min-h-[44px] flex items-center justify-center transition-colors active:opacity-70"
                   onClick={() =>
                     setCurrentPage((p) => Math.min(totalPages, p + 1))
                   }
                   disabled={currentPage === totalPages}
                 >
-                  Next
+                  Next →
                 </button>
               </div>
               
               {/* Desktop: Show all page numbers */}
-              <div className="hidden sm:flex justify-center items-center gap-2">
+              <div className="hidden sm:flex justify-center items-center gap-1.5 flex-wrap">
                 <button
-                  className="px-2 py-1 rounded dark:bg-[#35353E] bg-gray-400 dark:text-white text-gray-900 disabled:opacity-50 text-sm"
+                  className="px-3 py-1.5 rounded-lg dark:bg-[#35353E] bg-gray-400 dark:text-white text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors hover:opacity-80"
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
                 >
@@ -1016,10 +1018,10 @@ const PrivacySecurity = () => {
                 {[...Array(totalPages)].map((_, idx) => (
                   <button
                     key={idx}
-                    className={`px-2 py-1 rounded text-sm ${
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors min-w-[36px] ${
                       currentPage === idx + 1
-                        ? "bg-[#1D8751] text-white"
-                        : "dark:bg-[#35353E] bg-gray-400 dark:text-[#8C8CA1] text-gray-600"
+                        ? "bg-[#1D8751] text-white hover:bg-[#166b3e]"
+                        : "dark:bg-[#35353E] bg-gray-400 dark:text-[#8C8CA1] text-gray-600 hover:opacity-80"
                     }`}
                     onClick={() => setCurrentPage(idx + 1)}
                   >
@@ -1027,7 +1029,7 @@ const PrivacySecurity = () => {
                   </button>
                 ))}
                 <button
-                  className="px-2 py-1 rounded dark:bg-[#35353E] bg-gray-400 dark:text-white text-gray-900 disabled:opacity-50 text-sm"
+                  className="px-3 py-1.5 rounded-lg dark:bg-[#35353E] bg-gray-400 dark:text-white text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors hover:opacity-80"
                   onClick={() =>
                     setCurrentPage((p) => Math.min(totalPages, p + 1))
                   }

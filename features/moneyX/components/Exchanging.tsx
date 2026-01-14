@@ -742,17 +742,17 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
       {/* Timer Banner */}
       {timerActive && timeRemaining > 0 && (
         <div
-          className={`w-full mb-4 ${
+          className={`w-full mb-3 sm:mb-4 ${
             timeRemaining <= 60
               ? "bg-red-500/20 border-red-500"
               : timeRemaining <= 300
                 ? "bg-orange-500/20 border-orange-500"
                 : "bg-[#1D8751]/20 border-[#1D8751]"
-          } border-2 rounded-2xl p-2 sm:p-3 md:p-4 flex items-center justify-between`}
+          } border-2 rounded-xl sm:rounded-2xl p-2.5 sm:p-3 md:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-3`}
         >
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
             <svg
-              className={`w-6 h-6 ${
+              className={`w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0 ${
                 timeRemaining <= 60
                   ? "text-red-500"
                   : timeRemaining <= 300
@@ -770,18 +770,18 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                 d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
-            <div>
+            <div className="min-w-0 flex-1">
               <div
-                className={`text-sm font-semibold ${
+                className={`text-xs sm:text-sm font-semibold ${
                   isDark ? "text-white" : "text-gray-900"
                 }`}
               >
                 Transaction Timeout
               </div>
               <div
-                className={`text-xs ${
+                className={`text-[10px] sm:text-xs ${
                   isDark ? "text-gray-300" : "text-gray-600"
-                }`}
+                } break-words`}
               >
                 {timeRemaining <= 60
                   ? "Transaction will be cancelled soon!"
@@ -790,7 +790,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
             </div>
           </div>
           <div
-            className={`text-2xl font-bold ${
+            className={`text-xl sm:text-2xl font-bold flex-shrink-0 ${
               timeRemaining <= 60
                 ? "text-red-500"
                 : timeRemaining <= 300
@@ -809,21 +809,21 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
           isDark
             ? "bg-[var(--card-color)]  border:[#E8EFF5] dark:border-[#35353E]"
             : "bg-white border-gray-200"
-        } border-2 rounded-2xl p-4 shadow-lg w-full mb-4 min-h-[180px]`}
+        } border-2 rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 shadow-lg w-full mb-3 sm:mb-4 min-h-[160px] sm:min-h-[180px]`}
       >
-        <div className="flex-1 flex flex-col justify-between py-2 pr-2">
+        <div className="flex-1 flex flex-col justify-between py-1 sm:py-2 pr-0 sm:pr-2">
           <div>
             <div
               className={`${
                 isDark ? "text-[#7B7B7B]" : "text-gray-600"
-              } text-xs font-semibold mb-0.5`}
+              } text-[10px] sm:text-xs font-semibold mb-0.5`}
             >
               Amount:
             </div>
             <div
               className={`${
                 isDark ? "text-white" : "text-gray-900"
-              } text-base font-semibold mb-1 flex items-center gap-2`}
+              } text-sm sm:text-base font-semibold mb-1 flex items-center gap-2`}
             >
               <span>
                 {liveAmount !== null
@@ -839,11 +839,11 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                 <div
                   className={`${
                     isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                  } text-xs font-semibold mb-0.5 mt-3`}
+                  } text-[10px] sm:text-xs font-semibold mb-0.5 mt-2 sm:mt-3`}
                 >
                   From Payment Method:
                 </div>
-                <div className="flex items-center mb-2">
+                <div className="flex items-center mb-2 flex-wrap gap-1 sm:gap-2">
                   {effectiveTransactionData.fromPaymentMethod.provider_logo ||
                   effectiveTransactionData.fromPaymentMethod.logo ? (
                     <img
@@ -852,7 +852,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                         effectiveTransactionData.fromPaymentMethod.logo
                       }
                       alt={effectiveTransactionData.fromPaymentMethod.provider_name}
-                      className="w-6 h-6 mr-2 rounded-md object-contain bg-white"
+                      className="w-5 h-5 sm:w-6 sm:h-6 mr-1 sm:mr-2 rounded-md object-contain bg-white flex-shrink-0"
                       onError={(e) => {
                         e.currentTarget.src =
                           "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
@@ -862,7 +862,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                   <span
                     className={`${
                       isDark ? "text-white" : "text-gray-900"
-                    } text-sm font-semibold`}
+                    } text-xs sm:text-sm font-semibold break-words`}
                   >
                     {effectiveTransactionData.fromPaymentMethod.provider_name}
                   </span>
@@ -875,11 +875,11 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                 <div
                   className={`${
                     isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                  } text-xs font-semibold mb-0.5 mt-3`}
+                  } text-[10px] sm:text-xs font-semibold mb-0.5 mt-2 sm:mt-3`}
                 >
                   To Payment Method:
                 </div>
-                <div className="flex items-center mb-2">
+                <div className="flex items-center mb-2 flex-wrap gap-1 sm:gap-2">
                   {effectiveTransactionData.toPaymentMethod.provider_logo ||
                   effectiveTransactionData.toPaymentMethod.logo ? (
                     <img
@@ -888,7 +888,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                         effectiveTransactionData.toPaymentMethod.logo
                       }
                       alt={effectiveTransactionData.toPaymentMethod.provider_name}
-                      className="w-6 h-6 mr-2 rounded-md object-contain bg-white"
+                      className="w-5 h-5 sm:w-6 sm:h-6 mr-1 sm:mr-2 rounded-md object-contain bg-white flex-shrink-0"
                       onError={(e) => {
                         e.currentTarget.src =
                           "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
@@ -898,7 +898,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                   <span
                     className={`${
                       isDark ? "text-white" : "text-gray-900"
-                    } text-sm font-semibold`}
+                    } text-xs sm:text-sm font-semibold break-words`}
                   >
                     {effectiveTransactionData.toPaymentMethod.provider_name}
                   </span>
@@ -912,45 +912,45 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                 <div
                   className={`${
                     isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                  } text-xs font-semibold mb-0.5 mt-3`}
+                  } text-[10px] sm:text-xs font-semibold mb-0.5 mt-2 sm:mt-3`}
                 >
                   Bank Account Address:
                 </div>
-                <div className="flex items-center mb-2">
+                <div className="flex items-start sm:items-center mb-2 gap-2 flex-wrap">
                   <span
                     className={`${
                       isDark ? "text-white" : "text-gray-900"
-                    } text-sm font-mono bg-gray-500/10 px-2 py-1 rounded text-xs break-all`}
+                    } text-[10px] sm:text-xs font-mono bg-gray-500/10 px-2 py-1 rounded break-all flex-1 min-w-0`}
                   >
                     {effectiveTransactionData.walletAddress}
                   </span>
                   <CopyButton
                     value={effectiveTransactionData.walletAddress}
-                    className="ml-2"
+                    className="ml-0 sm:ml-2 flex-shrink-0"
                   />
                 </div>
               </>
             )}
           </div>
         </div>
-        <div className="flex-shrink-0 ml-0 md:ml-6 flex items-center justify-center py-2">
+        <div className="flex-shrink-0 ml-0 md:ml-6 mt-3 sm:mt-0 flex items-center justify-center py-2">
           {/* QR code */}
-          <div className="w-36 h-36 bg-white rounded-lg flex items-center justify-center">
+          <div className="w-28 h-28 sm:w-36 sm:h-36 bg-white rounded-lg flex items-center justify-center">
             <img
               src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${
                 effectiveTransactionData?.walletAddress || ""
               }`}
               alt="QR Code"
-              className="w-32 h-32"
+              className="w-24 h-24 sm:w-32 sm:h-32"
             />
           </div>
         </div>
       </div>
 
-      {/* Progress Steps - Same as express */}
-      <div className="flex items-center justify-between w-full mb-4 relative">
-        {/* Connecting Lines */}
-        <div className="absolute top-5 left-[12.5%] right-[12.5%] h-0.5 z-0">
+      {/* Progress Steps - Always in row, responsive */}
+      <div className="flex flex-row items-center justify-between w-full mb-3 sm:mb-4 relative gap-1 sm:gap-2 md:gap-4 overflow-x-auto pb-2 scrollbar-hide">
+        {/* Connecting Lines - Responsive positioning */}
+        <div className="absolute top-3 sm:top-4 md:top-5 left-[10%] sm:left-[12.5%] right-[10%] sm:right-[12.5%] h-0.5 z-0">
           <div
             className={`h-0.5 transition-all duration-500 ${
               currentStatus === "completed" || currentStatus === "finished"
@@ -970,9 +970,9 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
         </div>
 
         {/* Step 1: Awaiting Deposit */}
-        <div className="flex flex-col items-center flex-1 relative z-10">
+        <div className="flex flex-col items-center flex-1 relative z-10 min-w-[60px] sm:min-w-[70px] md:min-w-0 flex-shrink-0">
           <div
-            className={`w-10 h-10 rounded-full flex items-center justify-center mb-1 border-4 ${
+            className={`w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center mb-1 border-2 sm:border-3 md:border-4 ${
               currentStatus === "pending" ||
               currentStatus === "waiting" ||
               !shouldUseWebSocket
@@ -986,7 +986,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                   : "bg-[var(--card-color)] border-[#35353E]"
             }`}
           >
-            <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
+            <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-6 md:h-6" fill="none" viewBox="0 0 24 24">
               <circle
                 cx="12"
                 cy="12"
@@ -1026,9 +1026,9 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
               />
             </svg>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5 sm:gap-1 flex-wrap justify-center">
             <span
-              className={`font-semibold text-base ${
+              className={`font-semibold text-[10px] sm:text-xs md:text-sm lg:text-base whitespace-nowrap ${
                 currentStatus === "pending" ||
                 currentStatus === "waiting" ||
                 !shouldUseWebSocket
@@ -1042,22 +1042,23 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                     : "text-[#7B7B7B]"
               }`}
             >
-              Awaiting Deposit
+              <span className="hidden sm:inline">Awaiting Deposit</span>
+              <span className="sm:hidden">Awaiting</span>
             </span>
             {(currentStatus === "pending" ||
               currentStatus === "waiting" ||
               !shouldUseWebSocket) && (
               <div className="flex gap-1">
                 <span
-                  className="w-2 h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
+                  className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
                   style={{ animationDelay: "0ms" }}
                 ></span>
                 <span
-                  className="w-2 h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
+                  className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
                   style={{ animationDelay: "150ms" }}
                 ></span>
                 <span
-                  className="w-2 h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
+                  className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
                   style={{ animationDelay: "300ms" }}
                 ></span>
               </div>
@@ -1068,7 +1069,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
               currentStatus === "completed" ||
               currentStatus === "finished") && (
               <div className="flex items-center gap-1">
-                <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
+                <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-4 md:h-4" fill="none" viewBox="0 0 24 24">
                   <path
                     d="M9 12l2 2 4-4"
                     stroke="#1D8751"
@@ -1083,9 +1084,9 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
         </div>
 
         {/* Step 2: Confirming */}
-        <div className="flex flex-col items-center flex-1 relative z-10">
+        <div className="flex flex-col items-center flex-1 relative z-10 min-w-[60px] sm:min-w-[70px] md:min-w-0 flex-shrink-0">
           <div
-            className={`w-10 h-10 rounded-full flex items-center justify-center mb-1 border-4 ${
+            className={`w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center mb-1 border-2 sm:border-3 md:border-4 ${
               currentStatus === "confirming"
                 ? "bg-[#FF9500] border-[#FF95001A]"
                 : currentStatus === "exchanging" ||
@@ -1096,7 +1097,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                   : `${isDark ? "bg-[var(--card-color)] border-[#35353E]" : "bg-gray-200 border-gray-300"}`
             }`}
           >
-            <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
+            <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-6 md:h-6" fill="none" viewBox="0 0 24 24">
               <circle
                 cx="12"
                 cy="12"
@@ -1129,9 +1130,9 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
               />
             </svg>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5 sm:gap-1 flex-wrap justify-center">
             <span
-              className={`font-semibold text-base ${
+              className={`font-semibold text-[10px] sm:text-xs md:text-sm lg:text-base whitespace-nowrap ${
                 currentStatus === "confirming"
                   ? "text-[#FF9500]"
                   : currentStatus === "exchanging" ||
@@ -1147,15 +1148,15 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
             {currentStatus === "confirming" && (
               <div className="flex gap-1">
                 <span
-                  className="w-2 h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
+                  className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
                   style={{ animationDelay: "0ms" }}
                 ></span>
                 <span
-                  className="w-2 h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
+                  className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
                   style={{ animationDelay: "150ms" }}
                 ></span>
                 <span
-                  className="w-2 h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
+                  className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
                   style={{ animationDelay: "300ms" }}
                 ></span>
               </div>
@@ -1165,7 +1166,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
               currentStatus === "completed" ||
               currentStatus === "finished") && (
               <div className="flex items-center gap-1">
-                <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
+                <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-4 md:h-4" fill="none" viewBox="0 0 24 24">
                   <path
                     d="M9 12l2 2 4-4"
                     stroke="#1D8751"
@@ -1180,9 +1181,9 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
         </div>
 
         {/* Step 3: Exchanging */}
-        <div className="flex flex-col items-center flex-1 relative z-10">
+        <div className="flex flex-col items-center flex-1 relative z-10 min-w-[60px] sm:min-w-[70px] md:min-w-0 flex-shrink-0">
           <div
-            className={`w-10 h-10 rounded-full flex items-center justify-center mb-1 border-4 ${
+            className={`w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center mb-1 border-2 sm:border-3 md:border-4 ${
               currentStatus === "exchanging"
                 ? "bg-[#FF9500] border-[#FF95001A]"
                 : currentStatus === "sending" ||
@@ -1192,7 +1193,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                   : "bg-[var(--card-color)] border-[#35353E]"
             }`}
           >
-            <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
+            <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-6 md:h-6" fill="none" viewBox="0 0 24 24">
               <circle
                 cx="12"
                 cy="12"
@@ -1222,9 +1223,9 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
               />
             </svg>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5 sm:gap-1 flex-wrap justify-center">
             <span
-              className={`font-semibold text-base ${
+              className={`font-semibold text-[10px] sm:text-xs md:text-sm lg:text-base whitespace-nowrap ${
                 currentStatus === "exchanging"
                   ? "text-[#FF9500]"
                   : currentStatus === "sending" ||
@@ -1239,15 +1240,15 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
             {currentStatus === "exchanging" && (
               <div className="flex gap-1">
                 <span
-                  className="w-2 h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
+                  className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
                   style={{ animationDelay: "0ms" }}
                 ></span>
                 <span
-                  className="w-2 h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
+                  className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
                   style={{ animationDelay: "150ms" }}
                 ></span>
                 <span
-                  className="w-2 h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
+                  className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
                   style={{ animationDelay: "300ms" }}
                 ></span>
               </div>
@@ -1256,7 +1257,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
               currentStatus === "completed" ||
               currentStatus === "finished") && (
               <div className="flex items-center gap-1">
-                <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
+                <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-4 md:h-4" fill="none" viewBox="0 0 24 24">
                   <path
                     d="M9 12l2 2 4-4"
                     stroke="#1D8751"
@@ -1271,9 +1272,9 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
         </div>
 
         {/* Step 4: Sending to you */}
-        <div className="flex flex-col items-center flex-1 relative z-10">
+        <div className="flex flex-col items-center flex-1 relative z-10 min-w-[60px] sm:min-w-[70px] md:min-w-0 flex-shrink-0">
           <div
-            className={`w-10 h-10 rounded-full flex items-center justify-center mb-1 border-4 ${
+            className={`w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center mb-1 border-2 sm:border-3 md:border-4 ${
               currentStatus === "sending"
                 ? "bg-[#FF9500] border-[#FF95001A]"
                 : currentStatus === "completed" || currentStatus === "finished"
@@ -1281,7 +1282,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                   : "bg-[var(--card-color)] border-[#35353E]"
             }`}
           >
-            <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
+            <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-6 md:h-6" fill="none" viewBox="0 0 24 24">
               <circle
                 cx="12"
                 cy="12"
@@ -1311,9 +1312,9 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
               />
             </svg>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5 sm:gap-1 flex-wrap justify-center">
             <span
-              className={`font-semibold text-base ${
+              className={`font-semibold text-[10px] sm:text-xs md:text-sm lg:text-base whitespace-nowrap ${
                 currentStatus === "sending"
                   ? "text-[#FF9500]"
                   : currentStatus === "completed" ||
@@ -1322,29 +1323,37 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                     : "text-[#7B7B7B]"
               }`}
             >
-              {currentStatus === "completed"
-                ? "Transaction Completed"
-                : "Sending to you"}
+              {currentStatus === "completed" ? (
+                <>
+                  <span className="hidden md:inline">Transaction Completed</span>
+                  <span className="md:hidden">Completed</span>
+                </>
+              ) : (
+                <>
+                  <span className="hidden sm:inline">Sending to you</span>
+                  <span className="sm:hidden">Sending</span>
+                </>
+              )}
             </span>
             {currentStatus === "sending" && (
               <div className="flex gap-1">
                 <span
-                  className="w-2 h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
+                  className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
                   style={{ animationDelay: "0ms" }}
                 ></span>
                 <span
-                  className="w-2 h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
+                  className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
                   style={{ animationDelay: "150ms" }}
                 ></span>
                 <span
-                  className="w-2 h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
+                  className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
                   style={{ animationDelay: "300ms" }}
                 ></span>
               </div>
             )}
             {currentStatus === "completed" && (
               <div className="flex items-center gap-1">
-                <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
+                <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-4 md:h-4" fill="none" viewBox="0 0 24 24">
                   <path
                     d="M9 12l2 2 4-4"
                     stroke="#1D8751"
@@ -1353,7 +1362,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                     strokeLinejoin="round"
                   />
                 </svg>
-                <span className="text-[#1D8751] text-xs font-medium">
+                <span className="text-[#1D8751] text-[9px] sm:text-[10px] md:text-xs font-medium whitespace-nowrap">
                   Complete
                 </span>
               </div>
@@ -1366,29 +1375,29 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
       <div
         className={`${
           isDark ? "bg-[var(--card-color)] border-[#35353E]" : "bg-white border-gray-200"
-        } border-2 rounded-2xl p-3 sm:p-4 md:p-6 shadow-lg w-full mb-2 sm:mb-4`}
+        } border-2 rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 shadow-lg w-full mb-2 sm:mb-4`}
       >
         <div
           className={`${
             isDark ? "text-white" : "text-gray-900"
-          } text-2xl font-semibold mb-4`}
+          } text-lg sm:text-xl md:text-2xl font-semibold mb-3 sm:mb-4`}
         >
           Transaction Details
         </div>
         {/* Transaction ID Row */}
-        <div className="flex items-center justify-between mb-1">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mb-2 sm:mb-1">
           <div
             className={`${
               isDark ? "text-[#7B7B7B]" : "text-gray-600"
-            } text-base font-medium`}
+            } text-sm sm:text-base font-medium`}
           >
             Transaction ID
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 min-w-0 flex-1 sm:flex-initial">
             <span
               className={`${
                 isDark ? "text-white" : "text-gray-900"
-              } text-base font-mono font-semibold`}
+              } text-xs sm:text-sm md:text-base font-mono font-semibold break-all sm:break-normal`}
             >
               {liveTransactionId || effectiveTransactionData?.transactionId || "Pending..."}
             </span>
@@ -1416,22 +1425,22 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
           <div
             className={`${
               isDark ? "text-[#7B7B7B]" : "text-gray-600"
-            } text-base font-medium`}
+            } text-sm sm:text-base font-medium`}
           >
             From
           </div>
           <div
             className={`${
               isDark ? "text-[#7B7B7B]" : "text-gray-600"
-            } text-base font-medium`}
+            } text-sm sm:text-base font-medium`}
           >
             To
           </div>
         </div>
         {/* From/To Content Row */}
-        <div className="flex items-center justify-between mt-2">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mt-2">
           {/* From */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 min-w-0 flex-1 sm:flex-initial">
             {effectiveTransactionData?.fromPaymentMethod ? (
               <>
                 {(effectiveTransactionData.fromPaymentMethod.provider_logo ||
@@ -1442,18 +1451,18 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                       effectiveTransactionData.fromPaymentMethod.logo
                     }
                     alt={effectiveTransactionData.fromPaymentMethod.provider_name}
-                    className="w-8 h-8 rounded-md object-contain bg-white"
+                    className="w-6 h-6 sm:w-8 sm:h-8 rounded-md object-contain bg-white flex-shrink-0"
                     onError={(e) => {
                       e.currentTarget.src =
                         "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
                     }}
                   />
                 )}
-                <div>
+                <div className="min-w-0">
                   <div
                     className={`${
                       isDark ? "text-white" : "text-gray-900"
-                    } text-base font-semibold`}
+                    } text-sm sm:text-base font-semibold break-words`}
                   >
                     {effectiveTransactionData.fromPaymentMethod.provider_name}
                   </div>
@@ -1461,7 +1470,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                     <div
                       className={`${
                         isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                      } text-sm font-mono`}
+                      } text-xs sm:text-sm font-mono break-all`}
                     >
                       {effectiveTransactionData.fromPaymentMethod.account_number}
                     </div>
@@ -1472,14 +1481,14 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
               <div
                 className={`${
                   isDark ? "text-white" : "text-gray-900"
-                } text-base font-semibold`}
+                } text-sm sm:text-base font-semibold`}
               >
                 N/A
               </div>
             )}
           </div>
           {/* To */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 min-w-0 flex-1 sm:flex-initial sm:justify-end">
             {effectiveTransactionData?.toPaymentMethod ? (
               <>
                 {(effectiveTransactionData.toPaymentMethod.provider_logo ||
@@ -1490,18 +1499,18 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                       effectiveTransactionData.toPaymentMethod.logo
                     }
                     alt={effectiveTransactionData.toPaymentMethod.provider_name}
-                    className="w-8 h-8 rounded-md object-contain bg-white"
+                    className="w-6 h-6 sm:w-8 sm:h-8 rounded-md object-contain bg-white flex-shrink-0"
                     onError={(e) => {
                       e.currentTarget.src =
                         "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
                     }}
                   />
                 )}
-                <div className="text-right">
+                <div className="text-left sm:text-right min-w-0">
                   <div
                     className={`${
                       isDark ? "text-white" : "text-gray-900"
-                    } text-base font-semibold`}
+                    } text-sm sm:text-base font-semibold break-words`}
                   >
                     {effectiveTransactionData.toPaymentMethod.provider_name}
                   </div>
@@ -1509,7 +1518,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                     <div
                       className={`${
                         isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                      } text-sm font-mono`}
+                      } text-xs sm:text-sm font-mono break-all`}
                     >
                       {effectiveTransactionData.toPaymentMethod.account_number}
                     </div>
@@ -1520,7 +1529,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
               <div
                 className={`${
                   isDark ? "text-white" : "text-gray-900"
-                } text-base font-semibold`}
+                } text-sm sm:text-base font-semibold`}
               >
                 N/A
               </div>
@@ -1530,19 +1539,19 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
       </div>
 
       {/* Terms and Conditions */}
-      <div className="w-full rounded-2xl flex">
-        <div className="w-full bg-[#FF9500]/50 border-2 border-solid border-[#FF9500]/50 rounded-[18px] flex flex-col gap-2 p-3">
-          <h2 className="text-white text-base font-semibold">
+      <div className="w-full rounded-xl sm:rounded-2xl flex">
+        <div className="w-full bg-[#FF9500]/50 border-2 border-solid border-[#FF9500]/50 rounded-xl sm:rounded-[18px] flex flex-col gap-1.5 sm:gap-2 p-2.5 sm:p-3 md:p-4">
+          <h2 className="text-white text-sm sm:text-base md:text-lg font-semibold">
             Terms and Conditions Summary
           </h2>
-          <ul className="list-disc list-inside space-y-1">
-            <li className="text-white text-sm">
+          <ul className="list-disc list-inside space-y-0.5 sm:space-y-1">
+            <li className="text-white text-xs sm:text-sm break-words">
               Please send the money from your own account Only
             </li>
-            <li className="text-white text-sm">
+            <li className="text-white text-xs sm:text-sm break-words">
               Put transaction ID in the description field of the bank
             </li>
-            <li className="text-white text-sm">
+            <li className="text-white text-xs sm:text-sm break-words">
               Please note, If you do not follow above conditions, we will reject
               your transaction and send you back your money.
             </li>
