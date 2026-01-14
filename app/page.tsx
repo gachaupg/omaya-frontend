@@ -727,7 +727,7 @@ export default function MarketingPage() {
               {/* Wide soft glow */}
               <div className="w-[440px] sm:w-[700px] h-[120px] sm:h-[150px] bg-gradient-to-r from-transparent via-[#1D8751]/32 to-transparent blur-3xl rounded-full" />
               {/* Brighter core glow */}
-              <div className="absolute w-[280px] sm:w-[420px] h-[78px] sm:h-[96px] bg-gradient-to-r from-transparent via-[#13B562]/38 to-transparent blur-2xl rounded-full" />
+              <div className="absolute w-[280px] sm:w-[420px] h-[78px] sm:h-[96px] bg-gradient-to-r from-transparent via-[#13B562]/18 to-transparent blur-2xl rounded-full" />
               {/* Subtle green tint wash */}
               <div className="absolute w-[560px] sm:w-[860px] h-[180px] sm:h-[230px] bg-[#1D8751]/10 blur-[64px] rounded-full" />
             </div>
@@ -738,7 +738,7 @@ export default function MarketingPage() {
           </div>
 
           {/* Subtitle */}
-          <p className="text-center text-gray-700 dark:text-white text-sm sm:text-base md:text-lg mb-12 px-4">
+          <p className="text-center text-muted-foreground text-sm sm:text-base md:text-lg mb-12 px-4">
             Access 500+ cryptocurrencies with industry-leading security, competitive fees and lightning-fast transactions.
           </p>
 
