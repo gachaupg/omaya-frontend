@@ -1283,7 +1283,7 @@ export default function ExchangeForm({
         // "MONEY(Icon)" Style
         return (
           <span className="flex items-center gap-0.5">
-            <span className={textColorClass}>Money</span>
+            <span className={`${textColorClass} font-bold`}>Money</span>
             <span className="relative flex items-center mt-1 sm:mt-1.5 md:mt-2">
               <img
                 src={moneyXIconSrc1}

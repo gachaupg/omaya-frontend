@@ -23,30 +23,25 @@ interface UserPaymentSelectorProps {
   selectedDetails: UserPaymentDetail[];
 }
 
-/**
- * Dropdown-selector + card list for a user’s saved payment details.
- * Pure UI – no business logic touched.  Added `dark:` utilities everywhere so the
- * component looks correct in both light & dark themes.
- */
+// Dropdown-selector + card list for a user's saved payment details.
+// Pure UI – no business logic touched. Added `dark:` utilities everywhere so the
+// component looks correct in both light & dark themes.
 const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
   userPaymentDetails,
   onSelect,
   onRemove,
   selectedDetails,
 }) => {
-  const [selectedMethod, setSelectedMethod] = useState<string>("");
-  const [selectedProvider, setSelectedProvider] = useState<string>("");
+  const [selectedMethod, setSelectedMethod] = useState("");
+  const [selectedProvider, setSelectedProvider] = useState("");
 
-  // memo helpers
+  // Memoized options for payment methods
   const methodOptions = useMemo(() => {
     const seen = new Set<string>();
     const options: Array<{ value: string; label: string; logo?: string }> = [];
-    
-    // Find the best logo for each unique payment method
     userPaymentDetails.forEach((d) => {
       if (!seen.has(d.payment_method_name)) {
         seen.add(d.payment_method_name);
-        // Get logo with priority: logo_url > logo > provider_logo
         const logoUrl = d.logo_url || d.logo || d.provider_logo || undefined;
         options.push({
           value: d.payment_method_name,
@@ -55,20 +50,18 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
         });
       }
     });
-    
     return options;
   }, [userPaymentDetails]);
 
+  // Memoized options for providers
   const providerOptions = useMemo(() => {
     const seen = new Set<string>();
     const options: Array<{ value: string; label: string; logo?: string }> = [];
-    
     userPaymentDetails
       .filter((d) => d.payment_method_name === selectedMethod)
       .forEach((d) => {
         if (!seen.has(d.payment_provider_name)) {
           seen.add(d.payment_provider_name);
-          // Get logo with priority: logo_url > logo > provider_logo
           const logoUrl = d.logo_url || d.logo || d.provider_logo || undefined;
           options.push({
             value: d.payment_provider_name,
@@ -77,10 +70,10 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
           });
         }
       });
-    
     return options;
   }, [userPaymentDetails, selectedMethod]);
 
+  // Filtered details for selected method and provider
   const filteredDetails = useMemo(
     () =>
       userPaymentDetails.filter(
@@ -91,114 +84,121 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
     [userPaymentDetails, selectedMethod, selectedProvider]
   );
 
+  // Check if detail is selected
   const isSelected = (detail: UserPaymentDetail) =>
     selectedDetails.some((d) => d.id === detail.id);
 
-  // render
   return (
-    <div className="w-full" data-select-card="true">
-      
-      
+    <div className="space-y-6">
       {/* dropdowns */}
-      <div className="flex flex-col gap-3 sm:gap-2 sm:flex-row mb-4 w-full" data-select-card="true">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* payment-method */}
-        <div className="flex-1 w-full">
-          <label className="block mb-1.5 sm:mb-1 text-xs sm:text-sm text-gray-700 dark:text-[#788099]">
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
             Payment Method Type
           </label>
-          <div data-select-card="true" className="w-full">
+          <CustomSelect
+            options={methodOptions}
+            value={selectedMethod}
+            onChange={(value) => {
+              setSelectedMethod(value);
+              setSelectedProvider("");
+            }}
+            placeholder="Select Method Type"
+            logoSize={32}
+            logoClassName="rounded-full object-cover flex-shrink-0"
+            className="w-full"
+            sizeMode="card"
+          />
+        </div>
+
+        {/* provider */}
+        {selectedMethod && (
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Provider
+            </label>
             <CustomSelect
-              options={methodOptions}
-              value={selectedMethod}
-              onChange={(value) => {
-                setSelectedMethod(value);
-                setSelectedProvider("");
-              }}
-              placeholder="Select Method Type"
+              options={providerOptions}
+              value={selectedProvider}
+              onChange={(value) => setSelectedProvider(value)}
+              placeholder="Select Provider"
               logoSize={32}
               logoClassName="rounded-full object-cover flex-shrink-0"
               className="w-full"
               sizeMode="card"
             />
           </div>
-        </div>
-        {/* provider */}
-        {selectedMethod && (
-          <div className="flex-1 w-full">
-            <label className="block mb-1.5 sm:mb-1 text-xs sm:text-sm text-gray-700 dark:text-[#788099]">
-              Provider
-            </label>
-            <div data-select-card="true" className="w-full">
-              <CustomSelect
-                options={providerOptions}
-                value={selectedProvider}
-                onChange={(value) => setSelectedProvider(value)}
-                placeholder="Select Provider"
-                logoSize={32}
-                logoClassName="rounded-full object-cover flex-shrink-0"
-                className="w-full"
-                sizeMode="card"
-              />
-            </div>
-          </div>
         )}
       </div>
 
       {/* detail cards */}
       {selectedMethod && selectedProvider && (
-        <div className="space-y-2">
+        <div className="space-y-4">
           {filteredDetails.length > 0 ? (
             filteredDetails.map((detail) => (
               <div
                 key={detail.id}
-                className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 rounded-[16px] sm:rounded-[24px] bg-gray-50 dark:bg-[#23232B] border border-gray-200 dark:border-[#35353E]"
+                className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800 shadow-sm"
               >
-                <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-                  {/* Logo with priority: logo_url > logo > provider_logo */}
-                  <img
-                    src={detail.logo_url || detail.logo || detail.provider_logo || "/default-provider-logo.svg"}
-                    alt={`${detail.payment_provider_name} logo`}
-                    className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover border border-gray-200 dark:border-[#35353E] flex-shrink-0"
-                    onError={(e) => {
-                      e.currentTarget.src = "/default-provider-logo.svg";
-                    }}
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs text-gray-500 dark:text-[#788099] mb-0.5 sm:mb-1">
-                      Account Name
-                    </p>
-                    <p className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white mb-1.5 sm:mb-2 truncate">
-                      {detail.account_name}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-[#788099] mb-0.5 sm:mb-1">
-                      Account Number
-                    </p>
-                    <p className="font-semibold text-xs sm:text-sm text-gray-900 dark:text-white truncate">
-                      {detail.account_number}
-                    </p>
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start gap-3 flex-1">
+                    {/* Logo with priority: logo_url > logo > provider_logo */}
+                    <img
+                      src={
+                        detail.logo_url ||
+                        detail.logo ||
+                        detail.provider_logo ||
+                        "/default-provider-logo.svg"
+                      }
+                      alt={detail.payment_provider_name}
+                      className="w-12 h-12 rounded-full object-cover flex-shrink-0"
+                      onError={(e) => {
+                        e.currentTarget.src = "/default-provider-logo.svg";
+                      }}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="mb-2">
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Account Name
+                        </p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                          {detail.account_name}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Account Number
+                        </p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                          {detail.account_number}
+                        </p>
+                      </div>
+                    </div>
                   </div>
+                  {isSelected(detail) ? (
+                    <button
+                      onClick={() => onRemove(detail)}
+                      className="px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-md hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+                    >
+                      Remove
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => onSelect(detail)}
+                      className="px-4 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+                    >
+                      Select
+                    </button>
+                  )}
                 </div>
-
-                {isSelected(detail) ? (
-                  <button
-                    className="w-full sm:w-auto px-3 sm:px-4 py-2 text-xs sm:text-sm text-white rounded-[12px] sm:rounded-[16px] bg-[#E23D3A] hover:opacity-90 transition flex-shrink-0"
-                    onClick={() => onRemove(detail)}
-                  >
-                    Remove
-                  </button>
-                ) : (
-                  <button
-                    className="w-full sm:w-auto px-3 sm:px-4 py-2 text-xs sm:text-sm text-white rounded-[12px] sm:rounded-[16px] bg-[#1D8751] hover:opacity-90 transition flex-shrink-0"
-                    onClick={() => onSelect(detail)}
-                  >
-                    Select
-                  </button>
-                )}
               </div>
             ))
           ) : (
-            <div className="p-3 sm:p-4 text-xs sm:text-sm text-center text-gray-500 dark:text-[#788099] bg-gray-50 dark:bg-[#23232B] rounded-[16px] border border-gray-200 dark:border-[#35353E]">
-              No payment details found for this combination. Please add a payment method first.
+            <div className="text-center py-8 px-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+              <p className="text-gray-600 dark:text-gray-400">
+                No payment details found for this combination. Please add a payment method first.
+              </p>
             </div>
           )}
         </div>

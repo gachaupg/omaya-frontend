@@ -29,6 +29,26 @@ const KYCVerificationModal: React.FC = () => {
   const [verificationStatus, setVerificationStatus] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentTheme, setCurrentTheme] = useState<"light" | "dark">("light");
+
+  // Detect theme changes
+  useEffect(() => {
+    const checkTheme = () => {
+      const isDark = document.documentElement.classList.contains("dark");
+      setCurrentTheme(isDark ? "dark" : "light");
+    };
+
+    checkTheme();
+
+    // Watch for theme changes
+    const observer = new MutationObserver(checkTheme);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     if (accessToken) {
@@ -185,13 +205,10 @@ const KYCVerificationModal: React.FC = () => {
   if (!kycModalOpen) return null;
 
   return (
-    <div
-      className="fixed inset-0 flex items-center justify-center z-50"
-      style={{ background: "rgba(24, 24, 29, 0.5)" }}
-    >
+    <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/50">
       {/* Success Modal */}
       {showSuccessModal && (
-        <div className="bg-white dark:bg-[var(--card-color)] rounded-lg p-6 max-w-md w-full mx-4 border border-gray-200 dark:border-[#35353E]">
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 border border-gray-300 dark:border-gray-600 shadow-xl">
           <div className="flex flex-col items-center justify-center text-center">
             <div className="flex items-center gap-2 mb-4">
               <svg
@@ -209,7 +226,7 @@ const KYCVerificationModal: React.FC = () => {
                 Account Successfully Verified
               </h2>
             </div>
-            <p className="text-gray-600 dark:text-gray-300 text-sm mb-6">
+            <p className="text-gray-700 dark:text-gray-300 text-sm mb-6">
               Your account has been successfully verified. You can now access
               all the features of the platform.
             </p>
@@ -226,14 +243,14 @@ const KYCVerificationModal: React.FC = () => {
 
       {/* Main KYC Modal */}
       {!showSuccessModal && (
-        <div className="bg-white dark:bg-[var(--card-color)] rounded-lg p-6 max-w-4xl w-full mx-4 border border-gray-200 dark:border-[#35353E]">
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-4xl w-full mx-4 border border-gray-300 dark:border-gray-600 shadow-xl">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
               Identity Verification Required
             </h2>
             <button
               onClick={handleClose}
-              className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+              className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
             >
               <svg
                 className="w-6 h-6"
@@ -252,7 +269,7 @@ const KYCVerificationModal: React.FC = () => {
           </div>
 
           {!showWebSdk ? (
-            <div className="text-gray-700 dark:text-gray-300 space-y-4">
+            <div className="text-gray-800 dark:text-gray-300 space-y-4">
               <p>
                 Please verify your identity by clicking the button below. You
                 will be redirected to the SumSub verification page.
@@ -263,7 +280,7 @@ const KYCVerificationModal: React.FC = () => {
               </p>
 
               {error && (
-                <div className="bg-red-900/20 border border-red-500 text-red-400 p-3 rounded-lg">
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-400 dark:border-red-500 text-red-700 dark:text-red-400 p-3 rounded-lg">
                   {error}
                 </div>
               )}
@@ -281,24 +298,25 @@ const KYCVerificationModal: React.FC = () => {
           ) : (
             <div className="space-y-4">
               {error && (
-                <div className="bg-red-900/20 border border-red-500 text-red-400 p-3 rounded-lg">
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-400 dark:border-red-500 text-red-700 dark:text-red-400 p-3 rounded-lg">
                   {error}
                 </div>
               )}
 
               {accessToken && (
-                <div className="border border-[#35353E] rounded-lg p-4">
+                <div className="border border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-gray-50 dark:bg-gray-900">
                   <SumsubWebSdk
                     accessToken={accessToken}
                     expirationHandler={handleTokenRefresh}
                     config={{
                       lang: "en",
                       email: user?.email || "",
+                      theme: currentTheme,
                     }}
                     options={{
                       addViewportTag: false,
                       adaptIframeHeight: true,
-                      useCustomCss: true,
+                      useCustomCss: false,
                     }}
                     onMessage={handleSumSubMessage}
                     onError={(error: Error) => {
