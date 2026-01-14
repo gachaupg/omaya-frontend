@@ -38,7 +38,7 @@ import {
   setAuthRedirectPath,
 } from "@/lib/utils/authRedirect";
 import { useValidateAddress } from "@/hooks/useValidateAddress";
-import { openKYCModal } from "@/features/auth/slices/authSlice";
+import { openKYCModal, checkKYCStatus } from "@/features/auth/slices/authSlice";
 
 interface DepositFormProps {
   onExchange?: (transactionData: {
@@ -3284,7 +3284,7 @@ export default function DepositForm({
                       ? "bg-gray-500 cursor-not-allowed"
                       : "bg-[#1D8751] hover:bg-[#1D8751]/80"
                 }`}
-              onClick={() => {
+              onClick={async () => {
                 if (requiresLoginRedirect) {
                   const state = {
                     mode,
@@ -3309,10 +3309,29 @@ export default function DepositForm({
                   return;
                 }
 
-                // Check if user is verified (KYC check)
-                if (isAuthenticated && user && !user.is_verified) {
-                  dispatch(openKYCModal());
-                  return;
+                // Check if user is verified (KYC check) - verify with API
+                if (isAuthenticated && user) {
+                  // Check KYC status from API to get the latest status
+                  try {
+                    const kycResult = await dispatch(checkKYCStatus()).unwrap();
+                    const kycStatus = kycResult as any;
+                    
+                    // Only open modal if API confirms user is NOT verified
+                    if (kycStatus && kycStatus.is_verified === false) {
+                      dispatch(openKYCModal());
+                      return;
+                    }
+                    // If verified (is_verified === true), continue with the flow
+                  } catch (error) {
+                    // If API check fails, fallback to user.is_verified
+                    // But only open modal if explicitly false (not undefined/null)
+                    if (user.is_verified === false) {
+                      dispatch(openKYCModal());
+                      return;
+                    }
+                    // If verification status is unknown, allow the action to proceed
+                    console.warn("KYC status check failed, proceeding with caution:", error);
+                  }
                 }
 
                 if (selectedAsset && isForexAsset(selectedAsset)) {

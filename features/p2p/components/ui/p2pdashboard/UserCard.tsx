@@ -18,6 +18,7 @@ import HelpSupportForm from "@/features/settings/components/HelpSupportForm";
 import { useMatchedTradesWebSocket } from "../../../hooks/useMatchedTradesWebSocket";
 import { cookieUtils } from "@/lib/utils/cookieUtils";
 import VerifiedBadge from "@/components/ui/VerifiedBadge";
+import { checkKYCStatus } from "@/features/kyc/slices/kycSlice";
 
 const UserCard = () => {
   const [showHelpSupport, setShowHelpSupport] = useState(false);
@@ -32,6 +33,11 @@ const UserCard = () => {
   const { user, isAuthenticated } = useSelector(
     (state: RootState) => state.auth
   );
+  const kycState = useSelector((state: RootState) => state.kyc);
+  // KYC verification status from central KYC slice, fallback to user.is_verified
+  const isVerified = kycState.isVerified !== undefined 
+    ? kycState.isVerified 
+    : (user?.is_verified ?? false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [audioEnabled, setAudioEnabled] = useState(false);
   const [prevMatchedCount, setPrevMatchedCount] = useState(0);
@@ -60,6 +66,9 @@ const UserCard = () => {
           }
         })
         .catch((error) => { });
+      
+      // Ensure KYC status (is_verified) is up to date
+      dispatch(checkKYCStatus());
     }
   }, [dispatch, isAuthenticated]);
 
@@ -138,12 +147,12 @@ const UserCard = () => {
           formData.append("photo", file);
 
           await dispatch(updateProfileThunk(formData)).unwrap();
-          // Refetch profile to get updated photo in P2P dashboard
+          // Refetch P2P profile to get updated photo in this card
           const response = await dispatch(getP2PProfileThunk()).unwrap();
           if (response?.profile?.photo) {
             setProfileImage(response.profile.photo);
           }
-          // Also refresh global auth profile so navbar/other pages update without reload
+          // Also refresh main auth profile so navbar/other pages update without reload
           await dispatch(getUserProfile()).unwrap();
           toast.success("Profile image updated successfully");
         } catch (error: any) {
@@ -267,7 +276,7 @@ const UserCard = () => {
                 </h2>
               </div>
               <div className="flex items-center gap-1">
-                {user?.is_verified && (
+                {isVerified && (
                   <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#1D8751] rounded-full flex items-center justify-center border-2 border-white">
                     <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
                       <circle cx="10" cy="10" r="10" fill="#1D8751" />
@@ -282,7 +291,7 @@ const UserCard = () => {
                   </span>
                 )}
               </div>
-              {user?.is_verified ? (
+              {isVerified ? (
                 <span className="text-[#1D8751] flex items-center gap-1.5 text-xs sm:text-sm font-medium">
                   Verified Profile
                   <span className="inline-flex items-center justify-center w-5 h-5 flex-shrink-0" style={{ position: 'relative' }}>

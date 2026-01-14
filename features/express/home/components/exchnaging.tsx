@@ -1092,18 +1092,51 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
         </div>
         <div className={`flex-shrink-0 ${isHomePage ? 'ml-0 mt-2 md:mt-0 md:ml-3' : 'ml-0 md:ml-6'} flex items-center justify-center ${isHomePage ? 'py-1 sm:py-2' : 'py-2'}`}>
           {/* QR code */}
-          <div className={`${isHomePage ? 'w-24 h-24 sm:w-28 sm:h-28' : 'w-36 h-36'} bg-white rounded-lg flex items-center justify-center flex-shrink-0`}>
-            <img
-              src={`https://api.qrserver.com/v1/create-qr-code/?size=${isHomePage ? '112' : '180'}x${isHomePage ? '112' : '180'}&data=${
-                effectiveTransactionData?.type === "deposit" &&
-                effectiveTransactionData?.paymentDetail
-                  ? effectiveTransactionData.paymentDetail.account_number
-                  : effectiveTransactionData?.walletAddress || ""
-              }`}
-              alt="QR Code"
-              className={isHomePage ? "w-20 h-20 sm:w-24 sm:h-24" : "w-32 h-32"}
-            />
-          </div>
+          {(() => {
+            // For deposits, use account number; for withdrawals, use wallet address
+            let qrData = "";
+            
+            if (effectiveTransactionData?.type === "deposit" && effectiveTransactionData?.paymentDetail?.account_number) {
+              // For deposits, show account number in QR code
+              qrData = effectiveTransactionData.paymentDetail.account_number;
+            } else if (effectiveTransactionData?.type === "withdrawal" && effectiveTransactionData?.walletAddress) {
+              // For withdrawals, show wallet address
+              qrData = effectiveTransactionData.walletAddress;
+            } else if (effectiveTransactionData?.type === "deposit" && effectiveTransactionData?.paymentDetail) {
+              // Fallback: try to get account_number from payment_details array if not at root level
+              const firstDetail = effectiveTransactionData.paymentDetail.payment_details?.[0];
+              if (firstDetail?.account_number || firstDetail?.mobile_number) {
+                qrData = firstDetail.account_number || firstDetail.mobile_number;
+              }
+            }
+            
+            if (!qrData) {
+              return (
+                <div className={`${isHomePage ? 'w-24 h-24 sm:w-28 sm:h-28' : 'w-36 h-36'} bg-white rounded-lg flex items-center justify-center flex-shrink-0`}>
+                  <span className="text-gray-400 text-xs">No QR data</span>
+                </div>
+              );
+            }
+
+            const encodedData = encodeURIComponent(qrData);
+            return (
+              <div className={`${isHomePage ? 'w-24 h-24 sm:w-28 sm:h-28' : 'w-36 h-36'} bg-white rounded-lg flex items-center justify-center flex-shrink-0`}>
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=${isHomePage ? '112' : '180'}x${isHomePage ? '112' : '180'}&data=${encodedData}`}
+                  alt="QR Code"
+                  className={isHomePage ? "w-20 h-20 sm:w-24 sm:h-24" : "w-32 h-32"}
+                  onError={(e) => {
+                    // Fallback if QR code fails to load
+                    e.currentTarget.style.display = 'none';
+                    const parent = e.currentTarget.parentElement;
+                    if (parent) {
+                      parent.innerHTML = '<span class="text-gray-400 text-xs">QR unavailable</span>';
+                    }
+                  }}
+                />
+              </div>
+            );
+          })()}
         </div>
       </div>
 

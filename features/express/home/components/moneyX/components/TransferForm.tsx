@@ -17,6 +17,7 @@ import CustomSelect from "@/components/ui/HomeCommonSelect";
 import { showToast } from "@/lib/utils/toast";
 import { usePaymentMethodsDisplay } from "@/features/express/hooks/useDataDisplay";
 import { setAuthRedirectPath } from "@/lib/utils/authRedirect";
+import { openKYCModal, checkKYCStatus } from "@/features/auth/slices/authSlice";
 
 interface TransferFormProps {
   isHomePage?: boolean;
@@ -51,7 +52,7 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
     error: moneyXError,
   } = useSelector((state: any) => state.moneyX);
 
-  const { isAuthenticated } = useSelector((state: any) => state.auth);
+  const { isAuthenticated, user } = useSelector((state: any) => state.auth);
   const requiresLoginRedirect = isHomePage && !isAuthenticated;
 
   // Use state to hold payment methods - will trigger re-render when updated
@@ -611,6 +612,31 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
       setValidationErrors(errors);
       errors.forEach(error => showToast.error(error));
       return;
+    }
+
+    // Check if user is verified (KYC check) - verify with API
+    if (isAuthenticated && user) {
+      // Check KYC status from API to get the latest status
+      try {
+        const kycResult = await dispatch(checkKYCStatus()).unwrap();
+        const kycStatus = kycResult as any;
+        
+        // Only open modal if API confirms user is NOT verified
+        if (kycStatus && kycStatus.is_verified === false) {
+          dispatch(openKYCModal());
+          return;
+        }
+        // If verified (is_verified === true), continue with the flow
+      } catch (error) {
+        // If API check fails, fallback to user.is_verified
+        // But only open modal if explicitly false (not undefined/null)
+        if (user.is_verified === false) {
+          dispatch(openKYCModal());
+          return;
+        }
+        // If verification status is unknown, allow the action to proceed
+        console.warn("KYC status check failed, proceeding with caution:", error);
+      }
     }
 
     setIsSubmitting(true);
@@ -1193,6 +1219,31 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
                 if (!moneyXTransaction?.moneyx_transaction_id) {
                   showToast.error("Transaction not found. Please submit the transfer form first.");
                   return;
+                }
+
+                // Check if user is verified (KYC check) - verify with API
+                if (isAuthenticated && user) {
+                  // Check KYC status from API to get the latest status
+                  try {
+                    const kycResult = await dispatch(checkKYCStatus()).unwrap();
+                    const kycStatus = kycResult as any;
+                    
+                    // Only open modal if API confirms user is NOT verified
+                    if (kycStatus && kycStatus.is_verified === false) {
+                      dispatch(openKYCModal());
+                      return;
+                    }
+                    // If verified (is_verified === true), continue with the flow
+                  } catch (error) {
+                    // If API check fails, fallback to user.is_verified
+                    // But only open modal if explicitly false (not undefined/null)
+                    if (user.is_verified === false) {
+                      dispatch(openKYCModal());
+                      return;
+                    }
+                    // If verification status is unknown, allow the action to proceed
+                    console.warn("KYC status check failed, proceeding with caution:", error);
+                  }
                 }
 
                 setIsUpdatingTransaction(true);

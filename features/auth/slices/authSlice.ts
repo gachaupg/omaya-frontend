@@ -436,6 +436,7 @@ const authSlice = createSlice({
         localStorage.removeItem("access_token");
         localStorage.removeItem("refresh_token");
         localStorage.removeItem("user");
+        localStorage.removeItem("p2p_terms_accepted"); // Clear P2P terms acceptance on logout
       }
 
       // Broadcast logout to other tabs unless we're already handling a cross-tab logout

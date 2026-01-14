@@ -32,6 +32,7 @@ import OTPModal from "./OTPModal";
 
 import { logger } from '@/lib/utils/logger';
 import { useExpressI18n } from "@/lib/useExpressI18n";
+import { useTheme } from "@/context/theme";
 
 // Success Modal Component
 const SuccessModal = ({
@@ -48,11 +49,12 @@ const SuccessModal = ({
   onNavigateToP2P: () => void;
 }) => {
   const { t } = useExpressI18n();
+  const { isDark } = useTheme();
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-[#2A2A2A] rounded-3xl p-8 max-w-sm w-full mx-4 text-center shadow-2xl">
+    <div className="fixed inset-0 bg-black/20 dark:bg-black/20 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className={`${isDark ? "bg-[#2A2A2A]" : "bg-white"} rounded-3xl p-6 sm:p-8 max-w-sm w-full mx-4 text-center shadow-2xl`}>
         {/* Success Icon */}
         <div className="flex justify-center mb-6">
           <div className="w-16 h-16 bg-[#4CAF50] rounded-full flex items-center justify-center">
@@ -69,14 +71,14 @@ const SuccessModal = ({
         </div>
 
         {/* Success Title */}
-        <h2 className="text-white text-lg sm:text-xl font-semibold mb-3 sm:mb-4">
+        <h2 className={`${isDark ? "text-white" : "text-gray-900"} text-lg sm:text-xl font-semibold mb-3 sm:mb-4`}>
           Successfully Submitted
         </h2>
 
         {/* Amount Info */}
         <div className="mb-6">
-          <p className="text-gray-400 text-sm mb-2">{t("express.youWillReceive", "You Will Receive")}</p>
-          <p className="text-white text-2xl font-bold">
+          <p className={`${isDark ? "text-gray-400" : "text-gray-600"} text-sm mb-2`}>{t("express.youWillReceive", "You Will Receive")}</p>
+          <p className={`${isDark ? "text-white" : "text-gray-900"} text-2xl font-bold`}>
             {amount}{" "}
             {asset?.ticker?.toUpperCase() ||
               asset?.symbol?.toUpperCase() ||
@@ -135,9 +137,11 @@ const UserPaymentSelector = ({
   }, [userPaymentDetails, selectedDetails.length, onSelect]);
 
   return (
-    <div className="bg-[var(--card-color)] rounded-2xl border border-[#39394a] p-4">
-      <h3 className="text-white font-semibold mb-3">Select Payment Methods</h3>
-      <div className="space-y-2">
+    <div className="bg-[var(--card-color)] rounded-xl sm:rounded-2xl border border-[#39394a] p-3 sm:p-4 w-full overflow-hidden">
+      <h3 className="text-white font-semibold mb-2 sm:mb-3 text-sm sm:text-base">
+        Select Payment Methods
+      </h3>
+      <div className="space-y-2 w-full">
         {userPaymentDetails && userPaymentDetails.length > 0 ? (
           userPaymentDetails.map((detail) => {
             const isSelected = selectedDetails.some((d) => d.id === detail.id);
@@ -145,20 +149,26 @@ const UserPaymentSelector = ({
             return (
               <div
                 key={detail.id}
-                className={`flex items-center justify-between p-3 rounded-xl border ${isSelected
+                className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-lg sm:rounded-xl border w-full overflow-hidden ${isSelected
                   ? "border-[#1D8751] bg-[#1D8751]/10"
                   : "border-[#A2A4A9FF] bg-[#A2A4A9FF]"
                   }`}
               >
-                <div className="flex-1">
-                  <div className="text-white font-medium">
-                    {detail.payment_provider_name ||
-                      detail.provider_name ||
-                      "Unknown Provider"}{" "}
-                    - {detail.payment_method_name || "Unknown Method"}
+                <div className="flex-1 min-w-0 w-full sm:w-auto overflow-hidden pr-0 sm:pr-2">
+                  <div className="text-white font-medium text-sm sm:text-base break-words">
+                    <span className="break-words inline-block max-w-full">
+                      {detail.payment_provider_name ||
+                        detail.provider_name ||
+                        "Unknown Provider"}
+                    </span>
+                    <span className="hidden sm:inline"> - </span>
+                    <span className="block sm:inline break-words max-w-full">
+                      {detail.payment_method_name || "Unknown Method"}
+                    </span>
                   </div>
-                  <div className="text-[#788099] text-sm">
-                    {detail.account_name} ({detail.account_number})
+                  <div className="text-[#788099] text-xs sm:text-sm break-words mt-1">
+                    <span className="break-words inline-block max-w-full">{detail.account_name}</span>
+                    <span className="break-words inline-block max-w-full"> ({detail.account_number})</span>
                   </div>
                 </div>
                 <button
@@ -169,7 +179,7 @@ const UserPaymentSelector = ({
                       onSelect(detail);
                     }
                   }}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${isSelected
+                  className={`w-full sm:w-auto sm:flex-shrink-0 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors min-h-[44px] sm:min-h-0 flex items-center justify-center whitespace-nowrap ${isSelected
                     ? "bg-red-500 text-white hover:bg-red-600"
                     : "bg-[#1D8751] text-white hover:bg-[#166b3e]"
                     }`}
@@ -180,7 +190,7 @@ const UserPaymentSelector = ({
             );
           })
         ) : (
-          <div className="text-center text-[#788099] py-4">
+          <div className="text-center text-[#788099] py-4 text-sm sm:text-base">
             No payment details available
           </div>
         )}

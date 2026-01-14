@@ -2360,9 +2360,9 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
 
 
 
-      <div className="flex items-center text-[#F79330] text-lg mb-6 p-3 rounded-md">
-        <FiInfo className="text-[#F79330]" />
-        <p className="ml-2 text-gray-700 dark:text-gray-300">
+      <div className="flex items-start sm:items-center text-[#F79330] text-sm sm:text-lg mb-6 p-3 rounded-md gap-2 sm:gap-0">
+        <FiInfo className="text-[#F79330] flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 mt-0.5 sm:mt-0" />
+        <p className="ml-0 sm:ml-2 text-gray-700 dark:text-gray-300 text-xs sm:text-base">
           {t(
             "rates.feeInfo",
             "Transactions are subject to commission, above is the information on the commission rates"

@@ -146,6 +146,8 @@ export const Chats: React.FC = () => {
       const accepted = localStorage.getItem("p2p_terms_accepted");
       if (accepted === "true") {
         setTermsAccepted(true);
+      } else {
+        setTermsAccepted(false);
       }
     }
   }, []);
@@ -158,7 +160,7 @@ export const Chats: React.FC = () => {
   const prevSelectedUserIdRef = useRef<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Close emoji picker when clicking outside
+  // Close emoji picker when clicking outside or when no conversation is selected
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target as Node)) {
@@ -174,6 +176,13 @@ export const Chats: React.FC = () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [showEmojiPicker]);
+
+  // Close emoji picker when no conversation is selected
+  useEffect(() => {
+    if (!selectedUser && showEmojiPicker) {
+      setShowEmojiPicker(false);
+    }
+  }, [selectedUser, showEmojiPicker]);
 
   // Common emojis
   const commonEmojis = [
@@ -424,7 +433,7 @@ export const Chats: React.FC = () => {
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files) return;
+    if (!e.target.files || !selectedUser || !termsAccepted) return;
     const filesArray = Array.from(e.target.files);
     setUploadedImages((prev) => [...prev, ...filesArray]);
     // Allow selecting the same file again
@@ -860,7 +869,7 @@ export const Chats: React.FC = () => {
           {!termsAccepted && (
             <div className="px-4 pt-4">
               <div className="rounded-2xl border border-[#1D8751] bg-green-100 dark:bg-[#042417] text-gray-900 dark:text-white px-4 py-3 sm:px-6 sm:py-4 flex flex-col gap-3 relative overflow-hidden">
-                <div className="absolute inset-y-0 right-0 w-1/3 bg-gradient-to-l from-gray-400/70 to-transparent pointer-events-none"></div>
+                <div className="absolute inset-y-0 right-0 w-1/2 dark:w-1/2 bg-gradient-to-l from-gray-400/70 to-transparent pointer-events-none"></div>
                 <div className="flex items-center gap-2 relative z-10">
                   <div className="w-8 h-8 rounded-full bg-[#1D8751] flex items-center justify-center text-white text-sm font-bold">
                     P2P
@@ -947,9 +956,9 @@ export const Chats: React.FC = () => {
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                disabled={!termsAccepted || isSending}
+                disabled={!selectedUser || !termsAccepted || isSending}
                 className="w-8 h-8 flex-shrink-0 rounded-md bg-gray-300 dark:bg-[#374151] text-gray-600 dark:text-gray-400 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-400 dark:hover:bg-[#4B5563] transition-colors"
-                title="Attach image"
+                title={!selectedUser ? "Select a conversation to attach images" : "Attach image"}
                 aria-label="Attach image"
               >
                 <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -966,19 +975,22 @@ export const Chats: React.FC = () => {
                 <input
                   type="text"
                   placeholder={
-                    !termsAccepted 
-                      ? "Accept terms to start chatting" 
-                      : (() => {
-                          const status = selectedUser ? (selectedUser as any).status : null;
-                          const normalizedStatus = status ? String(status).toLowerCase() : null;
-                          const isClosed = normalizedStatus === "complete" || normalizedStatus === "completed" || normalizedStatus === "responded" || normalizedStatus === "cancelled";
-                          return isClosed ? "Chat is closed - Trade completed or cancelled" : "Type your message...";
-                        })()
+                    !selectedUser
+                      ? "Select a conversation to start chatting"
+                      : !termsAccepted 
+                        ? "Accept terms to start chatting" 
+                        : (() => {
+                            const status = selectedUser ? (selectedUser as any).status : null;
+                            const normalizedStatus = status ? String(status).toLowerCase() : null;
+                            const isClosed = normalizedStatus === "complete" || normalizedStatus === "completed" || normalizedStatus === "responded" || normalizedStatus === "cancelled";
+                            return isClosed ? "Chat is closed - Trade completed or cancelled" : "Type your message...";
+                          })()
                   }
                   value={messageInput}
                   onChange={(e) => setMessageInput(e.target.value)}
                   onKeyPress={handleKeyPress}
                   disabled={
+                    !selectedUser ||
                     !termsAccepted || 
                     isSending || 
                     (() => {
@@ -997,6 +1009,7 @@ export const Chats: React.FC = () => {
                 className="hidden"
                 accept="image/*"
                 multiple
+                disabled={!selectedUser || !termsAccepted || isSending}
                 onChange={handleImageChange}
               />
               
@@ -1004,11 +1017,15 @@ export const Chats: React.FC = () => {
               <div className="relative" ref={emojiPickerRef}>
                 <button
                   type="button"
-                  disabled={!termsAccepted || isSending}
+                  disabled={!selectedUser || !termsAccepted || isSending}
                   className="w-8 h-8 flex-shrink-0 rounded-full bg-gray-300 dark:bg-[#374151] text-gray-600 dark:text-gray-400 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-400 dark:hover:bg-[#4B5563] transition-colors"
-                  title="Pick emoji"
+                  title={!selectedUser ? "Select a conversation to use emojis" : "Pick emoji"}
                   aria-label="Pick emoji"
-                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                  onClick={() => {
+                    if (selectedUser && termsAccepted && !isSending) {
+                      setShowEmojiPicker(!showEmojiPicker);
+                    }
+                  }}
                 >
                   <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -1016,7 +1033,7 @@ export const Chats: React.FC = () => {
                 </button>
                 
                 {/* Emoji picker dropdown */}
-                {showEmojiPicker && (
+                {showEmojiPicker && selectedUser && (
                   <div className="absolute bottom-full right-0 mb-2 w-64 h-48 bg-white dark:bg-[#1F2937] border border-gray-300 dark:border-[#374151] rounded-lg shadow-lg p-3 overflow-y-auto z-50">
                     <div className="grid grid-cols-8 gap-1">
                       {commonEmojis.map((emoji, index) => (
@@ -1039,6 +1056,7 @@ export const Chats: React.FC = () => {
               <button
                 onClick={handleSendMessage}
                 disabled={
+                  !selectedUser ||
                   !termsAccepted || 
                   (!messageInput.trim() && uploadedImages.length === 0) || 
                   isSending ||
@@ -1053,7 +1071,8 @@ export const Chats: React.FC = () => {
                     const status = selectedUser ? (selectedUser as any).status : null;
                     const normalizedStatus = status ? String(status).toLowerCase() : null;
                     const isClosed = normalizedStatus === "complete" || normalizedStatus === "completed" || normalizedStatus === "responded" || normalizedStatus === "cancelled";
-                    return termsAccepted && 
+                    return selectedUser &&
+                           termsAccepted && 
                            (messageInput.trim() || uploadedImages.length > 0) && 
                            !isSending &&
                            !isClosed;
@@ -1062,14 +1081,16 @@ export const Chats: React.FC = () => {
                     : "opacity-60 cursor-not-allowed"
                 }`}
                 title={
-                  !termsAccepted 
-                    ? "Accept terms to send messages" 
-                    : (() => {
-                        const status = selectedUser ? (selectedUser as any).status : null;
-                        const normalizedStatus = status ? String(status).toLowerCase() : null;
-                        const isClosed = normalizedStatus === "complete" || normalizedStatus === "completed" || normalizedStatus === "responded" || normalizedStatus === "cancelled";
-                        return isClosed ? "Chat is closed" : (isSending ? "Sending..." : "Send message");
-                      })()
+                  !selectedUser
+                    ? "Select a conversation to send messages"
+                    : !termsAccepted 
+                      ? "Accept terms to send messages" 
+                      : (() => {
+                          const status = selectedUser ? (selectedUser as any).status : null;
+                          const normalizedStatus = status ? String(status).toLowerCase() : null;
+                          const isClosed = normalizedStatus === "complete" || normalizedStatus === "completed" || normalizedStatus === "responded" || normalizedStatus === "cancelled";
+                          return isClosed ? "Chat is closed" : (isSending ? "Sending..." : "Send message");
+                        })()
                 }
               >
                 <svg
