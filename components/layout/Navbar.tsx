@@ -13,6 +13,7 @@ import {
   getUserProfile,
   logout,
 } from "@/features/auth/slices/authSlice";
+import { checkKYCStatus } from "@/features/kyc/slices/kycSlice";
 import { useLanguageOptional } from "@/context/language";
 import { useTheme } from "@/context/theme";
 import { checkKYCStatus } from "@/features/kyc/slices/kycSlice";
@@ -537,7 +538,11 @@ export default function Navbar() {
 
   useEffect(() => {
     dispatch(initializeAuth());
-  }, [dispatch]);
+    // Fetch KYC status to know if user is verified
+    if (isAuthenticated) {
+      dispatch(checkKYCStatus());
+    }
+  }, [dispatch, isAuthenticated]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -568,12 +573,15 @@ export default function Navbar() {
     if (userProfile?.photo && typeof window !== "undefined") {
       localStorage.setItem("profile_photo", userProfile.photo);
       setCachedProfilePhoto(userProfile.photo);
+      setProfileImageError(false); // Reset error when we have a valid photo
     }
   }, [userProfile?.photo]);
 
   // Reset image error when profile photo changes
   useEffect(() => {
-    setProfileImageError(false);
+    if (userProfile?.photo || cachedProfilePhoto) {
+      setProfileImageError(false);
+    }
   }, [userProfile?.photo, cachedProfilePhoto]);
 
   // Profile data available for rendering
@@ -934,16 +942,15 @@ export default function Navbar() {
                   {(userProfile?.photo || cachedProfilePhoto) &&
                     !profileImageError ? (
                     <img
+                      key={userProfile?.photo || cachedProfilePhoto} // Force re-render when photo changes
                       src={userProfile?.photo || cachedProfilePhoto || ""}
                       alt="Profile"
-                      className="w-8 h-8 md:w-9 md:h-9 lg:w-10 lg:h-10 rounded-full object-cover"
-                      onError={() => {
+                      className="w-8 h-8 md:w-9 md:h-9 lg:w-10 lg:h-10 rounded-full object-cover border-2 border-white"
+                      onError={(e) => {
+                        console.error("Profile image failed to load");
                         setProfileImageError(true);
-                        if (typeof window !== "undefined") {
-                          localStorage.removeItem("profile_photo");
-                          setCachedProfilePhoto(null);
-                        }
                       }}
+                      loading="eager"
                     />
                   ) : (
                     <div className="w-8 h-8 md:w-9 md:h-9 lg:w-10 lg:h-10 rounded-full flex items-center justify-center bg-[#1D8751] border-2 border-white">
@@ -1015,21 +1022,19 @@ export default function Navbar() {
                               !profileImageError ? (
                               <>
                                 <img
+                                  key={userProfile?.photo || cachedProfilePhoto} // Force re-render
                                   src={
                                     userProfile?.photo ||
                                     cachedProfilePhoto ||
                                     ""
                                   }
                                   alt="Profile"
-                                  className="w-12 h-12 rounded-full object-cover"
-                                  onError={() => {
+                                  className="w-12 h-12 rounded-full object-cover border-2 border-transparent"
+                                  onError={(e) => {
+                                    console.error("Dropdown profile image failed to load");
                                     setProfileImageError(true);
-                                    // Clear invalid cached photo
-                                    if (typeof window !== "undefined") {
-                                      localStorage.removeItem("profile_photo");
-                                      setCachedProfilePhoto(null);
-                                    }
                                   }}
+                                  loading="eager"
                                 />
                                 {/* Verification Badge */}
                                 <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 z-10">
@@ -1406,13 +1411,32 @@ export default function Navbar() {
                           )}
                         </Link>
                       </div>
-                      <div className="text-left">
-                        <h4 className="text-white font-medium text-sm">
-                          {user?.first_name && user?.last_name
-                            ? `${user.first_name} ${user.last_name}`
-                            : user?.email}
-                        </h4>
-                        <p className="text-gray-400 text-xs">{user?.email}</p>
+                      <div className="text-left flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <h4 className="text-white font-medium text-sm truncate">
+                            {user?.first_name && user?.last_name
+                              ? `${user.first_name} ${user.last_name}`
+                              : user?.email}
+                          </h4>
+                          {isKycVerified && (
+                            <span className="inline-flex items-center justify-center w-4 h-4 shrink-0">
+                              <svg width="16" height="16" viewBox="0 0 20 20" className="absolute">
+                                <circle cx="10" cy="10" r="9" fill="white" />
+                                <circle cx="10" cy="10" r="7.5" fill="#1D8751" />
+                                {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map(angle => {
+                                  const rad = (angle * Math.PI) / 180;
+                                  const x = 10 + 8.5 * Math.cos(rad);
+                                  const y = 10 + 8.5 * Math.sin(rad);
+                                  return <circle key={angle} cx={x} cy={y} r="1" fill="white" />;
+                                })}
+                              </svg>
+                              <svg width="8" height="8" viewBox="0 0 10 10" fill="none" className="relative z-10">
+                                <path d="M2 5L4 7L8 3" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                              </svg>
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-gray-400 text-xs truncate">{user?.email}</p>
                       </div>
                     </div>
                   </div>
@@ -1539,8 +1563,8 @@ export default function Navbar() {
                               className="flex items-center w-full px-4 py-3 text-gray-300 hover:text-white hover:bg-[#35353E] rounded-lg transition-colors duration-200"
                               onClick={() => setProfileModalOpen(false)}
                             >
-                              <User size={20} className="mr-4" />
-                              <span className="text-base">Account</span>
+                              <User size={20} className="mr-3" />
+                              <span className="text-base whitespace-nowrap">Account</span>
                             </Link>
 
                             <Link

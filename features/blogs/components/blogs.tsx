@@ -8,6 +8,7 @@ import { useBlog } from "../hooks/blog";
 import { BlogPost } from "../types";
 import { useBlogsI18n } from "@/lib/useBlogsI18n";
 import { imageBuilder } from "@/sanity/lib/client";
+import { decodeHtml } from "@/lib/utils/html";
 
 import { logger } from '@/lib/utils/logger';
 
@@ -258,11 +259,15 @@ const BlogPage = () => {
                   <h2 className="text-xl font-bold mb-3 flex-grow text-gray-900 dark:text-white">
                     {post.title}
                   </h2>
-                  <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm line-clamp-3">
+                  {/* <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm line-clamp-3">
                     {post.description.length > 300
                       ? post.description.substring(0, 300).trim() + "..."
                       : post.description}
-                  </p>
+                  </p> */}
+                  <div
+                    className="text-gray-600 dark:text-gray-400 mb-4 text-sm line-clamp-3 prose prose-sm dark:prose-invert max-w-none"
+                    dangerouslySetInnerHTML={{ __html: decodeHtml(post.description) }}
+                  />
                   <p className="text-xs text-gray-500 dark:text-gray-500 mb-6">
                     {t("blogs.byAuthor", "By {{author}}", {
                       author: post.author_name || "Anonymous",

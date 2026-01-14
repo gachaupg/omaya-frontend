@@ -163,6 +163,14 @@ const ExchangeTransactions = () => {
     e?.preventDefault();
     e?.stopPropagation();
     setCurrentPage(pageNumber);
+    // Scroll to the top of the container
+    if (containerRef.current) {
+      // Calculate offset to account for fixed headers if any (approx 100px)
+      const yOffset = -100; 
+      const element = containerRef.current;
+      const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+      window.scrollTo({ top: y, behavior: 'smooth' });
+    }
   };
 
   const renderPagination = () => {
