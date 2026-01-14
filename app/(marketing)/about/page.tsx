@@ -723,6 +723,171 @@ const AboutPage = () => {
       </section>
       {/* Achievements Section - Figma Match */}
 
+      {/* Location Section */}
+
+      {/* Location Section */}
+      <section className="py-20 px-4 bg-white dark:bg-[var(--bg-color)] relative overflow-hidden">
+        <div className="max-w-7xl mx-auto relative z-10">
+          {/* Header */}
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-[#1D8751]/10 border border-[#1D8751]/30 mb-5 gap-2">
+              <Globe className="w-4 h-4 text-[#1D8751]" />
+              <span className="text-xs md:text-sm font-medium text-[#1D8751]">
+                Global Network
+              </span>
+            </div>
+
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 dark:text-white mb-4">
+              Our Locations
+            </h2>
+            <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+              Operating worldwide with local presence in strategic hubs
+            </p>
+          </div>
+
+          {/* Statistics Bar - COLORED ICONS AND NUMBERS */}
+          <div className="bg-white dark:bg-[#14141A] rounded-2xl p-6 mb-12 border border-gray-200 dark:border-[#1E1E26]">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Countries - BLUE */}
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center">
+                  <Globe className="w-6 h-6 text-blue-500" />
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-gray-900 dark:text-white">150+</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">Countries</div>
+                </div>
+              </div>
+
+              {/* Team Members - PURPLE */}
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center">
+                  <Users className="w-6 h-6 text-purple-500" />
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-gray-900 dark:text-white">350+</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">Team Members</div>
+                </div>
+              </div>
+
+              {/* Support Hours - GREEN */}
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-[#1D8751]/10 flex items-center justify-center">
+                  <Clock className="w-6 h-6 text-[#1D8751]" />
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-gray-900 dark:text-white">24/7</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">Support Hours</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="max-w-7xl mx-auto">
+            <div className="relative group overflow-hidden rounded-2xl bg-white dark:bg-linear-to-t dark:from-[#0F0F13] dark:to-[#18181D] border border-border dark:border-accent shadow-2xl transition-all duration-500 hover:shadow-[#1D8751]/10">
+              {/* City Image Header */}
+              <div className="relative h-[280px] md:h-[300px] overflow-hidden">
+                <Image
+                  src="/images/Mougadishu.jpeg"
+                  alt="Mogadishu"
+                  fill
+                  className="object-cover transition-transform duration-600 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-linear-to-t from-[#0F0F13] via-[#0F0F13]/40 to-transparent" />
+
+                {/* Flag Icon */}
+                <div className="absolute top-6 left-6 md:top-8 md:left-8">
+                  <div className="w-12 h-8 rounded-md overflow-hidden bg-[#4189DD] flex items-center justify-center shadow-lg border border-white/20">
+                    <Star className="w-4 h-4 text-white fill-current" />
+                  </div>
+                </div>
+
+                {/* Headquarters Badge */}
+                <div className="absolute top-6 right-6 md:top-8 md:right-8">
+                  <div className="px-5 py-2.5 rounded-xl bg-white backdrop-blur-md border border-[#20202A] text-xs font-semibold text-[#1D8751] uppercase tracking-wider">
+                    Headquarters
+                  </div>
+                </div>
+
+                {/* City Name */}
+                <div className="absolute bottom-10 left-6 md:left-10">
+                  <h3 className="text-4xl md:text-5xl font-bold text-white mb-2">Mogadishu</h3>
+                  <p className="text-lg text-gray-300 font-medium">Somalia</p>
+                </div>
+              </div>
+
+              {/* Card Content Area */}
+              <div className="p-8 md:p-12 space-y-8">
+                {/* Stats Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-16">
+                  {/* Local Time */}
+                  <div className="flex items-start gap-5">
+                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0">
+                      <Clock className="w-6 h-6 text-[#1D8751]" />
+                    </div>
+                    <div>
+                      <div className="text-lg font-bold text-gray-900 dark:text-white mb-1">GMT+3</div>
+                      <div className="text-sm text-muted-foreground font-medium">Local Time</div>
+                    </div>
+                  </div>
+
+                  {/* Team Size */}
+                  <div className="flex items-start gap-5">
+                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0">
+                      <Building2 className="w-6 h-6 text-[#1D8751]" />
+                    </div>
+                    <div>
+                      <div className="text-lg font-bold text-gray-900 dark:text-white mb-1">20+ Employees</div>
+                      <div className="text-sm text-muted-foreground font-medium">Team Size</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Address Section */}
+                <div className="pt-8 border-t border-border dark:border-[#20202A]">
+                  <div className="flex items-start gap-5">
+                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0">
+                      <MapPin className="w-6 h-6 text-[#1D8751]" />
+                    </div>
+                    <div className="space-y-2">
+                      <span className="text-sm text-muted-foreground font-medium">Address</span>
+                      <p className="text-lg md:text-xl text-gray-900 dark:text-white leading-relaxed font-medium">
+                        KM4, Taleh, Hodan District, Mogadishu, Somalia
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Contact Rows */}
+                <div className="space-y-4 pt-4">
+                  {/* Email Card */}
+                  <div className="p-6 rounded-2xl bg-gray-50/50 dark:bg-(--bg-color) border border-border dark:border-accent flex items-center gap-5 transition-colors group/item shrink-0">
+                    <div className="w-12 h-12 rounded-2xl bg-[#1D8751]/10 flex items-center justify-center shrink-0 group-hover/item:bg-[#1D8751]/20 transition-colors">
+                      <Mail className="w-6 h-6 text-[#1D8751]" />
+                    </div>
+                    <div>
+                      <div className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-1">Email</div>
+                      <div className="text-base md:text-lg text-[#1D8751] font-bold">info@omaya.io</div>
+                    </div>
+                  </div>
+
+                  {/* Phone Card */}
+                  <div className="p-6 rounded-2xl bg-gray-50/50 dark:bg-(--bg-color) border border-border dark:border-accent flex items-center gap-5 transition-colors group/item shrink-0">
+                    <div className="w-12 h-12 rounded-2xl bg-[#1D8751]/10 flex items-center justify-center shrink-0 group-hover/item:bg-[#1D8751]/20 transition-colors">
+                      <Phone className="w-6 h-6 text-[#1D8751]" />
+                    </div>
+                    <div>
+                      <div className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-1">Phone</div>
+                      <div className="text-base md:text-lg text-gray-900 dark:text-white font-bold">+252771000777</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Achievements Section */}
       <section className="py-20 px-4 bg-white dark:bg-[var(--bg-color)]">
         <div className="max-w-6xl mx-auto">
@@ -983,204 +1148,6 @@ const AboutPage = () => {
       </section>
 
 
-
-      {/* Location Section */}
-
-      {/* Location Section */}
-      <section className="py-20 px-4 bg-white dark:bg-[var(--bg-color)] relative overflow-hidden">
-        <div className="max-w-7xl mx-auto relative z-10">
-          {/* Header */}
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-[#1D8751]/10 border border-[#1D8751]/30 mb-5 gap-2">
-              <Globe className="w-4 h-4 text-[#1D8751]" />
-              <span className="text-xs md:text-sm font-medium text-[#1D8751]">
-                Global Network
-              </span>
-            </div>
-
-            <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 dark:text-white mb-4">
-              Our Locations
-            </h2>
-            <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-              Operating worldwide with local presence
-            </p>
-          </div>
-
-          {/* Statistics Bar - COLORED ICONS AND NUMBERS */}
-          <div className="bg-white dark:bg-[#14141A] rounded-2xl p-6 mb-12 border border-gray-200 dark:border-[#1E1E26]">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Countries - BLUE */}
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center">
-                  <Globe className="w-6 h-6 text-blue-500" />
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-gray-900 dark:text-white">150+</div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">Countries</div>
-                </div>
-              </div>
-
-              {/* Team Members - PURPLE */}
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center">
-                  <Users className="w-6 h-6 text-purple-500" />
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-gray-900 dark:text-white">350+</div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">Team Members</div>
-                </div>
-              </div>
-
-              {/* Support Hours - GREEN */}
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-[#1D8751]/10 flex items-center justify-center">
-                  <Clock className="w-6 h-6 text-[#1D8751]" />
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-gray-900 dark:text-white">24/7</div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">Support Hours</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Location Cards */}
-          <div className="grid md:grid-cols-2 gap-8">
-            {/* Dubai Headquarters */}
-            <div className="bg-white dark:bg-[#14141A] rounded-3xl overflow-hidden border border-gray-200 dark:border-[#1E1E26]">
-              {/* Image Section */}
-              <div className="relative h-64">
-                <img
-                  src="https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=800&q=80"
-                  alt="Dubai"
-                  className="absolute inset-0 w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                <div className="absolute top-4 left-4 w-8 h-5 rounded-sm overflow-hidden shadow-md">
-                  <img
-                    src="https://flagcdn.com/w80/ae.png"
-                    alt="UAE Flag"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div className="absolute top-4 right-4 px-3 py-1.5 rounded-xl bg-[#1D8751] text-white text-sm font-medium">
-                  Headquarters
-                </div>
-                <div className="absolute bottom-6 left-6">
-                  <h3 className="text-3xl font-bold text-white mb-1">Dubai</h3>
-                  <p className="text-gray-200 dark:text-gray-300">United Arab Emirates</p>
-                </div>
-              </div>
-
-              {/* Details Section */}
-              <div className="p-6 space-y-4">
-                <div className="flex items-start gap-3">
-                  <Clock className="w-5 h-5 text-[#1D8751] mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Local Time</p>
-                    <p className="text-gray-900 dark:text-white font-medium">GMT+4</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Building2 className="w-5 h-5 text-[#1D8751] mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Team Size</p>
-                    <p className="text-gray-900 dark:text-white font-medium">200+ Employees</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <MapPin className="w-5 h-5 text-[#1D8751] mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Address</p>
-                    <p className="text-gray-900 dark:text-white font-medium">123 Blockchain Avenue, Financial District</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Mail className="w-5 h-5 text-[#1D8751] mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Email</p>
-                    <p className="text-gray-900 dark:text-white font-medium">support@omaya.io</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Phone className="w-5 h-5 text-[#1D8751] mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Phone</p>
-                    <p className="text-gray-900 dark:text-white font-medium">+971 4 123 4567</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* San Francisco Regional Office */}
-            <div className="bg-white dark:bg-[#14141A] rounded-3xl overflow-hidden border border-gray-200 dark:border-[#1E1E26]">
-              {/* Image Section */}
-              <div className="relative h-64">
-                <img
-                  src="https://images.unsplash.com/photo-1501594907352-04cda38ebc29?w=800&q=80"
-                  alt="San Francisco"
-                  className="absolute inset-0 w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                <div className="absolute top-4 left-4 w-8 h-5 rounded-sm overflow-hidden shadow-md">
-                  <img
-                    src="https://flagcdn.com/w80/us.png"
-                    alt="US Flag"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div className="absolute top-4 right-4 px-3 py-1.5 rounded-xl bg-[#1D8751] text-white text-sm font-medium">
-                  Regional Office
-                </div>
-                <div className="absolute bottom-6 left-6">
-                  <h3 className="text-3xl font-bold text-white mb-1">San Francisco</h3>
-                  <p className="text-gray-200 dark:text-gray-300">United States</p>
-                </div>
-              </div>
-
-              {/* Details Section */}
-              <div className="p-6 space-y-4">
-                <div className="flex items-start gap-3">
-                  <Clock className="w-5 h-5 text-[#1D8751] mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Local Time</p>
-                    <p className="text-gray-900 dark:text-white font-medium">PST (GMT-8)</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Building2 className="w-5 h-5 text-[#1D8751] mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Team Size</p>
-                    <p className="text-gray-900 dark:text-white font-medium">150+ Employees</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <MapPin className="w-5 h-5 text-[#1D8751] mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Address</p>
-                    <p className="text-gray-900 dark:text-white font-medium">456 Tech Hub Street, Silicon Valley, CA 94102</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Mail className="w-5 h-5 text-[#1D8751] mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Email</p>
-                    <p className="text-gray-900 dark:text-white font-medium">us@omaya.io</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Phone className="w-5 h-5 text-[#1D8751] mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Phone</p>
-                    <p className="text-gray-900 dark:text-white font-medium">+1 (415) 123-4567</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Why Choose Us Section */}
       <section className="py-16 px-4 bg-white dark:bg-[#18181D]">
         <div className="max-w-7xl mx-auto">
@@ -1235,7 +1202,7 @@ const AboutPage = () => {
       <section className="py-16 px-4 bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-black dark:via-gray-900 dark:to-black relative overflow-hidden">
         {/* Glowing green light effect from top-left */}
         <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-br from-[#1D8751]/10 via-[#22c55e]/5 to-transparent dark:from-[#1D8751]/20 dark:via-[#22c55e]/10 dark:to-transparent rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
-        
+
 
         <div className="max-w-4xl mx-auto relative z-10">
           <div className="text-center">

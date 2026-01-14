@@ -3204,7 +3204,10 @@ export default function DepositForm({
               data-select-card="true"
               className="flex-1 sm:pl-4 border-t sm:border-t-0 sm:border-l border-[#35353E] dark:border-[#35353E] pt-2 sm:pt-0 sm:border-none"
             >
-              <div className="text-xs text-[#788099] dark:text-[#788099] mb-1 mt-[30px] sm:mt-[34px]">{t("express.bankPaymentMethod", "Bank/Payment Method")}</div>
+              <div className="hidden sm:block text-sm sm:text-[17px] mb-2 font-semibold">
+                <span className="opacity-0">Placeholder</span>
+              </div>
+              <div className="text-xs text-[#788099] dark:text-[#788099] mb-1">{t("express.bankPaymentMethod", "Bank/Payment Method")}</div>
               {/* <div>
                 hello
                 {
@@ -3642,7 +3645,10 @@ export default function DepositForm({
 
             {/* Asset Section */}
             <div className="flex-1 sm:pl-4 border-t sm:border-t-0 sm:border-l border-[#35353E] dark:border-[#35353E] pt-3 sm:pt-0 sm:border-none">
-              <div className="text-xs text-[#788099] dark:text-[#788099] mb-1 mt-[30px] sm:mt-[34px]">{t("express.youGet", "You Get")}</div>
+              <div className="hidden sm:block text-sm sm:text-[17px] mb-2 font-semibold">
+                <span className="opacity-0">Placeholder</span>
+              </div>
+              <div className="text-xs text-[#788099] dark:text-[#788099] mb-1">{t("express.youGet", "You Get")}</div>
               <div className="relative" ref={assetDropdownRef}>
                 <div
                   className={`h-[48px] w-full text-[#35353e] bg-transparent dark:bg-transparent dark:text-[#ffffff] rounded-2xl px-3 sm:px-4 text-base sm:text-lg border border-[#A2A4A9FF] dark:border-[#35353E] hover:border-blue-400 dark:hover:border-blue-400 flex items-center justify-between cursor-pointer transition-colors duration-200`}
@@ -3795,17 +3801,17 @@ export default function DepositForm({
                   ? "bg-gray-500 cursor-not-allowed"
                   : "bg-[#1D8751] hover:bg-[#166b3e]"
                 }`}
-              disabled={isHomePage 
+              disabled={isHomePage
                 ? payAmount >= 15000 || getAmount >= 15000
                 : isSubmitting ||
-                  !selectedAsset ||
-                  !payBank ||
-                  payAmount >= 15000 ||
-                  getAmount >= 15000 ||
-                  (selectedAsset &&
-                    !isSimpleCalculationAsset(selectedAsset) &&
-                    !isForexAsset(selectedAsset) &&
-                    estimateLoading)
+                !selectedAsset ||
+                !payBank ||
+                payAmount >= 15000 ||
+                getAmount >= 15000 ||
+                (selectedAsset &&
+                  !isSimpleCalculationAsset(selectedAsset) &&
+                  !isForexAsset(selectedAsset) &&
+                  estimateLoading)
               }
               onClick={() => {
                 // Prevent submission if amount is >= 15000
