@@ -9,6 +9,7 @@ interface Option {
   disabled?: boolean;
   logo?: string;
   subtitle?: string; // Second line for two-line display
+  title?: string; // Tooltip text shown on hover
 }
 
 type DropdownVerticalAlign = "cardTop" | "cardCenter";
@@ -501,6 +502,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
                     type="button"
                     onClick={() => handleOptionClick(option.value)}
                     disabled={option.disabled}
+                    title={option.title || option.label}
                     className={`
                     w-full text-left px-3 sm:px-4 py-2 sm:py-2.5 text-base sm:text-lg transition-colors duration-150
                     hover:bg-blue-50 dark:hover:bg-blue-900/20
