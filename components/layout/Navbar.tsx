@@ -16,7 +16,6 @@ import {
 import { checkKYCStatus } from "@/features/kyc/slices/kycSlice";
 import { useLanguageOptional } from "@/context/language";
 import { useTheme } from "@/context/theme";
-import { checkKYCStatus } from "@/features/kyc/slices/kycSlice";
 
 const DefaultProfileIcon = () => (
   <div className="w-10 h-10 rounded-full flex items-center justify-center bg-[#1D8751] border-2 border-white">
@@ -1418,7 +1417,7 @@ export default function Navbar() {
                               ? `${user.first_name} ${user.last_name}`
                               : user?.email}
                           </h4>
-                          {isKycVerified && (
+                          {isVerified && (
                             <span className="inline-flex items-center justify-center w-4 h-4 shrink-0">
                               <svg width="16" height="16" viewBox="0 0 20 20" className="absolute">
                                 <circle cx="10" cy="10" r="9" fill="white" />
