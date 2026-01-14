@@ -37,6 +37,10 @@ interface CustomSelectProps {
   dropdownVerticalAlign?: DropdownVerticalAlign;
   dropdownOffsetY?: number;
   dropdownOffsetX?: number;
+  /**
+   * Whether to use larger dropdown items (bigger logos and text)
+   */
+  largeDropdownItems?: boolean;
 }
 
 const CustomSelect: React.FC<CustomSelectProps> = ({
@@ -59,6 +63,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   dropdownVerticalAlign = "cardTop",
   dropdownOffsetY = 0,
   dropdownOffsetX = 0,
+  largeDropdownItems = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -72,6 +77,9 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
     left: 0,
     width: 0,
   });
+  
+  // Logo size for dropdown items
+  const dropdownItemLogoSize = largeDropdownItems ? 40 : 32;
 
   // Filter options based on search term - search both label and value
   const filteredOptions = options.filter((option) =>
@@ -502,9 +510,11 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
                     onClick={() => handleOptionClick(option.value)}
                     disabled={option.disabled}
                     className={`
-                    w-full text-left px-3 sm:px-4 py-2 sm:py-2.5 text-base sm:text-lg transition-colors duration-150
+                    w-full text-left transition-colors duration-150
                     hover:bg-blue-50 dark:hover:bg-blue-900/20
                     focus:outline-none focus:bg-blue-50 dark:focus:bg-blue-900/20
+                    ${largeDropdownItems ? "px-4 py-3 sm:py-4" : "px-3 sm:px-4 py-2 sm:py-2.5"}
+                    ${largeDropdownItems ? "text-base sm:text-lg" : "text-base sm:text-lg"}
                     ${isSelected
                       ? "bg-blue-100 dark:bg-blue-900/30 text-blue-900 dark:text-blue-100 font-medium"
                       : "text-gray-900 dark:text-white"
@@ -515,16 +525,17 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
                     }
                     ${optionClassName}
                   `}
-                    style={{ minHeight: "44px", marginBottom: "2px" }}
+                    style={{ minHeight: largeDropdownItems ? "56px" : "44px", marginBottom: "2px" }}
                     role="option"
                     aria-selected={value === option.value}
                   >
-                    <div className="flex items-center gap-2 sm:gap-3 min-w-0 w-full">
+                    <div className={`flex items-center min-w-0 w-full ${largeDropdownItems ? "gap-3 sm:gap-4" : "gap-2 sm:gap-3"}`}>
                       {option.logo && (
                         <img
                           src={option.logo}
                           alt=""
-                          className="w-6 h-6 sm:w-8 sm:h-8 rounded object-cover flex-shrink-0"
+                          className="rounded object-cover flex-shrink-0"
+                          style={{ width: dropdownItemLogoSize, height: dropdownItemLogoSize }}
                           onError={(e) => {
                             (e.target as HTMLImageElement).style.display = "none";
                           }}
@@ -532,11 +543,11 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
                       )}
                       {option.subtitle ? (
                         <div className="flex-1 min-w-0">
-                          <div className="text-[#1F2937] dark:text-[#ffffff] font-normal text-sm truncate">{option.label}</div>
-                          <div className="text-sm text-gray-500 dark:text-gray-400 truncate">{option.subtitle}</div>
+                          <div className={`text-[#1F2937] dark:text-[#ffffff] truncate ${largeDropdownItems ? "font-medium text-base" : "font-normal text-sm"}`}>{option.label}</div>
+                          <div className={`text-gray-500 dark:text-gray-400 truncate ${largeDropdownItems ? "text-sm" : "text-sm"}`}>{option.subtitle}</div>
                         </div>
                       ) : (
-                        <span className="truncate min-w-0 flex-1 text-left text-base sm:text-lg">{option.label}</span>
+                        <span className={`truncate min-w-0 flex-1 text-left ${largeDropdownItems ? "text-base sm:text-lg font-medium" : "text-base sm:text-lg"}`}>{option.label}</span>
                       )}
                     </div>
                   </button>

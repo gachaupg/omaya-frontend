@@ -2393,7 +2393,7 @@ export default function WithdrawalForm({
                         return (
                           <div
                             key={`popular-${asset.asset_id}-${asset.ticker}-${asset.network}-${index}`}
-                            className="flex items-center gap-3 p-3 sm:p-4 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-b border-gray-200 dark:border-gray-600 transition-colors duration-150"
+                            className="flex items-center gap-4 p-4 sm:p-5 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-b border-gray-200 dark:border-gray-600 transition-colors duration-150"
                             onClick={handleAssetClick}
                           >
                             <img
@@ -2409,14 +2409,14 @@ export default function WithdrawalForm({
                                 asset?.symbol ||
                                 "Asset"
                               }
-                              className="w-6 h-6 rounded-full object-cover"
+                              className="w-10 h-10 rounded-full object-cover"
                               onError={(e) => {
                                 e.currentTarget.src =
                                   "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
                               }}
                             />
                             <div className="flex-1">
-                              <div className="text-[#1F2937] dark:text-[#ffffff] font-normal text-sm flex items-center gap-2">
+                              <div className="text-[#1F2937] dark:text-[#ffffff] font-medium text-base flex items-center gap-2">
                                 {(asset.ticker ||
                                   asset.symbol ||
                                   asset.name ||
@@ -2455,7 +2455,7 @@ export default function WithdrawalForm({
                 ).map((asset: SupportedAsset, index: number) => (
                   <div
                     key={`${asset.asset_id}-${asset.ticker}-${asset.network}-${index}`}
-                    className="flex items-center gap-3 p-3 sm:p-4 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-b border-gray-200 dark:border-gray-600 last:border-b-0 transition-colors duration-150"
+                    className="flex items-center gap-4 p-4 sm:p-5 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-b border-gray-200 dark:border-gray-600 last:border-b-0 transition-colors duration-150"
                     onClick={() => {
                       if (calculationTimeout) {
                         clearTimeout(calculationTimeout);
@@ -2519,14 +2519,14 @@ export default function WithdrawalForm({
                       alt={
                         asset?.name || asset?.ticker || asset?.symbol || "Asset"
                       }
-                      className="w-6 h-6 rounded-full object-cover"
+                      className="w-10 h-10 rounded-full object-cover"
                       onError={(e) => {
                         e.currentTarget.src =
                           "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
                       }}
                     />
                     <div className="flex-1">
-                      <div className="text-[#1F2937] dark:text-[#ffffff] font-normal text-sm flex items-center gap-2">
+                      <div className="text-[#1F2937] dark:text-[#ffffff] font-medium text-base flex items-center gap-2">
                         {(asset.ticker ||
                           asset.symbol ||
                           asset.name ||
@@ -4166,6 +4166,7 @@ export default function WithdrawalForm({
                           dropdownTitle="Select a payment methods"
                           dropdownOffsetY={-68}
                           dropdownOffsetX={20}
+                          largeDropdownItems={true}
                         />
                       );
                     })()}
@@ -4285,6 +4286,7 @@ export default function WithdrawalForm({
                                     }`}
                                   triggerClassName={`px-4 py-2 text-lg border rounded-2xl w-full min-w-0 bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
                                     }`}
+                                  largeDropdownItems={true}
                                 />
                               </div>
                             </div>
