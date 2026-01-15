@@ -1334,7 +1334,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
                 onChange={(event) =>
                   setIsAddressConfirmed(event.target.checked)
                 }
-                className="w-4 h-4 mt-0.5 rounded border-[#1D8751] text-[#1D8751] focus:ring-[#1D8751] accent-[#1D8751]"
+                className="w-4 h-4 mt-0.5 rounded border-[#1D8751] text-[#1D8751] accent-[#1D8751]"
               />
               <span>I have read and agreed to Omaya Exchange <a href="/terms" className="text-[#1D8751] underline">Terms of Use</a>, <a href="/privacy" className="text-[#1D8751] underline">Privacy Policy</a></span>
             </label>

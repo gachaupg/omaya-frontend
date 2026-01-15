@@ -949,8 +949,8 @@ const LineCharts = React.memo(
                 Overview Total
               </h3>
 
-              <div className="flex flex-wrap gap-0.5 sm:gap-2">
-                {["exchange", "p2p", "swap", "buy"].map(t => (
+              <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                {["exchange", "p2p", "swap"].map(t => (
                   <button
                     key={t}
                     onClick={() => setActiveTab(t as any)}
@@ -1007,14 +1007,14 @@ const LineCharts = React.memo(
             <div className="flex flex-col xl:flex-row gap-6 px-4 pb-6 flex-1">
               <div className="xl:w-1/2">
                 <Legend
-                  data={referralCommissionsData(transactionSummary, walletData || undefined)}
+                  data={referralCommissionsData(transactionSummary, walletData || undefined, referralTimePeriod)}
                 />
               </div>
 
               <div className="flex-1 flex justify-center items-end">
                 <DonutChartWithCenter
-                  data={referralCommissionsData(transactionSummary, walletData || undefined)}
-                  total={referralCommissionsSummary(transactionSummary, walletData || undefined).total}
+                  data={referralCommissionsData(transactionSummary, walletData || undefined, referralTimePeriod)}
+                  total={referralCommissionsSummary(transactionSummary, walletData || undefined, referralTimePeriod).total}
                   label="Commissions"
                 />
               </div>

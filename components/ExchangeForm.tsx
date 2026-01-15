@@ -1264,14 +1264,14 @@ export default function ExchangeForm({
             <span className="relative flex items-center mt-1 sm:mt-1.5 md:mt-2">
               <img
                 src={exchangeIconSrc1}
-                className={`h-4.5 -mt-0.5 -ml-0.5 w-auto object-contain ${isActive && isDark ? "hidden" : "block"}`}
+                className={`h-3.5 sm:h-4.5 -mt-0.5 -ml-0.5 w-auto object-contain ${isActive && isDark ? "hidden" : "block"}`}
                 alt="X"
                 style={{ imageRendering: 'crisp-edges', WebkitFontSmoothing: 'antialiased' }}
               />
               {isActive && isDark && (
                 <img
                   src={exchangeIconSrc2}
-                  className="h-4.5 -mt-0.5 -ml-0.5 w-auto object-contain block"
+                  className="h-3.5 sm:h-4.5 -mt-0.5 -ml-0.5 w-auto object-contain block"
                   alt="X"
                   style={{ imageRendering: 'crisp-edges', WebkitFontSmoothing: 'antialiased' }}
                 />
@@ -1287,14 +1287,14 @@ export default function ExchangeForm({
             <span className="relative flex items-center mt-1 sm:mt-1.5 md:mt-2">
               <img
                 src={moneyXIconSrc1}
-                className={`h-4.5 -mt-0.5 object-contain ${isActive && isDark ? "hidden" : "block"}`}
+                className={`h-3.5 sm:h-4.5 -mt-0.5 object-contain ${isActive && isDark ? "hidden" : "block"}`}
                 alt="X"
                 style={{ imageRendering: 'crisp-edges', WebkitFontSmoothing: 'antialiased' }}
               />
               {isActive && isDark && (
                 <img
                   src={moneyXIconSrc2}
-                  className="h-4.5 -mt-0.5 w-auto object-contain block"
+                  className="h-3.5 sm:h-4.5 -mt-0.5 w-auto object-contain block"
                   alt="X"
                   style={{ imageRendering: 'crisp-edges', WebkitFontSmoothing: 'antialiased' }}
                 />
@@ -1361,13 +1361,13 @@ export default function ExchangeForm({
           borderRadius: getBorderRadius(),
           // Outer edges only - no borders between buttons (slanted edges handled separately)
           // When MoneyX is active, remove all borders from Express tab
-          borderLeft: hasLeftBorder && !isActive && !hasSlantLeft && !shouldHideBorders ? `2px solid ${borderColor}` : "none",
+          borderLeft: hasLeftBorder && !isActive && !hasSlantLeft && !shouldHideBorders ? `0px solid ${borderColor}` : "none",
           borderRight:
             hasRightBorder && !isActive && !hasSlantRight && !shouldHideBorders
-              ? `2px solid ${borderColor}`
+              ? `0px solid ${borderColor}`
               : "none",
-          borderTop: !isActive && !shouldHideBorders ? `2px solid ${borderColor}` : "none",
-          borderBottom: !isActive && !shouldHideBorders ? `2px solid ${borderColor}` : "none",
+          borderTop: !isActive && !shouldHideBorders ? `0px solid ${borderColor}` : "none",
+          borderBottom: !isActive && !shouldHideBorders ? `0px solid ${borderColor}` : "none",
         }}
       >
         {/* Border on slanted right edge */}
@@ -1586,20 +1586,20 @@ export default function ExchangeForm({
 
     return (
       <div
-        className="relative flex w-full overflow-hidden mt-0 mb-0 rounded-t-[28px] bg-gray-300 dark:bg-[#18181D] gap-0 border-0"
+        className="relative flex w-full overflow-hidden mt-0 mb-0 rounded-t-2xl bg-gray-300 dark:bg-[#18181D] gap-0 border border-b-0 dark:border-accent border-border"
       >
         {/* Uniform OUTER border that DOES NOT touch the active tab area (segmented). */}
         {/* Left / Right borders (hide the side border next to the active outer tab) */}
         {activeTab !== "express" && (
           <div
-            className="pointer-events-none absolute left-0 top-0 bottom-0 border-l-2 z-30"
+            className="pointer-events-none absolute left-0 top-0 bottom-0 z-30"
             style={{ borderColor }}
             aria-hidden="true"
           />
         )}
         {activeTab !== "swap" && (
           <div
-            className="pointer-events-none absolute right-0 top-0 bottom-0 border-r-2 z-30"
+            className="pointer-events-none absolute right-0 top-0 bottom-0 z-30"
             style={{ borderColor }}
             aria-hidden="true"
           />
@@ -1608,14 +1608,14 @@ export default function ExchangeForm({
         {/* Rounded top corners (hide the corner border next to the active tab) */}
         {activeTab !== "express" && (
           <div
-            className="pointer-events-none absolute top-0 left-0 h-10 w-10 sm:w-12 rounded-tl-[28px] border-t-2 border-l-2 z-30"
+            className="pointer-events-none absolute top-0 left-0 h-10 w-10 sm:w-12 z-30"
             style={{ borderColor }}
             aria-hidden="true"
           />
         )}
         {activeTab !== "swap" && (
           <div
-            className="pointer-events-none absolute top-0 right-0 h-10 w-10 sm:w-12 rounded-tr-[28px] border-t-2 border-r-2 z-30"
+            className="pointer-events-none absolute top-0 right-0 h-10 w-10 sm:w-12 z-30"
             style={{ borderColor }}
             aria-hidden="true"
           />
@@ -1624,7 +1624,7 @@ export default function ExchangeForm({
         {/* Top border segments (skip the active tab width) */}
         {activeTab === "express" && (
           <div
-            className="pointer-events-none absolute top-0 border-t-2 z-30"
+            className="pointer-events-none absolute top-0 z-30"
             // Express active => MoneyX inactive has a LEFT slant at the BOTTOM only, so TOP join is straight.
             style={{ borderColor, left: P_EXPRESS, right: 0 }}
             aria-hidden="true"
@@ -1633,13 +1633,13 @@ export default function ExchangeForm({
         {activeTab === "moneyx" && (
           <>
             <div
-              className="pointer-events-none absolute top-0 left-0 border-t-2 z-30"
+              className="pointer-events-none absolute top-0 left-0  z-30"
               // MoneyX active => Express top border extends until it meets the start of slanting part (full Express width)
               style={{ borderColor, width: P_EXPRESS }}
               aria-hidden="true"
             />
             <div
-              className="pointer-events-none absolute top-0 border-t-2 z-30"
+              className="pointer-events-none absolute top-0 z-30"
               // MoneyX active => Swap inactive join is straight at the TOP.
               style={{ borderColor, left: P_SWAP_START, right: 0 }}
               aria-hidden="true"
@@ -1648,7 +1648,7 @@ export default function ExchangeForm({
         )}
         {activeTab === "swap" && (
           <div
-            className="pointer-events-none absolute top-0 left-0 border-t-2 z-30"
+            className="pointer-events-none absolute top-0 left-0 z-30"
             // Swap active => MoneyX inactive has a RIGHT slant at the TOP (92%), so stop before the slant point.
             style={{ borderColor, width: P_MONEYX_RIGHT_TOP_CUT }}
             aria-hidden="true"
@@ -1725,12 +1725,12 @@ export default function ExchangeForm({
     return (
       <div
         className={`w-full mx-auto bg-background dark:bg-[#18181D]
-        rounded-2xl sm:rounded-3xl ${isHomePage
+        rounded-2xl ${isHomePage
             ? "max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl 2xl:max-w-4xl"
             : "max-w-none"
           }`}>
         {renderTabs()}
-        <div className="mt-5 sm:mt-5 px-3 sm:px-4 md:px-5 py-3 border-l border-r border-b border-border dark:border-accent rounded-b-2xl sm:rounded-b-3xl">
+        <div className="pt-5 sm:pt-5 px-3 sm:px-4 md:px-5 py-3 border-l border-r border-b border-border dark:border-accent rounded-b-2xl">
           <SwapWidget usePublicApi={isHomePage} />
         </div>
       </div>
@@ -1742,12 +1742,12 @@ export default function ExchangeForm({
     return (
       <div
         className={`w-full mx-auto bg-background dark:bg-[#18181D] 
-        rounded-2xl sm:rounded-3xl ${isHomePage
+        rounded-2xl ${isHomePage
             ? "max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl 2xl:max-w-4xl"
             : "max-w-none"
           }`}>
         {renderTabs()}
-        <div className="mt-2 sm:mt-3 px-3 sm:px-4 md:px-5 py-3 border-l border-r border-b border-border dark:border-accent rounded-b-2xl sm:rounded-b-3xl">
+        <div className="pt-2 sm:pt-3 px-3 sm:px-4 md:px-5 py-3 border-l border-r border-b border-border dark:border-accent rounded-b-2xl">
           <MoneyX isHomePage={isHomePage} />
         </div>
       </div>
@@ -1758,13 +1758,13 @@ export default function ExchangeForm({
   return (
     <div
       className={`w-full mx-auto bg-background dark:bg-[#18181D] 
-      rounded-2xl sm:rounded-3xl ${isHomePage
+      rounded-2xl ${isHomePage
           ? "max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl 2xl:max-w-4xl"
           : "max-w-none"
         }`}>
       {renderTabs()}
       {/* Express Exchange Content */}
-      <div className="mt-2 sm:mt-3 px-3 sm:px-4 md:px-5 py-3 border-l border-r border-b border-border dark:border-accent rounded-b-2xl sm:rounded-b-3xl">
+      <div className="pt-2 sm:pt-3 px-3 sm:px-4 md:px-5 py-3 border-l border-r border-b border-border dark:border-accent rounded-b-2xl">
         <Express isHomePage={isHomePage} />
       </div>
     </div>

@@ -67,7 +67,7 @@ const ResetPassword = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-app dark:bg-app flex flex-col md:flex-row items-start justify-center relative overflow-hidden px-6 py-8 md:pt-24">
+    <div className="flex min-h-screen bg-app dark:bg-app flex-col md:flex-row items-start justify-center relative overflow-hidden px-4 py-8 md:pt-24">
       {/* Left Side - Mobile App Preview */}
       <div className="w-full md:w-1/2 flex justify-center mb-8 md:mb-0 relative z-10">
         {/* Background Glow Effect */}
@@ -118,7 +118,7 @@ const ResetPassword = () => {
         </div>
       </div>
       {/* Right side - Reset password form */}
-      <div className="w-1/2 p-8 flex flex-col justify-center">
+      <div className="w-1/2 p-0 md:p-8 flex flex-col justify-center">
         <div className="max-w-md mx-auto w-full 2xl:max-w-3/4">
           <h1 className="text-2xl font-semibold text-white mb-2">
             {t("auth.forgot.title", "Forgot Password")}
@@ -169,6 +169,7 @@ const ResetPassword = () => {
                           strokeLinejoin="round"
                         />
                         <path
+                        
                           d="M10 12C11.1046 12 12 11.1046 12 10C12 8.89543 11.1046 8 10 8C8.89543 8 8 8.89543 8 10C8 11.1046 8.89543 12 10 12Z"
                           stroke="#788099"
                           strokeWidth="1.5"

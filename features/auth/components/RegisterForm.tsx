@@ -1029,7 +1029,7 @@ export default function RegistrationPage() {
                       <span>{selectedCountry}</span>
                     </button>
                     <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                      <span className="mr-2 text-[#788099] text-sm">
+                      <span className="mr-2 text-[#88898e] text-sm">
                         {
                           countries.find((c) => c.code === selectedCountry)
                             ?.dialCode
@@ -1262,14 +1262,14 @@ export default function RegistrationPage() {
                         >
                           <path
                             d="M2 10C2 10 5 4 10 4C15 4 18 10 18 10C18 10 15 16 10 16C5 16 2 10 2 10Z"
-                            stroke="#788099"
+                            stroke="#88898e"
                             strokeWidth="1.5"
                             strokeLinecap="round"
                             strokeLinejoin="round"
                           />
                           <path
                             d="M10 12C11.1046 12 12 11.1046 12 10C12 8.89543 11.1046 8 10 8C8.89543 8 8 8.89543 8 10C8 11.1046 8.89543 12 10 12Z"
-                            stroke="#788099"
+                            stroke="#88898e"
                             strokeWidth="1.5"
                             strokeLinecap="round"
                             strokeLinejoin="round"
@@ -1285,33 +1285,33 @@ export default function RegistrationPage() {
                         >
                           <path
                             d="M4.5 4.5L15.5 15.5"
-                            stroke="#788099"
+                            stroke="#88898e"
                             strokeWidth="1.5"
                             strokeLinecap="round"
                           />
                           <path
                             d="M11.843 11.844C11.5128 12.1745 11.1023 12.4138 10.6513 12.5398C10.2003 12.6658 9.72401 12.6745 9.26875 12.565C8.81348 12.4555 8.39456 12.2315 8.05372 11.9155C7.71288 11.5994 7.4619 11.2024 7.325 10.763"
-                            stroke="#788099"
+                            stroke="#88898e"
                             strokeWidth="1.5"
                             strokeLinecap="round"
                           />
                           <path
                             d="M8.5 5.016C9.017 4.926 9.549 4.879 10.093 4.879C14.5 4.879 17 10 17 10C17 10 16.307 11.323 15 12.5"
-                            stroke="#788099"
+                            stroke="#88898e"
                             strokeWidth="1.5"
                             strokeLinecap="round"
                             strokeLinejoin="round"
                           />
                           <path
                             d="M2 10C2 10 4 6 8.5 4.5"
-                            stroke="#788099"
+                            stroke="#88898e"
                             strokeWidth="1.5"
                             strokeLinecap="round"
                             strokeLinejoin="round"
                           />
                           <path
                             d="M7 7L13 13"
-                            stroke="#788099"
+                            stroke="#88898e"
                             strokeWidth="1.5"
                             strokeLinecap="round"
                           />
@@ -1401,14 +1401,14 @@ export default function RegistrationPage() {
                         >
                           <path
                             d="M2 10C2 10 5 4 10 4C15 4 18 10 18 10C18 10 15 16 10 16C5 16 2 10 2 10Z"
-                            stroke="#788099"
+                            stroke="#88898e"
                             strokeWidth="1.5"
                             strokeLinecap="round"
                             strokeLinejoin="round"
                           />
                           <path
                             d="M10 12C11.1046 12 12 11.1046 12 10C12 8.89543 11.1046 8 10 8C8.89543 8 8 8.89543 8 10C8 11.1046 8.89543 12 10 12Z"
-                            stroke="#788099"
+                            stroke="#88898e"
                             strokeWidth="1.5"
                             strokeLinecap="round"
                             strokeLinejoin="round"
@@ -1424,33 +1424,33 @@ export default function RegistrationPage() {
                         >
                           <path
                             d="M4.5 4.5L15.5 15.5"
-                            stroke="#788099"
+                            stroke="#88898e"
                             strokeWidth="1.5"
                             strokeLinecap="round"
                           />
                           <path
                             d="M11.843 11.844C11.5128 12.1745 11.1023 12.4138 10.6513 12.5398C10.2003 12.6658 9.72401 12.6745 9.26875 12.565C8.81348 12.4555 8.39456 12.2315 8.05372 11.9155C7.71288 11.5994 7.4619 11.2024 7.325 10.763"
-                            stroke="#788099"
+                            stroke="#88898e"
                             strokeWidth="1.5"
                             strokeLinecap="round"
                           />
                           <path
                             d="M8.5 5.016C9.017 4.926 9.549 4.879 10.093 4.879C14.5 4.879 17 10 17 10C17 10 16.307 11.323 15 12.5"
-                            stroke="#788099"
+                            stroke="#88898e"
                             strokeWidth="1.5"
                             strokeLinecap="round"
                             strokeLinejoin="round"
                           />
                           <path
                             d="M2 10C2 10 4 6 8.5 4.5"
-                            stroke="#788099"
+                            stroke="#88898e"
                             strokeWidth="1.5"
                             strokeLinecap="round"
                             strokeLinejoin="round"
                           />
                           <path
                             d="M7 7L13 13"
-                            stroke="#788099"
+                            stroke="#88898e"
                             strokeWidth="1.5"
                             strokeLinecap="round"
                           />
