@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import Image from "next/image";
-import { FaSearch } from "react-icons/fa";
+import { FaSearch, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import { useBlog } from "../hooks/blog";
 import { BlogPost } from "../types";
@@ -12,31 +12,51 @@ import { decodeHtml } from "@/lib/utils/html";
 
 import { logger } from '@/lib/utils/logger';
 
+const ITEMS_PER_PAGE = 12;
+
 const BlogPage = () => {
-  const [activeTab, setActiveTab] = useState("News");
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
   const { blogs, news, loading, error } = useBlog();
   const router = useRouter();
   const { t } = useBlogsI18n();
 
-  // Filter posts based on active tab and search term
-  const getFilteredPosts = () => {
-    const posts = activeTab === "News" ? news : blogs;
+  // Combine all posts (blogs and news) and sort by date (newest first)
+  const allPosts = useMemo(() => {
+    const combined = [...blogs, ...news];
+    return combined.sort((a: BlogPost, b: BlogPost) => {
+      const dateA = new Date(a.created_at || a.createdAt || 0).getTime();
+      const dateB = new Date(b.created_at || b.createdAt || 0).getTime();
+      return dateB - dateA; // Newest first
+    });
+  }, [blogs, news]);
 
+  // Filter posts based on search term
+  const filteredPosts = useMemo(() => {
     if (!searchTerm.trim()) {
-      return posts;
+      return allPosts;
     }
 
-    return posts.filter(
+    const searchLower = searchTerm.toLowerCase();
+    return allPosts.filter(
       (post: BlogPost) =>
-        post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        post.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        post.title.toLowerCase().includes(searchLower) ||
+        post.description.toLowerCase().includes(searchLower) ||
         (post.author_name &&
-          post.author_name.toLowerCase().includes(searchTerm.toLowerCase()))
+          post.author_name.toLowerCase().includes(searchLower))
     );
-  };
+  }, [allPosts, searchTerm]);
 
-  const filteredPosts = getFilteredPosts();
+  // Reset to page 1 when search term changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredPosts.length / ITEMS_PER_PAGE);
+  const indexOfLastItem = currentPage * ITEMS_PER_PAGE;
+  const indexOfFirstItem = indexOfLastItem - ITEMS_PER_PAGE;
+  const paginatedPosts = filteredPosts.slice(indexOfFirstItem, indexOfLastItem);
 
   // Format date function
   const formatDate = (dateString: string) => {
@@ -142,52 +162,7 @@ const BlogPage = () => {
           </h1>
         </header>
 
-        <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-          <div className="flex items-center space-x-2 bg-gray-100 dark:bg-[#161B22] rounded-full border border-gray-300 dark:border-[#30363D]">
-            <button
-              onClick={() => setActiveTab("News")}
-              className={`px-6 py-2 rounded-full text-sm font-medium flex 2xl:text-lg items-center gap-2 transition-colors ${
-                activeTab === "News"
-                  ? "bg-[#1D8751] text-white"
-                  : "text-[#788099]"
-              }`}
-            >
-              <span
-                className={`w-5 h-5 flex items-center justify-center rounded-full border-2 ${
-                  activeTab === "News" ? "border-white" : "border-gray-400"
-                }`}
-              >
-                <span
-                  className={`w-3 h-3 rounded-full ${
-                    activeTab === "News" ? "bg-white" : "bg-transparent"
-                  }`}
-                ></span>
-              </span>
-              {t("blogs.tab.news", "News")}
-            </button>
-            <button
-              onClick={() => setActiveTab("Blog")}
-              className={`px-6 py-2 rounded-full text-sm 2xl:text-lg font-medium flex items-center gap-2 transition-colors ${
-                activeTab === "Blog"
-                  ? "bg-[#1D8751] text-white"
-                  : "text-[#788099]"
-              }`}
-            >
-              <span
-                className={`w-5 h-5 flex items-center justify-center rounded-full border-2 ${
-                  activeTab === "Blog" ? "border-white" : "border-gray-400"
-                }`}
-              >
-                <span
-                  className={`w-3 h-3 rounded-full ${
-                    activeTab === "Blog" ? "bg-white" : "bg-transparent"
-                  }`}
-                ></span>
-              </span>
-              {t("blogs.tab.blog", "Blog")}
-            </button>
-          </div>
-
+        <div className="flex flex-col md:flex-row justify-end items-center mb-8 gap-4">
           <div className="relative w-full md:w-auto">
             <span className="absolute inset-y-0 left-0 flex items-center pl-4">
               <FaSearch className="h-5 w-5 text-gray-500 dark:text-gray-400" />
@@ -212,8 +187,7 @@ const BlogPage = () => {
                   )
                 : t(
                     "blogs.empty.none",
-                    `No ${activeTab.toLowerCase()} posts available.`,
-                    { tab: activeTab.toLowerCase() }
+                    "No blog posts available."
                   )}
             </p>
             {!searchTerm && (
@@ -226,8 +200,9 @@ const BlogPage = () => {
             )}
           </div>
         ) : (
-          <main className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {filteredPosts.map((post: BlogPost) => (
+          <>
+            <main className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {paginatedPosts.map((post: BlogPost) => (
               <article
                 key={getPostId(post)}
                 className="bg-gray-50 dark:bg-[#161B22] border border-gray-200 dark:border-[#30363D] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-[#1D87514f] transition-shadow duration-300 flex flex-col"
@@ -281,8 +256,76 @@ const BlogPage = () => {
                   </button>
                 </div>
               </article>
-            ))}
-          </main>
+              ))}
+            </main>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8 pt-6 border-t border-gray-200 dark:border-[#30363D]">
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  {t("blogs.pagination.showing", "Showing")} {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, filteredPosts.length)} {t("blogs.pagination.of", "of")} {filteredPosts.length} {t("blogs.pagination.posts", "posts")}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                      currentPage === 1
+                        ? "opacity-50 cursor-not-allowed border-gray-300 dark:border-[#35353E] bg-gray-100 dark:bg-[#161B22] text-gray-400 dark:text-gray-500"
+                        : "border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#161B22] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#1F2937]"
+                    }`}
+                  >
+                    <FaChevronLeft className="w-4 h-4" />
+                  </button>
+                  
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter((page) => {
+                        // Show first page, last page, current page, and pages around current
+                        if (page === 1 || page === totalPages) return true;
+                        if (Math.abs(page - currentPage) <= 1) return true;
+                        return false;
+                      })
+                      .map((page, index, array) => {
+                        // Add ellipsis if there's a gap
+                        const prevPage = array[index - 1];
+                        const showEllipsisBefore = prevPage && page - prevPage > 1;
+                        
+                        return (
+                          <React.Fragment key={page}>
+                            {showEllipsisBefore && (
+                              <span className="px-2 text-gray-500 dark:text-gray-400">...</span>
+                            )}
+                            <button
+                              onClick={() => setCurrentPage(page)}
+                              className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                                currentPage === page
+                                  ? "bg-[#1D8751] text-white border-[#1D8751]"
+                                  : "border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#161B22] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#1F2937]"
+                              }`}
+                            >
+                              {page}
+                            </button>
+                          </React.Fragment>
+                        );
+                      })}
+                  </div>
+
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                      currentPage === totalPages
+                        ? "opacity-50 cursor-not-allowed border-gray-300 dark:border-[#35353E] bg-gray-100 dark:bg-[#161B22] text-gray-400 dark:text-gray-500"
+                        : "border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#161B22] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#1F2937]"
+                    }`}
+                  >
+                    <FaChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
