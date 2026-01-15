@@ -950,7 +950,7 @@ const LineCharts = React.memo(
               </h3>
 
               <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                {["exchange", "p2p", "swap", "buy"].map(t => (
+                {["exchange", "p2p", "swap"].map(t => (
                   <button
                     key={t}
                     onClick={() => setActiveTab(t as any)}

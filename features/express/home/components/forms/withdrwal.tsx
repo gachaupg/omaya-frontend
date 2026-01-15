@@ -4238,15 +4238,19 @@ export default function WithdrawalForm({
                                         }
                                       }
 
-                                      // Display only account name and account number
+                                      // Display account name and account number
                                       const accountName = detail.account_name || 'No Name';
                                       const accountNumber = detail.account_number || detail.wallet_address || 'No Account';
-                                      const displayLabel = `${accountName} (${accountNumber})`;
+                                      const displayLabel = `${accountNumber} - ${accountName}`;
+                                      // Create a full tooltip with all information (using separators since HTML title doesn't support newlines)
+                                      const fullInfo = `Account Number: ${accountNumber} | Account Name: ${accountName}${providerName ? ` | Provider: ${providerName}` : ''}`;
 
                                       return {
                                         value: detail.id.toString(),
                                         label: displayLabel,
                                         logo: providerLogo || undefined,
+                                        // Add full information for tooltip on hover
+                                        title: fullInfo,
                                       };
                                     }
                                   )}

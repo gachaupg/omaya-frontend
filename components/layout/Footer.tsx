@@ -251,11 +251,11 @@ export default function Footer() {
               </li>
               <li>
                 <Link
-                  href="/#supported-assets"
-                  className={`hover:text-[#1D8751] text-xs md:text-sm transition-colors ${isActive("/#supported-assets") ? "text-[#1D8751]" : "text-gray-700 dark:text-white/80"
+                  href="/#referral"
+                  className={`hover:text-[#1D8751] text-xs md:text-sm transition-colors ${isActive("/#referral") ? "text-[#1D8751]" : "text-gray-700 dark:text-white/80"
                     }`}
                 >
-                  Our Partners
+                  Referral 
                 </Link>
               </li>
               <li>
