@@ -734,12 +734,12 @@ const PrivacySecurity = () => {
         </div>
       )}
 
-      <div className="p-3 dark:text-white text-gray-900 flex flex-col gap-4 w-full">
+      <div className="px-2 sm:px-3 py-3 dark:text-white text-gray-900 flex flex-col gap-4 w-full">
         {/* 2 Factor Authentication */}
         <div className="text-base font-bold mb-2 dark:text-white text-gray-900">
             Privacy & Security
           </div>
-        <div className="w-full rounded-2xl p-5 flex flex-col gap-4 max-w-none mx-auto bg-white dark:bg-[var(--card-color)] border border-[#E4E6F0] dark:border-[#35353E] shadow-sm">
+        <div className="w-full rounded-2xl px-3 sm:px-4 md:px-5 py-4 sm:py-5 flex flex-col gap-4 max-w-none mx-auto bg-white dark:bg-[var(--card-color)] border border-[#E4E6F0] dark:border-[#35353E] shadow-sm">
           <div className="text-base font-semibold mb-2 dark:text-white text-gray-900">
             2 Factor Authentication
           </div>
@@ -825,7 +825,7 @@ const PrivacySecurity = () => {
               : "No active sessions to sign out from"}
           </button>
          {/* Active Browser Sessions */}
-        <div className="w-full max-w-none mx-auto rounded-2xl border border-[#E4E6F0] dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] shadow-sm p-5 space-y-4">
+        <div className="w-full max-w-none mx-auto rounded-2xl border border-[#E4E6F0] dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] shadow-sm px-3 sm:px-4 md:px-5 py-4 sm:py-5 space-y-4">
           <div className="flex items-center justify-between mb-2">
             <div className="text-base font-semibold">
               Active Browser Session
@@ -954,7 +954,7 @@ const PrivacySecurity = () => {
             </div>
           ) : (
             <div className="border-t dark:border-[#35353E] border-gray-200 rounded-xl overflow-hidden">
-              <div className="px-4 py-3 text-xs font-semibold uppercase tracking-wide dark:text-[#8C8CA1] text-gray-500 space-y-1 bg-gray-50 dark:bg-[var(--card-color)]">
+              <div className="px-2 sm:px-3 md:px-4 py-3 text-xs font-semibold uppercase tracking-wide dark:text-[#8C8CA1] text-gray-500 space-y-1 bg-gray-50 dark:bg-[var(--card-color)]">
                 <div>Signed In</div>
                 <div>Location</div>
                 <div>IP Address</div>
@@ -962,7 +962,7 @@ const PrivacySecurity = () => {
               </div>
               <div className="divide-y dark:divide-[#2F2C3C] divide-gray-200 dark:text-white text-gray-800 bg-white dark:bg-[var(--card-color)]">
                 {paginatedSessions.map((session: DeviceSession) => (
-                  <div key={session.session_id} className="px-4 py-4 text-sm space-y-2">
+                  <div key={session.session_id} className="px-2 sm:px-3 md:px-4 py-4 text-sm space-y-2">
                     <p className="font-semibold">
                       {formatRelativeTime(session.sign_in_time)}
                     </p>

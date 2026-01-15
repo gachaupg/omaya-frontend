@@ -43,7 +43,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
   return (
     <div className="w-full flex flex-col px-1 sm:px-0">
       <h2 className="text-lg sm:text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
-        <span className="text-[#7e7e8f] dark:text-[#788099]">2-</span> Wallet Address
+        Wallet Address
       </h2>
       <div className="w-full mx-auto">
         {/* Combined Wallet Address and Terms Card */}

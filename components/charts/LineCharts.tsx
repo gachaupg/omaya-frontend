@@ -847,8 +847,8 @@ const LineCharts = React.memo(
             <h3 className="text-black dark:text-white text-xs sm:text-sm md:text-[14px] mb-2 font-semibold">
               Exchange Overview (USDT)
             </h3>
-            <div className="flex flex-wrap justify-between items-center mb-4 sm:mb-6 gap-2">
-              <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+            <div className="flex flex-wrap justify-between items-center mb-4 sm:mb-6 gap-1 sm:gap-2">
+              <div className="flex flex-wrap items-center gap-0.5 sm:gap-2 w-full sm:w-auto">
                 <Button
                   size="sm"
                   variant={filter === "All" ? "primary" : "outline"}
@@ -897,8 +897,8 @@ const LineCharts = React.memo(
             <h3 className="dark:text-wh text-[#051015] dark:text-white text-xs sm:text-sm md:text-[14px] mb-2 font-semibold">
               P2P Overview (USDT)
             </h3>
-            <div className="flex flex-wrap justify-between items-center mb-4 sm:mb-6 gap-2">
-              <div className="flex flex-wrap items-center justify-between gap-2 w-full sm:w-auto">
+            <div className="flex flex-wrap justify-between items-center mb-4 sm:mb-6 gap-1 sm:gap-2">
+              <div className="flex flex-wrap items-center gap-0.5 sm:gap-2 w-full sm:w-auto">
                 <Button
                   size="sm"
                   variant={p2pFilter === "All" ? "primary" : "outline"}
@@ -949,7 +949,7 @@ const LineCharts = React.memo(
                 Overview Total
               </h3>
 
-              <div className="flex flex-wrap gap-1.5 sm:gap-2">
+              <div className="flex flex-wrap gap-0.5 sm:gap-2">
                 {["exchange", "p2p", "swap", "buy"].map(t => (
                   <button
                     key={t}

@@ -716,12 +716,12 @@ export default function MarketingPage() {
 
         <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl relative z-10">
           {/* Section Title */}
-          <div className="flex justify-center mb-2">
-            <span className="border border-[#1D8751] bg-[#1D8751]/10 text-[#1D8751] text-xs sm:text-sm md:text-base font-medium px-3 py-1 rounded-[24px] inline-flex items-center justify-center">
+          <div className="flex justify-center mb-3 sm:mb-4">
+            <span className="bg-[#1D8751] text-white text-xs sm:text-sm md:text-base font-medium px-3 sm:px-4 py-1.5 sm:py-2 rounded-[24px] inline-flex items-center justify-center shadow-sm">
               SUPPORTED ASSETS
             </span>
           </div>
-          <div className="relative flex justify-center mb-3">
+          <div className="relative flex justify-center mb-3 sm:mb-4">
             {/* Greenish glow behind title */}
             <div className="pointer-events-none absolute inset-0 flex justify-center items-center -z-10">
               {/* Wide soft glow */}
@@ -731,14 +731,14 @@ export default function MarketingPage() {
               {/* Subtle green tint wash */}
               <div className="absolute w-[560px] sm:w-[860px] h-[180px] sm:h-[230px] bg-[#1D8751]/10 blur-[64px] rounded-full" />
             </div>
-            <h2 className="text-center text-2xl md:text-3xl 2xl:text-4xl font-bold">
+            <h2 className="text-center text-2xl sm:text-3xl md:text-4xl 2xl:text-5xl font-bold px-2">
               <span className="text-gray-900 dark:text-white">Trade Your Favorite</span>{" "}
               <span className="text-[#1D8751]">Cryptocurrencies</span>
             </h2>
           </div>
 
           {/* Subtitle */}
-          <p className="text-center text-gray-700 dark:text-white text-sm sm:text-base md:text-lg mb-12 px-4">
+          <p className="text-center text-gray-600 dark:text-gray-400 text-sm sm:text-base md:text-lg mb-8 sm:mb-12 px-4 max-w-3xl mx-auto">
             Access 500+ cryptocurrencies with industry-leading security, competitive fees and lightning-fast transactions.
           </p>
 

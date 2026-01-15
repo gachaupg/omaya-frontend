@@ -47,6 +47,14 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
   }, []);
 
   const currentCurrency = getCurrencyFromAsset(toAsset);
+  
+  // Get network from toAsset (the asset we're receiving)
+  const getNetworkFromAsset = useCallback((asset: any): string | undefined => {
+    if (!asset) return undefined;
+    return asset.network || undefined;
+  }, []);
+  
+  const currentNetwork = getNetworkFromAsset(toAsset);
 
   // Address validation hook - only API validation, no manual checks
   const {
@@ -57,6 +65,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
     reset: resetAddressValidation,
   } = useValidateAddress({
     currency: currentCurrency,
+    network: currentNetwork,
     debounceMs: 500,
     minLength: 0, // No manual length validation, let API handle it
     validateEmpty: false,
@@ -99,15 +108,15 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
   useEffect(() => {
     if (walletAddress.trim() && currentCurrency) {
       resetAddressValidation();
-      validateAddress(walletAddress, currentCurrency);
+      validateAddress(walletAddress, currentCurrency, currentNetwork);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentCurrency]); // Only run when currency changes
+  }, [currentCurrency, currentNetwork]); // Only run when currency or network changes
 
   // Auto-validate on mount if wallet address is already present
   useEffect(() => {
     if (walletAddress.trim() && currentCurrency) {
-      validateAddress(walletAddress, currentCurrency);
+      validateAddress(walletAddress, currentCurrency, currentNetwork);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run on mount
@@ -122,7 +131,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
       onWalletAddressChange(syntheticEvent);
       // Trigger validation after pasting
       if (text.trim() && currentCurrency) {
-        validateAddress(text, currentCurrency);
+        validateAddress(text, currentCurrency, currentNetwork);
       } else {
         resetAddressValidation();
       }
@@ -160,7 +169,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
   return (
     <div className="w-full flex flex-col gap-2 sm:gap-4">
       <div className="mb-1 sm:mb-2 text-base sm:text-lg md:text-xl font-bold text-[#788099]">
-        <span className="text-[#7e7e8f]">2-</span> Your Wallet Address
+        Your Wallet Address
       </div>
       <div className="w-full">
         {/* Combined Wallet Address and Terms Card */}
@@ -205,7 +214,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                           setWalletError(null);
                         } else {
                           // Trigger validation as user types
-                          validateAddress(e.target.value, currentCurrency);
+                          validateAddress(e.target.value, currentCurrency, currentNetwork);
                         }
                       }}
                       className={`flex-1 bg-transparent outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-[#7e7e8f] text-xs sm:text-sm md:text-base min-w-0 pr-2 sm:pr-1 ${walletError ? "text-red-500" : ""

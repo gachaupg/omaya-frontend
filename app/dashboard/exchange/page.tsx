@@ -2,8 +2,11 @@
 import React, { useState } from "react";
 import MoneyX from "@/features/moneyX/components/MoneyX";
 import Exchanging from "@/features/moneyX/components/Exchanging";
+import { useRouteProtection } from "@/features/auth/hooks/useRouteProtection";
+import Loader from "@/features/p2p/components/Common/Loader";
 
 const ExchangePage = () => {
+  const { isChecking, isVerified } = useRouteProtection();
   const [showExchanging, setShowExchanging] = useState(false);
   const [transactionData, setTransactionData] = useState<any>(null);
 
@@ -33,6 +36,18 @@ const ExchangePage = () => {
     setTransactionData(moneyxTransactionData);
     setShowExchanging(true);
   };
+
+  if (isChecking) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader size="lg" color="#1D8751" />
+      </div>
+    );
+  }
+
+  if (isVerified === false) {
+    return null; // Modal will be shown by the hook
+  }
 
   return (
     <div className="container mx-auto overflow-x-hidden">

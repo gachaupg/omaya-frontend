@@ -12,8 +12,9 @@ import { logger } from '@/lib/utils/logger';
 
 export const useThemeToggle = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { theme, updating } = useSelector((state: RootState) => state.settings);
+  const { theme } = useSelector((state: RootState) => state.settings);
   const [mounted, setMounted] = useState(false);
+  const [updating, setUpdating] = useState(false);
 
   // Ensure component is mounted before applying theme
   useEffect(() => {
@@ -96,6 +97,7 @@ export const useThemeToggle = () => {
 
   const toggleTheme = async (mode: "light" | "dark" | "deem" | "system") => {
     try {
+      setUpdating(true);
       // Update local state immediately for better UX
       dispatch(setThemeMode(mode));
 
@@ -110,10 +112,15 @@ export const useThemeToggle = () => {
       window.dispatchEvent(new CustomEvent("themeChange"));
 
       // No server API calls - using client-side only
+      // Small delay to show loading state
+      setTimeout(() => {
+        setUpdating(false);
+      }, 300);
     } catch (error) {
       console.error("Failed to update theme:", error);
       // Revert to previous theme on error
       dispatch(setThemeMode(theme.mode));
+      setUpdating(false);
     }
   };
 

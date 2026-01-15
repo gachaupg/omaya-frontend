@@ -11,6 +11,10 @@ export interface UseValidateAddressOptions {
    */
   currency?: string;
   /**
+   * Network name (e.g., 'bsc', 'eth', 'polygon')
+   */
+  network?: string;
+  /**
    * Debounce delay in milliseconds (default: 500ms)
    */
   debounceMs?: number;
@@ -40,7 +44,7 @@ export interface UseValidateAddressReturn {
   /**
    * Manually trigger validation
    */
-  validate: (address: string, currency?: string) => Promise<void>;
+  validate: (address: string, currency?: string, network?: string) => Promise<void>;
   /**
    * Reset validation state
    */
@@ -69,6 +73,7 @@ export function useValidateAddress(
 ): UseValidateAddressReturn {
   const {
     currency: defaultCurrency,
+    network: defaultNetwork,
     debounceMs = 500,
     minLength = 10,
     validateEmpty = false,
@@ -94,9 +99,10 @@ export function useValidateAddress(
   }, []);
 
   const validate = useCallback(
-    async (address: string, currency?: string) => {
+    async (address: string, currency?: string, network?: string) => {
       const addressTrimmed = address.trim();
       const currencyToUse = currency || defaultCurrency;
+      const networkToUse = network || defaultNetwork;
 
       // Clear previous debounce timer
       if (debounceTimerRef.current) {
@@ -154,7 +160,8 @@ export function useValidateAddress(
 
           const validationResult = await validateAddress(
             currencyToUse,
-            addressTrimmed
+            addressTrimmed,
+            networkToUse
           );
 
           // Check if request was aborted
@@ -185,7 +192,7 @@ export function useValidateAddress(
         }
       }, debounceMs);
     },
-    [defaultCurrency, debounceMs, minLength, validateEmpty]
+    [defaultCurrency, defaultNetwork, debounceMs, minLength, validateEmpty]
   );
 
   const reset = useCallback(() => {

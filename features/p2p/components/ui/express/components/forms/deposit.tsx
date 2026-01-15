@@ -1980,7 +1980,7 @@ export default function DepositForm({
   return (
     <div className="w-full min-h-screen flex flex-col dark:bg-[#18181D]">
       <h2 className="text-lg sm:text-xl font-bold mb-2 sm:mb-3 text-[#788099]">
-        <span className="text-[#7e7e8f] dark:text-[#788099]">1-</span> Transaction Info
+        Transaction Info
       </h2>
 
       {/* Network Status Indicator */}

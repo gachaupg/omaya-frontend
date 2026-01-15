@@ -458,15 +458,15 @@ export const Table: React.FC<TableProps> = ({
   if (data.length === 0) {
     return (
       <div className="w-full text-center py-2">
-        <div className="flex flex-col items-center justify-center border border-gray-200 dark:border-[#35353E] rounded-[24px] p-8 bg-white dark:bg-[var(--card-color)]">
-          <div className="w-16 h-16 mb-4 rounded-full bg-gray-100 dark:bg-[#35353E] flex items-center justify-center">
+        <div className="flex flex-col items-center justify-center border border-gray-200 dark:border-[#35353E] rounded-xl sm:rounded-2xl md:rounded-[24px] p-4 sm:p-6 md:p-8 bg-white dark:bg-[var(--card-color)]">
+          <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 mb-3 sm:mb-4 rounded-full bg-gray-100 dark:bg-[#35353E] flex items-center justify-center">
             <svg
-              width="24"
-              height="24"
+              width="20"
+              height="20"
               viewBox="0 0 24 24"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
-              className="text-gray-500 dark:text-[#788099]"
+              className="text-gray-500 dark:text-[#788099] sm:w-5 sm:h-5 md:w-6 md:h-6"
             >
               <path
                 d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z"
@@ -491,10 +491,10 @@ export const Table: React.FC<TableProps> = ({
               />
             </svg>
           </div>
-          <h3 className="text-lg font-semibold text-gray-500 dark:text-[#788099] mb-2">
+          <h3 className="text-base sm:text-lg font-semibold text-gray-500 dark:text-[#788099] mb-1 sm:mb-2">
             No Data Available
           </h3>
-          <p className="text-sm text-gray-400 dark:text-[#8C8CA1] text-center max-w-md">
+          <p className="text-xs sm:text-sm text-gray-400 dark:text-[#8C8CA1] text-center max-w-md px-2 sm:px-0">
             There are currently no records to display. Please check back later
             or try adjusting your filters.
           </p>
@@ -507,31 +507,31 @@ export const Table: React.FC<TableProps> = ({
   return (
     <>
       <div className="mt-1">
-        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between mb-1">
-          <div className="flex items-center gap-2 md:gap-3">
+        <div className="flex flex-col gap-2 sm:gap-3 md:flex-row md:items-center md:justify-between mb-1">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
             <h3
-              className={`font-medium text-gray-900 dark:text-white`}
+              className={`text-sm sm:text-base md:text-lg font-medium text-gray-900 dark:text-white`}
             >
               {title}
             </h3>
 
             {type === "p2p" && (
-              <div className="relative min-w-[80px]" ref={dateDropdownRef}>
+              <div className="relative w-full sm:w-auto sm:min-w-[80px]" ref={dateDropdownRef}>
                 <div className="flex items-center gap-2">
-                  <div className="relative flex-1">
+                  <div className="relative flex-1 sm:flex-initial">
                     <button
                       type="button"
                       onClick={() => setIsDateDropdownOpen((prev) => !prev)}
                       disabled={loading}
-                      className={`w-full px-3 py-2 rounded-full text-sm font-medium bg-[#E6E7EC] dark:bg-[var(--bg-color)] flex items-center gap-1 border-none outline-none focus:outline-none focus:ring-0 ${
+                      className={`w-full sm:w-auto px-3 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium bg-[#E6E7EC] dark:bg-[var(--bg-color)] flex items-center gap-1 border-none outline-none focus:outline-none focus:ring-0 ${
                         isAllFilterSelected
                           ? "text-[#8E939E] dark:text-[#8C8CA1]"
                           : "text-[#1F1F23] dark:text-white"
                       }`}
                     >
-                      <span>{dateFilter}</span>
+                      <span className="whitespace-nowrap">{dateFilter}</span>
                       <svg
-                        className={`w-4 h-4 transition-transform ${isDateDropdownOpen ? "rotate-180" : ""}`}
+                        className={`w-3 h-3 sm:w-4 sm:h-4 transition-transform flex-shrink-0 ${isDateDropdownOpen ? "rotate-180" : ""}`}
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -552,15 +552,15 @@ export const Table: React.FC<TableProps> = ({
                         handleDateFilterChange("ALL");
                         setIsDateDropdownOpen(false);
                       }}
-                      className="p-2 rounded-full text-sm text-gray-500 dark:text-[#8C8CA1] hover:text-[#1D8751] dark:hover:text-[#1D8751] hover:bg-gray-100 dark:hover:bg-[#35353E] transition-colors"
+                      className="p-1.5 sm:p-2 rounded-full text-sm text-gray-500 dark:text-[#8C8CA1] hover:text-[#1D8751] dark:hover:text-[#1D8751] hover:bg-gray-100 dark:hover:bg-[#35353E] transition-colors flex-shrink-0"
                       title="Clear date filter"
                     >
-                      <X size={16} />
+                      <X size={14} className="sm:w-4 sm:h-4" />
                     </button>
                   )}
                 </div>
                 {isDateDropdownOpen && (
-                  <div className="absolute top-full left-0 mt-2 w-full min-w-[100px] rounded-xl bg-white dark:bg-[var(--bg-color)] text-gray-900 dark:text-white shadow-lg z-20 py-1 border border-gray-200 dark:border-[#35353E]">
+                  <div className="absolute top-full left-0 mt-2 w-full sm:w-auto sm:min-w-[100px] rounded-xl bg-white dark:bg-[var(--bg-color)] text-gray-900 dark:text-white shadow-lg z-20 py-1 border border-gray-200 dark:border-[#35353E]">
                     {dateFilterOptions.map((option) => {
                       const isSelected = dateFilter === option;
                       return (
@@ -587,30 +587,30 @@ export const Table: React.FC<TableProps> = ({
             )}
           </div>
 
-          <div className="flex items-center gap-2 md:gap-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
             {type === "p2p" && (
-              <div className="relative w-full sm:w-60 md:w-56 lg:w-64">
+              <div className="relative w-full sm:w-56 md:w-60 lg:w-64">
                 <input
                   type="text"
                   placeholder="Search"
                   value={searchQuery}
                   onChange={handleSearch}
-                  className={`py-2 pl-9 pr-10 rounded-[24px] text-sm w-full border focus:outline-none bg-gray-100 dark:bg-[#35353E] text-gray-900 dark:text-gray-300 placeholder:text-gray-400 dark:placeholder:text-gray-500 border-gray-200 dark:border-[#35353E]`}
+                  className={`py-2 pl-9 pr-10 rounded-xl sm:rounded-2xl md:rounded-[24px] text-xs sm:text-sm w-full border focus:outline-none bg-gray-100 dark:bg-[#35353E] text-gray-900 dark:text-gray-300 placeholder:text-gray-400 dark:placeholder:text-gray-500 border-gray-200 dark:border-[#35353E]`}
                 />
                 <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
                   <Search
-                    size={16}
-                    className="text-[#1D8751]"
+                    size={14}
+                    className="text-[#1D8751] sm:w-4 sm:h-4"
                   />
                 </div>
                 <div className="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer">
                   <svg
-                    width="16"
-                    height="16"
+                    width="14"
+                    height="14"
                     viewBox="0 0 16 16"
                     fill="none"
                     xmlns="http://www.w3.org/2000/svg"
-                    className="text-[#1D8751]"
+                    className="text-[#1D8751] sm:w-4 sm:h-4"
                   >
                     <rect x="2" y="3" width="12" height="1.5" rx="0.75" fill="currentColor" />
                     <rect x="2" y="7.25" width="9" height="1.5" rx="0.75" fill="currentColor" />
@@ -621,28 +621,31 @@ export const Table: React.FC<TableProps> = ({
             )}
 
             {showExportButton && type !== "orders" && (
-              <div className="relative">
+              <div className="relative w-full sm:w-auto">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowExportOptions(!showExportOptions)}
-                  className="text-base font-semibold"
+                  className="text-xs sm:text-sm md:text-base font-semibold w-full sm:w-auto"
                 >
-                  <p className="text-[14px] text-[#1D8751]">Export Transactions</p>
+                  <p className="text-xs sm:text-sm md:text-[14px] text-[#1D8751] whitespace-nowrap">
+                    <span className="hidden sm:inline">Export Transactions</span>
+                    <span className="sm:hidden">Export</span>
+                  </p>
                 </Button>
 
                 {showExportOptions && (
-                  <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-[#23232B] border border-gray-200 dark:border-[#35353E] z-10">
+                  <div className="absolute right-0 sm:right-auto left-0 sm:left-auto mt-2 w-full sm:w-48 rounded-md shadow-lg bg-white dark:bg-[#23232B] border border-gray-200 dark:border-[#35353E] z-10">
                     <div className="py-1">
                       <button
                         onClick={() => handleExport("csv")}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-[#8C8CA1] hover:bg-gray-100 dark:hover:bg-[#35353E]"
+                        className="block w-full text-left px-4 py-2 text-xs sm:text-sm text-gray-700 dark:text-[#8C8CA1] hover:bg-gray-100 dark:hover:bg-[#35353E]"
                       >
                         Export as CSV
                       </button>
                       <button
                         onClick={() => handleExport("pdf")}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-[#8C8CA1] hover:bg-gray-100 dark:hover:bg-[#35353E]"
+                        className="block w-full text-left px-4 py-2 text-xs sm:text-sm text-gray-700 dark:text-[#8C8CA1] hover:bg-gray-100 dark:hover:bg-[#35353E]"
                       >
                         Export as PDF
                       </button>

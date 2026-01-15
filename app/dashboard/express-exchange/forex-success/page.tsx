@@ -5,8 +5,11 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
 import { useTheme } from "@/context/theme";
 import CopyButton from "@/components/ui/CopyButton";
+import { useRouteProtection } from "@/features/auth/hooks/useRouteProtection";
+import Loader from "@/features/p2p/components/Common/Loader";
 
 function ForexSuccessContent() {
+  const { isChecking, isVerified } = useRouteProtection();
   const searchParams = useSearchParams();
   const router = useRouter();
   const { isDark } = useTheme();
@@ -34,6 +37,18 @@ function ForexSuccessContent() {
       }
     }
   }, [currentExchange, transactionId]);
+
+  if (isChecking) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader size="lg" color="#1D8751" />
+      </div>
+    );
+  }
+
+  if (isVerified === false) {
+    return null; // Modal will be shown by the hook
+  }
 
   if (!exchangeData) {
     return (
