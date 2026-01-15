@@ -242,12 +242,22 @@ const ReferralWithdrawalHistory: React.FC = () => {
         <div className="flex items-center justify-between mt-6">
           <button
             disabled={!data.previous}
+            onClick={() => {
+              if (data.previous) {
+                dispatch(fetchReferralWithdrawalHistory(data.previous));
+              }
+            }}
             className="px-4 py-2 rounded-lg bg-gray-200 dark:bg-[#35353F] text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-300 dark:hover:bg-[#2A2A32] transition-colors"
           >
             Previous
           </button>
           <button
             disabled={!data.next}
+            onClick={() => {
+              if (data.next) {
+                dispatch(fetchReferralWithdrawalHistory(data.next));
+              }
+            }}
             className="px-4 py-2 rounded-lg bg-gray-200 dark:bg-[#35353F] text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-300 dark:hover:bg-[#2A2A32] transition-colors"
           >
             Next

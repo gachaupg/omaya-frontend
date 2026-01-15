@@ -4092,20 +4092,32 @@ export default function WithdrawalForm({
                             <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 break-words">
                               {selectedPaymentDetails.length} account(s) selected
                             </span>
-                            <button
-                              type="button"
-                              onClick={async () => {
-                                try {
-                                  await dispatch(fetchUserPaymentDetails(true)).unwrap();
-                                  showToast.success("Payment details refreshed!");
-                                } catch (error) {
-                                  showToast.error("Failed to refresh payment details");
-                                }
-                              }}
-                              className="text-xs text-[#1D8751] hover:text-[#166b3e] underline self-start sm:self-auto"
-                            >
-                              Refresh
-                            </button>
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedPaymentDetails([]);
+                                  showToast.info("Account selection cleared");
+                                }}
+                                className="text-xs text-[#E23D3A] hover:text-[#c42e2e] underline self-start sm:self-auto"
+                              >
+                                Remove
+                              </button>
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  try {
+                                    await dispatch(fetchUserPaymentDetails(true)).unwrap();
+                                    showToast.success("Payment details refreshed!");
+                                  } catch (error) {
+                                    showToast.error("Failed to refresh payment details");
+                                  }
+                                }}
+                                className="text-xs text-[#1D8751] hover:text-[#166b3e] underline self-start sm:self-auto"
+                              >
+                                Refresh
+                              </button>
+                            </div>
                           </div>
                           <div className="space-y-2 w-full overflow-hidden">
                             {selectedPaymentDetails.map((detail: UserPaymentDetail, index: number) => (
@@ -4131,6 +4143,16 @@ export default function WithdrawalForm({
                               </div>
                             ))}
                           </div>
+                          {/* Register new account link */}
+                          <p className="text-[#F79330] text-sm mt-3">
+                            <button
+                              type="button"
+                              onClick={() => setIsPaymentModalOpen(true)}
+                              className="hover:underline cursor-pointer"
+                            >
+                              Don't have an account? Register Now
+                            </button>
+                          </p>
                         </div>
                       ) : enhancedFilteredUserPaymentDetails.length > 0 ? (
                         <div className="relative w-full overflow-hidden">
@@ -4205,6 +4227,16 @@ export default function WithdrawalForm({
                               : ""
                               }`}
                           />
+                          {/* Register new account link */}
+                          <p className="text-[#F79330] text-sm mt-3">
+                            <button
+                              type="button"
+                              onClick={() => setIsPaymentModalOpen(true)}
+                              className="hover:underline cursor-pointer"
+                            >
+                              Don't have an account? Register Now
+                            </button>
+                          </p>
                         </div>
                       ) : (
                         <p className="text-[#F79330] text-sm">
