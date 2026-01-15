@@ -1264,14 +1264,14 @@ export default function ExchangeForm({
             <span className="relative flex items-center mt-1 sm:mt-1.5 md:mt-2">
               <img
                 src={exchangeIconSrc1}
-                className={`h-4.5 -mt-0.5 -ml-0.5 w-auto object-contain ${isActive && isDark ? "hidden" : "block"}`}
+                className={`h-3.5 sm:h-4.5 -mt-0.5 -ml-0.5 w-auto object-contain ${isActive && isDark ? "hidden" : "block"}`}
                 alt="X"
                 style={{ imageRendering: 'crisp-edges', WebkitFontSmoothing: 'antialiased' }}
               />
               {isActive && isDark && (
                 <img
                   src={exchangeIconSrc2}
-                  className="h-4.5 -mt-0.5 -ml-0.5 w-auto object-contain block"
+                  className="h-3.5 sm:h-4.5 -mt-0.5 -ml-0.5 w-auto object-contain block"
                   alt="X"
                   style={{ imageRendering: 'crisp-edges', WebkitFontSmoothing: 'antialiased' }}
                 />
@@ -1287,14 +1287,14 @@ export default function ExchangeForm({
             <span className="relative flex items-center mt-1 sm:mt-1.5 md:mt-2">
               <img
                 src={moneyXIconSrc1}
-                className={`h-4.5 -mt-0.5 object-contain ${isActive && isDark ? "hidden" : "block"}`}
+                className={`h-3.5 sm:h-4.5 -mt-0.5 object-contain ${isActive && isDark ? "hidden" : "block"}`}
                 alt="X"
                 style={{ imageRendering: 'crisp-edges', WebkitFontSmoothing: 'antialiased' }}
               />
               {isActive && isDark && (
                 <img
                   src={moneyXIconSrc2}
-                  className="h-4.5 -mt-0.5 w-auto object-contain block"
+                  className="h-3.5 sm:h-4.5 -mt-0.5 w-auto object-contain block"
                   alt="X"
                   style={{ imageRendering: 'crisp-edges', WebkitFontSmoothing: 'antialiased' }}
                 />

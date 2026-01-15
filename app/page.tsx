@@ -438,7 +438,7 @@ export default function MarketingPage() {
           ></div>
         </div>
 
-        <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 relative z-10 mt-8">
+        <div className="w-full max-w-[1600px] mx-auto px-2 sm:px-4 lg:px-8 xl:px-10 relative z-10 mt-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 items-start gap-y-5 md:gap-y-4 md:gap-x-6 lg:gap-x-8 xl:gap-x-10">
             <div className="space-y-2 md:space-y-3 pl-0 md:pl-4 lg:pl-5 text-center md:text-left">
               {/* Green pill banner */}
