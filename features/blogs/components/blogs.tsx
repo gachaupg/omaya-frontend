@@ -17,19 +17,21 @@ const ITEMS_PER_PAGE = 12;
 const BlogPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const { blogs, news, loading, error } = useBlog();
+  const { allPosts: allPostsFromHook, loading, error } = useBlog();
   const router = useRouter();
   const { t } = useBlogsI18n();
 
-  // Combine all posts (blogs and news) and sort by date (newest first)
+  // Use all posts from hook (includes all categories) and sort by date (newest first)
   const allPosts = useMemo(() => {
-    const combined = [...blogs, ...news];
-    return combined.sort((a: BlogPost, b: BlogPost) => {
+    if (!allPostsFromHook || allPostsFromHook.length === 0) {
+      return [];
+    }
+    return [...allPostsFromHook].sort((a: BlogPost, b: BlogPost) => {
       const dateA = new Date(a.created_at || a.createdAt || 0).getTime();
       const dateB = new Date(b.created_at || b.createdAt || 0).getTime();
       return dateB - dateA; // Newest first
     });
-  }, [blogs, news]);
+  }, [allPostsFromHook]);
 
   // Filter posts based on search term
   const filteredPosts = useMemo(() => {
