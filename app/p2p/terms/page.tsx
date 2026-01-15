@@ -15,6 +15,7 @@ const P2PTermsPage = () => {
             ← Back to Chats
           </Link>
         </div>
+        
 
         <h1 className="text-2xl sm:text-3xl font-bold text-[#051015] dark:text-white mb-6">
           P2P Trading Terms & Conditions
