@@ -1538,7 +1538,7 @@ export default function DepositForm({
                       .map((asset: SupportedAsset, index: number) => (
                         <div
                           key={`popular-${asset.asset_id || "asset"}-${asset.symbol || asset.ticker || asset.name}-${asset.network || "unknown"}-${index}`}
-                          className="flex items-center gap-3 p-3 sm:p-4 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer transition-colors duration-150"
+                          className="flex items-center gap-4 p-4 sm:p-5 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer transition-colors duration-150"
                           onClick={() => {
                             handleAssetSelection(asset);
                             setIsAssetDropdownOpen(false);
@@ -1558,7 +1558,7 @@ export default function DepositForm({
                               asset?.symbol ||
                               "Asset"
                             }
-                            className="w-6 h-6 rounded-full object-cover"
+                            className="w-10 h-10 rounded-full object-cover"
                             onError={(e) => {
                               e.currentTarget.src =
                                 "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
@@ -1566,7 +1566,7 @@ export default function DepositForm({
                           />
                           <div className="flex-1">
                             <div
-                              className={`font-normal text-sm flex items-center gap-2 ${
+                              className={`font-medium text-base flex items-center gap-2 ${
                                 isDark ? "text-white" : "text-[#1F2937]"
                               }`}
                             >
@@ -1617,7 +1617,7 @@ export default function DepositForm({
                 ).map((asset: SupportedAsset, index: number) => (
                   <div
                     key={`${asset.asset_id || "asset"}-${asset.symbol || asset.ticker || asset.name}-${asset.network || "unknown"}-${index}`}
-                    className="flex items-center gap-3 p-3 sm:p-4 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer transition-colors duration-150"
+                    className="flex items-center gap-4 p-4 sm:p-5 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer transition-colors duration-150"
                     onClick={() => {
                       handleAssetSelection(asset);
                       setIsAssetDropdownOpen(false);
@@ -1637,7 +1637,7 @@ export default function DepositForm({
                         asset?.symbol ||
                         "Asset"
                       }
-                      className="w-6 h-6 rounded-full object-cover"
+                      className="w-10 h-10 rounded-full object-cover"
                       onError={(e) => {
                         e.currentTarget.src =
                           "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
@@ -1645,7 +1645,7 @@ export default function DepositForm({
                     />
                     <div className="flex-1">
                       <div
-                        className={`font-normal text-sm flex items-center gap-2 ${
+                        className={`font-medium text-base flex items-center gap-2 ${
                           isDark ? "text-white" : "text-[#1F2937]"
                         }`}
                       >
@@ -2936,6 +2936,7 @@ export default function DepositForm({
                   dropdownTitle="Select a payment methods"
                   dropdownOffsetY={-68}
                   dropdownOffsetX={20}
+                  largeDropdownItems={true}
                 />
               </div>
               {adminMethodsError && <p className="text-red-500 text-sm mt-1">{adminMethodsError}</p>}

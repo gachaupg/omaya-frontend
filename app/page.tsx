@@ -438,7 +438,7 @@ export default function MarketingPage() {
           ></div>
         </div>
 
-        <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 relative z-10 mt-8">
+        <div className="w-full max-w-[1600px] mx-auto px-2 sm:px-4 lg:px-8 xl:px-10 relative z-10 mt-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 items-start gap-y-5 md:gap-y-4 md:gap-x-6 lg:gap-x-8 xl:gap-x-10">
             <div className="space-y-2 md:space-y-3 pl-0 md:pl-4 lg:pl-5 text-center md:text-left">
               {/* Green pill banner */}
@@ -716,12 +716,12 @@ export default function MarketingPage() {
 
         <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl relative z-10">
           {/* Section Title */}
-          <div className="flex justify-center mb-2">
-            <span className="border border-[#1D8751] bg-[#1D8751]/10 text-[#1D8751] text-xs sm:text-sm md:text-base font-medium px-3 py-1 rounded-[24px] inline-flex items-center justify-center">
+          <div className="flex justify-center mb-4">
+            <span className="text-[#1D8751] text-xs sm:text-sm tracking-widest font-medium uppercase">
               SUPPORTED ASSETS
             </span>
           </div>
-          <div className="relative flex justify-center mb-3">
+          <div className="relative flex justify-center mb-4">
             {/* Greenish glow behind title */}
             <div className="pointer-events-none absolute inset-0 flex justify-center items-center -z-10">
               {/* Wide soft glow */}
@@ -732,7 +732,7 @@ export default function MarketingPage() {
               <div className="absolute w-[560px] sm:w-[860px] h-[180px] sm:h-[230px] bg-[#1D8751]/10 blur-[64px] rounded-full" />
             </div>
             <h2 className="text-center text-2xl md:text-3xl 2xl:text-4xl font-bold">
-              <span className="text-gray-900 dark:text-white">Trade Your Favorite</span>{" "}
+              <span className="text-gray-900 dark:text-white">Trade Your Favorite </span>
               <span className="text-[#1D8751]">Cryptocurrencies</span>
             </h2>
           </div>
@@ -776,34 +776,35 @@ export default function MarketingPage() {
                       ? price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
                       : price.toFixed(4);
 
-                    // Get icon container color based on symbol
+                    // Get icon container color based on symbol - matching Figma design
                     const getIconColor = (symbol: string, name: string) => {
                       const symbolUpper = symbol.toUpperCase();
                       const nameUpper = name.toUpperCase();
                       const colorMap: { [key: string]: string } = {
-                        'BTC': 'bg-orange-500', // Bitcoin - orange circle
-                        'BITCOIN': 'bg-orange-500',
-                        'ETH': 'bg-indigo-600', // Ethereum - indigo/purple
-                        'ETHEREUM': 'bg-indigo-600',
-                        'USDT': 'bg-green-500', // Tether - green circle
-                        'TETHER': 'bg-green-500',
-                        'BNB': 'bg-yellow-500', // BNB - yellow
-                        'ADA': 'bg-blue-700', // Cardano - dark blue
-                        'CARDANO': 'bg-blue-700',
-                        'XRP': 'bg-red-500', // Ripple - red circle
-                        'RIPPLE': 'bg-red-500',
-                        'SOL': 'bg-purple-600', // Solana - purple square
-                        'SOLANA': 'bg-purple-600',
-                        'DOT': 'bg-pink-500', // Polkadot - pink square
-                        'POLKADOT': 'bg-pink-500',
-                        'FXP': 'bg-blue-700', // FXPRIMUS - dark blue
-                        'FXPRIMUS': 'bg-blue-700',
-                        'PM': 'bg-red-500', // Perfect Money - red circle
-                        'PERFECT MONEY': 'bg-red-500',
-                        'ICM': 'bg-blue-500', // ICM Capital - blue
-                        'ICM CAPITAL': 'bg-blue-500',
+                        'BTC': 'bg-[#C27227]', // Bitcoin - warm orange/brown
+                        'BITCOIN': 'bg-[#C27227]',
+                        'ETH': 'bg-[#627EEA]', // Ethereum - purple/indigo
+                        'ETHEREUM': 'bg-[#627EEA]',
+                        'USDT': 'bg-[#26A17B]', // Tether - teal green
+                        'TETHER': 'bg-[#26A17B]',
+                        'BNB': 'bg-[#F3BA2F]', // BNB - gold/yellow
+                        'ADA': 'bg-[#0033AD]', // Cardano - dark blue
+                        'CARDANO': 'bg-[#0033AD]',
+                        'XRP': 'bg-[#8B3A3A]', // XRP - maroon/dark red
+                        'RIPPLE': 'bg-[#8B3A3A]',
+                        'SOL': 'bg-[#4A4A4A]', // Solana - dark gray
+                        'SOLANA': 'bg-[#4A4A4A]',
+                        'DOT': 'bg-[#E6007A]', // Polkadot - pink
+                        'POLKADOT': 'bg-[#E6007A]',
+                        'FXP': 'bg-[#1A365D]', // FXPRIMUS - dark navy
+                        'FXPRIMUS': 'bg-[#1A365D]',
+                        'PM': 'bg-[#FF3366]', // Perfect Money - bright red
+                        'PERFECT MONEY': 'bg-[#FF3366]',
+                        'ICM': 'bg-[#2B5F9E]', // ICM Capital - blue
+                        'ICM CAPITAL': 'bg-[#2B5F9E]',
+                        'USDC': 'bg-[#2775CA]', // USDC - blue
                       };
-                      return colorMap[symbolUpper] || colorMap[nameUpper] || 'bg-gray-500'; // Default gray
+                      return colorMap[symbolUpper] || colorMap[nameUpper] || 'bg-[#4A5568]'; // Default gray
                     };
 
                     const iconBgColor = getIconColor(asset.symbol, asset.name);
@@ -811,37 +812,20 @@ export default function MarketingPage() {
                     return (
                       <div
                         key={asset.id}
-                        className="bg-gray-50 dark:bg-[#1D1D23] rounded-xl p-0 border border-gray-200 dark:border-[#2A2A2A] hover:border-[#1D8751]/40 transition-colors relative overflow-hidden"
+                        className="bg-gray-50 dark:bg-[#1A1A1F] rounded-2xl border border-gray-200 dark:border-[#2A2A35] hover:border-[#1D8751]/40 transition-colors relative overflow-hidden"
                       >
-                        {/* Dark mode gradient background */}
-                        <div
-                          className="hidden dark:block absolute inset-0 rounded-xl"
-                          style={{
-                            background: 'linear-gradient(to bottom, rgba(29, 29, 35, 0.95), rgba(29, 29, 35, 1))',
-                            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.3)'
-                          }}
-                        ></div>
-
-                        {/* Greenish radial gradient from top-right corner - lighter in light mode */}
-                        <div
-                          className="absolute top-0 right-0 w-3/4 h-3/4 opacity-20 dark:opacity-30 pointer-events-none rounded-xl"
-                          style={{
-                            background: 'radial-gradient(circle at top right, rgba(29, 135, 81, 0.15) 0%, transparent 70%)'
-                          }}
-                        ></div>
-
-                        {/* Content wrapper with relative positioning */}
+                        {/* Content wrapper */}
                         <div className="relative z-10">
                           {/* Logo header section - colored rounded rectangle matching Figma */}
-                          <div className={`relative w-full h-20 sm:h-24 md:h-28 ${iconBgColor} rounded-t-xl flex items-center justify-center`}>
-                            {/* Asset logo - centered in the colored area */}
-                            <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 bg-white dark:bg-[#1D1D23] rounded-xl flex items-center justify-center shadow-lg">
+                          <div className={`relative w-full h-24 sm:h-28 md:h-32 ${iconBgColor} rounded-t-2xl flex items-center justify-center`}>
+                            {/* Asset logo with circular colored background matching Figma */}
+                            <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-18 md:h-18 bg-black/20 rounded-full flex items-center justify-center">
                               <Image
                                 src={asset.image}
                                 alt={asset.name}
                                 width={56}
                                 height={56}
-                                className="object-contain w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12"
+                                className="object-contain w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14"
                                 unoptimized
                               />
                             </div>
@@ -1089,45 +1073,45 @@ export default function MarketingPage() {
                     </p>
 
                     {/* Feature Boxes - 2x2 Grid */}
-                    <div className="grid grid-cols-2 gap-4 mt-3">
+                    <div className="grid grid-cols-2 gap-3 mt-3">
                       {[
                         {
                           icon: Shield,
                           title: "Bank-Grade Security",
                           desc: "Advanced encryption & multi-layer protection",
-                          bgColor: "bg-linear-to-br from-[#2B7FFF] to-[#00B8DB]",
+                          bgColor: "bg-gradient-to-br from-[#3B82F6] to-[#06B6D4]",
                         },
                         {
                           icon: Award,
                           title: "Licensed & Regulated",
                           desc: "Approved by Central Bank of Somalia",
-                          bgColor: "bg-linear-to-br from-[#AD46FF] to-[#F6339A]",
+                          bgColor: "bg-gradient-to-br from-[#A855F7] to-[#EC4899]",
                         },
                         {
                           icon: Users,
                           title: "100K+ Active Users",
                           desc: "Trusted by traders across East Africa",
-                          bgColor: "bg-linear-to-br from-[#1D8751] to-[#309A64]",
+                          bgColor: "bg-gradient-to-br from-[#22C55E] to-[#10B981]",
                         },
                         {
                           icon: TrendingUp,
                           title: "99.9% Uptime",
                           desc: "Reliable trading 24/7/365",
-                          bgColor: "bg-linear-to-br from-[#FF6900] to-[#FB2C36]",
+                          bgColor: "bg-gradient-to-br from-[#F97316] to-[#EF4444]",
                         },
                       ].map((feature, index) => (
                         <div
                           key={index}
-                          className="flex items-start gap-3 sm:gap-4 bg-gray-50 dark:bg-[#18181D] rounded-2xl p-4 border border-border dark:border-secondary/15"
+                          className="flex items-start gap-3 bg-gray-50 dark:bg-[#1A1A1F] rounded-xl p-3 sm:p-4 border border-gray-200 dark:border-[#2A2A35]"
                         >
-                          <div className={`w-10 h-10 ${feature.bgColor} rounded-xl flex items-center justify-center mb-3 shrink-0`}>
-                            <feature.icon className={`w-6 h-6`} />
+                          <div className={`w-9 h-9 sm:w-10 sm:h-10 ${feature.bgColor} rounded-lg flex items-center justify-center shrink-0`}>
+                            <feature.icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                           </div>
-                          <div>
-                            <div className="text-gray-900 dark:text-white font-bold text-sm mb-1">
+                          <div className="min-w-0">
+                            <div className="text-gray-900 dark:text-white font-semibold text-sm mb-0.5">
                               {feature.title}
                             </div>
-                            <div className="text-gray-700 dark:text-white/70 text-xs leading-relaxed">
+                            <div className="text-gray-600 dark:text-gray-400 text-xs leading-relaxed">
                               {feature.desc}
                             </div>
                           </div>
@@ -1456,52 +1440,52 @@ export default function MarketingPage() {
               <div className="
           grid grid-cols-1
           sm:grid-cols-2
-          gap-2
+          gap-3
         ">
                 {[
                   {
                     title: "Low Transaction Fee",
                     desc: "Industry-leading fees starting from 0.1%",
                     icon: <DollarSign className="w-5 h-5 sm:w-6 sm:h-6 text-white" />,
-                    bg: "bg-[#1D8751]"
+                    bg: "bg-gradient-to-br from-[#22C55E] to-[#16A34A]"
                   },
                   {
                     title: "Secure Payment Service",
                     desc: "Bank-grade security with 2FA authentication",
                     icon: <Shield className="w-5 h-5 sm:w-6 sm:h-6 text-white" />,
-                    bg: "bg-blue-500"
+                    bg: "bg-gradient-to-br from-[#8B5CF6] to-[#6366F1]"
                   },
                   {
                     title: "Fast Transactions",
                     desc: "Lightning-fast execution in milliseconds",
                     icon: <Zap className="w-5 h-5 sm:w-6 sm:h-6 text-white" />,
-                    bg: "bg-orange-500"
+                    bg: "bg-gradient-to-br from-[#F59E0B] to-[#F97316]"
                   },
                   {
                     title: "We Work 24/7",
                     desc: "Round-the-clock support & trading",
                     icon: <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-white" />,
-                    bg: "bg-purple-500"
+                    bg: "bg-gradient-to-br from-[#06B6D4] to-[#0EA5E9]"
                   }
                 ].map((item, i) => (
                   <div
                     key={i}
                     className="
                 flex items-start gap-3 sm:gap-4
-                bg-gray-50 dark:bg-[#18181D]
-                rounded-2xl
-                p-4
-                border border-gray-200 dark:border-secondary/15
+                bg-gray-50 dark:bg-[#1A1A1F]
+                rounded-xl
+                p-3 sm:p-4
+                border border-gray-200 dark:border-[#2A2A35]
               "
                   >
-                    <div className={`${item.bg} w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shrink-0`}>
+                    <div className={`${item.bg} w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center shrink-0 shadow-lg`}>
                       {item.icon}
                     </div>
                     <div>
-                      <h4 className="text-gray-900 dark:text-white font-bold text-base  mb-1 sm:mb-2">
+                      <h4 className="text-gray-900 dark:text-white font-semibold text-sm sm:text-base mb-1">
                         {item.title}
                       </h4>
-                      <p className="text-gray-600 dark:text-muted-foreground text-sm">
+                      <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">
                         {item.desc}
                       </p>
                     </div>
@@ -1512,8 +1496,8 @@ export default function MarketingPage() {
               {/* App Buttons */}
               <div className="
           flex flex-col sm:flex-row
-          gap-3 sm:gap-4
-          pt-6
+          gap-3
+          pt-4
         ">
                 {[
                   { pre: 'Download on the', text: "App Store" },
@@ -1525,19 +1509,18 @@ export default function MarketingPage() {
                     className="
                 inline-flex items-center justify-start gap-3
                 bg-gray-900 hover:bg-gray-800
-                dark:bg-[#18181D] dark:hover:bg-black/70
-                border-2 border-[#1D8751]/30
-                rounded-2xl
-                px-5 sm:px-6 py-3.5 sm:py-4
-                min-w-[180px] sm:min-w-[200px]
+                dark:bg-[#1A1A1F] dark:hover:bg-[#252530]
+                border border-gray-700 dark:border-[#2A2A35]
+                rounded-xl
+                px-4 py-2.5 sm:py-3
+                min-w-[160px] sm:min-w-[180px]
                 transition-colors
               "
                   >
-                    <HiOutlineDeviceMobile className="text-3xl text-[#1D8751]" />
+                    <HiOutlineDeviceMobile className="text-2xl text-[#22C55E]" />
                     <div className="flex flex-col items-start">
-                      <span className="text-muted-foreground font-medium text-sm tracking-wide">{btn.pre}</span>
-                      <span className="text-white font-medium text-sm tracking-wide">{btn.text}</span>
-
+                      <span className="text-gray-400 font-medium text-xs tracking-wide">{btn.pre}</span>
+                      <span className="text-white font-semibold text-sm tracking-wide">{btn.text}</span>
                     </div>
                   </a>
                 ))}
@@ -1631,7 +1614,7 @@ export default function MarketingPage() {
         </div>
       </div>
       {/* Refer and Invite Section */}
-      <div className="w-full bg-white dark:bg-transparent py-4 md:py-8 my-4 md:my-6">
+      <div id="referral" className="w-full bg-white dark:bg-transparent py-4 md:py-8 my-4 md:my-6">
         <div className="w-full md:container md:mx-auto md:max-w-8xl md:px-4 md:px-6 lg:px-8 xl:px-12 2xl:px-16">
           <div className="w-full md:mx-auto md:max-w-7xl rounded-3xl overflow-hidden bg-[#1D8751] relative">
 

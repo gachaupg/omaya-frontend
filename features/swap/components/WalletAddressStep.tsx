@@ -219,16 +219,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                         {isAddressValidating ? (
                           <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-[#1D8751] border-t-transparent rounded-full animate-spin"></div>
                         ) : addressValidationResult?.isValid ? (
-                          <svg className="w-4 h-4 sm:w-5 sm:h-5 text-[#1D8751] flex-shrink-0" viewBox="0 0 24 24" fill="none">
-                            <path
-                              d="M9 12l2 2 4-4"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
-                          </svg>
+                          ''
                         ) : walletError ? (
                           <svg className="w-4 h-4 sm:w-5 sm:h-5 text-[#E23D3A] flex-shrink-0" viewBox="0 0 24 24" fill="none">
                             <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
@@ -374,7 +365,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                   checked={hasAcceptedTerms}
                   onChange={(e) => setHasAcceptedTerms(e.target.checked)}
                   disabled={isLoading}
-                  className="w-4 h-4 sm:w-5 sm:h-5 accent-[#1D8751] text-[#1D8751] bg-white dark:bg-[var(--card-color)] border-gray-300 dark:border-[#39394a] rounded focus:ring-[#1D8751] focus:ring-2 disabled:opacity-50 flex-shrink-0 cursor-pointer"
+                  className="w-4 h-4 sm:w-5 sm:h-5 accent-[#1D8751] text-[#1D8751] bg-white dark:bg-[var(--card-color)] border-gray-300 dark:border-[#39394a] rounded disabled:opacity-50 shrink-0 cursor-pointer"
                 />
                 <label
                   htmlFor="accept-terms"
