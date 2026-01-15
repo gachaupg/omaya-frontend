@@ -685,6 +685,19 @@ export default function DepositForm({
   }, []);
 
   const currentCurrency = getCurrencyFromAsset(selectedAsset);
+  
+  // Get network from selectedNetwork or selectedAsset
+  const getCurrentNetwork = useCallback((): string | undefined => {
+    if (selectedNetwork) {
+      return selectedNetwork.network_type || selectedNetwork.network_id || selectedNetwork.network || undefined;
+    }
+    if (selectedAsset) {
+      return getAssetNetwork(selectedAsset);
+    }
+    return undefined;
+  }, [selectedNetwork, selectedAsset]);
+  
+  const currentNetwork = getCurrentNetwork();
 
   // Address validation hook
   const {
@@ -695,6 +708,7 @@ export default function DepositForm({
     reset: resetAddressValidation,
   } = useValidateAddress({
     currency: currentCurrency,
+    network: currentNetwork,
     debounceMs: 500,
     minLength: 10,
     validateEmpty: false,
@@ -743,16 +757,16 @@ export default function DepositForm({
     currentCurrency,
   ]);
 
-  // Reset validation when asset changes
+  // Reset validation when asset or network changes
   useEffect(() => {
     if (walletAddress.trim() && selectedAsset) {
-      validateAddress(walletAddress, currentCurrency);
+      validateAddress(walletAddress, currentCurrency, currentNetwork);
     } else {
       resetAddressValidation();
       setWalletError(null);
       setIsAddressConfirmed(false);
     }
-  }, [selectedAsset, currentCurrency, validateAddress, resetAddressValidation]);
+  }, [selectedAsset, currentCurrency, currentNetwork, validateAddress, resetAddressValidation]);
 
   // Forex-specific state
   const [forexAccountNumber, setForexAccountNumber] = useState<string>("");
@@ -3846,7 +3860,7 @@ export default function DepositForm({
                     setIsAddressConfirmed(false);
                   } else {
                     // Use API validation hook
-                    validateAddress(value, currentCurrency);
+                    validateAddress(value, currentCurrency, currentNetwork);
                   }
                 }}
                 placeholder="Paste your crypto address"
@@ -3878,7 +3892,7 @@ export default function DepositForm({
                     setWalletAddress(text);
                     // Validate pasted address using API
                     if (text.trim() && selectedAsset && currentCurrency) {
-                      validateAddress(text, currentCurrency);
+                      validateAddress(text, currentCurrency, currentNetwork);
                     }
                   } catch (err) {
                     console.error("Failed to read clipboard:", err);

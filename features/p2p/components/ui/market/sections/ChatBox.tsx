@@ -399,26 +399,7 @@ const ChatBox: React.FC<{
             className="flex items-center gap-1 px-2 py-1.5 sm:py-1 dark:bg-[#1D8751] bg-[#1D8751] text-white rounded hover:bg-[#166b3e] transition-colors disabled:opacity-50 text-xs font-medium flex-shrink-0"
             title="Refresh messages and load images"
           >
-            <svg
-              width="12"
-              height="12"
-              className={`sm:w-[14px] sm:h-[14px] ${isRefreshing ? "animate-spin" : ""}`}
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M1 4v6h6M23 20v-6h-6"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10M23 10l-4.64 4.36A9 9 0 0 1 3.51 15"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+            
             <span className="hidden sm:inline">{isRefreshing ? "Refreshing..." : "Refresh"}</span>
             <span className="sm:hidden">{isRefreshing ? "..." : "↻"}</span>
           </button>

@@ -16,8 +16,7 @@ import {
 import AppealModal from "./appeal";
 import ChatBox from "./ChatBox";
 import { showToast } from "@/lib/utils/toast";
-import { handleCopy } from "@/features/p2p/components/Common/utils";
-import { AlertCircle, Copy, RefreshCw } from "lucide-react";
+import { AlertCircle, RefreshCw } from "lucide-react";
 import { FaChevronRight } from "react-icons/fa";
 import { Dialog } from "@headlessui/react";
 import { useTradeStatusWebSocket } from "@/features/p2p/hooks/useTradeStatusWebSocket";
@@ -51,6 +50,7 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
     (state: RootState) => state.auth
   );
   const [showCancelMsg, setShowCancelMsg] = useState(false);
+  const [copiedButton, setCopiedButton] = useState<string | null>(null);
   const router = useRouter();
 
   // WebSocket status update callback - use useCallback to prevent reconnections
@@ -352,6 +352,14 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
     }
   };
 
+  // Custom copy handler that shows "Copied" in button
+  const handleCopyToClipboard = (value: string | undefined, buttonId: string) => {
+    if (!value) return;
+    navigator.clipboard.writeText(value);
+    setCopiedButton(buttonId);
+    setTimeout(() => setCopiedButton(null), 2000);
+  };
+
   return (
     <div className="md:mt-20">
       {/* Breadcrumb */}
@@ -433,7 +441,6 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
             className="flex items-center gap-1 bg-white dark:bg-[var(--bg-color)] text-[#1D8751] rounded-lg px-2 py-1 border border-[#E8EFF5] dark:border-[#35353E] hover:bg-gray-200 dark:hover:bg-[#35353E] transition-colors"
             title="Refresh"
           >
-            <RefreshCw size={14} />
           </button>
         </div>
         {/* Advertiser Info */}
@@ -506,10 +513,9 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
             <button
               type="button"
               className="underline text-[#1D8751] cursor-pointer inline-flex items-center gap-1 hover:text-[#16663d] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1D8751] focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-[#18181D]"
-              onClick={() => handleCopy(singleOrder?.id || singleOrder?.buy_order)}
+              onClick={() => handleCopyToClipboard(singleOrder?.id || singleOrder?.buy_order, "order-number")}
             >
-              <span>{confirmOrder?.id || "9346457687345"}</span>
-              <Copy className="w-4 h-4 text-[#1D8751]" strokeWidth={2} />
+              <span>{copiedButton === "order-number" ? "Copied!" : confirmOrder?.id || "9346457687345"}</span>
             </button>
           </div>
         </div>
@@ -622,11 +628,10 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
                         <button
                         className="w-full sm:w-auto px-3 md:px-4 py-2 rounded-full border border-[#E8EFF5] dark:border-[#35353E] text-[#1D8751] bg-[#E8EFF5] dark:bg-[#35353E] font-semibold text-sm flex items-center justify-center gap-1.5 flex-shrink-0"
                         onClick={() =>
-                          handleCopy(paymentDetails?.account_name || "")
+                          handleCopyToClipboard(paymentDetails?.account_name || "", "account-name")
                         }
                       >
-                        Copy
-                        <Copy className="w-3 h-3 md:w-4 md:h-4" />
+                        {copiedButton === "account-name" ? "Copied!" : "Copy"}
                       </button>
                       </div>
                     </div>
@@ -643,11 +648,10 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
                         <button
                           className="w-full sm:w-auto px-3 md:px-4 py-2 rounded-full border border-[#E8EFF5] dark:border-[#35353E] text-[#1D8751] bg-[#E8EFF5] dark:bg-[#35353E] font-semibold text-sm flex items-center justify-center gap-1.5 flex-shrink-0"
                           onClick={() =>
-                            handleCopy(paymentDetails?.account_number || "")
+                            handleCopyToClipboard(paymentDetails?.account_number || "", "account-number")
                           }
                         >
-                          Copy
-                          <Copy className="w-3 h-3 md:w-4 md:h-4" />
+                          {copiedButton === "account-number" ? "Copied!" : "Copy"}
                         </button>
                       </div>
                     </div>
@@ -662,10 +666,9 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
                         </p>
                         <button
                           className="w-full sm:w-auto px-3 md:px-4 py-2 font-[11px] md:font-[13px] rounded-full border border-[#E8EFF5] dark:border-[#35353E] text-[#1D8751] bg-[#E8EFF5] dark:bg-[#35353E] flex items-center justify-center gap-1.5 flex-shrink-0"
-                          onClick={() => handleCopy(singleOrder?.id || "")}
+                          onClick={() => handleCopyToClipboard(singleOrder?.id || "", "transaction-id")}
                         >
-                          Copy
-                          <Copy className="w-3 h-3 md:w-4 md:h-4" />
+                          {copiedButton === "transaction-id" ? "Copied!" : "Copy"}
                         </button>
                       </div>
                     </div>

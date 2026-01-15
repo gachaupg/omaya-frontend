@@ -9,6 +9,7 @@ import { logger } from "@/lib/utils/logger";
 export interface ValidateAddressRequest {
   currency: string;
   address: string;
+  network: string;
 }
 
 export interface ValidateAddressResponse {
@@ -33,14 +34,56 @@ export interface ValidationResult {
 }
 
 /**
+ * Normalize network name to lowercase format (e.g., "BSC" -> "bsc", "Ethereum" -> "eth")
+ */
+function normalizeNetwork(network: string | undefined | null): string {
+  if (!network) return "";
+  
+  const networkLower = network.toLowerCase().trim();
+  
+  // Map common network names to standard format
+  const networkMap: { [key: string]: string } = {
+    "bsc": "bsc",
+    "binance smart chain": "bsc",
+    "binance": "bsc",
+    "eth": "eth",
+    "ethereum": "eth",
+    "polygon": "polygon",
+    "matic": "polygon",
+    "polygon network": "polygon",
+    "trx": "trx",
+    "tron": "trx",
+    "tron network": "trx",
+    "arbitrum": "arbitrum",
+    "arb": "arbitrum",
+    "optimism": "optimism",
+    "op": "optimism",
+    "avalanche": "avalanche",
+    "avax": "avalanche",
+    "solana": "solana",
+    "sol": "solana",
+  };
+  
+  // Check if we have a mapping
+  if (networkMap[networkLower]) {
+    return networkMap[networkLower];
+  }
+  
+  // Return lowercase version if no mapping found
+  return networkLower;
+}
+
+/**
  * Validate a cryptocurrency address using ChangeNow API
  * @param currency - The currency code (e.g., 'btc', 'eth', 'usdt')
  * @param address - The wallet address to validate
+ * @param network - The network name (e.g., 'bsc', 'eth', 'polygon')
  * @returns Promise<ValidationResult>
  */
 export async function validateAddress(
   currency: string,
-  address: string
+  address: string,
+  network?: string
 ): Promise<ValidationResult> {
   // Basic validation - address should not be empty
   if (!address || address.trim().length === 0) {
@@ -81,10 +124,23 @@ export async function validateAddress(
       };
     }
     
-    const requestPayload = {
+    // Normalize network if provided
+    const normalizedNetwork = network ? normalizeNetwork(network) : "";
+    
+    // Build request payload with network
+    const requestPayload: ValidateAddressRequest = {
       currency: currency.toLowerCase(),
       address: address.trim(),
+      network: normalizedNetwork,
     };
+    
+    // If network is not provided, still include it as empty string (API may require it)
+    if (!normalizedNetwork) {
+      logger.warn("validateAddress", "Network not provided for address validation", {
+        currency,
+        address: address.substring(0, 10) + "...",
+      });
+    }
 
     logger.debug("validateAddress", `Validating ${currency} address: ${address.substring(0, 10)}...`, {
       endpoint,

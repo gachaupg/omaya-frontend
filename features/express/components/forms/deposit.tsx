@@ -65,7 +65,7 @@ interface DepositFormProps {
     finalDepositAddress?: string;
   }) => void;
   mode: "deposit" | "withdrawal";
-  onModeChange?: (mode: "deposit" | "withdrawal") => void;
+  onModeChange?: (mode: "deposit" | "withdrawal", currentState?: any) => void;
   isHomePage?: boolean;
   initialState?: any;
 }
@@ -677,6 +677,19 @@ export default function DepositForm({
   }, []);
 
   const currentCurrency = getCurrencyFromAsset(selectedAsset);
+  
+  // Get network from selectedNetwork or selectedAsset
+  const getCurrentNetwork = useCallback((): string | undefined => {
+    if (selectedNetwork) {
+      return selectedNetwork.network_type || selectedNetwork.network_id || selectedNetwork.network || undefined;
+    }
+    if (selectedAsset) {
+      return getAssetNetwork(selectedAsset);
+    }
+    return undefined;
+  }, [selectedNetwork, selectedAsset]);
+  
+  const currentNetwork = getCurrentNetwork();
 
   // Address validation hook
   const {
@@ -687,6 +700,7 @@ export default function DepositForm({
     reset: resetAddressValidation,
   } = useValidateAddress({
     currency: currentCurrency,
+    network: currentNetwork,
     debounceMs: 500,
     minLength: 10,
     validateEmpty: false,
@@ -731,14 +745,14 @@ export default function DepositForm({
     currentCurrency,
   ]);
 
-  // Reset validation when asset changes
+  // Reset validation when asset or network changes
   useEffect(() => {
     if (walletAddress.trim() && currentCurrency) {
       resetAddressValidation();
-      validateAddress(walletAddress, currentCurrency);
+      validateAddress(walletAddress, currentCurrency, currentNetwork);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentCurrency]); // Only run when currency changes
+  }, [currentCurrency, currentNetwork]); // Only run when currency or network changes
   // Initialize selectedPaymentDetail from initialState if available (immediate, no waiting)
   const [selectedPaymentDetail, setSelectedPaymentDetail] = useState<any>(() => {
     // If we have initialState with payment, use it immediately (normalized)
@@ -751,54 +765,56 @@ export default function DepositForm({
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [hasAutoExpanded, setHasAutoExpanded] = useState(false);
   const [isRestoringFromInitialState, setIsRestoringFromInitialState] = useState(false);
+  const hasInitializedPayment = useRef(false);
+  const previousInitialState = useRef<any>(null);
 
   useEffect(() => {
+    // Only restore from initialState on first mount or when initialState actually changes
+    const initialStateChanged = previousInitialState.current !== initialState;
+    previousInitialState.current = initialState;
+
     // If we have initialState with payment (full object from home page), ensure it's set and payBank is correct
-    if (initialState?.payment) {
+    if (initialState?.payment && (initialStateChanged || !hasInitializedPayment.current)) {
       const initialStatePayment = initialState.payment;
 
-      // Use the payment object directly from initialState (exact object from home page) - normalize to ensure account details
-      if (!selectedPaymentDetail || selectedPaymentDetail !== initialStatePayment) {
+      // Only restore if we haven't initialized yet or if initialState changed
+      if (!hasInitializedPayment.current || initialStateChanged) {
         const normalized = normalizePaymentDetails(initialStatePayment);
         setSelectedPaymentDetail(normalized);
-      }
-      // Ensure payBank is set correctly
-      const correctPayBank = initialStatePayment.provider_name || initialStatePayment.payment_provider_name || initialState.payBank || "";
-      if (payBank !== correctPayBank) {
+        
+        const correctPayBank = initialStatePayment.provider_name || initialStatePayment.payment_provider_name || initialState.payBank || "";
         setPayBank(correctPayBank);
+        hasInitializedPayment.current = true;
       }
       return; // Don't proceed to defaults
     }
 
-    // Only apply defaults if we don't have initialState payment
-    if (!initialState?.payment && finalPaymentMethods && finalPaymentMethods.length > 0) {
+    // Only apply defaults if we don't have initialState payment and haven't initialized yet
+    if (!initialState?.payment && finalPaymentMethods && finalPaymentMethods.length > 0 && !hasInitializedPayment.current) {
       const matchingSelection = finalPaymentMethods.find(
         (method: any) => method?.provider_name === payBank
       );
 
       if (matchingSelection) {
-        if (
-          !selectedPaymentDetail ||
-          selectedPaymentDetail?.provider_name !== matchingSelection.provider_name
-        ) {
+        if (!selectedPaymentDetail || selectedPaymentDetail?.provider_name !== matchingSelection.provider_name) {
           // Normalize payment details before setting
           const normalized = normalizePaymentDetails(matchingSelection);
           setSelectedPaymentDetail(normalized);
         }
+        hasInitializedPayment.current = true;
         return;
       }
 
       const firstMethod = finalPaymentMethods[0];
-      if (!firstMethod?.provider_name) {
-        return;
+      if (firstMethod?.provider_name) {
+        setPayBank(firstMethod.provider_name);
+        // Normalize payment details before setting
+        const normalized = normalizePaymentDetails(firstMethod);
+        setSelectedPaymentDetail(normalized);
+        hasInitializedPayment.current = true;
       }
-
-      setPayBank(firstMethod.provider_name);
-      // Normalize payment details before setting
-      const normalized = normalizePaymentDetails(firstMethod);
-      setSelectedPaymentDetail(normalized);
     }
-  }, [finalPaymentMethods, payBank, selectedPaymentDetail, initialState]);
+  }, [finalPaymentMethods, initialState]); // Removed payBank and selectedPaymentDetail from dependencies
 
   // Add transaction code state
   const [transactionCode, setTransactionCode] = useState<string>("");
@@ -3404,7 +3420,22 @@ export default function DepositForm({
                 onClick={() => {
                   // Switch between deposit and withdrawal modes
                   if (onModeChange) {
-                    onModeChange(mode === "deposit" ? "withdrawal" : "deposit");
+                    // Preserve current state including payment method selection
+                    // Convert single payment detail to array format for withdrawal form
+                    const currentState = {
+                      payBank,
+                      payment: selectedPaymentDetail,
+                      paymentDetails: selectedPaymentDetail ? [selectedPaymentDetail] : [],
+                      selectedAsset,
+                      payAmountInput,
+                      getAmountInput,
+                      amountInput: payAmountInput,
+                      receiveAmountInput: getAmountInput,
+                      amountValue: parseFloat(payAmountInput) || 0,
+                      receiveAmountValue: getAmount,
+                      walletAddress,
+                    };
+                    onModeChange(mode === "deposit" ? "withdrawal" : "deposit", currentState);
                   }
                 }}
               >
@@ -3519,7 +3550,7 @@ export default function DepositForm({
                     }
                   }}
                   placeholder="Enter amount"
-                  className={`w-full h-[48px] text-[#35353e] dark:text-white bg-white dark:bg-[#35353E] rounded-2xl px-4 pr-16 text-base sm:text-lg focus:outline-none border appearance-none transition-colors duration-200 ${receiveAmountError &&
+                  className={`w-full h-[48px] text-[#35353e] dark:text-white bg-transparent dark:bg-transparent rounded-2xl px-4 pr-16 text-base sm:text-lg focus:outline-none border appearance-none transition-colors duration-200 ${receiveAmountError &&
                     (receiveAmountError.includes("Rough estimate") ||
                       receiveAmountError.includes("Using estimated rate"))
                     ? "border-[#F79330]"
@@ -4367,7 +4398,7 @@ export default function DepositForm({
                       setWalletError(null); // No error when empty - address is optional
                     } else {
                       // Trigger validation as user types
-                      validateAddress(value, currentCurrency);
+                      validateAddress(value, currentCurrency, currentNetwork);
                     }
                     setForceUpdate((prev) => prev + 1);
                   }}
@@ -4431,7 +4462,7 @@ export default function DepositForm({
                     setIsAddressConfirmed(false);
                     // Trigger validation after pasting
                     if (text.trim()) {
-                      validateAddress(text, currentCurrency);
+                      validateAddress(text, currentCurrency, currentNetwork);
                     } else {
                       resetAddressValidation();
                     }

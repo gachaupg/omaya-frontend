@@ -475,7 +475,6 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
   return (
     <div className="w-full flex flex-col dark:text-white text-gray-900">
       <h2 className="text-base sm:text-lg md:text-xl font-semibold mb-2 sm:mb-3 md:mb-4 dark:text-[#9ba3c5] text-gray-700">
-        <span className="dark:text-[#7e7e8f] text-gray-500 mr-1">1-</span>
         {t("swap.transactionInfo", "Transaction Info")}
       </h2>
 

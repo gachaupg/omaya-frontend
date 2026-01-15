@@ -49,8 +49,14 @@ const TradePreview: React.FC<TradePreviewProps> = ({
   const [isAmountValid, setIsAmountValid] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
   const [numericAmount, setNumericAmount] = useState(0);
+  const [imageError, setImageError] = useState(false);
 
   const paymentDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Reset image error when advertiser data changes
+  useEffect(() => {
+    setImageError(false);
+  }, [advertiserData.id, advertiserData.advertiser_photo]);
 
   const commissionRate = parseFloat(advertiserData.commission);
   const minAmount = advertiserData.minAmount;
@@ -354,9 +360,18 @@ const TradePreview: React.FC<TradePreviewProps> = ({
           <div className="flex-1 flex flex-col gap-3">
           {/* Advertiser Info */}
           <div className="flex items-center gap-3 sm:gap-4">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-xl sm:text-2xl font-bold bg-[#1D8751] text-white flex-shrink-0">
-              {advertiserData.advertiserInitials} 
-            </div>
+            {advertiserData.advertiser_photo && !imageError ? (
+              <img
+                src={advertiserData.advertiser_photo}
+                alt={advertiserData.advertiser}
+                className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover flex-shrink-0"
+                onError={() => setImageError(true)}
+              />
+            ) : (
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-xl sm:text-2xl font-bold bg-[#1D8751] text-white flex-shrink-0">
+                {advertiserData.advertiserInitials}
+              </div>
+            )}
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
                 <span className="truncate">{advertiserData.advertiser}</span>

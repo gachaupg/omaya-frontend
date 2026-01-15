@@ -16,6 +16,7 @@ export interface MarketRow {
   minAmount: number;
   maxAmount: number;
   currency: string;
+  originalCurrency?: string; // Original currency before conversion (for filtering)
   paymentType: string[];
   isMerchant?: boolean;
   isMerchantBusiness?: boolean;
