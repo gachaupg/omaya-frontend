@@ -532,8 +532,8 @@ export default function Navbar() {
   const profileModalRef = useRef<HTMLDivElement>(null);
 
   // Use KYC state for verification status, fallback to user.is_verified
-  const isVerified = kycState.isVerified !== undefined 
-    ? kycState.isVerified 
+  const isVerified = kycState.isVerified !== undefined
+    ? kycState.isVerified
     : (user?.is_verified ?? false);
 
   useEffect(() => {
@@ -790,16 +790,16 @@ export default function Navbar() {
     if (isProtectedRoute && isAuthenticated) {
       // Check if user is verified
       const isUnverified = isVerified === false;
-      
+
       if (isUnverified) {
         e.preventDefault();
         e.stopPropagation();
-        
+
         // Double-check with API
         try {
           const result = await dispatch(checkKYCStatus()).unwrap();
           const kycStatus = result as any;
-          
+
           if (kycStatus?.is_verified === false) {
             dispatch(openKYCModal());
             return;
@@ -1252,137 +1252,139 @@ export default function Navbar() {
       </nav>
 
       {/* Mobile Menu */}
-      {mobileMenuOpen && (
-        <>
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 bg-black/50 z-40 md:hidden"
+      <>
+        {/* Backdrop */}
+        <div
+          className={`fixed inset-0 z-40 md:hidden transition-all duration-300 ${mobileMenuOpen ? "bg-black/50 opacity-100" : "bg-black/0 opacity-0 pointer-events-none"
+            }`}
+          onClick={toggleMobileMenu}
+        />
+        {/* Mobile Menu Slide */}
+        <div
+          className={`fixed top-16 left-0 h-[calc(100vh-4rem)] w-full sm:w-80 z-50 md:hidden p-4 sm:p-6 space-y-4 sm:space-y-6 shadow-lg dark:bg-[var(--bg-color)] bg-white overflow-y-auto transform transition-transform duration-300 ease-in-out ${mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+            }`}
+        >
+          <MobileNavLink
+            href="/"
             onClick={toggleMobileMenu}
-          />
-          <div
-            className={`fixed top-16 left-0 right-0 z-50 md:hidden p-4 sm:p-6 space-y-4 sm:space-y-6 shadow-lg transition-all duration-300 dark:bg-[var(--bg-color)] bg-white max-h-[calc(100vh-4rem)] overflow-y-auto`}
+            pathname={pathname}
           >
+            Home
+          </MobileNavLink>
+          {isAuthenticated && (
             <MobileNavLink
-              href="/"
+              href="/dashboard"
               onClick={toggleMobileMenu}
               pathname={pathname}
             >
-              Home
+              Dashboard
             </MobileNavLink>
-            {isAuthenticated && (
-              <MobileNavLink
-                href="/dashboard"
-                onClick={toggleMobileMenu}
-                pathname={pathname}
-              >
-                Dashboard
-              </MobileNavLink>
-            )}
-            <MobileNavLink
-              href="/market"
-              onClick={toggleMobileMenu}
-              pathname={pathname}
-            >
-              Market
-            </MobileNavLink>
-            <MobileNavLink
-              href="/rates"
-              onClick={toggleMobileMenu}
-              pathname={pathname}
-            >
-              Rates
-            </MobileNavLink>
-            <MobileNavLink
-              href="/blog"
-              onClick={toggleMobileMenu}
-              pathname={pathname}
-            >
-              Blog
-            </MobileNavLink>
-            <MobileNavLink
-              href="/about"
-              onClick={toggleMobileMenu}
-              pathname={pathname}
-            >
-              About Us
-            </MobileNavLink>
-            <MobileNavLink
-              href="/contactUs"
-              onClick={toggleMobileMenu}
-              pathname={pathname}
-            >
-              Contact us
-            </MobileNavLink>
+          )}
+          <MobileNavLink
+            href="/market"
+            onClick={toggleMobileMenu}
+            pathname={pathname}
+          >
+            Market
+          </MobileNavLink>
+          <MobileNavLink
+            href="/rates"
+            onClick={toggleMobileMenu}
+            pathname={pathname}
+          >
+            Rates
+          </MobileNavLink>
+          <MobileNavLink
+            href="/blog"
+            onClick={toggleMobileMenu}
+            pathname={pathname}
+          >
+            Blog
+          </MobileNavLink>
+          <MobileNavLink
+            href="/about"
+            onClick={toggleMobileMenu}
+            pathname={pathname}
+          >
+            About Us
+          </MobileNavLink>
+          <MobileNavLink
+            href="/contactUs"
+            onClick={toggleMobileMenu}
+            pathname={pathname}
+          >
+            Contact us
+          </MobileNavLink>
 
-            <div className="flex flex-col space-y-4 pt-4">
-              {isAuthenticated ? (
-                <>
-                  <div className="relative">
-                    <button
-                      onClick={toggleMobileDepositDropdown}
-                      className="flex items-center justify-center w-full bg-[#1D8751] hover:bg-[#13B562] text-white px-6 py-2 rounded-full transition-colors duration-200 text-base min-h-[44px]"
-                    >
-                      Deposit
-                      <ChevronDown className={`ml-2 w-5 h-5 transition-transform duration-200 ${mobileDepositDropdownOpen ? "rotate-180" : ""}`} />
-                    </button>
+          <div className="flex flex-col space-y-4 pt-4">
+            {isAuthenticated ? (
+              <>
+                <div className="relative">
+                  <button
+                    onClick={toggleMobileDepositDropdown}
+                    className="flex items-center justify-center w-full bg-[#1D8751] hover:bg-[#13B562] text-white px-6 py-2 rounded-full transition-colors duration-200 text-base min-h-[44px]"
+                  >
+                    Deposit
+                    <ChevronDown className={`ml-2 w-5 h-5 transition-transform duration-200 ${mobileDepositDropdownOpen ? "rotate-180" : ""}`} />
+                  </button>
 
-                    {/* Mobile Deposit Dropdown */}
-                    {mobileDepositDropdownOpen && (
-                      <>
-                        {/* Backdrop */}
-                        <div
-                          className="fixed inset-0 bg-black/50 z-[60] md:hidden"
-                          onClick={toggleMobileDepositDropdown}
-                        />
-                        {/* Dropdown Menu */}
-                        <div className="fixed inset-x-4 top-20 sm:top-24 z-[70] md:hidden dark:bg-[var(--card-color)] bg-white dark:border-[#35353E] border-gray-200 rounded-xl shadow-xl overflow-hidden">
-                          <div className="p-4 sm:p-6">
-                            {depositItems.map((item, index) => {
-                              const isActive = pathname === item.href || pathname?.startsWith(item.href + "/");
-                              return (
-                                <Link
-                                  key={index}
-                                  href={item.href}
-                                  className="block mb-4 last:mb-0"
-                                  onClick={(e) => {
-                                    handleProtectedNavigation(e, item.href);
-                                    setMobileDepositDropdownOpen(false);
-                                    toggleMobileMenu();
-                                  }}
+                  {/* Mobile Deposit Dropdown */}
+                  {mobileDepositDropdownOpen && (
+                    <>
+                      {/* Backdrop */}
+                      <div
+                        className="fixed inset-0 bg-black/50 z-[60] md:hidden"
+                        onClick={toggleMobileDepositDropdown}
+                      />
+                      {/* Dropdown Menu */}
+                      <div className="fixed inset-x-4 top-20 sm:top-24 z-[70] md:hidden dark:bg-[var(--card-color)] bg-white dark:border-[#35353E] border-gray-200 rounded-xl shadow-xl overflow-hidden">
+                        <div className="p-4 sm:p-6">
+                          {depositItems.map((item, index) => {
+                            const isActive = pathname === item.href || pathname?.startsWith(item.href + "/");
+                            return (
+                              <Link
+                                key={index}
+                                href={item.href}
+                                className="block mb-4 last:mb-0"
+                                onClick={(e) => {
+                                  handleProtectedNavigation(e, item.href);
+                                  setMobileDepositDropdownOpen(false);
+                                  toggleMobileMenu();
+                                }}
+                              >
+                                <div
+                                  className={`flex items-center rounded-lg transition-colors duration-200 group p-3 ${isActive
+                                    ? "dark:bg-[#35353E] bg-gray-100"
+                                    : "dark:hover:bg-[#35353E] hover:bg-gray-50"
+                                    }`}
                                 >
-                                  <div
-                                    className={`flex items-center rounded-lg transition-colors duration-200 group p-3 ${isActive
-                                      ? "dark:bg-[#35353E] bg-gray-100"
-                                      : "dark:hover:bg-[#35353E] hover:bg-gray-50"
-                                      }`}
-                                  >
-                                    <div className="w-10 h-10 flex items-center justify-center mr-4 shrink-0">
-                                      <img
-                                        className="w-8 h-8 object-contain"
-                                        src={item.icon}
-                                        alt=""
-                                      />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                      <h4 className="dark:text-white flex flex-row items-center text-gray-900 font-medium text-base mb-1">
-                                        {item.title}
-                                      </h4>
-                                      <p className="dark:text-gray-400 text-gray-600 text-sm leading-relaxed">
-                                        {item.description}
-                                      </p>
-                                    </div>
-                                    <ChevronRight className="w-5 h-5 dark:text-gray-400 text-gray-500 group-hover:text-[#1D8751] transition-colors shrink-0 ml-2" />
+                                  <div className="w-10 h-10 flex items-center justify-center mr-4 shrink-0">
+                                    <img
+                                      className="w-8 h-8 object-contain"
+                                      src={item.icon}
+                                      alt=""
+                                    />
                                   </div>
-                                </Link>
-                              );
-                            })}
-                          </div>
+                                  <div className="flex-1 min-w-0">
+                                    <h4 className="dark:text-white flex flex-row items-center text-gray-900 font-medium text-base mb-1">
+                                      {item.title}
+                                    </h4>
+                                    <p className="dark:text-gray-400 text-gray-600 text-sm leading-relaxed">
+                                      {item.description}
+                                    </p>
+                                  </div>
+                                  <ChevronRight className="w-5 h-5 dark:text-gray-400 text-gray-500 group-hover:text-[#1D8751] transition-colors shrink-0 ml-2" />
+                                </div>
+                              </Link>
+                            );
+                          })}
                         </div>
-                      </>
-                    )}
-                  </div>
-                  <div className="relative mt-4 flex justify-center">
-                    {/* <button
+                      </div>
+                    </>
+                  )}
+                </div>
+                <div className="relative mt-4 flex justify-center">
+                  {/* <button
                     onClick={toggleProfileModal}
                     className="text-white focus:outline-none"
                   >
@@ -1408,302 +1410,302 @@ export default function Navbar() {
                       />
                     </svg>
                   </span> */}
-                  </div>
-                  <div className="flex flex-col items-center space-y-3 mt-4">
-                    <div className="flex items-center space-x-3 justify-between w-full">
-                      <div>
-                        <Link
-                          href="/dashboard/account"
-                          onClick={toggleMobileMenu}
-                          className="text-white relative inline-block"
-                        >
-                          {(userProfile?.photo || cachedProfilePhoto) &&
-                            !profileImageError ? (
-                            <>
-                              <img
-                                src={
-                                  userProfile?.photo || cachedProfilePhoto || ""
+                </div>
+                <div className="flex flex-col items-center space-y-3 mt-4">
+                  <div className="flex items-center space-x-3 justify-between w-full">
+                    <div>
+                      <Link
+                        href="/dashboard/account"
+                        onClick={toggleMobileMenu}
+                        className="text-white relative inline-block"
+                      >
+                        {(userProfile?.photo || cachedProfilePhoto) &&
+                          !profileImageError ? (
+                          <>
+                            <img
+                              src={
+                                userProfile?.photo || cachedProfilePhoto || ""
+                              }
+                              alt="Profile"
+                              className="w-10 h-10 rounded-full object-cover"
+                              onError={() => {
+                                setProfileImageError(true);
+                                // Clear invalid cached photo
+                                if (typeof window !== "undefined") {
+                                  localStorage.removeItem("profile_photo");
+                                  setCachedProfilePhoto(null);
                                 }
-                                alt="Profile"
-                                className="w-10 h-10 rounded-full object-cover"
-                                onError={() => {
-                                  setProfileImageError(true);
-                                  // Clear invalid cached photo
-                                  if (typeof window !== "undefined") {
-                                    localStorage.removeItem("profile_photo");
-                                    setCachedProfilePhoto(null);
-                                  }
-                                }}
-                              />
-                              {/* Verification Badge */}
-                              <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 z-10">
-                                <svg
-                                  width="20"
-                                  height="20"
-                                  viewBox="0 0 20 20"
-                                  className="absolute"
-                                >
-                                  <circle cx="10" cy="10" r="9" fill="white" />
-                                  <circle
-                                    cx="10"
-                                    cy="10"
-                                    r="7.5"
-                                    fill={isVerified ? "#1D8751" : "#FCD34D"}
-                                  />
-                                  {/* Serrated edge using small circles */}
-                                  {[
-                                    0, 30, 60, 90, 120, 150, 180, 210, 240, 270,
-                                    300, 330,
-                                  ].map((angle) => {
-                                    const rad = (angle * Math.PI) / 180;
-                                    const x = 10 + 8.5 * Math.cos(rad);
-                                    const y = 10 + 8.5 * Math.sin(rad);
-                                    return (
-                                      <circle
-                                        key={angle}
-                                        cx={x}
-                                        cy={y}
-                                        r="1"
-                                        fill="white"
-                                      />
-                                    );
-                                  })}
-                                </svg>
-                                {isVerified && (
-                                  <svg
-                                    width="10"
-                                    height="10"
-                                    viewBox="0 0 10 10"
-                                    fill="none"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    className="relative z-10"
-                                  >
-                                    <path
-                                      d="M2 5L4 7L8 3"
-                                      stroke="#FFFFFF"
-                                      strokeWidth="1.5"
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                    />
-                                  </svg>
-                                )}
-                              </span>
-                            </>
-                          ) : (
-                            <DefaultProfileIcon />
-                          )}
-                        </Link>
-                      </div>
-                      <div className="text-left flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <h4 className="text-white font-medium text-sm truncate">
-                            {user?.first_name && user?.last_name
-                              ? `${user.first_name} ${user.last_name}`
-                              : user?.email}
-                          </h4>
-                          {isVerified && (
-                            <span className="inline-flex items-center justify-center w-4 h-4 shrink-0">
-                              <svg width="16" height="16" viewBox="0 0 20 20" className="absolute">
+                              }}
+                            />
+                            {/* Verification Badge */}
+                            <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 z-10">
+                              <svg
+                                width="20"
+                                height="20"
+                                viewBox="0 0 20 20"
+                                className="absolute"
+                              >
                                 <circle cx="10" cy="10" r="9" fill="white" />
-                                <circle cx="10" cy="10" r="7.5" fill="#1D8751" />
-                                {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map(angle => {
+                                <circle
+                                  cx="10"
+                                  cy="10"
+                                  r="7.5"
+                                  fill={isVerified ? "#1D8751" : "#FCD34D"}
+                                />
+                                {/* Serrated edge using small circles */}
+                                {[
+                                  0, 30, 60, 90, 120, 150, 180, 210, 240, 270,
+                                  300, 330,
+                                ].map((angle) => {
                                   const rad = (angle * Math.PI) / 180;
                                   const x = 10 + 8.5 * Math.cos(rad);
                                   const y = 10 + 8.5 * Math.sin(rad);
-                                  return <circle key={angle} cx={x} cy={y} r="1" fill="white" />;
+                                  return (
+                                    <circle
+                                      key={angle}
+                                      cx={x}
+                                      cy={y}
+                                      r="1"
+                                      fill="white"
+                                    />
+                                  );
                                 })}
                               </svg>
-                              <svg width="8" height="8" viewBox="0 0 10 10" fill="none" className="relative z-10">
-                                <path d="M2 5L4 7L8 3" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                              </svg>
+                              {isVerified && (
+                                <svg
+                                  width="10"
+                                  height="10"
+                                  viewBox="0 0 10 10"
+                                  fill="none"
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  className="relative z-10"
+                                >
+                                  <path
+                                    d="M2 5L4 7L8 3"
+                                    stroke="#FFFFFF"
+                                    strokeWidth="1.5"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  />
+                                </svg>
+                              )}
                             </span>
-                          )}
+                          </>
+                        ) : (
+                          <DefaultProfileIcon />
+                        )}
+                      </Link>
+                    </div>
+                    <div className="text-left flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <h4 className="text-white font-medium text-sm truncate">
+                          {user?.first_name && user?.last_name
+                            ? `${user.first_name} ${user.last_name}`
+                            : user?.email}
+                        </h4>
+                        {isVerified && (
+                          <span className="inline-flex items-center justify-center w-4 h-4 shrink-0">
+                            <svg width="16" height="16" viewBox="0 0 20 20" className="absolute">
+                              <circle cx="10" cy="10" r="9" fill="white" />
+                              <circle cx="10" cy="10" r="7.5" fill="#1D8751" />
+                              {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map(angle => {
+                                const rad = (angle * Math.PI) / 180;
+                                const x = 10 + 8.5 * Math.cos(rad);
+                                const y = 10 + 8.5 * Math.sin(rad);
+                                return <circle key={angle} cx={x} cy={y} r="1" fill="white" />;
+                              })}
+                            </svg>
+                            <svg width="8" height="8" viewBox="0 0 10 10" fill="none" className="relative z-10">
+                              <path d="M2 5L4 7L8 3" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-gray-400 text-xs truncate">{user?.email}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Mobile Profile Modal */}
+                {profileModalOpen && (
+                  <div className="fixed inset-0 z-[9999] md:hidden">
+                    <div
+                      className="absolute inset-0 bg-black bg-opacity-50"
+                      onClick={() => setProfileModalOpen(false)}
+                    />
+                    <div className="absolute bottom-0 left-0 right-0 bg-[#1E2329] border-t border-[#35353E] rounded-t-lg">
+                      <div className="p-6">
+                        {/* User Info */}
+                        <div className="flex items-center mb-6">
+                          <div className="mr-4 relative">
+                            <button
+                              className="relative cursor-pointer hover:opacity-80 transition-opacity"
+                              onClick={toggleImageModal}
+                              type="button"
+                            >
+                              {(userProfile?.photo || cachedProfilePhoto) &&
+                                !profileImageError ? (
+                                <>
+                                  <img
+                                    key={`${userProfile?.photo || cachedProfilePhoto}-${Date.now()}`}
+                                    src={
+                                      userProfile?.photo ||
+                                      cachedProfilePhoto ||
+                                      ""
+                                    }
+                                    alt="Profile"
+                                    className="w-16 h-16 rounded-full object-cover border-2 border-white"
+                                    onError={() => {
+                                      console.error("Mobile profile image failed to load:", userProfile?.photo || cachedProfilePhoto);
+                                      if (userProfile?.photo || cachedProfilePhoto) {
+                                        setProfileImageError(true);
+                                        // Clear invalid cached photo
+                                        if (typeof window !== "undefined") {
+                                          localStorage.removeItem(
+                                            "profile_photo"
+                                          );
+                                          setCachedProfilePhoto(null);
+                                        }
+                                      }
+                                    }}
+                                    onLoad={() => {
+                                      if (profileImageError) {
+                                        setProfileImageError(false);
+                                      }
+                                    }}
+                                  />
+                                  {/* Verification Badge */}
+                                  <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-6 h-6 z-10">
+                                    <svg
+                                      width="24"
+                                      height="24"
+                                      viewBox="0 0 24 24"
+                                      className="absolute"
+                                    >
+                                      <circle
+                                        cx="12"
+                                        cy="12"
+                                        r="11"
+                                        fill="white"
+                                      />
+                                      <circle
+                                        cx="12"
+                                        cy="12"
+                                        r="9"
+                                        fill={isVerified ? "#1D8751" : "#FCD34D"}
+                                      />
+                                      {/* Serrated edge using small circles */}
+                                      {[
+                                        0, 30, 60, 90, 120, 150, 180, 210,
+                                        240, 270, 300, 330,
+                                      ].map((angle) => {
+                                        const rad = (angle * Math.PI) / 180;
+                                        const x = 12 + 10 * Math.cos(rad);
+                                        const y = 12 + 10 * Math.sin(rad);
+                                        return (
+                                          <circle
+                                            key={angle}
+                                            cx={x}
+                                            cy={y}
+                                            r="1.2"
+                                            fill="white"
+                                          />
+                                        );
+                                      })}
+                                    </svg>
+                                    {isVerified && (
+                                      <svg
+                                        width="12"
+                                        height="12"
+                                        viewBox="0 0 12 12"
+                                        fill="none"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        className="relative z-10"
+                                      >
+                                        <path
+                                          d="M2.5 6L5 8.5L9.5 4"
+                                          stroke="#FFFFFF"
+                                          strokeWidth="1.8"
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                        />
+                                      </svg>
+                                    )}
+                                  </span>
+                                </>
+                              ) : (
+                                <div className="w-16 h-16 rounded-full flex items-center justify-center bg-[#1D8751] border-2 border-white">
+                                  <User className="w-8 h-8 text-white" />
+                                </div>
+                              )}
+                            </button>
+                          </div>
+                          <div>
+                            <h4 className="text-white font-medium text-lg">
+                              {user?.first_name} {user?.last_name}
+                            </h4>
+                            <p className="text-gray-400 text-sm">
+                              {user?.email}
+                            </p>
+                          </div>
                         </div>
-                        <p className="text-gray-400 text-xs truncate">{user?.email}</p>
+
+                        {/* Menu Items */}
+                        <div className="space-y-4">
+                          <Link
+                            href="/dashboard/account"
+                            className="flex items-center w-full px-4 py-3 text-gray-300 hover:text-white hover:bg-[#35353E] rounded-lg transition-colors duration-200"
+                            onClick={() => setProfileModalOpen(false)}
+                          >
+                            <User size={20} className="mr-3" />
+                            <span className="text-base whitespace-nowrap">Account</span>
+                          </Link>
+
+                          <Link
+                            href="/dashboard/settings"
+                            className="flex items-center w-full px-4 py-3 text-gray-300 hover:text-white hover:bg-[#35353E] rounded-lg transition-colors duration-200"
+                            onClick={() => setProfileModalOpen(false)}
+                          >
+                            <Settings size={20} className="mr-4" />
+                            <span className="text-base">Settings</span>
+                          </Link>
+
+                          <button
+                            onClick={handleLogout}
+                            className="flex items-center w-full px-4 py-3 text-gray-300 hover:text-white hover:bg-[#35353E] rounded-lg transition-colors duration-200"
+                          >
+                            <LogOut size={20} className="mr-4" />
+                            <span className="text-base">Logout</span>
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
-
-                  {/* Mobile Profile Modal */}
-                  {profileModalOpen && (
-                    <div className="fixed inset-0 z-[9999] md:hidden">
-                      <div
-                        className="absolute inset-0 bg-black bg-opacity-50"
-                        onClick={() => setProfileModalOpen(false)}
-                      />
-                      <div className="absolute bottom-0 left-0 right-0 bg-[#1E2329] border-t border-[#35353E] rounded-t-lg">
-                        <div className="p-6">
-                          {/* User Info */}
-                          <div className="flex items-center mb-6">
-                            <div className="mr-4 relative">
-                              <button
-                                className="relative cursor-pointer hover:opacity-80 transition-opacity"
-                                onClick={toggleImageModal}
-                                type="button"
-                              >
-                                {(userProfile?.photo || cachedProfilePhoto) &&
-                                  !profileImageError ? (
-                                  <>
-                                    <img
-                                      key={`${userProfile?.photo || cachedProfilePhoto}-${Date.now()}`}
-                                      src={
-                                        userProfile?.photo ||
-                                        cachedProfilePhoto ||
-                                        ""
-                                      }
-                                      alt="Profile"
-                                      className="w-16 h-16 rounded-full object-cover border-2 border-white"
-                                      onError={() => {
-                                        console.error("Mobile profile image failed to load:", userProfile?.photo || cachedProfilePhoto);
-                                        if (userProfile?.photo || cachedProfilePhoto) {
-                                          setProfileImageError(true);
-                                          // Clear invalid cached photo
-                                          if (typeof window !== "undefined") {
-                                            localStorage.removeItem(
-                                              "profile_photo"
-                                            );
-                                            setCachedProfilePhoto(null);
-                                          }
-                                        }
-                                      }}
-                                      onLoad={() => {
-                                        if (profileImageError) {
-                                          setProfileImageError(false);
-                                        }
-                                      }}
-                                    />
-                                    {/* Verification Badge */}
-                                    <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-6 h-6 z-10">
-                                      <svg
-                                        width="24"
-                                        height="24"
-                                        viewBox="0 0 24 24"
-                                        className="absolute"
-                                      >
-                                        <circle
-                                          cx="12"
-                                          cy="12"
-                                          r="11"
-                                          fill="white"
-                                        />
-                                        <circle
-                                          cx="12"
-                                          cy="12"
-                                          r="9"
-                                          fill={isVerified ? "#1D8751" : "#FCD34D"}
-                                        />
-                                        {/* Serrated edge using small circles */}
-                                        {[
-                                          0, 30, 60, 90, 120, 150, 180, 210,
-                                          240, 270, 300, 330,
-                                        ].map((angle) => {
-                                          const rad = (angle * Math.PI) / 180;
-                                          const x = 12 + 10 * Math.cos(rad);
-                                          const y = 12 + 10 * Math.sin(rad);
-                                          return (
-                                            <circle
-                                              key={angle}
-                                              cx={x}
-                                              cy={y}
-                                              r="1.2"
-                                              fill="white"
-                                            />
-                                          );
-                                        })}
-                                      </svg>
-                                      {isVerified && (
-                                        <svg
-                                          width="12"
-                                          height="12"
-                                          viewBox="0 0 12 12"
-                                          fill="none"
-                                          xmlns="http://www.w3.org/2000/svg"
-                                          className="relative z-10"
-                                        >
-                                          <path
-                                            d="M2.5 6L5 8.5L9.5 4"
-                                            stroke="#FFFFFF"
-                                            strokeWidth="1.8"
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                          />
-                                        </svg>
-                                      )}
-                                    </span>
-                                  </>
-                                ) : (
-                                  <div className="w-16 h-16 rounded-full flex items-center justify-center bg-[#1D8751] border-2 border-white">
-                                    <User className="w-8 h-8 text-white" />
-                                  </div>
-                                )}
-                              </button>
-                            </div>
-                            <div>
-                              <h4 className="text-white font-medium text-lg">
-                                {user?.first_name} {user?.last_name}
-                              </h4>
-                              <p className="text-gray-400 text-sm">
-                                {user?.email}
-                              </p>
-                            </div>
-                          </div>
-
-                          {/* Menu Items */}
-                          <div className="space-y-4">
-                            <Link
-                              href="/dashboard/account"
-                              className="flex items-center w-full px-4 py-3 text-gray-300 hover:text-white hover:bg-[#35353E] rounded-lg transition-colors duration-200"
-                              onClick={() => setProfileModalOpen(false)}
-                            >
-                              <User size={20} className="mr-3" />
-                              <span className="text-base whitespace-nowrap">Account</span>
-                            </Link>
-
-                            <Link
-                              href="/dashboard/settings"
-                              className="flex items-center w-full px-4 py-3 text-gray-300 hover:text-white hover:bg-[#35353E] rounded-lg transition-colors duration-200"
-                              onClick={() => setProfileModalOpen(false)}
-                            >
-                              <Settings size={20} className="mr-4" />
-                              <span className="text-base">Settings</span>
-                            </Link>
-
-                            <button
-                              onClick={handleLogout}
-                              className="flex items-center w-full px-4 py-3 text-gray-300 hover:text-white hover:bg-[#35353E] rounded-lg transition-colors duration-200"
-                            >
-                              <LogOut size={20} className="mr-4" />
-                              <span className="text-base">Logout</span>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <>
-                  <Link href="/auth/register" onClick={toggleMobileMenu}>
-                    <AuthButton variant="primary" fullWidth>
-                      Register
-                    </AuthButton>
-                  </Link>
-                  <Link href="/auth/login" onClick={toggleMobileMenu}>
-                    <AuthButton variant="secondary" fullWidth>
-                      Log In
-                    </AuthButton>
-                  </Link>
-                </>
-              )}
-            </div>
-
-            <div className="flex items-center justify-center gap-6 pt-4 border-t dark:border-gray-700 border-gray-200">
-              <LanguageSelector />
-              <ThemeSelector isTransparentNavbar={isTransparentNavbar} />
-            </div>
+                )}
+              </>
+            ) : (
+              <>
+                <Link href="/auth/register" onClick={toggleMobileMenu}>
+                  <AuthButton variant="primary" fullWidth>
+                    Register
+                  </AuthButton>
+                </Link>
+                <Link href="/auth/login" onClick={toggleMobileMenu}>
+                  <AuthButton variant="secondary" fullWidth>
+                    Log In
+                  </AuthButton>
+                </Link>
+              </>
+            )}
           </div>
-        </>
-      )}
+
+          <div className="flex items-center justify-center gap-6 pt-4 border-t dark:border-gray-700 border-gray-200">
+            <LanguageSelector />
+            <ThemeSelector isTransparentNavbar={isTransparentNavbar} />
+          </div>
+        </div>
+      </>
+
 
       {/* Image Preview Modal */}
       {showImagePreview &&
