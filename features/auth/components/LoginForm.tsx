@@ -588,7 +588,7 @@ export default function LoginPage() {
 
       {/* Captcha Modal - On top of form */}
       {showCaptchaModal && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-end pointer-events-none pr-14 md:pr-18 lg:pr-26">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none">
           {/* Backdrop */}
           <div className="absolute inset-0 bg-black/50 dark:bg-black/70 pointer-events-auto" onClick={handleCloseCaptchaModal}></div>
           {/* Modal */}

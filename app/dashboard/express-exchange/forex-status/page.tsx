@@ -8,8 +8,11 @@ import CopyButton from "@/components/ui/CopyButton";
 import { fetchForexExchangeThunk, setForexExchangeFromCache } from "@/features/express/slices/forexSlice";
 import { forexStatusWebSocket } from "@/features/express/services/forexStatusWebSocket";
 import type { AppDispatch } from "@/store";
+import { useRouteProtection } from "@/features/auth/hooks/useRouteProtection";
+import Loader from "@/features/p2p/components/Common/Loader";
 
 function ForexStatusContent() {
+  const { isChecking, isVerified } = useRouteProtection();
   const searchParams = useSearchParams();
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
@@ -199,6 +202,18 @@ function ForexStatusContent() {
       return () => clearTimeout(redirectTimer);
     }
   }, [currentStatus, currentExchange, router, transactionId]);
+
+  if (isChecking) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader size="lg" color="#1D8751" />
+      </div>
+    );
+  }
+
+  if (isVerified === false) {
+    return null; // Modal will be shown by the hook
+  }
 
   if (loading) {
     return (

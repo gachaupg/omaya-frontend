@@ -16,9 +16,16 @@ interface PasswordChangeRequest {
 const PasswordSection: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
-  const { updating, error, success } = useSelector(
+  const { error } = useSelector(
     (state: RootState) => state.settings
   );
+  
+  // Local success state for password section only
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
+  
+  // Local loading states for password section only
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
   
   // Track backend error separately to prioritize it
   const [backendError, setBackendError] = useState<string | null>(null);
@@ -114,6 +121,7 @@ const PasswordSection: React.FC = () => {
     if (!validatePasswordForm()) return;
 
     try {
+      setSendingOtp(true);
       const response = await dispatch(sendPasswordResetOTP()).unwrap();
       setOtpSent(true);
       setMaskedEmail(response.masked_email || null);
@@ -121,6 +129,8 @@ const PasswordSection: React.FC = () => {
     } catch (error: any) {
       // Error is handled by the slice and toast
       console.error("Send OTP error:", error);
+    } finally {
+      setSendingOtp(false);
     }
   };
 
@@ -134,6 +144,7 @@ const PasswordSection: React.FC = () => {
     }
 
     try {
+      setVerifyingOtp(true);
       // Step 1: Verify OTP
       await dispatch(verifyPasswordResetOTP(otp)).unwrap();
       setOtpVerified(true);
@@ -157,6 +168,7 @@ const PasswordSection: React.FC = () => {
         setOtpVerified(false);
         setMaskedEmail(null);
         setBackendError(null);
+        setPasswordSuccess(true);
         setShowPasswords({
           new: false,
           confirm: false,
@@ -175,6 +187,8 @@ const PasswordSection: React.FC = () => {
     } catch (error: any) {
       // Error is handled by the slice and toast
       console.error("Verify OTP error:", error);
+    } finally {
+      setVerifyingOtp(false);
     }
   };
 
@@ -223,13 +237,18 @@ const PasswordSection: React.FC = () => {
     }
   };
 
-  // Clear errors when component unmounts or when success occurs
+  // Clear errors when password change succeeds
   useEffect(() => {
-    if (success) {
+    if (passwordSuccess) {
       setErrors({});
       setBackendError(null);
+      // Reset success state after a delay
+      const timer = setTimeout(() => {
+        setPasswordSuccess(false);
+      }, 3000);
+      return () => clearTimeout(timer);
     }
-  }, [success]);
+  }, [passwordSuccess]);
   
   // Clear backend error when Redux error changes (from other actions)
   useEffect(() => {
@@ -380,7 +399,7 @@ const PasswordSection: React.FC = () => {
                 placeholder="000000"
                 value={otp}
                 onChange={(e) => handleOtpChange(e.target.value)}
-                disabled={otpVerified || updating}
+                disabled={otpVerified || verifyingOtp}
               />
             </div>
             {errors.otp && (
@@ -404,17 +423,17 @@ const PasswordSection: React.FC = () => {
             <button
               className="w-full mt-2 py-2 sm:py-2.5 rounded-[18px] border border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751] hover:text-white transition text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={handleSendOTP}
-              disabled={updating}
+              disabled={sendingOtp}
             >
-              {updating ? "Sending..." : "Send OTP"}
+              {sendingOtp ? "Sending..." : "Send OTP"}
             </button>
           ) : !otpVerified ? (
             <button
               className="w-full py-2 sm:py-2.5 rounded-[18px] border border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751] hover:text-white transition text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={handleVerifyOTP}
-              disabled={updating || otp.length !== 6}
+              disabled={verifyingOtp || otp.length !== 6}
             >
-              {updating ? "Verifying & Changing Password..." : "Verify OTP & Change Password"}
+              {verifyingOtp ? "Verifying & Changing Password..." : "Verify OTP & Change Password"}
             </button>
           ) : (
             <div className="w-full py-2 sm:py-2.5 rounded-[18px] border border-green-500 bg-green-500/10 text-green-600 dark:text-green-400 text-sm sm:text-base text-center">
@@ -426,7 +445,7 @@ const PasswordSection: React.FC = () => {
             <button
               className="w-full py-2 sm:py-2.5 rounded-[18px] border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition text-sm sm:text-base"
               onClick={handleReset}
-              disabled={updating}
+              disabled={sendingOtp || verifyingOtp}
             >
               Reset
             </button>

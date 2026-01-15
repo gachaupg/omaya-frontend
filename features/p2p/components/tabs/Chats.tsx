@@ -131,7 +131,79 @@ export const Chats: React.FC = () => {
   });
 
   const [selectedUser, setSelectedUser] = useState<GroupedUser | null>(null);
+  
+  // State for terms acceptance - computed from localStorage
   const [termsAccepted, setTermsAccepted] = useState(false);
+  
+  // Check terms acceptance whenever user data becomes available
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    
+    // Only check if user is authenticated and has user_id
+    if (!isAuthenticated || !user?.user_id) {
+      setTermsAccepted(false);
+      return;
+    }
+    
+    // Check user-specific key first (this persists across logouts)
+    const userSpecificKey = `p2p_terms_accepted_${user.user_id}`;
+    const accepted = localStorage.getItem(userSpecificKey);
+    
+    if (accepted === "true") {
+      console.log(`[P2P Terms] User ${user.user_id} has accepted terms - banner hidden`);
+      setTermsAccepted(true);
+      return;
+    }
+    
+    // Also check legacy key for backward compatibility
+    const legacyAccepted = localStorage.getItem("p2p_terms_accepted");
+    if (legacyAccepted === "true") {
+      // Migrate to user-specific key immediately so it persists
+      localStorage.setItem(userSpecificKey, "true");
+      console.log(`[P2P Terms] Migrated legacy acceptance to user-specific key for ${user.user_id}`);
+      setTermsAccepted(true);
+      return;
+    }
+    
+    console.log(`[P2P Terms] User ${user.user_id} has NOT accepted terms - showing banner`);
+    setTermsAccepted(false);
+  }, [isAuthenticated, user?.user_id]);
+  
+  // Additional check on mount with a small delay to ensure Redux is rehydrated
+  useEffect(() => {
+    const checkTermsOnMount = () => {
+      if (typeof window === "undefined") {
+        return;
+      }
+      
+      if (isAuthenticated && user?.user_id) {
+        const userSpecificKey = `p2p_terms_accepted_${user.user_id}`;
+        const accepted = localStorage.getItem(userSpecificKey);
+        
+        if (accepted === "true") {
+          setTermsAccepted(true);
+        } else {
+          // Check legacy key
+          const legacyAccepted = localStorage.getItem("p2p_terms_accepted");
+          if (legacyAccepted === "true") {
+            localStorage.setItem(userSpecificKey, "true");
+            setTermsAccepted(true);
+          }
+        }
+      }
+    };
+    
+    // Check immediately
+    checkTermsOnMount();
+    
+    // Also check after a short delay to catch Redux rehydration
+    const timeoutId = setTimeout(checkTermsOnMount, 100);
+    
+    return () => clearTimeout(timeoutId);
+  }, []); // Only run on mount
+  
   const [messageInput, setMessageInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
@@ -139,18 +211,6 @@ export const Chats: React.FC = () => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
   const [showChatView, setShowChatView] = useState(false); // For mobile/tablet: true = show conversation, false = show list
-
-  // Check localStorage for terms acceptance on mount
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const accepted = localStorage.getItem("p2p_terms_accepted");
-      if (accepted === "true") {
-        setTermsAccepted(true);
-      } else {
-        setTermsAccepted(false);
-      }
-    }
-  }, []);
   const [searchTerm, setSearchTerm] = useState("");
   const wsRef = useRef<any>(null);
   const [optimisticMessages, setOptimisticMessages] = useState<Map<string, any[]>>(new Map());
@@ -894,9 +954,17 @@ export const Chats: React.FC = () => {
                   </Link>
                   <button
                     onClick={() => {
-                      setTermsAccepted(true);
-                      if (typeof window !== "undefined") {
+                      if (typeof window !== "undefined" && user?.user_id) {
+                        // Store with user ID so it persists across logouts for the same user
+                        const userSpecificKey = `p2p_terms_accepted_${user.user_id}`;
+                        localStorage.setItem(userSpecificKey, "true");
+                        // Also set legacy key for backward compatibility
                         localStorage.setItem("p2p_terms_accepted", "true");
+                        console.log(`[P2P Terms] Terms accepted by user ${user.user_id} - saved to localStorage`);
+                        // Update state immediately to hide banner
+                        setTermsAccepted(true);
+                      } else {
+                        console.warn("[P2P Terms] Cannot accept terms - user data not available");
                       }
                     }}
                     className="px-3 py-1.5 rounded-full bg-[#1D8751] text-[11px] sm:text-xs text-white font-medium hover:bg-[#15803D] transition-colors flex items-center gap-1"

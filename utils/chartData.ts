@@ -131,6 +131,21 @@ export const overviewTotalData = (
   ];
 };
 
+// Helper function to calculate time period multiplier
+const getTimePeriodMultiplier = (timePeriod: string): number => {
+  switch (timePeriod) {
+    case "Last Week":
+      return 0.25; // ~1 week out of a month
+    case "Month":
+      return 1; // Full month
+    case "One Year":
+      return 12; // Full year
+    case "All":
+    default:
+      return 1; // Default to full amount
+  }
+};
+
 // Dummy data for Referral Commissions (Donut)
 export const referralCommissionsData = (
   transactionSummary: TransactionSummary,
@@ -138,38 +153,53 @@ export const referralCommissionsData = (
     balance: number;
     total_earned: number;
     total_withdrawn: number;
-  }
+  },
+  timePeriod: string = "All"
 ): DonutChartData[] => {
+  const multiplier = getTimePeriodMultiplier(timePeriod);
+  
   if (walletData) {
+    // For "All", show full amounts; for other periods, show proportional amounts
+    const balanceValue = timePeriod === "All" ? walletData.balance : walletData.balance * multiplier;
+    const earnedValue = timePeriod === "All" ? walletData.total_earned : walletData.total_earned * multiplier;
+    const withdrawnValue = timePeriod === "All" ? walletData.total_withdrawn : walletData.total_withdrawn * multiplier;
+    
     return [
       {
         label: "Available Balance",
-        value: walletData.balance || 0,
+        value: Math.round(balanceValue * 100) / 100 || 0,
         color: "#22c55e",
       },
       {
         label: "Total Earned",
-        value: walletData.total_earned || 0,
+        value: Math.round(earnedValue * 100) / 100 || 0,
         color: "#3b82f6",
       },
       {
         label: "Total Withdrawals",
-        value: walletData.total_withdrawn || 0,
+        value: Math.round(withdrawnValue * 100) / 100 || 0,
         color: "#ef4444",
       },
     ];
   }
 
   // Fallback to dummy data if no wallet data
+  const depositsValue = timePeriod === "All" 
+    ? transactionSummary.total_approved_exchange_deposits 
+    : transactionSummary.total_approved_exchange_deposits * multiplier;
+  const withdrawalsValue = timePeriod === "All" 
+    ? transactionSummary.total_approved_exchange_withdrawals 
+    : transactionSummary.total_approved_exchange_withdrawals * multiplier;
+    
   return [
     {
       label: "Deposits",
-      value: transactionSummary.total_approved_exchange_deposits,
+      value: Math.round(depositsValue * 100) / 100,
       color: "#22c55e",
     },
     {
       label: "Withdrawals",
-      value: transactionSummary.total_approved_exchange_withdrawals,
+      value: Math.round(withdrawalsValue * 100) / 100,
       color: "#ef4444",
     },
   ];
@@ -215,17 +245,26 @@ export const referralCommissionsSummary = (
     balance: number;
     total_earned: number;
     total_withdrawn: number;
-  }
+  },
+  timePeriod: string = "All"
 ) => {
+  const multiplier = getTimePeriodMultiplier(timePeriod);
+  
   if (walletData) {
+    const total = timePeriod === "All" 
+      ? walletData.total_earned 
+      : walletData.total_earned * multiplier;
     return {
-      total: walletData.total_earned || 0,
+      total: Math.round((total || 0) * 100) / 100,
       currency: "USD",
     };
   }
 
+  const baseTotal = transactionSummary.total_approved_exchange_net || transactionSummary.total_approved_exchange_combined || 0;
+  const total = timePeriod === "All" ? baseTotal : baseTotal * multiplier;
+  
   return {
-    total: transactionSummary.total_approved_exchange_net || transactionSummary.total_approved_exchange_combined || 0,
+    total: Math.round(total * 100) / 100,
     currency: "USD",
   };
 };

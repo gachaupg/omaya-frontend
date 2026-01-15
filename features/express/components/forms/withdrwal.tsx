@@ -240,7 +240,7 @@ interface DepositFormProps {
     paymentDetails?: UserPaymentDetail[];
   }) => void;
   mode: "deposit" | "withdrawal";
-  onModeChange?: (mode: "deposit" | "withdrawal") => void;
+  onModeChange?: (mode: "deposit" | "withdrawal", currentState?: any) => void;
   isHomePage?: boolean;
 }
 
@@ -836,30 +836,47 @@ export default function WithdrawalForm({
     return filtered;
   }, [initialState?.paymentDetails, payBank, userPaymentMethodsDisplay.displayData, effectiveUserPaymentMethods, selectedAsset]);
 
-  // Auto-select first account when accounts are available for selected payment type
-  useEffect(() => {
-    // PRIORITY: If we have initialState with paymentDetails, ALWAYS use them EXACTLY as they are - NO MATCHING, NO COMPARISONS
-    if (initialState?.paymentDetails && Array.isArray(initialState.paymentDetails) && initialState.paymentDetails.length > 0) {
-      // Always use exact objects from initialState - full objects from home page
-      setSelectedPaymentDetails(initialState.paymentDetails as UserPaymentDetail[]);
+  // Track if we've initialized payment from initialState
+  const hasInitializedPayment = useRef(false);
+  const previousInitialState = useRef<any>(null);
+  const previousPayBank = useRef<string>("");
 
-      // Set payBank from the first payment detail
-      const firstDetail = initialState.paymentDetails[0];
-      const providerName =
-        firstDetail.payment_provider_name || firstDetail.provider_name || firstDetail.payment_provider;
-      if (providerName) {
-        setPayBank(extractProviderDisplayName(providerName));
+  // Initialize from initialState (only on mount or when initialState changes)
+  useEffect(() => {
+    // Only restore from initialState on first mount or when initialState actually changes
+    const initialStateChanged = previousInitialState.current !== initialState;
+    previousInitialState.current = initialState;
+
+    // PRIORITY: If we have initialState with paymentDetails, use them only on first mount or when initialState changes
+    if (initialState?.paymentDetails && Array.isArray(initialState.paymentDetails) && initialState.paymentDetails.length > 0) {
+      // Only restore if we haven't initialized yet or if initialState changed
+      if (!hasInitializedPayment.current || initialStateChanged) {
+        // Always use exact objects from initialState - full objects from home page
+        setSelectedPaymentDetails(initialState.paymentDetails as UserPaymentDetail[]);
+
+        // Set payBank from the first payment detail
+        const firstDetail = initialState.paymentDetails[0];
+        const providerName =
+          firstDetail.payment_provider_name || firstDetail.provider_name || firstDetail.payment_provider;
+        if (providerName) {
+          const extractedPayBank = extractProviderDisplayName(providerName);
+          setPayBank(extractedPayBank);
+          previousPayBank.current = extractedPayBank;
+        }
+        hasInitializedPayment.current = true;
       }
       return; // Don't proceed to defaults
     }
 
-    // Only apply defaults if we don't have initialState or paymentDetails is empty
-    if (!initialState?.paymentDetails || !Array.isArray(initialState.paymentDetails) || initialState.paymentDetails.length === 0) {
+    // Only apply defaults if we don't have initialState or paymentDetails is empty, and haven't initialized yet
+    if ((!initialState?.paymentDetails || !Array.isArray(initialState.paymentDetails) || initialState.paymentDetails.length === 0) && !hasInitializedPayment.current) {
       // First, try to auto-select based on payBank if it's set
-      if (payBank && enhancedFilteredUserPaymentDetails.length > 0 && selectedPaymentDetails.length === 0) {
+      if (payBank && enhancedFilteredUserPaymentDetails && enhancedFilteredUserPaymentDetails.length > 0) {
         // Auto-select first account that matches the selected payment method
         const firstAccount = enhancedFilteredUserPaymentDetails[0];
         setSelectedPaymentDetails([firstAccount]);
+        previousPayBank.current = payBank;
+        hasInitializedPayment.current = true;
         return;
       }
 
@@ -868,19 +885,48 @@ export default function WithdrawalForm({
         userPaymentMethodsDisplay.displayData ||
         [];
 
-      // Auto-select first available payment detail if we have any and no payment details are selected
-      if (allUserPaymentDetails.length > 0 && selectedPaymentDetails.length === 0) {
+      // Auto-select first available payment detail if we have any
+      if (allUserPaymentDetails.length > 0) {
         const firstAccount = allUserPaymentDetails[0];
         setSelectedPaymentDetails([firstAccount]);
         // Set payBank from the selected payment detail if not already set
         const providerName =
           firstAccount.payment_provider_name || firstAccount.provider_name || firstAccount.payment_provider;
         if (providerName && !payBank) {
-          setPayBank(extractProviderDisplayName(providerName));
+          const extractedPayBank = extractProviderDisplayName(providerName);
+          setPayBank(extractedPayBank);
+          previousPayBank.current = extractedPayBank;
         }
+        hasInitializedPayment.current = true;
       }
     }
-  }, [initialState, payBank, enhancedFilteredUserPaymentDetails, selectedPaymentDetails, effectiveUserPaymentMethods, userPaymentMethodsDisplay.displayData]);
+  }, [initialState]); // Only depend on initialState for initialization
+
+  // Auto-select first account when user changes payment method (separate from initialization)
+  useEffect(() => {
+    // Skip if we're still initializing from initialState
+    if (!hasInitializedPayment.current) {
+      return;
+    }
+
+    // Skip if payBank hasn't actually changed (user selection)
+    if (payBank === previousPayBank.current) {
+      return;
+    }
+
+    // Skip if we have initialState paymentDetails (don't override preserved state)
+    if (initialState?.paymentDetails && Array.isArray(initialState.paymentDetails) && initialState.paymentDetails.length > 0) {
+      previousPayBank.current = payBank;
+      return;
+    }
+
+    // When user changes payment method, auto-select first account for that method
+    if (payBank && enhancedFilteredUserPaymentDetails && enhancedFilteredUserPaymentDetails.length > 0 && selectedPaymentDetails.length === 0) {
+      const firstAccount = enhancedFilteredUserPaymentDetails[0];
+      setSelectedPaymentDetails([firstAccount]);
+      previousPayBank.current = payBank;
+    }
+  }, [payBank, enhancedFilteredUserPaymentDetails, selectedPaymentDetails.length, initialState?.paymentDetails]);
 
   // Reset form if user changes asset or payment method after submission
   useEffect(() => {
@@ -3255,7 +3301,7 @@ export default function WithdrawalForm({
       ) : (
         <>
           <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
-            <span className="text-[#7e7e8f] dark:text-[#788099]">1-</span> Transaction Info
+            Transaction Info
           </h2>
 
           {/* API Validation Error - Show as simple red text */}
@@ -3515,7 +3561,22 @@ export default function WithdrawalForm({
                   onClick={() => {
                     // Switch between deposit and withdrawal modes
                     if (onModeChange) {
-                      onModeChange(mode === "deposit" ? "withdrawal" : "deposit");
+                      // Preserve current state including payment method selection
+                      // Extract first payment detail for deposit form (which uses single object)
+                      const currentState = {
+                        payBank,
+                        paymentDetails: selectedPaymentDetails,
+                        payment: selectedPaymentDetails.length > 0 ? selectedPaymentDetails[0] : selectedPaymentDetail,
+                        selectedAsset,
+                        payAmountInput,
+                        getAmountInput,
+                        amountInput: payAmountInput,
+                        receiveAmountInput: getAmountInput,
+                        amountValue: parseFloat(payAmountInput) || 0,
+                        receiveAmountValue: getAmount,
+                        walletAddress: payoutAddress || withdrawalAddress,
+                      };
+                      onModeChange(mode === "deposit" ? "withdrawal" : "deposit", currentState);
                     }
                   }}
                 >
@@ -3700,7 +3761,7 @@ export default function WithdrawalForm({
                           ? "Calculating..."
                           : "Enter amount"
                       }
-                      className={`w-full h-[48px] text-[#35353e] dark:text-white bg-white dark:bg-[#35353E] rounded-2xl px-3 sm:px-4 pr-16 text-base sm:text-lg focus:outline-none border appearance-none transition-colors duration-200 ${(receiveAmountError &&
+                      className={`w-full h-[48px] text-[#35353e] dark:text-white bg-transparent dark:bg-transparent rounded-2xl px-3 sm:px-4 pr-16 text-base sm:text-lg focus:outline-none border appearance-none transition-colors duration-200 ${(receiveAmountError &&
                         (receiveAmountError.includes("Rough estimate") ||
                           receiveAmountError.includes("Using estimated rate"))) ||
                         (apiValidationError &&
@@ -3832,14 +3893,33 @@ export default function WithdrawalForm({
                         const providerLogo = firstDetail.provider_logo || firstDetail.logo || firstDetail.provider_logo_url;
 
                         if (providerName && providerName.trim() !== "") {
+                          // Show all available payment methods, not just the one from initialState
+                          const providerNames = Array.from(
+                            new Set(
+                              (adminWalletListDisplay.displayData || []).map(
+                                (wallet: any) => wallet?.admin_payment_detail?.provider_name
+                              )
+                            )
+                          ).filter((type) => Boolean(type && type.trim())) as string[];
+
+                          const optionProviders =
+                            providerNames.length > 0 ? providerNames : fallbackProviderNames;
+
                           return (
                             <CustomSelect
-                              options={[{
-                                value: providerName,
-                                label: providerName,
-                                logo: providerLogo,
-                              }]}
-                              value={providerName}
+                              options={optionProviders.map((paymentType: string) => {
+                                const adminDetail = adminWalletListDisplay.displayData?.find(
+                                  (wallet: any) =>
+                                    wallet.admin_payment_detail?.provider_name === paymentType
+                                )?.admin_payment_detail;
+
+                                return {
+                                  value: paymentType,
+                                  label: adminDetail?.provider_name || paymentType,
+                                  logo: adminDetail?.provider_logo || undefined,
+                                };
+                              })}
+                              value={payBank || providerName}
                               sizeMode="card"
                               logoSize={32}
                               dropdownMaxHeight={350}
@@ -3848,12 +3928,35 @@ export default function WithdrawalForm({
                                 }`}
                               triggerClassName="bg-transparent dark:bg-transparent text-[#35353e] dark:text-white border border-gray-300 dark:border-[#39394A] px-3 sm:px-4 py-2 sm:py-2.5 text-base sm:text-lg"
                               onChange={(value) => {
-                                // Don't allow changing if using initialState
+                                const selectedWallet = adminWalletListDisplay.displayData?.find(
+                                  (wallet: any) =>
+                                    wallet.admin_payment_detail?.provider_name === value
+                                );
+
+                                setPayBank(extractProviderDisplayName(value));
+                                setSelectedPaymentDetail(
+                                  selectedWallet?.admin_payment_detail || null
+                                );
+
+                                // Auto-select first registered account for the selected payment method
+                                // Clear first, then let the auto-selection useEffect handle it
+                                setSelectedPaymentDetails([]);
                                 setPaymentMethodError(null);
+
+                                // The auto-selection useEffect will handle selecting the first account
+                                // after enhancedFilteredUserPaymentDetails updates
                               }}
-                              placeholder={providerName}
-                              disabled={true}
-                              searchable={false}
+                              placeholder={
+                                adminWalletListDisplay.isLoading
+                                  ? "Loading payment methods..."
+                                  : providerNames.length === 0
+                                    ? "No payment methods available"
+                                    : "Select Payment Method"
+                              }
+                              loading={adminWalletListDisplay.isLoading}
+                              loadingText="Loading payment methods..."
+                              emptyText="No payment methods available"
+                              searchable={true}
                             />
                           );
                         }
@@ -3919,7 +4022,6 @@ export default function WithdrawalForm({
                                 ? "No payment methods available"
                                 : "Select Payment Method"
                           }
-                          disabled={adminWalletListDisplay.isLoading}
                           loading={adminWalletListDisplay.isLoading}
                           loadingText="Loading payment methods..."
                           emptyText="No payment methods available"
@@ -4269,7 +4371,6 @@ export default function WithdrawalForm({
               className="mb-6 flex flex-col gap-3 w-full px-2"
             >
               <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
-                <span className="text-[#7e7e8f] dark:text-[#788099]">2-</span>
                 Wallet Address
               </h2>
               <div className="bg-white dark:bg-[#18181D] border-2 border-[#35353e] rounded-2xl p-3 sm:p-4 md:p-5 shadow-lg w-full text-[#35353e] dark:text-[#788099]">

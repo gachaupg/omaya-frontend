@@ -29,6 +29,10 @@ const formatCurrencyLabel = (currency?: string | null) => {
   return currency.toUpperCase();
 };
 
+// USD to KSH conversion rate (1 USD = 1 USDT, so 1 USDT = ~135 KSH)
+// This is a reasonable approximation - can be updated with live rates
+const USD_TO_KSH_RATE = 135;
+
 const formatLimitDuration = (duration: string): string => {
   if (!duration) return "10 Minutes";
 
@@ -61,13 +65,27 @@ const formatLimitDuration = (duration: string): string => {
 };
 
 const getCurrencyOptions = (orders: any): Option[] => {
-  if (!orders?.buy_orders?.results)
-    return [{ label: "USDT", value: "USDT" }];
-
-  const currencies = new Set(
-    orders.buy_orders.results.map((order: any) => order.currency)
-  );
-  return Array.from(currencies).map((currency) => ({
+  // Always include USDT and KSH as base options
+  const baseCurrencies = new Set(["USDT", "KSH"]);
+  
+  if (orders?.buy_orders?.results) {
+    orders.buy_orders.results.forEach((order: any) => {
+      if (order.currency) {
+        baseCurrencies.add(order.currency);
+      }
+    });
+  }
+  
+  // Also check sell orders for currencies
+  if (orders?.sell_orders?.results) {
+    orders.sell_orders.results.forEach((order: any) => {
+      if (order.currency) {
+        baseCurrencies.add(order.currency);
+      }
+    });
+  }
+  
+  return Array.from(baseCurrencies).map((currency) => ({
     label: formatCurrencyLabel(currency as string),
     value: currency as string,
   }));
@@ -414,6 +432,24 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
           provider_logo: pd.provider_logo || null, // Explicitly preserve, even if null
         })) : [];
 
+        // Convert amounts to KSH if KSH is selected (1 USDT = 1 USD = USD_TO_KSH_RATE KSH)
+        const shouldConvertToKSH = selectedCurrency === "KSH";
+        const availableAmount = parseFloat(order.available_amount || 0);
+        const minAmount = parseFloat(order.min_order_amount || 0);
+        const maxAmount = parseFloat(order.max_order_amount || 0);
+        
+        const convertedAvailable = shouldConvertToKSH 
+          ? availableAmount * USD_TO_KSH_RATE 
+          : availableAmount;
+        const convertedMin = shouldConvertToKSH 
+          ? minAmount * USD_TO_KSH_RATE 
+          : minAmount;
+        const convertedMax = shouldConvertToKSH 
+          ? maxAmount * USD_TO_KSH_RATE 
+          : maxAmount;
+        
+        const displayCurrency = shouldConvertToKSH ? "KSH" : order.currency;
+
         return {
           id: order.id,
           advertiser: `${firstName} ${lastName}`,
@@ -429,13 +465,9 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
           // Check online status from API - status "offline" means offline, otherwise online
           online: order.status !== 'offline',
           commission: `${order.commission_rate || 0}`,
-          available: `${parseFloat(order.available_amount || 0).toFixed(2)} ${order.currency}`,
-          availableAmount: parseFloat(order.available_amount || 0),
-          limit: `${parseFloat(order.min_order_amount || 0).toFixed(
-            2
-          )} - ${parseFloat(order.max_order_amount || 0).toFixed(2)} ${
-            order.currency
-          }`,
+          available: `${convertedAvailable.toFixed(2)} ${displayCurrency}`,
+          availableAmount: convertedAvailable,
+          limit: `${convertedMin.toFixed(2)} - ${convertedMax.toFixed(2)} ${displayCurrency}`,
           payment:
             order.payment_details?.map((detail: any) => detail.provider) || [],
           paymentType:
@@ -444,9 +476,10 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
             ) || [],
           isMerchant: Boolean(order.is_merchant),
           isMerchantBusiness: Boolean(order.is_merchant_business),
-          minAmount: parseFloat(order.min_order_amount || 0),
-          maxAmount: parseFloat(order.max_order_amount || 0),
-          currency: order.currency,
+          minAmount: convertedMin,
+          maxAmount: convertedMax,
+          currency: displayCurrency,
+          originalCurrency: order.currency, // Store original currency for filtering
           timeLimit: formatLimitDuration(order.limit_duration),
           avgRealiseTime: formatLimitDuration(
             order.completion_time || "00:02:00"
@@ -457,7 +490,15 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
         };
       })
       .filter((row: MarketRow) => {
-        if (selectedCurrency && row.currency !== selectedCurrency) return false;
+        // When KSH is selected, show USDT/USD orders (we'll convert them to KSH for display)
+        if (selectedCurrency === "KSH") {
+          // Show orders that are in USDT or USD (original currency before conversion)
+          if (row.originalCurrency && row.originalCurrency !== "USDT" && row.originalCurrency !== "USD") {
+            return false;
+          }
+        } else if (selectedCurrency && row.originalCurrency !== selectedCurrency) {
+          return false;
+        }
 
         if (showMerchantOnly && !row.isMerchant) {
           return false;

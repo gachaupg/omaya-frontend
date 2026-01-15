@@ -847,8 +847,8 @@ const LineCharts = React.memo(
             <h3 className="text-black dark:text-white text-xs sm:text-sm md:text-[14px] mb-2 font-semibold">
               Exchange Overview (USDT)
             </h3>
-            <div className="flex flex-wrap justify-between items-center mb-4 sm:mb-6 gap-2">
-              <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+            <div className="flex flex-wrap justify-between items-center mb-4 sm:mb-6 gap-1 sm:gap-2">
+              <div className="flex flex-wrap items-center gap-0.5 sm:gap-2 w-full sm:w-auto">
                 <Button
                   size="sm"
                   variant={filter === "All" ? "primary" : "outline"}
@@ -897,8 +897,8 @@ const LineCharts = React.memo(
             <h3 className="dark:text-wh text-[#051015] dark:text-white text-xs sm:text-sm md:text-[14px] mb-2 font-semibold">
               P2P Overview (USDT)
             </h3>
-            <div className="flex flex-wrap justify-between items-center mb-4 sm:mb-6 gap-2">
-              <div className="flex flex-wrap items-center justify-between gap-2 w-full sm:w-auto">
+            <div className="flex flex-wrap justify-between items-center mb-4 sm:mb-6 gap-1 sm:gap-2">
+              <div className="flex flex-wrap items-center gap-0.5 sm:gap-2 w-full sm:w-auto">
                 <Button
                   size="sm"
                   variant={p2pFilter === "All" ? "primary" : "outline"}
@@ -1007,14 +1007,14 @@ const LineCharts = React.memo(
             <div className="flex flex-col xl:flex-row gap-6 px-4 pb-6 flex-1">
               <div className="xl:w-1/2">
                 <Legend
-                  data={referralCommissionsData(transactionSummary, walletData || undefined)}
+                  data={referralCommissionsData(transactionSummary, walletData || undefined, referralTimePeriod)}
                 />
               </div>
 
               <div className="flex-1 flex justify-center items-end">
                 <DonutChartWithCenter
-                  data={referralCommissionsData(transactionSummary, walletData || undefined)}
-                  total={referralCommissionsSummary(transactionSummary, walletData || undefined).total}
+                  data={referralCommissionsData(transactionSummary, walletData || undefined, referralTimePeriod)}
+                  total={referralCommissionsSummary(transactionSummary, walletData || undefined, referralTimePeriod).total}
                   label="Commissions"
                 />
               </div>

@@ -12,8 +12,9 @@ import {
   initializeAuth,
   getUserProfile,
   logout,
+  openKYCModal,
+  checkKYCStatus,
 } from "@/features/auth/slices/authSlice";
-import { checkKYCStatus } from "@/features/kyc/slices/kycSlice";
 import { useLanguageOptional } from "@/context/language";
 import { useTheme } from "@/context/theme";
 
@@ -570,15 +571,22 @@ export default function Navbar() {
   // Cache profile photo in localStorage when it's available
   useEffect(() => {
     if (userProfile?.photo && typeof window !== "undefined") {
-      localStorage.setItem("profile_photo", userProfile.photo);
-      setCachedProfilePhoto(userProfile.photo);
-      setProfileImageError(false); // Reset error when we have a valid photo
+      // Validate photo URL before caching
+      const photoUrl = userProfile.photo.trim();
+      if (photoUrl && (photoUrl.startsWith('http://') || photoUrl.startsWith('https://') || photoUrl.startsWith('/'))) {
+        localStorage.setItem("profile_photo", photoUrl);
+        setCachedProfilePhoto(photoUrl);
+        setProfileImageError(false); // Reset error when we have a valid photo
+      }
     }
   }, [userProfile?.photo]);
 
-  // Reset image error when profile photo changes
+  // Reset image error when profile photo changes (more aggressive reset)
   useEffect(() => {
-    if (userProfile?.photo || cachedProfilePhoto) {
+    const currentPhoto = userProfile?.photo || cachedProfilePhoto;
+    if (currentPhoto) {
+      // Always reset error when we have a photo URL, even if it's the same
+      // This helps with cases where the image failed to load but the URL is valid
       setProfileImageError(false);
     }
   }, [userProfile?.photo, cachedProfilePhoto]);
@@ -761,6 +769,52 @@ export default function Navbar() {
     setShowImagePreview(false);
   };
 
+  // Handle navigation with verification check
+  const handleProtectedNavigation = async (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    // Allow dashboard access for all users
+    if (href === "/dashboard" || href === "/dashboard/") {
+      return; // Allow navigation
+    }
+
+    // Check if this is a protected route
+    const protectedRoutes = [
+      "/dashboard/express-exchange",
+      "/dashboard/exchange",
+      "/dashboard/p2p",
+      "/dashboard/swap",
+      "/dashboard/settings",
+    ];
+
+    const isProtectedRoute = protectedRoutes.some(route => href.startsWith(route));
+
+    if (isProtectedRoute && isAuthenticated) {
+      // Check if user is verified
+      const isUnverified = isVerified === false;
+      
+      if (isUnverified) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Double-check with API
+        try {
+          const result = await dispatch(checkKYCStatus()).unwrap();
+          const kycStatus = result as any;
+          
+          if (kycStatus?.is_verified === false) {
+            dispatch(openKYCModal());
+            return;
+          }
+        } catch (error) {
+          // If API check fails, use current state
+          if (isVerified === false) {
+            dispatch(openKYCModal());
+            return;
+          }
+        }
+      }
+    }
+  };
+
   // Don't render theme-dependent content until mounted
   if (!mounted) {
     return (
@@ -900,7 +954,10 @@ export default function Navbar() {
                             key={index}
                             href={item.href}
                             className="block mb-1 last:mb-0"
-                            onClick={() => setDepositDropdownOpen(false)}
+                            onClick={(e) => {
+                              handleProtectedNavigation(e, item.href);
+                              setDepositDropdownOpen(false);
+                            }}
                           >
                             <div
                               className={`flex items-center rounded-lg transition-colors duration-200 group p-3 ${isActive
@@ -941,13 +998,27 @@ export default function Navbar() {
                   {(userProfile?.photo || cachedProfilePhoto) &&
                     !profileImageError ? (
                     <img
-                      key={userProfile?.photo || cachedProfilePhoto} // Force re-render when photo changes
+                      key={`${userProfile?.photo || cachedProfilePhoto}-${Date.now()}`} // Force re-render when photo changes with timestamp
                       src={userProfile?.photo || cachedProfilePhoto || ""}
                       alt="Profile"
                       className="w-8 h-8 md:w-9 md:h-9 lg:w-10 lg:h-10 rounded-full object-cover border-2 border-white"
                       onError={(e) => {
-                        console.error("Profile image failed to load");
-                        setProfileImageError(true);
+                        console.error("Profile image failed to load:", userProfile?.photo || cachedProfilePhoto);
+                        // Only set error if we actually have a photo URL
+                        if (userProfile?.photo || cachedProfilePhoto) {
+                          setProfileImageError(true);
+                          // Clear invalid cached photo
+                          if (cachedProfilePhoto && cachedProfilePhoto === (userProfile?.photo || cachedProfilePhoto)) {
+                            localStorage.removeItem("profile_photo");
+                            setCachedProfilePhoto(null);
+                          }
+                        }
+                      }}
+                      onLoad={() => {
+                        // Reset error on successful load
+                        if (profileImageError) {
+                          setProfileImageError(false);
+                        }
                       }}
                       loading="eager"
                     />
@@ -1021,7 +1092,7 @@ export default function Navbar() {
                               !profileImageError ? (
                               <>
                                 <img
-                                  key={userProfile?.photo || cachedProfilePhoto} // Force re-render
+                                  key={`${userProfile?.photo || cachedProfilePhoto}-${Date.now()}`} // Force re-render
                                   src={
                                     userProfile?.photo ||
                                     cachedProfilePhoto ||
@@ -1030,8 +1101,20 @@ export default function Navbar() {
                                   alt="Profile"
                                   className="w-12 h-12 rounded-full object-cover border-2 border-transparent"
                                   onError={(e) => {
-                                    console.error("Dropdown profile image failed to load");
-                                    setProfileImageError(true);
+                                    console.error("Dropdown profile image failed to load:", userProfile?.photo || cachedProfilePhoto);
+                                    if (userProfile?.photo || cachedProfilePhoto) {
+                                      setProfileImageError(true);
+                                      // Clear invalid cached photo
+                                      if (cachedProfilePhoto && cachedProfilePhoto === (userProfile?.photo || cachedProfilePhoto)) {
+                                        localStorage.removeItem("profile_photo");
+                                        setCachedProfilePhoto(null);
+                                      }
+                                    }
+                                  }}
+                                  onLoad={() => {
+                                    if (profileImageError) {
+                                      setProfileImageError(false);
+                                    }
                                   }}
                                   loading="eager"
                                 />
@@ -1261,7 +1344,8 @@ export default function Navbar() {
                                   key={index}
                                   href={item.href}
                                   className="block mb-4 last:mb-0"
-                                  onClick={() => {
+                                  onClick={(e) => {
+                                    handleProtectedNavigation(e, item.href);
                                     setMobileDepositDropdownOpen(false);
                                     toggleMobileMenu();
                                   }}
@@ -1461,6 +1545,7 @@ export default function Navbar() {
                                   !profileImageError ? (
                                   <>
                                     <img
+                                      key={`${userProfile?.photo || cachedProfilePhoto}-${Date.now()}`}
                                       src={
                                         userProfile?.photo ||
                                         cachedProfilePhoto ||
@@ -1469,13 +1554,21 @@ export default function Navbar() {
                                       alt="Profile"
                                       className="w-16 h-16 rounded-full object-cover border-2 border-white"
                                       onError={() => {
-                                        setProfileImageError(true);
-                                        // Clear invalid cached photo
-                                        if (typeof window !== "undefined") {
-                                          localStorage.removeItem(
-                                            "profile_photo"
-                                          );
-                                          setCachedProfilePhoto(null);
+                                        console.error("Mobile profile image failed to load:", userProfile?.photo || cachedProfilePhoto);
+                                        if (userProfile?.photo || cachedProfilePhoto) {
+                                          setProfileImageError(true);
+                                          // Clear invalid cached photo
+                                          if (typeof window !== "undefined") {
+                                            localStorage.removeItem(
+                                              "profile_photo"
+                                            );
+                                            setCachedProfilePhoto(null);
+                                          }
+                                        }
+                                      }}
+                                      onLoad={() => {
+                                        if (profileImageError) {
+                                          setProfileImageError(false);
                                         }
                                       }}
                                     />

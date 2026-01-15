@@ -2295,7 +2295,7 @@ export default function WithdrawalForm({
   return (
     <div className="w-full min-h-screen flex flex-col dark:bg-transparent  ">
       <h2 className="text-lg sm:text-xl font-bold mb-2 sm:mb-3 text-[#788099]">
-        <span className="text-[#7e7e8f]">1-</span> Transaction Info
+        Transaction Info
       </h2>
 
       <div className="w-full mx-auto text-white">

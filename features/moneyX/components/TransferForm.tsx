@@ -1048,7 +1048,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
                     handleAmountChange(e.target.value, false);
                   }}
                   placeholder="Enter amount"
-                  className="w-full h-[48px] text-[#35353e] dark:text-white bg-white dark:bg-[#35353E] rounded-2xl px-4 pr-16 text-base sm:text-lg focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] appearance-none"
+                  className="w-full h-[48px] text-[#35353e] dark:text-white bg-transparent dark:bg-transparent rounded-2xl px-4 pr-16 text-base sm:text-lg focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] appearance-none"
                 />
               </div>
             </div>
@@ -1334,7 +1334,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
                 onChange={(event) =>
                   setIsAddressConfirmed(event.target.checked)
                 }
-                className="w-4 h-4 mt-0.5 rounded border-[#1D8751] text-[#1D8751] focus:ring-[#1D8751] accent-[#1D8751]"
+                className="w-4 h-4 mt-0.5 rounded border-[#1D8751] text-[#1D8751] accent-[#1D8751]"
               />
               <span>I have read and agreed to Omaya Exchange <a href="/terms" className="text-[#1D8751] underline">Terms of Use</a>, <a href="/privacy" className="text-[#1D8751] underline">Privacy Policy</a></span>
             </label>

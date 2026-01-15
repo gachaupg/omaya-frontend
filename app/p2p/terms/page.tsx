@@ -1,27 +1,43 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const P2PTermsPage = () => {
+  const router = useRouter();
+
+  const handleAccept = () => {
+    // Set acceptance in localStorage
+    if (typeof window !== "undefined") {
+      localStorage.setItem("p2p_terms_accepted", "true");
+    }
+    // Navigate back to chats
+    router.push("/dashboard/p2p?tab=chats");
+  };
+
+  const handleClose = () => {
+    // Just navigate back without accepting
+    router.push("/dashboard/p2p?tab=chats");
+  };
+
   return (
-    <div className="w-full max-w-4xl mx-auto px-4 py-8 mt-8 sm:mt-12">
-      <div className="bg-white dark:bg-[#1D1D23] rounded-2xl border border-[#E8EFF5] dark:border-[#35353E] p-6 sm:p-8">
-        <div className="mb-6">
-          <Link
-            href="/dashboard/p2p?tab=chats"
-            className="text-sm text-[#1D8751] hover:underline inline-flex items-center gap-1"
-          >
-            ← Back to Chats
-          </Link>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-[#1D1D23] rounded-2xl border border-[#E8EFF5] dark:border-[#35353E] w-full max-w-2xl max-h-[90vh] flex flex-col">
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-[#E8EFF5] dark:border-[#35353E]">
+          <h1 className="text-xl sm:text-2xl font-bold text-[#051015] dark:text-white">
+            P2P Trading Terms & Conditions
+          </h1>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            Last updated: 1/14/2026
+          </p>
         </div>
+        
 
-        <h1 className="text-2xl sm:text-3xl font-bold text-[#051015] dark:text-white mb-6">
-          P2P Trading Terms & Conditions
-        </h1>
-
-        <div className="prose dark:prose-invert max-w-none">
-          <div className="text-sm sm:text-base text-gray-700 dark:text-gray-300 space-y-4">
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto px-6 py-4">
+          <div className="prose dark:prose-invert max-w-none">
+            <div className="text-sm sm:text-base text-gray-700 dark:text-gray-300 space-y-4">
             <section>
               <h2 className="text-lg font-semibold text-[#051015] dark:text-white mb-2">
                 1. Introduction
@@ -162,11 +178,35 @@ const P2PTermsPage = () => {
             </section>
           </div>
         </div>
+      </div>
 
-        <div className="mt-8 pt-6 border-t border-[#E8EFF5] dark:border-[#35353E]">
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            Last updated: {new Date().toLocaleDateString()}
-          </p>
+        {/* Footer with Accept and Close buttons */}
+        <div className="px-6 py-4 border-t border-[#E8EFF5] dark:border-[#35353E] flex gap-3 justify-end">
+          <button
+            onClick={handleClose}
+            className="px-6 py-2.5 rounded-lg border border-gray-300 dark:border-[#35353E] text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-[#2A2A31] transition-colors"
+          >
+            Close
+          </button>
+          <button
+            onClick={handleAccept}
+            className="px-6 py-2.5 rounded-lg bg-[#1D8751] text-white font-medium hover:bg-[#15803D] transition-colors flex items-center gap-2"
+          >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
+            Accept
+          </button>
         </div>
       </div>
     </div>
