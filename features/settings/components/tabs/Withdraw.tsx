@@ -591,7 +591,45 @@ const Withdraw = () => {
                   </Button>
                   {error && (
                     <div className="text-red-500 text-xs mt-2 text-center">
-                      {typeof error === "string" ? error : JSON.stringify(error)}
+                      {(() => {
+                        // Parse and format the error message for better readability
+                        if (typeof error === "string") {
+                          try {
+                            const parsed = JSON.parse(error);
+                            if (parsed.error) {
+                              let message = parsed.error;
+                              if (parsed.balance !== undefined) {
+                                const balance = parseFloat(parsed.balance) || 0;
+                                message += ` Your current balance is $${balance.toFixed(2)}.`;
+                              }
+                              if (parsed.requested !== undefined) {
+                                const requested = parseFloat(parsed.requested) || 0;
+                                message += ` You requested $${requested.toFixed(2)}.`;
+                              }
+                              return message;
+                            }
+                            return error;
+                          } catch {
+                            return error;
+                          }
+                        }
+                        if (typeof error === "object" && error !== null) {
+                          if (error.error) {
+                            let message = error.error;
+                            if (error.balance !== undefined) {
+                              const balance = parseFloat(error.balance) || 0;
+                              message += ` Your current balance is $${balance.toFixed(2)}.`;
+                            }
+                            if (error.requested !== undefined) {
+                              const requested = parseFloat(error.requested) || 0;
+                              message += ` You requested $${requested.toFixed(2)}.`;
+                            }
+                            return message;
+                          }
+                          return error.message || JSON.stringify(error);
+                        }
+                        return String(error);
+                      })()}
                     </div>
                   )}
                 </div>

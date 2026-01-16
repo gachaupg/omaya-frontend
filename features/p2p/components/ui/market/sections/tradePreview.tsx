@@ -450,7 +450,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
               <span className="text-[#1D8751]">{advertiserData.commission}</span>
             </div>
             {/* I Want to Send */}
-            <div className="flex flex-col gap-2 sm:gap-2">
+            <div className="flex flex-col gap-2 sm:gap-2 rounded-xl p-3 sm:p-3 border border-gray-300 dark:border-[#35353E] bg-gray-100 dark:bg-transparent">
               <div className="text-sm sm:text-base text-gray-500 dark:text-[#788099] font-semibold">
                 I Want to Send
               </div>

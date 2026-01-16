@@ -241,7 +241,7 @@ export const marketTableData = [
 export const orderStatusTabs: Array<{ id: string; label: string; count?: number }> = [
   { id: "all", label: "All Orders" },
   { id: "completed", label: "Completed" },
-  { id: "matched", label: "Processing" },
+  { id: "processing", label: "Processing" },
   { id: "canceled", label: "Canceled" },
 ];
 

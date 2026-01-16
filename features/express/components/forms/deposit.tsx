@@ -4391,12 +4391,34 @@ export default function DepositForm({
                 <span className="mx-2 text-[#788099] cursor-pointer">
                   <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
                     <path
-                      d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"
-                      stroke="#788099"
+                      d="M3 7V5a2 2 0 0 1 2-2h2"
+                      stroke="currentColor"
                       strokeWidth="2"
                       strokeLinecap="round"
-                      strokeLinejoin="round"
                     />
+                    <path
+                      d="M17 3h2a2 2 0 0 1 2 2v2"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                    <path
+                      d="M21 17v2a2 2 0 0 1-2 2h-2"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                    <path
+                      d="M7 21H5a2 2 0 0 1-2-2v-2"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                    {/* Inner QR pattern */}
+                    <rect x="7" y="7" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.5" />
+                    <rect x="13" y="7" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.5" />
+                    <rect x="7" y="13" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.5" />
+                    <rect x="13" y="13" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.5" />
                   </svg>
                 </span>
               </div>

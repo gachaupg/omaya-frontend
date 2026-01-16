@@ -24,6 +24,14 @@ import { ShieldCheck, CircleCheckBig, Sparkles, Earth } from "lucide-react";
 
 import { GoDotFill } from "react-icons/go";
 import FloatingParticles from "@/components/ui/floating-particles";
+import { decodeHtml } from "@/lib/utils/html";
+
+// Strip HTML tags for excerpt preview
+const stripHtmlTags = (html: string): string => {
+  if (!html) return '';
+  const decoded = decodeHtml(html);
+  return decoded.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
+};
 
 const steps = [
   {
@@ -149,11 +157,14 @@ interface Article {
   id: number;
   title: string;
   excerpt: string;
+  description?: string; // Full decoded HTML description
   image: string;
   category: Category;
+  originalCategory?: string; // Original backend category (trading, security, defi, etc.)
   tags: ArticleTag[];
   slug: string;
   createdAt?: string;
+  createdAtRaw?: string; // Raw date string for sorting
 }
 
 
@@ -171,7 +182,7 @@ export default function MarketingPage() {
   const [contactErrorMessage, setContactErrorMessage] = useState("");
   const [showAllFAQs, setShowAllFAQs] = useState(false);
   const [showAllAssets, setShowAllAssets] = useState(false);
-  const { blogs, news, loading, error } = useBlog();
+  const { blogs, news, allPosts, loading, error } = useBlog();
   const { faqs: faqItems, loading: faqLoading, error: faqError } = useFAQ();
   const { statistics, loading: statsLoading, error: statsError } = useHighlightStatistics();
   const {
@@ -292,34 +303,61 @@ export default function MarketingPage() {
         .replace(/(^-|-$)/g, "");
     };
 
-    // Truncate description to 300 characters with ellipses
+    // Decode and strip HTML, then truncate description to 300 characters with ellipses
     const truncateDescription = (description: string) => {
-      if (description.length <= 300) {
-        return description;
+      const decoded = decodeHtml(description);
+      const textOnly = stripHtmlTags(decoded);
+      if (textOnly.length <= 300) {
+        return textOnly;
       }
-      return description.substring(0, 300).trim() + "...";
+      return textOnly.substring(0, 300).trim() + "...";
     };
 
     return {
-      id: index + 1,
+      id: typeof blog.id === 'number' ? blog.id : (typeof blog._id === 'number' ? blog._id : index + 1),
       title: blog.title,
       excerpt: truncateDescription(blog.description),
+      description: decodeHtml(blog.description || ''), // Full decoded HTML description
       image: getImageUrl(blog),
       category: blog.category === "news" ? "News" : ("Blog" as Category),
+      originalCategory: blog.category || "news", // Preserve original backend category
       tags: [tags[0], tags[1]], // Default tags
       slug: createSlug(blog.title),
       createdAt: formatDate(
         blog.created_at || blog.createdAt || new Date().toISOString()
       ),
+      createdAtRaw: blog.created_at || blog.createdAt || new Date().toISOString(), // Preserve raw date for sorting
     };
   };
 
-  // Get all articles (both News and Blog)
+  // Format category name for display (market_analysis -> Market Analysis)
+  const formatCategoryName = (category: string): string => {
+    if (!category) return 'News';
+    return category
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  };
+
+  // Get all articles (all categories) sorted by date (latest first)
   const getArticles = (): Article[] => {
-    const allPosts = [...news, ...blogs];
-    return allPosts
+    // Use allPosts if available (from useBlog hook), otherwise fallback to combined blogs and news
+    const postsToUse = allPosts && allPosts.length > 0 ? allPosts : [...news, ...blogs];
+    // Sort by createdAt (newest first)
+    const sortedPosts = postsToUse.sort((a, b) => {
+      const dateA = new Date(a.created_at || a.createdAt || 0).getTime();
+      const dateB = new Date(b.created_at || b.createdAt || 0).getTime();
+      return dateB - dateA; // Newest first
+    });
+    const articles = sortedPosts
       .slice(0, 6)
       .map((post, index) => transformBlogToArticle(post, index));
+    // Sort articles again by raw date to ensure proper ordering
+    return articles.sort((a, b) => {
+      const dateA = new Date(a.createdAtRaw || a.createdAt || 0).getTime();
+      const dateB = new Date(b.createdAtRaw || b.createdAt || 0).getTime();
+      return dateB - dateA; // Newest first
+    });
   };
 
   const articles = getArticles();
@@ -729,7 +767,7 @@ export default function MarketingPage() {
               {/* Wide soft glow */}
               <div className="w-[440px] sm:w-[700px] h-[120px] sm:h-[150px] bg-gradient-to-r from-transparent via-[#1D8751]/32 to-transparent blur-3xl rounded-full" />
               {/* Brighter core glow */}
-              <div className="absolute w-[280px] sm:w-[420px] h-[78px] sm:h-[96px] bg-gradient-to-r from-transparent via-[#13B562]/38 to-transparent blur-2xl rounded-full" />
+              <div className="absolute w-[280px] sm:w-[420px] h-[78px] sm:h-[96px] bg-gradient-to-r from-transparent via-[#13B562]/18 to-transparent blur-2xl rounded-full" />
               {/* Subtle green tint wash */}
               <div className="absolute w-[560px] sm:w-[860px] h-[180px] sm:h-[230px] bg-[#1D8751]/10 blur-[64px] rounded-full" />
             </div>
@@ -740,9 +778,8 @@ export default function MarketingPage() {
           </div>
 
           {/* Subtitle */}
-          <p className="text-center text-gray-500 dark:text-gray-400 text-sm sm:text-base mb-10 px-4 max-w-2xl mx-auto">
-            Access 500+ cryptocurrencies with industry-leading security, competitive fees and<br className="hidden sm:block" />
-            lightning-fast transactions.
+          <p className="text-center text-muted-foreground text-sm sm:text-base md:text-lg mb-12 px-4">
+            Access 500+ cryptocurrencies with industry-leading security, competitive fees and lightning-fast transactions.
           </p>
 
           {/* Cryptocurrency Cards Grid - 2 rows of 4 */}
@@ -1774,7 +1811,7 @@ export default function MarketingPage() {
 
             {/* Main Title */}
             <h2 className="text-3xl sm:text-4xl md:text-5xl 2xl:text-6xl font-bold mb-4">
-              Enjoy Our <span className="text-[#1D8751]">Blog</span> & News on the <span className="text-[#1D8751]">Latest Updates</span>
+              Enjoy Our <span className="text-[#1D8751]">Blog</span> & News on the <span className="text-[#1D8751]">Latest</span> Updates
             </h2>
 
             {/* Subheading */}
@@ -1827,22 +1864,27 @@ export default function MarketingPage() {
             ) : (
               // Articles grid
               filteredArticles.slice(0, 6).map((article, index) => {
-                // Category colors mapping
+                // Category colors mapping - matches backend category names (lowercase with underscores)
                 const categoryColors: { [key: string]: string } = {
-                  'Market Analysis': 'bg-purple-500',
-                  'Security': 'bg-orange-500',
-                  'DeFi': 'bg-[#1D8751]',
-                  'Trading': 'bg-yellow-500',
-                  'Technology': 'bg-pink-500',
-                  'Regulation': 'bg-blue-500',
-                  'Crypto': 'bg-blue-500',
-                  'Investment': 'bg-purple-500',
-                  'NFTs': 'bg-pink-500',
-                  'Finance': 'bg-green-500',
+                  'trading': 'bg-gradient-to-r from-yellow-400 to-orange-500',
+                  'security': 'bg-gradient-to-r from-red-500 to-orange-500',
+                  'defi': 'bg-gradient-to-r from-green-400 to-green-600',
+                  'market_analysis': 'bg-gradient-to-r from-blue-500 to-purple-500',
+                  'blog': 'bg-gradient-to-r from-purple-500 to-pink-500',
+                  'news': 'bg-gradient-to-r from-blue-500 to-indigo-500',
+                  // Fallback for formatted names (if any exist)
+                  'Trading': 'bg-gradient-to-r from-yellow-400 to-orange-500',
+                  'Security': 'bg-gradient-to-r from-red-500 to-orange-500',
+                  'DeFi': 'bg-gradient-to-r from-green-400 to-green-600',
+                  'Market Analysis': 'bg-gradient-to-r from-blue-500 to-purple-500',
+                  'Blog': 'bg-gradient-to-r from-purple-500 to-pink-500',
+                  'News': 'bg-gradient-to-r from-blue-500 to-indigo-500',
                 };
 
-                const categoryName = article.tags[0]?.name || article.category || 'News';
-                const categoryColor = categoryColors[categoryName] || 'bg-[#1D8751]';
+                // Get the original category from the article (preserved during transformation)
+                const backendCategory = article.originalCategory || article.category?.toLowerCase() || 'news';
+                const categoryName = formatCategoryName(backendCategory);
+                const categoryColor = categoryColors[backendCategory] || categoryColors[categoryName] || 'bg-gradient-to-r from-[#1D8751] to-green-600';
 
                 // Calculate read time (estimate 200 words per minute)
                 const wordCount = article.excerpt.split(' ').length;
@@ -1885,10 +1927,12 @@ export default function MarketingPage() {
                         {article.title}
                       </h3>
 
-                      {/* Description */}
-                      <p className="text-gray-700 dark:text-white/70 text-sm mb-5 flex-grow line-clamp-3">
+                      {/* Description - decoded HTML rendered properly (text only for preview) */}
+                      <div 
+                        className="text-gray-700 dark:text-white/70 text-sm mb-5 flex-grow line-clamp-3"
+                      >
                         {article.excerpt}
-                      </p>
+                      </div>
 
                       {/* Read More Link */}
                       <Link
