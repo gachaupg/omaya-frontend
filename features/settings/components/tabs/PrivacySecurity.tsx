@@ -118,6 +118,9 @@ const PrivacySecurity = () => {
   const [logoutProgress, setLogoutProgress] = useState(0);
   const [currentLogoutSession, setCurrentLogoutSession] =
     useState<DeviceSession | null>(null);
+  const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null);
+  const [sessionToDelete, setSessionToDelete] = useState<DeviceSession | null>(null);
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
 
   // Track session creation to prevent premature auto-logout
   const [isCreatingSession, setIsCreatingSession] = useState(false);
@@ -391,13 +394,34 @@ const PrivacySecurity = () => {
     setCurrentLogoutSession(null);
   };
 
-  const handleRemoveSession = async (sessionToRemove: DeviceSession) => {
+  const handleRemoveSessionClick = (session: DeviceSession) => {
+    setSessionToDelete(session);
+    setShowDeleteConfirmModal(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!sessionToDelete) return;
+    
+    setDeletingSessionId(sessionToDelete.session_id);
+    setShowDeleteConfirmModal(false);
+    
     try {
-      await dispatch(logoutDevice(sessionToRemove.session_id)).unwrap();
+      await dispatch(logoutDevice(sessionToDelete.session_id)).unwrap();
       showToast.success("Device session removed successfully");
-    } catch (error) {
+      // Refresh the sessions list after deletion
+      dispatch(fetchDeviceSessions());
+    } catch (error: any) {
       console.error("Failed to remove device session:", error);
+      showToast.error(error?.message || "Failed to remove device session");
+    } finally {
+      setDeletingSessionId(null);
+      setSessionToDelete(null);
     }
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeleteConfirmModal(false);
+    setSessionToDelete(null);
   };
 
   const formatDate = (dateString: string) => {
@@ -645,6 +669,63 @@ const PrivacySecurity = () => {
                   setDisableError(null);
                 }}
                 disabled={disableLoading}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Session Confirmation Modal */}
+      {showDeleteConfirmModal && sessionToDelete && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4">
+          <div className="dark:bg-[var(--card-color)] bg-white p-4 sm:p-6 rounded-xl w-full max-w-sm sm:max-w-md max-h-[90vh] overflow-y-auto">
+            <h3 className="text-lg font-semibold mb-4 dark:text-white text-gray-900">
+              Delete Session?
+            </h3>
+            <div className="dark:text-[#8C8CA1] text-gray-600 text-sm mb-4">
+              Are you sure you want to delete this session? This will sign out the device from your account.
+            </div>
+            <div className="bg-gray-50 dark:bg-[#1F2937] rounded-lg p-3 mb-4 space-y-2 text-sm">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold dark:text-white text-gray-900">Browser:</span>
+                <span className="dark:text-[#8C8CA1] text-gray-600">
+                  {sessionToDelete.browser || "Unknown browser"}
+                  {sessionToDelete.device_type && ` (${sessionToDelete.device_type})`}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="font-semibold dark:text-white text-gray-900">Location:</span>
+                <span className="dark:text-[#8C8CA1] text-gray-600">
+                  {sessionToDelete.location || "Unknown location"}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="font-semibold dark:text-white text-gray-900">IP Address:</span>
+                <span className="font-mono dark:text-[#8C8CA1] text-gray-600">
+                  {sessionToDelete.ip_address || "Unknown IP"}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="font-semibold dark:text-white text-gray-900">Signed In:</span>
+                <span className="dark:text-[#8C8CA1] text-gray-600">
+                  {formatRelativeTime(sessionToDelete.sign_in_time)}
+                </span>
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <button
+                className="flex-1 bg-[#E23D3A] text-white rounded px-4 py-2.5 font-semibold text-sm hover:bg-[#c9322f] transition-colors"
+                onClick={handleConfirmDelete}
+                disabled={deletingSessionId === sessionToDelete.session_id}
+              >
+                {deletingSessionId === sessionToDelete.session_id ? "Deleting..." : "Delete Session"}
+              </button>
+              <button
+                className="flex-1 dark:bg-[#35353E] bg-gray-400 dark:text-white text-gray-900 rounded px-4 py-2.5 font-semibold text-sm transition-colors"
+                onClick={handleCancelDelete}
+                disabled={deletingSessionId === sessionToDelete.session_id}
               >
                 Cancel
               </button>
@@ -975,18 +1056,52 @@ const PrivacySecurity = () => {
               </div>
               <div className="divide-y dark:divide-[#2F2C3C] divide-gray-200 dark:text-white text-gray-800 bg-white dark:bg-[var(--card-color)]">
                 {paginatedSessions.map((session: DeviceSession) => (
-                  <div key={session.session_id} className="px-2 sm:px-3 md:px-4 py-4 text-sm space-y-2">
-                    <p className="font-semibold">
-                      {formatRelativeTime(session.sign_in_time)}
-                    </p>
-                    <p>{session.location || "Unknown location"}</p>
-                    <p className="font-mono break-all">
-                      {session.ip_address || "Unknown IP"}
-                    </p>
-                    <p>
-                      {session.browser || "Unknown browser"}
-                      {session.device_type && ` (${session.device_type})`}
-                    </p>
+                  <div key={session.session_id} className="px-2 sm:px-3 md:px-4 py-4 text-sm space-y-2 relative group">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 space-y-2">
+                        <p className="font-semibold">
+                          {formatRelativeTime(session.sign_in_time)}
+                          {session.is_current && (
+                            <span className="ml-2 text-xs px-2 py-0.5 rounded bg-[#1D8751]/20 text-[#1D8751] dark:bg-[#1D8751]/30 dark:text-[#1D8751]">
+                              Current
+                            </span>
+                          )}
+                        </p>
+                        <p>{session.location || "Unknown location"}</p>
+                        <p className="font-mono break-all">
+                          {session.ip_address || "Unknown IP"}
+                        </p>
+                        <p>
+                          {session.browser || "Unknown browser"}
+                          {session.device_type && ` (${session.device_type})`}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => handleRemoveSessionClick(session)}
+                        disabled={deletingSessionId === session.session_id || session.is_current}
+                        className="p-2 hover:bg-gray-100 dark:hover:bg-[#2A2A2A] rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        title={session.is_current ? "Cannot delete current session" : "Delete session"}
+                      >
+                        {deletingSessionId === session.session_id ? (
+                          <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-[#1D8751]"></div>
+                        ) : (
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="w-5 h-5 text-red-500 cursor-pointer"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"
+                            />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>

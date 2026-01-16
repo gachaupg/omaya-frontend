@@ -7,23 +7,23 @@ import { FaArrowLeft, FaCalendar, FaUser, FaTag } from "react-icons/fa";
 import { useBlog } from "../../hooks/blog";
 import { BlogPost } from "../../types";
 import { imageBuilder } from "@/sanity/lib/client";
+import { decodeHtml } from "@/lib/utils/html";
 
 const SingleBlogPage = () => {
   const params = useParams();
   const router = useRouter();
-  const { blogs, news, loading, error } = useBlog();
+  const { allPosts, loading, error } = useBlog();
   const [blogPost, setBlogPost] = useState<BlogPost | null>(null);
 
   useEffect(() => {
-    if (params?.id && (blogs.length > 0 || news.length > 0)) {
-      const allPosts = [...blogs, ...news];
+    if (params?.id && allPosts.length > 0) {
       const post = allPosts.find((post) => {
         const postId = post.id || post._id;
         return postId.toString() === params.id;
       });
       setBlogPost(post || null);
     }
-  }, [params?.id, blogs, news]);
+  }, [params?.id, allPosts]);
 
   // Format date function
   const formatDate = (dateString: string) => {
@@ -121,30 +121,11 @@ const SingleBlogPage = () => {
 
           {/* Article Content */}
           <div className="p-6 md:p-8">
-            <div className="prose prose-invert max-w-none">
-              <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed mb-6">
-                {blogPost.description}
-              </p>
-
-              {/* Placeholder for full content - you can extend this based on your API */}
-              <div className="text-gray-600 dark:text-gray-400 space-y-4">
-                <p>
-                  This is a detailed view of the blog post. In a real
-                  implementation, you would fetch the full content of the blog
-                  post from your API using the blog post ID.
-                </p>
-                <p>
-                  The current implementation shows the blog post details
-                  including the title, description, author, category, and
-                  creation date. You can extend this component to include the
-                  full article content, comments, related posts, and other
-                  features.
-                </p>
-                <p>
-                  The blog post was created on {formatDate(blogPost.created_at || blogPost.createdAt || new Date().toISOString())}
-                  and belongs to the {blogPost.category} category.
-                </p>
-              </div>
+            <div className="prose prose-lg dark:prose-invert max-w-none">
+              <div
+                className="text-gray-700 dark:text-gray-300 leading-relaxed"
+                dangerouslySetInnerHTML={{ __html: decodeHtml(blogPost.description) }}
+              />
             </div>
           </div>
 
