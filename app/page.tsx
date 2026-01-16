@@ -378,6 +378,11 @@ export default function MarketingPage() {
      <section
         className="relative min-h-screen pt-18 pb-16 mx-auto overflow-visible bg-gradient-to-br from-gray-50 to-white dark:bg-[var(--bg-color)]"
       >
+        {/* Mask overlay to hide content behind navbar - positioned just below navbar (z-50) */}
+        <div className="fixed top-0 left-0 right-0 h-[80px] z-[45] pointer-events-none">
+          <div className="w-full h-full bg-white dark:bg-[var(--bg-color)]"></div>
+        </div>
+        
         {/* Background styling - different for light and dark modes */}
         <div className="absolute inset-0 overflow-hidden z-0">
           {/* Light mode: Subtle gray/white gradient background */}
@@ -387,11 +392,8 @@ export default function MarketingPage() {
           <div className="absolute inset-0 bg-[#0a0a0f] hidden dark:block"></div>
 
           {/* Pure black overlay at top for navbar area - NO gradients visible behind navbar */}
-          <div className="absolute top-0 left-0 right-0 h-[120px] bg-[#000000] hidden dark:block"></div>
-          <div className="absolute top-0 left-0 right-0 h-[200px] bg-gradient-to-b from-[#000000] via-[#000000]/95 to-transparent hidden dark:block"></div>
-
-          {/* Dark overlay covering upper regions to suppress gradients */}
-          <div className="absolute top-0 left-0 right-0 h-[400px] bg-gradient-to-b from-[#000000]/80 via-[#000000]/40 to-transparent hidden dark:block"></div>
+          <div className="absolute top-0 left-0 right-0 h-[80px] bg-[#000000] z-10 hidden dark:block"></div>
+          <div className="absolute top-0 left-0 right-0 h-[80px] bg-white z-10 dark:hidden"></div>
 
           {/* Very subtle purple glow - top left (faint, diffused) - positioned lower to not show behind navbar */}
           <div className="absolute top-[150px] left-0 w-[500px] h-[500px] bg-purple-600/3 dark:bg-purple-600/5 rounded-full blur-[150px]"></div>
@@ -438,7 +440,7 @@ export default function MarketingPage() {
           ></div>
         </div>
 
-        <div className="w-full max-w-[1600px] mx-auto px-2 sm:px-4 lg:px-8 xl:px-10 relative z-10 mt-8">
+        <div className="w-full max-w-[1600px] mx-auto px-2 sm:px-4 lg:px-8 xl:px-10 relative z-10 mt-4" style={{ paddingTop: 'clamp(1rem, 3vw, 2rem)' }}>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 items-start gap-y-5 md:gap-y-4 md:gap-x-6 lg:gap-x-8 xl:gap-x-10">
             <div className="space-y-2 md:space-y-3 pl-0 md:pl-4 lg:pl-5 text-center md:text-left">
               {/* Green pill banner */}
@@ -1073,8 +1075,8 @@ export default function MarketingPage() {
                       evolving needs of individuals, traders, and businesses across emerging markets.
                     </p>
 
-                    {/* Feature Boxes - 2x2 Grid */}
-                    <div className="grid grid-cols-2 gap-3 mt-3">
+                    {/* Feature Boxes - Responsive Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
                       {[
                         {
                           icon: Shield,
@@ -1645,7 +1647,7 @@ export default function MarketingPage() {
                 </div>
 
                 {/* Steps */}
-                <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Step 1 */}
                   <div className="flex gap-4">
                     <div className="shrink-0 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
@@ -1669,7 +1671,7 @@ export default function MarketingPage() {
                   </div>
 
                   {/* Step 3 */}
-                  <div className="flex gap-4">
+                  <div className="flex gap-4 md:col-span-2 lg:col-span-1">
                     <div className="shrink-0 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
                       <Gift className="w-5 h-5 text-white" />
                     </div>

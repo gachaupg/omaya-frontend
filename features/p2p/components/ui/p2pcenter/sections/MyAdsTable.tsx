@@ -171,7 +171,7 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
                   <img
                     src={
                       trade.asset_image ||
-                      "https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png"
+                      "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
                     }
                     alt={trade.asset || "Asset"}
                     className="w-7 h-7"
@@ -308,7 +308,7 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
                 <img
                   src={
                     trade.asset_image ||
-                    "https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png"
+                    "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
                   }
                   alt={trade.asset || "Asset"}
                   className="w-7 h-7"

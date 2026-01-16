@@ -765,56 +765,33 @@ export default function DepositForm({
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [hasAutoExpanded, setHasAutoExpanded] = useState(false);
   const [isRestoringFromInitialState, setIsRestoringFromInitialState] = useState(false);
-  const hasInitializedPayment = useRef(false);
-  const previousInitialState = useRef<any>(null);
-
+  // Auto-select the first payment method exactly like home page form
   useEffect(() => {
-    // Only restore from initialState on first mount or when initialState actually changes
-    const initialStateChanged = previousInitialState.current !== initialState;
-    previousInitialState.current = initialState;
-
-    // If we have initialState with payment (full object from home page), ensure it's set and payBank is correct
-    if (initialState?.payment && (initialStateChanged || !hasInitializedPayment.current)) {
-      const initialStatePayment = initialState.payment;
-
-      // Only restore if we haven't initialized yet or if initialState changed
-      if (!hasInitializedPayment.current || initialStateChanged) {
-        const normalized = normalizePaymentDetails(initialStatePayment);
-        setSelectedPaymentDetail(normalized);
-        
-        const correctPayBank = initialStatePayment.provider_name || initialStatePayment.payment_provider_name || initialState.payBank || "";
-        setPayBank(correctPayBank);
-        hasInitializedPayment.current = true;
-      }
-      return; // Don't proceed to defaults
+    if (finalPaymentMethods.length === 0) {
+      return;
     }
 
-    // Only apply defaults if we don't have initialState payment and haven't initialized yet
-    if (!initialState?.payment && finalPaymentMethods && finalPaymentMethods.length > 0 && !hasInitializedPayment.current) {
-      const matchingSelection = finalPaymentMethods.find(
+    const hasSelected = finalPaymentMethods.some(
+      (method: any) => method?.provider_name === payBank
+    );
+
+    if (!payBank || !hasSelected) {
+      const defaultMethod = finalPaymentMethods[0];
+      setPayBank(defaultMethod.provider_name);
+      // Normalize payment details before setting
+      const normalized = normalizePaymentDetails(defaultMethod);
+      setSelectedPaymentDetail(normalized);
+    } else if (!selectedPaymentDetail) {
+      const matchedMethod = finalPaymentMethods.find(
         (method: any) => method?.provider_name === payBank
       );
-
-      if (matchingSelection) {
-        if (!selectedPaymentDetail || selectedPaymentDetail?.provider_name !== matchingSelection.provider_name) {
-          // Normalize payment details before setting
-          const normalized = normalizePaymentDetails(matchingSelection);
-          setSelectedPaymentDetail(normalized);
-        }
-        hasInitializedPayment.current = true;
-        return;
-      }
-
-      const firstMethod = finalPaymentMethods[0];
-      if (firstMethod?.provider_name) {
-        setPayBank(firstMethod.provider_name);
+      if (matchedMethod) {
         // Normalize payment details before setting
-        const normalized = normalizePaymentDetails(firstMethod);
+        const normalized = normalizePaymentDetails(matchedMethod);
         setSelectedPaymentDetail(normalized);
-        hasInitializedPayment.current = true;
       }
     }
-  }, [finalPaymentMethods, initialState]); // Removed payBank and selectedPaymentDetail from dependencies
+  }, [finalPaymentMethods, payBank, selectedPaymentDetail]);
 
   // Add transaction code state
   const [transactionCode, setTransactionCode] = useState<string>("");
@@ -4410,35 +4387,6 @@ export default function DepositForm({
                       : ""
                     }`}
                 />
-                {/* Validation status indicator */}
-                {walletAddress.trim() && currentCurrency && (
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center">
-                    {isAddressValidating ? (
-                      <div className="w-4 h-4 border-2 border-[#1D8751] border-t-transparent rounded-full animate-spin"></div>
-                    ) : addressValidationResult?.isValid ? (
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-[#1D8751]">
-                        <path
-                          d="M9 12l2 2 4-4"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
-                      </svg>
-                    ) : walletError ? (
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-[#E23D3A]">
-                        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
-                        <path
-                          d="M12 8v4M12 16h.01"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                        />
-                      </svg>
-                    ) : null}
-                  </div>
-                )}
                 {/* Bookmark icon */}
                 <span className="mx-2 text-[#788099] cursor-pointer">
                   <svg width="20" height="20" fill="none" viewBox="0 0 24 24">

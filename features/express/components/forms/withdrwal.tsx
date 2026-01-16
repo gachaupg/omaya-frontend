@@ -1,52 +1,58 @@
 "use client";
-import React, { useEffect, useState, useRef, useMemo, useCallback } from "react";
+import React, {
+  useEffect,
+  useState,
+  useRef,
+  useMemo,
+  useCallback,
+} from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { FaExchangeAlt, FaExclamationCircle } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
-import { AppDispatch } from "../../../../store";
+import { AppDispatch } from "@/store";  
 import {
   fetchAdminPaymentDetails,
   fetchUserPaymentDetails,
   fetchAdminWalletList,
 } from "../../../exchange/slices/paymentSlice";
 import { fetchPublicPaymentMethods } from "../../../p2p/slices/paymentMethodsSlice";
-import { fetchAssets } from "../../../exchange/slices/exchangeSlice";
-import { createDeposit } from "../../../exchange/slices/exchangeSlice";
+import { fetchAssets, createDeposit } from "../../../exchange/slices/exchangeSlice";
 import {
   fetchSupportedAssets,
   fetchSwapEstimate,
 } from "../../../swap/slices/swapSlice";
-import { validateWalletAddress } from "../../../../lib/addressValidaion";
-import { showToast } from "../../../../lib/utils/toast";
+import { validateWalletAddress } from "@/lib/addressValidaion";
+import { showToast } from "@/lib/utils/toast";
 import { DepositResponse } from "../../../exchange/types";
 import { SupportedAsset } from "../../../swap/types";
 import { FaSearch } from "react-icons/fa";
-import { createExpressWithdrawal } from "../../api";
+import { createExpressWithdrawal } from "@/features/express/api";
 import {
   ExpressWithdrawalPayload,
   ExpressWithdrawalResponse,
-} from "../../types";
+} from "@/features/express/types";
 import PaymentMethodsModal from "../../../p2p/components/ui/p2pdashboard/sections/PaymentMethodsModal";
 import InfoModal from "./info";
-import { debugAssetFetching } from "../../../../lib/utils/debugAssets";
-import { useAssetsDisplay, usePaymentMethodsDisplay } from "../../hooks/useDataDisplay";
+import { debugAssetFetching } from "@/lib/utils/debugAssets";
+import {
+  useAssetsDisplay,
+  usePaymentMethodsDisplay,
+} from "@/features/express/hooks/useDataDisplay";
+import { useChangeNowAssets } from "@/features/express/home/hooks/useChangeNowAssets";
 import CustomSelect from "@/components/ui/CustomSelect";
+import {
+  PAYMENT_LOGO_BASE_CLASS,
+  PAYMENT_LOGO_SIZE,
+} from "../../utils/imageHelpers";
 import ForexWithdrawal from "./ForexWithdrawal";
+import { useTheme } from "@/context/theme";
 import {
   buildExpressRedirectPath,
   setAuthRedirectPath,
 } from "@/lib/utils/authRedirect";
-import { useExpressI18n } from "@/lib/useExpressI18n";
-import {
-  ASSET_ICON_BASE_CLASS,
-  ASSET_ICON_SIZE,
-  getHighResAssetIcon,
-  getHighResPaymentLogo,
-  PAYMENT_LOGO_BASE_CLASS,
-  PAYMENT_LOGO_SIZE,
-} from "../../utils/imageHelpers";
+import { openKYCModal, checkKYCStatus } from "@/features/auth/slices/authSlice";
 
 // Add UserPaymentDetail interface
 interface UserPaymentDetail {
@@ -66,79 +72,6 @@ interface UserPaymentDetail {
   payment_provider?: string;
 }
 
-// Asset dropdown item component to fix hooks order issue
-const AssetDropdownItem = ({
-  asset,
-  isSelected,
-  onSelect,
-  getHighResAssetIcon,
-  ASSET_ICON_BASE_CLASS,
-  ASSET_ICON_SIZE,
-  getNetworkDisplayName,
-  getAssetNetwork,
-  selectedAsset,
-}: {
-  asset: SupportedAsset;
-  isSelected: boolean;
-  onSelect: () => void;
-  getHighResAssetIcon: (asset: any, size: number) => string;
-  ASSET_ICON_BASE_CLASS: string;
-  ASSET_ICON_SIZE: number;
-  getNetworkDisplayName: (network: string) => string;
-  getAssetNetwork: (asset: SupportedAsset) => string;
-  selectedAsset: any;
-}) => {
-  // Clean up display name
-  const displayName = (() => {
-    let name = asset.name || asset.ticker || asset.symbol || "Unknown Asset";
-    name = name
-      .replace(/\s*\(Binance Smart Chain\)\s*\(BSC\)/gi, "")
-      .replace(/\s*\(Ethereum\)\s*\(ETH\)/gi, "")
-      .replace(/\s*\(Polygon\)\s*\(MATIC\)/gi, "")
-      .replace(/\s*\(Avalanche\)\s*\(AVAX\)/gi, "")
-      .replace(/\s*\(TRON\)\s*\(TRX\)/gi, "")
-      .replace(/\s*\(Solana\)\s*\(SOL\)/gi, "")
-      .replace(/\s*\(BSC\)$/gi, "")
-      .replace(/\s*\(ETH\)$/gi, "")
-      .replace(/\s*\(MATIC\)$/gi, "")
-      .replace(/\s*\(AVAX\)$/gi, "")
-      .replace(/\s*\(TRX\)$/gi, "")
-      .replace(/\s*\(SOL\)$/gi, "")
-      .trim();
-    return name;
-  })();
-
-  return (
-    <div
-      className={`flex items-center gap-3 p-3 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-b transition-all duration-150 last:border-b-0 group ${isSelected ? "bg-blue-50 dark:bg-blue-900/20 border-b-blue-400" : ""
-        }`}
-      onClick={onSelect}
-    >
-      <img
-        src={getHighResAssetIcon(asset, ASSET_ICON_SIZE)}
-        alt={asset?.name || asset?.ticker || asset?.symbol || "Asset"}
-        className={`${ASSET_ICON_BASE_CLASS} w-11 h-11`}
-        loading="lazy"
-        onError={(e) => {
-          e.currentTarget.src = getHighResAssetIcon(null, ASSET_ICON_SIZE);
-        }}
-      />
-      <div className="flex-1">
-        <div className="text-[#35353e] dark:text-[#ffffff] font-medium flex items-center gap-2">
-          {(asset.ticker || asset.symbol || asset.name || "Unknown").toUpperCase()}
-          <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
-            {getNetworkDisplayName(getAssetNetwork(asset))}
-          </span>
-        </div>
-        <div className="text-[#35353e] dark:text-[#788099] text-sm">{displayName}</div>
-      </div>
-      {selectedAsset?.asset_id === asset.asset_id && (
-        <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
-      )}
-    </div>
-  );
-};
-
 // Add UserPaymentSelector component
 const UserPaymentSelector = ({
   userPaymentDetails,
@@ -154,8 +87,8 @@ const UserPaymentSelector = ({
   adminWalletListDisplay: any;
 }) => {
   return (
-    <div className="bg-white dark:bg-[#18181D] rounded-2xl border border-gray-200 dark:border-[#39394a] p-2 sm:p-3 md:p-4">
-      <h3 className="text-gray-900 dark:text-white font-semibold mb-3 text-lg sm:text-xl">Select Payment Methods</h3>
+    <div className="bg-[#1D1D23] rounded-2xl border border-[#39394a] p-4">
+      <h3 className="text-white font-semibold mb-3">Select Payment Methods</h3>
       <div className="space-y-2">
         {userPaymentDetails && userPaymentDetails.length > 0 ? (
           userPaymentDetails.map((detail) => {
@@ -165,12 +98,12 @@ const UserPaymentSelector = ({
               <div
                 key={detail.id}
                 className={`flex items-center justify-between p-3 rounded-xl border ${isSelected
-                  ? "border-[#1D8751] bg-[#1D8751]/10 dark:bg-[#1D8751]/10"
-                  : "border-gray-300 dark:border-[#A2A4A9FF] bg-gray-50 dark:bg-[#A2A4A9FF]"
+                  ? "border-[#1D8751] bg-[#1D8751]/10"
+                  : "border-[#A2A4A9FF] bg-[#A2A4A9FF]"
                   }`}
               >
                 <div className="flex-1">
-                  <div className="text-gray-900 dark:text-white font-medium text-base sm:text-lg">
+                  <div className="text-white font-medium">
                     {(() => {
                       // Get the admin provider name for this payment method
                       const adminDetail = adminWalletListDisplay.displayData?.find(
@@ -180,7 +113,7 @@ const UserPaymentSelector = ({
                       return adminDetail?.provider_name || detail.payment_provider_name || detail.provider_name || "Unknown Provider";
                     })()} - {detail.account_name || detail.account_number}
                   </div>
-                  <div className="text-gray-600 dark:text-[#788099] text-sm sm:text-base">
+                  <div className="text-[#788099] text-sm">
                     {detail.account_name} ({detail.account_number})
                   </div>
                 </div>
@@ -192,7 +125,7 @@ const UserPaymentSelector = ({
                       onSelect(detail);
                     }
                   }}
-                  className={`px-4 py-2 rounded-lg text-base sm:text-lg font-medium transition-colors ${isSelected
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${isSelected
                     ? "bg-red-500 text-white hover:bg-red-600"
                     : "bg-[#1D8751] text-white hover:bg-[#166b3e]"
                     }`}
@@ -203,7 +136,7 @@ const UserPaymentSelector = ({
             );
           })
         ) : (
-          <div className="text-center text-gray-600 dark:text-[#788099] py-4 text-base">
+          <div className="text-center text-[#788099] py-4">
             No payment details available
           </div>
         )}
@@ -213,7 +146,6 @@ const UserPaymentSelector = ({
 };
 
 interface DepositFormProps {
-  initialState?: any;
   onExchange?: (transactionData: {
     type: "deposit" | "withdrawal";
     amount: number;
@@ -240,8 +172,14 @@ interface DepositFormProps {
     paymentDetails?: UserPaymentDetail[];
   }) => void;
   mode: "deposit" | "withdrawal";
-  onModeChange?: (mode: "deposit" | "withdrawal", currentState?: any) => void;
+  onModeChange?: (mode: "deposit" | "withdrawal") => void;
   isHomePage?: boolean;
+  initialState?: {
+    amountValue?: number;
+    amountInput?: string;
+    asset?: any;
+    paymentDetails?: UserPaymentDetail[];
+  };
 }
 
 // Network mapping function
@@ -266,15 +204,14 @@ const getNetworkDisplayName = (network: string) => {
 };
 
 export default function WithdrawalForm({
-  initialState,
   onExchange,
   mode,
   onModeChange,
   isHomePage = false,
+  initialState,
 }: DepositFormProps) {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
-  const { t } = useExpressI18n();
   const [transactionMode, setTransactionMode] = useState<"crypto" | "forex">("crypto");
 
   // Declare all refs early to avoid initialization errors
@@ -308,48 +245,74 @@ export default function WithdrawalForm({
     loading: swapAssetsLoading,
     error: swapAssetsError,
   } = useSelector((state: any) => state.swap);
+  const { isAuthenticated, user } = useSelector((state: any) => state.auth);
+  const { isDark } = useTheme();
+
+  const {
+    assets: homeAssets,
+    loading: homeAssetsLoading,
+    error: homeAssetsError,
+  } = useChangeNowAssets(isHomePage);
+
+  const exchangeAssetsSource = isHomePage ? homeAssets : assets?.assets;
+  const swapAssetsSource = isHomePage ? [] : swapAssets;
+  const exchangeAssetsLoadingState = isHomePage
+    ? homeAssetsLoading
+    : assetsLoading;
+  const swapAssetsLoadingState = isHomePage ? false : swapAssetsLoading;
+  const exchangeAssetsErrorState = isHomePage ? homeAssetsError : null;
+  const swapAssetsErrorState = isHomePage ? null : swapAssetsError;
+  const requiresLoginRedirect = isHomePage && !isAuthenticated;
 
   // Use the data display hooks for consistent data handling
   const assetsDisplay = useAssetsDisplay(
-    assets?.assets,
-    swapAssets,
-    assetsLoading,
-    swapAssetsLoading,
-    null, // exchange error
-    swapAssetsError
+    exchangeAssetsSource,
+    swapAssetsSource,
+    exchangeAssetsLoadingState,
+    swapAssetsLoadingState,
+    exchangeAssetsErrorState,
+    swapAssetsErrorState
   );
 
-  // Add user payment details state
+  // Add user payment details state - check both slices
   const { userPaymentDetails, loading: userPaymentLoading } = useSelector(
     (state: any) => state.payment
   );
 
-  // Process payment methods data based on API structure - same logic as ExchangeForm
+  // Also check paymentMethods slice (some components use this)
+  const { userPaymentDetails: userPaymentDetailsFromP2P, userDetailsLoading: userDetailsLoadingP2P } = useSelector(
+    (state: any) => state.paymentMethods || {}
+  );
+
+  // Use whichever has data, prefer payment slice
+  const effectiveUserPaymentDetailsFromRedux = userPaymentDetails?.length > 0
+    ? userPaymentDetails
+    : (userPaymentDetailsFromP2P?.length > 0 ? userPaymentDetailsFromP2P : []);
+
+  // Process payment methods data based on API structure - prioritize public payment methods
   const processedPaymentMethods = useMemo(() => {
-    if (isHomePage) {
-      // Handle new API structure for public payment methods
-      // First check for providers array (new structure)
-      if (Array.isArray(publicPaymentMethods?.data?.providers)) {
-        return publicPaymentMethods.data.providers;
-      }
-      // Check for payment_methods array (older structure)
-      if (Array.isArray(publicPaymentMethods?.data?.payment_methods)) {
-        return publicPaymentMethods.data.payment_methods;
-      }
-      // Check if publicPaymentMethods itself is an array (fallback)
-      if (Array.isArray(publicPaymentMethods)) {
-        return publicPaymentMethods;
-      }
-      return []; // Return empty array if no valid data
+    // Always try to use public payment methods first (they have logos)
+    // Handle new API structure for public payment methods
+    if (Array.isArray(publicPaymentMethods?.data?.providers)) {
+      return publicPaymentMethods.data.providers;
     }
-    // For authenticated users, use admin payment details
+    // Check for payment_methods array (older structure)
+    if (Array.isArray(publicPaymentMethods?.data?.payment_methods)) {
+      return publicPaymentMethods.data.payment_methods;
+    }
+    // Check if publicPaymentMethods itself is an array (fallback)
+    if (Array.isArray(publicPaymentMethods)) {
+      return publicPaymentMethods;
+    }
+
+    // Fallback to admin payment details if public methods not available
     const adminArray = Array.isArray(adminPaymentDetails)
       ? adminPaymentDetails
       : Array.isArray(adminPaymentDetails?.data)
         ? adminPaymentDetails.data
         : [];
     return adminArray;
-  }, [isHomePage, publicPaymentMethods, adminPaymentDetails]);
+  }, [publicPaymentMethods, adminPaymentDetails]);
 
   // Extract payment method names based on the API structure - same as ExchangeForm
   const getPaymentMethodName = (item: any) => {
@@ -368,10 +331,61 @@ export default function WithdrawalForm({
     return null;
   };
 
+  // Normalize payment method names to handle mismatches between user details and API
+  const normalizePaymentMethodName = (methodName: string | null | undefined): string | null => {
+    if (!methodName || typeof methodName !== 'string') return null;
+
+    // Map variations to standard method names
+    const methodMap: Record<string, string> = {
+      'Money_Transfer': 'Money_Transfer', // Keep as is, will be filtered if not in API
+      'money_transfer': 'Money_Transfer',
+      'Money Transfer': 'Money_Transfer',
+      'money transfer': 'Money_Transfer',
+    };
+
+    const normalized = methodMap[methodName] || methodName;
+    return normalized;
+  };
+
   // Get unique payment methods from processed data
   const uniquePaymentMethods = Array.from(
     new Set((processedPaymentMethods || []).map(getPaymentMethodName).filter(Boolean))
   ).filter(method => method && typeof method === 'string' && method.trim().length > 0) as string[];
+
+  // Get available payment method names from API (for comparison with user payment details)
+  const availablePaymentMethodNames = useMemo(() => {
+    const methods = new Set<string>();
+
+    // Extract from public payment methods API response
+    if (Array.isArray(publicPaymentMethods?.data?.providers)) {
+      publicPaymentMethods.data.providers.forEach((provider: any) => {
+        const methodName = getPaymentMethodName(provider);
+        if (methodName) {
+          methods.add(methodName);
+        }
+      });
+    }
+
+    // Also include from processed payment methods
+    uniquePaymentMethods.forEach(method => {
+      if (method) methods.add(method);
+    });
+
+    const methodList: string[] = Array.from(methods);
+
+    // Debug: Log comparison between user payment details and API methods
+    if (userPaymentDetails && Array.isArray(userPaymentDetails) && userPaymentDetails.length > 0) {
+      const userMethodNames = new Set<string>(
+        userPaymentDetails
+          .map((detail: any) => normalizePaymentMethodName(detail?.payment_method_name))
+          .filter((m): m is string => m !== null && typeof m === 'string')
+      );
+
+      const userMethodsArray: string[] = Array.from(userMethodNames);
+    }
+
+    return methodList;
+  }, [publicPaymentMethods, uniquePaymentMethods, userPaymentDetails]);
 
   // Add "Bank" as a default option if not already present
   const validPaymentMethods = uniquePaymentMethods.filter(method =>
@@ -419,31 +433,49 @@ export default function WithdrawalForm({
     }
   }, [adminPaymentDetails]);
 
+  // Get full Redux payment state at component level (not in useEffect)
+  const fullPaymentState = useSelector((state: any) => state.payment);
+
   useEffect(() => {
     if (userPaymentDetails && userPaymentDetails.length > 0) {
       userPaymentMethodsRef.current = userPaymentDetails;
     }
-  }, [userPaymentDetails]);
+  }, [userPaymentDetails, userPaymentLoading, fullPaymentState]);
 
   // Always use ref data - completely stable, never changes unless ref is updated
   const effectivePaymentMethods = paymentMethodsRef.current;
   const effectiveUserPaymentMethods = userPaymentMethodsRef.current;
 
-  // Fetch public payment methods when on home page
+  // Fetch public payment methods for withdrawal with caching (1 hour TTL)
   useEffect(() => {
-    if (isHomePage) {
-      console.log("🚀 WithdrawalForm: Fetching public payment methods for home page");
-      dispatch(fetchPublicPaymentMethods())
-        .unwrap()
-        .then((result) => {
-          console.log("✅ WithdrawalForm: Public payment methods fetched successfully:", result);
-        })
-        .catch((error) => {
-          console.error("❌ WithdrawalForm: Failed to fetch public payment methods:", error);
-        });
-      return;
-    }
-  }, [dispatch, isHomePage]);
+    const fetchWithCache = async () => {
+      try {
+        const { sliceCache } = await import("@/lib/utils/sliceCache");
+        
+        // Try to get from cache first
+        const cachedData = await sliceCache.get<any>('paymentMethods', 'fetchPublicPaymentMethods');
+        
+        if (cachedData) {
+          // Use cached data
+          dispatch({
+            type: 'paymentMethods/fetchPublicPaymentMethods/fulfilled',
+            payload: cachedData,
+          });
+        } else {
+          // Fetch fresh data and cache it
+          const result = await dispatch(fetchPublicPaymentMethods()).unwrap();
+          if (result) {
+            await sliceCache.set('paymentMethods', 'fetchPublicPaymentMethods', result, undefined, 60 * 60 * 1000); // 1 hour TTL
+          }
+        }
+      } catch (error) {
+        // If cache fails, just fetch normally
+        dispatch(fetchPublicPaymentMethods());
+      }
+    };
+    
+    fetchWithCache();
+  }, [dispatch]);
 
   // Initialize refs with cached data IMMEDIATELY on mount (runs only once)
   useEffect(() => {
@@ -488,6 +520,27 @@ export default function WithdrawalForm({
     initializePaymentMethods();
   }, []); // Empty deps - runs only once on mount
 
+  // Update wallet list ref whenever we get new data
+  useEffect(() => {
+    if (adminWalletList && adminWalletList.length > 0) {
+      const displayData = adminWalletList.filter((wallet: any) => {
+        const paymentDetail = wallet?.admin_payment_detail;
+        if (!paymentDetail) return false;
+
+        if (paymentDetail.is_active === undefined || paymentDetail.is_active === null) return true;
+
+        return paymentDetail.is_active === true ||
+          paymentDetail.is_active === 'true' ||
+          paymentDetail.is_active === 1 ||
+          paymentDetail.is_active === '1';
+      });
+
+      if (displayData.length > 0) {
+        walletListRef.current = displayData;
+      }
+    }
+  }, [adminWalletList]);
+
   // Always use ref data - completely stable
   const adminWalletListDisplay = {
     displayData: walletListRef.current,
@@ -520,64 +573,22 @@ export default function WithdrawalForm({
     }
   };
 
-  // Restore both send and receive amounts from initialState
-  const [payAmount, setPayAmount] = useState(() => {
-    if (initialState?.amountValue !== undefined) {
-      return initialState.amountValue;
-    }
-    return 100;
-  });
-  const extractProviderDisplayName = (value?: string | null) => {
-    if (!value) return "";
-    return value.split(" - ")[0].trim();
-  };
-
-  const normalizeProviderName = (value?: string | null) =>
-    extractProviderDisplayName(value).toLowerCase();
-
-  const [payBank, setPayBank] = useState(() => {
-    // Set payBank from initialState paymentDetails immediately
-    if (
-      initialState?.paymentDetails &&
-      Array.isArray(initialState.paymentDetails) &&
-      initialState.paymentDetails.length > 0
-    ) {
-      const firstDetail = initialState.paymentDetails[0];
-      return extractProviderDisplayName(
-        firstDetail.payment_provider_name ||
-        firstDetail.provider_name ||
-        firstDetail.payment_provider
-      );
-    }
-    // Also check if initialState has payBank directly
-    if (initialState?.payBank) {
-      return extractProviderDisplayName(initialState.payBank);
-    }
-    return "";
-  });
-  const [getAmount, setGetAmount] = useState(() => {
-    if (initialState?.receiveAmountValue !== undefined) {
-      return initialState.receiveAmountValue;
-    }
-    if (initialState?.amountValue !== undefined) {
-      return initialState.amountValue;
-    }
-    return 0;
-  });
+  const [payAmount, setPayAmount] = useState(initialState?.amountValue ?? 100);
+  const [payBank, setPayBank] = useState(
+    initialState?.paymentDetails?.[0]?.payment_provider_name || ""
+  );
+  const [selectedProviderData, setSelectedProviderData] =
+    useState<any>(initialState?.paymentDetails?.[0] || null);
+  const [getAmount, setGetAmount] = useState(initialState?.amountValue ?? 0);
   const [payAmountInput, setPayAmountInput] = useState(
     initialState?.amountInput ?? "100"
   );
-  const [getAmountInput, setGetAmountInput] = useState(() => {
-    if (initialState?.receiveAmountInput) {
-      return initialState.receiveAmountInput;
-    }
-    if (initialState?.receiveAmountValue !== undefined) {
-      return initialState.receiveAmountValue.toString();
-    }
-    return "0";
-  });
-  // Don't set asset directly from initialState - let matching logic handle it
-  const [selectedAsset, setSelectedAsset] = useState<any>(null);
+  const [getAmountInput, setGetAmountInput] = useState(
+    initialState?.amountInput ?? "0"
+  );
+  const [selectedAsset, setSelectedAsset] = useState<any>(
+    initialState?.asset || null
+  );
   const [selectedNetwork, setSelectedNetwork] = useState<any>(null);
   const [isCalculatingFromPay, setIsCalculatingFromPay] = useState(true);
   const [walletAddress, setWalletAddress] = useState("");
@@ -609,16 +620,32 @@ export default function WithdrawalForm({
     top: 0,
     left: 0,
     width: 0,
+    cardLeft: 0,
+    cardTop: 0,
+    cardWidth: 0,
   });
   const [isComponentMounted, setIsComponentMounted] = useState(false);
 
   const updateAssetDropdownPosition = useCallback(() => {
-    if (!assetDropdownRef.current) return;
+    if (!assetDropdownRef.current) {
+      return;
+    }
     const rect = assetDropdownRef.current.getBoundingClientRect();
+    const cardElement = assetDropdownRef.current.closest(
+      "[data-asset-card='true']"
+    ) as HTMLElement | null;
+    const cardRect = cardElement?.getBoundingClientRect();
     setAssetDropdownPosition({
       top: rect.bottom + window.scrollY,
       left: rect.left + window.scrollX,
       width: rect.width,
+      cardLeft: cardRect
+        ? cardRect.left + window.scrollX
+        : rect.left + window.scrollX,
+      cardTop: cardRect
+        ? cardRect.top + window.scrollY
+        : rect.top + window.scrollY,
+      cardWidth: cardRect ? cardRect.width : rect.width,
     });
   }, []);
 
@@ -627,11 +654,16 @@ export default function WithdrawalForm({
   }, []);
 
   useEffect(() => {
-    if (!isAssetDropdownOpen) return;
+    if (!isAssetDropdownOpen) {
+      return;
+    }
+
     updateAssetDropdownPosition();
     const handleReposition = () => updateAssetDropdownPosition();
+
     window.addEventListener("resize", handleReposition);
     window.addEventListener("scroll", handleReposition, true);
+
     return () => {
       window.removeEventListener("resize", handleReposition);
       window.removeEventListener("scroll", handleReposition, true);
@@ -649,18 +681,10 @@ export default function WithdrawalForm({
   // Add loading state for "You Receive" calculation
   const [isCalculatingReceive, setIsCalculatingReceive] = useState(false);
 
-  // Add payment selection state - Initialize from initialState immediately (exact objects from home page)
+  // Add payment selection state
   const [selectedPaymentDetails, setSelectedPaymentDetails] = useState<
     UserPaymentDetail[]
-  >(() => {
-    // If we have initialState with paymentDetails, use them immediately
-    if (initialState?.paymentDetails && initialState.paymentDetails.length > 0) {
-      return initialState.paymentDetails as UserPaymentDetail[];
-    }
-    return [];
-  });
-  const [hasAutoExpanded, setHasAutoExpanded] = useState(false);
-  const [isRestoringFromInitialState, setIsRestoringFromInitialState] = useState(false);
+  >([]);
 
   // Add calculation stability state
   const [isCalculating, setIsCalculating] = useState(false);
@@ -672,40 +696,6 @@ export default function WithdrawalForm({
   );
   const [previousValidAmount, setPreviousValidAmount] = useState<string>("");
   const [isUserModifiedAmount, setIsUserModifiedAmount] = useState(false);
-
-  // Update wallet list ref whenever we get new data (needs payBank state defined)
-  useEffect(() => {
-    if (adminWalletList && adminWalletList.length > 0) {
-      const displayData = adminWalletList.filter((wallet: any) => {
-        const paymentDetail = wallet?.admin_payment_detail;
-        if (!paymentDetail) return false;
-
-        if (paymentDetail.is_active === undefined || paymentDetail.is_active === null) return true;
-
-        return (
-          paymentDetail.is_active === true ||
-          paymentDetail.is_active === "true" ||
-          paymentDetail.is_active === 1 ||
-          paymentDetail.is_active === "1"
-        );
-      });
-
-      if (displayData.length > 0) {
-        walletListRef.current = displayData;
-
-        // Auto-select first payment method if no initialState and payBank is not set
-        if (!payBank && (!initialState || !initialState.paymentDetails || (Array.isArray(initialState.paymentDetails) && initialState.paymentDetails.length === 0))) {
-          const firstPaymentDetail = displayData[0]?.admin_payment_detail;
-          const providerName = firstPaymentDetail?.provider_name;
-
-          if (providerName) {
-            setPayBank(extractProviderDisplayName(providerName));
-            setSelectedPaymentDetail(firstPaymentDetail || null);
-          }
-        }
-      }
-    }
-  }, [adminWalletList, payBank, initialState]);
 
 
   // Add caching for API responses with timestamp
@@ -745,188 +735,153 @@ export default function WithdrawalForm({
 
   // Filter user payment details based on selected provider
   // Match payment_provider_name from user payment details with provider_name from admin
-  useEffect(() => {
-    if (initialState?.payBank) {
-      const normalized = extractProviderDisplayName(initialState.payBank);
-      if (normalized && normalized !== payBank) {
-        setPayBank(normalized);
-      }
-    }
-  }, [initialState?.payBank]);
-
-  const filteredUserPaymentDetails = useMemo(() => {
-    // If we have initialState payment details, use them directly (exact objects from home page)
-    if (
-      initialState?.paymentDetails &&
-      Array.isArray(initialState.paymentDetails) &&
-      initialState.paymentDetails.length > 0
-    ) {
-      return initialState.paymentDetails as UserPaymentDetail[];
-    }
-
-    const normalizedPayBank = normalizeProviderName(payBank);
-    if (!normalizedPayBank) {
-      return [];
-    }
-
-    return (userPaymentMethodsDisplay.displayData || effectiveUserPaymentMethods || []).filter(
+  const filteredUserPaymentDetails = payBank
+    ? (userPaymentMethodsDisplay.displayData || effectiveUserPaymentMethods || []).filter(
       (detail: any) => {
-        // Debug logging
-        console.log("Filtering user payment details:");
-        console.log("Selected provider (payBank):", payBank);
-        console.log("User detail:", detail);
-        console.log("User payment_provider_name:", detail.payment_provider_name);
-        console.log(
-          "Match result:",
-          normalizeProviderName(detail.payment_provider_name || detail.provider_name) === normalizedPayBank
-        );
-
         // Match user payment provider name with selected admin provider name
-        return (
-          normalizeProviderName(detail.payment_provider_name || detail.provider_name) ===
-          normalizedPayBank
-        );
+        return detail.payment_provider_name === payBank;
       }
-    );
-  }, [initialState?.paymentDetails, payBank, userPaymentMethodsDisplay.displayData, effectiveUserPaymentMethods]);
+    )
+    : [];
 
   // Enhanced filtering with fallback options
   const enhancedFilteredUserPaymentDetails = useMemo(() => {
-    // If we have initialState payment details, use them directly
-    if (
-      initialState?.paymentDetails &&
-      Array.isArray(initialState.paymentDetails) &&
-      initialState.paymentDetails.length > 0
-    ) {
-      return initialState.paymentDetails as UserPaymentDetail[];
-    }
-
-    const normalizedPayBank = normalizeProviderName(payBank);
-    if (!normalizedPayBank) {
+    if (!payBank) {
       return [];
     }
 
-    const sourceData = userPaymentMethodsDisplay.displayData || effectiveUserPaymentMethods || [];
+    // Try multiple sources for user payment details
+    // Handle different data structures (array, object with data property, etc.)
+    // Use effectiveUserPaymentDetailsFromRedux which checks both slices
+    let rawUserDetails = effectiveUserPaymentDetailsFromRedux.length > 0
+      ? effectiveUserPaymentDetailsFromRedux
+      : userPaymentDetails;
 
-    console.log("Enhanced filtering debug:");
-    console.log("Selected provider (payBank):", payBank);
-    console.log("Source data length:", sourceData.length);
+    if (rawUserDetails && typeof rawUserDetails === 'object' && !Array.isArray(rawUserDetails)) {
+      // Check if data is nested in a data property
+      rawUserDetails = (rawUserDetails as any)?.data || (rawUserDetails as any)?.payment_details || rawUserDetails;
+    }
+
+    const sourceData = userPaymentMethodsDisplay.displayData ||
+      effectiveUserPaymentMethods ||
+      (Array.isArray(rawUserDetails) ? rawUserDetails : []) ||
+      [];
 
     const filtered = sourceData.filter((detail: any) => {
       // Match user payment provider name with selected admin provider name
-      const matchesProvider =
-        normalizeProviderName(detail.payment_provider_name || detail.provider_name) ===
-        normalizedPayBank;
+      // Try multiple matching strategies to ensure we catch all cases
+      // Also handle format differences (e.g., "Equity Bank" vs "Equity Bank - Bank")
+      const normalizeProviderName = (name: string | null | undefined): string => {
+        if (!name) return "";
+        // Remove " - Method" suffix if present
+        return name.includes(" - ") ? name.split(" - ")[0].trim() : name.trim();
+      };
 
-      console.log("User detail:", detail);
-      console.log("User payment_provider_name:", detail.payment_provider_name);
-      console.log("Selected payBank:", payBank);
-      console.log("Match result:", matchesProvider);
+      // Get the provider field from selected provider (e.g., "Equity Bank" from API)
+      // This is the key field to compare with user payment_provider_name
+      const selectedProviderField = selectedProviderData?.provider ||
+        normalizeProviderName(payBank);
+
+      const normalizedPayBank = normalizeProviderName(payBank);
+      const normalizedDetailProvider = normalizeProviderName(detail.payment_provider_name);
+      const normalizedDetailName = normalizeProviderName(detail.provider_name);
+      const normalizedDetailPaymentProvider = normalizeProviderName(detail.payment_provider);
+      const normalizedSelectedProvider = normalizeProviderName(selectedProviderField);
+
+      // Primary comparison: API provider.provider field with user payment_provider_name
+      const providerMatch1 = detail.payment_provider_name === selectedProviderField ||
+        normalizedDetailProvider === normalizedSelectedProvider ||
+        normalizedDetailProvider === normalizedPayBank ||
+        detail.payment_provider_name === payBank;
+
+      // Secondary comparisons
+      const providerMatch2 = normalizedDetailName === normalizedSelectedProvider ||
+        normalizedDetailName === normalizedPayBank ||
+        detail.provider_name === payBank;
+
+      const providerMatch3 = normalizedDetailPaymentProvider === normalizedSelectedProvider ||
+        normalizedDetailPaymentProvider === normalizedPayBank ||
+        detail.payment_provider === payBank;
+
+      const matchesProvider = providerMatch1 || providerMatch2 || providerMatch3;
+
+      // Compare payment_method_name from user details with available methods from API
+      const userPaymentMethodName = normalizePaymentMethodName(detail.payment_method_name);
+      const hasValidPaymentMethod = userPaymentMethodName
+        ? availablePaymentMethodNames.includes(userPaymentMethodName)
+        : false;
 
       // If FXP is selected, only show approved payment methods
       if (selectedAsset && isForexAsset(selectedAsset)) {
         const isApproved = detail.status?.toLowerCase() === 'approved';
-        return matchesProvider && isApproved;
+        return matchesProvider && isApproved && hasValidPaymentMethod;
       }
 
-      return matchesProvider;
+      // Only return payment details that match provider AND have a valid payment method name
+      return matchesProvider && hasValidPaymentMethod;
     });
 
-    console.log("Filtered results:", filtered);
     return filtered;
-  }, [initialState?.paymentDetails, payBank, userPaymentMethodsDisplay.displayData, effectiveUserPaymentMethods, selectedAsset]);
+  }, [payBank, userPaymentMethodsDisplay.displayData, effectiveUserPaymentMethods, selectedAsset, availablePaymentMethodNames, userPaymentDetails, selectedProviderData]);
 
-  // Track if we've initialized payment from initialState
-  const hasInitializedPayment = useRef(false);
-  const previousInitialState = useRef<any>(null);
-  const previousPayBank = useRef<string>("");
-
-  // Initialize from initialState (only on mount or when initialState changes)
+  // Auto-select first payment method when payment methods are available
   useEffect(() => {
-    // Only restore from initialState on first mount or when initialState actually changes
-    const initialStateChanged = previousInitialState.current !== initialState;
-    previousInitialState.current = initialState;
-
-    // PRIORITY: If we have initialState with paymentDetails, use them only on first mount or when initialState changes
-    if (initialState?.paymentDetails && Array.isArray(initialState.paymentDetails) && initialState.paymentDetails.length > 0) {
-      // Only restore if we haven't initialized yet or if initialState changed
-      if (!hasInitializedPayment.current || initialStateChanged) {
-        // Always use exact objects from initialState - full objects from home page
-        setSelectedPaymentDetails(initialState.paymentDetails as UserPaymentDetail[]);
-
-        // Set payBank from the first payment detail
-        const firstDetail = initialState.paymentDetails[0];
-        const providerName =
-          firstDetail.payment_provider_name || firstDetail.provider_name || firstDetail.payment_provider;
-        if (providerName) {
-          const extractedPayBank = extractProviderDisplayName(providerName);
-          setPayBank(extractedPayBank);
-          previousPayBank.current = extractedPayBank;
-        }
-        hasInitializedPayment.current = true;
-      }
-      return; // Don't proceed to defaults
+    // Only auto-select if no payment method is currently selected
+    if (payBank) {
+      return;
     }
 
-    // Only apply defaults if we don't have initialState or paymentDetails is empty, and haven't initialized yet
-    if ((!initialState?.paymentDetails || !Array.isArray(initialState.paymentDetails) || initialState.paymentDetails.length === 0) && !hasInitializedPayment.current) {
-      // First, try to auto-select based on payBank if it's set
-      if (payBank && enhancedFilteredUserPaymentDetails && enhancedFilteredUserPaymentDetails.length > 0) {
-        // Auto-select first account that matches the selected payment method
-        const firstAccount = enhancedFilteredUserPaymentDetails[0];
-        setSelectedPaymentDetails([firstAccount]);
-        previousPayBank.current = payBank;
-        hasInitializedPayment.current = true;
+    // Check if payment methods are available from public payment methods
+    if (Array.isArray(publicPaymentMethods?.data?.providers) && publicPaymentMethods.data.providers.length > 0) {
+      const firstProvider = publicPaymentMethods.data.providers[0];
+      const firstProviderName = firstProvider.provider_name || firstProvider.payment_provider_name;
+
+      if (firstProviderName) {
+        setPayBank(firstProviderName);
+        setSelectedProviderData(firstProvider);
+        setSelectedPaymentDetail(firstProvider);
         return;
       }
+    }
 
-      // If no payBank is set yet, get all available user payment details
-      const allUserPaymentDetails = effectiveUserPaymentMethods ||
-        userPaymentMethodsDisplay.displayData ||
-        [];
+    // Fallback to admin wallet list if public methods not available
+    if (adminWalletListDisplay.displayData && adminWalletListDisplay.displayData.length > 0) {
+      const providerNames = Array.from(
+        new Set(
+          adminWalletListDisplay.displayData.map(
+            (wallet: any) => wallet?.admin_payment_detail?.provider_name
+          )
+        )
+      ).filter((type) => Boolean(type && type.trim())) as string[];
 
-      // Auto-select first available payment detail if we have any
-      if (allUserPaymentDetails.length > 0) {
-        const firstAccount = allUserPaymentDetails[0];
-        setSelectedPaymentDetails([firstAccount]);
-        // Set payBank from the selected payment detail if not already set
-        const providerName =
-          firstAccount.payment_provider_name || firstAccount.provider_name || firstAccount.payment_provider;
-        if (providerName && !payBank) {
-          const extractedPayBank = extractProviderDisplayName(providerName);
-          setPayBank(extractedPayBank);
-          previousPayBank.current = extractedPayBank;
+      if (providerNames.length > 0) {
+        const firstProviderName = providerNames[0];
+        const selectedWallet = adminWalletListDisplay.displayData.find(
+          (wallet: any) =>
+            wallet.admin_payment_detail?.provider_name === firstProviderName
+        );
+
+        if (selectedWallet?.admin_payment_detail) {
+          setPayBank(firstProviderName);
+          setSelectedProviderData(selectedWallet.admin_payment_detail);
+          setSelectedPaymentDetail(selectedWallet.admin_payment_detail);
         }
-        hasInitializedPayment.current = true;
       }
     }
-  }, [initialState]); // Only depend on initialState for initialization
+  }, [payBank, publicPaymentMethods, adminWalletListDisplay.displayData]);
 
-  // Auto-select first account when user changes payment method (separate from initialization)
+  // Auto-select first account when accounts are available for selected payment type
   useEffect(() => {
-    // Skip if we're still initializing from initialState
-    if (!hasInitializedPayment.current) {
-      return;
-    }
+    if (
+      payBank &&
+      enhancedFilteredUserPaymentDetails.length > 0 &&
+      selectedPaymentDetails.length === 0
+    ) {
 
-    // Skip if payBank hasn't actually changed (user selection)
-    if (payBank === previousPayBank.current) {
-      return;
-    }
-
-    // Skip if we have initialState paymentDetails (don't override preserved state)
-    if (initialState?.paymentDetails && Array.isArray(initialState.paymentDetails) && initialState.paymentDetails.length > 0) {
-      previousPayBank.current = payBank;
-      return;
-    }
-
-    // When user changes payment method, auto-select first account for that method
-    if (payBank && enhancedFilteredUserPaymentDetails && enhancedFilteredUserPaymentDetails.length > 0 && selectedPaymentDetails.length === 0) {
       const firstAccount = enhancedFilteredUserPaymentDetails[0];
       setSelectedPaymentDetails([firstAccount]);
-      previousPayBank.current = payBank;
     }
-  }, [payBank, enhancedFilteredUserPaymentDetails, selectedPaymentDetails.length, initialState?.paymentDetails]);
+  }, [payBank, enhancedFilteredUserPaymentDetails, selectedPaymentDetails]);
 
   // Reset form if user changes asset or payment method after submission
   useEffect(() => {
@@ -978,43 +933,53 @@ export default function WithdrawalForm({
       return;
     }
 
-    // First try to get from cache, then force refresh if no data
-    dispatch(fetchAdminPaymentDetails(false))
-      .unwrap()
-      .then((data) => {
-        // Update ref immediately
-        if (data && data.length > 0) {
-          paymentMethodsRef.current = data.filter((p: any) =>
+    const fetchWithCache = async () => {
+      try {
+        const { sliceCache } = await import("@/lib/utils/sliceCache");
+        
+        // Try to get from cache first
+        const cachedData = await sliceCache.get<any[]>('payment', 'fetchAdminPaymentDetails');
+        
+        if (cachedData && cachedData.length > 0) {
+          // Update ref immediately
+          paymentMethodsRef.current = cachedData.filter((p: any) =>
             p.is_active === undefined || p.is_active === null || p.is_active === true || p.is_active === 'true'
           );
+          dispatch({
+            type: 'payment/fetchAdminPaymentDetails/fulfilled',
+            payload: cachedData,
+          });
+        } else {
+          // Fetch fresh data and cache it
+          const data = await dispatch(fetchAdminPaymentDetails(true)).unwrap();
+          if (data && data.length > 0) {
+            paymentMethodsRef.current = data.filter((p: any) =>
+              p.is_active === undefined || p.is_active === null || p.is_active === true || p.is_active === 'true'
+            );
+            await sliceCache.set('payment', 'fetchAdminPaymentDetails', data, undefined, 60 * 60 * 1000); // 1 hour TTL
+          }
         }
-        // If no payment methods in cache, force refresh
-        if (!data || (Array.isArray(data) && data.length === 0)) {
-          return dispatch(fetchAdminPaymentDetails(true)).unwrap();
-        }
-        return data;
-      })
-      .catch((error: unknown) => {
-        // If cache fetch fails, try force refresh
-        return dispatch(fetchAdminPaymentDetails(true))
+      } catch (error) {
+        // If cache fails, just fetch normally
+        dispatch(fetchAdminPaymentDetails(true))
           .unwrap()
           .then((data) => {
-            // Update ref immediately
             if (data && data.length > 0) {
               paymentMethodsRef.current = data.filter((p: any) =>
                 p.is_active === undefined || p.is_active === null || p.is_active === true || p.is_active === 'true'
               );
             }
-            return data;
           })
-          .catch((refreshError: unknown) => {
-            console.error('❌ Force refresh also failed:', refreshError);
-            // Don't show toast error - the UI will handle the loading/error state gracefully
+          .catch(() => {
+            // Silent fail
           });
-      });
+      }
+    };
+
+    fetchWithCache();
   }, [dispatch, isHomePage]);
 
-  // Fetch admin wallet list
+  // Fetch admin wallet list with caching (1 hour TTL)
   useEffect(() => {
     // Skip API calls on home page
     if (isHomePage || hasFetchedAdminWallet) {
@@ -1028,26 +993,30 @@ export default function WithdrawalForm({
       return;
     }
 
-    dispatch(fetchAdminWalletList(false))
-      .unwrap()
-      .then((data) => {
-        console.log("✅ Admin wallet list fetched successfully");
-        setHasFetchedAdminWallet(true);
-        setAdminWalletRetryCount(0); // Reset retry count on success
-
-        // If no data in cache, try one force refresh (counts as a retry)
-        if ((!data || !data.results || data.results.length === 0) && adminWalletRetryCount === 0) {
-          setAdminWalletRetryCount(1);
-          dispatch(fetchAdminWalletList(true)).unwrap()
-            .then(() => {
-              setHasFetchedAdminWallet(true);
-            })
-            .catch(() => {
-              setHasFetchedAdminWallet(true);
-            });
+    const fetchWithCache = async () => {
+      try {
+        const { sliceCache } = await import("@/lib/utils/sliceCache");
+        
+        // Try to get from cache first
+        const cachedData = await sliceCache.get<any>('payment', 'fetchAdminWalletList');
+        
+        if (cachedData && cachedData.results && cachedData.results.length > 0) {
+          setHasFetchedAdminWallet(true);
+          setAdminWalletRetryCount(0);
+          dispatch({
+            type: 'payment/fetchAdminWalletList/fulfilled',
+            payload: cachedData,
+          });
+        } else {
+          // Fetch fresh data and cache it
+          const data = await dispatch(fetchAdminWalletList(true)).unwrap();
+          if (data && data.results && data.results.length > 0) {
+            setHasFetchedAdminWallet(true);
+            setAdminWalletRetryCount(0);
+            await sliceCache.set('payment', 'fetchAdminWalletList', data, undefined, 60 * 60 * 1000); // 1 hour TTL
+          }
         }
-      })
-      .catch((error: unknown) => {
+      } catch (error: unknown) {
         console.error(`❌ Failed to fetch admin wallet list (attempt ${adminWalletRetryCount + 1}/${MAX_RETRIES}):`, error);
         setAdminWalletRetryCount(prev => prev + 1);
 
@@ -1058,7 +1027,10 @@ export default function WithdrawalForm({
           }
           setHasFetchedAdminWallet(true);
         }
-      });
+      }
+    };
+
+    fetchWithCache();
   }, [dispatch, isHomePage, hasFetchedAdminWallet, adminWalletRetryCount]);
 
   useEffect(() => {
@@ -1108,44 +1080,69 @@ export default function WithdrawalForm({
       });
   }, [dispatch, isHomePage, hasFetchedAssets, assetsRetryCount]);
 
-  // Fetch user payment details
+  // Track previous authentication state to detect login
+  const prevIsAuthenticatedRef = useRef(isAuthenticated);
+
+  // Fetch user payment details with caching (1 hour TTL) and refetch on login
   useEffect(() => {
-    // Skip API calls on home page
-    if (isHomePage) {
+    // Only fetch if user is authenticated (needed for both home page and regular page)
+    if (!isAuthenticated) {
+      prevIsAuthenticatedRef.current = isAuthenticated;
       return;
     }
 
-    // First try to get from cache, then force refresh if no data
-    dispatch(fetchUserPaymentDetails(false))
-      .unwrap()
-      .then((data) => {
-        // Update ref immediately
+    // Detect login: if user just logged in (wasn't authenticated before, now is)
+    const justLoggedIn = !prevIsAuthenticatedRef.current && isAuthenticated;
+    prevIsAuthenticatedRef.current = isAuthenticated;
+
+    const fetchWithCache = async () => {
+      try {
+        const { sliceCache } = await import("@/lib/utils/sliceCache");
+        
+        // If user just logged in, clear cache and force refresh
+        if (justLoggedIn) {
+          await sliceCache.delete('payment', 'fetchUserPaymentDetails');
+          await sliceCache.delete('paymentMethods', 'fetchPublicPaymentMethods');
+          await sliceCache.delete('payment', 'fetchAdminPaymentDetails');
+          await sliceCache.delete('payment', 'fetchAdminWalletList');
+        }
+
+        // Try to get from cache first (unless just logged in)
+        if (!justLoggedIn) {
+          const cachedData = await sliceCache.get<any[]>('payment', 'fetchUserPaymentDetails');
+          if (cachedData && cachedData.length > 0) {
+            userPaymentMethodsRef.current = cachedData;
+            dispatch({
+              type: 'payment/fetchUserPaymentDetails/fulfilled',
+              payload: cachedData,
+            });
+            return;
+          }
+        }
+
+        // Fetch fresh data and cache it
+        const data = await dispatch(fetchUserPaymentDetails(true)).unwrap();
         if (data && data.length > 0) {
           userPaymentMethodsRef.current = data;
+          await sliceCache.set('payment', 'fetchUserPaymentDetails', data, undefined, 60 * 60 * 1000); // 1 hour TTL
         }
-        // If no payment methods in cache, force refresh
-        if (!data || (Array.isArray(data) && data.length === 0)) {
-          return dispatch(fetchUserPaymentDetails(true)).unwrap();
-        }
-        return data;
-      })
-      .catch((error: unknown) => {
-        // If cache fetch fails, try force refresh
-        return dispatch(fetchUserPaymentDetails(true))
+      } catch (error) {
+        // If cache fails, just fetch normally
+        dispatch(fetchUserPaymentDetails(true))
           .unwrap()
           .then((data) => {
-            // Update ref immediately
             if (data && data.length > 0) {
               userPaymentMethodsRef.current = data;
             }
-            return data;
           })
-          .catch((refreshError: unknown) => {
-            console.error('❌ Force refresh also failed:', refreshError);
-            // Don't show toast error - the UI will handle the loading/error state gracefully
+          .catch(() => {
+            // Silent fail
           });
-      });
-  }, [dispatch, isHomePage]);
+      }
+    };
+
+    fetchWithCache();
+  }, [dispatch, isHomePage, isAuthenticated]);
 
   // Fetch swap assets
   useEffect(() => {
@@ -1249,51 +1246,9 @@ export default function WithdrawalForm({
       });
   }, [dispatch, isHomePage, hasFetchedSwapAssets, swapAssetsRetryCount]);
 
-  // Restore asset from initialState when assets are loaded
+  // Auto-select first asset and calculate received amount when assets are loaded
   useEffect(() => {
-    if (!assetsDisplay.shouldShowData || assetsDisplay.displayData.length === 0) {
-      return;
-    }
-
-    // If we have initialState with asset, try to match it first (priority over defaults)
-    if (initialState?.asset) {
-      const initialStateAsset = initialState.asset;
-
-      // Use asset directly from initialState (full object from home page)
-      // Try to find it in available assets by asset_id, otherwise use initialState asset directly
-      const matchingAsset = assetsDisplay.displayData.find((asset: any) => {
-        if (initialStateAsset.asset_id && asset.asset_id) {
-          return String(initialStateAsset.asset_id).toLowerCase().trim() === String(asset.asset_id).toLowerCase().trim();
-        }
-        return false;
-      });
-
-      // Use matched asset if found, otherwise use initialState asset directly
-      const assetToUse = matchingAsset || initialStateAsset;
-
-      setIsRestoringFromInitialState(true);
-      setSelectedAsset(assetToUse);
-      // Restore exact amounts from initialState
-      if (initialState.amountValue !== undefined) {
-        setPayAmount(initialState.amountValue);
-        setPayAmountInput(initialState.amountInput || initialState.amountValue.toString());
-      }
-      // Restore receive amount if available
-      if (initialState.receiveAmountValue !== undefined) {
-        setGetAmount(initialState.receiveAmountValue);
-        setGetAmountInput(initialState.receiveAmountInput || initialState.receiveAmountValue.toString());
-      } else if (initialState.amountValue !== undefined) {
-        // If no receive amount, calculate it
-        setTimeout(() => {
-          calculateAmounts(initialState.amountValue, true);
-        }, 100);
-      }
-      setIsRestoringFromInitialState(false);
-      return; // Don't proceed to auto-select
-    }
-
-    // Auto-select first asset only if no asset is selected and no initialState
-    if (!selectedAsset && !initialState?.asset) {
+    if (assetsDisplay.shouldShowData && assetsDisplay.displayData.length > 0 && !selectedAsset) {
       // Sort assets to get USDT on BSC, USDC on BSC, fxprimus, then others
       const sortedAssets = [...assetsDisplay.displayData].sort((a, b) => {
         const tickerA = (a?.ticker || a?.symbol || a?.name || "")
@@ -1366,9 +1321,9 @@ export default function WithdrawalForm({
     }
   }, [assetsDisplay.displayData, selectedAsset, isUserModifiedAmount]);
 
-  // Recalculate when asset changes (but not when restoring from initialState)
+  // Recalculate when asset changes
   useEffect(() => {
-    if (selectedAsset && payAmount > 0 && isCalculatingFromPay && !isRestoringFromInitialState) {
+    if (selectedAsset && payAmount > 0 && isCalculatingFromPay) {
       // Clear any existing estimate when asset changes
       setEstimate(null);
       setEstimateError(null);
@@ -1392,7 +1347,7 @@ export default function WithdrawalForm({
         setEstimateLoading(true);
       }
     }
-  }, [selectedAsset, isRestoringFromInitialState]);
+  }, [selectedAsset]);
 
   // Simplified estimate handler - UI updates now happen immediately in API response handlers
   // This just acts as a safety net to clear loading states if they get stuck
@@ -1404,35 +1359,14 @@ export default function WithdrawalForm({
     }
   }, [estimate, estimateLoading]);
 
-  // Clear validation errors when amount is cleared or form is reset
-  useEffect(() => {
-    if (!payAmount || payAmount === 0 || payAmountInput === "" || payAmountInput === "0") {
-      setApiValidationError(null);
-      setReceiveAmountError(null);
-      setEstimateError(null);
-      setCalculationError(null);
-    }
-  }, [payAmount, payAmountInput]);
-
-  // Clear validation errors on component unmount
-  useEffect(() => {
-    return () => {
-      setApiValidationError(null);
-      setReceiveAmountError(null);
-      setEstimateError(null);
-      setCalculationError(null);
-    };
-  }, []);
-
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Node;
       if (
         assetDropdownRef.current &&
-        !assetDropdownRef.current.contains(target) &&
+        !assetDropdownRef.current.contains(event.target as Node) &&
         (!assetDropdownContentRef.current ||
-          !assetDropdownContentRef.current.contains(target))
+          !assetDropdownContentRef.current.contains(event.target as Node))
       ) {
         setIsAssetDropdownOpen(false);
       }
@@ -1443,6 +1377,34 @@ export default function WithdrawalForm({
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+
+  // Close asset dropdown when page scrolls, but NOT when the user scrolls inside the dropdown itself
+  useEffect(() => {
+    const handleScroll = (event: Event) => {
+      const target = event.target as Node | null;
+      // Ignore scroll events that originate from inside the dropdown content
+      if (
+        assetDropdownContentRef.current &&
+        target &&
+        assetDropdownContentRef.current.contains(target)
+      ) {
+        return;
+      }
+      if (isAssetDropdownOpen) {
+        setIsAssetDropdownOpen(false);
+      }
+    };
+
+    if (isAssetDropdownOpen) {
+      window.addEventListener("scroll", handleScroll, true);
+      document.addEventListener("scroll", handleScroll, true);
+    }
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll, true);
+      document.removeEventListener("scroll", handleScroll, true);
+    };
+  }, [isAssetDropdownOpen]);
 
   // Check if asset is one of the first two direct assets (USDT on BSC or USDC on BSC)
   const isSimpleCalculationAsset = (asset: any) => {
@@ -1548,7 +1510,7 @@ export default function WithdrawalForm({
   const getDefaultAmount = (asset: any) => {
     if (!asset) return 100;
     const ticker = (asset?.ticker || asset?.symbol || "").toLowerCase();
-    return ticker === "usdt" || ticker === "usdc" ? 100 : 0.001;
+    return ticker === "usdt" || ticker === "usdc" ? 100 : 0.1;
   };
 
   // Get minimum amount based on asset type
@@ -1631,6 +1593,7 @@ export default function WithdrawalForm({
             fromCurrency: selectedAsset.ticker?.toUpperCase(),
             fromNetwork: selectedAsset.network,
             amount: payAmount,
+            usePublicApi: !!isHomePage,
           })
         )
           .then((result) => {
@@ -1897,6 +1860,7 @@ export default function WithdrawalForm({
             toCurrency: selectedAsset.ticker, // TO selected asset (what we need to send)
             toNetwork: selectedAsset.network,
             amount: getAmount, // Use receive amount directly
+            usePublicApi: !!isHomePage,
           })
         ),
         timeoutPromise,
@@ -2279,6 +2243,402 @@ export default function WithdrawalForm({
     return 0;
   });
 
+  const renderAssetDropdown = () => {
+    if (!isComponentMounted || !isAssetDropdownOpen) {
+      return null;
+    }
+
+    const assetDropdownElement = assetDropdownRef.current;
+    let dropdownStyle: React.CSSProperties;
+
+    // Use simple absolute positioning for dashboard (like deposit form)
+    // Use complex fixed positioning for home page
+    if (!isHomePage && assetDropdownElement) {
+      // Dashboard: Simple absolute positioning relative to dropdown element
+      dropdownStyle = {
+        position: "absolute",
+        top: assetDropdownPosition.top,
+        left: assetDropdownPosition.left,
+        width: assetDropdownPosition.width || assetDropdownElement.offsetWidth || undefined,
+      };
+    } else {
+      // Home page: Complex fixed positioning logic
+      const viewportWidth = typeof window !== "undefined" ? window.innerWidth : 0;
+      const minMargin = 16;
+      const minWidth = 280;
+      const maxWidth = 450;
+
+      // Find the card that contains the asset dropdown trigger
+      let currentCard: Element | null = null;
+
+      if (assetDropdownElement) {
+        // Traverse up the DOM to find the parent card
+        let parent = assetDropdownElement.parentElement;
+        while (parent) {
+          if (parent.hasAttribute('data-asset-card') || parent.hasAttribute('data-select-card')) {
+            currentCard = parent;
+            break;
+          }
+          parent = parent.parentElement;
+        }
+      }
+
+      // Fallback to first card if we can't find the current card
+      if (!currentCard) {
+        currentCard = document.querySelector("[data-select-card='true']") ||
+          document.querySelector("[data-asset-card='true']");
+      }
+
+      dropdownStyle = {
+        position: "fixed",
+        top: 200,
+        left: (viewportWidth - minWidth) / 2,
+        width: minWidth,
+      };
+
+      if (currentCard && assetDropdownElement) {
+        const cardRect = currentCard.getBoundingClientRect();
+        const dropdownRect = assetDropdownElement.getBoundingClientRect();
+
+        // Check if this is "You Send" section (has data-asset-card) or "You Receive" section
+        // "You Send" has both data-asset-card and data-select-card
+        // "You Receive" has only data-select-card
+        const isYouSend = currentCard.hasAttribute('data-asset-card');
+
+        // Calculate reduced width so dropdowns don't cover amount inputs (40% of card width)
+        let desiredWidth = Math.min(maxWidth, Math.max(minWidth, cardRect.width * 0.4));
+
+        // Position dropdown vertically based on section
+        let top = cardRect.top - 45; // default: above the card
+        if (isYouSend) {
+          top = cardRect.top + 1; // push "You Send" asset dropdown down a little more
+        } else {
+          // "You Receive" section - pushed down significantly below the card bottom
+          top = cardRect.bottom + 20; // Push "You Receive" dropdown down by 20px below card bottom
+        }
+
+        let left: number;
+
+        // Both "You Send" and "You Receive" - position from right side of card, pushed more right
+        // Position it very close to the right edge
+        left = cardRect.right - desiredWidth - 3; // 3px from right edge of card
+
+        // Push "You Send" dropdown further to the right
+        if (isYouSend) {
+          left += 18; // additional right offset for "You Send"
+        } else {
+          // Push "You Receive" dropdown to the right a little more
+          left += 40; // additional right offset for "You Receive"
+        }
+
+        // Ensure it doesn't go off the left edge
+        if (left < cardRect.left) {
+          left = cardRect.left;
+        }
+
+        // Ensure it doesn't go off screen on the right
+        if (left + desiredWidth > viewportWidth - minMargin) {
+          left = viewportWidth - desiredWidth - minMargin;
+        }
+
+        // Ensure it doesn't go off the left edge
+        if (left < minMargin) {
+          left = minMargin;
+        }
+
+        // If card is too narrow, center it
+        if (cardRect.width < desiredWidth + 16) {
+          left = cardRect.left + (cardRect.width - desiredWidth) / 2;
+        }
+
+        // Final boundary check to ensure it doesn't go off screen
+        if (left + desiredWidth > viewportWidth - minMargin) {
+          left = viewportWidth - desiredWidth - minMargin;
+        }
+
+        dropdownStyle = {
+          position: "fixed",
+          top,
+          left,
+          width: desiredWidth,
+        };
+      }
+    }
+
+    return createPortal(
+      (
+        <div
+          ref={assetDropdownContentRef}
+          className="mt-1 bg-[#ffffff] dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-2xl shadow-lg z-[1200]"
+          style={dropdownStyle}
+        >
+          {/* Search Input */}
+          <div className="p-3 border-b border-[#A2A4A9FF] dark:border-[#35353E]">
+            <div className="relative">
+              <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#7e7e8f] w-4 h-4" />
+              <input
+                type="text"
+                placeholder="Type a currency"
+                className="w-full text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 rounded-xl px-10 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400"
+                value={assetSearchTerm}
+                onChange={(e) => setAssetSearchTerm(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="max-h-60 overflow-y-auto">
+            {sortedSwapAssets.length > 0 ? (
+              <>
+                {!assetSearchTerm && sortedSwapAssets.length > 3 && (
+                  <>
+                    <div className="px-3 py-2 bg-[#F5F6F7] dark:bg-[#23232B] border-b border-[#A2A4A9FF] dark:border-[#35353E]">
+                      <span className="text-xs font-semibold text-[#788099] uppercase tracking-wider">
+                        Popular
+                      </span>
+                    </div>
+                    {sortedSwapAssets
+                      .slice(0, 3)
+                      .map((asset: SupportedAsset, index: number) => {
+                        const handleAssetClick = () => {
+                          if (calculationTimeout) {
+                            clearTimeout(calculationTimeout);
+                          }
+                          if (estimateTimeout) {
+                            clearTimeout(estimateTimeout);
+                          }
+
+                          setEstimate(null);
+                          setEstimateError(null);
+                          setEstimateLoading(false);
+                          setCalculationError(null);
+                          setReceiveAmountError(null);
+                          setApiValidationError(null);
+                          setApiValidationError(null);
+
+                          setSelectedAsset(asset);
+                          setIsAssetDropdownOpen(false);
+                          setAssetSearchTerm("");
+
+                          if (isSimpleCalculationAsset(asset)) {
+                            setIsCalculatingFromPay(true);
+                            if (!isUserModifiedAmount) {
+                              const defaultAmount = getDefaultAmount(asset);
+                              setPayAmount(defaultAmount);
+                              setPayAmountInput(defaultAmount.toString());
+                              calculateAmounts(defaultAmount, true);
+                            } else {
+                              calculateAmounts(payAmount, true);
+                            }
+                          } else if (isForexAsset(asset)) {
+                            setIsCalculatingFromPay(true);
+                            if (!isUserModifiedAmount) {
+                              const defaultAmount = 1000;
+                              setPayAmount(defaultAmount);
+                              setPayAmountInput(defaultAmount.toString());
+                              calculateAmounts(defaultAmount, true);
+                            } else {
+                              calculateAmounts(payAmount, true);
+                            }
+                          } else {
+                            setIsCalculatingFromPay(true);
+                            setIsCalculating(true);
+                            setIsCalculatingReceive(true);
+                            setEstimateLoading(true);
+                            if (!isUserModifiedAmount) {
+                              const defaultAmount = getDefaultAmount(asset);
+                              setPayAmount(defaultAmount);
+                              setPayAmountInput(defaultAmount.toString());
+                            }
+                          }
+                        };
+
+                        return (
+                          <div
+                            key={`popular-${asset.asset_id}-${asset.ticker}-${asset.network}-${index}`}
+                            className={`flex items-center gap-3 p-3 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E] transition-colors duration-150 ${selectedAsset?.asset_id === asset.asset_id ? "bg-blue-50 dark:bg-blue-900/20" : ""}`}
+                            onClick={handleAssetClick}
+                          >
+                            <img
+                              src={
+                                asset?.image_url ||
+                                asset?.asset_image ||
+                                (asset as any)?.image ||
+                                "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                              }
+                              alt={
+                                asset?.name ||
+                                asset?.ticker ||
+                                asset?.symbol ||
+                                "Asset"
+                              }
+                              className="w-10 h-10 rounded-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.src =
+                                  "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                              }}
+                            />
+                            <div className="flex-1">
+                              <div className="text-[#1F2937] dark:text-[#ffffff] font-medium text-base flex items-center gap-2">
+                                {(asset.ticker ||
+                                  asset.symbol ||
+                                  asset.name ||
+                                  "Unknown"
+                                ).toUpperCase()}
+                                <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-normal px-2 py-0.5 rounded-full">
+                                  {getNetworkDisplayName(asset.network)}
+                                </span>
+                              </div>
+                              <div className="text-sm text-gray-500 dark:text-gray-400">
+                                {asset.name ||
+                                  (asset.ticker || "").toUpperCase() ||
+                                  (asset.symbol || "").toUpperCase() ||
+                                  "Unknown Asset"}
+                                {asset.legacy_ticker && (
+                                  <span className="text-xs text-[#f7c624] dark:text-[#f7c624] bg-[#f7c6241a] px-1 py-0.5 rounded-full">
+                                    {asset.legacy_ticker}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            {selectedAsset?.asset_id === asset.asset_id && (
+                              <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
+                            )}
+                          </div>
+                        );
+                      })}
+
+                    <div className="border-t-2 border-[#D1D2D4FF] dark:border-[#35353E]"></div>
+
+                    <div className="px-3 py-2 bg-[#F5F6F7] dark:bg-[#23232B] border-b border-[#A2A4A9FF] dark:border-[#35353E]">
+                      <span className="text-xs font-semibold text-[#788099] uppercase tracking-wider">
+                        All Assets
+                      </span>
+                    </div>
+                  </>
+                )}
+
+                {(assetSearchTerm
+                  ? sortedSwapAssets
+                  : sortedSwapAssets.slice(3)
+                ).map((asset: SupportedAsset, index: number) => {
+                  const isCurrentlySelected =
+                    selectedAsset?.ticker === asset.ticker &&
+                    selectedAsset?.network === asset.network;
+                  return (
+                  <div
+                    key={`${asset.asset_id}-${asset.ticker}-${asset.network}-${index}`}
+                    className={`flex items-center gap-3 p-3 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-b transition-all duration-150 last:border-b-0 ${isCurrentlySelected ? "bg-blue-50 dark:bg-blue-900/20" : ""}`}
+                    onClick={() => {
+                      if (calculationTimeout) {
+                        clearTimeout(calculationTimeout);
+                      }
+                      if (estimateTimeout) {
+                        clearTimeout(estimateTimeout);
+                      }
+
+                      setEstimate(null);
+                      setEstimateError(null);
+                      setEstimateLoading(false);
+                      setCalculationError(null);
+                      setReceiveAmountError(null);
+                      setApiValidationError(null);
+                      setApiValidationError(null);
+
+                      setSelectedAsset(asset);
+                      setIsAssetDropdownOpen(false);
+                      setAssetSearchTerm("");
+
+                      if (isSimpleCalculationAsset(asset)) {
+                        setIsCalculatingFromPay(true);
+                        if (!isUserModifiedAmount) {
+                          const defaultAmount = getDefaultAmount(asset);
+                          setPayAmount(defaultAmount);
+                          setPayAmountInput(defaultAmount.toString());
+                          calculateAmounts(defaultAmount, true);
+                        } else {
+                          calculateAmounts(payAmount, true);
+                        }
+                      } else if (isForexAsset(asset)) {
+                        setIsCalculatingFromPay(true);
+                        if (!isUserModifiedAmount) {
+                          const defaultAmount = 1000;
+                          setPayAmount(defaultAmount);
+                          setPayAmountInput(defaultAmount.toString());
+                          calculateAmounts(defaultAmount, true);
+                        } else {
+                          calculateAmounts(payAmount, true);
+                        }
+                      } else {
+                        setIsCalculatingFromPay(true);
+                        setIsCalculating(true);
+                        setIsCalculatingReceive(true);
+                        setEstimateLoading(true);
+                        if (!isUserModifiedAmount) {
+                          const defaultAmount = getDefaultAmount(asset);
+                          setPayAmount(defaultAmount);
+                          setPayAmountInput(defaultAmount.toString());
+                        }
+                      }
+                    }}
+                  >
+                    <img
+                      src={
+                        asset?.image_url ||
+                        asset?.asset_image ||
+                        (asset as any)?.image ||
+                        "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                      }
+                      alt={
+                        asset?.name || asset?.ticker || asset?.symbol || "Asset"
+                      }
+                      className="w-10 h-10 rounded-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.src =
+                          "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                      }}
+                    />
+                    <div className="flex-1">
+                      <div className="text-[#1F2937] dark:text-[#ffffff] font-medium text-base flex items-center gap-2">
+                        {(asset.ticker ||
+                          asset.symbol ||
+                          asset.name ||
+                          "Unknown"
+                        ).toUpperCase()}
+                        <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-normal px-2 py-0.5 rounded-full">
+                          {getNetworkDisplayName(asset.network)}
+                        </span>
+                      </div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                        {asset.name ||
+                          (asset.ticker || "").toUpperCase() ||
+                          (asset.symbol || "").toUpperCase() ||
+                          "Unknown Asset"}
+                        {asset.legacy_ticker && (
+                          <span className="text-xs text-[#f7c624] dark:text-[#f7c624] bg-[#f7c6241a] px-1 py-0.5 rounded-full">
+                            {asset.legacy_ticker}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {selectedAsset?.asset_id === asset.asset_id && (
+                      <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
+                    )}
+                  </div>
+                  );
+                })}
+              </>
+            ) : (
+              <div className="p-4 text-center text-[#7e7e8f] dark:text-[#788099]">
+                {assetSearchTerm ? "No assets found" : "No assets available"}
+              </div>
+            )}
+          </div>
+        </div>
+      ),
+      document.body
+    );
+  };
+
   // Calculate fees and amounts - Network fee is always 0 for BEP20
   const networkFee = 0;
 
@@ -2554,6 +2914,26 @@ export default function WithdrawalForm({
     }
   }, [selectedAsset, walletAddress]);
 
+  // Clear validation errors when amount is cleared or form is reset
+  useEffect(() => {
+    if (!payAmount || payAmount === 0 || payAmountInput === "" || payAmountInput === "0") {
+      setApiValidationError(null);
+      setReceiveAmountError(null);
+      setEstimateError(null);
+      setCalculationError(null);
+    }
+  }, [payAmount, payAmountInput]);
+
+  // Clear validation errors on component unmount
+  useEffect(() => {
+    return () => {
+      setApiValidationError(null);
+      setReceiveAmountError(null);
+      setEstimateError(null);
+      setCalculationError(null);
+    };
+  }, []);
+
   // Validate first card data
   const validateFirstCard = () => {
     const errors: string[] = [];
@@ -2605,6 +2985,31 @@ export default function WithdrawalForm({
 
   const handleFirstCardSubmit = async () => {
     if (validateFirstCard()) {
+      // Check if user is verified (KYC check) - verify with API
+      if (isAuthenticated && user) {
+        // Check KYC status from API to get the latest status
+        try {
+          const kycResult = await dispatch(checkKYCStatus()).unwrap();
+          const kycStatus = kycResult as any;
+          
+          // Only open modal if API confirms user is NOT verified
+          if (kycStatus && kycStatus.is_verified === false) {
+            dispatch(openKYCModal());
+            return;
+          }
+          // If verified (is_verified === true), continue with the flow
+        } catch (error) {
+          // If API check fails, fallback to user.is_verified
+          // But only open modal if explicitly false (not undefined/null)
+          if (user.is_verified === false) {
+            dispatch(openKYCModal());
+            return;
+          }
+          // If verification status is unknown, allow the action to proceed
+          console.warn("KYC status check failed, proceeding with caution:", error);
+        }
+      }
+
       setIsSubmitting(true);
       setIsTransactionSubmitted(false);
 
@@ -2731,85 +3136,6 @@ export default function WithdrawalForm({
     }
   };
 
-  // Auto-submit when initialState is provided (redirected from home page)
-  useEffect(() => {
-    // Only run on dashboard (not home page) and if we have initialState
-    if (isHomePage || !initialState || hasAutoExpanded) {
-      return;
-    }
-
-    // Check if we have required data from initialState
-    if (!initialState.amountValue || !initialState.asset) {
-      return;
-    }
-
-    // Wait for asset to be loaded and matched
-    if (!selectedAsset) {
-      return;
-    }
-
-    // Don't run if already submitted or submitting
-    if (isTransactionSubmitted || isSubmitting) {
-      return;
-    }
-
-    // Check if we have user payment methods available
-    const allUserPaymentDetails = effectiveUserPaymentMethods ||
-      userPaymentMethodsDisplay.displayData ||
-      [];
-
-    // If no payment details selected and we have available payment methods, wait a bit for auto-selection
-    if (selectedPaymentDetails.length === 0 && allUserPaymentDetails.length > 0) {
-      // Give it a moment for the auto-selection useEffect to run
-      return;
-    }
-
-    // If still no payment details after waiting, and we have payment methods, trigger auto-selection
-    if (selectedPaymentDetails.length === 0 && allUserPaymentDetails.length > 0) {
-      const firstAccount = allUserPaymentDetails[0];
-      setSelectedPaymentDetails([firstAccount]);
-      const providerName =
-        firstAccount.payment_provider_name || firstAccount.provider_name;
-      if (providerName && !payBank) {
-        setPayBank(extractProviderDisplayName(providerName));
-      }
-      // Return and let the effect re-run after selection
-      return;
-    }
-
-    // Auto-expand: If it's a forex asset, show forex form; otherwise, auto-submit first card
-    if (selectedAsset && isForexAsset(selectedAsset)) {
-      setShowForexWithdrawalForm(true);
-      setHasAutoExpanded(true);
-    } else if (selectedAsset && selectedPaymentDetails.length > 0) {
-      // Auto-submit the first card (same as clicking the submit button)
-      const timer = setTimeout(() => {
-        if (!isTransactionSubmitted && !isSubmitting && selectedPaymentDetails.length > 0) {
-          console.log("🚀 AUTO-SUBMITTING WITHDRAWAL:", {
-            selectedAsset: selectedAsset.ticker,
-            selectedPaymentDetails: selectedPaymentDetails.length,
-            payBank
-          });
-          handleFirstCardSubmit();
-          setHasAutoExpanded(true);
-        }
-      }, 2000); // Delay to ensure everything is ready
-
-      return () => clearTimeout(timer);
-    }
-  }, [
-    initialState,
-    selectedAsset,
-    selectedPaymentDetails,
-    effectiveUserPaymentMethods,
-    userPaymentMethodsDisplay.displayData,
-    payBank,
-    isHomePage,
-    hasAutoExpanded,
-    isTransactionSubmitted,
-    isSubmitting,
-  ]);
-
   // Validate form data
   const validateForm = () => {
     const errors: string[] = [];
@@ -2868,6 +3194,31 @@ export default function WithdrawalForm({
       setValidationErrors(errors);
       showToast.error("Please fix the following errors: " + errors.join(", "));
       return;
+    }
+
+    // Check if user is verified (KYC check) - verify with API
+    if (isAuthenticated && user) {
+      // Check KYC status from API to get the latest status
+      try {
+        const kycResult = await dispatch(checkKYCStatus()).unwrap();
+        const kycStatus = kycResult as any;
+        
+        // Only open modal if API confirms user is NOT verified
+        if (kycStatus && kycStatus.is_verified === false) {
+          dispatch(openKYCModal());
+          return;
+        }
+        // If verified (is_verified === true), continue with the flow
+      } catch (error) {
+        // If API check fails, fallback to user.is_verified
+        // But only open modal if explicitly false (not undefined/null)
+        if (user.is_verified === false) {
+          dispatch(openKYCModal());
+          return;
+        }
+        // If verification status is unknown, allow the action to proceed
+        console.warn("KYC status check failed, proceeding with caution:", error);
+      }
     }
 
     setIsSubmitting(true);
@@ -3116,178 +3467,6 @@ export default function WithdrawalForm({
     }
   }, [selectedPaymentDetail]);
 
-  const getAssetNetwork = (asset: SupportedAsset) => {
-    if (!asset) return "Unknown";
-    if (asset.network) return asset.network;
-    if (asset.ticker) return asset.ticker;
-    if (asset.symbol) return asset.symbol;
-    if (asset.name) return asset.name;
-    return "Unknown";
-  };
-
-  const handleAssetSelection = (asset: SupportedAsset) => {
-    setSelectedAsset(asset);
-    setIsAssetDropdownOpen(false);
-    setAssetSearchTerm("");
-  };
-
-  const renderAssetDropdown = () => {
-    if (!isComponentMounted || !isAssetDropdownOpen) {
-      return null;
-    }
-
-    // Safely get trigger rect - ensure ref is available
-    const triggerRect = assetDropdownRef.current?.getBoundingClientRect();
-    const triggerWidth =
-      assetDropdownPosition.width || triggerRect?.width || 0;
-    let expandedWidth: number | undefined =
-      triggerWidth > 0 ? triggerWidth + 48 : undefined;
-
-    const viewportAllowance =
-      typeof window !== "undefined" ? window.innerWidth - 32 : undefined;
-
-    if (
-      expandedWidth !== undefined &&
-      viewportAllowance !== undefined &&
-      expandedWidth > viewportAllowance
-    ) {
-      expandedWidth = viewportAllowance;
-    }
-
-    const extraWidth =
-      expandedWidth !== undefined && triggerWidth > 0
-        ? expandedWidth - triggerWidth
-        : 0;
-
-    let computedLeft =
-      triggerRect && extraWidth
-        ? triggerRect.left - extraWidth / 2
-        : assetDropdownPosition.left;
-
-    if (
-      typeof window !== "undefined" &&
-      expandedWidth !== undefined &&
-      computedLeft !== undefined
-    ) {
-      const maxLeft = window.innerWidth - expandedWidth - 16;
-      computedLeft = Math.min(Math.max(16, computedLeft), Math.max(16, maxLeft));
-    }
-
-    const dropdownStyle: React.CSSProperties = {
-      position: "absolute",
-      top: assetDropdownPosition.top,
-      left: computedLeft ?? triggerRect?.left ?? assetDropdownPosition.left,
-      width:
-        expandedWidth ??
-        assetDropdownPosition.width ??
-        (triggerWidth > 0 ? triggerWidth : undefined),
-    };
-
-    return createPortal(
-      (
-        <div
-          ref={assetDropdownContentRef}
-          className="mt-1 bg-[#ffffff] dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-2xl shadow-lg z-[1200] max-h-[70vh] sm:max-h-96 overflow-y-auto"
-          style={dropdownStyle}
-        >
-          {/* Search Input */}
-          <div className="p-2 sm:p-3 border-b border-[#A2A4A9FF] dark:border-[#35353E]">
-            <div className="relative">
-              <FaSearch className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 text-[#7e7e8f] w-3 h-3 sm:w-4 sm:h-4" />
-              <input
-                type="text"
-                placeholder="Search assets..."
-                className="w-full text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 rounded-xl px-8 sm:px-10 py-1.5 sm:py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400"
-                value={assetSearchTerm}
-                onChange={(e) => setAssetSearchTerm(e.target.value)}
-              />
-            </div>
-          </div>
-
-          {/* Asset List */}
-          <div className="max-h-60 overflow-y-auto">
-            {sortedSwapAssets.length > 0 ? (
-              <>
-                {/* Popular Section - First 3 assets only if no search */}
-                {!assetSearchTerm && sortedSwapAssets.length > 3 && (
-                  <>
-                    <div className="px-3 py-2 bg-[#F5F6F7] dark:bg-[#23232B] border-b border-[#A2A4A9FF] dark:border-[#35353E]">
-                      <span className="text-xs font-semibold text-[#788099] uppercase tracking-wider">
-                        Popular
-                      </span>
-                    </div>
-                    {sortedSwapAssets
-                      .slice(0, 3)
-                      .map((asset: SupportedAsset, index: number) => {
-                        const isCurrentlySelected = selectedAsset?.ticker === asset.ticker && selectedAsset?.network === asset.network;
-                        return (
-                          <AssetDropdownItem
-                            key={`popular-${asset.asset_id || "asset"}-${asset.symbol || asset.ticker || asset.name}-${asset.network || "unknown"}-${index}`}
-                            asset={asset}
-                            isSelected={isCurrentlySelected}
-                            onSelect={() => {
-                              handleAssetSelection(asset);
-                              setIsAssetDropdownOpen(false);
-                              setAssetSearchTerm("");
-                            }}
-                            getHighResAssetIcon={getHighResAssetIcon}
-                            ASSET_ICON_BASE_CLASS={ASSET_ICON_BASE_CLASS}
-                            ASSET_ICON_SIZE={ASSET_ICON_SIZE}
-                            getNetworkDisplayName={getNetworkDisplayName}
-                            getAssetNetwork={getAssetNetwork}
-                            selectedAsset={selectedAsset}
-                          />
-                        );
-                      })}
-
-                    <div className="border-t-2 border-[#D1D2D4FF] dark:border-[#35353E]"></div>
-
-                    <div className="px-3 py-2 bg-[#F5F6F7] dark:bg-[#23232B] border-b border-[#A2A4A9FF] dark:border-[#35353E]">
-                      <span className="text-xs font-semibold text-[#788099] uppercase tracking-wider">
-                        All Assets
-                      </span>
-                    </div>
-                  </>
-                )}
-
-                {/* Rest of the assets or all assets if searching */}
-                {(assetSearchTerm
-                  ? sortedSwapAssets
-                  : sortedSwapAssets.slice(3)
-                ).map((asset: SupportedAsset, index: number) => {
-                  const isCurrentlySelected = selectedAsset?.ticker === asset.ticker && selectedAsset?.network === asset.network;
-                  return (
-                    <AssetDropdownItem
-                      key={`${asset.asset_id || "asset"}-${asset.symbol || asset.ticker || asset.name}-${asset.network || "unknown"}-${index}`}
-                      asset={asset}
-                      isSelected={isCurrentlySelected}
-                      onSelect={() => {
-                        handleAssetSelection(asset);
-                        setIsAssetDropdownOpen(false);
-                        setAssetSearchTerm("");
-                      }}
-                      getHighResAssetIcon={getHighResAssetIcon}
-                      ASSET_ICON_BASE_CLASS={ASSET_ICON_BASE_CLASS}
-                      ASSET_ICON_SIZE={ASSET_ICON_SIZE}
-                      getNetworkDisplayName={getNetworkDisplayName}
-                      getAssetNetwork={getAssetNetwork}
-                      selectedAsset={selectedAsset}
-                    />
-                  );
-                })}
-              </>
-            ) : (
-              <div className="p-4 text-center text-[#7e7e8f] dark:text-[#788099]">
-                {assetSearchTerm ? "No assets found" : "No assets available"}
-              </div>
-            )}
-          </div>
-        </div>
-      ),
-      document.body
-    );
-  };
-
   return (
     <div className="flex flex-col dark:bg-[var(--bg-color)] pl-0 sm:pl-4 pr-2 sm:pr-0 mr-0 sm:mr-40 w-full sm:max-w-5xl">
       {/* Crypto/Forex Toggle Buttons Removed */}
@@ -3301,12 +3480,12 @@ export default function WithdrawalForm({
       ) : (
         <>
           <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
-            Transaction Info
+            {/* <span className="text-[#7e7e8f] dark:text-[#788099]">1-</span> Transaction Info */}
           </h2>
 
           {/* API Validation Error - Show as simple red text */}
           {apiValidationError && (
-            <div className="mb-2 sm:mb-4 text-red-500 text-sm font-medium">
+            <div className="mb-4 text-red-500 text-sm font-medium">
               {apiValidationError}
             </div>
           )}
@@ -3315,17 +3494,24 @@ export default function WithdrawalForm({
             {/* Top Section - You Send and You Get in one card */}
             <div className="relative mb-2 sm:mb-3 md:mb-4">
               {/* Top Card Container */}
-              <div className="relative flex flex-col sm:flex-row border border-[#35353E] dark:border-[#35353E] rounded-xl sm:rounded-2xl p-2 sm:p-3 md:p-4 gap-2 sm:gap-3 md:gap-0 overflow-visible bg-white dark:bg-[#18181D]">
+              <div
+                data-asset-card="true"
+                data-select-card="true"
+                className="relative flex flex-col sm:flex-row border border-[#35353E] dark:border-[#35353E] rounded-xl sm:rounded-2xl p-2 sm:p-3 md:p-4 overflow-visible gap-2 sm:gap-3 md:gap-0 bg-white dark:bg-[#18181D]"
+              >
                 {/* You Send Section */}
-                <div className="flex-1">
-                  <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
+                <div className="flex-1 min-w-0">
+                  <label className="block text-[15px] text-[#475569] dark:text-[#9CA3AF] mb-2 font-semibold flex items-center gap-2">
                     You Send
                     {isCalculatingFromPay &&
                       (isCalculating || isCalculatingReceive) && (
                         <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
                       )}
                   </label>
-                  <div className="text-xs text-[#788099] dark:text-[#788099] mb-1">{t("express.amount", "Amount")}</div>
+                  <div className={`text-xs mb-1 ${isDark ? "text-[#788099]" : "text-[#64748B]"
+                    }`}>
+                    Amount
+                  </div>
                   <div className="relative">
                     <input
                       type="text"
@@ -3427,9 +3613,23 @@ export default function WithdrawalForm({
                                 setIsCalculating(false);
                                 setIsCalculatingReceive(false);
                               }
+                            } else {
+                              // For invalid input, clear the receive amount but don't show "0"
+                              setGetAmount(0);
+                              setGetAmountInput("");
+                              setReceiveAmountError(null);
+                              setApiValidationError(null);
+                              setIsCalculating(false);
+                              setIsCalculatingReceive(false);
                             }
                           }
                         }
+                      }}
+                      onKeyDown={(e) => {
+                        // Allow all numeric input including negative signs
+                      }}
+                      onBlur={() => {
+                        // Allow any value on blur
                       }}
                       placeholder={
                         (isCalculating || isCalculatingReceive) &&
@@ -3437,37 +3637,86 @@ export default function WithdrawalForm({
                           ? "Calculating..."
                           : "Enter amount"
                       }
-                      className={`w-full h-[48px] text-[#35353e] dark:text-white bg-transparent dark:bg-transparent rounded-2xl px-2 sm:px-3 md:px-4 pr-12 sm:pr-16 text-base sm:text-lg focus:outline-none border appearance-none transition-colors duration-200 ${apiValidationError
+                      className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${apiValidationError
                         ? "border-red-500"
                         : isCalculating || isCalculatingReceive
                           ? "border-[#1D8751]"
-                          : "border-[#A2A4A9FF] dark:border-[#35353E]"
+                          : isDark
+                            ? "border-white/10 text-white"
+                            : "border-gray-200 text-[#111827]"
                         }`}
                     />
                     <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
-                      <span className="text-[#35353e] dark:text-white text-sm font-medium">
+                      <span className={`${isDark ? "text-white" : "text-[#1F2937]"} text-sm font-medium`}>
                         {selectedAsset
                           ? (
                             selectedAsset.ticker ||
                             selectedAsset.symbol ||
-                            selectedAsset.name ||
-                            "USD"
-                          )
-                          : "USD"}
+                            "USDT"
+                          ).toUpperCase()
+                          : "USDT"}
                       </span>
                     </div>
+                    {(isCalculatingReceive || isCalculating) &&
+                      !apiValidationError && (
+                        <div className="absolute right-12 top-1/2 transform -translate-y-1/2">
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#1D8751]"></div>
+                        </div>
+                      )}
+                    {apiValidationError && (
+                      <div className="absolute right-12 top-1/2 transform -translate-y-1/2">
+                        <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
+                          <circle
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            className="text-red-500"
+                          />
+                          <line
+                            x1="12"
+                            y1="8"
+                            x2="12"
+                            y2="12"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            className="text-red-500"
+                          />
+                          <circle
+                            cx="12"
+                            cy="16"
+                            r="1"
+                            fill="currentColor"
+                            className="text-red-500"
+                          />
+                        </svg>
+                      </div>
+                    )}
                   </div>
+                  {/* Display calculation error below You Send input */}
+                  {calculationError && (
+                    <div className="mt-2 text-sm text-yellow-500 dark:text-yellow-400">
+                      {calculationError}
+                    </div>
+                  )}
+                  {apiValidationError && (
+                    <div className="mt-2 text-sm text-yellow-500 dark:text-yellow-400">
+                      {apiValidationError}
+                    </div>
+                  )}
                 </div>
 
                 {/* You Get Section */}
-                <div className="flex-1 sm:pl-4 border-t sm:border-t-0 sm:border-l border-[#35353E] dark:border-[#35353E] pt-3 sm:pt-0 sm:border-none" data-select-card="true">
+                <div className="flex-1 min-w-0 sm:pl-4 border-t sm:border-t-0 sm:border-l border-[#35353E] dark:border-[#35353E] pt-2 sm:pt-0 sm:border-none">
                   <div className="hidden sm:block text-sm sm:text-[17px] mb-2 font-semibold">
                     <span className="opacity-0">Placeholder</span>
                   </div>
-                  <div className="text-xs text-[#788099] dark:text-[#788099] mb-1">{t("express.youGet", "You Get")}</div>
+                  <div className="text-xs text-[#788099] dark:text-[#788099] mb-1">Asset</div>
                   <div className="relative" ref={assetDropdownRef}>
                     <div
-                      className={`w-full h-[48px] bg-transparent dark:bg-transparent text-[#35353e] dark:text-white rounded-2xl px-3 sm:px-4 text-base sm:text-lg focus:outline-none border border-[#39394A] dark:border-[#35353E] hover:border-blue-400 dark:hover:border-blue-400 flex items-center justify-between cursor-pointer transition-colors duration-200`}
+                      className={`w-full rounded-2xl px-4 py-2 text-lg focus:outline-none border flex items-center justify-between cursor-pointer bg-transparent border-[#A2A4A9FF] dark:border-[#35353E] text-[#35353e] dark:text-[#ffffff]`}
                       onClick={() => {
                         if (!isAssetDropdownOpen) {
                           updateAssetDropdownPosition();
@@ -3479,26 +3728,32 @@ export default function WithdrawalForm({
                         {selectedAsset ? (
                           <>
                             <img
-                              src={getHighResAssetIcon(selectedAsset, 72)}
+                              src={
+                                selectedAsset?.image_url ||
+                                selectedAsset?.asset_image ||
+                                (selectedAsset as any)?.image ||
+                                "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                              }
                               alt={
                                 selectedAsset?.name ||
                                 selectedAsset?.ticker ||
                                 selectedAsset?.symbol ||
                                 "Asset"
                               }
-                              className={`${ASSET_ICON_BASE_CLASS} w-6 h-6`}
-                              loading="lazy"
+                              className="w-6 h-6 rounded-full object-cover"
                               onError={(e) => {
                                 console.log(
                                   "Image failed to load for asset:",
                                   selectedAsset
                                 );
-                                e.currentTarget.src = getHighResAssetIcon(null, 72);
+                                e.currentTarget.src =
+                                  "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
                               }}
                             />
                             <div className="flex flex-col">
                               <div className="flex items-center gap-2">
-                                <span className="text-[#35353e] dark:text-white font-medium">
+                                <span className={`font-normal text-sm ${isDark ? "text-white" : "text-[#1F2937]"
+                                  }`}>
                                   {(
                                     selectedAsset.ticker ||
                                     selectedAsset.symbol ||
@@ -3506,25 +3761,20 @@ export default function WithdrawalForm({
                                     "Unknown"
                                   ).toUpperCase()}
                                 </span>
-                                <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
+                                <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-normal px-2 py-0.5 rounded-full">
                                   {getNetworkDisplayName(selectedAsset.network)}
                                 </span>
                               </div>
-                              <span className="text-[#788099] text-xs">
-                                {selectedAsset.name ||
-                                  (selectedAsset.ticker || selectedAsset.symbol || "Unknown")} ({getNetworkDisplayName(selectedAsset.network)})
-                              </span>
                             </div>
                           </>
                         ) : (
                           <>
                             <img
-                              src={getHighResAssetIcon(null, 72)}
+                              src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
                               alt="asset icon"
-                              className={`${ASSET_ICON_BASE_CLASS} w-12 h-12`}
-                              loading="lazy"
+                              className="w-6 h-6"
                             />
-                            <span className="text-[#7e7e8f] dark:text-[#788099]">
+                            <span className={`${isDark ? "text-[#788099]" : "text-[#64748B]"}`}>
                               {assetsDisplay.isLoading
                                 ? "Loading assets..."
                                 : "Select Asset"}
@@ -3548,35 +3798,19 @@ export default function WithdrawalForm({
                       </svg>
                     </div>
 
-                    {/* Asset Dropdown */}
                     {renderAssetDropdown()}
                   </div>
                 </div>
               </div>
 
               {/* Swap Circle - positioned to touch both borders equally */}
-              <div className="absolute left-1/2 transform -translate-x-1/2 top-full -translate-y-1/3 z-10">
+              <div className="absolute left-1/2 transform -translate-x-1/2 top-full -translate-y-8 sm:-translate-y-6 z-10">
                 <button
-                  className="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-105"
+                  className="w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-105"
                   onClick={() => {
                     // Switch between deposit and withdrawal modes
                     if (onModeChange) {
-                      // Preserve current state including payment method selection
-                      // Extract first payment detail for deposit form (which uses single object)
-                      const currentState = {
-                        payBank,
-                        paymentDetails: selectedPaymentDetails,
-                        payment: selectedPaymentDetails.length > 0 ? selectedPaymentDetails[0] : selectedPaymentDetail,
-                        selectedAsset,
-                        payAmountInput,
-                        getAmountInput,
-                        amountInput: payAmountInput,
-                        receiveAmountInput: getAmountInput,
-                        amountValue: parseFloat(payAmountInput) || 0,
-                        receiveAmountValue: getAmount,
-                        walletAddress: payoutAddress || withdrawalAddress,
-                      };
-                      onModeChange(mode === "deposit" ? "withdrawal" : "deposit", currentState);
+                      onModeChange(mode === "deposit" ? "withdrawal" : "deposit");
                     }
                   }}
                 >
@@ -3596,11 +3830,14 @@ export default function WithdrawalForm({
               </div>
             </div>
 
-            {/* Bottom Section - You Receive and Bank/Payment Method in one card */}
-            <div className="relative mb-2 sm:mb-3">
-              <div className="relative flex flex-col sm:flex-row border border-[#35353E] dark:border-[#35353E] rounded-xl sm:rounded-2xl p-2 sm:p-3 md:p-4 gap-2 sm:gap-3 md:gap-4 overflow-visible bg-white dark:bg-[#18181D]">
+            {/* Bottom Section - You Receive and Payment Method in one card */}
+            <div className="relative mb-2 sm:mb-3 md:mb-4">
+              <div
+                data-select-card="true"
+                className="relative flex flex-col sm:flex-row border border-[#35353E] dark:border-[#35353E] rounded-xl sm:rounded-2xl p-2 sm:p-3 md:p-4 overflow-visible gap-2 sm:gap-3 md:gap-0 bg-white dark:bg-[#18181D]"
+              >
                 {/* You Receive Section */}
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
                     You Receive
                     {!isCalculatingFromPay &&
@@ -3608,7 +3845,7 @@ export default function WithdrawalForm({
                         <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
                       )}
                   </label>
-                  <div className="text-xs text-[#788099] dark:text-[#788099] mb-1">{t("express.amount", "Amount")}</div>
+                  <div className="text-xs text-[#788099] dark:text-[#788099] mb-1">Amount</div>
                   <div className="relative">
                     <input
                       type="text"
@@ -3761,7 +3998,7 @@ export default function WithdrawalForm({
                           ? "Calculating..."
                           : "Enter amount"
                       }
-                      className={`w-full h-[48px] text-[#35353e] dark:text-white bg-transparent dark:bg-transparent rounded-2xl px-3 sm:px-4 pr-16 text-base sm:text-lg focus:outline-none border appearance-none transition-colors duration-200 ${(receiveAmountError &&
+                      className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${(receiveAmountError &&
                         (receiveAmountError.includes("Rough estimate") ||
                           receiveAmountError.includes("Using estimated rate"))) ||
                         (apiValidationError &&
@@ -3781,11 +4018,13 @@ export default function WithdrawalForm({
                           ? "border-red-500"
                           : isCalculating || isCalculatingReceive
                             ? "border-[#1D8751]"
-                            : "border-[#A2A4A9FF] dark:border-[#35353E]"
+                            : isDark
+                              ? "border-white/10 text-white"
+                              : "border-gray-200 text-[#111827]"
                         }`}
                     />
                     <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
-                      <span className="text-[#35353e] dark:text-[#ffffff] text-sm font-medium">
+                      <span className={`${isDark ? "text-white" : "text-[#1F2937]"} text-sm font-medium`}>
                         USD
                       </span>
                     </div>
@@ -3878,154 +4117,120 @@ export default function WithdrawalForm({
                 </div>
 
                 {/* Payment Method Section */}
-                <div className="flex-1 sm:pl-4 border-t sm:border-t-0 sm:border-l border-[#35353E] dark:border-[#35353E] pt-3 sm:pt-0 sm:border-none" data-select-card="true">
+                <div className="flex-1 sm:pl-4 border-t sm:border-t-0 sm:border-l border-[#35353E] dark:border-[#35353E] pt-2 sm:pt-0 sm:border-none relative z-0">
                   <div className="hidden sm:block text-sm sm:text-[17px] mb-2 font-semibold">
                     <span className="opacity-0">Placeholder</span>
                   </div>
-                  <div className="text-xs text-[#788099] dark:text-[#788099] mb-1">Bank/Payment Method</div>
-                  <div className="relative">
+                  <div className="text-xs text-[#788099] dark:text-[#788099] mb-1">Payment Method</div>
+                  <div className="relative z-0">
                     {(() => {
-                      // PRIORITY: If we have initialState paymentDetails, use EXACT payment method from there - NO MATCHING
-                      if (initialState?.paymentDetails && Array.isArray(initialState.paymentDetails) && initialState.paymentDetails.length > 0) {
-                        const firstDetail = initialState.paymentDetails[0];
-                        // Use EXACT provider name from the payment detail object from home page
-                        const providerName = firstDetail.payment_provider_name || firstDetail.provider_name || firstDetail.payment_provider || "";
-                        const providerLogo = firstDetail.provider_logo || firstDetail.logo || firstDetail.provider_logo_url;
+                      // Use public payment methods if available (they have logos)
+                      let paymentMethodOptions: Array<{ value: string; label: string; logo?: string }> = [];
 
-                        if (providerName && providerName.trim() !== "") {
-                          // Show all available payment methods, not just the one from initialState
-                          const providerNames = Array.from(
-                            new Set(
-                              (adminWalletListDisplay.displayData || []).map(
-                                (wallet: any) => wallet?.admin_payment_detail?.provider_name
-                              )
+                      if (Array.isArray(publicPaymentMethods?.data?.providers) && publicPaymentMethods.data.providers.length > 0) {
+                        // Use public payment methods with logos
+                        paymentMethodOptions = publicPaymentMethods.data.providers.map((provider: any) => {
+                          const providerName = provider.provider_name || provider.payment_provider_name || "Unknown";
+                          const methodName = provider.method?.method_name || provider.method?.method_display || provider.method_name || null;
+                          const subtitle = methodName ? `${providerName} - ${methodName}` : null;
+
+                          return {
+                            value: providerName,
+                            label: providerName,
+                            subtitle: subtitle || undefined,
+                            logo: provider.logo || provider.provider_logo || undefined,
+                          };
+                        }).filter((opt: any) => opt.value && opt.value.trim());
+                      } else {
+                        // Fallback to admin wallet list
+                        const providerNames = Array.from(
+                          new Set(
+                            (adminWalletListDisplay.displayData || []).map(
+                              (wallet: any) => wallet?.admin_payment_detail?.provider_name
                             )
-                          ).filter((type) => Boolean(type && type.trim())) as string[];
+                          )
+                        ).filter((type) => Boolean(type && type.trim())) as string[];
 
-                          const optionProviders =
-                            providerNames.length > 0 ? providerNames : fallbackProviderNames;
+                        paymentMethodOptions = providerNames.map((paymentType: string) => {
+                          const adminDetail = adminWalletListDisplay.displayData?.find(
+                            (wallet: any) =>
+                              wallet.admin_payment_detail?.provider_name === paymentType
+                          )?.admin_payment_detail;
 
-                          return (
-                            <CustomSelect
-                              options={optionProviders.map((paymentType: string) => {
-                                const adminDetail = adminWalletListDisplay.displayData?.find(
-                                  (wallet: any) =>
-                                    wallet.admin_payment_detail?.provider_name === paymentType
-                                )?.admin_payment_detail;
+                          const providerName = adminDetail?.provider_name || paymentType;
+                          const methodName = adminDetail?.payment_method_type || adminDetail?.payment_method_name || null;
+                          const subtitle = methodName ? `${providerName} - ${methodName}` : null;
 
-                                return {
-                                  value: paymentType,
-                                  label: adminDetail?.provider_name || paymentType,
-                                  logo: adminDetail?.provider_logo || undefined,
-                                };
-                              })}
-                              value={payBank || providerName}
-                              sizeMode="card"
-                              logoSize={32}
-                              dropdownMaxHeight={350}
-                              dropdownPosition="above"
-                              className={`w-full ${paymentMethodError ? "border-red-500 dark:border-red-500" : ""
-                                }`}
-                              triggerClassName="bg-transparent dark:bg-transparent text-[#35353e] dark:text-white border border-gray-300 dark:border-[#39394A] px-3 sm:px-4 py-2 sm:py-2.5 text-base sm:text-lg"
-                              onChange={(value) => {
-                                const selectedWallet = adminWalletListDisplay.displayData?.find(
-                                  (wallet: any) =>
-                                    wallet.admin_payment_detail?.provider_name === value
-                                );
-
-                                setPayBank(extractProviderDisplayName(value));
-                                setSelectedPaymentDetail(
-                                  selectedWallet?.admin_payment_detail || null
-                                );
-
-                                // Auto-select first registered account for the selected payment method
-                                // Clear first, then let the auto-selection useEffect handle it
-                                setSelectedPaymentDetails([]);
-                                setPaymentMethodError(null);
-
-                                // The auto-selection useEffect will handle selecting the first account
-                                // after enhancedFilteredUserPaymentDetails updates
-                              }}
-                              placeholder={
-                                adminWalletListDisplay.isLoading
-                                  ? "Loading payment methods..."
-                                  : providerNames.length === 0
-                                    ? "No payment methods available"
-                                    : "Select Payment Method"
-                              }
-                              loading={adminWalletListDisplay.isLoading}
-                              loadingText="Loading payment methods..."
-                              emptyText="No payment methods available"
-                              searchable={true}
-                            />
-                          );
-                        }
+                          return {
+                            value: paymentType,
+                            label: providerName,
+                            subtitle: subtitle || undefined,
+                            logo: adminDetail?.provider_logo || undefined,
+                          };
+                        });
                       }
 
-                      // Otherwise, use normal dropdown with all options
-                      const providerNames = Array.from(
-                        new Set(
-                          (adminWalletListDisplay.displayData || []).map(
-                            (wallet: any) => wallet?.admin_payment_detail?.provider_name
-                          )
-                        )
-                      ).filter((type) => Boolean(type && type.trim())) as string[];
+                      // Use fallback if no options available
+                      if (paymentMethodOptions.length === 0) {
+                        paymentMethodOptions = fallbackProviderNames.map((name: string) => ({
+                          value: name,
+                          label: name,
+                        }));
+                      }
 
-                      const optionProviders =
-                        providerNames.length > 0 ? providerNames : fallbackProviderNames;
+                      const isLoading = publicMethodsLoading || adminWalletListDisplay.isLoading;
 
                       return (
                         <CustomSelect
-                          options={optionProviders.map((paymentType: string) => {
-                            const adminDetail = adminWalletListDisplay.displayData?.find(
-                              (wallet: any) =>
-                                wallet.admin_payment_detail?.provider_name === paymentType
-                            )?.admin_payment_detail;
-
-                            return {
-                              value: paymentType,
-                              label: adminDetail?.provider_name || paymentType,
-                              logo: adminDetail?.provider_logo || undefined,
-                            };
-                          })}
+                          options={paymentMethodOptions}
                           value={payBank}
+                          logoSize={PAYMENT_LOGO_SIZE}
+                          logoClassName={PAYMENT_LOGO_BASE_CLASS}
                           sizeMode="card"
-                          logoSize={32}
-                          dropdownMaxHeight={350}
-                          dropdownPosition="above"
-                          className={`w-full ${paymentMethodError ? "border-red-500 dark:border-red-500" : ""
-                            }`}
-                          triggerClassName="bg-transparent dark:bg-transparent text-[#35353e] dark:text-white border border-gray-300 dark:border-[#39394A] px-3 sm:px-4 py-2 sm:py-2.5 text-base sm:text-lg"
                           onChange={(value) => {
-                            const selectedWallet = adminWalletListDisplay.displayData?.find(
-                              (wallet: any) =>
-                                wallet.admin_payment_detail?.provider_name === value
-                            );
+                            // Find the selected provider from public payment methods or admin wallet list
+                            let selectedWallet = null;
+                            let selectedProvider = null;
 
-                            setPayBank(extractProviderDisplayName(value));
+                            // First try to find in public payment methods
+                            if (Array.isArray(publicPaymentMethods?.data?.providers)) {
+                              selectedProvider = publicPaymentMethods.data.providers.find(
+                                (provider: any) =>
+                                  (provider.provider_name || provider.payment_provider_name) === value
+                              );
+                            }
+
+                            // If not found in public methods, try admin wallet list
+                            if (!selectedProvider) {
+                              selectedWallet = adminWalletListDisplay.displayData?.find(
+                                (wallet: any) =>
+                                  wallet.admin_payment_detail?.provider_name === value
+                              );
+                            }
+
+                            // Keep the full value for dropdown matching, but store provider data for filtering
+                            setPayBank(value); // Keep full value for dropdown to work
+                            setSelectedProviderData(selectedProvider); // Store full provider data for comparison
                             setSelectedPaymentDetail(
-                              selectedWallet?.admin_payment_detail || null
+                              selectedWallet?.admin_payment_detail || selectedProvider || null
                             );
 
-                            // Auto-select first registered account for the selected payment method
-                            // Clear first, then let the auto-selection useEffect handle it
                             setSelectedPaymentDetails([]);
                             setPaymentMethodError(null);
-
-                            // The auto-selection useEffect will handle selecting the first account
-                            // after enhancedFilteredUserPaymentDetails updates
                           }}
                           placeholder={
-                            adminWalletListDisplay.isLoading
+                            isLoading
                               ? "Loading payment methods..."
-                              : providerNames.length === 0
-                                ? "No payment methods available"
-                                : "Select Payment Method"
+                              : finalPaymentMethods && finalPaymentMethods.length > 0
+                                ? "Select Payment Method"
+                                : "No payment methods available"
                           }
-                          loading={adminWalletListDisplay.isLoading}
+                          disabled={isLoading}
+                          loading={isLoading}
                           loadingText="Loading payment methods..."
                           emptyText="No payment methods available"
                           searchable={true}
+                          className="w-full"
                         />
                       );
                     })()}
@@ -4035,188 +4240,147 @@ export default function WithdrawalForm({
 
                   {/* Registered Account Section */}
                   {payBank && (
-                    <div className="mt-2 sm:mt-3 w-full overflow-hidden">
-                      <label className="block text-sm sm:text-base lg:text-[17px] text-[#7e7e8f] mb-2 font-semibold">
+                    <div className="mt-3 w-full relative z-10">
+                      <label className="block text-[17px] text-[#475569] dark:text-[#9CA3AF] mb-2 font-semibold">
                         Registered Account
                       </label>
-                      {/* If we have selectedPaymentDetails from initialState, show ONLY those - EXACT objects from home page */}
-                      {initialState?.paymentDetails && Array.isArray(initialState.paymentDetails) && initialState.paymentDetails.length > 0 ? (
-                        <div className="relative w-full overflow-hidden">
-                          <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
-                            <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 break-words">
-                              {initialState.paymentDetails.length} account(s) found
-                            </span>
-                            <button
-                              type="button"
-                              onClick={async () => {
-                                try {
-                                  await dispatch(fetchUserPaymentDetails(true)).unwrap();
-                                  showToast.success("Payment details refreshed!");
-                                } catch (error) {
-                                  showToast.error("Failed to refresh payment details");
-                                }
-                              }}
-                              className="text-xs text-[#1D8751] hover:text-[#166b3e] underline self-start sm:self-auto"
-                            >
-                              Refresh
-                            </button>
-                          </div>
-                          <div className="space-y-2 w-full overflow-hidden">
-                            {initialState.paymentDetails.map((detail: any, index: number) => (
-                              <div
-                                key={index}
-                                className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-lg sm:rounded-xl border border-[#1D8751] bg-[#1D8751]/10 dark:bg-[#1D8751]/10 w-full overflow-hidden"
-                              >
-                                <div className="flex-1 min-w-0 w-full sm:w-auto overflow-hidden">
-                                  <div className="text-gray-900 dark:text-white font-medium text-sm sm:text-base lg:text-lg break-words">
-                                    <span className="break-words inline-block max-w-full">
-                                      {detail.payment_provider_name || detail.provider_name || "Unknown Provider"}
-                                    </span>
-                                    <span className="hidden sm:inline"> - </span>
-                                    <span className="block sm:inline break-words max-w-full">
-                                      {detail.account_name || detail.account_number}
-                                    </span>
-                                  </div>
-                                  <div className="text-gray-600 dark:text-[#788099] text-xs sm:text-sm break-words mt-1">
-                                    <span className="break-words inline-block max-w-full">{detail.account_name}</span>
-                                    <span className="break-words inline-block max-w-full"> ({detail.account_number})</span>
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ) : selectedPaymentDetails.length > 0 ? (
-                        <div className="relative w-full overflow-hidden">
-                          <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
-                            <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 break-words">
-                              {selectedPaymentDetails.length} account(s) selected
-                            </span>
-                            <button
-                              type="button"
-                              onClick={async () => {
-                                try {
-                                  await dispatch(fetchUserPaymentDetails(true)).unwrap();
-                                  showToast.success("Payment details refreshed!");
-                                } catch (error) {
-                                  showToast.error("Failed to refresh payment details");
-                                }
-                              }}
-                              className="text-xs text-[#1D8751] hover:text-[#166b3e] underline self-start sm:self-auto"
-                            >
-                              Refresh
-                            </button>
-                          </div>
-                          <div className="space-y-2 w-full overflow-hidden">
-                            {selectedPaymentDetails.map((detail: UserPaymentDetail, index: number) => (
-                              <div
-                                key={detail.id || detail.user_payment_detail_id || index}
-                                className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-lg sm:rounded-xl border border-[#1D8751] bg-[#1D8751]/10 dark:bg-[#1D8751]/10 w-full overflow-hidden"
-                              >
-                                <div className="flex-1 min-w-0 w-full sm:w-auto overflow-hidden">
-                                  <div className="text-gray-900 dark:text-white font-medium text-sm sm:text-base lg:text-lg break-words">
-                                    <span className="break-words inline-block max-w-full">
-                                      {detail.payment_provider_name || detail.provider_name || "Unknown Provider"}
-                                    </span>
-                                    <span className="hidden sm:inline"> - </span>
-                                    <span className="block sm:inline break-words max-w-full">
-                                      {detail.account_name || detail.account_number}
-                                    </span>
-                                  </div>
-                                  <div className="text-gray-600 dark:text-[#788099] text-xs sm:text-sm break-words mt-1">
-                                    <span className="break-words inline-block max-w-full">{detail.account_name || "N/A"}</span>
-                                    <span className="break-words inline-block max-w-full"> ({detail.account_number || detail.wallet_address || "N/A"})</span>
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ) : enhancedFilteredUserPaymentDetails.length > 0 ? (
-                        <div className="relative w-full overflow-hidden">
-                          <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
-                            <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 break-words">
-                              {enhancedFilteredUserPaymentDetails.length} account(s) found
-                            </span>
-                            <button
-                              type="button"
-                              onClick={async () => {
-                                try {
-                                  await dispatch(fetchUserPaymentDetails(true)).unwrap();
-                                  showToast.success("Payment details refreshed!");
-                                } catch (error) {
-                                  showToast.error("Failed to refresh payment details");
-                                }
-                              }}
-                              className="text-xs text-[#1D8751] hover:text-[#166b3e] underline self-start sm:self-auto"
-                            >
-                              Refresh
-                            </button>
-                          </div>
-                          <CustomSelect
-                            options={(enhancedFilteredUserPaymentDetails || []).map(
-                              (detail: UserPaymentDetail) => {
-                                const adminDetail = adminWalletListDisplay.displayData?.find(
-                                  (wallet: any) => {
-                                    const walletProviderName = wallet.admin_payment_detail?.provider_name;
-                                    const detailProviderName = detail.payment_provider_name || detail.provider_name;
-                                    return normalizeProviderName(walletProviderName) === normalizeProviderName(detailProviderName);
-                                  }
-                                )?.admin_payment_detail;
+                      {(() => {
+                        // Check if user has ANY accounts at all (not just filtered ones)
+                        const allUserAccounts = userPaymentMethodsDisplay.displayData || effectiveUserPaymentMethods || [];
+                        const hasAnyAccounts = allUserAccounts.length > 0;
+                        const hasFilteredAccounts = enhancedFilteredUserPaymentDetails.length > 0;
 
-                                return {
-                                  value: detail.id?.toString() || detail.user_payment_detail_id || "",
-                                  label: `${adminDetail?.provider_name || detail.payment_provider_name || detail.provider_name || "Unknown Provider"} - ${detail.account_name || detail.account_number || "N/A"} (${detail.account_number || detail.wallet_address || 'No Account'})`,
-                                  logo: detail.provider_logo || adminDetail?.provider_logo || undefined,
-                                };
-                              }
-                            )}
-                            value={
-                              selectedPaymentDetails.length > 0
-                                ? (selectedPaymentDetails[0].id?.toString() || selectedPaymentDetails[0].user_payment_detail_id || "")
-                                : ""
-                            }
-                            onChange={(value) => {
-                              const selectedDetail =
-                                enhancedFilteredUserPaymentDetails.find(
-                                  (detail: UserPaymentDetail) =>
-                                    (detail.id?.toString() === value) || (detail.user_payment_detail_id === value)
-                                );
-                              if (selectedDetail) {
-                                setSelectedPaymentDetails([selectedDetail]);
-                                setPaymentMethodError(null);
-                              }
-                            }}
-                            placeholder={
-                              userPaymentMethodsDisplay.isLoading
-                                ? "Loading accounts..."
-                                : enhancedFilteredUserPaymentDetails.length > 0
-                                  ? "Select Registered Account"
-                                  : "No registered accounts available"
-                            }
-                            disabled={userPaymentMethodsDisplay.isLoading}
-                            loading={userPaymentMethodsDisplay.isLoading}
-                            loadingText="Loading accounts..."
-                            emptyText="No registered accounts available"
-                            searchable={true}
-                            sizeMode="card"
-                            className={`w-full ${paymentMethodError
-                              ? "border-red-500 dark:border-red-500"
-                              : ""
-                              }`}
-                          />
-                        </div>
-                      ) : (
-                        <p className="text-[#F79330] text-sm">
-                          <button
-                            type="button"
-                            onClick={() => setIsPaymentModalOpen(true)}
-                            className="hover:underline cursor-pointer"
-                          >
-                            Don't have an account? Register Now
-                          </button>
-                        </p>
-                      )}
+                        if (hasFilteredAccounts) {
+                          return (
+                            <div className="relative w-full z-10">
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className="text-sm text-gray-600 dark:text-gray-400">
+                                  {enhancedFilteredUserPaymentDetails.length} account(s) found
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    try {
+                                      await dispatch(fetchUserPaymentDetails(true)).unwrap();
+                                      showToast.success("Payment details refreshed!");
+                                    } catch (error) {
+                                      showToast.error("Failed to refresh payment details");
+                                    }
+                                  }}
+                                  className="text-xs text-[#1D8751] hover:text-[#166b3e] underline"
+                                >
+                                  Refresh
+                                </button>
+                              </div>
+                              <div className="w-full min-w-0 relative z-[100] isolate">
+                                <CustomSelect
+                                  options={(enhancedFilteredUserPaymentDetails || []).map(
+                                    (detail: UserPaymentDetail) => {
+                                      // Try to get provider info from public payment methods first
+                                      let providerName = detail.payment_provider_name || detail.provider_name || "Unknown Provider";
+                                      let providerLogo = detail.provider_logo;
+
+                                      if (Array.isArray(publicPaymentMethods?.data?.providers)) {
+                                        const publicProvider = publicPaymentMethods.data.providers.find(
+                                          (provider: any) =>
+                                            (provider.provider_name || provider.payment_provider_name) === detail.payment_provider_name ||
+                                            (provider.provider_name || provider.payment_provider_name) === detail.provider_name
+                                        );
+                                        if (publicProvider) {
+                                          providerName = publicProvider.provider_name || publicProvider.payment_provider_name || providerName;
+                                          providerLogo = publicProvider.logo || publicProvider.provider_logo || providerLogo;
+                                        }
+                                      }
+
+                                      // Fallback to admin detail if not found in public methods
+                                      if (!providerLogo) {
+                                        const adminDetail = adminWalletListDisplay.displayData?.find(
+                                          (wallet: any) => wallet.admin_payment_detail?.provider_name === detail.payment_provider_name
+                                        )?.admin_payment_detail;
+                                        if (adminDetail) {
+                                          providerName = adminDetail.provider_name || providerName;
+                                          providerLogo = adminDetail.provider_logo || providerLogo;
+                                        }
+                                      }
+
+                                      // Display account name and account number
+                                      const accountName = detail.account_name || 'No Name';
+                                      const accountNumber = detail.account_number || detail.wallet_address || 'No Account';
+                                      const displayLabel = `${accountNumber} - ${accountName}`;
+                                      // Create a full tooltip with all information (using separators since HTML title doesn't support newlines)
+                                      const fullInfo = `Account Number: ${accountNumber} | Account Name: ${accountName}${providerName ? ` | Provider: ${providerName}` : ''}`;
+
+                                      return {
+                                        value: detail.id.toString(),
+                                        label: displayLabel,
+                                        logo: providerLogo || undefined,
+                                        // Add full information for tooltip on hover
+                                        title: fullInfo,
+                                      };
+                                    }
+                                  )}
+                                  value={
+                                    selectedPaymentDetails.length > 0
+                                      ? selectedPaymentDetails[0].id.toString()
+                                      : ""
+                                  }
+                                  onChange={(value) => {
+                                    const selectedId = Number(value);
+                                    const selectedDetail =
+                                      enhancedFilteredUserPaymentDetails.find(
+                                        (detail: UserPaymentDetail) =>
+                                          detail.id === selectedId
+                                      );
+                                    if (selectedDetail) {
+                                      setSelectedPaymentDetails([selectedDetail]);
+                                      // Clear payment method error when selecting an account
+                                      setPaymentMethodError(null);
+                                    }
+                                  }}
+                                  placeholder={
+                                    userPaymentMethodsDisplay.isLoading
+                                      ? "Loading accounts..."
+                                      : "Select Registered Account"
+                                  }
+                                  disabled={userPaymentMethodsDisplay.isLoading}
+                                  loading={userPaymentMethodsDisplay.isLoading}
+                                  loadingText="Loading accounts..."
+                                  emptyText="No registered accounts available"
+                                  searchable={true}
+                                  className="w-full min-w-0"
+                                />
+                              </div>
+                            </div>
+                          );
+                        } else if (hasAnyAccounts) {
+                          // User has accounts but not for this payment method
+                          return (
+                            <p className="text-[#F79330] text-sm">
+                              No account found for this payment method.{" "}
+                              <button
+                                type="button"
+                                onClick={() => setIsPaymentModalOpen(true)}
+                                className="hover:underline cursor-pointer font-medium text-[#1D8751] hover:text-[#166b3e]"
+                              >
+                                Add Account
+                              </button>
+                            </p>
+                          );
+                        } else {
+                          // User has no accounts at all
+                          return (
+                            <p className="text-[#F79330] text-sm">
+                              <button
+                                type="button"
+                                onClick={() => setIsPaymentModalOpen(true)}
+                                className="hover:underline cursor-pointer"
+                              >
+                                Don't have an account? Register Now
+                              </button>
+                            </p>
+                          );
+                        }
+                      })()}
                     </div>
                   )}
                 </div>
@@ -4248,109 +4412,116 @@ export default function WithdrawalForm({
             />
           </div>  */}
 
-            {/* Disclaimer Banner */}
-            <div className="flex items-center rounded-2xl px-2 sm:px-3 md:px-4 py-2 sm:py-3 mb-2 sm:mb-4 bg-white dark:bg-[#18181D]">
-              <div className="flex items-center gap-3">
-                <div className="w-5 h-5 border-2 border-[#E23D3A] rounded-full flex items-center justify-center flex-shrink-0">
-                  <span className="text-[#E23D3A] text-xs font-bold">i</span>
-                </div>
-                <span className="text-[#35353e] dark:text-[#788099] text-sm font-medium">
-                  This is only an estimated price based on current market rates. The
-                  final price will be confirmed when we receive the funds.
-                </span>
+
+
+            {/* Warning Message */}
+            {!isTransactionSubmitted && !showForexWithdrawalForm && (
+              <div className="mt-4 mb-3 flex items-center gap-3 p-3 rounded-2xl bg-transparent">
+                <img
+                  src="https://res.cloudinary.com/pitz/image/upload/v1765784047/alert-circle_1_ujybne.png"
+                  alt="Warning"
+                  className="w-5 h-5 flex-shrink-0 mt-1"
+                />
+                <p className={`text-sm ${isDark ? "text-white" : "text-gray-900"}`}>
+                  This is only an estimated price based on current market rates. The final price will be confirmed when we receive the funds.
+                </p>
               </div>
-            </div>
+            )}
 
             {/* Submit Button for First Card */}
             {!isTransactionSubmitted && !showForexWithdrawalForm && (
-              <div className="mt-4">
-                {(() => {
-                  const isDisabled =
-                    isHomePage
+              <div className="relative">
+                <button
+                  type="button"
+                  className={`w-full text-[#35353e] dark:text-[#788099] text-base font-medium py-1.5 rounded-full flex items-center justify-center gap-2 transition-colors ${isHomePage
+                    ? payAmount >= 15000 || getAmount >= 15000
+                      ? "bg-gray-500 cursor-not-allowed"
+                      : "bg-[#1D8751] hover:bg-[#1D8751]/80 cursor-pointer"
+                    : isSubmitting ||
+                      isTransactionSubmitted ||
+                      isInfoModalOpen ||
+                      payAmount >= 15000 ||
+                      getAmount >= 15000
+                      ? "bg-gray-500 cursor-not-allowed"
+                      : "bg-[#1D8751] hover:bg-[#1D8751]/80"
+                    }`}
+                  onClick={() => {
+                    if (requiresLoginRedirect) {
+                      const state = {
+                        mode,
+                        // Send amounts (You Send)
+                        amountInput: payAmountInput,
+                        amountValue: payAmount,
+                        // Receive amounts (You Receive)
+                        receiveAmountInput: getAmountInput,
+                        receiveAmountValue: getAmount,
+                        // Asset - save FULL object
+                        asset: selectedAsset ? { ...selectedAsset } : null,
+                        // Payment details - save FULL objects
+                        paymentDetails: selectedPaymentDetails.map((detail: UserPaymentDetail) => ({ ...detail })),
+                        // Keep currently selected provider/bank (even if user hasn't selected an account yet)
+                        payBank,
+                      };
+                      setAuthRedirectPath(
+                        buildExpressRedirectPath(mode, state)
+                      );
+                      router.push("/auth/login");
+                      return;
+                    }
+
+                    if (selectedAsset && isForexAsset(selectedAsset)) {
+                      if (!payAmount || payAmount <= 0) {
+                        showToast.error("Please enter a valid amount");
+                        return;
+                      }
+                      if (selectedPaymentDetails.length === 0) {
+                        showToast.error("Please select a payment method");
+                        return;
+                      }
+                      setShowForexWithdrawalForm(true);
+                    } else {
+                      handleFirstCardSubmit();
+                    }
+                  }}
+                  disabled={
+                    requiresLoginRedirect
                       ? payAmount >= 15000 || getAmount >= 15000
                       : isSubmitting ||
                       isTransactionSubmitted ||
                       isInfoModalOpen ||
                       payAmount >= 15000 ||
-                      getAmount >= 15000 ||
-                      selectedPaymentDetails.length === 0;
-                  return (
-                    <button
-                      className={`w-full text-white dark:text-white text-sm sm:text-base font-medium py-3 sm:py-2 rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 transition-colors min-h-[44px] sm:min-h-0 ${isHomePage
-                        ? payAmount >= 15000 || getAmount >= 15000
-                          ? "bg-gray-500 cursor-not-allowed"
-                          : "bg-[#1D8751] hover:bg-[#166b3e] cursor-pointer"
-                        : isDisabled
-                          ? "bg-gray-500 cursor-not-allowed"
-                          : "bg-[#1D8751] hover:bg-[#166b3e]"
-                        }`}
-                      onClick={() => {
-                        // Prevent submission if amount is >= 15000
-                        if (payAmount >= 15000 || getAmount >= 15000) {
-                          showToast.error("Amount cannot exceed $15,000. Please contact OTC Desk for larger amounts.");
-                          return;
-                        }
-
-                        if (isHomePage) {
-                          const state = {
-                            mode,
-                            amountInput: getAmountInput,
-                            amountValue: getAmount,
-                            asset: selectedAsset,
-                            paymentDetails: selectedPaymentDetails,
-                          };
-                          setAuthRedirectPath(buildExpressRedirectPath(mode, state));
-                          router.push("/auth/login");
-                          return;
-                        }
-
-                        if (selectedAsset && isForexAsset(selectedAsset)) {
-                          if (!payAmount || payAmount <= 0) {
-                            showToast.error("Please enter a valid amount");
-                            return;
-                          }
-                          if (selectedPaymentDetails.length === 0) {
-                            showToast.error("Please select a payment method");
-                            return;
-                          }
-                          setShowForexWithdrawalForm(true);
-                        } else {
-                          handleFirstCardSubmit();
-                        }
-                      }}
-                      disabled={isDisabled}
-                    >
-                      {isSubmitting ? (
-                        <div className="flex items-center gap-2">
-                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#A2A4A9FF] dark:border-[#35353E]"></div>
-                          <span>Submitting...</span>
-                        </div>
-                      ) : isTransactionSubmitted ? (
-                        <div className="flex items-center gap-2">
-                          <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
-                            <path
-                              d="M9 12l2 2 4-4"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                          </svg>
-                          <span>Withdrawal Addresses Generated</span>
-                        </div>
-                      ) : (
-                        <span className="flex items-center justify-center">
-                          <span className="text-base font-bold dark:text-white text-white">Express</span>
-                          <img
-                            className="mt-2"
-                            src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
-                            alt=""
-                          />
-                        </span>
-                      )}
-                    </button>
-                  );
-                })()}
+                      getAmount >= 15000
+                  }
+                >
+                  {isSubmitting ? (
+                    <div className="flex items-center gap-2">
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#A2A4A9FF] dark:border-[#35353E]"></div>
+                      <span>Submitting...</span>
+                    </div>
+                  ) : isTransactionSubmitted ? (
+                    <div className="flex items-center gap-2">
+                      <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
+                        <path
+                          d="M9 12l2 2 4-4"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                      <span>Withdrawal Addresses Generated</span>
+                    </div>
+                  ) : (
+                    <span className="flex items-center justify-center gap-2">
+                      <span className="text-base font-medium text-white">Express</span>
+                      <img
+                        className="h-5 w-auto mt-3"
+                        src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
+                        alt="Express icon"
+                      />
+                    </span>
+                  )}
+                </button>
               </div>
             )}
 
@@ -4368,24 +4539,25 @@ export default function WithdrawalForm({
           {isTransactionSubmitted && (
             <div
               key={`wallet-section-${forceUpdate}`}
-              className="mb-6 flex flex-col gap-3 w-full px-2"
+              className="mb-6 flex flex-col gap-3 w-full px-0 sm:px-2"
             >
               <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
+                <span className="text-[#7e7e8f] dark:text-[#788099]">2-</span>
                 Wallet Address
               </h2>
-              <div className="bg-white dark:bg-[#18181D] border-2 border-[#35353e] rounded-2xl p-3 sm:p-4 md:p-5 shadow-lg w-full text-[#35353e] dark:text-[#788099]">
+              <div className="dark:bg-[#1D1D23] border-2 border-[#35353e] rounded-2xl p-3 sm:p-5 shadow-lg w-full text-[#35353e] dark:text-[#788099]">
                 {/* USDT Wallet Address */}
-                <div className="mb-2 sm:mb-3 md:mb-4">
-                  <h3 className="text-[#35353e] dark:text-[#788099] font-semibold mb-2">
+                <div className="mb-4">
+                  <h3 className="text-sm sm:text-base text-[#35353e] dark:text-[#788099] font-semibold mb-2">
                     USDT Wallet Address
                   </h3>
                   {withdrawalAddress ? (
-                    <div className="bg-white dark:bg-[#18181D] border border-[#1D8751] rounded-xl p-2 sm:p-3 md:p-4">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[#35353e] dark:text-[#788099] text-sm font-mono break-all">
+                    <div className=" dark:bg-[#1D1D23]  border border-[#1D8751] rounded-xl p-3 sm:p-4">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
+                        <span className="text-[#35353e] dark:text-[#788099] text-xs sm:text-sm font-mono break-all flex-1">
                           {withdrawalAddress}
                         </span>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-shrink-0">
                           <button
                             onClick={() => {
                               navigator.clipboard.writeText(withdrawalAddress);
@@ -4395,7 +4567,7 @@ export default function WithdrawalForm({
                                 setIsWalletAddressCopied(false);
                               }, 2000);
                             }}
-                            className="flex items-center gap-1 bg-[#23232b] dark:bg-[#35353E] border border-[#1D8751] text-[#1D8751] rounded-full px-4 py-1 font-semibold text-base hover:bg-[#1D8751] hover:text-[#35353e] transition-colors"
+                            className="flex items-center gap-1 bg-[#23232b] dark:bg-[#35353E] border border-[#1D8751] text-[#1D8751] rounded-full px-2 sm:px-4 py-1 font-semibold text-xs sm:text-base hover:bg-[#1D8751] hover:text-[#35353e] transition-colors"
                           >
                             {isWalletAddressCopied ? (
                               <>
@@ -4469,9 +4641,10 @@ export default function WithdrawalForm({
                     </div>
                   )}
                 </div>
+
                 {/* QR Code */}
-                <div className="mb-2 sm:mb-3 md:mb-4">
-                  <div className="bg-white dark:bg-[#18181D] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-xl p-2 sm:p-3 md:p-4 flex justify-center">
+                <div className="mb-4">
+                  <div className=" dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-xl p-4 flex justify-center">
                     {qrCodeUrl ? (
                       <img src={qrCodeUrl} alt="QR Code" className="w-48 h-48" />
                     ) : (
@@ -4536,19 +4709,19 @@ export default function WithdrawalForm({
                   <div className=" dark:bg-[#1D1D23] border border-[#1D8751] rounded-xl p-4">
                     <ul className="list-none space-y-2">
                       <li className="flex items-start">
-                        <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] dark:bg-[#1D8751] inline-block mr-3"></span>
+                        <span className="w-2 h-2 mt-1.5 rounded-full bg-[#1D8751] dark:bg-[#1D8751] flex-shrink-0 mr-3"></span>
                         <span className="text-[#35353e] dark:text-[#788099] text-sm">
                           Please send the money from your own account Only
                         </span>
                       </li>
                       <li className="flex items-start">
-                        <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] dark:bg-[#1D8751] inline-block mr-3"></span>
+                        <span className="w-2 h-2 mt-1.5 rounded-full bg-[#1D8751] dark:bg-[#1D8751] flex-shrink-0 mr-3"></span>
                         <span className="text-[#35353e] dark:text-[#788099] text-sm">
                           Put transaction ID in the description field of the bank
                         </span>
                       </li>
                       <li className="flex items-start">
-                        <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] dark:bg-[#1D8751] inline-block mr-3"></span>
+                        <span className="w-2 h-2 mt-1.5 rounded-full bg-[#1D8751] dark:bg-[#1D8751] flex-shrink-0 mr-3"></span>
                         <span className="text-[#35353e] dark:text-[#788099] text-sm">
                           Please note, If you do not follow above conditions, we
                           will reject your transaction and send you back your money.
@@ -4573,7 +4746,7 @@ export default function WithdrawalForm({
                   <label className="flex items-start cursor-pointer">
                     <input
                       type="checkbox"
-                      className="terms-checkbox-green mt-1 mr-3 w-5 h-5 rounded border-2 border-[#1D8751] focus:ring-[#1D8751] appearance-none bg-transparent checked:bg-[#1D8751] checked:border-[#1D8751] flex-shrink-0"
+                      className="terms-checkbox-green mt-1 mr-3 w-4 h-4 rounded border-2 border-[#1D8751] focus:ring-[#1D8751] appearance-none bg-transparent checked:bg-[#1D8751] checked:border-[#1D8751] flex-shrink-0"
                     />
                     <span className="text-[#35353e] dark:text-[#788099] text-sm">
                       I've read and agree to the{" "}
@@ -4623,7 +4796,7 @@ export default function WithdrawalForm({
                   </div>
                 )}
                 <button
-                  className={`w-full text-white dark:text-white text-sm sm:text-base font-medium py-3 sm:py-2 rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 transition-colors min-h-[44px] sm:min-h-0 ${isSubmitting || isInfoModalOpen || getAmount > 15000 || !withdrawalAddress
+                  className={`w-full text-[#35353e] dark:text-[#788099] text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${isSubmitting || isInfoModalOpen || getAmount > 15000
                     ? "bg-gray-500 cursor-not-allowed"
                     : "bg-[#1D8751] hover:bg-[#166b3e]"
                     }`}
@@ -4653,12 +4826,7 @@ export default function WithdrawalForm({
                       onExchange(transactionData);
                     }
                   }}
-                  disabled={
-                    isSubmitting ||
-                    isInfoModalOpen ||
-                    getAmount > 15000 ||
-                    !withdrawalAddress
-                  }
+                  disabled={isSubmitting || isInfoModalOpen || getAmount > 15000}
                 >
                   {isSubmitting ? (
                     <div className="flex items-center gap-2">
@@ -4667,7 +4835,7 @@ export default function WithdrawalForm({
                     </div>
                   ) : (
                     <span className="flex items-center justify-center">
-                      <span className="text-base font-bold dark:text-white text-white">Express</span>
+
                       <img
                         className="mt-2"
                         src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"

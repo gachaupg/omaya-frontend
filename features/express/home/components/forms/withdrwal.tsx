@@ -586,6 +586,7 @@ export default function WithdrawalForm({
   // Asset selection state for search functionality
   const [isAssetDropdownOpen, setIsAssetDropdownOpen] = useState(false);
   const [assetSearchTerm, setAssetSearchTerm] = useState("");
+  const [assetFilterTab, setAssetFilterTab] = useState<"all" | "new" | "gainers" | "losers">("all");
   const [assetDropdownPosition, setAssetDropdownPosition] = useState({
     top: 0,
     left: 0,
@@ -2105,20 +2106,77 @@ export default function WithdrawalForm({
     }
   }, [selectedAsset, getAmount, isCalculatingFromPay, apiValidationError]);
 
-  // Filter swap assets based on search term - search by ticker and name
-  const filteredSwapAssets =
-    assetsDisplay.displayData?.filter((asset: SupportedAsset) => {
+  // Filter swap assets based on search term and filter tab - search by ticker and name
+  const filteredSwapAssets = useMemo(() => {
+    let filtered = assetsDisplay.displayData?.filter((asset: SupportedAsset) => {
       const ticker = asset?.ticker?.toUpperCase() || "";
       const name = asset?.name?.toUpperCase() || "";
       const symbol = asset?.symbol?.toUpperCase() || "";
       const searchTerm = assetSearchTerm.toUpperCase();
 
-      return (
+      // Apply search filter
+      const matchesSearch = !searchTerm || 
         ticker.includes(searchTerm) ||
         name.includes(searchTerm) ||
-        symbol.includes(searchTerm)
-      );
+        symbol.includes(searchTerm);
+
+      if (!matchesSearch) return false;
+
+      // Apply filter tab (only for home page)
+      if (isHomePage) {
+        switch (assetFilterTab) {
+          case "new":
+            // Show featured assets or assets with is_changenow_asset as "new"
+            return asset.featured === true || asset.is_changenow_asset === true;
+          case "gainers":
+            // For now, show all assets (can be enhanced with price data)
+            // You can add price change logic here when available
+            return true;
+          case "losers":
+            // For now, show all assets (can be enhanced with price data)
+            // You can add price change logic here when available
+            return true;
+          case "all":
+          default:
+            return true;
+        }
+      }
+
+      return true;
     }) || [];
+
+    // Sort based on filter tab for home page
+    if (isHomePage && assetFilterTab !== "all" && !assetSearchTerm) {
+      switch (assetFilterTab) {
+        case "gainers":
+          // Sort by ticker name ascending (can be enhanced with price change data)
+          filtered = [...filtered].sort((a, b) => {
+            const tickerA = (a.ticker || "").toUpperCase();
+            const tickerB = (b.ticker || "").toUpperCase();
+            return tickerA.localeCompare(tickerB);
+          });
+          break;
+        case "losers":
+          // Sort by ticker name descending (can be enhanced with price change data)
+          filtered = [...filtered].sort((a, b) => {
+            const tickerA = (a.ticker || "").toUpperCase();
+            const tickerB = (b.ticker || "").toUpperCase();
+            return tickerB.localeCompare(tickerA);
+          });
+          break;
+        case "new":
+          // Show featured/new assets first
+          filtered = [...filtered].sort((a, b) => {
+            if (a.featured && !b.featured) return -1;
+            if (!a.featured && b.featured) return 1;
+            return 0;
+          });
+          break;
+      }
+    }
+
+    return filtered;
+  }, [assetsDisplay.displayData, assetSearchTerm, assetFilterTab, isHomePage]);
 
   // Sort assets: USDT on BSC, USDC on BSC, fxprimus, then rest in original order
   const sortedSwapAssets = [...filteredSwapAssets].sort((a, b) => {
@@ -2300,7 +2358,10 @@ export default function WithdrawalForm({
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-600">
             <h3 className="text-base font-semibold text-gray-900 dark:text-white">Currency from</h3>
             <button
-              onClick={() => setIsAssetDropdownOpen(false)}
+              onClick={() => {
+                setIsAssetDropdownOpen(false);
+                if (isHomePage) setAssetFilterTab("all");
+              }}
               className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
               aria-label="Close"
             >
@@ -2323,6 +2384,52 @@ export default function WithdrawalForm({
               />
             </div>
           </div>
+
+          {/* Filter Tabs - Only show for home page */}
+          {isHomePage && (
+            <div className="flex items-center gap-2 px-2 py-2 border-b border-gray-200 dark:border-gray-600 overflow-x-auto">
+              <button
+                onClick={() => setAssetFilterTab("all")}
+                className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-2xl whitespace-nowrap transition-colors ${
+                  assetFilterTab === "all"
+                    ? "bg-[#1D8751] text-white"
+                    : "bg-[#35353E] text-gray-300 hover:bg-[#40404A]"
+                }`}
+              >
+                All
+              </button>
+              <button
+                onClick={() => setAssetFilterTab("new")}
+                className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-2xl whitespace-nowrap transition-colors ${
+                  assetFilterTab === "new"
+                    ? "bg-[#1D8751] text-white"
+                    : "bg-[#35353E] text-gray-300 hover:bg-[#40404A]"
+                }`}
+              >
+                New
+              </button>
+              <button
+                onClick={() => setAssetFilterTab("gainers")}
+                className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-2xl whitespace-nowrap transition-colors ${
+                  assetFilterTab === "gainers"
+                    ? "bg-[#1D8751] text-white"
+                    : "bg-[#35353E] text-gray-300 hover:bg-[#40404A]"
+                }`}
+              >
+                Gainers
+              </button>
+              <button
+                onClick={() => setAssetFilterTab("losers")}
+                className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-2xl whitespace-nowrap transition-colors ${
+                  assetFilterTab === "losers"
+                    ? "bg-[#1D8751] text-white"
+                    : "bg-[#35353E] text-gray-300 hover:bg-[#40404A]"
+                }`}
+              >
+                Losers
+              </button>
+            </div>
+          )}
 
           <div className="max-h-[60vh] sm:max-h-[50vh] overflow-y-auto p-1">
             {sortedSwapAssets.length > 0 ? (
@@ -2356,6 +2463,7 @@ export default function WithdrawalForm({
                           setSelectedAsset(asset);
                           setIsAssetDropdownOpen(false);
                           setAssetSearchTerm("");
+                          if (isHomePage) setAssetFilterTab("all");
 
                           if (isSimpleCalculationAsset(asset)) {
                             setIsCalculatingFromPay(true);
@@ -3570,8 +3678,8 @@ export default function WithdrawalForm({
                         : isCalculating || isCalculatingReceive
                           ? "border-[#1D8751]"
                           : isDark
-                            ? "border-white/10 text-white"
-                            : "border-gray-200 text-[#111827]"
+                            ? "border-white/10 text-white font-normal"
+                            : "border-gray-200 text-[#111827] font-bold"
                         }`}
                     />
                     <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
@@ -3681,7 +3789,7 @@ export default function WithdrawalForm({
                             />
                             <div className="flex flex-col">
                               <div className="flex items-center gap-2">
-                                <span className={`font-normal text-sm ${isDark ? "text-white" : "text-[#1F2937]"
+                                <span className={`text-sm ${isDark ? "text-white font-normal" : "text-[#1F2937] font-extrabold"
                                   }`}>
                                   {(
                                     selectedAsset.ticker ||
@@ -3952,8 +4060,8 @@ export default function WithdrawalForm({
                           : isCalculating || isCalculatingReceive
                             ? "border-[#1D8751]"
                             : isDark
-                              ? "border-white/10 text-white"
-                              : "border-gray-200 text-[#111827]"
+                              ? "border-white/10 text-white font-normal"
+                              : "border-gray-200 text-[#111827] font-extrabold"
                         }`}
                     />
                     <div className="absolute right-4 top-1/2 transform -translate-y-1/2">

@@ -323,12 +323,26 @@ export const settingsApi = {
     });
   },
 
-  // Referral Withdrawal History
-  getReferralWithdrawalHistory: async (): Promise<any> => {
+  // Referral Withdrawal History with pagination support
+  getReferralWithdrawalHistory: async (pageUrl?: string | null): Promise<any> => {
     return withRetry(async () => {
-      const response = await apiClient.get(
-        "/trading_engine/user-referral/withdrawals/"
-      );
+      let url = "/trading_engine/user-referral/withdrawals/";
+      // If pageUrl is provided and is a full URL, extract the path and query params
+      if (pageUrl) {
+        try {
+          const urlObj = new URL(pageUrl);
+          url = urlObj.pathname + urlObj.search;
+        } catch {
+          // If pageUrl is just a path, use it directly
+          if (pageUrl.startsWith("/")) {
+            url = pageUrl;
+          } else {
+            // Otherwise, treat it as a query parameter
+            url = `/trading_engine/user-referral/withdrawals/?${pageUrl}`;
+          }
+        }
+      }
+      const response = await apiClient.get(url);
       return response.data;
     });
   },

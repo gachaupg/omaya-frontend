@@ -5,7 +5,10 @@ import { AppDispatch } from "@/store";
 import { RootState } from "@/store/rootReducer";
 import { 
   closeKYCModal, 
-  logout 
+  logout,
+  sendPhoneOTP,
+  verifyPhoneOTP,
+  checkKYCStatus as checkAuthKYCStatus
 } from "@/features/auth/slices/authSlice";
 import { checkKYCStatus, verifyKYCStatus } from "@/features/kyc/slices/kycSlice";
 import { showToast } from "@/lib/utils/toast";
@@ -20,6 +23,16 @@ const KYCVerificationModal: React.FC = () => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showPendingModal, setShowPendingModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Phone verification state
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [otp, setOtp] = useState("");
+  const [sendingOTP, setSendingOTP] = useState(false);
+  const [verifyingOTP, setVerifyingOTP] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [phoneVerified, setPhoneVerified] = useState(false);
+  const [resendTimer, setResendTimer] = useState(0);
+  const [kycStatus, setKycStatus] = useState<any>(null);
   const [verificationData, setVerificationData] = useState({
     country: 'Somalia',
     documentType: '',
@@ -40,7 +53,45 @@ const KYCVerificationModal: React.FC = () => {
     if (user?.email) {
       setVerificationData(prev => ({ ...prev, email: user.email }));
     }
-  }, [user?.email]);
+    // Initialize phone number from user
+    if (user?.phone_number) {
+      setPhoneNumber(user.phone_number);
+    }
+  }, [user?.email, user?.phone_number]);
+
+  // Check KYC status for phone verification
+  useEffect(() => {
+    if (kycModalOpen && user) {
+      dispatch(checkAuthKYCStatus()).then((result: any) => {
+        if (result.payload) {
+          const status = result.payload as any;
+          setKycStatus(status);
+          if (status.phone_verified === true) {
+            setPhoneVerified(true);
+          }
+          if (status.phone_number) {
+            setPhoneNumber(status.phone_number);
+          }
+        }
+      });
+    }
+  }, [kycModalOpen, user, dispatch]);
+
+  // Resend OTP timer
+  useEffect(() => {
+    if (resendTimer > 0) {
+      const timer = setInterval(() => {
+        setResendTimer((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [resendTimer]);
 
   // Check localStorage for pending verification status on mount
   useEffect(() => {
@@ -71,9 +122,89 @@ const KYCVerificationModal: React.FC = () => {
     }
   }, [kycModalOpen, user?.user_id, dispatch]);
 
-  const handleManualVerificationClick = () => {
-    setShowManualVerification(true);
+  const handleManualVerificationClick = async () => {
     setError(null);
+    
+    // Check if phone is already verified
+    if (phoneVerified || kycStatus?.phone_verified === true) {
+      // Phone already verified, start from step 1 (document info)
+      setCurrentStep(1);
+      setShowManualVerification(true);
+      return;
+    }
+    
+    // Phone not verified, start from step 0 (phone verification)
+    setCurrentStep(0);
+    setShowManualVerification(true);
+  };
+
+  const handleSendOTP = async () => {
+    if (!phoneNumber.trim()) {
+      setError("Please enter your phone number");
+      showToast.error("Error", "Please enter your phone number");
+      return;
+    }
+
+    setSendingOTP(true);
+    setError(null);
+    try {
+      const result = await dispatch(sendPhoneOTP({ phone_number: phoneNumber })).unwrap();
+      setOtpSent(true);
+      setResendTimer(60); // 60 seconds cooldown
+      showToast.success(
+        "OTP Sent",
+        `OTP sent successfully via ${result.channel === "whatsapp" ? "WhatsApp" : "SMS"}`
+      );
+    } catch (error: any) {
+      const errorMsg = typeof error === "string" ? error : "Failed to send OTP. Please try again.";
+      setError(errorMsg);
+      showToast.error("Error", errorMsg);
+    } finally {
+      setSendingOTP(false);
+    }
+  };
+
+  const handleVerifyOTP = async () => {
+    if (!otp.trim() || otp.length !== 6) {
+      setError("Please enter a valid 6-digit OTP");
+      showToast.error("Error", "Please enter a valid 6-digit OTP");
+      return;
+    }
+
+    setVerifyingOTP(true);
+    setError(null);
+    try {
+      const result = await dispatch(verifyPhoneOTP({ otp })).unwrap();
+      if (result.phone_verified) {
+        setPhoneVerified(true);
+        showToast.success("Success", "Phone number verified successfully");
+        
+        // Refresh KYC status
+        const kycResult = await dispatch(checkAuthKYCStatus()).unwrap();
+        setKycStatus(kycResult);
+        
+        // Move to next step (document info)
+        setCurrentStep(1);
+        setError(null);
+      }
+    } catch (error: any) {
+      const errorMsg = typeof error === "string" ? error : "Invalid or expired OTP. Please try again.";
+      setError(errorMsg);
+      showToast.error("Error", errorMsg);
+    } finally {
+      setVerifyingOTP(false);
+    }
+  };
+
+  const handleResendOTP = () => {
+    if (resendTimer > 0) return;
+    handleSendOTP();
+  };
+
+  const formatTimer = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -85,6 +216,13 @@ const KYCVerificationModal: React.FC = () => {
 
   const validateStep = (step: number) => {
     switch (step) {
+      case 0:
+        // Phone verification step - OTP must be verified
+        if (!phoneVerified) {
+          setError("Please verify your phone number first");
+          return false;
+        }
+        return true;
       case 1:
         if (!verificationData.country || !verificationData.documentType || !verificationData.documentNumber) {
           setError("Please fill in all required fields");
@@ -192,13 +330,23 @@ const KYCVerificationModal: React.FC = () => {
 
   const nextStep = () => {
     if (validateStep(currentStep)) {
-      setCurrentStep(prev => prev + 1);
+      // If on phone verification step and phone is verified, move to step 1
+      if (currentStep === 0 && phoneVerified) {
+        setCurrentStep(1);
+      } else {
+        setCurrentStep(prev => prev + 1);
+      }
       setError(null);
     }
   };
 
   const prevStep = () => {
-    setCurrentStep(prev => prev - 1);
+    // Don't allow going back from step 1 if phone is not verified
+    if (currentStep === 1 && !phoneVerified) {
+      setCurrentStep(0);
+    } else if (currentStep > 0) {
+      setCurrentStep(prev => prev - 1);
+    }
     setError(null);
   };
 
@@ -350,7 +498,7 @@ const KYCVerificationModal: React.FC = () => {
     setError(null);
     setShowSuccessModal(false);
     setShowPendingModal(false);
-    setCurrentStep(1);
+    setCurrentStep(phoneVerified ? 1 : 0);
     setDocumentFrontImage(null);
     setDocumentBackImage(null);
     setFaceImage(null);
@@ -358,6 +506,9 @@ const KYCVerificationModal: React.FC = () => {
     setDocumentFrontPreview(null);
     setDocumentBackPreview(null);
     setFacePreview(null);
+    setOtp("");
+    setOtpSent(false);
+    setResendTimer(0);
     setVerificationData({
       country: 'Somalia',
       documentType: '',
@@ -464,7 +615,9 @@ const KYCVerificationModal: React.FC = () => {
       {showManualVerification && !showSuccessModal && !showPendingModal && (
         <div className="bg-white dark:bg-[#1A1A1A] rounded-lg p-4 max-w-2xl w-full mx-4 border border-gray-200 dark:border-[#35353E] max-h-[90vh] overflow-y-auto shadow-xl">
           <div className="flex justify-between items-center mb-3">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Identity Verification - Step {currentStep} of 3</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Identity Verification - Step {phoneVerified ? currentStep : currentStep + 1} of {phoneVerified ? 3 : 4}
+            </h2>
             <button
               onClick={handleClose}
               className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
@@ -479,13 +632,105 @@ const KYCVerificationModal: React.FC = () => {
           <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-4">
             <div 
               className="bg-[#1D8751] h-2 rounded-full transition-all duration-300" 
-              style={{ width: `${(currentStep / 3) * 100}%` }}
+              style={{ width: `${phoneVerified ? (currentStep / 3) * 100 : ((currentStep + 1) / 4) * 100}%` }}
             ></div>
           </div>
           
           {error && (
             <div className="bg-red-50 dark:bg-red-900/20 border border-red-400 dark:border-red-500 text-red-600 dark:text-red-400 p-2 rounded-lg mb-3 text-sm">
               {error}
+            </div>
+          )}
+
+          {/* Step 0: Phone Verification */}
+          {currentStep === 0 && !phoneVerified && (
+            <div className="space-y-3">
+              <div className="text-center mb-4">
+                <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-2">
+                  <svg className="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">Phone Verification</h3>
+                <p className="text-gray-500 dark:text-gray-400 text-xs">Verify your phone number to continue</p>
+              </div>
+
+              <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 mb-4">
+                <p className="text-sm text-green-700 dark:text-green-300">
+                  We'll send you a verification code via WhatsApp (or SMS if WhatsApp is unavailable).
+                </p>
+              </div>
+
+              {/* Phone Number Input */}
+              {!otpSent && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Phone Number *</label>
+                    <input
+                      type="tel"
+                      value={phoneNumber}
+                      onChange={(e) => setPhoneNumber(e.target.value)}
+                      placeholder="+254712345678"
+                      className="w-full px-3 py-1.5 text-sm bg-gray-50 dark:bg-[#2A2A2A] border border-gray-300 dark:border-[#35353E] rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#1D8751]"
+                      disabled={sendingOTP}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* OTP Input */}
+              {otpSent && !phoneVerified && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Enter OTP *</label>
+                    <input
+                      type="text"
+                      value={otp}
+                      onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                      placeholder="Enter 6-digit OTP"
+                      maxLength={6}
+                      className="w-full px-3 py-1.5 text-sm bg-gray-50 dark:bg-[#2A2A2A] border border-gray-300 dark:border-[#35353E] rounded-lg text-gray-900 dark:text-white text-center text-lg tracking-widest focus:outline-none focus:border-[#1D8751]"
+                      disabled={verifyingOTP}
+                    />
+                  </div>
+                  
+                  {/* Resend OTP */}
+                  <div className="text-center">
+                    {resendTimer > 0 ? (
+                      <p className="text-xs text-gray-600 dark:text-gray-400">
+                        Resend OTP in{" "}
+                        <span className="font-semibold text-[#1D8751]">
+                          {formatTimer(resendTimer)}
+                        </span>
+                      </p>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleResendOTP}
+                        disabled={sendingOTP}
+                        className="text-xs text-[#1D8751] hover:underline disabled:opacity-50"
+                      >
+                        Resend OTP
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Success Message */}
+              {phoneVerified && (
+                <div className="bg-green-50 dark:bg-green-900/20 border border-green-500 text-green-600 dark:text-green-400 p-3 rounded-lg flex items-start gap-2">
+                  <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  <div className="flex-1">
+                    <p className="font-semibold mb-1 text-sm">Phone Verified!</p>
+                    <p className="text-xs text-green-500 dark:text-green-300">
+                      Your phone number has been successfully verified.
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -697,7 +942,7 @@ const KYCVerificationModal: React.FC = () => {
 
           {/* Navigation Buttons */}
           <div className="flex gap-2 mt-4">
-            {currentStep > 1 && (
+            {currentStep > (phoneVerified ? 1 : 0) && (
               <button
                 onClick={prevStep}
                 className="flex-1 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-700 text-gray-800 dark:text-white h-9 rounded-lg transition-colors duration-200 text-sm"
@@ -706,7 +951,50 @@ const KYCVerificationModal: React.FC = () => {
               </button>
             )}
             
-            {currentStep < 3 ? (
+            {currentStep === 0 && !phoneVerified ? (
+              // Phone verification step buttons
+              <div className="flex gap-2 w-full">
+                {!otpSent ? (
+                  <button
+                    onClick={handleSendOTP}
+                    disabled={sendingOTP || !phoneNumber.trim()}
+                    className="flex-1 bg-[#1D8751] hover:bg-[#167a47] text-white h-9 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm"
+                  >
+                    {sendingOTP ? (
+                      <>
+                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                        <span>Sending...</span>
+                      </>
+                    ) : (
+                      "Send OTP"
+                    )}
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleVerifyOTP}
+                    disabled={verifyingOTP || !otp || otp.length !== 6}
+                    className="flex-1 bg-[#1D8751] hover:bg-[#167a47] text-white h-9 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm"
+                  >
+                    {verifyingOTP ? (
+                      <>
+                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                        <span>Verifying...</span>
+                      </>
+                    ) : (
+                      "Verify OTP"
+                    )}
+                  </button>
+                )}
+                {phoneVerified && (
+                  <button
+                    onClick={nextStep}
+                    className="flex-1 bg-[#1D8751] hover:bg-[#167a47] text-white h-9 rounded-lg transition-colors duration-200 text-sm"
+                  >
+                    Next
+                  </button>
+                )}
+              </div>
+            ) : currentStep < 3 ? (
               <button
                 onClick={nextStep}
                 className="flex-1 bg-[#1D8751] hover:bg-[#167a47] text-white h-9 rounded-lg transition-colors duration-200 text-sm"

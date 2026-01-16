@@ -17,21 +17,28 @@ export interface ReferralWithdrawalUser {
 }
 
 export interface ReferralWithdrawalHistoryItem {
-  id: number;
-  user: ReferralWithdrawalUser;
+  id?: number;
+  user?: ReferralWithdrawalUser | string;
   referral_withdrawal_id: string;
-  wallet_address: string;
+  wallet_address?: string;
   timestamp: string;
   status: "pending" | "approved" | "rejected" | "completed" | "otp_pending";
   requested_amount: string;
-  otp_created_at: string;
-  assign_to: string | null;
-  timezone: string;
-  phone: string;
-  email: string;
-  client_name: string;
-  client_photo: string | null;
+  total_amount_due?: string;
+  otp_created_at?: string;
+  assign_to?: string | null;
+  assigned_to_email?: string | null;
+  timezone?: string;
+  time_duration?: string | null;
+  phone?: string;
+  email?: string;
+  user_email?: string;
+  client_name?: string;
+  client_photo?: string | null;
   currency: string;
+  withdrawal_method?: string;
+  transaction_type?: string;
+  mode?: string;
 }
 
 export interface ReferralWithdrawalHistoryResponse {
@@ -53,12 +60,12 @@ const initialState: ReferralWithdrawalHistoryState = {
   error: null,
 };
 
-// Async thunk to fetch referral withdrawal history
+// Async thunk to fetch referral withdrawal history with pagination
 export const fetchReferralWithdrawalHistory = createAsyncThunk(
   "referralWithdrawalHistory/fetch",
-  async (_, { rejectWithValue }) => {
+  async (pageUrl: string | null | undefined = undefined, { rejectWithValue }) => {
     try {
-      const response = await settingsApi.getReferralWithdrawalHistory();
+      const response = await settingsApi.getReferralWithdrawalHistory(pageUrl);
       return response;
     } catch (error: any) {
       return rejectWithValue(

@@ -305,8 +305,14 @@ const PrivacySecurity = () => {
       // Log out locally and redirect to login page
       dispatch(logout());
       if (typeof window !== "undefined") {
+        // Preserve p2p_act before clearing localStorage
+        const p2pAct = localStorage.getItem("p2p_act");
         // Clear all localStorage data
         localStorage.clear();
+        // Restore p2p_act after clearing
+        if (p2pAct) {
+          localStorage.setItem("p2p_act", p2pAct);
+        }
         // Clear all cookies
         document.cookie = "access_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
         document.cookie = "refresh_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
@@ -489,8 +495,14 @@ const PrivacySecurity = () => {
           logger.debug('dashboard', "Executing auto logout...");
           dispatch(logout());
           if (typeof window !== "undefined") {
+            // Preserve p2p_act before clearing localStorage
+            const p2pAct = localStorage.getItem("p2p_act");
             // Clear all localStorage data
             localStorage.clear();
+            // Restore p2p_act after clearing
+            if (p2pAct) {
+              localStorage.setItem("p2p_act", p2pAct);
+            }
             // Clear all cookies
             document.cookie = "access_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
             document.cookie = "refresh_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
@@ -933,6 +945,7 @@ const PrivacySecurity = () => {
                          sign_in_time: new Date().toISOString(),
                          user_agent: navigator.userAgent,
                          device_type: getDeviceType(),
+                         description: `${getDeviceType()} - ${getBrowserInfo(navigator.userAgent)}`,
                        };
                        
                        await dispatch(createDeviceSession(payload)).unwrap();

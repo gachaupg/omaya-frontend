@@ -453,19 +453,19 @@ function Cash({ sharedFeesError }: CashProps) {
                
                 <ul className="list-none space-y-2">
                   <li className="flex items-start">
-                    <span className="w-4 h-4 mt-1 rounded-full bg-[#1D8751] dark:bg-[#1D8751] flex-shrink-0 mr-3"></span>
+                    <span className="w-2 h-2 mt-1.5 rounded-full bg-[#1D8751] dark:bg-[#1D8751] flex-shrink-0 mr-3"></span>
                     <span className="text-[#051015] dark:text-[#A3A3A3] text-sm">
                       Please send the money from your own account Only
                     </span>
                   </li>
                   <li className="flex items-start">
-                    <span className="w-4 h-4 mt-1 rounded-full bg-[#1D8751] dark:bg-[#1D8751] flex-shrink-0 mr-3"></span>
+                    <span className="w-2 h-2 mt-1.5 rounded-full bg-[#1D8751] dark:bg-[#1D8751] flex-shrink-0 mr-3"></span>
                     <span className="text-[#051015] dark:text-[#A3A3A3] text-sm">
                       Put transaction ID in the description field of the bank
                     </span>
                   </li>
                   <li className="flex items-start">
-                    <span className="w-4 h-4 mt-1 rounded-full bg-[#1D8751] dark:bg-[#1D8751] flex-shrink-0 mr-3"></span>
+                    <span className="w-2 h-2 mt-1.5 rounded-full bg-[#1D8751] dark:bg-[#1D8751] flex-shrink-0 mr-3"></span>
                     <span className="text-[#051015] dark:text-[#A3A3A3] text-sm">
                       Please note, If you do not follow above conditions, we
                       will reject your transaction and send you back your money.

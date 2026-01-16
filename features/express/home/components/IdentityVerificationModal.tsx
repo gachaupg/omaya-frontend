@@ -4,7 +4,7 @@
  * Identity Verification Required Modal
  * 
  * This modal displays when a user is not verified (is_verified: false).
- * It checks KYC status from the API endpoint: /api/kyc/status/
+ * It first requires phone verification, then navigates to documents page.
  * 
  * Usage Example:
  * ```tsx
@@ -32,7 +32,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import { AppDispatch } from "@/store";
 import { RootState } from "@/store/rootReducer";
-import { checkKYCStatus } from "@/features/auth/slices/authSlice";
+import { checkKYCStatus, sendPhoneOTP, verifyPhoneOTP } from "@/features/auth/slices/authSlice";
 import { showToast } from "@/lib/utils/toast";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
@@ -61,13 +61,50 @@ const IdentityVerificationModal: React.FC<IdentityVerificationModalProps> = ({
   const [kycStatus, setKycStatus] = useState<KYCStatusResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [checkingStatus, setCheckingStatus] = useState(false);
+  
+  // Phone verification state
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [otp, setOtp] = useState("");
+  const [sendingOTP, setSendingOTP] = useState(false);
+  const [verifyingOTP, setVerifyingOTP] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [phoneVerified, setPhoneVerified] = useState(false);
+  const [resendTimer, setResendTimer] = useState(0);
 
   // Fetch KYC status when modal opens
   useEffect(() => {
     if (isOpen && isAuthenticated) {
       fetchKYCStatus();
+      // Initialize phone number from user or KYC status
+      if (user?.phone_number) {
+        setPhoneNumber(user.phone_number);
+      }
     }
-  }, [isOpen, isAuthenticated]);
+  }, [isOpen, isAuthenticated, user]);
+
+  // Check if phone is already verified
+  useEffect(() => {
+    if (kycStatus?.phone_verified === true) {
+      setPhoneVerified(true);
+      setOtpSent(true);
+    }
+  }, [kycStatus]);
+
+  // Resend OTP timer
+  useEffect(() => {
+    if (resendTimer > 0) {
+      const timer = setInterval(() => {
+        setResendTimer((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [resendTimer]);
 
   const fetchKYCStatus = async () => {
     setCheckingStatus(true);
@@ -80,6 +117,11 @@ const IdentityVerificationModal: React.FC<IdentityVerificationModalProps> = ({
       if (status.is_verified === true) {
         onClose();
       }
+      
+      // Set phone number if available
+      if (status.phone_number) {
+        setPhoneNumber(status.phone_number);
+      }
     } catch (error) {
       console.error("Failed to fetch KYC status:", error);
       showToast.error("Error", "Failed to check verification status");
@@ -88,14 +130,70 @@ const IdentityVerificationModal: React.FC<IdentityVerificationModalProps> = ({
     }
   };
 
-  const handleVerify = () => {
-    if (onVerify) {
-      onVerify();
-    } else {
-      // Navigate to KYC verification page
-      router.push("/dashboard/kyc");
-      onClose();
+  const handleSendOTP = async () => {
+    if (!phoneNumber.trim()) {
+      showToast.error("Error", "Please enter your phone number");
+      return;
     }
+
+    setSendingOTP(true);
+    try {
+      const result = await dispatch(sendPhoneOTP({ phone_number: phoneNumber })).unwrap();
+      setOtpSent(true);
+      setResendTimer(60); // 60 seconds cooldown
+      showToast.success(
+        "OTP Sent",
+        `OTP sent successfully via ${result.channel === "whatsapp" ? "WhatsApp" : "SMS"}`
+      );
+    } catch (error: any) {
+      showToast.error("Error", error || "Failed to send OTP. Please try again.");
+    } finally {
+      setSendingOTP(false);
+    }
+  };
+
+  const handleVerifyOTP = async () => {
+    if (!otp.trim() || otp.length !== 6) {
+      showToast.error("Error", "Please enter a valid 6-digit OTP");
+      return;
+    }
+
+    setVerifyingOTP(true);
+    try {
+      const result = await dispatch(verifyPhoneOTP({ otp })).unwrap();
+      if (result.phone_verified) {
+        setPhoneVerified(true);
+        showToast.success("Success", "Phone number verified successfully");
+        
+        // Refresh KYC status
+        await fetchKYCStatus();
+        
+        // Navigate to documents page after a short delay
+        setTimeout(() => {
+          if (onVerify) {
+            onVerify();
+          } else {
+            router.push("/dashboard/kyc");
+          }
+          onClose();
+        }, 1000);
+      }
+    } catch (error: any) {
+      showToast.error("Error", error || "Invalid or expired OTP. Please try again.");
+    } finally {
+      setVerifyingOTP(false);
+    }
+  };
+
+  const handleResendOTP = () => {
+    if (resendTimer > 0) return;
+    handleSendOTP();
+  };
+
+  const formatTimer = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
   const handleClose = () => {
@@ -106,28 +204,23 @@ const IdentityVerificationModal: React.FC<IdentityVerificationModalProps> = ({
   if (!isOpen) return null;
 
   // Don't render modal if user is verified - check both KYC status and user data
-  // This is a safety check to prevent showing modal to verified users
   if (kycStatus?.is_verified === true) {
-    // User is verified according to API, close modal and don't render
     if (isOpen) {
-      // Close modal if it's open but user is verified
       setTimeout(() => onClose(), 0);
     }
     return null;
   }
   
   if (user?.is_verified === true && !kycStatus) {
-    // User is verified according to user data (before API check completes)
-    // Don't show modal
     return null;
   }
 
-  // Determine if user is unverified - only show modal if explicitly not verified
+  // Determine if user is unverified
   const isUnverified = kycStatus
     ? kycStatus.is_verified === false
     : user
     ? user.is_verified === false
-    : false; // Don't show if we don't know the status yet
+    : false;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/60 p-4">
@@ -140,7 +233,9 @@ const IdentityVerificationModal: React.FC<IdentityVerificationModalProps> = ({
                 Identity Verification Required
               </h2>
               <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
-                Complete your identity verification to continue
+                {phoneVerified 
+                  ? "Phone verified! Proceeding to document verification..."
+                  : "First, verify your phone number to continue"}
               </p>
             </div>
             <button
@@ -172,14 +267,36 @@ const IdentityVerificationModal: React.FC<IdentityVerificationModalProps> = ({
                 Checking verification status...
               </span>
             </div>
+          ) : phoneVerified ? (
+            // Phone verified - show success message
+            <div className="text-center py-8">
+              <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg
+                  className="w-8 h-8 text-green-600 dark:text-green-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              </div>
+              <p className="text-gray-600 dark:text-gray-400">
+                Phone number verified successfully! Redirecting to document verification...
+              </p>
+            </div>
           ) : (
             <>
-              {/* Status Information */}
+              {/* Phone Verification Step */}
               <div className="mb-6 space-y-4">
-                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
                   <div className="flex items-start">
                     <svg
-                      className="w-5 h-5 text-yellow-600 dark:text-yellow-400 mt-0.5 mr-3 flex-shrink-0"
+                      className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 mr-3 flex-shrink-0"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -188,139 +305,98 @@ const IdentityVerificationModal: React.FC<IdentityVerificationModalProps> = ({
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         strokeWidth={2}
-                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                        d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
                       />
                     </svg>
                     <div className="flex-1">
-                      <h3 className="text-sm font-semibold text-yellow-800 dark:text-yellow-200 mb-1">
-                        Verification Required
+                      <h3 className="text-sm font-semibold text-blue-800 dark:text-blue-200 mb-1">
+                        Step 1: Phone Verification
                       </h3>
-                      <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                        Your account needs to be verified before you can use this
-                        feature. Please complete the identity verification process.
+                      <p className="text-sm text-blue-700 dark:text-blue-300">
+                        Verify your phone number to proceed with identity verification.
                       </p>
                     </div>
                   </div>
                 </div>
 
-                {/* Status Details */}
-                {kycStatus && (
-                  <div className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4 space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600 dark:text-gray-400">
-                        Verification Status:
-                      </span>
-                      <span
-                        className={`font-semibold ${
-                          kycStatus.is_verified
-                            ? "text-green-600 dark:text-green-400"
-                            : "text-red-600 dark:text-red-400"
-                        }`}
-                      >
-                        {kycStatus.is_verified ? "Verified" : "Not Verified"}
-                      </span>
+                {/* Phone Number Input */}
+                {!otpSent && (
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Phone Number
+                      </label>
+                      <input
+                        type="tel"
+                        value={phoneNumber}
+                        onChange={(e) => setPhoneNumber(e.target.value)}
+                        placeholder="+254712345678"
+                        className="w-full px-4 py-3 border border-gray-300 dark:border-[#35353E] rounded-lg bg-white dark:bg-[#1D1D23] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1D8751] focus:border-transparent"
+                        disabled={sendingOTP}
+                      />
                     </div>
-                    {kycStatus.status && (
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-600 dark:text-gray-400">
-                          Status:
-                        </span>
-                        <span className="font-medium text-gray-900 dark:text-gray-200 capitalize">
-                          {kycStatus.status}
-                        </span>
-                      </div>
-                    )}
-                    {kycStatus.phone_verified !== undefined && (
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-600 dark:text-gray-400">
-                          Phone Verified:
-                        </span>
-                        <span
-                          className={`font-semibold ${
-                            kycStatus.phone_verified
-                              ? "text-green-600 dark:text-green-400"
-                              : "text-red-600 dark:text-red-400"
-                          }`}
-                        >
-                          {kycStatus.phone_verified ? "Yes" : "No"}
-                        </span>
-                      </div>
-                    )}
+                    <Button
+                      type="button"
+                      variant="primary"
+                      onClick={handleSendOTP}
+                      className="w-full"
+                      disabled={sendingOTP || !phoneNumber.trim()}
+                    >
+                      {sendingOTP ? "Sending..." : "Send OTP"}
+                    </Button>
                   </div>
                 )}
 
-                {/* Benefits List */}
-                <div className="space-y-2">
-                  <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                    Verification Benefits:
-                  </p>
-                  <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                    <li className="flex items-start">
-                      <svg
-                        className="w-5 h-5 text-[#1D8751] mr-2 mt-0.5 flex-shrink-0"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
-                      <span>Access to all platform features</span>
-                    </li>
-                    <li className="flex items-start">
-                      <svg
-                        className="w-5 h-5 text-[#1D8751] mr-2 mt-0.5 flex-shrink-0"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
-                      <span>Higher transaction limits</span>
-                    </li>
-                    <li className="flex items-start">
-                      <svg
-                        className="w-5 h-5 text-[#1D8751] mr-2 mt-0.5 flex-shrink-0"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
-                      <span>Enhanced security and protection</span>
-                    </li>
-                    <li className="flex items-start">
-                      <svg
-                        className="w-5 h-5 text-[#1D8751] mr-2 mt-0.5 flex-shrink-0"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
-                      <span>Priority customer support</span>
-                    </li>
-                  </ul>
-                </div>
+                {/* OTP Input */}
+                {otpSent && !phoneVerified && (
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Enter OTP
+                      </label>
+                      <input
+                        type="text"
+                        value={otp}
+                        onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                        placeholder="Enter 6-digit OTP"
+                        maxLength={6}
+                        className="w-full px-4 py-3 border border-gray-300 dark:border-[#35353E] rounded-lg bg-white dark:bg-[#1D1D23] text-gray-900 dark:text-white text-center text-lg tracking-widest focus:outline-none focus:ring-2 focus:ring-[#1D8751] focus:border-transparent"
+                        disabled={verifyingOTP}
+                      />
+                    </div>
+                    
+                    {/* Resend OTP */}
+                    <div className="text-center">
+                      {resendTimer > 0 ? (
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          Resend OTP in{" "}
+                          <span className="font-semibold text-[#1D8751]">
+                            {formatTimer(resendTimer)}
+                          </span>
+                        </p>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={handleResendOTP}
+                          disabled={sendingOTP}
+                          className="text-sm text-[#1D8751] hover:underline disabled:opacity-50"
+                        >
+                          Resend OTP
+                        </button>
+                      )}
+                    </div>
+
+                    <Button
+                      type="button"
+                      variant="primary"
+                      onClick={handleVerifyOTP}
+                      className="w-full"
+                      disabled={verifyingOTP || !otp || otp.length !== 6}
+                    >
+                      {verifyingOTP ? "Verifying..." : "Verify OTP"}
+                    </Button>
+                  </div>
+                )}
               </div>
 
               {/* Action Buttons */}
@@ -330,26 +406,16 @@ const IdentityVerificationModal: React.FC<IdentityVerificationModalProps> = ({
                   variant="outline"
                   onClick={handleClose}
                   className="flex-1 w-full sm:w-auto"
-                  disabled={loading}
+                  disabled={loading || verifyingOTP}
                 >
                   Cancel
-                </Button>
-                <Button
-                  type="button"
-                  variant="primary"
-                  onClick={handleVerify}
-                  className="flex-1 w-full sm:w-auto"
-                  disabled={loading}
-                >
-                  {loading ? "Processing..." : "Verify Identity"}
                 </Button>
               </div>
 
               {/* Footer Note */}
               <div className="mt-4 text-center">
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Verification usually takes a few minutes. You'll be notified once
-                  your identity is verified.
+                  After phone verification, you'll be redirected to complete document verification.
                 </p>
               </div>
             </>
@@ -361,4 +427,3 @@ const IdentityVerificationModal: React.FC<IdentityVerificationModalProps> = ({
 };
 
 export default IdentityVerificationModal;
-
