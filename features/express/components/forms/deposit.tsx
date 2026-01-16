@@ -1030,8 +1030,10 @@ export default function DepositForm({
     }
 
     // If we have initialState with asset, use it directly (full object from home page)
-    if (initialState?.asset && !selectedAsset) {
-      const initialStateAsset = initialState.asset;
+    // Check both initialState.asset and initialState.selectedAsset for backward compatibility
+    const assetFromInitialState = initialState?.asset || initialState?.selectedAsset;
+    if (assetFromInitialState && !selectedAsset) {
+      const initialStateAsset = assetFromInitialState;
 
       // Try to find the exact asset in available assets by asset_id
       const matchingAsset = assetsDisplay.displayData.find((asset: any) => {
@@ -1071,7 +1073,7 @@ export default function DepositForm({
     }
 
     // Auto-select first asset only if no asset is selected and no initialState
-    if (!selectedAsset && !initialState?.asset) {
+    if (!selectedAsset && !initialState?.asset && !initialState?.selectedAsset) {
       // Use the sorted assets to get the first one (USDT on BSC first, USDC on BSC second)
       const sortedAssets = [...assetsDisplay.displayData].sort((a, b) => {
         const tickerA = (a?.ticker || a?.symbol || a?.name || "")
@@ -2974,7 +2976,7 @@ export default function DepositForm({
   return (
     <div className="flex flex-col dark:bg-[var(--bg-color)] pl-0 sm:pl-4 pr-2 sm:pr-0 mr-0 sm:mr-40 w-full sm:max-w-5xl">
       <h2 className="text-xl font-bold mb-2 text-[#788099] dark:text-[#788099] inline-flex items-center gap-2">
-        <span className="text-[#7e7e8f] dark:text-[#788099]">1-</span>{" "}
+        
         {t("express.transactionInfo", "Transaction Info")}
       </h2>
 
@@ -3397,13 +3399,14 @@ export default function DepositForm({
                 onClick={() => {
                   // Switch between deposit and withdrawal modes
                   if (onModeChange) {
-                    // Preserve current state including payment method selection
+                    // Preserve current state including payment method selection and asset selection
                     // Convert single payment detail to array format for withdrawal form
                     const currentState = {
                       payBank,
                       payment: selectedPaymentDetail,
                       paymentDetails: selectedPaymentDetail ? [selectedPaymentDetail] : [],
                       selectedAsset,
+                      asset: selectedAsset,
                       payAmountInput,
                       getAmountInput,
                       amountInput: payAmountInput,
