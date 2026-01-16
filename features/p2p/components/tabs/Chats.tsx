@@ -8,6 +8,7 @@ import { GroupedUser, postTradeMessage } from "@/features/p2p/api";
 import { getTradeMessagesWebSocket, cleanupTradeMessagesWebSocket } from "@/features/p2p/services/tradeMessagesWebSocket";
 import { cookieUtils } from "@/lib/utils/cookieUtils";
 import Link from "next/link";
+import TermsAndConditionsModal from "@/features/p2p/components/ui/TermsAndConditionsModal";
 
 interface ConversationItemProps {
   group: any;
@@ -56,11 +57,10 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
   return (
     <button
       onClick={onSelect}
-      className={`w-full flex items-start gap-3 rounded-xl px-3 py-3 text-left transition-colors ${
-        isActive
-          ? "bg-gray-100 dark:bg-[#111827] border border-[#1D8751]"
-          : "bg-transparent hover:bg-gray-50 dark:hover:bg-[#111827]/60 border border-transparent"
-      }`}
+      className={`w-full flex items-start gap-3 rounded-xl px-3 py-3 text-left transition-colors ${isActive
+        ? "bg-gray-100 dark:bg-[#111827] border border-[#1D8751]"
+        : "bg-transparent hover:bg-gray-50 dark:hover:bg-[#111827]/60 border border-transparent"
+        }`}
     >
       <div className="flex-shrink-0">
         <div className="w-9 h-9 rounded-full bg-[#1D8751] flex items-center justify-center text-xs font-bold text-white overflow-hidden relative">
@@ -131,32 +131,32 @@ export const Chats: React.FC = () => {
   });
 
   const [selectedUser, setSelectedUser] = useState<GroupedUser | null>(null);
-  
+
   // State for terms acceptance - computed from localStorage
   const [termsAccepted, setTermsAccepted] = useState(false);
-  
+
   // Check terms acceptance whenever user data becomes available
   useEffect(() => {
     if (typeof window === "undefined") {
       return;
     }
-    
+
     // Only check if user is authenticated and has user_id
     if (!isAuthenticated || !user?.user_id) {
       setTermsAccepted(false);
       return;
     }
-    
+
     // Check user-specific key first (this persists across logouts)
     const userSpecificKey = `p2p_terms_accepted_${user.user_id}`;
     const accepted = localStorage.getItem(userSpecificKey);
-    
+
     if (accepted === "true") {
       console.log(`[P2P Terms] User ${user.user_id} has accepted terms - banner hidden`);
       setTermsAccepted(true);
       return;
     }
-    
+
     // Also check legacy key for backward compatibility
     const legacyAccepted = localStorage.getItem("p2p_terms_accepted");
     if (legacyAccepted === "true") {
@@ -166,22 +166,22 @@ export const Chats: React.FC = () => {
       setTermsAccepted(true);
       return;
     }
-    
+
     console.log(`[P2P Terms] User ${user.user_id} has NOT accepted terms - showing banner`);
     setTermsAccepted(false);
   }, [isAuthenticated, user?.user_id]);
-  
+
   // Additional check on mount with a small delay to ensure Redux is rehydrated
   useEffect(() => {
     const checkTermsOnMount = () => {
       if (typeof window === "undefined") {
         return;
       }
-      
+
       if (isAuthenticated && user?.user_id) {
         const userSpecificKey = `p2p_terms_accepted_${user.user_id}`;
         const accepted = localStorage.getItem(userSpecificKey);
-        
+
         if (accepted === "true") {
           setTermsAccepted(true);
         } else {
@@ -194,21 +194,22 @@ export const Chats: React.FC = () => {
         }
       }
     };
-    
+
     // Check immediately
     checkTermsOnMount();
-    
+
     // Also check after a short delay to catch Redux rehydration
     const timeoutId = setTimeout(checkTermsOnMount, 100);
-    
+
     return () => clearTimeout(timeoutId);
   }, []); // Only run on mount
-  
+
   const [messageInput, setMessageInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [uploadedImages, setUploadedImages] = useState<File[]>([]);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
   const [showChatView, setShowChatView] = useState(false); // For mobile/tablet: true = show conversation, false = show list
   const [searchTerm, setSearchTerm] = useState("");
@@ -282,10 +283,10 @@ export const Chats: React.FC = () => {
   // Compute displayed messages by merging real messages with optimistic ones
   const displayedMessages = useMemo(() => {
     if (!selectedUser || !selectedUser.entity_id) return [];
-    
+
     const realMessages = selectedUser.messages || [];
     const optimistic = optimisticMessages.get(selectedUser.entity_id) || [];
-    
+
     // Filter out optimistic messages that have been replaced by real ones
     const filteredOptimistic = optimistic.filter((optMsg) => {
       // Check if a real message with same content exists (sent within 10 seconds)
@@ -298,7 +299,7 @@ export const Chats: React.FC = () => {
       });
       return !hasRealMatch; // Keep if no real match found
     });
-    
+
     // Clean up replaced optimistic messages
     if (filteredOptimistic.length !== optimistic.length) {
       setOptimisticMessages((prev) => {
@@ -312,14 +313,14 @@ export const Chats: React.FC = () => {
         return newMap;
       });
     }
-    
+
     return [...realMessages, ...filteredOptimistic];
   }, [selectedUser?.messages, selectedUser?.entity_id, optimisticMessages]);
 
   // Auto-scroll to bottom when chat is opened or messages change
   useEffect(() => {
     const currentEntityId = selectedUser?.entity_id || null;
-    
+
     // If chat changed, scroll to bottom
     if (currentEntityId !== prevSelectedUserIdRef.current) {
       prevSelectedUserIdRef.current = currentEntityId;
@@ -348,7 +349,7 @@ export const Chats: React.FC = () => {
       // Skip update if we just added an optimistic message
       return;
     }
-    
+
     if (selectedUser && selectedUser.entity_id && groupedUsers) {
       const updatedUser = groupedUsers.find(
         (user) => user.entity_id === selectedUser.entity_id
@@ -357,7 +358,7 @@ export const Chats: React.FC = () => {
         // Only update if messages actually changed to avoid unnecessary re-renders
         const currentMessageIds = (selectedUser.messages || []).map(m => m.id).join(',');
         const newMessageIds = updatedUser.messages.map(m => m.id).join(',');
-        
+
         if (currentMessageIds !== newMessageIds) {
           // Merge messages instead of replacing entire object
           setSelectedUser(prev => prev ? {
@@ -464,13 +465,13 @@ export const Chats: React.FC = () => {
     return conversations.filter((group: any) => {
       // Search by display name (sender/buyer name)
       const displayName = getDisplayName(group)?.toLowerCase?.() || "";
-      
+
       // Search by peer name (for P2P conversations)
       const peerName = (group.peer_name || "").toString().toLowerCase();
-      
+
       // Search by sender name
       const senderName = ((group as any).sender_name || "").toString().toLowerCase();
-      
+
       // Search by emails
       const peerEmail = (group.peer_email || "").toString().toLowerCase();
       const senderEmail = ((group as any).sender_email || "").toString().toLowerCase();
@@ -522,7 +523,7 @@ export const Chats: React.FC = () => {
     const messageContent = messageInput.trim();
     const tempId = `temp-${Date.now()}-${Math.random()}`;
     const imagesToSend = uploadedImages;
-    
+
     // Create optimistic message
     const optimisticMessage = {
       id: tempId,
@@ -548,7 +549,7 @@ export const Chats: React.FC = () => {
       newMap.set(entityId, [...existing, optimisticMessage]);
       return newMap;
     });
-    
+
     // Set flag to prevent useEffect from overwriting selectedUser immediately
     justAddedOptimisticRef.current = true;
     setTimeout(() => {
@@ -588,7 +589,7 @@ export const Chats: React.FC = () => {
       }, 1000); // Remove after 1 second, real message should be in by then
     } catch (error) {
       console.error("Failed to send message:", error);
-      
+
       // Remove optimistic message on error
       setOptimisticMessages((prev) => {
         const newMap = new Map(prev);
@@ -628,12 +629,12 @@ export const Chats: React.FC = () => {
 
     // Use displayedMessages which includes optimistic messages
     const allMessages = displayedMessages;
-    
+
     // Check if chat is closed - disable if status is "Complete"/"completed", "Responded"/"responded", or "Cancelled"/"cancelled"
     const chatStatus = selectedUser ? (selectedUser as any).status : null;
     const normalizedStatus = chatStatus ? String(chatStatus).toLowerCase() : null;
     const isChatClosed = normalizedStatus === "complete" || normalizedStatus === "completed" || normalizedStatus === "responded" || normalizedStatus === "cancelled";
-    
+
     if (allMessages.length === 0) {
       return (
         <div className="flex items-center justify-center h-full text-sm text-gray-600 dark:text-[#A2A4A9]">
@@ -643,7 +644,7 @@ export const Chats: React.FC = () => {
     }
 
     return (
-      <div 
+      <div
         ref={messagesContainerRef}
         className="flex flex-col gap-1 px-4 py-4 overflow-y-auto flex-1 min-h-0"
       >
@@ -653,13 +654,13 @@ export const Chats: React.FC = () => {
           .map((msg: any, index: number) => {
             // Determine if this message is from the logged-in user
             // Compare by sender_id first (most reliable), then by email as fallback
-            const isSender = 
+            const isSender =
               (user?.id && msg.sender_id && msg.sender_id === user.id) ||
-              (user?.email && msg.sender_email && 
+              (user?.email && msg.sender_email &&
                 msg.sender_email.trim().toLowerCase() === user.email.trim().toLowerCase());
-            
+
             // Extract display name from sender_name or sender_email
-            const displayName = msg.sender_name || 
+            const displayName = msg.sender_name ||
               (msg.sender_email ? msg.sender_email.split('@')[0] : "Unknown User");
 
             return (
@@ -678,7 +679,7 @@ export const Chats: React.FC = () => {
                   <div className={`text-xs font-semibold mb-0 ${isSender ? "text-green-100" : "text-gray-900 dark:text-white"}`}>
                     {isSender ? "You" : displayName}
                   </div>
-                  
+
                   {msg.content && (
                     <div className="text-xs sm:text-sm break-words mb-0.5 whitespace-pre-line">
                       {msg.content}
@@ -706,7 +707,7 @@ export const Chats: React.FC = () => {
                       })}
                     </div>
                   )}
-                  
+
                   <div className="text-[10px] opacity-75 text-right mt-0">
                     {msg.timestamp ? formatTimestamp(msg.timestamp) : ""}
                   </div>
@@ -714,7 +715,7 @@ export const Chats: React.FC = () => {
               </div>
             );
           })}
-        
+
         {/* Chat Closed Notification in messages area */}
         {isChatClosed && (
           <div className="mt-4 mb-2 bg-gray-100 dark:bg-[#2C2C34] rounded-xl p-4 border border-gray-300 dark:border-[#35353E]">
@@ -746,7 +747,7 @@ export const Chats: React.FC = () => {
             </div>
           </div>
         )}
-        
+
         <div ref={messagesEndRef} />
       </div>
     );
@@ -867,12 +868,12 @@ export const Chats: React.FC = () => {
                   />
                 </svg>
               </button>
-              
+
               {selectedUser && (() => {
                 const latestMessage = selectedUser.messages?.[0];
                 const photoUrl = getPhotoUrl(selectedUser, latestMessage);
                 const displayName = getDisplayName(selectedUser);
-                
+
                 return (
                   <>
                     <div className="flex-shrink-0">
@@ -946,12 +947,12 @@ export const Chats: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2 mt-1 relative z-10">
-                  <Link
-                    href="/p2p/terms"
+                  <button
+                    onClick={() => setShowTermsModal(true)}
                     className="px-3 py-1.5 rounded-full border border-[#1D8751] text-[11px] sm:text-xs text-[#1D8751] dark:text-[#D1FAE5] bg-transparent hover:bg-green-200 dark:hover:bg-[#064E3B] transition-colors inline-block"
                   >
                     Read Terms &amp; Conditions
-                  </Link>
+                  </button>
                   <button
                     onClick={() => {
                       if (typeof window !== "undefined" && user?.user_id) {
@@ -1037,7 +1038,7 @@ export const Chats: React.FC = () => {
                   />
                 </svg>
               </button>
-              
+
               {/* Input field */}
               <div className="flex-1 relative">
                 <input
@@ -1045,22 +1046,22 @@ export const Chats: React.FC = () => {
                   placeholder={
                     !selectedUser
                       ? "Select a conversation to start chatting"
-                      : !termsAccepted 
-                        ? "Accept terms to start chatting" 
+                      : !termsAccepted
+                        ? "Accept terms to start chatting"
                         : (() => {
-                            const status = selectedUser ? (selectedUser as any).status : null;
-                            const normalizedStatus = status ? String(status).toLowerCase() : null;
-                            const isClosed = normalizedStatus === "complete" || normalizedStatus === "completed" || normalizedStatus === "responded" || normalizedStatus === "cancelled";
-                            return isClosed ? "Chat is closed - Trade completed or cancelled" : "Type your message...";
-                          })()
+                          const status = selectedUser ? (selectedUser as any).status : null;
+                          const normalizedStatus = status ? String(status).toLowerCase() : null;
+                          const isClosed = normalizedStatus === "complete" || normalizedStatus === "completed" || normalizedStatus === "responded" || normalizedStatus === "cancelled";
+                          return isClosed ? "Chat is closed - Trade completed or cancelled" : "Type your message...";
+                        })()
                   }
                   value={messageInput}
                   onChange={(e) => setMessageInput(e.target.value)}
                   onKeyPress={handleKeyPress}
                   disabled={
                     !selectedUser ||
-                    !termsAccepted || 
-                    isSending || 
+                    !termsAccepted ||
+                    isSending ||
                     (() => {
                       const status = selectedUser ? (selectedUser as any).status : null;
                       const normalizedStatus = status ? String(status).toLowerCase() : null;
@@ -1070,7 +1071,7 @@ export const Chats: React.FC = () => {
                   className="w-full rounded-lg bg-black dark:bg-[#374151] border-0 px-4 py-2.5 text-xs sm:text-sm text-white dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1D8751]/50 disabled:opacity-50 disabled:cursor-not-allowed"
                 />
               </div>
-              
+
               <input
                 type="file"
                 ref={fileInputRef}
@@ -1080,7 +1081,7 @@ export const Chats: React.FC = () => {
                 disabled={!selectedUser || !termsAccepted || isSending}
                 onChange={handleImageChange}
               />
-              
+
               {/* Emoji picker button */}
               <div className="relative" ref={emojiPickerRef}>
                 <button
@@ -1099,7 +1100,7 @@ export const Chats: React.FC = () => {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </button>
-                
+
                 {/* Emoji picker dropdown */}
                 {showEmojiPicker && selectedUser && (
                   <div className="absolute bottom-full right-0 mb-2 w-64 h-48 bg-white dark:bg-[#1F2937] border border-gray-300 dark:border-[#374151] rounded-lg shadow-lg p-3 overflow-y-auto z-50">
@@ -1119,14 +1120,14 @@ export const Chats: React.FC = () => {
                   </div>
                 )}
               </div>
-              
+
               {/* Send button - Rectangular green */}
               <button
                 onClick={handleSendMessage}
                 disabled={
                   !selectedUser ||
-                  !termsAccepted || 
-                  (!messageInput.trim() && uploadedImages.length === 0) || 
+                  !termsAccepted ||
+                  (!messageInput.trim() && uploadedImages.length === 0) ||
                   isSending ||
                   (() => {
                     const status = selectedUser ? (selectedUser as any).status : null;
@@ -1134,31 +1135,30 @@ export const Chats: React.FC = () => {
                     return normalizedStatus === "complete" || normalizedStatus === "completed" || normalizedStatus === "responded" || normalizedStatus === "cancelled";
                   })()
                 }
-                className={`w-10 h-8 flex-shrink-0 rounded-lg bg-[#1D8751] text-white flex items-center justify-center transition-all ${
-                  (() => {
-                    const status = selectedUser ? (selectedUser as any).status : null;
-                    const normalizedStatus = status ? String(status).toLowerCase() : null;
-                    const isClosed = normalizedStatus === "complete" || normalizedStatus === "completed" || normalizedStatus === "responded" || normalizedStatus === "cancelled";
-                    return selectedUser &&
-                           termsAccepted && 
-                           (messageInput.trim() || uploadedImages.length > 0) && 
-                           !isSending &&
-                           !isClosed;
-                  })()
-                    ? "opacity-100 hover:bg-[#15803D] cursor-pointer"
-                    : "opacity-60 cursor-not-allowed"
-                }`}
+                className={`w-10 h-8 flex-shrink-0 rounded-lg bg-[#1D8751] text-white flex items-center justify-center transition-all ${(() => {
+                  const status = selectedUser ? (selectedUser as any).status : null;
+                  const normalizedStatus = status ? String(status).toLowerCase() : null;
+                  const isClosed = normalizedStatus === "complete" || normalizedStatus === "completed" || normalizedStatus === "responded" || normalizedStatus === "cancelled";
+                  return selectedUser &&
+                    termsAccepted &&
+                    (messageInput.trim() || uploadedImages.length > 0) &&
+                    !isSending &&
+                    !isClosed;
+                })()
+                  ? "opacity-100 hover:bg-[#15803D] cursor-pointer"
+                  : "opacity-60 cursor-not-allowed"
+                  }`}
                 title={
                   !selectedUser
                     ? "Select a conversation to send messages"
-                    : !termsAccepted 
-                      ? "Accept terms to send messages" 
+                    : !termsAccepted
+                      ? "Accept terms to send messages"
                       : (() => {
-                          const status = selectedUser ? (selectedUser as any).status : null;
-                          const normalizedStatus = status ? String(status).toLowerCase() : null;
-                          const isClosed = normalizedStatus === "complete" || normalizedStatus === "completed" || normalizedStatus === "responded" || normalizedStatus === "cancelled";
-                          return isClosed ? "Chat is closed" : (isSending ? "Sending..." : "Send message");
-                        })()
+                        const status = selectedUser ? (selectedUser as any).status : null;
+                        const normalizedStatus = status ? String(status).toLowerCase() : null;
+                        const isClosed = normalizedStatus === "complete" || normalizedStatus === "completed" || normalizedStatus === "responded" || normalizedStatus === "cancelled";
+                        return isClosed ? "Chat is closed" : (isSending ? "Sending..." : "Send message");
+                      })()
                 }
               >
                 <svg
@@ -1179,6 +1179,22 @@ export const Chats: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Terms and Conditions Modal */}
+      <TermsAndConditionsModal
+        isOpen={showTermsModal}
+        onClose={() => setShowTermsModal(false)}
+        onAccept={() => {
+          if (user?.user_id) {
+            const userSpecificKey = `p2p_terms_accepted_${user.user_id}`;
+            localStorage.setItem(userSpecificKey, "true");
+            localStorage.setItem("p2p_terms_accepted", "true");
+            console.log(`[P2P Terms] Terms accepted by user ${user.user_id}`);
+            setTermsAccepted(true);
+            setShowTermsModal(false);
+          }
+        }}
+      />
     </div>
   );
 };

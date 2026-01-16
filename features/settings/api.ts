@@ -324,11 +324,10 @@ export const settingsApi = {
   },
 
   // Referral Withdrawal History
-  getReferralWithdrawalHistory: async (): Promise<any> => {
+  getReferralWithdrawalHistory: async (pageUrl?: string | null): Promise<any> => {
     return withRetry(async () => {
-      const response = await apiClient.get(
-        "/trading_engine/user-referral/withdrawals/"
-      );
+      const url = pageUrl || "/trading_engine/user-referral/withdrawals/";
+      const response = await apiClient.get(url);
       return response.data;
     });
   },

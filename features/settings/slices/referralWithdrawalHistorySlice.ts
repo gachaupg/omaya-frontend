@@ -56,9 +56,9 @@ const initialState: ReferralWithdrawalHistoryState = {
 // Async thunk to fetch referral withdrawal history
 export const fetchReferralWithdrawalHistory = createAsyncThunk(
   "referralWithdrawalHistory/fetch",
-  async (_, { rejectWithValue }) => {
+  async (pageUrl?: string | null, { rejectWithValue }) => {
     try {
-      const response = await settingsApi.getReferralWithdrawalHistory();
+      const response = await settingsApi.getReferralWithdrawalHistory(pageUrl);
       return response;
     } catch (error: any) {
       return rejectWithValue(

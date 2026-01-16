@@ -4412,7 +4412,7 @@ export default function DepositForm({
                 />
                 {/* Validation status indicator */}
                 {walletAddress.trim() && currentCurrency && (
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center">
+                  <div className="flex items-center ml-2 flex-shrink-0">
                     {isAddressValidating ? (
                       <div className="w-4 h-4 border-2 border-[#1D8751] border-t-transparent rounded-full animate-spin"></div>
                     ) : addressValidationResult?.isValid ? (
@@ -4439,16 +4439,42 @@ export default function DepositForm({
                     ) : null}
                   </div>
                 )}
-                {/* Bookmark icon */}
-                <span className="mx-2 text-[#788099] cursor-pointer">
-                  <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
+                {/* QR Scanner icon */}
+                <span 
+                  className="mx-2 text-[#1D8751] cursor-pointer hover:text-[#16663d] transition-colors flex-shrink-0"
+                  title="Scan QR Code"
+                >
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                    {/* QR code scanner frame */}
                     <path
-                      d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"
-                      stroke="#788099"
+                      d="M3 7V5a2 2 0 0 1 2-2h2"
+                      stroke="currentColor"
                       strokeWidth="2"
                       strokeLinecap="round"
-                      strokeLinejoin="round"
                     />
+                    <path
+                      d="M17 3h2a2 2 0 0 1 2 2v2"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                    <path
+                      d="M21 17v2a2 2 0 0 1-2 2h-2"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                    <path
+                      d="M7 21H5a2 2 0 0 1-2-2v-2"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                    {/* Inner QR pattern */}
+                    <rect x="7" y="7" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.5" />
+                    <rect x="13" y="7" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.5" />
+                    <rect x="7" y="13" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.5" />
+                    <rect x="13" y="13" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.5" />
                   </svg>
                 </span>
               </div>

@@ -26,13 +26,26 @@ const UserCard = () => {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [profileImage, setProfileImage] = React.useState<string | null>(null);
+  
+  // Initialize profile image from localStorage or user photo
+  const [profileImage, setProfileImage] = React.useState<string | null>(() => {
+    if (typeof window !== "undefined") {
+      const cached = localStorage.getItem("p2p_profile_image");
+      if (cached) return cached;
+    }
+    return null;
+  });
+  
   const { data: matchedTrades } = useSelector(
     (state: RootState) => state.matchedTrades
   );
   const { user, isAuthenticated } = useSelector(
     (state: RootState) => state.auth
   );
+  
+  // Use user.photo as fallback if profileImage is not set
+  const displayImage = profileImage || user?.photo || null;
+  
   const kycState = useSelector((state: RootState) => state.kyc);
   // KYC verification status from central KYC slice, fallback to user.is_verified
   const isVerified = kycState.isVerified !== undefined 
@@ -63,6 +76,10 @@ const UserCard = () => {
         .then((response) => {
           if (response?.profile?.photo) {
             setProfileImage(response.profile.photo);
+            // Cache profile image to localStorage
+            if (typeof window !== "undefined") {
+              localStorage.setItem("p2p_profile_image", response.profile.photo);
+            }
           }
         })
         .catch((error) => { });
@@ -151,6 +168,10 @@ const UserCard = () => {
           const response = await dispatch(getP2PProfileThunk()).unwrap();
           if (response?.profile?.photo) {
             setProfileImage(response.profile.photo);
+            // Cache the updated profile image
+            if (typeof window !== "undefined") {
+              localStorage.setItem("p2p_profile_image", response.profile.photo);
+            }
           }
           // Also refresh main auth profile so navbar/other pages update without reload
           await dispatch(getUserProfile()).unwrap();
@@ -192,9 +213,9 @@ const UserCard = () => {
             {/* User Avatar with Edit Button */}
             <div className="relative">
               <div className="h-14 w-14 rounded-full overflow-hidden relative bg-gray-200 dark:bg-[#35353E] flex items-center justify-center">
-                {profileImage ? (
+                {displayImage ? (
                   <Image
-                    src={profileImage}
+                    src={displayImage}
                     alt="User avatar"
                     width={56}
                     height={56}
@@ -377,10 +398,10 @@ const UserCard = () => {
           </div>
 
           {/* Right Section: Action Buttons */}
-          <div className="flex flex-wrap gap-2 justify-start md:justify-center xl:justify-end w-full xl:w-auto">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 justify-center sm:justify-start md:justify-center xl:justify-end w-full xl:w-auto mt-4 xl:mt-0">
             <Button
               borderRadius={24}
-              className="sm:w-[130px]"
+              className="flex-1 sm:flex-none sm:w-[130px] min-w-[100px]"
               height={36}
               variant="primary"
               size="sm"
@@ -390,7 +411,7 @@ const UserCard = () => {
             </Button>
             <Button
               borderRadius={24}
-              className="sm:w-[130px]"
+              className="flex-1 sm:flex-none sm:w-[130px] min-w-[100px]"
               height={36}
               variant="secondary"
               size="sm"
@@ -398,13 +419,14 @@ const UserCard = () => {
             >
               + Post Sell Ad
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className=" flex items-center justify-center p-0"
-              onClick={() => router.push("/dashboard/notifications")}
-              icon={
-                <div className="w-10 h-10 rounded-full border border-[#1D8751] flex items-center justify-center p-1 relative">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="flex items-center justify-center p-0"
+                onClick={() => router.push("/dashboard/notifications")}
+                icon={
+                  <div className="w-10 h-10 rounded-full border border-[#1D8751] flex items-center justify-center p-1 relative">
                   <svg
                     width="16"
                     height="16"
@@ -455,7 +477,7 @@ const UserCard = () => {
             <Button
               variant="ghost"
               size="sm"
-              className=" flex items-center justify-center p-0"
+              className="flex items-center justify-center p-0"
               onClick={() => router.push("/contactUs")}
               icon={
                 <div className="w-10 h-10 rounded-[50%] border border-[#1D8751] flex items-center justify-center p-0">
@@ -491,6 +513,7 @@ const UserCard = () => {
                 </div>
               }
             />
+            </div>
           </div>
         </div>
       )}

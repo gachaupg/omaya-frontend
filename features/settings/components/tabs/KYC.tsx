@@ -60,7 +60,6 @@ const KYC = () => {
           <div className="flex items-center gap-3">
             <div
               className="relative cursor-pointer"
-              onClick={handleImageClick}
             >
               {!profileImage || profileImage === DEFAULT_AVATAR ? (
                 <svg
