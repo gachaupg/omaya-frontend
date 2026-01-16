@@ -11,6 +11,7 @@ import { logger } from '@/lib/utils/logger';
 export const useBlog = () => {
   const [blogs, setBlogs] = useState<BlogPost[]>([]);
   const [news, setNews] = useState<BlogPost[]>([]);
+  const [allPostsFromAPI, setAllPostsFromAPI] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [useLiveUpdates, setUseLiveUpdates] = useState(true);
@@ -52,15 +53,17 @@ export const useBlog = () => {
 
       logger.debug('general', "Transformed blogs:", transformedBlogs);
 
-      // Filter blogs and news
+      // Filter blogs and news (for backward compatibility)
       const blogPosts = transformedBlogs.filter((blog: BlogPost) => blog.category === "blog");
       const newsPosts = transformedBlogs.filter((blog: BlogPost) => blog.category === "news");
 
       logger.debug('general', "Filtered blogs:", blogPosts);
       logger.debug('general', "Filtered news:", newsPosts);
+      logger.debug('general', "All posts (all categories):", transformedBlogs);
 
       setBlogs(blogPosts);
       setNews(newsPosts);
+      setAllPostsFromAPI(transformedBlogs); // Store all posts from API (all categories)
     } catch (err) {
       // Provide fallback data instead of showing error to user
       const fallbackBlogs: BlogPost[] = [
@@ -110,7 +113,7 @@ export const useBlog = () => {
   // Use live updates if available, otherwise fall back to API
   useEffect(() => {
     if (useLiveUpdates) {
-      // Always process live blogs, even if empty (they might be loading)
+      // Process all live blogs - filter by category for backward compatibility
       const blogPosts = liveBlogs.filter((blog: BlogPost) => blog.category === "blog");
       const newsPosts = liveBlogs.filter((blog: BlogPost) => blog.category === "news");
       
@@ -131,6 +134,16 @@ export const useBlog = () => {
     }
   }, [liveBlogs, liveLoading, liveError, useLiveUpdates]);
 
+  // Get all posts regardless of category (for homepage display)
+  // This includes all categories: trading, security, defi, market_analysis, blog, news, etc.
+  const allPosts = useMemo(() => {
+    if (useLiveUpdates) {
+      return liveBlogs; // All posts from live subscription (includes all categories)
+    }
+    // When using API fallback, use allPostsFromAPI which contains all categories
+    return allPostsFromAPI.length > 0 ? allPostsFromAPI : [...blogs, ...news];
+  }, [liveBlogs, allPostsFromAPI, blogs, news, useLiveUpdates]);
+
   // Expose refresh function to allow manual cache invalidation
   const refresh = () => {
     if (useLiveUpdates) {
@@ -147,6 +160,7 @@ export const useBlog = () => {
   return {
     blogs,
     news,
+    allPosts, // All posts regardless of category
     loading,
     error,
     refresh,

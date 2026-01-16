@@ -46,6 +46,8 @@ const PaymentMethods = () => {
   const [accountName, setAccountName] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
   const [isClient, setIsClient] = useState(false);
+  const [isProviderDropdownOpen, setIsProviderDropdownOpen] = useState(false);
+  const providerDropdownRef = useRef<HTMLDivElement>(null);
 
   // Edit modal states
   const [editingPaymentMethod, setEditingPaymentMethod] = useState<PaymentMethod | null>(null);
@@ -105,6 +107,27 @@ const PaymentMethods = () => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [handleClickOutside]);
+
+  // Close provider dropdown on outside click
+  useEffect(() => {
+    const handleProviderDropdownClickOutside = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (
+        isProviderDropdownOpen &&
+        providerDropdownRef.current &&
+        !providerDropdownRef.current.contains(target)
+      ) {
+        setIsProviderDropdownOpen(false);
+      }
+    };
+
+    if (isProviderDropdownOpen) {
+      document.addEventListener("mousedown", handleProviderDropdownClickOutside);
+      return () => {
+        document.removeEventListener("mousedown", handleProviderDropdownClickOutside);
+      };
+    }
+  }, [isProviderDropdownOpen]);
 
   // Providers for selected method
   const providers = (adminMethods || []).filter(
@@ -574,25 +597,60 @@ const PaymentMethods = () => {
               <label className="block text-gray-600 dark:text-[#788099] text-xs sm:text-sm mb-1">
                 Provider
               </label>
-              <div className="relative">
-                <select
-                  className="w-full bg-white dark:bg-[var(--card-color)] text-gray-900 dark:text-white appearance-none pr-10 rounded-xl border border-gray-200 dark:border-[#35353E] h-12 px-4 text-sm"
-                  value={selectedProvider}
-                  onChange={(e) => setSelectedProvider(e.target.value)}
+              <div className="relative" ref={providerDropdownRef}>
+                <button
+                  type="button"
+                  onClick={() => !adminLoading && setIsProviderDropdownOpen(!isProviderDropdownOpen)}
                   disabled={adminLoading}
+                  className={`w-full bg-white dark:bg-[var(--card-color)] text-gray-900 dark:text-white rounded-xl border border-gray-200 dark:border-[#35353E] h-12 px-4 text-sm flex items-center justify-between transition-all duration-200 ${
+                    adminLoading
+                      ? "opacity-50 cursor-not-allowed"
+                      : "hover:border-[#1D8751] dark:hover:border-[#1D8751] focus:outline-none focus:ring-2 focus:ring-[#1D8751]/20 cursor-pointer"
+                  } ${isProviderDropdownOpen ? "border-[#1D8751] dark:border-[#1D8751]" : ""}`}
                 >
-                  <option value="">Select Provider</option>
-                  {providers.map((p: any, idx: number) => (
-                    <option key={p.provider_name + idx} value={p.provider_name}>
-                      {p.provider_name}
-                    </option>
-                  ))}
-                </select>
-                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
+                  <span className={selectedProvider ? "text-gray-900 dark:text-white" : "text-gray-500 dark:text-gray-400"}>
+                    {selectedProvider || "Select Provider"}
+                  </span>
+                  <ChevronDown
+                    className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${
+                      isProviderDropdownOpen ? "transform rotate-180" : ""
+                    }`}
+                  />
+                </button>
+
+                {/* Custom Dropdown */}
+                {isProviderDropdownOpen && !adminLoading && (
+                  <div className="absolute z-50 w-full mt-2 bg-white dark:bg-[var(--card-color)] border border-gray-200 dark:border-[#35353E] rounded-xl shadow-lg max-h-60 overflow-auto">
+                    {providers.map((p: any, idx: number) => (
+                      <div
+                        key={p.provider_name + idx}
+                        className={`px-3 py-2.5 text-sm cursor-pointer transition-colors ${
+                          selectedProvider === p.provider_name
+                            ? "bg-[#1D8751]/10 dark:bg-[#1D8751]/20 text-[#1D8751] dark:text-[#1D8751] font-medium"
+                            : "text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-[#1F2937]"
+                        }`}
+                        onClick={() => {
+                          setSelectedProvider(p.provider_name);
+                          setIsProviderDropdownOpen(false);
+                        }}
+                      >
+                        <span className="flex items-center gap-2">
+                          {p.logo || p.provider_logo ? (
+                            <img
+                              src={getHighResPaymentLogo(p.logo, p.provider_logo, PAYMENT_LOGO_SIZE)}
+                              alt={p.provider_name}
+                              className="w-5 h-5 rounded object-contain"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display = "none";
+                              }}
+                            />
+                          ) : null}
+                          <span>{p.provider_name}</span>
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
