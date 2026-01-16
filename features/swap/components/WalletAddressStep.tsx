@@ -28,6 +28,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
 }) => {
   const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
   const [walletError, setWalletError] = useState<string | null>(null);
+  const [expandedTerms, setExpandedTerms] = useState(false);
 
   // Get currency from toAsset (the asset we're receiving)
   const getCurrencyFromAsset = useCallback((asset: any): string | undefined => {
@@ -331,39 +332,103 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                     d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                   />
                 </svg>
-                <h3 className="text-gray-900 dark:text-[#788099] font-medium text-sm sm:text-base">
-                  Terms and Conditions Summary
+                <h3 className="text-gray-900 dark:text-white font-medium text-sm sm:text-base">
+                  Terms & Conditions
                 </h3>
               </div>
 
-              {/* Terms Box */}
-              <div className={`bg-gray-50 dark:bg-[var(--card-color)] ${strongBorder} rounded-xl p-4 sm:p-5`}>
-                <div className="space-y-2 sm:space-y-3">
-                  {/* Term 1 */}
-                  <div className="flex items-start gap-2 sm:gap-3">
-                    <div className="w-2 h-2 bg-[#1D8751] rounded-full mt-1.5 sm:mt-2 flex-shrink-0"></div>
-                    <p className="text-xs sm:text-sm text-gray-900 dark:text-white">
-                      Please send the money from your own account Only
-                    </p>
+              {/* Terms Box - Collapsible */}
+              <div className={`bg-gray-50 dark:bg-[var(--card-color)] ${strongBorder} rounded-xl overflow-hidden transition-all duration-300`}>
+                {/* Summary Section - Always Visible */}
+                <div className="p-4 sm:p-5">
+                  <div className={`space-y-2 sm:space-y-3 ${expandedTerms ? '' : 'line-clamp-3'}`}>
+                    <div className="flex items-start gap-2 sm:gap-3">
+                      <span className="text-[#1D8751] font-bold text-sm sm:text-base flex-shrink-0">1.</span>
+                      <p className="text-xs sm:text-sm text-gray-900 dark:text-white">
+                        <span className="font-semibold">Send from your own wallet only:</span> You must send the crypto asset from a wallet that you personally own and control. Third-party or intermediary wallets are not allowed.
+                      </p>
+                    </div>
+
+                    <div className="flex items-start gap-2 sm:gap-3">
+                      <span className="text-[#1D8751] font-bold text-sm sm:text-base flex-shrink-0">2.</span>
+                      <p className="text-xs sm:text-sm text-gray-900 dark:text-white">
+                        <span className="font-semibold">Send the correct asset and network:</span> You must send {toAsset?.name || toAsset?.symbol || 'the asset'} on the {currentNetwork || 'selected network'} only. Sending any other asset or using a different network will result in PERMANENT LOSS of funds.
+                      </p>
+                    </div>
+
+                    <div className="flex items-start gap-2 sm:gap-3">
+                      <span className="text-[#1D8751] font-bold text-sm sm:text-base flex-shrink-0">3.</span>
+                      <p className="text-xs sm:text-sm text-gray-900 dark:text-white">
+                        <span className="font-semibold">Provide the correct receiving address:</span> You must enter the correct receiving wallet address for {toAsset?.name || toAsset?.symbol || 'the asset'} on {currentNetwork || 'the selected network'}. Putting any other asset or using a different network will result in PERMANENT LOSS of funds.
+                      </p>
+                    </div>
                   </div>
 
-                  {/* Term 2 */}
-                  <div className="flex items-start gap-2 sm:gap-3">
-                    <div className="w-2 h-2 bg-[#1D8751] rounded-full mt-1.5 sm:mt-2 flex-shrink-0"></div>
-                    <p className="text-xs sm:text-sm text-gray-900 dark:text-white">
-                      Put transaction ID in the description field of the bank
-                    </p>
-                  </div>
-
-                  {/* Term 3 */}
-                  <div className="flex items-start gap-2 sm:gap-3">
-                    <div className="w-2 h-2 bg-[#1D8751] rounded-full mt-1.5 sm:mt-2 flex-shrink-0"></div>
-                    <p className="text-xs sm:text-sm text-gray-900 dark:text-white">
-                      Please note, If you do not follow above conditions, we
-                      will reject your transaction and send you back your money.
-                    </p>
-                  </div>
+                  {/* Show More/Less Button */}
+                  <button
+                    onClick={() => setExpandedTerms(!expandedTerms)}
+                    className="mt-3 sm:mt-4 text-[#1D8751] hover:text-[#166b3e] font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition-colors"
+                  >
+                    {expandedTerms ? (
+                      <>
+                        <span>Show Less</span>
+                        <svg className="w-4 h-4 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                        </svg>
+                      </>
+                    ) : (
+                      <>
+                        <span>Show More</span>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                        </svg>
+                      </>
+                    )}
+                  </button>
                 </div>
+
+                {/* Expanded Content */}
+                {expandedTerms && (
+                  <div className="border-t border-gray-200 dark:border-[#35353E] px-4 sm:px-5 py-4 sm:py-5 space-y-4 sm:space-y-5">
+                    {/* Term 4 */}
+                    <div className="flex items-start gap-2 sm:gap-3">
+                      <span className="text-[#1D8751] font-bold text-sm sm:text-base flex-shrink-0">4.</span>
+                      <div className="flex-1">
+                        <p className="text-xs sm:text-sm text-gray-900 dark:text-white font-semibold mb-2">
+                          Irreversible transactions & user responsibility:
+                        </p>
+                        <p className="text-xs sm:text-sm text-gray-900 dark:text-white mb-2">
+                          Blockchain transactions are irreversible. If you send:
+                        </p>
+                        <ul className="text-xs sm:text-sm text-gray-900 dark:text-white space-y-1 ml-3">
+                          <li>• the wrong crypto asset,</li>
+                          <li>• the wrong network, or</li>
+                          <li>• an incorrect receiving address,</li>
+                        </ul>
+                        <p className="text-xs sm:text-sm text-gray-900 dark:text-white mt-2">
+                          the funds will be permanently lost, and we will not be able to recover or assist in any way.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Term 5 */}
+                    <div className="flex items-start gap-2 sm:gap-3">
+                      <span className="text-[#1D8751] font-bold text-sm sm:text-base flex-shrink-0">5.</span>
+                      <div className="flex-1">
+                        <p className="text-xs sm:text-sm text-gray-900 dark:text-white font-semibold mb-2">
+                          Acceptance of terms:
+                        </p>
+                        <p className="text-xs sm:text-sm text-gray-900 dark:text-white">
+                          Before sending any funds, you must confirm that you have read and accepted:
+                        </p>
+                        <ul className="text-xs sm:text-sm text-gray-900 dark:text-white space-y-1.5 ml-3 mt-2">
+                          <li>• all the terms and conditions listed above, and</li>
+                          <li>• our full <Link href="/legal/terms-of-service" target="_blank" rel="noopener noreferrer" className="text-[#1D8751] underline font-medium hover:text-[#166b3e]">Terms of Service</Link></li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Terms Acceptance Checkbox */}
@@ -378,25 +443,24 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                 />
                 <label
                   htmlFor="accept-terms"
-                  className="text-xs sm:text-sm text-[#1D8751] leading-relaxed cursor-pointer"
+                  className="text-xs sm:text-sm text-gray-900 dark:text-white leading-relaxed cursor-pointer"
                 >
-                  <span className="text-gray-900 dark:text-white font-medium">
+                  <span className="font-medium">
                     I have read and agreed to Omaya Exchange{" "}
                   </span>
                   <Link
                     href="/legal/terms-of-service"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[#1D8751] underline font-medium"
+                    className="text-[#1D8751] underline font-medium hover:text-[#166b3e]"
                   >
                     Terms of Use
                   </Link>{" "}
-
                   <Link
                     href="/legal/privacy-policy"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[#1D8751] underline font-medium"
+                    className="text-[#1D8751] underline font-medium hover:text-[#166b3e]"
                   >
                     Privacy Policy
                   </Link>
@@ -405,7 +469,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                     href="/legal/payment-policy"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[#1D8751] underline font-medium"
+                    className="text-[#1D8751] underline font-medium hover:text-[#166b3e]"
                   >
                     Payment Policies
                   </Link>
@@ -414,15 +478,16 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                     href="/legal/aml-policy"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[#1D8751] font-medium underline"
+                    className="text-[#1D8751] font-medium underline hover:text-[#166b3e]"
                   >
                     AML
-                  </Link>,{" "}
+                  </Link>
+                  ,{" "}
                   <Link
                     href="/legal/risk-disclosure-statement"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[#1D8751] font-medium underline"
+                    className="text-[#1D8751] font-medium underline hover:text-[#166b3e]"
                   >
                     Risk Disclosure Statement
                   </Link>
