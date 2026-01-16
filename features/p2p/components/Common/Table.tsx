@@ -785,7 +785,7 @@ export const Table: React.FC<TableProps> = ({
                 >
                   <div className="flex items-center gap-2">
                     <img
-                      src="https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png"
+                      src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
                       alt={row.asset || "Asset"}
                       className="w-6 h-6"
                     />
@@ -875,7 +875,7 @@ export const Table: React.FC<TableProps> = ({
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <img
-                          src="https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png"
+                          src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
                           alt={row.asset || "Asset"}
                           className="w-6 h-6"
                         />

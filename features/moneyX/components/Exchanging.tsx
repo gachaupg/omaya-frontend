@@ -738,7 +738,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
   }
 
   return (
-    <div className={`w-full min-h-screen flex flex-col pt-0 sm:pt-1 md:pt-2 px-0 sm:px-2 md:px-0 pr-2 sm:pr-0`}>
+    <div className={`w-full min-h-screen flex flex-col pt-0 sm:pt-1 md:pt-2 pl-0 sm:pl-4 pr-2 sm:pr-0 mr-0 sm:mr-40 max-w-full sm:max-w-5xl overflow-x-hidden box-border`}>
       {/* Timer Banner */}
       {timerActive && timeRemaining > 0 && (
         <div
@@ -809,10 +809,10 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
           isDark
             ? "bg-[var(--card-color)]  border:[#E8EFF5] dark:border-[#35353E]"
             : "bg-white border-gray-200"
-        } border-2 rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 shadow-lg w-full mb-3 sm:mb-4 min-h-[160px] sm:min-h-[180px]`}
+        } border-2 rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 shadow-lg w-full mb-3 sm:mb-4 min-h-[160px] sm:min-h-[180px] overflow-hidden box-border`}
       >
-        <div className="flex-1 flex flex-col justify-between py-1 sm:py-2 pr-0 sm:pr-2">
-          <div>
+        <div className="flex-1 flex flex-col justify-between py-1 sm:py-2 pr-0 sm:pr-2 w-full">
+          <div className="w-full">
             <div
               className={`${
                 isDark ? "text-[#7B7B7B]" : "text-gray-600"
@@ -825,7 +825,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                 isDark ? "text-white" : "text-gray-900"
               } text-sm sm:text-base font-semibold mb-1 flex items-center gap-2`}
             >
-              <span>
+              <span className="break-words">
                 {liveAmount !== null
                   ? liveAmount
                   : effectiveTransactionData?.amount || 0}{" "}
@@ -843,7 +843,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                 >
                   From Payment Method:
                 </div>
-                <div className="flex items-center mb-2 flex-wrap gap-1 sm:gap-2">
+                <div className="flex items-center mb-2 gap-1 sm:gap-2 w-full min-w-0">
                   {effectiveTransactionData.fromPaymentMethod.provider_logo ||
                   effectiveTransactionData.fromPaymentMethod.logo ? (
                     <img
@@ -852,7 +852,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                         effectiveTransactionData.fromPaymentMethod.logo
                       }
                       alt={effectiveTransactionData.fromPaymentMethod.provider_name}
-                      className="w-5 h-5 sm:w-6 sm:h-6 mr-1 sm:mr-2 rounded-md object-contain bg-white flex-shrink-0"
+                      className="w-5 h-5 sm:w-6 sm:h-6 rounded-md object-contain bg-white flex-shrink-0"
                       onError={(e) => {
                         e.currentTarget.src =
                           "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
@@ -862,7 +862,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                   <span
                     className={`${
                       isDark ? "text-white" : "text-gray-900"
-                    } text-xs sm:text-sm font-semibold break-words`}
+                    } text-xs sm:text-sm font-semibold break-words flex-1 min-w-0`}
                   >
                     {effectiveTransactionData.fromPaymentMethod.provider_name}
                   </span>
@@ -879,7 +879,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                 >
                   To Payment Method:
                 </div>
-                <div className="flex items-center mb-2 flex-wrap gap-1 sm:gap-2">
+                <div className="flex items-center mb-2 gap-1 sm:gap-2 w-full min-w-0">
                   {effectiveTransactionData.toPaymentMethod.provider_logo ||
                   effectiveTransactionData.toPaymentMethod.logo ? (
                     <img
@@ -888,7 +888,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                         effectiveTransactionData.toPaymentMethod.logo
                       }
                       alt={effectiveTransactionData.toPaymentMethod.provider_name}
-                      className="w-5 h-5 sm:w-6 sm:h-6 mr-1 sm:mr-2 rounded-md object-contain bg-white flex-shrink-0"
+                      className="w-5 h-5 sm:w-6 sm:h-6 rounded-md object-contain bg-white flex-shrink-0"
                       onError={(e) => {
                         e.currentTarget.src =
                           "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
@@ -898,7 +898,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                   <span
                     className={`${
                       isDark ? "text-white" : "text-gray-900"
-                    } text-xs sm:text-sm font-semibold break-words`}
+                    } text-xs sm:text-sm font-semibold break-words flex-1 min-w-0`}
                   >
                     {effectiveTransactionData.toPaymentMethod.provider_name}
                   </span>
@@ -916,17 +916,17 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                 >
                   Bank Account Address:
                 </div>
-                <div className="flex items-start sm:items-center mb-2 gap-2 flex-wrap">
+                <div className="flex items-center mb-2 gap-2 w-full">
                   <span
                     className={`${
                       isDark ? "text-white" : "text-gray-900"
-                    } text-[10px] sm:text-xs font-mono bg-gray-500/10 px-2 py-1 rounded break-all flex-1 min-w-0`}
+                    } text-[10px] sm:text-xs font-mono bg-gray-500/10 dark:bg-gray-500/20 px-2 py-1.5 rounded break-all flex-1 min-w-0`}
                   >
                     {effectiveTransactionData.walletAddress}
                   </span>
                   <CopyButton
                     value={effectiveTransactionData.walletAddress}
-                    className="ml-0 sm:ml-2 flex-shrink-0"
+                    className="flex-shrink-0"
                   />
                 </div>
               </>
@@ -1375,7 +1375,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
       <div
         className={`${
           isDark ? "bg-[var(--card-color)] border-[#35353E]" : "bg-white border-gray-200"
-        } border-2 rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 shadow-lg w-full mb-2 sm:mb-4`}
+        } border-2 rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 shadow-lg w-full mb-2 sm:mb-4 overflow-hidden box-border`}
       >
         <div
           className={`${
@@ -1438,9 +1438,9 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
           </div>
         </div>
         {/* From/To Content Row */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mt-2">
+        <div className="flex flex-row items-center justify-between gap-2 sm:gap-4 mt-2">
           {/* From */}
-          <div className="flex items-center gap-2 min-w-0 flex-1 sm:flex-initial">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
             {effectiveTransactionData?.fromPaymentMethod ? (
               <>
                 {(effectiveTransactionData.fromPaymentMethod.provider_logo ||
@@ -1488,7 +1488,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
             )}
           </div>
           {/* To */}
-          <div className="flex items-center gap-2 min-w-0 flex-1 sm:flex-initial sm:justify-end">
+          <div className="flex items-center gap-2 min-w-0 flex-1 justify-end">
             {effectiveTransactionData?.toPaymentMethod ? (
               <>
                 {(effectiveTransactionData.toPaymentMethod.provider_logo ||
@@ -1506,7 +1506,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                     }}
                   />
                 )}
-                <div className="text-left sm:text-right min-w-0">
+                <div className="text-right min-w-0">
                   <div
                     className={`${
                       isDark ? "text-white" : "text-gray-900"

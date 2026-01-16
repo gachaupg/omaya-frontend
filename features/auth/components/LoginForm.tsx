@@ -275,7 +275,7 @@ export default function LoginPage() {
 
       {/* Right Side - Login Form */}
       <div className="w-full md:w-1/2 relative z-10">
-        <div className="max-w-md mx-auto 2xl:max-w-3/4">
+        <div className="max-w-md mx-auto 2xl:max-w-3/4 relative">
           <div className="mb-6">
             <h1 className="dark:text-white text-gray-900 text-2xl font-semibold">
               {t("auth.login.title", "Welcome")}
@@ -285,7 +285,7 @@ export default function LoginPage() {
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6 relative">
             {/* Email Field */}
             <div>
               <label
@@ -583,32 +583,30 @@ export default function LoginPage() {
               </div>
             </div>
           </form>
-        </div>
-      </div>
 
-      {/* Captcha Modal - On top of form */}
-      {showCaptchaModal && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none">
-          {/* Backdrop */}
-          <div className="absolute inset-0 bg-black/50 dark:bg-black/70 pointer-events-auto" onClick={handleCloseCaptchaModal}></div>
-          {/* Modal */}
-          <div
-            className="relative bg-white dark:bg-[var(--card-color)] rounded-2xl shadow-2xl max-w-md w-full p-6 pointer-events-auto border border-gray-200 dark:border-[#35353E] z-10"
-            onClick={(e) => e.stopPropagation()}
-          >
+          {/* Captcha Modal - On top of form inputs only */}
+          {showCaptchaModal && (
+            <div className="absolute -top-4 sm:-top-6 md:-top-8 lg:-top-12 left-0 right-0 bottom-0 z-[9999] flex items-center justify-center pointer-events-none py-2 sm:py-3 md:py-4 lg:py-6 overflow-y-auto">
+              {/* Backdrop - covers the form inputs area */}
+              <div className="absolute inset-0 bg-transparent pointer-events-auto" onClick={handleCloseCaptchaModal}></div>
+               {/* Modal */}
+               <div
+                 className="relative bg-white dark:bg-[var(--card-color)] rounded-lg sm:rounded-xl md:rounded-2xl shadow-2xl w-[95%] sm:w-[90%] md:w-[85%] lg:w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl my-auto pointer-events-auto border border-gray-200 dark:border-[#35353E] z-10 p-3 sm:p-4 md:p-5 lg:p-6 max-h-[90vh] sm:max-h-[88vh] md:max-h-[85vh] overflow-y-auto"
+                onClick={(e) => e.stopPropagation()}
+              >
             {/* Header */}
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold dark:text-white text-gray-900">
+            <div className="flex items-center justify-between mb-4 sm:mb-6">
+              <h2 className="text-lg sm:text-xl font-semibold dark:text-white text-gray-900">
                 {t("auth.login.captcha", "Security Verification")}
               </h2>
               <button
                 onClick={handleCloseCaptchaModal}
                 disabled={captchaSuccess}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-[#35353E] rounded-full transition-colors"
+                className="p-1.5 sm:p-2 hover:bg-gray-100 dark:hover:bg-[#35353E] rounded-full transition-colors flex-shrink-0"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 text-gray-500 dark:text-gray-400"
+                  className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500 dark:text-gray-400"
                   viewBox="0 0 20 20"
                   fill="currentColor"
                 >
@@ -622,13 +620,13 @@ export default function LoginPage() {
             </div>
 
             {/* Captcha Content */}
-            <div className="flex flex-col items-center">
+            <div className="flex flex-col items-center w-full">
               {captchaSuccess ? (
-                <div className="flex flex-col items-center text-center py-6">
-                  <div className="w-16 h-16 rounded-full bg-[#E6F4EC] dark:bg-[#1F3B2C] flex items-center justify-center mb-4">
+                <div className="flex flex-col items-center text-center py-4 sm:py-6 w-full">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-[#E6F4EC] dark:bg-[#1F3B2C] flex items-center justify-center mb-3 sm:mb-4">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      className="w-8 h-8 text-[#1D8751]"
+                      className="w-6 h-6 sm:w-8 sm:h-8 text-[#1D8751]"
                       viewBox="0 0 20 20"
                       fill="currentColor"
                     >
@@ -639,24 +637,26 @@ export default function LoginPage() {
                       />
                     </svg>
                   </div>
-                  <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                  <p className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white px-2">
                     {t("auth.login.captchaSuccessTitle", "Verification complete")}
                   </p>
-                  <p className="mt-2 text-sm text-gray-500 dark:text-[#9CA3AF]">
+                  <p className="mt-2 text-xs sm:text-sm text-gray-500 dark:text-[#9CA3AF] px-2">
                     {t("auth.login.captchaSuccessDescription", "Redirecting to your account...")}
                   </p>
                 </div>
               ) : (
                 <>
-                  <DragFitCaptcha
-                    imgSrc="https://picsum.photos/280/140?random=10"
-                    onSuccess={handleCaptchaSuccess}
-                    darkMode={isDark}
-                  />
+                  <div className="w-full flex justify-center">
+                    <DragFitCaptcha
+                      imgSrc="https://picsum.photos/280/140?random=10"
+                      onSuccess={handleCaptchaSuccess}
+                      darkMode={isDark}
+                    />
+                  </div>
                   {errors.captcha && (
-                    <p className="mt-4 text-sm text-[#F04438] flex items-center">
+                    <p className="mt-3 sm:mt-4 text-xs sm:text-sm text-[#F04438] flex items-center px-2 text-center">
                       <svg
-                        className="w-4 h-4 mr-1"
+                        className="w-3 h-3 sm:w-4 sm:h-4 mr-1 flex-shrink-0"
                         viewBox="0 0 20 20"
                         fill="currentColor"
                       >
@@ -666,15 +666,17 @@ export default function LoginPage() {
                           clipRule="evenodd"
                         />
                       </svg>
-                      {errors.captcha}
+                      <span>{errors.captcha}</span>
                     </p>
                   )}
                 </>
               )}
             </div>
           </div>
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
     </div>
   );

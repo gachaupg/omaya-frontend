@@ -46,6 +46,7 @@ export const useLiveChatWebSocket = ({
   const reconnectAttemptsRef = useRef(0);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const maxReconnectAttempts = 5;
+  const pendingMessagesRef = useRef<Map<string, number>>(new Map()); // Track recently sent messages to avoid duplicates
   const reconnectDelay = 3000;
   const historyLoadedRef = useRef(false);
   
@@ -144,7 +145,21 @@ export const useLiveChatWebSocket = ({
               message: data.data.message || "",
               timestamp: data.data.timestamp || new Date().toISOString(),
             };
-            setMessages((prev) => [...prev, chatMessage]);
+            
+            // Check if this is a duplicate of a message we just sent
+            const messageKey = `${chatMessage.message.trim()}_${chatMessage.sender_role}`;
+            const pendingTime = pendingMessagesRef.current.get(messageKey);
+            const now = Date.now();
+            
+            // If it's a user message and we sent it recently (within last 2 seconds), skip it
+            if (chatMessage.sender_role === "user" && pendingTime && (now - pendingTime) < 2000) {
+              // Remove from pending and skip adding (we already added it optimistically)
+              pendingMessagesRef.current.delete(messageKey);
+              logger.debug("live-chat", "Skipping duplicate user message:", chatMessage.message);
+            } else {
+              // Add the message (it's either from agent or not a duplicate)
+              setMessages((prev) => [...prev, chatMessage]);
+            }
           } else if (data.type === "typing_indicator") {
             setIsTyping({
               userName: data.user_name || "Agent",
@@ -283,6 +298,18 @@ export const useLiveChatWebSocket = ({
         message: message,
       };
       wsRef.current.send(JSON.stringify(messageData));
+      
+      // Track this message to avoid duplicates when server echoes it back
+      const messageKey = `${message.trim()}_user`;
+      pendingMessagesRef.current.set(messageKey, Date.now());
+      
+      // Clean up old pending messages (older than 5 seconds)
+      const now = Date.now();
+      for (const [key, time] of pendingMessagesRef.current.entries()) {
+        if (now - time > 5000) {
+          pendingMessagesRef.current.delete(key);
+        }
+      }
       
       // Add user message to local state immediately (optimistic update)
       const userMessage: ChatMessage = {

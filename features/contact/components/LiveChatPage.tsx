@@ -139,29 +139,29 @@ const LiveChatPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-white dark:bg-[var(--bg-color)] flex flex-col pt-16 md:pt-20">
       {/* Header */}
-      <div className="flex items-center justify-between px-3 sm:px-4 md:px-6 py-4 sm:py-4 md:py-6 border-b border-gray-200 dark:border-[#35353E] bg-white dark:bg-[#1D1D23] sticky top-16 md:top-20 z-10">
-        <div className="flex items-center gap-3 sm:gap-4 w-full">
+      <div className="flex items-center justify-between px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 border-b border-gray-200 dark:border-[#35353E] bg-white dark:bg-[#1D1D23] sticky top-16 md:top-20 z-10">
+        <div className="flex items-center gap-2 sm:gap-3 w-full">
           <button
             onClick={() => router.back()}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-[#2A2A2A] rounded-full transition-colors flex-shrink-0"
+            className="p-1.5 hover:bg-gray-100 dark:hover:bg-[#2A2A2A] rounded-full transition-colors flex-shrink-0"
           >
-            <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+            <ArrowLeft className="w-4 h-4 text-gray-600 dark:text-gray-400" />
           </button>
-          <div className="flex items-center gap-3 min-w-0 flex-1">
-            <div className="w-10 h-10 bg-[#1D8751] rounded-full flex items-center justify-center flex-shrink-0">
-              <MessageCircle className="w-5 h-5 text-white" />
+          <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 flex-1">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 bg-[#1D8751] rounded-full flex items-center justify-center flex-shrink-0">
+              <MessageCircle className="w-4 h-4 text-white" />
             </div>
             <div className="min-w-0 flex-1">
-              <h2 className="text-base sm:text-lg md:text-xl font-semibold text-gray-900 dark:text-white truncate">
+              <h2 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white truncate leading-tight">
                 Live Chat Support
               </h2>
-              <div className="flex items-center gap-2 min-w-0">
+              <div className="flex items-center gap-1.5 min-w-0 mt-0.5">
                 <div
-                  className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                  className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
                     isConnected ? "bg-green-500" : "bg-gray-400"
                   }`}
                 />
-                <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate">
+                <span className="text-xs text-gray-500 dark:text-gray-400 truncate leading-tight">
                   {isConnected
                     ? session?.status === "waiting"
                       ? `Waiting for agent... (Position: ${session.queue_position || 0})`
@@ -177,7 +177,7 @@ const LiveChatPage: React.FC = () => {
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 space-y-4 bg-gray-50 dark:bg-[#15161D]">
+      <div className="flex-1 overflow-y-auto px-3 sm:px-4 md:px-6 py-3 sm:py-4 space-y-3 bg-gray-50 dark:bg-[#15161D]">
         {isCreatingSession ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
@@ -211,7 +211,7 @@ const LiveChatPage: React.FC = () => {
                 className={`flex ${isUser ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className={`max-w-[75%] sm:max-w-[60%] rounded-2xl px-4 py-2 ${
+                  className={`max-w-[75%] sm:max-w-[60%] rounded-xl sm:rounded-2xl px-3 sm:px-4 py-1.5 sm:py-2 ${
                     isSystem
                       ? "bg-yellow-50 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200 mx-auto text-center"
                       : isUser
@@ -221,7 +221,7 @@ const LiveChatPage: React.FC = () => {
                 >
                   {!isSystem && (
                     <div
-                      className={`text-xs font-medium mb-1 ${
+                      className={`text-xs font-medium mb-0.5 ${
                         isUser
                           ? "text-white/80"
                           : "text-gray-500 dark:text-gray-400"
@@ -230,11 +230,11 @@ const LiveChatPage: React.FC = () => {
                       {message.sender_name}
                     </div>
                   )}
-                  <div className="text-sm whitespace-pre-wrap break-words">
+                  <div className="text-sm whitespace-pre-wrap break-words leading-relaxed">
                     {message.message}
                   </div>
                   <div
-                    className={`text-xs mt-1 ${
+                    className={`text-xs mt-0.5 ${
                       isSystem
                         ? "text-yellow-600 dark:text-yellow-300"
                         : isUser
@@ -253,18 +253,18 @@ const LiveChatPage: React.FC = () => {
         {/* Typing Indicator */}
         {isTyping?.isTyping && (
           <div className="flex justify-start">
-            <div className="bg-white dark:bg-[#2A2A2A] rounded-2xl px-4 py-2 border border-gray-200 dark:border-[#35353E]">
+            <div className="bg-white dark:bg-[#2A2A2A] rounded-xl px-3 py-1.5 border border-gray-200 dark:border-[#35353E]">
               <div className="flex items-center gap-1">
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
+                <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" />
                 <div
-                  className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                  className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"
                   style={{ animationDelay: "0.1s" }}
                 />
                 <div
-                  className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                  className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"
                   style={{ animationDelay: "0.2s" }}
                 />
-                <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
+                <span className="text-xs text-gray-500 dark:text-gray-400 ml-1.5">
                   {isTyping.userName} is typing...
                 </span>
               </div>
@@ -276,26 +276,33 @@ const LiveChatPage: React.FC = () => {
       </div>
 
       {/* Input Area */}
-      <div className="border-t border-gray-200 dark:border-[#35353E] px-3 sm:px-4 md:px-6 py-4 sm:py-6 bg-white dark:bg-[#1D1D23]">
-        <div className="flex gap-2 max-w-4xl mx-auto w-full">
+      <div className="border-t border-gray-200 dark:border-[#35353E] px-3 sm:px-4 md:px-6 py-2.5 sm:py-3 bg-white dark:bg-[#1D1D23]">
+        <div className="flex gap-2 max-w-4xl mx-auto w-full items-end">
           <textarea
             value={messageInput}
             onChange={(e) => setMessageInput(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Type your message..."
             disabled={!isConnected || isCreatingSession}
-            rows={2}
-            className="flex-1 px-4 py-2 border border-gray-300 dark:border-[#35353E] rounded-xl resize-none focus:ring-2 focus:ring-[#1D8751] focus:border-transparent outline-none bg-white dark:bg-[#2A2A2A] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+            rows={1}
+            className="flex-1 px-3 sm:px-4 py-2 border border-gray-300 dark:border-[#35353E] rounded-lg resize-none focus:ring-2 focus:ring-[#1D8751] focus:border-transparent outline-none bg-white dark:bg-[#2A2A2A] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base min-h-[40px] max-h-[120px] overflow-y-auto"
+            style={{ height: 'auto' }}
+            onInput={(e) => {
+              const target = e.target as HTMLTextAreaElement;
+              target.style.height = 'auto';
+              target.style.height = `${Math.min(target.scrollHeight, 120)}px`;
+            }}
           />
           <button
             onClick={handleSendMessage}
             disabled={!messageInput.trim() || !isConnected || isCreatingSession}
-            className="px-4 sm:px-6 py-2 bg-[#1D8751] text-white rounded-xl hover:bg-[#166b42] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center min-w-[50px]"
+            className="px-3 sm:px-4 py-2 h-[40px] bg-[#1D8751] text-white rounded-lg hover:bg-[#166b42] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center flex-shrink-0"
+            aria-label="Send message"
           >
             {isConnected ? (
-              <Send className="w-5 h-5" />
+              <Send className="w-4 h-4 sm:w-5 sm:h-5" />
             ) : (
-              <Loader2 className="w-5 h-5 animate-spin" />
+              <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
             )}
           </button>
         </div>

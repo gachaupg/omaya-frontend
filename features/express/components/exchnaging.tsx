@@ -968,7 +968,8 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                       <span
                         className={`${
                           isDark ? "text-white" : "text-gray-900"
-                        } text-sm font-mono bg-gray-500/10 px-2 py-1 rounded text-xs break-all`}
+                        } text-sm font-mono bg-gray-500/10 px-2 py-1 rounded text-xs break-all max-w-[200px] sm:max-w-[300px] leading-tight inline-block`}
+                        style={{ wordBreak: 'break-all', lineHeight: '1.3' }}
                       >
                         {effectiveTransactionData.walletAddress}
                       </span>
@@ -1050,13 +1051,14 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                 >
                   Wallet Address:
                 </div>
-                <div
-                  className={`${
-                    isDark ? "text-white" : "text-gray-900"
-                  } text-sm font-mono break-all`}
-                >
-                  {effectiveTransactionData.walletAddress}
-                </div>
+                  <div
+                    className={`${
+                      isDark ? "text-white" : "text-gray-900"
+                    } text-sm font-mono break-all max-w-[200px] sm:max-w-[250px] leading-tight`}
+                    style={{ wordBreak: 'break-all', lineHeight: '1.3' }}
+                  >
+                    {effectiveTransactionData.walletAddress}
+                  </div>
               </>
             )}
           </div>
@@ -1613,9 +1615,18 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
             effectiveTransactionData?.paymentDetail ? (
               <>
                 <img
-                  src="https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
+                  src={
+                    effectiveTransactionData.paymentDetail.logo_url ||
+                    effectiveTransactionData.paymentDetail.logo ||
+                    effectiveTransactionData.paymentDetail.provider_logo ||
+                    "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
+                  }
                   alt={effectiveTransactionData.paymentDetail.provider_name}
                   className="w-8 h-8 rounded-full flex-shrink-0"
+                  onError={(e) => {
+                    e.currentTarget.src =
+                      "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+                  }}
                 />
                 <div className="min-w-0 flex-1">
                   <div
@@ -1628,9 +1639,12 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                   <div
                     className={`${
                       isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                    } text-xs sm:text-sm font-mono truncate`}
+                    } text-xs sm:text-sm font-mono break-all max-w-[200px] sm:max-w-[250px] leading-tight`}
+                    style={{ wordBreak: 'break-all', lineHeight: '1.3' }}
                   >
-                    {effectiveTransactionData.paymentDetail.account_number}
+                    {effectiveTransactionData.paymentDetail.account_number ||
+                      effectiveTransactionData.paymentDetail.mobile_number ||
+                      "N/A"}
                   </div>
                 </div>
               </>
@@ -1659,24 +1673,36 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                   }}
                 />
                 <div className="min-w-0 flex-1">
-                  <div
-                    className={`${
-                      isDark ? "text-white" : "text-gray-900"
-                    } text-sm sm:text-base font-semibold truncate`}
-                  >
-                    {effectiveTransactionData?.asset?.ticker ||
-                      effectiveTransactionData?.asset?.symbol ||
-                      effectiveTransactionData?.asset?.name ||
-                      (effectiveTransactionData?.type === "deposit"
-                        ? "USD"
-                        : effectiveTransactionData?.type === "withdrawal"
+                  <div className="flex items-center gap-1 flex-wrap">
+                    <div
+                      className={`${
+                        isDark ? "text-white" : "text-gray-900"
+                      } text-sm sm:text-base font-semibold truncate`}
+                    >
+                      {effectiveTransactionData?.asset?.ticker ||
+                        effectiveTransactionData?.asset?.symbol ||
+                        effectiveTransactionData?.asset?.name ||
+                        (effectiveTransactionData?.type === "deposit"
                           ? "USD"
-                          : "USDT")}
+                          : effectiveTransactionData?.type === "withdrawal"
+                            ? "USD"
+                            : "USDT")}
+                    </div>
+                    {effectiveTransactionData?.asset?.description && (
+                      <span
+                        className={`${
+                          isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                        } text-xs sm:text-sm font-normal truncate`}
+                      >
+                        {effectiveTransactionData?.asset?.description}
+                      </span>
+                    )}
                   </div>
                   <div
                     className={`${
                       isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                    } text-xs sm:text-sm font-mono break-all`}
+                    } text-xs sm:text-sm font-mono break-all mt-0.5 max-w-[200px] sm:max-w-[250px] leading-tight`}
+                    style={{ wordBreak: 'break-all', lineHeight: '1.3' }}
                   >
                     {effectiveTransactionData?.walletAddress ||
                       "TQn9Y2khEsLJW1ChVWFM...RDow5oRP7bX"}
@@ -1712,33 +1738,36 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                   }}
                 />
                 <div className="text-left sm:text-right min-w-0 flex-1">
-                  <div
-                    className={`${
-                      isDark ? "text-white" : "text-gray-900"
-                    } text-sm sm:text-base font-semibold truncate`}
-                  >
-                    {effectiveTransactionData?.asset?.ticker ||
-                      effectiveTransactionData?.asset?.symbol ||
-                      effectiveTransactionData?.asset?.name ||
-                      (effectiveTransactionData?.type === "deposit"
-                        ? "USD"
-                        : effectiveTransactionData?.type === "withdrawal"
-                          ? "USD"
-                          : "USDT")}
-                  </div>
-                  {effectiveTransactionData?.asset?.description && (
-                    <span
+                  <div className="flex items-center gap-1 flex-wrap sm:justify-end">
+                    <div
                       className={`${
-                        isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                      } text-xs sm:text-sm font-normal block sm:inline sm:ml-1 truncate`}
+                        isDark ? "text-white" : "text-gray-900"
+                      } text-sm sm:text-base font-semibold truncate`}
                     >
-                      {effectiveTransactionData?.asset?.description}
-                    </span>
-                  )}
+                      {effectiveTransactionData?.asset?.ticker ||
+                        effectiveTransactionData?.asset?.symbol ||
+                        effectiveTransactionData?.asset?.name ||
+                        (effectiveTransactionData?.type === "deposit"
+                          ? "USD"
+                          : effectiveTransactionData?.type === "withdrawal"
+                            ? "USD"
+                            : "USDT")}
+                    </div>
+                    {effectiveTransactionData?.asset?.description && (
+                      <span
+                        className={`${
+                          isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                        } text-xs sm:text-sm font-normal truncate`}
+                      >
+                        {effectiveTransactionData?.asset?.description}
+                      </span>
+                    )}
+                  </div>
                   <div
                     className={`${
                       isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                    } text-xs sm:text-sm font-mono break-all mt-1`}
+                    } text-xs sm:text-sm font-mono break-all mt-0.5 max-w-[200px] sm:max-w-[250px] leading-tight`}
+                    style={{ wordBreak: 'break-all', lineHeight: '1.3' }}
                   >
                     {effectiveTransactionData?.walletAddress ||
                       "TQn9Y2khEsLJW1ChVWFM...RDow5oRP7bX"}
@@ -1748,9 +1777,25 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
             ) : (
               <>
                 <img
-                  src="https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
-                  alt="Bank"
+                  src={
+                    effectiveTransactionData?.paymentDetails?.[0]?.logo_url ||
+                    effectiveTransactionData?.paymentDetails?.[0]?.logo ||
+                    effectiveTransactionData?.paymentDetails?.[0]?.provider_logo ||
+                    effectiveTransactionData?.paymentDetail?.logo_url ||
+                    effectiveTransactionData?.paymentDetail?.logo ||
+                    effectiveTransactionData?.paymentDetail?.provider_logo ||
+                    "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
+                  }
+                  alt={
+                    effectiveTransactionData?.paymentDetails?.[0]?.provider_name ||
+                    effectiveTransactionData?.paymentDetail?.provider_name ||
+                    "Bank"
+                  }
                   className="w-8 h-8 rounded-full flex-shrink-0"
+                  onError={(e) => {
+                    e.currentTarget.src =
+                      "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+                  }}
                 />
                 <div className="text-left sm:text-right min-w-0 flex-1">
                   <div
@@ -1758,22 +1803,21 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                       isDark ? "text-white" : "text-gray-900"
                     } text-sm sm:text-base font-semibold truncate`}
                   >
-                    Bank Transfer
+                    {effectiveTransactionData?.paymentDetails?.[0]?.provider_name ||
+                      effectiveTransactionData?.paymentDetail?.provider_name ||
+                      "Bank Transfer"}
                   </div>
-                  <span
-                    className={`${
-                      isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                    } text-xs sm:text-sm font-normal block sm:inline sm:ml-1 truncate`}
-                  >
-                    To your account
-                  </span>
                   <div
                     className={`${
                       isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                    } text-xs sm:text-sm font-mono break-all mt-1`}
+                    } text-xs sm:text-sm font-mono break-all mt-0.5 max-w-[200px] sm:max-w-[250px] leading-tight`}
+                    style={{ wordBreak: 'break-all', lineHeight: '1.3' }}
                   >
-                    {effectiveTransactionData?.paymentDetails?.[0]
-                      ?.account_number || "Account Number"}
+                    {effectiveTransactionData?.paymentDetails?.[0]?.account_number ||
+                      effectiveTransactionData?.paymentDetail?.account_number ||
+                      effectiveTransactionData?.paymentDetails?.[0]?.mobile_number ||
+                      effectiveTransactionData?.paymentDetail?.mobile_number ||
+                      "N/A"}
                   </div>
                 </div>
               </>

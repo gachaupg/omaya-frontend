@@ -177,7 +177,7 @@ const FilterTabs: React.FC<FilterTabsProps> = ({
       {/* Token */}
       <div className="flex items-center bg-gray-100 dark:bg-[var(--card-color)] rounded-full px-5 py-2.5 w-full sm:w-auto">
         <img
-          src="https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png"
+          src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
           alt="Tether"
           className="w-7 h-7 mr-2.5"
         />

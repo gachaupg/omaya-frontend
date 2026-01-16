@@ -1,4 +1,3 @@
-import Image from "next/image";
 import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/store/rootReducer";
@@ -13,6 +12,29 @@ const ReferralWithdrawalHistory: React.FC = () => {
   useEffect(() => {
     dispatch(fetchReferralWithdrawalHistory());
   }, [dispatch]);
+
+  // Handle pagination
+  const handlePageChange = (pageUrl: string | null) => {
+    if (pageUrl) {
+      dispatch(fetchReferralWithdrawalHistory(pageUrl));
+    }
+  };
+
+  // Determine transaction mode/type
+  const getTransactionMode = (withdrawal: ReferralWithdrawalHistoryItem) => {
+    // Check if it has wallet_address (crypto) or not (cash)
+    if (withdrawal.wallet_address) {
+      return "Crypto";
+    }
+    // Could be cash withdrawal or other types
+    if (withdrawal.withdrawal_method) {
+      return withdrawal.withdrawal_method === "crypto" ? "Crypto" : 
+             withdrawal.withdrawal_method === "cash" ? "Cash" : 
+             withdrawal.withdrawal_method;
+    }
+    // Default based on presence of wallet
+    return "Cash";
+  };
 
   // Get asset full name
   const getAssetName = (symbol: string) => {
@@ -106,11 +128,34 @@ const ReferralWithdrawalHistory: React.FC = () => {
     );
   }
 
-  type WithdrawalWithCurrency = ReferralWithdrawalHistoryItem & {
-    currency?: string;
+  const withdrawals = data.results as ReferralWithdrawalHistoryItem[];
+
+  // Calculate pagination info
+  const getCurrentPage = () => {
+    if (data.next) {
+      try {
+        const url = new URL(data.next);
+        const page = parseInt(url.searchParams.get("page") || "2");
+        return page - 1;
+      } catch {
+        return 1;
+      }
+    }
+    if (data.previous) {
+      try {
+        const url = new URL(data.previous);
+        const page = parseInt(url.searchParams.get("page") || "1");
+        return page + 1;
+      } catch {
+        return 2;
+      }
+    }
+    return 1;
   };
 
-  const withdrawals = data.results as WithdrawalWithCurrency[];
+  const currentPage = getCurrentPage();
+  const itemsPerPage = withdrawals.length || 10;
+  const totalPages = Math.ceil(data.count / itemsPerPage);
 
   return (
     <div className="space-y-4">
@@ -127,49 +172,74 @@ const ReferralWithdrawalHistory: React.FC = () => {
             <thead className="bg-gray-100 dark:bg-[#35353E]">
               <tr className="border-b border-[#E8EFF5] dark:border-[#35353F]">
                 <th className="text-left py-3 px-4 text-sm font-semibold text-gray-400 dark:text-gray-500">
+                  Transaction ID
+                </th>
+                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-400 dark:text-gray-500">
                   Asset
                 </th>
                 <th className="text-left py-3 px-4 text-sm font-semibold text-gray-400 dark:text-gray-500">
                   Amount
                 </th>
                 <th className="text-left py-3 px-4 text-sm font-semibold text-gray-400 dark:text-gray-500">
-                  Payment Method
+                  Mode
                 </th>
                 <th className="text-left py-3 px-4 text-sm font-semibold text-gray-400 dark:text-gray-500">
-                  When
+                  Wallet Address
+                </th>
+                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-400 dark:text-gray-500">
+                  Status
+                </th>
+                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-400 dark:text-gray-500">
+                  Date
                 </th>
               </tr>
             </thead>
             <tbody>
               {withdrawals.map((withdrawal) => (
                 <tr
-                  key={withdrawal.id}
+                  key={withdrawal.referral_withdrawal_id}
                   className="border-b border-[#E8EFF5] dark:border-[#35353F] last:border-b-0 hover:bg-gray-50 dark:hover:bg-[var(--card-color)] transition-colors"
                 >
+                  <td className="py-4 px-4 text-xs font-mono text-gray-600 dark:text-gray-400">
+                    {withdrawal.referral_withdrawal_id.slice(0, 8)}...
+                  </td>
                   <td className="py-4 px-4 text-sm text-gray-600 dark:text-gray-400">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full bg-[#F79330] flex items-center justify-center flex-shrink-0">
                         <span className="text-white text-xs font-bold">
-                          {withdrawal.currency?.substring(0, 3) || "BTC"}
+                          {withdrawal.currency?.substring(0, 3) || "USD"}
                         </span>
                       </div>
                       <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-                        {withdrawal.currency} {getAssetName(withdrawal.currency || "")}
+                        {withdrawal.currency || "USDT"}
                       </span>
                     </div>
                   </td>
-                  <td className="py-4 px-4 text-sm font-semibold text-red-500">
-                    ${parseFloat(withdrawal.requested_amount).toFixed(2)}
+                  <td className="py-4 px-4 text-sm font-semibold text-[#1D8751]">
+                    ${parseFloat(withdrawal.requested_amount || "0").toFixed(2)}
                   </td>
                   <td className="py-4 px-4 text-sm text-gray-600 dark:text-gray-400">
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0">
-                        <span className="text-white text-[10px] font-bold">S</span>
-                      </div>
-                      <span className="text-sm text-gray-800 dark:text-gray-200">
-                        Salam Bank
+                    <span className="px-2 py-1 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs font-medium">
+                      {getTransactionMode(withdrawal)}
+                    </span>
+                  </td>
+                  <td className="py-4 px-4 text-xs font-mono text-gray-600 dark:text-gray-400 max-w-[120px] truncate">
+                    {withdrawal.wallet_address ? (
+                      <span title={withdrawal.wallet_address}>
+                        {withdrawal.wallet_address.slice(0, 6)}...{withdrawal.wallet_address.slice(-4)}
                       </span>
-                    </div>
+                    ) : (
+                      <span className="text-gray-400">N/A</span>
+                    )}
+                  </td>
+                  <td className="py-4 px-4">
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(
+                        withdrawal.status
+                      )}`}
+                    >
+                      {withdrawal.status.toUpperCase()}
+                    </span>
                   </td>
                   <td className="py-4 px-4 text-sm text-gray-500 dark:text-gray-400">
                     {formatTimeAgo(withdrawal.timestamp)}
@@ -185,25 +255,28 @@ const ReferralWithdrawalHistory: React.FC = () => {
       <div className="md:hidden space-y-3">
         {withdrawals.map((withdrawal) => (
           <div
-            key={withdrawal.id}
+            key={withdrawal.referral_withdrawal_id}
             className="bg-white dark:bg-[var(--card-color)] border border-[#E8EFF5] dark:border-[#35353F] rounded-xl p-4"
           >
             <div className="flex items-start justify-between mb-3">
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-1">
-                  <Image
-                    src="https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png"
-                    alt={`${withdrawal.currency} icon`}
-                    width={32}
-                    height={32}
-                    className="rounded-full bg-gray-100 dark:bg-[#2A2A32] p-1"
-                  />
-                  <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-                    {withdrawal.currency}
-                  </span>
+                  <div className="w-8 h-8 rounded-full bg-[#F79330] flex items-center justify-center flex-shrink-0">
+                    <span className="text-white text-xs font-bold">
+                      {withdrawal.currency?.substring(0, 3) || "USD"}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-sm font-semibold text-gray-800 dark:text-gray-200 block">
+                      {withdrawal.currency || "USDT"}
+                    </span>
+                    <span className="px-2 py-0.5 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs font-medium mt-1 inline-block">
+                      {getTransactionMode(withdrawal)}
+                    </span>
+                  </div>
                 </div>
-                <div className="text-sm font-mono text-gray-700 dark:text-gray-300">
-                  {withdrawal.referral_withdrawal_id.slice(0, 12)}...
+                <div className="text-xs font-mono text-gray-500 dark:text-gray-400 mt-1">
+                  Transaction ID: {withdrawal.referral_withdrawal_id.slice(0, 12)}...
                 </div>
               </div>
               <span
@@ -214,22 +287,31 @@ const ReferralWithdrawalHistory: React.FC = () => {
                 {withdrawal.status.toUpperCase()}
               </span>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2 border-t border-[#E8EFF5] dark:border-[#35353F] pt-3">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-500 dark:text-gray-400">
                   Amount:
                 </span>
                 <span className="text-sm font-semibold text-[#1D8751]">
-                  ${parseFloat(withdrawal.requested_amount).toFixed(2)}
+                  ${parseFloat(withdrawal.requested_amount || "0").toFixed(2)}
                 </span>
               </div>
+              {withdrawal.wallet_address && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                    Wallet:
+                  </span>
+                  <span className="text-xs font-mono text-gray-600 dark:text-gray-400" title={withdrawal.wallet_address}>
+                    {withdrawal.wallet_address.slice(0, 6)}...{withdrawal.wallet_address.slice(-4)}
+                  </span>
+                </div>
+              )}
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-500 dark:text-gray-400">
-                  Wallet:
+                  Date:
                 </span>
-                <span className="text-xs font-mono text-gray-600 dark:text-gray-400">
-                  {withdrawal.wallet_address.slice(0, 6)}...
-                  {withdrawal.wallet_address.slice(-4)}
+                <span className="text-xs text-gray-600 dark:text-gray-400">
+                  {formatTimeAgo(withdrawal.timestamp)}
                 </span>
               </div>
             </div>
@@ -237,31 +319,31 @@ const ReferralWithdrawalHistory: React.FC = () => {
         ))}
       </div>
 
-      {/* Pagination (if needed) */}
-      {(data.next || data.previous) && (
-        <div className="flex items-center justify-between mt-6">
-          <button
-            disabled={!data.previous}
-            onClick={() => {
-              if (data.previous) {
-                dispatch(fetchReferralWithdrawalHistory(data.previous));
-              }
-            }}
-            className="px-4 py-2 rounded-lg bg-gray-200 dark:bg-[#35353F] text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-300 dark:hover:bg-[#2A2A32] transition-colors"
-          >
-            Previous
-          </button>
-          <button
-            disabled={!data.next}
-            onClick={() => {
-              if (data.next) {
-                dispatch(fetchReferralWithdrawalHistory(data.next));
-              }
-            }}
-            className="px-4 py-2 rounded-lg bg-gray-200 dark:bg-[#35353F] text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-300 dark:hover:bg-[#2A2A32] transition-colors"
-          >
-            Next
-          </button>
+      {/* Pagination */}
+      {(data.next || data.previous || data.count > 0) && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 pt-4 border-t border-[#E8EFF5] dark:border-[#35353F]">
+          <div className="text-sm text-gray-600 dark:text-gray-400">
+            Showing {withdrawals.length} of {data.count} withdrawal{data.count !== 1 ? "s" : ""}
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handlePageChange(data.previous)}
+              disabled={!data.previous || loading}
+              className="px-4 py-2 rounded-lg bg-white dark:bg-[#35353F] border border-[#E8EFF5] dark:border-[#35353F] text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-[#2A2A32] transition-colors font-medium"
+            >
+              Previous
+            </button>
+            <div className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400">
+              Page {currentPage} {totalPages > 1 && `of ${totalPages}`}
+            </div>
+            <button
+              onClick={() => handlePageChange(data.next)}
+              disabled={!data.next || loading}
+              className="px-4 py-2 rounded-lg bg-white dark:bg-[#35353F] border border-[#E8EFF5] dark:border-[#35353F] text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-[#2A2A32] transition-colors font-medium"
+            >
+              Next
+            </button>
+          </div>
         </div>
       )}
     </div>

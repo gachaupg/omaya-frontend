@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from "react";
 import CustomSelect from "@/components/ui/CustomSelect";
+import { AdminPaymentMethod } from "@/features/p2p/types/paymentMethods";
 
 export interface UserPaymentDetail {
   id: number;
@@ -18,6 +19,7 @@ export interface UserPaymentDetail {
 
 interface UserPaymentSelectorProps {
   userPaymentDetails: UserPaymentDetail[];
+  adminMethods?: AdminPaymentMethod[];
   onSelect: (detail: UserPaymentDetail) => void;
   onRemove: (detail: UserPaymentDetail) => void;
   selectedDetails: UserPaymentDetail[];
@@ -28,6 +30,7 @@ interface UserPaymentSelectorProps {
 // component looks correct in both light & dark themes.
 const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
   userPaymentDetails,
+  adminMethods = [],
   onSelect,
   onRemove,
   selectedDetails,
@@ -35,12 +38,26 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
   const [selectedMethod, setSelectedMethod] = useState("");
   const [selectedProvider, setSelectedProvider] = useState("");
 
-  // Memoized options for payment methods
+  // Memoized options for payment methods - show all admin methods first, then user methods
   const methodOptions = useMemo(() => {
     const seen = new Set<string>();
     const options: Array<{ value: string; label: string; logo?: string }> = [];
+    
+    // First, add all admin payment method types
+    adminMethods.forEach((m) => {
+      if (m.payment_method_type && !seen.has(m.payment_method_type)) {
+        seen.add(m.payment_method_type);
+        options.push({
+          value: m.payment_method_type,
+          label: m.payment_method_type,
+          logo: m.logo_url || m.logo || undefined,
+        });
+      }
+    });
+    
+    // Then, add user payment methods that aren't already in the list
     userPaymentDetails.forEach((d) => {
-      if (!seen.has(d.payment_method_name)) {
+      if (d.payment_method_name && !seen.has(d.payment_method_name)) {
         seen.add(d.payment_method_name);
         const logoUrl = d.logo_url || d.logo || d.provider_logo || undefined;
         options.push({
@@ -50,17 +67,34 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
         });
       }
     });
+    
     return options;
-  }, [userPaymentDetails]);
+  }, [userPaymentDetails, adminMethods]);
 
-  // Memoized options for providers
+  // Memoized options for providers - show all admin providers first, then user providers
   const providerOptions = useMemo(() => {
     const seen = new Set<string>();
     const options: Array<{ value: string; label: string; logo?: string }> = [];
+    
+    // First, add all admin providers for the selected method
+    adminMethods
+      .filter((m) => m.payment_method_type === selectedMethod)
+      .forEach((m) => {
+        if (m.provider_name && !seen.has(m.provider_name)) {
+          seen.add(m.provider_name);
+          options.push({
+            value: m.provider_name,
+            label: m.provider_name,
+            logo: m.logo_url || m.logo || undefined,
+          });
+        }
+      });
+    
+    // Then, add user providers for the selected method
     userPaymentDetails
       .filter((d) => d.payment_method_name === selectedMethod)
       .forEach((d) => {
-        if (!seen.has(d.payment_provider_name)) {
+        if (d.payment_provider_name && !seen.has(d.payment_provider_name)) {
           seen.add(d.payment_provider_name);
           const logoUrl = d.logo_url || d.logo || d.provider_logo || undefined;
           options.push({
@@ -70,10 +104,11 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
           });
         }
       });
+    
     return options;
-  }, [userPaymentDetails, selectedMethod]);
+  }, [userPaymentDetails, adminMethods, selectedMethod]);
 
-  // Filtered details for selected method and provider
+  // Filtered details for selected method and provider - show user payment details
   const filteredDetails = useMemo(
     () =>
       userPaymentDetails.filter(
@@ -82,6 +117,17 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
           d.payment_provider_name === selectedProvider
       ),
     [userPaymentDetails, selectedMethod, selectedProvider]
+  );
+  
+  // Check if there are admin methods for the selected provider (to show "Add Account" message)
+  const hasAdminMethod = useMemo(
+    () =>
+      adminMethods.some(
+        (m) =>
+          m.payment_method_type === selectedMethod &&
+          m.provider_name === selectedProvider
+      ),
+    [adminMethods, selectedMethod, selectedProvider]
   );
 
   // Check if detail is selected
@@ -197,7 +243,9 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
           ) : (
             <div className="text-center py-8 px-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
               <p className="text-gray-600 dark:text-gray-400">
-                No payment details found for this combination. Please add a payment method first.
+                {hasAdminMethod
+                  ? `No payment account found for ${selectedProvider}. Please add a payment account first.`
+                  : "No payment details found for this combination. Please add a payment method first."}
               </p>
             </div>
           )}

@@ -499,7 +499,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
               <div className="flex flex-col gap-2 sm:gap-2">
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                   <span className="text-2xl sm:text-3xl text-[#1D8751] font-semibold flex-shrink-0">
-                    <img src="https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png" alt="" />
+                    <img src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png" alt="" />
                   </span>
                   <input
                     type="number"
