@@ -33,6 +33,7 @@ import OTPModal from "./OTPModal";
 import { logger } from '@/lib/utils/logger';
 import { useExpressI18n } from "@/lib/useExpressI18n";
 import { useTheme } from "@/context/theme";
+import { CollapsibleTermsSection } from "./CollapsibleTermsSection";
 
 // Success Modal Component
 const SuccessModal = ({
@@ -2959,58 +2960,8 @@ export default function WithdrawalForm({
               </p>
             </div>
 
-            {/* Terms and Conditions Summary */}
-            <div className="flex flex-col gap-2 mt-2">
-              <div className="flex items-center mb-2">
-                <span className="mr-2 text-[#1D8751]">
-                  <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
-                    <circle
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="#1D8751"
-                      strokeWidth="2"
-                    />
-                    <line
-                      x1="12"
-                      y1="8"
-                      x2="12"
-                      y2="12"
-                      stroke="#1D8751"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                    />
-                    <circle cx="12" cy="16" r="1" fill="#1D8751" />
-                  </svg>
-                </span>
-                <span className="text-base font-semibold text-[#7e7e8f] dark:text-[#788099]">
-                  Terms and Conditions Summary
-                </span>
-              </div>
-              <div className=" dark:bg-[var(--card-color)] border border-[#1D8751] rounded-xl p-4">
-                <ul className="list-none space-y-2">
-                  <li className="flex items-start">
-                    <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] dark:bg-[#1D8751] inline-block mr-3"></span>
-                    <span className="text-[#35353e] dark:text-[#788099] text-sm">
-                      Please send the money from your own account Only
-                    </span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] dark:bg-[#1D8751] inline-block mr-3"></span>
-                    <span className="text-[#35353e] dark:text-[#788099] text-sm">
-                      Put transaction ID in the description field of the bank
-                    </span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] dark:bg-[#1D8751] inline-block mr-3"></span>
-                    <span className="text-[#35353e] dark:text-[#788099] text-sm">
-                      Please note, If you do not follow above conditions, we
-                      will reject your transaction and send you back your money.
-                    </span>
-                  </li>
-                </ul>
-              </div>
-            </div>
+            {/* Terms and Conditions Summary - Collapsible */}
+            <CollapsibleTermsSection />
 
             {/* Terms Checkbox */}
             <div className="mt-4">
