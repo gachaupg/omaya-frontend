@@ -24,6 +24,8 @@ export const API_CONFIG = {
     PROFILE: "/api/profile/",
     KYC_STATUS: "/api/kyc/status/",
     KYC_VERIFY: "/api/kyc/verify/",
+    KYC_PHONE_SEND_OTP: "/api/kyc/phone/send-otp/",
+    KYC_PHONE_VERIFY_OTP: "/api/kyc/phone/verify-otp/",
     SUMSUB_INITIATE: "/api/sumsub/initiate/",
     SUMSUB_TOKEN: "/api/sumsub/token/",
     ENABLE_2FA: "/api/2fa/enable/",

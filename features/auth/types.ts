@@ -161,3 +161,23 @@ export interface ApiErrorResponse {
   status: number;
   statusText: string;
 }
+
+// Phone verification types
+export interface PhoneSendOTPPayload {
+  phone_number: string;
+}
+
+export interface PhoneSendOTPResponse {
+  message: string;
+  phone_number: string;
+  channel: "whatsapp" | "sms";
+}
+
+export interface PhoneVerifyOTPPayload {
+  otp: string;
+}
+
+export interface PhoneVerifyOTPResponse {
+  message: string;
+  phone_verified: boolean;
+}

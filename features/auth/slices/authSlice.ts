@@ -24,6 +24,10 @@ import {
   ApiError,
   UserProfile,
   ProfileResponse,
+  PhoneSendOTPPayload,
+  PhoneSendOTPResponse,
+  PhoneVerifyOTPPayload,
+  PhoneVerifyOTPResponse,
 } from "../types";
 import { API_ENDPOINTS } from "../api";
 import { post, get, AxiosError } from "../../../lib/apiClient";
@@ -155,6 +159,38 @@ export const checkKYCStatus = createAsyncThunk<KYCResponse>(
     }
   }
 );
+
+// Phone verification - Send OTP
+export const sendPhoneOTP = createAsyncThunk<
+  PhoneSendOTPResponse,
+  PhoneSendOTPPayload
+>("auth/sendPhoneOTP", async (payload, { rejectWithValue }) => {
+  try {
+    const response = await post<PhoneSendOTPResponse>(
+      API_ENDPOINTS.KYC_PHONE_SEND_OTP,
+      payload
+    );
+    return response.data;
+  } catch (error) {
+    return rejectWithValue(handleApiError(error));
+  }
+});
+
+// Phone verification - Verify OTP
+export const verifyPhoneOTP = createAsyncThunk<
+  PhoneVerifyOTPResponse,
+  PhoneVerifyOTPPayload
+>("auth/verifyPhoneOTP", async (payload, { rejectWithValue }) => {
+  try {
+    const response = await post<PhoneVerifyOTPResponse>(
+      API_ENDPOINTS.KYC_PHONE_VERIFY_OTP,
+      payload
+    );
+    return response.data;
+  } catch (error) {
+    return rejectWithValue(handleApiError(error));
+  }
+});
 
 export const initiateKYCVerification = createAsyncThunk<
   SumSubInitiateResponse,
@@ -440,6 +476,15 @@ const authSlice = createSlice({
         // Terms acceptance is user-specific and should remain accepted
       }
 
+      // Clear all cached data on logout
+      if (typeof window !== "undefined") {
+        import("@/lib/utils/sliceCache").then(({ sliceCache }) => {
+          sliceCache.clear().catch(() => {
+            // Silent fail if cache clear fails
+          });
+        });
+      }
+
       // Broadcast logout to other tabs unless we're already handling a cross-tab logout
       if (typeof window !== "undefined") {
         const shouldBroadcast = !(window as typeof window & Record<string, any>)[
@@ -536,9 +581,14 @@ const authSlice = createSlice({
           state.profile = null;
           state.loading = false;
           
-          // Clear ALL localStorage and cookies
+          // Clear ALL localStorage and cookies (but preserve p2p_act)
           if (typeof window !== 'undefined') {
+            // Preserve p2p_act before clearing localStorage
+            const p2pAct = localStorage.getItem("p2p_act");
             localStorage.clear();
+            if (p2pAct) {
+              localStorage.setItem("p2p_act", p2pAct);
+            }
             cookieUtils.removeCookie("access_token");
             
             console.log('🔒 Invalid or incomplete profile found, redirecting to login...');

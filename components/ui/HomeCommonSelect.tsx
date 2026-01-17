@@ -414,7 +414,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
                 className={`truncate min-w-0 text-lg ${
                   !selectedOption && !loading
                     ? placeholderClassName || "text-gray-500 dark:text-gray-400"
-                    : ""
+                    : selectedOption ? "font-bold dark:font-normal" : ""
                 }`}
                 title={selectedOption ? displayValue : undefined}
               >

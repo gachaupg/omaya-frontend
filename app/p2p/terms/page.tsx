@@ -7,9 +7,10 @@ const P2PTermsPage = () => {
   const router = useRouter();
 
   const handleAccept = () => {
-    // Set acceptance in localStorage
+    // Store acceptance in localStorage - this persists even after logout
     if (typeof window !== "undefined") {
       localStorage.setItem("p2p_terms_accepted", "true");
+      console.log("[P2P Terms] Terms accepted - saved to localStorage (persists across logouts)");
     }
     // Navigate back to chats
     router.push("/dashboard/p2p?tab=chats");

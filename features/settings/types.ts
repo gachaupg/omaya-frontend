@@ -147,6 +147,7 @@ export interface CreateDeviceSessionPayload {
   sign_in_time: string;
   user_agent: string;
   device_type: string;
+  description?: string;
 }
 
 export interface DeviceSessionsResponse extends SettingsApiResponse {

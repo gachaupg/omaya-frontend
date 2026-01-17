@@ -116,6 +116,19 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
   useEffect(() => {
     if (selectedPaymentDetails.length > 0) {
       logger.debug('p2p', "Selected Payment Details:", selectedPaymentDetails);
+      
+      // Auto-populate Terms field with payment method names
+      const paymentMethodNames = selectedPaymentDetails
+        .map((detail) => detail.payment_provider_name || detail.payment_method_name)
+        .filter((name) => name) // Filter out empty/null names
+        .join(", ");
+      
+      if (paymentMethodNames) {
+        setTerms(paymentMethodNames);
+      }
+    } else {
+      // Clear terms when no payment methods are selected
+      setTerms("");
     }
   }, [selectedPaymentDetails]);
 
@@ -306,25 +319,25 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
       <div className="fixed inset-0 z-50 flex items-center justify-center">
         {/* Overlay */}
         <div
-          className="absolute inset-0 bg-black/60"
+          className="absolute inset-0 bg-black/60 dark:bg-black/60"
           onClick={onClose}
         />
 
         {/* Modal */}
-        <div className="relative bg-[#111319] rounded-xl px-8 py-10 w-[90%] max-w-sm shadow-xl">
+        <div className="relative bg-white dark:bg-[#111319] rounded-xl px-8 py-10 w-[90%] max-w-sm shadow-xl">
           <div className="flex flex-col items-center space-y-6">
             {/* Icon */}
-            <MdCheckCircle className="text-secondary" size={70} />
+            <MdCheckCircle className="text-[#1D8751] dark:text-secondary" size={70} />
 
             {/* Text */}
-            <p className="text-white text-lg font-medium text-center">
+            <p className="text-gray-900 dark:text-white text-lg font-medium text-center">
               Successfully Published
             </p>
 
             {/* Button */}
             <button
               onClick={onClose}
-              className="w-full bg-secondary text-white py-2.5 rounded-lg font-medium hover:opacity-90 transition"
+              className="w-full bg-[#1D8751] dark:bg-secondary text-white py-2.5 rounded-lg font-medium hover:opacity-90 transition"
             >
               Ok
             </button>
@@ -794,6 +807,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                 <div className="flex-1">
                   <UserPaymentSelector
                     userPaymentDetails={userPaymentDetails || []}
+                    adminMethods={adminMethods || []}
                     onSelect={handleSelectPaymentDetail}
                     onRemove={handleRemovePaymentDetail}
                     selectedDetails={selectedPaymentDetails}
@@ -928,7 +942,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
               className="flex-1 rounded-[24px] border-1 border-[#1D8751] dark:text-white text-black bg-transparent text-base py-2 hover:bg-[#23232B] transition"
               variant="outline"
               onClick={() => {
-                router.push("/dashboard/p2p/");
+                setShowPaymentModal(true);
               }}
             >
               Add Payment Method
@@ -949,14 +963,16 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
           <Card className="w-full mb-4 px-2 py-2 sm:px-4 sm:py-4 bg-card border border-gray-200 dark:border-[#35353E] rounded-[24px]">
             <div>
               <label className="text-lg text-gray-600 dark:text-[#788099] mb-2 block">
-                Terms (Optional)
+                Description (Payment Methods)
               </label>
               <textarea
                 className={`w-full bg-card border ${errors.terms
                     ? "border-red-500"
                     : "border-gray-200 dark:border-[#35353E]"
                   } rounded-[24px] px-6 py-5 text-gray-600 dark:text-[#788099] min-h-[120px] mb-6 resize-none`}
-                placeholder="Enter terms..."
+                placeholder={selectedPaymentDetails.length > 0 
+                  ? "Payment methods will be auto-filled here..." 
+                  : "Select payment methods above to auto-fill..."}
                 value={terms}
                 onChange={(e) => {
                   setTerms(e.target.value);
@@ -965,6 +981,11 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
               />
               {errors.terms && (
                 <span className="text-red-500 text-sm mt-1">{errors.terms}</span>
+              )}
+              {selectedPaymentDetails.length > 0 && (
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Payment methods: {selectedPaymentDetails.map((d) => d.payment_provider_name || d.payment_method_name).filter(Boolean).join(", ")}
+                </p>
               )}
             </div>
             <div>

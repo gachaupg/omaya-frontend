@@ -73,7 +73,12 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     // Set up the auth callback to handle 401 errors
     setAuthCallback(() => {
       store.dispatch(logout());
+      // Preserve p2p_act before clearing localStorage
+      const p2pAct = localStorage.getItem("p2p_act");
       localStorage.clear();
+      if (p2pAct) {
+        localStorage.setItem("p2p_act", p2pAct);
+      }
       document.cookie = 'access_token=; Max-Age=0; Path=/; SameSite=Lax';
       window.location.href = '/auth/login';
     });

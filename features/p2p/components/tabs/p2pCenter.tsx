@@ -239,7 +239,7 @@ const P2PCenter: React.FC = () => {
               assetSymbol: typeof trade?.currency === 'string' ? trade.currency : '',
           assetImage:
                 (typeof trade?.asset_image === 'string' && trade.asset_image) ||
-            "https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png",
+            "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png",
               commission_rate: typeof trade?.commission_rate === 'number' ? trade.commission_rate : 0,
               payment: safePaymentDetails
                 .filter((detail: any) => {
@@ -294,7 +294,7 @@ const P2PCenter: React.FC = () => {
             return {
               ...trade,
               assetSymbol: trade?.currency || '',
-              assetImage: "https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png",
+              assetImage: "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png",
               commission_rate: 0,
               payment: [],
               payment_details: [],

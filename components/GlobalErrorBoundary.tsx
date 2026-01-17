@@ -50,9 +50,15 @@ class GlobalErrorBoundary extends Component<Props, State> {
   }
 
   private handleAuthError() {
-    // Clear all auth data
+    // Clear all auth data (but preserve p2p_act)
     if (typeof window !== 'undefined') {
+      // Preserve p2p_act before clearing localStorage
+      const p2pAct = localStorage.getItem("p2p_act");
       localStorage.clear();
+      // Restore p2p_act after clearing
+      if (p2pAct) {
+        localStorage.setItem("p2p_act", p2pAct);
+      }
       sessionStorage.clear();
     }
     

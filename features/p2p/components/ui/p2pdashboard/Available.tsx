@@ -3,12 +3,12 @@ import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "@/store";
 import { RootState } from "@/store/rootReducer";
 import { fetchTransactionSummary } from "@/features/p2p/slices/transactionSummarySlice";
-import { formatNumber } from "@/utils/formatters";
+import { formatCurrency } from "@/lib/globalFormatter";
 import { fetchWallets } from "@/features/p2p/slices/walletSlice";
 import { usePendingTotal } from "@/utils/pending";
 
 const USDT_ICON =
-  "https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png";
+  "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
 
 const Available = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -65,11 +65,11 @@ const Available = () => {
             </div>
             {/* Available */}
             <div className="text-center self-center text-sm sm:text-base text-gray-900 dark:text-white font-medium">
-              {formatNumber(availableBalance)}
+              {formatCurrency(availableBalance ?? 0, "USDT")}
             </div>
             {/* Locked */}
             <div className="text-center self-center text-sm sm:text-base text-gray-900 dark:text-white font-medium">
-              {formatNumber(totalLocked)}
+              {formatCurrency(totalLocked ?? 0, "USDT")}
             </div>
           </div>
         </div>

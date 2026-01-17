@@ -765,56 +765,33 @@ export default function DepositForm({
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [hasAutoExpanded, setHasAutoExpanded] = useState(false);
   const [isRestoringFromInitialState, setIsRestoringFromInitialState] = useState(false);
-  const hasInitializedPayment = useRef(false);
-  const previousInitialState = useRef<any>(null);
-
+  // Auto-select the first payment method exactly like home page form
   useEffect(() => {
-    // Only restore from initialState on first mount or when initialState actually changes
-    const initialStateChanged = previousInitialState.current !== initialState;
-    previousInitialState.current = initialState;
-
-    // If we have initialState with payment (full object from home page), ensure it's set and payBank is correct
-    if (initialState?.payment && (initialStateChanged || !hasInitializedPayment.current)) {
-      const initialStatePayment = initialState.payment;
-
-      // Only restore if we haven't initialized yet or if initialState changed
-      if (!hasInitializedPayment.current || initialStateChanged) {
-        const normalized = normalizePaymentDetails(initialStatePayment);
-        setSelectedPaymentDetail(normalized);
-        
-        const correctPayBank = initialStatePayment.provider_name || initialStatePayment.payment_provider_name || initialState.payBank || "";
-        setPayBank(correctPayBank);
-        hasInitializedPayment.current = true;
-      }
-      return; // Don't proceed to defaults
+    if (finalPaymentMethods.length === 0) {
+      return;
     }
 
-    // Only apply defaults if we don't have initialState payment and haven't initialized yet
-    if (!initialState?.payment && finalPaymentMethods && finalPaymentMethods.length > 0 && !hasInitializedPayment.current) {
-      const matchingSelection = finalPaymentMethods.find(
+    const hasSelected = finalPaymentMethods.some(
+      (method: any) => method?.provider_name === payBank
+    );
+
+    if (!payBank || !hasSelected) {
+      const defaultMethod = finalPaymentMethods[0];
+      setPayBank(defaultMethod.provider_name);
+      // Normalize payment details before setting
+      const normalized = normalizePaymentDetails(defaultMethod);
+      setSelectedPaymentDetail(normalized);
+    } else if (!selectedPaymentDetail) {
+      const matchedMethod = finalPaymentMethods.find(
         (method: any) => method?.provider_name === payBank
       );
-
-      if (matchingSelection) {
-        if (!selectedPaymentDetail || selectedPaymentDetail?.provider_name !== matchingSelection.provider_name) {
-          // Normalize payment details before setting
-          const normalized = normalizePaymentDetails(matchingSelection);
-          setSelectedPaymentDetail(normalized);
-        }
-        hasInitializedPayment.current = true;
-        return;
-      }
-
-      const firstMethod = finalPaymentMethods[0];
-      if (firstMethod?.provider_name) {
-        setPayBank(firstMethod.provider_name);
+      if (matchedMethod) {
         // Normalize payment details before setting
-        const normalized = normalizePaymentDetails(firstMethod);
+        const normalized = normalizePaymentDetails(matchedMethod);
         setSelectedPaymentDetail(normalized);
-        hasInitializedPayment.current = true;
       }
     }
-  }, [finalPaymentMethods, initialState]); // Removed payBank and selectedPaymentDetail from dependencies
+  }, [finalPaymentMethods, payBank, selectedPaymentDetail]);
 
   // Add transaction code state
   const [transactionCode, setTransactionCode] = useState<string>("");
@@ -1053,8 +1030,10 @@ export default function DepositForm({
     }
 
     // If we have initialState with asset, use it directly (full object from home page)
-    if (initialState?.asset && !selectedAsset) {
-      const initialStateAsset = initialState.asset;
+    // Check both initialState.asset and initialState.selectedAsset for backward compatibility
+    const assetFromInitialState = initialState?.asset || initialState?.selectedAsset;
+    if (assetFromInitialState && !selectedAsset) {
+      const initialStateAsset = assetFromInitialState;
 
       // Try to find the exact asset in available assets by asset_id
       const matchingAsset = assetsDisplay.displayData.find((asset: any) => {
@@ -1094,7 +1073,7 @@ export default function DepositForm({
     }
 
     // Auto-select first asset only if no asset is selected and no initialState
-    if (!selectedAsset && !initialState?.asset) {
+    if (!selectedAsset && !initialState?.asset && !initialState?.selectedAsset) {
       // Use the sorted assets to get the first one (USDT on BSC first, USDC on BSC second)
       const sortedAssets = [...assetsDisplay.displayData].sort((a, b) => {
         const tickerA = (a?.ticker || a?.symbol || a?.name || "")
@@ -2997,7 +2976,7 @@ export default function DepositForm({
   return (
     <div className="flex flex-col dark:bg-[var(--bg-color)] pl-0 sm:pl-4 pr-2 sm:pr-0 mr-0 sm:mr-40 w-full sm:max-w-5xl">
       <h2 className="text-xl font-bold mb-2 text-[#788099] dark:text-[#788099] inline-flex items-center gap-2">
-        <span className="text-[#7e7e8f] dark:text-[#788099]">1-</span>{" "}
+        
         {t("express.transactionInfo", "Transaction Info")}
       </h2>
 
@@ -3420,13 +3399,14 @@ export default function DepositForm({
                 onClick={() => {
                   // Switch between deposit and withdrawal modes
                   if (onModeChange) {
-                    // Preserve current state including payment method selection
+                    // Preserve current state including payment method selection and asset selection
                     // Convert single payment detail to array format for withdrawal form
                     const currentState = {
                       payBank,
                       payment: selectedPaymentDetail,
                       paymentDetails: selectedPaymentDetail ? [selectedPaymentDetail] : [],
                       selectedAsset,
+                      asset: selectedAsset,
                       payAmountInput,
                       getAmountInput,
                       amountInput: payAmountInput,
@@ -4410,42 +4390,9 @@ export default function DepositForm({
                       : ""
                     }`}
                 />
-                {/* Validation status indicator */}
-                {walletAddress.trim() && currentCurrency && (
-                  <div className="flex items-center ml-2 flex-shrink-0">
-                    {isAddressValidating ? (
-                      <div className="w-4 h-4 border-2 border-[#1D8751] border-t-transparent rounded-full animate-spin"></div>
-                    ) : addressValidationResult?.isValid ? (
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-[#1D8751]">
-                        <path
-                          d="M9 12l2 2 4-4"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
-                      </svg>
-                    ) : walletError ? (
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-[#E23D3A]">
-                        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
-                        <path
-                          d="M12 8v4M12 16h.01"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                        />
-                      </svg>
-                    ) : null}
-                  </div>
-                )}
-                {/* QR Scanner icon */}
-                <span 
-                  className="mx-2 text-[#1D8751] cursor-pointer hover:text-[#16663d] transition-colors flex-shrink-0"
-                  title="Scan QR Code"
-                >
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                    {/* QR code scanner frame */}
+                {/* Bookmark icon */}
+                <span className="mx-2 text-[#788099] cursor-pointer">
+                  <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
                     <path
                       d="M3 7V5a2 2 0 0 1 2-2h2"
                       stroke="currentColor"

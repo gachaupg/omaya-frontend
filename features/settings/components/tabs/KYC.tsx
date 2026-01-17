@@ -103,7 +103,7 @@ const KYC = () => {
                 {fullName}
               </p>
               <div className="flex items-center gap-2 text-sm font-medium dark:text-[#1D8751] text-[#15803D]">
-                Verified Profiless
+                Verified Profile
                 <span className="inline-flex items-center justify-center w-5 h-5 flex-shrink-0" style={{position: 'relative'}}>
                       <svg width="18" height="18" viewBox="0 0 20 20" style={{position: 'absolute'}}>
                         <circle cx="10" cy="10" r="9" fill="white" />

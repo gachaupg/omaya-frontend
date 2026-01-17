@@ -28,41 +28,61 @@ export const DonutChartWithCenter: React.FC<DonutChartWithCenterProps> = ({
   const displayValue =
     typeof centerValue === "number" ? centerValue : actualTotal;
 
+  // Check if amount is 0.00 or all values are 0
+  const isZero = displayValue === 0 || actualTotal === 0;
+  const greyColor = "#9CA3AF"; // Grey color for zero amounts
+
   return (
     <svg width="180" height="180" viewBox="0 0 180 180">
-      {data.map((d, i) => {
-        const value =
-          actualTotal > 0
-            ? (d.value / actualTotal) * (circumference - gap * data.length)
-            : 0;
-        const el = (
-          <circle
-            key={d.label}
-            r={radius}
-            cx={center}
-            cy={center}
-            fill="transparent"
-            stroke={d.color}
-            strokeWidth={stroke}
-            strokeDasharray={`${value} ${circumference - value}`}
-            strokeDashoffset={Number.isFinite(-offset) ? -offset : 0}
-            strokeLinecap="round"
-            style={{ opacity: 1 }}
-          />
-        );
-        offset += value + gap;
-        return el;
-      })}
+      {isZero ? (
+        // Show grey circle when amount is 0.00
+        <circle
+          r={radius}
+          cx={center}
+          cy={center}
+          fill="transparent"
+          stroke={greyColor}
+          strokeWidth={stroke}
+          strokeDasharray={`${circumference} 0`}
+          strokeLinecap="round"
+          style={{ opacity: 1 }}
+        />
+      ) : (
+        // Show normal donut chart when there are values
+        data.map((d, i) => {
+          const value =
+            actualTotal > 0
+              ? (d.value / actualTotal) * (circumference - gap * data.length)
+              : 0;
+          const el = (
+            <circle
+              key={d.label}
+              r={radius}
+              cx={center}
+              cy={center}
+              fill="transparent"
+              stroke={d.color}
+              strokeWidth={stroke}
+              strokeDasharray={`${value} ${circumference - value}`}
+              strokeDashoffset={Number.isFinite(-offset) ? -offset : 0}
+              strokeLinecap="round"
+              style={{ opacity: 1 }}
+            />
+          );
+          offset += value + gap;
+          return el;
+        })
+      )}
       <text
         x={center}
         y={center - 2}
         textAnchor="middle"
-        className="fill-black dark:fill-white"
+        className={isZero ? "fill-gray-400 dark:fill-gray-500" : "fill-black dark:fill-white"}
         fontSize="18"
         fontWeight="bold"
       >
         {displayValue === 0
-          ? "0.0"
+          ? "0.00"
           : formatCurrency(displayValue).replace(" USD", "")}
       </text>
       <text

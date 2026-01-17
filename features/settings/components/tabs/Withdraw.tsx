@@ -24,6 +24,8 @@ const Withdraw = () => {
   const [confirmAddress, setConfirmAddress] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [otp, setOtp] = useState("");
+  const [resendTimer, setResendTimer] = useState(0); // Timer in seconds (5 minutes = 300 seconds)
+  const [isResending, setIsResending] = useState(false);
   const [errors, setErrors] = useState<{
     amount?: string;
     walletAddress?: string;
@@ -114,8 +116,67 @@ const Withdraw = () => {
       setWalletAddress("");
       setConfirmAddress(false);
       setErrors({});
+      setResendTimer(0);
     }
   }, [success]);
+
+  // Start countdown timer when OTP modal opens
+  useEffect(() => {
+    if (showOtpModal) {
+      setResendTimer(300); // 5 minutes = 300 seconds
+    } else {
+      setResendTimer(0);
+    }
+  }, [showOtpModal]);
+
+  // Countdown timer
+  useEffect(() => {
+    if (resendTimer > 0) {
+      const timer = setInterval(() => {
+        setResendTimer((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      return () => clearInterval(timer);
+    }
+  }, [resendTimer]);
+
+  // Format timer as MM:SS
+  const formatTimer = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+  };
+
+  // Handle resend OTP
+  const handleResendOtp = async () => {
+    if (resendTimer > 0 || isResending) return;
+
+    setIsResending(true);
+    try {
+      // Resend by creating a new withdrawal request (this will send a new OTP)
+      await dispatch(
+        createReferralWithdraw({
+          requested_amount: amount,
+          wallet_address: walletAddress,
+          withdrawal_method: "crypto",
+        })
+      ).unwrap();
+      
+      // Reset timer to 5 minutes
+      setResendTimer(300);
+      setOtp(""); // Clear current OTP input
+    } catch (error) {
+      // Error is handled by Redux state
+    } finally {
+      setIsResending(false);
+    }
+  };
 
   // Helper function to fetch fees with caching
   const fetchFeesWithCache = useCallback((amountValue: string) => {
@@ -580,38 +641,97 @@ const Withdraw = () => {
 
           {/* OTP Modal */}
           {showOtpModal && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div className="bg-white dark:bg-[#1A1A1F] border border-[#1D8751] rounded-2xl p-8 max-w-md mx-4">
-                <h3 className="text-xl font-bold text-[#0D0D0D] dark:text-white mb-4">Enter OTP</h3>
-                <p className="text-[#788099] dark:text-[#A3A3A3] mb-4">
+            <div className="fixed inset-0 flex items-center justify-center z-[9999] pointer-events-none">
+              <div className="bg-white dark:bg-[#1A1A1F] border-2 border-[#1D8751] rounded-2xl p-6 sm:p-8 max-w-md mx-4 shadow-2xl pointer-events-auto">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-bold text-[#0D0D0D] dark:text-white">Enter OTP</h3>
+                  <button
+                    type="button"
+                    onClick={() => dispatch(closeOtpModal())}
+                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                    aria-label="Close"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                <p className="text-[#788099] dark:text-[#A3A3A3] mb-4 text-sm">
                   Please enter the OTP sent to verify your withdrawal.
                 </p>
                 <form onSubmit={handleOtpSubmit}>
                   <input
                     type="text"
                     value={otp}
-                    onChange={(e) => setOtp(e.target.value)}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
                     placeholder="Enter 6-digit OTP"
                     maxLength={6}
-                    className="w-full bg-[#F5F7FA] dark:bg-[var(--bg-color)] border border-[#E8EFF5] dark:border-[#35353F] rounded-xl px-4 py-3 text-[#0D0D0D] dark:text-white text-lg text-center tracking-widest focus:outline-none focus:border-[#1D8751] mb-4"
+                    className="w-full bg-white dark:bg-[var(--bg-color)] border-2 border-[#E8EFF5] dark:border-[#35353F] rounded-xl px-4 py-3 text-[#0D0D0D] dark:text-white text-lg text-center tracking-widest focus:outline-none focus:border-[#1D8751] mb-4"
                   />
                   {otpError && (
                     <div className="text-red-500 text-sm mb-4 text-center">
                       {typeof otpError === "string" ? otpError : JSON.stringify(otpError)}
                     </div>
                   )}
+                  
+                  {/* Resend OTP Section */}
+                  <div className="mb-4 text-center">
+                    {resendTimer > 0 ? (
+                      <p className="text-sm text-[#788099] dark:text-[#A3A3A3]">
+                        Resend OTP in{" "}
+                        <span className="font-semibold text-[#1D8751] dark:text-[#1D8751]">
+                          {formatTimer(resendTimer)}
+                        </span>
+                      </p>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleResendOtp}
+                        disabled={isResending}
+                        className="text-sm text-[#1D8751] dark:text-[#1D8751] font-medium hover:underline disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mx-auto"
+                      >
+                        {isResending ? (
+                          <>
+                            <svg
+                              className="animate-spin h-4 w-4"
+                              viewBox="0 0 24 24"
+                            >
+                              <circle
+                                className="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                strokeWidth="4"
+                                fill="none"
+                              />
+                              <path
+                                className="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8v8z"
+                              />
+                            </svg>
+                            Resending...
+                          </>
+                        ) : (
+                          "Resend OTP"
+                        )}
+                      </button>
+                    )}
+                  </div>
+
                   <div className="flex gap-3">
                     <button
                       type="button"
                       onClick={() => dispatch(closeOtpModal())}
-                      className="flex-1 bg-[#E8EFF5] dark:bg-[#35353F] text-[#0D0D0D] dark:text-white py-3 rounded-xl text-lg font-medium hover:bg-[#D1D9E6] dark:hover:bg-[#2A2A32] transition-colors"
+                      className="flex-1 bg-[#E8EFF5] dark:bg-[#35353F] text-[#0D0D0D] dark:text-white py-3 rounded-xl text-base font-medium hover:bg-[#D1D9E6] dark:hover:bg-[#2A2A32] transition-colors"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
                       disabled={otpVerifying || !otp || otp.length !== 6}
-                      className="flex-1 bg-[#1D8751] text-white py-3 rounded-xl text-lg font-medium hover:bg-[#166b3e] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                      className="flex-1 bg-[#1D8751] text-white py-3 rounded-xl text-base font-medium hover:bg-[#166b3e] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                     >
                       {otpVerifying && (
                         <svg

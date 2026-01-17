@@ -4,13 +4,16 @@ import { useDispatch, useSelector } from 'react-redux'
 import { RootState } from '@/store'
 import { submitMerchantApplicationThunk, clearMerchantError, clearMerchantSuccess, fetchMerchantApplicationStatusThunk } from '@/features/p2p/slices/merchantSlice'
 import { showToast } from '@/lib/utils/toast'
+import { selectTransactionSummary, fetchTransactionSummary } from '@/features/p2p/slices/transactionSummarySlice'
+import { formatCurrency } from '@/lib/globalFormatter'
 
 import { logger } from '@/lib/utils/logger';
 
 const Merchant = () => {
   const dispatch = useDispatch()
   const { loading, error, success, status, statusLoading } = useSelector((state: RootState) => state.merchant)
-  const { user } = useSelector((state: RootState) => state.auth)
+  const { user, isAuthenticated } = useSelector((state: RootState) => state.auth)
+  const summary = useSelector(selectTransactionSummary)
 
   const displayName = React.useMemo(() => {
     if (!user) return 'Advertiser User Name'
@@ -39,11 +42,22 @@ const Merchant = () => {
   })
 
   const [currentUploadType, setCurrentUploadType] = useState<keyof typeof files | null>(null)
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null)
 
-  // Fetch merchant application status on component mount
+  // Fetch merchant application status and transaction summary on component mount
   useEffect(() => {
-    dispatch(fetchMerchantApplicationStatusThunk() as any)
-  }, [dispatch])
+    if (isAuthenticated) {
+      dispatch(fetchMerchantApplicationStatusThunk() as any)
+      dispatch(fetchTransactionSummary() as any)
+    }
+  }, [dispatch, isAuthenticated])
+
+  // Reset file input when document type changes
+  useEffect(() => {
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }, [currentUploadType])
 
   const documentTypes = [
     {
@@ -366,13 +380,31 @@ const Merchant = () => {
                 <p className="text-sm text-muted-foreground">No record of fraudulent or suspicious activity</p>
               </div>
               <div className="flex items-start gap-3">
-                <svg className="w-5 h-5 text-rose-600 dark:text-red-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
-                </svg>
-                <div>
-                  <p className="text-sm text-muted-foreground">At least $10,000 equivalent trading volume in the last 30 days</p>
-                  <p className="text-xs text-rose-600 dark:text-red-400 mt-1">Current: $0.01 USDT (Required: $10,000 USDT)</p>
-                </div>
+                {(() => {
+                  const currentVolume = Number(summary?.total_approved_p2p_volume || summary?.total_volume || 0);
+                  const requiredVolume = 10000;
+                  const meetsRequirement = currentVolume >= requiredVolume;
+                  
+                  return (
+                    <>
+                      {meetsRequirement ? (
+                        <svg className="w-5 h-5 text-emerald-600 dark:text-green-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                        </svg>
+                      ) : (
+                        <svg className="w-5 h-5 text-rose-600 dark:text-red-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+                        </svg>
+                      )}
+                      <div>
+                        <p className="text-sm text-muted-foreground">At least $10,000 equivalent trading volume in the last 30 days</p>
+                        <p className={`text-xs mt-1 ${meetsRequirement ? 'text-emerald-600 dark:text-green-400' : 'text-rose-600 dark:text-red-400'}`}>
+                          Current: {formatCurrency(currentVolume, "USDT")} (Required: $10,000 USDT)
+                        </p>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
               <div className="flex items-start gap-3">
                 <svg className="w-5 h-5 text-rose-600 dark:text-red-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
@@ -470,6 +502,7 @@ const Merchant = () => {
                   </p>
 
                   <input
+                    ref={fileInputRef}
                     type="file"
                     accept=".pdf,.jpg,.jpeg,.png"
                     onChange={(e) => handleFileChange(e.target.files?.[0] || null)}
@@ -504,7 +537,13 @@ const Merchant = () => {
                           </div>
                         </div>
                         <button
-                          onClick={() => setFiles(prev => ({ ...prev, [currentUploadType]: null }))}
+                          onClick={() => {
+                            setFiles(prev => ({ ...prev, [currentUploadType]: null }))
+                            // Reset the file input so the same file can be selected again
+                            if (fileInputRef.current) {
+                              fileInputRef.current.value = ''
+                            }
+                          }}
                           className="text-rose-500 hover:bg-rose-500/10 p-1 rounded transition-all duration-200"
                           title="Remove file"
                         >
@@ -539,7 +578,13 @@ const Merchant = () => {
                       </div>
                     </div>
                     <button
-                      onClick={() => setFiles(prev => ({ ...prev, [key]: null }))}
+                      onClick={() => {
+                        setFiles(prev => ({ ...prev, [key]: null }))
+                        // Reset the file input so the same file can be selected again
+                        if (fileInputRef.current && currentUploadType === key) {
+                          fileInputRef.current.value = ''
+                        }
+                      }}
                       className="text-[#1D8751] hover:bg-[#1D8751]/10 p-1 rounded transition-all duration-200"
                     >
                       <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
