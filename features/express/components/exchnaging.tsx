@@ -797,60 +797,105 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
         </div>
       )}
 
-      {/* Top Card - Figma Design Layout */}
+      {/* Top Card */}
       <div
-        className={`${
+        className={`flex flex-col md:flex-row justify-between items-stretch bg-[#FFFFFF] dark:${
           isDark
-            ? "bg-[#23232B] border-[#35353E]"
+            ? "bg-[#23232B]  border:[#E8EFF5] dark:border-[#35353E]"
             : "bg-white border-gray-200"
-        } border-2 rounded-2xl p-4 sm:p-5 shadow-lg w-full max-w-4xl mb-2 sm:mb-4`}
+        } border-2 rounded-2xl p-3 sm:p-4 shadow-lg w-full max-w-4xl mb-2 sm:mb-4 min-h-[180px]`}
       >
-        {/* Main Content Row - Left side info + Right side QR */}
-        <div className="flex flex-col sm:flex-row justify-between gap-4">
-          {/* Left Side - Transaction Info */}
-          <div className="flex-1 space-y-3">
-            {/* Amount & Transaction Code Row */}
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4">
-              {/* Amount */}
-              <div>
-                <div className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"} text-xs font-medium mb-0.5`}>
-                  Amount:
+        <div className="flex-1 flex flex-col justify-between py-2 pr-2">
+          <div>
+            <div
+              className={`${
+                isDark ? "text-[#7B7B7B]" : "text-gray-600"
+              } text-xs font-semibold mb-0.5`}
+            >
+              Amount:
+            </div>
+            <div
+              className={`${
+                isDark ? "text-white" : "text-gray-900"
+              } text-base font-semibold mb-1 flex items-center gap-2`}
+            >
+              <span>
+                {liveAmount !== null
+                  ? liveAmount
+                  : effectiveTransactionData?.amount || 0}{" "}
+                {effectiveTransactionData?.type === "deposit" ? (
+                  "USD"
+                ) : (
+                  <span className="uppercase">
+                    {liveCurrency ||
+                      effectiveTransactionData?.asset?.ticker ||
+                      effectiveTransactionData?.asset?.symbol ||
+                      effectiveTransactionData?.asset?.name ||
+                      transactionData?.details?.to_currency ||
+                      (effectiveTransactionData?.type === "deposit"
+                        ? "USD"
+                        : effectiveTransactionData?.type === "withdrawal"
+                          ? "USD"
+                          : "USD")}
+                  </span>
+                )}
+              </span>
+            </div>
+            {/* {liveAmount !== null &&
+              liveAmount !== effectiveTransactionData?.amount && (
+                <div className={`${
+                  isDark ? 'text-[#7B7B7B]' : 'text-gray-600'
+                } text-xs mb-1`}>
+                  Initial: {effectiveTransactionData?.amount || 0}{" "}
+                  {effectiveTransactionData?.asset?.ticker || (effectiveTransactionData?.type === "deposit" ? "USD" : effectiveTransactionData?.type === "withdrawal" ? "USD" : "USDT")}
                 </div>
-                <div className={`${isDark ? "text-white" : "text-gray-900"} text-lg font-bold`}>
-                  {liveAmount !== null ? liveAmount : effectiveTransactionData?.amount || 0}{" "}
-                  {effectiveTransactionData?.type === "deposit" ? (
-                    <span className="uppercase">
-                      {effectiveTransactionData?.asset?.ticker ||
-                        effectiveTransactionData?.asset?.symbol ||
-                        effectiveTransactionData?.asset?.name ||
-                        "USDT"}
-                    </span>
-                  ) : (
-                    <span className="uppercase">
-                      {liveCurrency ||
-                        effectiveTransactionData?.asset?.ticker ||
-                        effectiveTransactionData?.asset?.symbol ||
-                        "USD"}
-                    </span>
-                  )}
-                </div>
-              </div>
-              
-              {/* Transaction Code */}
-              {effectiveTransactionData?.depositCode && (
-                <div className="sm:text-right">
-                  <div className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"} text-xs font-medium mb-0.5`}>
-                    Transaction code:
+              )} */}
+
+            {/* Display previous amount if it changed */}
+            {previousAmount !== null &&
+              liveAmount !== null &&
+              previousAmount !== liveAmount && (
+                <div
+                  className={`mt-2 p-2 ${
+                    isDark
+                      ? "bg-[var(--card-color)] border-[#35353E]"
+                      : "bg-gray-100 border-gray-300"
+                  } rounded border`}
+                >
+                  <div
+                    className={`${
+                      isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                    } text-xs font-semibold mb-1`}
+                  >
+                    Amount Change:
                   </div>
-                  <div className="flex items-center gap-2 sm:justify-end">
-                    <span className={`${isDark ? "text-[#FF9500]" : "text-orange-600"} text-base font-bold font-mono`}>
-                      {effectiveTransactionData.depositCode}
-                    </span>
-                    <CopyButton
-                      value={effectiveTransactionData.depositCode}
-                      className="text-[#7B7B7B] hover:text-white transition-colors"
-                      showIcon={true}
-                    />
+                  <div
+                    className={`${
+                      isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                    } text-xs mb-0.5`}
+                  >
+                    Previous: {previousAmount.toFixed(8)}{" "}
+                    {liveCurrency ||
+                      effectiveTransactionData?.asset?.ticker ||
+                      effectiveTransactionData?.asset?.symbol ||
+                      effectiveTransactionData?.asset?.name ||
+                      (effectiveTransactionData?.type === "deposit"
+                        ? "USD"
+                        : effectiveTransactionData?.type === "withdrawal"
+                          ? "USD"
+                          : "USDT")}
+                  </div>
+                  <div className="text-green-400 text-xs">
+                    Current: {liveAmount.toFixed(8)}{" "}
+                    {liveCurrency ||
+                      effectiveTransactionData?.asset?.ticker ||
+                      effectiveTransactionData?.asset?.symbol ||
+                      effectiveTransactionData?.asset?.name ||
+                      (effectiveTransactionData?.type === "deposit"
+                        ? "USD"
+                        : effectiveTransactionData?.type === "withdrawal"
+                          ? "USD"
+                          : "USDT")}
                   </div>
                 </div>
               )}
@@ -940,52 +985,70 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               </>
             )}
 
-            {/* Bank Information */}
+            {/* Bank Information (for non-direct deposits) */}
             {effectiveTransactionData?.type === "deposit" &&
               effectiveTransactionData?.paymentDetail &&
-              effectiveTransactionData.paymentDetail.provider_name !== "direct" && (
+              effectiveTransactionData.paymentDetail.provider_name !==
+                "direct" && (
                 <>
-                  <div>
-                    <div className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"} text-xs font-medium mb-1`}>
-                      Bank:
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <img
-                        src={effectiveTransactionData.paymentDetail.logo_url || "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"}
-                        alt={effectiveTransactionData.paymentDetail.provider_name}
-                        className="w-5 h-5 rounded-full"
-                      />
-                      <span className={`${isDark ? "text-white" : "text-gray-900"} text-sm font-semibold`}>
-                        {effectiveTransactionData.paymentDetail.provider_name}
-                      </span>
-                    </div>
+                  <div
+                    className={`${
+                      isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                    } text-xs font-semibold mb-0.5 mt-3`}
+                  >
+                    Bank:
                   </div>
-
-                  <div className="space-y-2">
-                    <div>
-                      <div className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"} text-xs font-medium mb-0.5`}>
-                        Account Name:
-                      </div>
-                      <div className={`${isDark ? "text-white" : "text-gray-900"} text-sm`}>
-                        {effectiveTransactionData.paymentDetail.account_name}
-                      </div>
-                    </div>
-                    <div>
-                      <div className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"} text-xs font-medium mb-0.5`}>
-                        Account Number:
-                      </div>
-                      <div className={`${isDark ? "text-white" : "text-gray-900"} text-sm font-mono`}>
-                        {effectiveTransactionData.paymentDetail.account_number}
-                      </div>
-                    </div>
+                  <div className="flex items-center mb-1">
+                    <img
+                      src="https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
+                      alt={effectiveTransactionData.paymentDetail.provider_name}
+                      className="w-6 h-6 rounded-full mr-2"
+                    />
+                    <span
+                      className={`${
+                        isDark ? "text-white" : "text-gray-900"
+                      } text-sm font-semibold`}
+                    >
+                      {effectiveTransactionData.paymentDetail.provider_name}
+                    </span>
+                  </div>
+                  <div
+                    className={`${
+                      isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                    } text-xs font-semibold mb-0.5`}
+                  >
+                    Account Name:
+                  </div>
+                  <div
+                    className={`${
+                      isDark ? "text-white" : "text-gray-900"
+                    } text-sm mb-1`}
+                  >
+                    {effectiveTransactionData.paymentDetail.account_name}
+                  </div>
+                  <div
+                    className={`${
+                      isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                    } text-xs font-semibold mb-0.5`}
+                  >
+                    Account Number:
+                  </div>
+                  <div
+                    className={`${
+                      isDark ? "text-white" : "text-gray-900"
+                    } text-sm font-mono`}
+                  >
+                    {effectiveTransactionData.paymentDetail.account_number}
                   </div>
                 </>
               )}
-
-            {/* Withdrawal Wallet Address */}
             {effectiveTransactionData?.type === "withdrawal" && (
-              <div>
-                <div className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"} text-xs font-medium mb-0.5`}>
+              <>
+                <div
+                  className={`${
+                    isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                  } text-xs font-semibold mb-0.5`}
+                >
                   Wallet Address:
                 </div>
                   <div
@@ -999,67 +1062,58 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               </>
             )}
           </div>
-
-          {/* Right Side - QR Code */}
-          <div className="flex-shrink-0 flex items-start justify-center sm:justify-end">
-            {(() => {
-              let qrData = "";
-              
-              if (effectiveTransactionData?.type === "deposit" && effectiveTransactionData?.paymentDetail?.account_number) {
-                qrData = effectiveTransactionData.paymentDetail.account_number;
-              } else if (effectiveTransactionData?.type === "withdrawal" && effectiveTransactionData?.walletAddress) {
-                qrData = effectiveTransactionData.walletAddress;
-              } else if (effectiveTransactionData?.type === "deposit" && effectiveTransactionData?.paymentDetail) {
-                const firstDetail = effectiveTransactionData.paymentDetail.payment_details?.[0];
-                if (firstDetail?.account_number || firstDetail?.mobile_number) {
-                  qrData = firstDetail.account_number || firstDetail.mobile_number;
-                }
-              } else {
-                qrData = liveTransactionId || effectiveTransactionData?.transactionId || "";
+        </div>
+        <div className="flex-shrink-0 ml-0 md:ml-6 flex items-center justify-center py-2">
+          {/* QR code */}
+          {(() => {
+            // For deposits, use account number; for withdrawals, use wallet address
+            let qrData = "";
+            
+            if (effectiveTransactionData?.type === "deposit" && effectiveTransactionData?.paymentDetail?.account_number) {
+              // For deposits, show account number in QR code
+              qrData = effectiveTransactionData.paymentDetail.account_number;
+            } else if (effectiveTransactionData?.type === "withdrawal" && effectiveTransactionData?.walletAddress) {
+              // For withdrawals, show wallet address
+              qrData = effectiveTransactionData.walletAddress;
+            } else if (effectiveTransactionData?.type === "deposit" && effectiveTransactionData?.paymentDetail) {
+              // Fallback: try to get account_number from payment_details array if not at root level
+              const firstDetail = effectiveTransactionData.paymentDetail.payment_details?.[0];
+              if (firstDetail?.account_number || firstDetail?.mobile_number) {
+                qrData = firstDetail.account_number || firstDetail.mobile_number;
               }
-              
-              if (!qrData) {
-                return (
-                  <div className="w-28 h-28 sm:w-32 sm:h-32 bg-white rounded-lg flex items-center justify-center">
-                    <span className="text-gray-400 text-xs">No QR data</span>
-                  </div>
-                );
-              }
-
-              const encodedData = encodeURIComponent(qrData);
+            } else {
+              // Final fallback to transaction ID
+              qrData = liveTransactionId || effectiveTransactionData?.transactionId || "";
+            }
+            
+            if (!qrData) {
               return (
-                <div className="w-28 h-28 sm:w-32 sm:h-32 bg-white rounded-lg p-1 flex items-center justify-center">
-                  <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodedData}`}
-                    alt="QR Code"
-                    className="w-full h-full object-contain"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none';
-                      const parent = e.currentTarget.parentElement;
-                      if (parent) {
-                        parent.innerHTML = '<span class="text-gray-400 text-xs">QR unavailable</span>';
-                      }
-                    }}
-                  />
+                <div className="w-36 h-36 bg-white rounded-lg flex items-center justify-center">
+                  <span className="text-gray-400 text-xs">No QR data</span>
                 </div>
               );
-            })()}
-          </div>
-        </div>
+            }
 
-        {/* Address Section - Full Width at Bottom */}
-        {effectiveTransactionData?.walletAddress && effectiveTransactionData?.type === "deposit" && (
-          <div className={`mt-4 pt-3 border-t ${isDark ? "border-[#35353E]" : "border-gray-200"}`}>
-            <div className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"} text-xs font-medium mb-1`}>
-              Address:
-            </div>
-            <div className={`${isDark ? "bg-[#1A1A1F]" : "bg-gray-100"} rounded-lg px-3 py-2`}>
-              <div className={`${isDark ? "text-white" : "text-gray-900"} text-xs sm:text-sm font-mono break-all`}>
-                {effectiveTransactionData.walletAddress}
+            const encodedData = encodeURIComponent(qrData);
+            return (
+              <div className="w-36 h-36 bg-white rounded-lg flex items-center justify-center">
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodedData}`}
+                  alt="QR Code"
+                  className="w-32 h-32"
+                  onError={(e) => {
+                    // Fallback if QR code fails to load
+                    e.currentTarget.style.display = 'none';
+                    const parent = e.currentTarget.parentElement;
+                    if (parent) {
+                      parent.innerHTML = '<span class="text-gray-400 text-xs">QR unavailable</span>';
+                    }
+                  }}
+                />
               </div>
-            </div>
-          </div>
-        )}
+            );
+          })()}
+        </div>
       </div>
 
       <div className="flex items-center justify-between w-full max-w-4xl mb-2 sm:mb-4 relative">
@@ -1658,7 +1712,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
             )}
           </div>
           {/* To */}
-          <div className="flex items-start gap-2 min-w-0 flex-1 sm:flex-initial sm:justify-end">
+          <div className="flex items-center gap-2 min-w-0 flex-1 sm:flex-initial sm:justify-end">
             {effectiveTransactionData?.type === "deposit" ? (
               <>
                 <img
@@ -1718,16 +1772,8 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                     {effectiveTransactionData?.walletAddress ||
                       "TQn9Y2khEsLJW1ChVWFM...RDow5oRP7bX"}
                   </div>
-                  {/* Asset Description */}
-                  <span className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"} text-xs`}>
-                    {effectiveTransactionData?.asset?.name || "Tether US"}
-                  </span>
                 </div>
-                {/* Wallet Address below */}
-                <div className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"} text-[10px] font-mono break-all mt-0.5 text-right max-w-[200px] sm:max-w-[280px]`}>
-                  {effectiveTransactionData?.walletAddress || "TQn9Y2khEsLJW1ChVWFM...RDow5oRP7bX"}
-                </div>
-              </div>
+              </>
             ) : (
               <>
                 <img
