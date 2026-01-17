@@ -1257,49 +1257,29 @@ export default function ExchangeForm({
     // Process label rendering
     const renderLabel = () => {
       if (variant === "express") {
-        // "E(Icon)" Style
+        // "E_X" Style - E followed by X icon only (matching sidebar)
         return (
-          <span className="flex items-center gap-0.5">
-            <span className={textColorClass}>E</span>
-            <span className="relative flex items-center mt-1 sm:mt-1.5 md:mt-2">
-              <img
-                src={exchangeIconSrc1}
-                className={`h-3.5 sm:h-4.5 -mt-0.5 -ml-0.5 w-auto object-contain ${isActive && isDark ? "hidden" : "block"}`}
-                alt="X"
-                style={{ imageRendering: 'crisp-edges', WebkitFontSmoothing: 'antialiased' }}
-              />
-              {isActive && isDark && (
-                <img
-                  src={exchangeIconSrc2}
-                  className="h-3.5 sm:h-4.5 -mt-0.5 -ml-0.5 w-auto object-contain block"
-                  alt="X"
-                  style={{ imageRendering: 'crisp-edges', WebkitFontSmoothing: 'antialiased' }}
-                />
-              )}
-            </span>
+          <span className="flex flex-row items-center justify-center h-full">
+            <span className={`${textColorClass} text-[10px] sm:text-xs md:text-sm lg:text-base font-bold uppercase`} style={{ lineHeight: 1 }}>E</span>
+            <img
+              src={isActive && isDark ? exchangeIconSrc2 : exchangeIconSrc1}
+              className="h-[10px] sm:h-[11px] md:h-[13px] lg:h-[15px] w-auto"
+              alt="X"
+              style={{ display: 'inline-block' }}
+            />
           </span>
         );
       } else if (variant === "moneyx") {
-        // "MONEY(Icon)" Style
+        // "Money_X" Style - Money followed by X icon
         return (
-          <span className="flex items-center gap-0.5">
-            <span className={`${textColorClass} font-bold`}>Money</span>
-            <span className="relative flex items-center mt-1 sm:mt-1.5 md:mt-2">
-              <img
-                src={moneyXIconSrc1}
-                className={`h-3.5 sm:h-4.5 -mt-0.5 object-contain ${isActive && isDark ? "hidden" : "block"}`}
-                alt="X"
-                style={{ imageRendering: 'crisp-edges', WebkitFontSmoothing: 'antialiased' }}
-              />
-              {isActive && isDark && (
-                <img
-                  src={moneyXIconSrc2}
-                  className="h-3.5 sm:h-4.5 -mt-0.5 w-auto object-contain block"
-                  alt="X"
-                  style={{ imageRendering: 'crisp-edges', WebkitFontSmoothing: 'antialiased' }}
-                />
-              )}
-            </span>
+          <span className="flex flex-row items-center justify-center h-full">
+            <span className={`${textColorClass} text-[10px] sm:text-xs md:text-sm lg:text-base font-bold`} style={{ lineHeight: 1 }}>Money</span>
+            <img
+              src={isActive && isDark ? moneyXIconSrc2 : moneyXIconSrc1}
+              className="h-[10px] sm:h-[11px] md:h-[13px] lg:h-[15px] w-auto"
+              alt="X"
+              style={{ display: 'inline-block' }}
+            />
           </span>
         );
       }

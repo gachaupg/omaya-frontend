@@ -39,12 +39,12 @@ const UserCard = () => {
   const { data: matchedTrades } = useSelector(
     (state: RootState) => state.matchedTrades
   );
-  const { user, isAuthenticated } = useSelector(
+  const { user, isAuthenticated, profile } = useSelector(
     (state: RootState) => state.auth
   );
   
-  // Use user.photo as fallback if profileImage is not set
-  const displayImage = profileImage || user?.photo || null;
+  // Use profile.photo as fallback if profileImage is not set
+  const displayImage = profileImage || profile?.photo || null;
   
   const kycState = useSelector((state: RootState) => state.kyc);
   // KYC verification status from central KYC slice, fallback to user.is_verified
