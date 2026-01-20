@@ -560,6 +560,33 @@ export default function Navbar() {
       }
     }
   }, []);
+  
+  // Listen for profile photo updates from other components
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    
+    const handleProfilePhotoUpdate = (event: CustomEvent) => {
+      const newPhotoUrl = event.detail?.photoUrl;
+      if (newPhotoUrl) {
+        // Add cache-busting parameter to force browser to reload the image
+        const photoWithTimestamp = newPhotoUrl.includes('?') 
+          ? `${newPhotoUrl}&t=${Date.now()}`
+          : `${newPhotoUrl}?t=${Date.now()}`;
+        setCachedProfilePhoto(photoWithTimestamp);
+        // Also update localStorage with the original URL (without timestamp)
+        localStorage.setItem("profile_photo", newPhotoUrl);
+        setProfileImageError(false);
+        // Force refetch profile to update Redux state
+        dispatch(getUserProfile());
+      }
+    };
+    
+    window.addEventListener('profilePhotoUpdated', handleProfilePhotoUpdate as EventListener);
+    
+    return () => {
+      window.removeEventListener('profilePhotoUpdated', handleProfilePhotoUpdate as EventListener);
+    };
+  }, [dispatch]);
 
   useEffect(() => {
     // ✅ Only fetch profile if we don't have it (prevents refetch on every navigation)
