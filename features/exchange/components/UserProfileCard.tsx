@@ -65,6 +65,41 @@ const UserProfileCard: React.FC<UserProfileCardProps> = ({
     }
   }, [dispatch, isAuthenticated]);
 
+  // Listen for profile photo updates from other components
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    
+    const handleProfilePhotoUpdate = (event: CustomEvent) => {
+      const newPhotoUrl = event.detail?.photoUrl;
+      if (newPhotoUrl) {
+        // Add cache-busting parameter to force browser to reload the image
+        const photoWithTimestamp = newPhotoUrl.includes('?') 
+          ? `${newPhotoUrl}&t=${Date.now()}`
+          : `${newPhotoUrl}?t=${Date.now()}`;
+        setProfileImage(photoWithTimestamp);
+      }
+    };
+    
+    window.addEventListener('profilePhotoUpdated', handleProfilePhotoUpdate as EventListener);
+    
+    // Also check localStorage in case profile was updated in another tab
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'profile_photo' && e.newValue) {
+        const photoWithTimestamp = e.newValue.includes('?') 
+          ? `${e.newValue}&t=${Date.now()}`
+          : `${e.newValue}?t=${Date.now()}`;
+        setProfileImage(photoWithTimestamp);
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('profilePhotoUpdated', handleProfilePhotoUpdate as EventListener);
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, []);
+
   const handleImageClick = () => {
     fileInputRef.current?.click();
   };

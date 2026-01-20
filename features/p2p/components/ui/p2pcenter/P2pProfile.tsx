@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { formatNumber } from "@/utils/formatters";
 import { formatCurrency } from "@/lib/globalFormatter";
 import { useSelector, useDispatch } from "react-redux";
@@ -37,6 +37,34 @@ const P2pProfile = ({
     dispatch(fetchFeedback() as any);
   }, [dispatch]);
 
+  // Force re-render when profile photo is updated
+  const [profilePhotoKey, setProfilePhotoKey] = useState(0);
+  
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    
+    const handleProfilePhotoUpdate = () => {
+      // Force component to re-render by updating key
+      setProfilePhotoKey(prev => prev + 1);
+    };
+    
+    window.addEventListener('profilePhotoUpdated', handleProfilePhotoUpdate as EventListener);
+    
+    // Also check localStorage in case profile was updated in another tab
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'profile_photo') {
+        setProfilePhotoKey(prev => prev + 1);
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('profilePhotoUpdated', handleProfilePhotoUpdate as EventListener);
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, []);
+
   // Calculate feedback statistics
   const feedbackStats = useMemo(() => {
     const total = feedbackData?.length || 0;
@@ -72,7 +100,8 @@ const P2pProfile = ({
             <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full overflow-hidden bg-gray-200 dark:bg-[#35353E] flex items-center justify-center">
               {userProfile?.photo ? (
                 <img  
-                  src={userProfile.photo}
+                  key={profilePhotoKey}
+                  src={userProfile.photo.includes('?') ? `${userProfile.photo}&t=${Date.now()}` : `${userProfile.photo}?t=${Date.now()}`}
                   alt="User Avatar"
                   className="w-full h-full object-cover rounded-full"
                   onError={(e) => {
