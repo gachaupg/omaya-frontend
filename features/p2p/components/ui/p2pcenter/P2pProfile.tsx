@@ -2,11 +2,12 @@ import React, { useEffect, useMemo, useState } from "react";
 import { formatNumber } from "@/utils/formatters";
 import { formatCurrency } from "@/lib/globalFormatter";
 import { useSelector, useDispatch } from "react-redux";
-import { RootState } from "@/store";
+import { RootState, AppDispatch } from "@/store";
 import { toNumber } from "@/lib/finanacial";
 import { useRouter } from "next/navigation";
 import { fetchMerchantApplicationStatusThunk } from "@/features/p2p/slices/merchantSlice";
 import { fetchFeedback } from "@/features/p2p/slices/feedbackSlice";
+import { getUserProfile } from "@/features/auth/slices/authSlice";
 
 import { logger } from '@/lib/utils/logger';
 
@@ -20,7 +21,7 @@ const P2pProfile = ({
   loading: any;
 }) => {
   const router = useRouter();
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const { user, isAuthenticated, profile: userProfile } = useSelector(
     (state: RootState) => state.auth
   );
@@ -31,11 +32,15 @@ const P2pProfile = ({
     (state: RootState) => state.feedback
   );
 
-  // Fetch merchant status and feedback on component mount
+  // Fetch merchant status, feedback, and user profile on component mount
   useEffect(() => {
     dispatch(fetchMerchantApplicationStatusThunk() as any);
     dispatch(fetchFeedback() as any);
-  }, [dispatch]);
+    // Fetch fresh user profile to ensure photo is synced
+    if (isAuthenticated) {
+      dispatch(getUserProfile());
+    }
+  }, [dispatch, isAuthenticated]);
 
   // Force re-render when profile photo is updated
   const [profilePhotoKey, setProfilePhotoKey] = useState(0);

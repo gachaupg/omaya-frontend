@@ -293,7 +293,7 @@ const UserCard = () => {
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-lg font-bold dark:text-[#FFFFFF] text-[#1D1D23]">
-                  Hello, {user?.first_name} !
+                  Hello, {user?.first_name}{user?.last_name ? ` ${user.last_name}` : ''} !
                 </h2>
               </div>
               <div className="flex items-center gap-1">

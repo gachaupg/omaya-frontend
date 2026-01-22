@@ -837,22 +837,23 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                     <>
                       <div
                         className={`${
-                          isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                        } text-xs font-semibold mb-0.5 mt-3`}
+                          isDark ? "text-[#1D8751]" : "text-[#1D8751]"
+                        } text-sm font-semibold mb-1 mt-3`}
                       >
-                        Wallet Address:
+                        USDT Wallet Address:
                       </div>
-                      <div className="flex items-center mb-2">
+                      <div className="flex items-center mb-2 p-2 rounded-lg border border-[#1D8751]/30 bg-[#1D8751]/5">
                         <span
                           className={`${
                             isDark ? "text-white" : "text-gray-900"
-                          } text-sm font-mono bg-gray-500/10 px-2 py-1 rounded text-xs break-all`}
+                          } text-sm font-mono break-all flex-1 leading-relaxed`}
+                          style={{ wordBreak: 'break-all', lineHeight: '1.5' }}
                         >
                           {effectiveTransactionData.walletAddress}
                         </span>
                         <CopyButton
                           value={effectiveTransactionData.walletAddress}
-                          className="ml-2"
+                          className="ml-2 flex-shrink-0"
                         />
                       </div>
                     </>
@@ -952,21 +953,26 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
         <div className="flex-shrink-0 ml-0 md:ml-6 flex items-center justify-center py-2">
           {/* QR code */}
           {(() => {
-            // For deposits, use account number; for withdrawals, use wallet address
+            // For deposits, use wallet address first (for crypto), then account number; for withdrawals, use wallet address
             let qrData = "";
             
-            if (effectiveTransactionData?.type === "deposit" && effectiveTransactionData?.paymentDetail?.account_number) {
-              // For deposits, show account number in QR code
-              qrData = effectiveTransactionData.paymentDetail.account_number;
+            if (effectiveTransactionData?.type === "deposit") {
+              // For deposits, first check wallet address (for USDT/crypto deposits)
+              if (effectiveTransactionData?.walletAddress) {
+                qrData = effectiveTransactionData.walletAddress;
+              } else if (effectiveTransactionData?.paymentDetail?.account_number) {
+                // Then check account number for fiat deposits
+                qrData = effectiveTransactionData.paymentDetail.account_number;
+              } else if (effectiveTransactionData?.paymentDetail) {
+                // Fallback: try to get account_number from payment_details array if not at root level
+                const firstDetail = effectiveTransactionData.paymentDetail.payment_details?.[0];
+                if (firstDetail?.account_number || firstDetail?.mobile_number) {
+                  qrData = firstDetail.account_number || firstDetail.mobile_number;
+                }
+              }
             } else if (effectiveTransactionData?.type === "withdrawal" && effectiveTransactionData?.walletAddress) {
               // For withdrawals, show wallet address
               qrData = effectiveTransactionData.walletAddress;
-            } else if (effectiveTransactionData?.type === "deposit" && effectiveTransactionData?.paymentDetail) {
-              // Fallback: try to get account_number from payment_details array if not at root level
-              const firstDetail = effectiveTransactionData.paymentDetail.payment_details?.[0];
-              if (firstDetail?.account_number || firstDetail?.mobile_number) {
-                qrData = firstDetail.account_number || firstDetail.mobile_number;
-              }
             }
             
             if (!qrData) {

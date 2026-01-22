@@ -28,6 +28,8 @@ const Orders = memo(() => {
     status: "all",
     date: "all",
     currency: "usdt",
+    customDateFrom: undefined as string | undefined,
+    customDateTo: undefined as string | undefined,
   });
 
   // State for unread messages view
@@ -136,6 +138,17 @@ const Orders = memo(() => {
               return false;
             }
             break;
+          case "custom":
+            if (filters.customDateFrom && filters.customDateTo) {
+              const fromDate = new Date(filters.customDateFrom);
+              fromDate.setHours(0, 0, 0, 0);
+              const toDate = new Date(filters.customDateTo);
+              toDate.setHours(23, 59, 59, 999);
+              if (tradeDate < fromDate || tradeDate > toDate) {
+                return false;
+              }
+            }
+            break;
         }
       }
 
@@ -143,24 +156,44 @@ const Orders = memo(() => {
     });
   }, [trades.results, filters]);
 
-  const transformedData: TransactionType[] = filteredData.map((trade) => ({
-    id: trade.id,
-    type: trade.order_type.toLowerCase(),
-    date: trade.timestamp, // Keep as ISO string for formatDate to parse correctly
-    amount: parseFloat(trade.amount).toFixed(2),
-    status: trade.status.toLowerCase(),
-    asset: parseFloat(trade.amount).toFixed(2),
-    assetSymbol: "USDT",
-    rate: parseFloat(trade.rate.toString()).toFixed(2),
-    payment: trade.payment_details?.[0]
-      ? {
-          bank: trade.payment_details[0].provider,
-          logo: "",
-        }
-      : undefined,
-    // Add all trade data for modal
-    rawData: trade,
-  }));
+
+
+  const transformedData: TransactionType[] = filteredData.map((trade) => {
+    // Determine the user's action based on their role in the trade
+    // If the current user is the buyer, they performed a "buy" action
+    // If the current user is the seller, they performed a "sell" action
+    const currentUserName = user?.first_name || '';
+    const isBuyer = trade.buyer?.toLowerCase().includes(currentUserName.toLowerCase());
+    const isSeller = trade.seller?.toLowerCase().includes(currentUserName.toLowerCase());
+    
+    // Determine user's action: if user is buyer, action is "buy"; if seller, action is "sell"
+    // Fallback to order_type if we can't determine
+    let userAction = trade.order_type.toLowerCase();
+    if (isBuyer && !isSeller) {
+      userAction = "buy";
+    } else if (isSeller && !isBuyer) {
+      userAction = "sell";
+    }
+    
+    return {
+      id: trade.id,
+      type: userAction,
+      date: trade.timestamp, // Keep as ISO string for formatDate to parse correctly
+      amount: parseFloat(trade.amount).toFixed(2),
+      status: trade.status.toLowerCase(),
+      asset: parseFloat(trade.amount).toFixed(2),
+      assetSymbol: "USDT",
+      rate: parseFloat(trade.rate.toString()).toFixed(2),
+      payment: trade.payment_details?.[0]
+        ? {
+            bank: trade.payment_details[0].provider,
+            logo: "",
+          }
+        : undefined,
+      // Add all trade data for modal
+      rawData: trade,
+    };
+  });
 
   // Show skeleton while loading initial data
   if (loading && trades.results.length === 0) {
