@@ -240,7 +240,7 @@ const EditPaymentMethodModal: React.FC<EditPaymentMethodModalProps> = ({
               placeholder="Enter account name"
               disabled={patchLoading}
               required
-              className="w-full"
+              className="w-full text-gray-900 dark:text-white disabled:opacity-50"
             />
           </div>
 
@@ -261,7 +261,7 @@ const EditPaymentMethodModal: React.FC<EditPaymentMethodModalProps> = ({
                 placeholder="Enter wallet address"
                 disabled={patchLoading}
                 required
-                className="w-full"
+                className="w-full text-gray-900 dark:text-white disabled:opacity-50"
               />
             </div>
           ) : (
@@ -280,7 +280,7 @@ const EditPaymentMethodModal: React.FC<EditPaymentMethodModalProps> = ({
                 placeholder="Enter account number"
                 disabled={patchLoading}
                 required
-                className="w-full"
+                className="w-full text-gray-900 dark:text-white"
               />
             </div>
           )}
@@ -303,7 +303,7 @@ const EditPaymentMethodModal: React.FC<EditPaymentMethodModalProps> = ({
                   checked={formData.allow_auto_send}
                   onChange={(e) => handleInputChange("allow_auto_send", e.target.checked)}
                   disabled={patchLoading}
-                  className="terms-checkbox-green w-5 h-5 rounded border-2 border-[#1D8751] focus:ring-[#1D8751] appearance-none bg-transparent checked:bg-[#1D8751] checked:border-[#1D8751] flex-shrink-0"
+                  className="terms-checkbox-green w-5 h-5 rounded border-2 border-[#1D8751] focus:ring-[#1D8751] appearance-none bg-transparent checked:bg-[#1D8751] checked:border-[#1D8751] shrink-0"
                 />
                 <label
                   htmlFor="allow_auto_send"

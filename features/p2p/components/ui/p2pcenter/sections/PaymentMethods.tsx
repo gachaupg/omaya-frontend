@@ -718,14 +718,14 @@ const PaymentMethods = () => {
                 placeholder="Account Name"
                 value={accountName}
                 onChange={(e) => setAccountName(e.target.value)}
-                className="w-full text-sm"
+                className="w-full text-sm text-gray-900 dark:text-white disabled:opacity-50"
                 disabled
               />
               <Input
                 placeholder="Account Number"
                 value={accountNumber}
                 onChange={(e) => setAccountNumber(e.target.value)}
-                className="w-full text-sm"
+                className="w-full text-sm text-gray-900 dark:text-white"
               />
             </div>
 
