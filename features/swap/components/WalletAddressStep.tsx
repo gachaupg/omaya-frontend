@@ -48,13 +48,13 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
   }, []);
 
   const currentCurrency = getCurrencyFromAsset(toAsset);
-  
+
   // Get network from toAsset (the asset we're receiving)
   const getNetworkFromAsset = useCallback((asset: any): string | undefined => {
     if (!asset) return undefined;
     return asset.network || undefined;
   }, []);
-  
+
   const currentNetwork = getNetworkFromAsset(toAsset);
 
   // Address validation hook - only API validation, no manual checks
@@ -184,12 +184,12 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
               </div>
 
               {/* Input Field with Paste Button */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-start gap-2 sm:gap-3">
                 <div className="flex-1 relative min-w-0">
-                  <div className={`flex items-center bg-white dark:bg-[var(--card-color)] ${strongBorder} rounded-2xl px-2 sm:px-3 md:px-4 py-2 sm:py-3 min-h-[48px]`}>
+                  <div className={`flex items-center bg-white dark:bg-(--card-color) ${strongBorder} rounded-2xl px-2 sm:px-3 md:px-4 py-2 sm:py-3 min-h-12`}>
                     {/* Wallet Icon */}
                     <svg
-                      className="w-4 h-4 sm:w-5 sm:h-5 text-[#1D8751] mr-2 sm:mr-3 flex-shrink-0"
+                      className="w-4 h-4 sm:w-5 sm:h-5 text-[#1D8751] mr-2 sm:mr-3 shrink-0"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -208,13 +208,11 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                       value={walletAddress}
                       onChange={(e) => {
                         onWalletAddressChange(e);
-                        setWalletError(null); // Clear error immediately for better UX
-                        // Validate address in real-time using the validation hook
+                        setWalletError(null);
                         if (e.target.value.trim() === "") {
                           resetAddressValidation();
                           setWalletError(null);
                         } else {
-                          // Trigger validation as user types
                           validateAddress(e.target.value, currentCurrency, currentNetwork);
                         }
                       }}
@@ -223,30 +221,10 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                       placeholder={`Paste ${toAsset?.name || toAsset?.symbol || ""} address`}
                       disabled={isLoading}
                     />
-                    {/* Validation status indicator - show based on API validation only */}
-                    {walletAddress.trim() && (
-                      <div className="absolute right-8 sm:right-10 top-1/2 -translate-y-1/2 flex items-center flex-shrink-0">
-                        {isAddressValidating ? (
-                          <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-[#1D8751] border-t-transparent rounded-full animate-spin"></div>
-                        ) : addressValidationResult?.isValid ? (
-                          ''
-                        ) : walletError ? (
-                          <svg className="w-4 h-4 sm:w-5 sm:h-5 text-[#E23D3A] flex-shrink-0" viewBox="0 0 24 24" fill="none">
-                            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
-                            <path
-                              d="M12 8v4M12 16h.01"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                            />
-                          </svg>
-                        ) : null}
-                      </div>
-                    )}
 
                     {/* Bookmark Icon */}
                     <svg
-                      className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 dark:text-[#7e7e8f] ml-auto flex-shrink-0"
+                      className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 dark:text-[#7e7e8f] ml-auto shrink-0"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -259,16 +237,31 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                       />
                     </svg>
                   </div>
+
+                  {/* Error Message with Word Break Fix */}
+                  {walletError && (
+                    <p className="mt-2 text-red-500 text-xs sm:text-sm lg:text-md font-medium  flex items-center gap-2 break-all">
+                      <svg
+                        className="w-4 h-4 shrink-0"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span>{walletError}</span>
+                    </p>
+                  )}
                 </div>
 
                 {/* Paste Button */}
                 <button
                   onClick={handlePaste}
                   disabled={isLoading}
-                  className="bg-[#1D8751] hover:bg-[#166b3e] disabled:bg-gray-500 disabled:cursor-not-allowed text-white px-3 sm:px-4 md:px-5 py-2.5 sm:py-3 rounded-xl flex items-center justify-center gap-1.5 sm:gap-2 transition-colors min-h-[48px] w-full sm:w-auto sm:flex-shrink-0"
+                  className="bg-[#1D8751] hover:bg-[#166b3e] disabled:bg-gray-500 disabled:cursor-not-allowed text-white px-3 sm:px-4 md:px-5 py-2.5 sm:py-3 rounded-xl flex items-center justify-center gap-1.5 sm:gap-2 transition-colors min-h-12 w-full sm:w-auto sm:shrink-0"
                 >
                   <svg
-                    className="w-4 h-4 sm:w-5 sm:h-5 text-white flex-shrink-0"
+                    className="w-4 h-4 sm:w-5 sm:h-5 text-white shrink-0"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -294,13 +287,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                     </p>
                   )}
                   {!isAddressValidating && walletError && (
-                    <p className="text-red-500 text-sm font-medium flex items-center gap-2">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
-                        <path d="M12 8v4M12 16h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                      </svg>
-                      {walletError}
-                    </p>
+                   ''
                   )}
                   {!isAddressValidating && !walletError && addressValidationResult?.isValid && (
                     <p className="text-[#1D8751] text-sm font-medium flex items-center gap-2">
