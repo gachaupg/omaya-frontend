@@ -82,14 +82,14 @@ const MoneyXTransactions = () => {
       <div className="hidden lg:block overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="text-left text-xs sm:text-sm dark:text-[#788099] text-gray-500 border-b dark:border-[#35353E] border-gray-200">
-              <th className="py-3 px-4 font-medium">Transaction ID</th>
-              <th className="py-3 px-4 font-medium">From</th>
-              <th className="py-3 px-4 font-medium">To</th>
-              <th className="py-3 px-4 font-medium">Amount Sent</th>
-              <th className="py-3 px-4 font-medium">Amount Received</th>
-              <th className="py-3 px-4 font-medium">Status</th>
-              <th className="py-3 px-4 font-medium">Date</th>
+            <tr className="border-b border-gray-200 dark:border-[#35353E]">
+              <th className="py-3 px-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]">Transaction ID</th>
+              <th className="py-3 px-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]">From</th>
+              <th className="py-3 px-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]">To</th>
+              <th className="py-3 px-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]">Amount Sent</th>
+              <th className="py-3 px-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]">Amount Received</th>
+              <th className="py-3 px-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]">Status</th>
+              <th className="py-3 px-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]">Date</th>
             </tr>
           </thead>
           <tbody>
@@ -150,12 +150,12 @@ const MoneyXTransactions = () => {
                     {tx.status || "Pending"}
                   </span>
                 </td>
-                <td className="py-4 px-4">
-                  <span className="text-sm dark:text-[#788099] text-gray-500">
+                <td className="py-4 px-4 border-b border-gray-200 dark:border-[#35353E]">
+                  <span className="text-sm sm:text-base text-gray-500 dark:text-[#A0A3BC]">
                     {tx.created_at
                       ? formatDistanceToNow(new Date(tx.created_at), {
-                          addSuffix: true,
-                        })
+                        addSuffix: true,
+                      })
                       : "-"}
                   </span>
                 </td>
