@@ -78,14 +78,14 @@ const extractPaymentInfo = (tx: any) => {
   };
 };
 
-const ExchangeTransactions = () => {
+const ExchangeTransactions = ({itemsPerPage=10}) => {
   const dispatch = useDispatch<AppDispatch>();
   const { t } = useDashboardI18n();
   const { transactions, loading, error } = useSelector(
     (state: RootState) => state.p2pTransactions
   );
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  // const itemsPerPage = 10;
   const containerRef = React.useRef<HTMLDivElement>(null);
 
   /* -------------------------- fetch data ----------------------------- */

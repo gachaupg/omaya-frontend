@@ -4,9 +4,9 @@
     "express": "Express",
     "expressChange": "Change",
     "exchange": "",
-    "p2pTrading": "P2P Trading",
-    "swapCrypto": "Swap Crypto",
-    "account": "Account",
+    "p2pTrading": "P2P",
+    "swapCrypto": "SWAP",
+    "account": "ACCOUNT",
     "notifications": "Notifications"
   },
   "userCard": {
@@ -33,7 +33,7 @@
     "types": {
       "deposit": "Deposit",
       "withdrawal": "Withdrawal",
-      "p2pBuy": "P2P Buy/Sell",
+      "p2pBuy": "P2P",
       "p2pSell": "P2P Sell",
       "swap": "Swap",
       "exchange": "Exchange"

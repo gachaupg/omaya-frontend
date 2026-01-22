@@ -656,7 +656,6 @@ export default function DepositForm({
     initialState?.walletAddress || ""
   );
   const [walletError, setWalletError] = useState<string | null>(null);
-  const [isAddressConfirmed, setIsAddressConfirmed] = useState(false);
   const [forceUpdate, setForceUpdate] = useState(0);
 
   // Get currency from selectedAsset for validation
@@ -677,7 +676,7 @@ export default function DepositForm({
   }, []);
 
   const currentCurrency = getCurrencyFromAsset(selectedAsset);
-  
+
   // Get network from selectedNetwork or selectedAsset
   const getCurrentNetwork = useCallback((): string | undefined => {
     if (selectedNetwork) {
@@ -688,7 +687,7 @@ export default function DepositForm({
     }
     return undefined;
   }, [selectedNetwork, selectedAsset]);
-  
+
   const currentNetwork = getCurrentNetwork();
 
   // Address validation hook
@@ -732,7 +731,6 @@ export default function DepositForm({
         );
       } else {
         setWalletError(null);
-        setIsAddressConfirmed(true);
       }
     } else if (addressValidationError) {
       setWalletError(addressValidationError);
@@ -2073,10 +2071,6 @@ export default function DepositForm({
     }
   }, [selectedAsset, walletAddress]);
 
-  useEffect(() => {
-    setIsAddressConfirmed(false);
-  }, [walletAddress]);
-
   // Clear validation errors when amount is cleared or form is reset
   useEffect(() => {
     if (!payAmount || payAmount === 0 || payAmountInput === "" || payAmountInput === "0") {
@@ -2102,7 +2096,6 @@ export default function DepositForm({
     isSubmitting ||
     !walletAddress.trim() ||
     !!walletError ||
-    !isAddressConfirmed ||
     !termsAccepted ||
     payAmount >= 15000 ||
     getAmount >= 15000;
@@ -2976,7 +2969,7 @@ export default function DepositForm({
   return (
     <div className="flex flex-col dark:bg-[var(--bg-color)] pl-0 sm:pl-4 pr-2 sm:pr-0 mr-0 sm:mr-40 w-full sm:max-w-5xl">
       <h2 className="text-xl font-bold mb-2 text-[#788099] dark:text-[#788099] inline-flex items-center gap-2">
-        
+
         {t("express.transactionInfo", "Transaction Info")}
       </h2>
 
@@ -3869,8 +3862,9 @@ export default function DepositForm({
                 </div>
               ) : (
                 <span className="flex items-center justify-center">
-                  <span className="text-base font-medium dark:text-white text-white">
-                    {t("express.express", "Express")}
+                  <span className="text-base font-semibold dark:text-white text-white">
+                    {/* {t("express.express", "Express")} */}
+                    E
                   </span>
                   <img
                     className="mt-2"
@@ -4369,7 +4363,6 @@ export default function DepositForm({
                   onChange={(e) => {
                     const value = e.target.value;
                     setWalletAddress(value);
-                    setIsAddressConfirmed(false);
                     setWalletError(null); // Clear error immediately for better UX
 
                     // Validate address in real-time using the validation hook
@@ -4432,7 +4425,6 @@ export default function DepositForm({
                   try {
                     const text = await navigator.clipboard.readText();
                     setWalletAddress(text);
-                    setIsAddressConfirmed(false);
                     // Trigger validation after pasting
                     if (text.trim()) {
                       validateAddress(text, currentCurrency, currentNetwork);
@@ -4496,17 +4488,7 @@ export default function DepositForm({
             )}
 
 
-            <label className="flex mb-2 sm:mb-4 items-center gap-2 mt-2 sm:mt-3 md:mt-4 text-sm text-[#35353e] dark:text-[#788099]">
-              <input
-                type="checkbox"
-                checked={isAddressConfirmed}
-                onChange={(event) =>
-                  setIsAddressConfirmed(event.target.checked)
-                }
-                className="w-4 h-4 rounded border-[#1D8751] text-[#1D8751] focus:ring-[#1D8751] accent-[#1D8751] cursor-pointer"
-              />
-              <span>{t("express.confirmWalletAddress", "I confirm that this wallet address is correct.")}</span>
-            </label>
+
 
             {/* {!walletAddress.trim() && (
               <p className="text-[#7e7e8f] dark:text-[#788099] text-sm mt-2 font-medium">
@@ -4515,7 +4497,7 @@ export default function DepositForm({
             )} */}
 
             {/* Terms and Conditions Summary */}
-            <div className="flex items-center mb-2">
+            <div className="flex items-center my-2">
               <span className="mr-2 text-[#1D8751]">
                 <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
                   <circle
@@ -4662,8 +4644,9 @@ export default function DepositForm({
                 </div>
               ) : (
                 <span className="flex items-center justify-center">
-                  <span className="text-base font-bold dark:text-white text-white">
-                    {t("express.express", "Express")}
+                  <span className="text-base font-semibold dark:text-white text-white">
+                    {/* {t("express.express", "Express")} */}
+                    E
                   </span>
                   <img
                     className="mt-2"
