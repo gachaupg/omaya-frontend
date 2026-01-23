@@ -133,27 +133,27 @@ const P2PTransactions = () => {
                 <span
                   className={
                     typeof transaction.type === "string" &&
-                    transaction.type === "buy"
+                      transaction.type === "buy"
                       ? "text-[#1D8751] font-semibold text-sm"
                       : "text-[#E23D3A] font-semibold text-sm"
                   }
                 >
                   {typeof transaction.type === "string"
                     ? transaction.type.charAt(0).toUpperCase() +
-                      transaction.type.slice(1)
+                    transaction.type.slice(1)
                     : ""}
                 </span>
               </div>
-              
+
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
                   <div className="text-xs text-gray-500 dark:text-[#A0A3BC] mb-1">Amount</div>
                   <div
-                    className="text-base font-bold"
+                    className="text-base sm:text-lg font-semibold"
                     style={{
                       color:
                         typeof transaction.type === "string" &&
-                        transaction.type === "buy"
+                          transaction.type === "buy"
                           ? "#1D8751"
                           : "#E23D3A",
                     }}
@@ -176,8 +176,8 @@ const P2PTransactions = () => {
                       )}
                     <span className="text-gray-900 dark:text-white text-sm">
                       {transaction.payment &&
-                      typeof transaction.payment === "object" &&
-                      "bank" in transaction.payment
+                        typeof transaction.payment === "object" &&
+                        "bank" in transaction.payment
                         ? transaction.payment.bank
                         : "N/A"}
                     </span>
@@ -201,12 +201,12 @@ const P2PTransactions = () => {
       <div className="hidden sm:block overflow-x-auto">
         <table className="min-w-full text-sm text-left bg-transparent">
           <thead>
-            <tr className="text-gray-600 dark:text-[#A0A3BC] border-b border-gray-200 dark:border-[#35353E]">
-              <th className="px-3 sm:px-4 lg:px-4 py-3 font-medium text-xs sm:text-sm">Asset</th>
-              <th className="px-3 sm:px-4 lg:px-4 py-3 font-medium text-xs sm:text-sm">Transaction Type</th>
-              <th className="px-3 sm:px-4 lg:px-4 py-3 font-medium text-xs sm:text-sm">Amount</th>
-              <th className="px-3 sm:px-4 lg:px-4 py-3 font-medium text-xs sm:text-sm">Payment Method</th>
-              <th className="px-3 sm:px-4 lg:px-4 py-3 font-medium text-xs sm:text-sm">When</th>
+            <tr className="border-b border-gray-200 dark:border-[#35353E]">
+              <th className="px-3 sm:px-4 lg:px-4 py-3 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]">Asset</th>
+              <th className="px-3 sm:px-4 lg:px-4 py-3 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]">Transaction Type</th>
+              <th className="px-3 sm:px-4 lg:px-4 py-3 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]">Amount</th>
+              <th className="px-3 sm:px-4 lg:px-4 py-3 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]">Payment Method</th>
+              <th className="px-3 sm:px-4 lg:px-4 py-3 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]">When</th>
             </tr>
           </thead>
           <tbody>
@@ -235,48 +235,47 @@ const P2PTransactions = () => {
                   className="border-b border-gray-200 dark:border-[#35353E] hover:bg-gray-50 dark:hover:bg-[#28293d] transition-colors"
                 >
                   {/* Asset */}
-                  <td className="px-3 sm:px-4 lg:px-4 py-3">
+                  <td className="px-3 sm:px-4 lg:px-4 py-3 border-b border-gray-200 dark:border-[#35353E]">
                     <div className="flex items-center gap-2 sm:gap-3">
-                    <img
-                      src={
-                        COIN_ICONS[transaction.assetSymbol] || COIN_ICONS.USDT
-                      }
-                      alt={transaction.assetSymbol}
+                      <img
+                        src={
+                          COIN_ICONS[transaction.assetSymbol] || COIN_ICONS.USDT
+                        }
+                        alt={transaction.assetSymbol}
                         className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white flex-shrink-0"
-                    />
+                      />
                       <div className="min-w-0">
-                        <div className="font-medium text-xs sm:text-sm lg:text-base text-gray-900 dark:text-white truncate">
-                        {transaction.assetSymbol}
-                      </div>
+                        <div className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white truncate">
+                          {transaction.assetSymbol}
+                        </div>
                         <div className="text-xs text-gray-500 dark:text-[#A0A3BC] truncate">
-                        {transaction.asset}
+                          {transaction.asset}
                         </div>
                       </div>
                     </div>
                   </td>
                   {/* Transaction Type */}
-                  <td className="px-3 sm:px-4 lg:px-4 py-3">
+                  <td className="px-3 sm:px-4 lg:px-4 py-3 border-b border-gray-200 dark:border-[#35353E]">
                     <span
-                      className={`text-xs sm:text-sm lg:text-base font-semibold ${
-                        typeof transaction.type === "string" &&
+                      className={`text-sm sm:text-base font-medium ${typeof transaction.type === "string" &&
                         transaction.type === "buy"
-                          ? "text-[#1D8751]"
-                          : "text-[#E23D3A]"
-                      }`}
+                        ? "text-[#1D8751]"
+                        : "text-[#E23D3A]"
+                        }`}
                     >
                       {typeof transaction.type === "string"
                         ? transaction.type.charAt(0).toUpperCase() +
-                          transaction.type.slice(1)
+                        transaction.type.slice(1)
                         : ""}
                     </span>
                   </td>
                   {/* Amount */}
                   <td
-                    className="px-3 sm:px-4 lg:px-4 py-3 text-sm sm:text-base lg:text-lg font-bold"
+                    className="px-3 sm:px-4 lg:px-4 py-3 border-b border-gray-200 dark:border-[#35353E] text-sm sm:text-base font-semibold"
                     style={{
                       color:
                         typeof transaction.type === "string" &&
-                        transaction.type === "buy"
+                          transaction.type === "buy"
                           ? "#1D8751"
                           : "#E23D3A",
                     }}
@@ -284,29 +283,29 @@ const P2PTransactions = () => {
                     ${transaction.amount}
                   </td>
                   {/* Payment Method */}
-                  <td className="px-3 sm:px-4 lg:px-4 py-3">
+                  <td className="px-3 sm:px-4 lg:px-4 py-3 border-b border-gray-200 dark:border-[#35353E]">
                     <div className="flex items-center gap-2 min-w-0">
-                    {transaction.payment &&
-                      typeof transaction.payment === "object" &&
-                      "logo" in transaction.payment &&
-                      transaction.payment.logo && (
-                        <img
-                          src={transaction.payment.logo}
-                          alt={transaction.payment.bank}
-                            className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white flex-shrink-0"
-                        />
-                      )}
-                      <span className="text-gray-900 dark:text-white text-xs sm:text-sm lg:text-base truncate">
                       {transaction.payment &&
-                      typeof transaction.payment === "object" &&
-                      "bank" in transaction.payment
-                        ? transaction.payment.bank
-                        : "N/A"}
-                    </span>
+                        typeof transaction.payment === "object" &&
+                        "logo" in transaction.payment &&
+                        transaction.payment.logo && (
+                          <img
+                            src={transaction.payment.logo}
+                            alt={transaction.payment.bank}
+                            className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white flex-shrink-0"
+                          />
+                        )}
+                      <span className="text-gray-900 dark:text-white text-sm sm:text-base truncate">
+                        {transaction.payment &&
+                          typeof transaction.payment === "object" &&
+                          "bank" in transaction.payment
+                          ? transaction.payment.bank
+                          : "N/A"}
+                      </span>
                     </div>
                   </td>
                   {/* When */}
-                  <td className="px-3 sm:px-4 lg:px-4 py-3 text-xs sm:text-sm text-gray-500 dark:text-[#A0A3BC]">
+                  <td className="px-3 sm:px-4 lg:px-4 py-3 border-b border-gray-200 dark:border-[#35353E] text-sm sm:text-base text-gray-500 dark:text-[#A0A3BC]">
                     {formatDistanceToNow(new Date(transaction.date), {
                       addSuffix: true,
                     })}
@@ -317,7 +316,7 @@ const P2PTransactions = () => {
           </tbody>
         </table>
       </div>
-      
+
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex justify-center items-center gap-1 sm:gap-2 mt-4 flex-wrap">
@@ -340,11 +339,10 @@ const P2PTransactions = () => {
                 e.stopPropagation();
                 setPage(idx + 1);
               }}
-              className={`px-2 sm:px-3 py-1.5 sm:py-1 rounded-full border text-xs sm:text-sm min-h-[44px] sm:min-h-0 lg:min-h-0 ${
-                page === idx + 1
-                  ? "bg-[#1D8751] text-white border-[#1D8751]"
-                  : "border-[#35353E] text-gray-600 dark:text-[#A0A3BC] bg-white dark:bg-[#23232b] hover:bg-gray-100 dark:hover:bg-[#35353E]"
-              } transition`}
+              className={`px-2 sm:px-3 py-1.5 sm:py-1 rounded-full border text-xs sm:text-sm min-h-[44px] sm:min-h-0 lg:min-h-0 ${page === idx + 1
+                ? "bg-[#1D8751] text-white border-[#1D8751]"
+                : "border-[#35353E] text-gray-600 dark:text-[#A0A3BC] bg-white dark:bg-[#23232b] hover:bg-gray-100 dark:hover:bg-[#35353E]"
+                } transition`}
             >
               {idx + 1}
             </button>

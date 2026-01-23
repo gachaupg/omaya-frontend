@@ -87,7 +87,7 @@ const Transactions = () => {
   };
 
   return (
-    <div className="bg-card border border-[#E8EFF5] dark:border-[#35353E] rounded-xl sm:rounded-xl lg:rounded-2xl p-3 sm:p-4 lg:p-4 overflow-hidden">
+    <div className="bg-card border border-[#E8EFF5] dark:border-accent rounded-xl sm:rounded-xl lg:rounded-2xl p-3 sm:p-4 lg:p-4 overflow-hidden">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-4 lg:mb-4 gap-3 sm:gap-4 lg:gap-4">
         <h2 className="text-lg sm:text-xl lg:text-2xl font-semibold dark:text-white text-[#0D0D0D]">
           {t("transactions.title", "Recent Transactions")}

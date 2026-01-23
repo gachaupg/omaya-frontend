@@ -132,7 +132,7 @@ const SwapTransactions = () => {
                 {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}
               </span>
             </div>
-            
+
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div>
                 <div className="text-xs text-[#788099] mb-1">From Amount</div>
@@ -161,77 +161,77 @@ const SwapTransactions = () => {
 
       {/* Desktop Table Layout */}
       <div className="hidden sm:block overflow-x-auto">
-      <table className="w-full">
-        <thead>
-          <tr className="border-b border-[#E8EFF5] dark:border-[#35353E]">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-[#E8EFF5] dark:border-[#35353E]">
               <th className="text-left py-3 px-3 sm:px-4 text-xs sm:text-sm font-medium text-[#788099]">
-              Transaction
-            </th>
+                Transaction
+              </th>
               <th className="text-left py-3 px-3 sm:px-4 text-xs sm:text-sm font-medium text-[#788099]">
-              Amount
-            </th>
+                Amount
+              </th>
               <th className="text-left py-3 px-3 sm:px-4 text-xs sm:text-sm font-medium text-[#788099]">
-              Status
-            </th>
+                Status
+              </th>
               <th className="text-left py-3 px-3 sm:px-4 text-xs sm:text-sm font-medium text-[#788099]">
-              Date
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.data.map((transaction: SwapTransaction) => (
-            <tr
-              key={transaction.id}
-              className="border-b border-[#E8EFF5] dark:border-[#35353E] hover:bg-[#F5F5F5] dark:hover:bg-[#23232B] transition-colors"
-            >
+                Date
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.data.map((transaction: SwapTransaction) => (
+              <tr
+                key={transaction.id}
+                className="border-b border-[#E8EFF5] dark:border-[#35353E] hover:bg-[#F5F5F5] dark:hover:bg-[#23232B] transition-colors"
+              >
                 <td className="py-3 sm:py-4 px-3 sm:px-4">
                   <div className="flex items-center gap-2 sm:gap-3">
-                  <img
-                    src={transaction.from_currency_image}
-                    alt={transaction.from_currency}
+                    <img
+                      src={transaction.from_currency_image}
+                      alt={transaction.from_currency}
                       className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex-shrink-0"
-                    onError={(e) => {
-                      e.currentTarget.src = "/images/placeholder.svg";
-                    }}
-                  />
+                      onError={(e) => {
+                        e.currentTarget.src = "/images/placeholder.svg";
+                      }}
+                    />
                     <div className="min-w-0">
                       <div className="font-medium text-xs sm:text-sm lg:text-base text-[#0D0D0D] dark:text-white truncate">
-                      {transaction.from_currency.toUpperCase()} → {transaction.to_currency.toUpperCase()}
-                    </div>
+                        {transaction.from_currency.toUpperCase()} → {transaction.to_currency.toUpperCase()}
+                      </div>
                       <div className="text-xs text-[#788099] truncate">
-                      {transaction.from_network.toUpperCase()} → {transaction.to_network.toUpperCase()}
+                        {transaction.from_network.toUpperCase()} → {transaction.to_network.toUpperCase()}
+                      </div>
                     </div>
                   </div>
-                </div>
-              </td>
+                </td>
                 <td className="py-3 sm:py-4 px-3 sm:px-4">
                   <div className="text-[#0D0D0D] dark:text-white font-medium text-xs sm:text-sm lg:text-base">
-                  {parseFloat(transaction.amount_expected_from).toFixed(6)} {transaction.from_currency.toUpperCase()}
-                </div>
-                <div className="text-xs text-[#788099]">
-                  ≈ {parseFloat(transaction.amount_expected_to).toFixed(2)} {transaction.to_currency.toUpperCase()}
-                </div>
-              </td>
+                    {parseFloat(transaction.amount_expected_from).toFixed(6)} {transaction.from_currency.toUpperCase()}
+                  </div>
+                  <div className="text-xs text-[#788099]">
+                    ≈ {parseFloat(transaction.amount_expected_to).toFixed(2)} {transaction.to_currency.toUpperCase()}
+                  </div>
+                </td>
                 <td className="py-3 sm:py-4 px-3 sm:px-4">
-                <span
+                  <span
                     className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                    transaction.status
-                  )}`}
-                >
-                  {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}
-                </span>
-              </td>
-                <td className="py-3 sm:py-4 px-3 sm:px-4 text-xs sm:text-sm text-[#788099]">
-                {formatDistanceToNow(new Date(transaction.created_at), {
-                  addSuffix: true,
-                })}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+                      transaction.status
+                    )}`}
+                  >
+                    {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}
+                  </span>
+                </td>
+                <td className="py-3 sm:py-4 px-3 sm:px-4 border-b border-[#E8EFF5] dark:border-[#35353E] text-xs sm:text-sm text-gray-500 dark:text-[#A0A3BC]">
+                  {formatDistanceToNow(new Date(transaction.created_at), {
+                    addSuffix: true,
+                  })}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
-      
+
       {/* Pagination */}
       {data.pages > 1 && (
         <div className="flex flex-col sm:flex-row items-center justify-between mt-4 pt-4 border-t border-[#E8EFF5] dark:border-[#35353E] gap-3 sm:gap-0">
