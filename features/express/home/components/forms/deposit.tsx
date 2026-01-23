@@ -3491,10 +3491,10 @@ export default function DepositForm({
                     <span>Posting...</span>
                   </div>
                 ) : (
-                  <span className="flex items-center justify-center gap-2">
-                    <span className="text-base font-medium text-white">Express</span>
+                  <span className="flex items-center justify-center">
+                    <span className="text-base font-semibold text-white">E</span>
                   <img
-                    className="h-5 w-auto mt-3"
+                    className="h-5 w-auto mt-2"
                       src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
                       alt="Express icon"
                     />

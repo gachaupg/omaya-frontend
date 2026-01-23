@@ -114,6 +114,16 @@ const Transactions = () => {
             {t("transactions.types.p2pBuy", "P2P")}
           </button>
           <button
+            onClick={() => setActiveTab("moneyx")}
+            className={`${
+              activeTab === "moneyx"
+                ? "bg-[#1D8751] text-white"
+                : "border border-[#1D8751] text-[#1D8751] dark:text-[#1D8751]"
+            } px-3 sm:px-4 lg:px-6 py-2 rounded-full font-medium text-xs sm:text-sm lg:text-base min-h-[44px] sm:min-h-0 lg:min-h-0 flex items-center justify-center transition-colors`}
+          >
+            {t("transactions.types.moneyx", "MoneyX")}
+          </button>
+          <button
             onClick={() => setActiveTab("swap")}
             className={`${
               activeTab === "swap"
@@ -133,16 +143,7 @@ const Transactions = () => {
           >
             {t("transactions.types.p2pWithdrawalDeposit", "P2P Withdrawal/Deposit")}
           </button>
-          <button
-            onClick={() => setActiveTab("moneyx")}
-            className={`${
-              activeTab === "moneyx"
-                ? "bg-[#1D8751] text-white"
-                : "border border-[#1D8751] text-[#1D8751] dark:text-[#1D8751]"
-            } px-3 sm:px-4 lg:px-6 py-2 rounded-full font-medium text-xs sm:text-sm lg:text-base min-h-[44px] sm:min-h-0 lg:min-h-0 flex items-center justify-center transition-colors`}
-          >
-            {t("transactions.types.moneyx", "MoneyX")}
-          </button>
+          
         </div>
       </div>
       {renderContent()}
