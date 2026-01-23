@@ -899,9 +899,8 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
     !selectedToPaymentDetail;
 
   return (
-    <div className="flex flex-col dark:bg-(--bg-color) pl-0 sm:pl-4 pr-2 sm:pr-0 mr-0 sm:mr-40 w-full sm:max-w-5xl">
+    <div className="flex flex-col dark:bg-(--bg-color) pl-0 sm:pl-4 pr-2 sm:pr-0 w-full sm:max-w-3xl mx-auto">
       <h2 className="text-lg sm:text-xl font-bold mb-1 sm:mb-2 text-[#788099] dark:text-[#788099] inline-flex items-center gap-2">
-        <span className="text-[#7e7e8f] dark:text-[#788099]">1-</span>
         Transfer Information
       </h2>
 
@@ -1165,7 +1164,6 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
         <>
           {/* Bank Account Address Section */}
           <h2 className="text-xl font-bold mb-2 text-[#788099] dark:text-[#788099] inline-flex items-center gap-2">
-            <span className="text-[#7e7e8f] dark:text-[#788099]">2-</span>
             Bank Account Address
           </h2>
           <div

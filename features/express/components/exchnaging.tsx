@@ -1713,66 +1713,58 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
             )}
           </div>
           {/* To */}
-          <div className="flex items-center gap-2 min-w-0 flex-1 sm:flex-initial sm:justify-end">
+          <div className="flex flex-col items-start sm:items-end gap-2 min-w-0 flex-1 sm:flex-initial">
             {effectiveTransactionData?.type === "deposit" ? (
               <>
-                <img
-                  src={
-                    effectiveTransactionData?.asset?.icon ||
-                    effectiveTransactionData?.asset?.icon_url ||
-                    effectiveTransactionData?.asset?.image_url ||
-                    effectiveTransactionData?.asset?.image ||
-                    "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
-                  }
-                  alt={
-                    effectiveTransactionData?.asset?.symbol ||
-                    (effectiveTransactionData?.type === "deposit"
-                      ? "USD"
-                      : effectiveTransactionData?.type === "withdrawal"
+                {/* Asset info row - logo, name, network */}
+                <div className="flex items-center gap-2">
+                  <img
+                    src={
+                      effectiveTransactionData?.asset?.icon ||
+                      effectiveTransactionData?.asset?.icon_url ||
+                      effectiveTransactionData?.asset?.image_url ||
+                      effectiveTransactionData?.asset?.image ||
+                      "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                    }
+                    alt={
+                      effectiveTransactionData?.asset?.symbol ||
+                      (effectiveTransactionData?.type === "deposit"
                         ? "USD"
-                        : "USDT")
-                  }
-                  className="w-8 h-8 rounded-full flex-shrink-0"
-                  onError={(e) => {
-                    e.currentTarget.src =
-                      "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
-                  }}
-                />
-                <div className="text-left sm:text-right min-w-0 flex-1">
-                  <div className="flex items-center gap-1 flex-wrap sm:justify-end">
-                    <div
-                      className={`${
-                        isDark ? "text-white" : "text-gray-900"
-                      } text-sm sm:text-base font-semibold truncate`}
-                    >
-                      {effectiveTransactionData?.asset?.ticker ||
-                        effectiveTransactionData?.asset?.symbol ||
-                        effectiveTransactionData?.asset?.name ||
-                        (effectiveTransactionData?.type === "deposit"
+                        : effectiveTransactionData?.type === "withdrawal"
                           ? "USD"
-                          : effectiveTransactionData?.type === "withdrawal"
-                            ? "USD"
-                            : "USDT")}
-                    </div>
-                    {effectiveTransactionData?.asset?.description && (
-                      <span
-                        className={`${
-                          isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                        } text-xs sm:text-sm font-normal truncate`}
-                      >
-                        {effectiveTransactionData?.asset?.description}
-                      </span>
-                    )}
-                  </div>
+                          : "USDT")
+                    }
+                    className="w-8 h-8 rounded-full flex-shrink-0"
+                    onError={(e) => {
+                      e.currentTarget.src =
+                        "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                    }}
+                  />
                   <div
                     className={`${
-                      isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                    } text-xs sm:text-sm font-mono break-all mt-0.5 max-w-[200px] sm:max-w-[250px] leading-tight`}
-                    style={{ wordBreak: 'break-all', lineHeight: '1.3' }}
+                      isDark ? "text-white" : "text-gray-900"
+                    } text-sm sm:text-base font-semibold`}
                   >
-                    {effectiveTransactionData?.walletAddress ||
-                      "TQn9Y2khEsLJW1ChVWFM...RDow5oRP7bX"}
+                    {effectiveTransactionData?.asset?.ticker ||
+                      effectiveTransactionData?.asset?.symbol ||
+                      effectiveTransactionData?.asset?.name ||
+                      "USDT"}
                   </div>
+                  {effectiveTransactionData?.network?.network_type && (
+                    <span className="bg-[#1D8751] text-white text-xs px-2 py-0.5 rounded-full font-medium">
+                      {effectiveTransactionData?.network?.network_type}
+                    </span>
+                  )}
+                </div>
+                {/* Address row - below asset info */}
+                <div
+                  className={`${
+                    isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                  } text-xs sm:text-sm font-mono break-all max-w-[200px] sm:max-w-[300px] leading-tight text-left sm:text-right`}
+                  style={{ wordBreak: 'break-all', lineHeight: '1.3' }}
+                >
+                  {effectiveTransactionData?.walletAddress ||
+                    "TQn9Y2khEsLJW1ChVWFM...RDow5oRP7bX"}
                 </div>
               </>
             ) : (
