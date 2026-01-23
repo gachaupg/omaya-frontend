@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import {ArrowLeft} from "lucide-react";
 
 type PolicyConfig = {
   title: string;
@@ -179,9 +180,14 @@ export default async function LegalPolicyPage({ params }: PolicyPageProps) {
     notFound();
   }
 
+
   return (
     <div className="min-h-screen bg-[#EEF1F4] dark:bg-[#18181D] pt-32 pb-16 px-4">
-      <div className="max-w-4xl mx-auto bg-white dark:bg-[#18181D] rounded-3xl shadow-xl border border-gray-200 dark:border-[#35353E] p-8 md:p-12">
+      <div className="max-w-4xl mx-auto bg-white dark:bg-[#18181D] rounded-3xl shadow-xl border border-gray-200 dark:border-accent p-8 md:p-12">
+        <a className="inline-block mb-2" href="/">
+          <ArrowLeft className="text-muted-foreground cursor-pointer" size={20} />
+        </a>
+
         <header className="mb-8">
           <p className="text-sm text-[#1D8751] font-semibold uppercase tracking-wide">
             Legal Policy

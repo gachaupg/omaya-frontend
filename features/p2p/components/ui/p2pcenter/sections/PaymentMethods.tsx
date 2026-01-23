@@ -785,7 +785,7 @@ const PaymentMethods = () => {
           <div className="border-t border-gray-200 dark:border-[#35353E] my-6" />
 
           {/* Mobile Money Section */}
-          <div className="mb-6">
+          <div className="mb-6 mx-4">
             <div className="flex items-center justify-between mb-4">
               <h4 className="text-lg font-semibold text-gray-900 dark:text-white">Mobile Money</h4>
             </div>
@@ -815,7 +815,7 @@ const PaymentMethods = () => {
       )}
 
       {/* Update Button */}
-      <div className="mt-8 w-full">
+      <div className="mt-8 mx-4">
         <Button
           height={44}
           borderRadius={24}
