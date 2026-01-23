@@ -1696,12 +1696,6 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
             <div className="flex flex-col sm:flex-row gap-6">
               {/* Amount Section */}
               <div className="flex-1 min-w-0">
-                <label
-                  className={`block text-[15px] mb-2 font-semibold ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"
-                    }`}
-                >
-                  {t("rates.amount", "Amount")}
-                </label>
               <div className="relative">
                 <input
                   type="text"
@@ -1997,12 +1991,6 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
             <div className="flex flex-col sm:flex-row gap-6">
             {/* You Get Section */}
             <div className="flex-1 min-w-0">
-              <label
-                className={`block text-[15px] mb-2 font-semibold ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"
-                  }`}
-              >
-                {t("rates.amount", "Amount")}
-              </label>
               <div className="relative">
                 <input
                   type="text"
@@ -2334,16 +2322,6 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                   : amountNum > 0 ? `$${commissionAmount.toFixed(2)}` : "$0.00"}
               </span>
             </div>
-            <div className="flex justify-between text-sm mb-1">
-              <span className={isDark ? "text-[#E8EFF5]" : "text-[#051015]"}>
-                {t("rates.networkFee", "Network Fee:")}
-              </span>
-              <span className="text-[#1D8751]">
-                {selectedAsset && !isSimpleCalculationAsset(selectedAsset) && estimate?.network_fee
-                  ? `$${estimate.network_fee}`
-                  : amountNum > 0 ? `$${networkFee.toFixed(2)}` : "$0.00"}
-              </span>
-            </div>
             <div className={`border-t ${isDark ? "border-[#35353E]" : "border-[#E8EFF5]"} mt-2 pt-2 flex justify-between text-sm`}>
               <span className="text-[#F79330] font-semibold">
                 {t("rates.totalFees", "Total Fees")}
@@ -2351,7 +2329,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
               <span className="text-[#F79330] font-semibold">
                 {selectedAsset && !isSimpleCalculationAsset(selectedAsset) && estimate?.total_fee
                   ? `$${estimate.total_fee}`
-                  : amountNum > 0 ? `$${totalFees.toFixed(2)}` : "$0.00"}
+                  : amountNum > 0 ? `$${commissionAmount.toFixed(2)}` : "$0.00"}
               </span>
             </div>
           </div>

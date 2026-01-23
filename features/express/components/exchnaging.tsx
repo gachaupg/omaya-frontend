@@ -959,23 +959,23 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                   <>
                     <div
                       className={`${
-                        isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                      } text-xs font-semibold mb-0.5 mt-3`}
+                        isDark ? "text-[#1D8751]" : "text-[#1D8751]"
+                      } text-sm font-semibold mb-1 mt-3`}
                     >
-                      Wallet Address:
+                      USDT Wallet Address:
                     </div>
-                    <div className="flex items-center mb-2">
+                    <div className="flex items-center mb-2 p-2 rounded-lg border border-[#1D8751]/30 bg-[#1D8751]/5">
                       <span
                         className={`${
                           isDark ? "text-white" : "text-gray-900"
-                        } text-sm font-mono bg-gray-500/10 px-2 py-1 rounded text-xs break-all max-w-[200px] sm:max-w-[300px] leading-tight inline-block`}
-                        style={{ wordBreak: 'break-all', lineHeight: '1.3' }}
+                        } text-sm font-mono break-all flex-1 leading-relaxed`}
+                        style={{ wordBreak: 'break-all', lineHeight: '1.5' }}
                       >
                         {effectiveTransactionData.walletAddress}
                       </span>
                       <CopyButton
                         value={effectiveTransactionData.walletAddress}
-                        className="ml-2"
+                        className="ml-2 flex-shrink-0"
                       />
                     </div>
                   </>
@@ -1116,9 +1116,9 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
         </div>
       </div>
 
-      <div className="flex items-center justify-between w-full max-w-4xl mb-2 sm:mb-4 relative">
+      <div className="flex items-center justify-between w-full max-w-4xl mb-2 sm:mb-4 relative px-2 sm:px-0 overflow-x-auto">
         {/* Connecting Lines */}
-        <div className="absolute top-5 left-[12.5%] right-[12.5%] h-0.5 z-0">
+        <div className="absolute top-5 left-[12.5%] right-[12.5%] h-0.5 z-0 hidden sm:block">
           <div
             className={`h-0.5 transition-all duration-500 ${
               currentStatus === "completed" || currentStatus === "finished"
@@ -1138,9 +1138,9 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
         </div>
 
         {/* Step 1: Awaiting Deposit */}
-        <div className="flex flex-col items-center flex-1 relative z-10">
+        <div className="flex flex-col items-center flex-1 relative z-10 min-w-[70px] sm:min-w-0">
           <div
-            className={`w-10 h-10 rounded-full flex items-center justify-center mb-1 border-4 ${
+            className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center mb-1 border-2 sm:border-4 ${
               currentStatus === "pending" ||
               currentStatus === "waiting" ||
               !shouldUseWebSocket
@@ -1154,7 +1154,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                   : "bg-[#23232B] border-[#35353E]"
             }`}
           >
-            <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
+            <svg width="20" height="20" className="sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24">
               <circle
                 cx="12"
                 cy="12"
@@ -1194,9 +1194,9 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               />
             </svg>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5 sm:gap-1 flex-wrap justify-center">
             <span
-              className={`font-semibold text-base ${
+              className={`font-semibold text-[10px] sm:text-base text-center ${
                 currentStatus === "pending" ||
                 currentStatus === "waiting" ||
                 !shouldUseWebSocket
@@ -1210,22 +1210,23 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                     : "text-[#7B7B7B]"
               }`}
             >
-              Awaiting Deposit
+              <span className="hidden sm:inline">Awaiting Deposit</span>
+              <span className="sm:hidden">Awaiting</span>
             </span>
             {(currentStatus === "pending" ||
               currentStatus === "waiting" ||
               !shouldUseWebSocket) && (
-              <div className="flex gap-1">
+              <div className="flex gap-0.5 sm:gap-1">
                 <span
-                  className="w-2 h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
+                  className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
                   style={{ animationDelay: "0ms" }}
                 ></span>
                 <span
-                  className="w-2 h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
+                  className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
                   style={{ animationDelay: "150ms" }}
                 ></span>
                 <span
-                  className="w-2 h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
+                  className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
                   style={{ animationDelay: "300ms" }}
                 ></span>
               </div>
@@ -1250,9 +1251,9 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
           </div>
         </div>
         {/* Step 2: Confirming */}
-        <div className="flex flex-col items-center flex-1 relative z-10">
+        <div className="flex flex-col items-center flex-1 relative z-10 min-w-[70px] sm:min-w-0">
           <div
-            className={`w-10 h-10 rounded-full flex items-center justify-center mb-1 border-4 ${
+            className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center mb-1 border-2 sm:border-4 ${
               currentStatus === "confirming"
                 ? "bg-[#FF9500] border-[#FF95001A]"
                 : currentStatus === "exchanging" ||
@@ -1263,7 +1264,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                   : `${isDark ? "bg-[#23232B] border-[#35353E]" : "bg-gray-200 border-gray-300"}`
             }`}
           >
-            <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
+            <svg width="20" height="20" className="sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24">
               <circle
                 cx="12"
                 cy="12"
@@ -1296,9 +1297,9 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               />
             </svg>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5 sm:gap-1 flex-wrap justify-center">
             <span
-              className={`font-semibold text-base ${
+              className={`font-semibold text-[10px] sm:text-base text-center ${
                 currentStatus === "confirming"
                   ? "text-[#FF9500]"
                   : currentStatus === "exchanging" ||
@@ -1312,17 +1313,17 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               Confirming
             </span>
             {currentStatus === "confirming" && (
-              <div className="flex gap-1">
+              <div className="flex gap-0.5 sm:gap-1">
                 <span
-                  className="w-2 h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
+                  className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
                   style={{ animationDelay: "0ms" }}
                 ></span>
                 <span
-                  className="w-2 h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
+                  className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
                   style={{ animationDelay: "150ms" }}
                 ></span>
                 <span
-                  className="w-2 h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
+                  className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
                   style={{ animationDelay: "300ms" }}
                 ></span>
               </div>
@@ -1346,9 +1347,9 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
           </div>
         </div>
         {/* Step 3: Exchanging */}
-        <div className="flex flex-col items-center flex-1 relative z-10">
+        <div className="flex flex-col items-center flex-1 relative z-10 min-w-[70px] sm:min-w-0">
           <div
-            className={`w-10 h-10 rounded-full flex items-center justify-center mb-1 border-4 ${
+            className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center mb-1 border-2 sm:border-4 ${
               currentStatus === "exchanging"
                 ? "bg-[#FF9500] border-[#FF95001A]"
                 : currentStatus === "sending" ||
@@ -1358,7 +1359,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                   : "bg-[#23232B] border-[#35353E]"
             }`}
           >
-            <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
+            <svg width="20" height="20" className="sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24">
               <circle
                 cx="12"
                 cy="12"
@@ -1388,9 +1389,9 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               />
             </svg>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5 sm:gap-1 flex-wrap justify-center">
             <span
-              className={`font-semibold text-base ${
+              className={`font-semibold text-[10px] sm:text-base text-center ${
                 currentStatus === "exchanging"
                   ? "text-[#FF9500]"
                   : currentStatus === "sending" ||
@@ -1403,17 +1404,17 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               Exchanging
             </span>
             {currentStatus === "exchanging" && (
-              <div className="flex gap-1">
+              <div className="flex gap-0.5 sm:gap-1">
                 <span
-                  className="w-2 h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
+                  className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
                   style={{ animationDelay: "0ms" }}
                 ></span>
                 <span
-                  className="w-2 h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
+                  className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
                   style={{ animationDelay: "150ms" }}
                 ></span>
                 <span
-                  className="w-2 h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
+                  className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
                   style={{ animationDelay: "300ms" }}
                 ></span>
               </div>
@@ -1436,9 +1437,9 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
           </div>
         </div>
         {/* Step 4: Sending to you */}
-        <div className="flex flex-col items-center flex-1 relative z-10">
+        <div className="flex flex-col items-center flex-1 relative z-10 min-w-[70px] sm:min-w-0">
           <div
-            className={`w-10 h-10 rounded-full flex items-center justify-center mb-1 border-4 ${
+            className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center mb-1 border-2 sm:border-4 ${
               currentStatus === "sending"
                 ? "bg-[#FF9500] border-[#FF95001A]"
                 : currentStatus === "completed" || currentStatus === "finished"
@@ -1446,7 +1447,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                   : "bg-[#23232B] border-[#35353E]"
             }`}
           >
-            <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
+            <svg width="20" height="20" className="sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24">
               <circle
                 cx="12"
                 cy="12"
@@ -1476,9 +1477,9 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               />
             </svg>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5 sm:gap-1 flex-wrap justify-center">
             <span
-              className={`font-semibold text-base ${
+              className={`font-semibold text-[10px] sm:text-base text-center ${
                 currentStatus === "sending"
                   ? "text-[#FF9500]"
                   : currentStatus === "completed" ||
@@ -1488,21 +1489,21 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               }`}
             >
               {currentStatus === "completed"
-                ? "Transaction Completed"
-                : "Sending to you"}
+                ? <><span className="hidden sm:inline">Transaction Completed</span><span className="sm:hidden">Complete</span></>
+                : <><span className="hidden sm:inline">Sending to you</span><span className="sm:hidden">Sending</span></>}
             </span>
             {currentStatus === "sending" && (
-              <div className="flex gap-1">
+              <div className="flex gap-0.5 sm:gap-1">
                 <span
-                  className="w-2 h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
+                  className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
                   style={{ animationDelay: "0ms" }}
                 ></span>
                 <span
-                  className="w-2 h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
+                  className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
                   style={{ animationDelay: "150ms" }}
                 ></span>
                 <span
-                  className="w-2 h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
+                  className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
                   style={{ animationDelay: "300ms" }}
                 ></span>
               </div>

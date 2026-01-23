@@ -277,6 +277,7 @@ export const dateOptions = [
   { value: "today", label: "Today" },
   { value: "week", label: "This Week" },
   { value: "month", label: "This Month" },
+  { value: "custom", label: "Custom Range" },
 ];
 
 // P2P transaction history data

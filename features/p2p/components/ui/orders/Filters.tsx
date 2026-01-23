@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import Button from "@/features/p2p/components/Common/Button";
 import {
   orderStatusTabs,
@@ -18,12 +18,16 @@ interface FiltersProps {
     status: string;
     date: string;
     currency: string;
+    customDateFrom?: string;
+    customDateTo?: string;
   };
   onFilterChange: (filters: {
     type: string;
     status: string;
     date: string;
     currency: string;
+    customDateFrom?: string;
+    customDateTo?: string;
   }) => void;
   loading?: boolean;
   orderStatusTabs: Array<{ id: string; label: string; count?: number }>;
@@ -45,6 +49,10 @@ const Filters: React.FC<FiltersProps> = ({
   showUnreadMessages = false,
   totalUnreadCount = 0,
 }) => {
+  const [showCustomDatePicker, setShowCustomDatePicker] = useState(false);
+  const [customDateFrom, setCustomDateFrom] = useState(filters.customDateFrom || "");
+  const [customDateTo, setCustomDateTo] = useState(filters.customDateTo || "");
+
   const handleTypeChange = (value: string) => {
     if (loading) return;
     onFilterChange({ ...filters, type: value });
@@ -57,7 +65,24 @@ const Filters: React.FC<FiltersProps> = ({
 
   const handleDateChange = (value: string) => {
     if (loading) return;
-    onFilterChange({ ...filters, date: value });
+    if (value === "custom") {
+      setShowCustomDatePicker(true);
+    } else {
+      setShowCustomDatePicker(false);
+      onFilterChange({ ...filters, date: value, customDateFrom: undefined, customDateTo: undefined });
+    }
+  };
+
+  const handleCustomDateApply = () => {
+    if (customDateFrom && customDateTo) {
+      onFilterChange({ 
+        ...filters, 
+        date: "custom", 
+        customDateFrom: customDateFrom,
+        customDateTo: customDateTo 
+      });
+      setShowCustomDatePicker(false);
+    }
   };
 
   const handleCurrencyChange = (value: string) => {
@@ -428,6 +453,51 @@ const Filters: React.FC<FiltersProps> = ({
           </div>
         </div>
       </div>
+      
+      {/* Custom Date Range Picker */}
+      {showCustomDatePicker && (
+        <div className="mt-3 p-4 rounded-xl bg-white dark:bg-[var(--card-color)] border border-gray-200 dark:border-[#35353E] shadow-lg">
+          <div className="flex flex-col sm:flex-row gap-3 items-end">
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                From Date
+              </label>
+              <input
+                type="date"
+                value={customDateFrom}
+                onChange={(e) => setCustomDateFrom(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#1D1D23] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1D8751]"
+              />
+            </div>
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                To Date
+              </label>
+              <input
+                type="date"
+                value={customDateTo}
+                onChange={(e) => setCustomDateTo(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#1D1D23] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1D8751]"
+              />
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowCustomDatePicker(false)}
+                className="px-4 py-2 rounded-lg border border-gray-300 dark:border-[#35353E] text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#35353E] transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCustomDateApply}
+                disabled={!customDateFrom || !customDateTo}
+                className="px-4 py-2 rounded-lg bg-[#1D8751] text-white hover:bg-[#16663d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Apply
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

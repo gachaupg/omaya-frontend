@@ -44,12 +44,13 @@ const TradePreview: React.FC<TradePreviewProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [sendAmount, setSendAmount] = useState("");
   const [receiveAmount, setReceiveAmount] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<string[]>([]);
+  const [paymentMethod, setPaymentMethod] = useState<string>("");
   const [isPaymentDropdownOpen, setIsPaymentDropdownOpen] = useState(false);
   const [isAmountValid, setIsAmountValid] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
   const [numericAmount, setNumericAmount] = useState(0);
   const [imageError, setImageError] = useState(false);
+  const [paymentSearchTerm, setPaymentSearchTerm] = useState("");
 
   const paymentDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -94,10 +95,17 @@ const TradePreview: React.FC<TradePreviewProps> = ({
   }, [paymentDetails]);
 
   const selectedPaymentSummary = React.useMemo(() => {
-    if (paymentMethod.length === 0) return "Select payment methods";
-    if (paymentMethod.length <= 2) return paymentMethod.join(", ");
-    return `${paymentMethod.length} methods selected`;
+    if (!paymentMethod) return "Select payment method";
+    return paymentMethod;
   }, [paymentMethod]);
+
+  // Filter payment options based on search term
+  const filteredPaymentOptions = React.useMemo(() => {
+    if (!paymentSearchTerm.trim()) return paymentOptions;
+    return paymentOptions.filter((opt) =>
+      opt.label.toLowerCase().includes(paymentSearchTerm.toLowerCase())
+    );
+  }, [paymentOptions, paymentSearchTerm]);
 
   // Close payment dropdown on outside click
   useEffect(() => {
@@ -279,7 +287,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
   };
 
   const isFormValid = () => {
-    if (!sendAmount || paymentMethod.length === 0) {
+    if (!sendAmount || !paymentMethod) {
       return false;
     }
     return isAmountValid;
@@ -290,9 +298,9 @@ const TradePreview: React.FC<TradePreviewProps> = ({
       if (!sendAmount) {
         setErrorMessage("Please enter an amount");
         showToast.error("Validation Error", "Please enter an amount");
-      } else if (paymentMethod.length === 0) {
-        setErrorMessage("Please select at least one payment method");
-        showToast.error("Validation Error", "Please select at least one payment method");
+      } else if (!paymentMethod) {
+        setErrorMessage("Please select a payment method");
+        showToast.error("Validation Error", "Please select a payment method");
       }
       return;
     }
@@ -548,42 +556,60 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                   </svg>
                 </button>
                 {isPaymentDropdownOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-2 rounded-xl border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] shadow-lg z-20 max-h-60 overflow-y-auto">
-                    {paymentOptions.length === 0 ? (
-                      <div className="px-4 py-3 text-sm text-gray-500 dark:text-[#788099]">
-                        No payment methods available
-                      </div>
-                    ) : (
-                      paymentOptions.map((opt) => {
-                        const isSelected = paymentMethod.includes(opt.value);
-                        return (
-                          <button
-                            key={opt.id}
-                            type="button"
-                            onClick={() => {
-                              setPaymentMethod((prev) =>
-                                prev.includes(opt.value)
-                                  ? prev.filter((m) => m !== opt.value)
-                                  : [...prev, opt.value]
-                              );
-                            }}
-                            className={`w-full flex items-center gap-3 px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-[#35353E] ${
-                              isSelected
-                                ? "text-gray-900 dark:text-white"
-                                : "text-gray-700 dark:text-[#C7CAD1]"
-                            }`}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              readOnly
-                              className="w-4 h-4 text-[#1D8751] border-gray-300 rounded focus:ring-[#1D8751] cursor-pointer"
-                            />
-                            <span className="text-sm sm:text-base font-semibold">{opt.label}</span>
-                          </button>
-                        );
-                      })
-                    )}
+                  <div className="absolute top-full left-0 right-0 mt-2 rounded-xl border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] shadow-lg z-20 max-h-72 overflow-hidden flex flex-col">
+                    {/* Search Input */}
+                    <div className="p-2 border-b border-gray-200 dark:border-[#35353E]">
+                      <input
+                        type="text"
+                        placeholder="Search payment method..."
+                        value={paymentSearchTerm}
+                        onChange={(e) => setPaymentSearchTerm(e.target.value)}
+                        className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-[#35353E] bg-gray-50 dark:bg-[#23232B] text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-[#788099] focus:outline-none focus:ring-2 focus:ring-[#1D8751]"
+                      />
+                    </div>
+                    {/* Payment Options */}
+                    <div className="overflow-y-auto max-h-52">
+                      {paymentOptions.length === 0 ? (
+                        <div className="px-4 py-3 text-sm text-gray-500 dark:text-[#788099]">
+                          No payment methods available
+                        </div>
+                      ) : filteredPaymentOptions.length === 0 ? (
+                        <div className="px-4 py-3 text-sm text-gray-500 dark:text-[#788099]">
+                          No matching payment methods
+                        </div>
+                      ) : (
+                        filteredPaymentOptions.map((opt) => {
+                          const isSelected = paymentMethod === opt.value;
+                          return (
+                            <button
+                              key={opt.id}
+                              type="button"
+                              onClick={() => {
+                                setPaymentMethod(opt.value);
+                                setIsPaymentDropdownOpen(false);
+                                setPaymentSearchTerm("");
+                              }}
+                              className={`w-full flex items-center gap-3 px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-[#35353E] ${
+                                isSelected
+                                  ? "text-gray-900 dark:text-white bg-gray-50 dark:bg-[#35353E]"
+                                  : "text-gray-700 dark:text-[#C7CAD1]"
+                              }`}
+                            >
+                              <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                                isSelected
+                                  ? "border-[#1D8751] bg-[#1D8751]"
+                                  : "border-gray-400 dark:border-[#788099]"
+                              }`}>
+                                {isSelected && (
+                                  <div className="w-2 h-2 rounded-full bg-white"></div>
+                                )}
+                              </div>
+                              <span className="text-sm sm:text-base font-semibold">{opt.label}</span>
+                            </button>
+                          );
+                        })
+                      )}
+                    </div>
                   </div>
                 )}
               </div>

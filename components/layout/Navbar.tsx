@@ -952,7 +952,7 @@ export default function Navbar() {
               isTransparent={isTransparentNavbar}
               pathname={pathname}
             >
-              <span className="hidden lg:inline">Contact us</span>
+              <span className="hidden lg:inline">Contact Us</span>
               <span className="lg:hidden">Contact</span>
             </NavLink>
           </div>
@@ -1362,7 +1362,7 @@ export default function Navbar() {
               onClick={toggleMobileMenu}
               pathname={pathname}
             >
-              Contact us
+              Contact Us
             </MobileNavLink>
 
             <div className="flex flex-col space-y-4 pt-4">

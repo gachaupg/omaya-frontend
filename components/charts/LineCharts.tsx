@@ -485,12 +485,12 @@ const Dropdown = ({
 }) => (
   <div className="relative w-auto inline-flex min-w-0">
     <select
-      className="appearance-none bg-transparent dark:text-gray-300 text-gray-700 rounded-full px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs md:text-sm pr-5 sm:pr-6 md:pr-7 focus:outline-none w-auto min-w-[60px] sm:min-w-[80px] border border-gray-300 dark:border-gray-600"
+      className="appearance-none bg-white dark:bg-[#23232B] dark:text-white text-gray-700 rounded-full px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs md:text-sm pr-5 sm:pr-6 md:pr-7 focus:outline-none w-auto min-w-[60px] sm:min-w-[80px] border border-gray-300 dark:border-[#35353E]"
       value={value}
       onChange={(e) => onChange(e.target.value)}
     >
       {options.map((opt) => (
-        <option key={opt} value={opt}>
+        <option key={opt} value={opt} className="bg-white dark:bg-[#23232B] dark:text-white text-gray-700">
           {opt}
         </option>
       ))}
