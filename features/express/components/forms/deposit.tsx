@@ -2271,8 +2271,7 @@ export default function DepositForm({
         setApiResponse(depositResponse);
         setTransactionCode(depositResponse.deposit_code || "");
 
-        // Show success message
-        showToast.success("Deposit request submitted successfully!");
+        // Note: Toast moved to handleProceedToNext to avoid showing prematurely
 
         setIsFirstCardSubmitted(true);
         // Scroll to the next section
@@ -4103,7 +4102,6 @@ export default function DepositForm({
         <>
           {/* Payment Details Card */}
           <h2 className="text-xl font-bold mb-2 text-[#788099] dark:text-[#788099] inline-flex items-center gap-2">
-            <span className="text-[#7e7e8f] dark:text-[#788099]">2-</span>{" "}
             {t("express.paymentDetails", "Payment Details")}
           </h2>
           <div
@@ -4206,7 +4204,6 @@ export default function DepositForm({
           {apiResponse && apiResponse.deposit_code && (
             <>
               <h2 className="text-xl font-bold mb-2 text-[#788099] dark:text-[#788099] inline-flex items-center gap-2">
-                <span className="text-[#7e7e8f] dark:text-[#788099]">3-</span>{" "}
                 {t("express.transactionCode", "Transaction Code")}
               </h2>
               <div className="mb-4 sm:mb-6 flex flex-col gap-2 sm:gap-3 w-full px-1 sm:px-2">
@@ -4322,7 +4319,6 @@ export default function DepositForm({
 
           {/* Wallet Address Section */}
           <h2 className="text-xl font-bold mb-2 text-[#788099] dark:text-[#788099] inline-flex items-center gap-2">
-            <span className="text-[#7e7e8f] dark:text-[#788099]">4-</span>{" "}
             {t("express.walletAddress", "Wallet Address")}
           </h2>
           <div className="flex flex-col bg-white dark:bg-[#1D1D23] border-2 border-[#35353E] rounded-2xl p-5 shadow-lg w-full text-[#35353e] dark:text-[#788099] mb-6">

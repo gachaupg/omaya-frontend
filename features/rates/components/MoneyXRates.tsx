@@ -1018,12 +1018,6 @@ const MoneyXRates = () => {
                   ${commissionAmount.toFixed(2)}
                 </span>
               </div>
-              <div className="flex justify-between text-sm mb-1">
-                <span className={isDark ? "text-[#E8EFF5]" : "text-[#051015]"}>
-                  {t("rates.networkFee", "Network Fee:")}
-                </span>
-                <span className="text-[#1D8751]">${networkFee.toFixed(2)}</span>
-              </div>
               <div
                 className={`border-t ${isDark ? "border-[#35353E]" : "border-[#E8EFF5]"} mt-2 pt-2 flex justify-between text-sm`}
               >
@@ -1031,7 +1025,7 @@ const MoneyXRates = () => {
                   {t("rates.totalFees", "Total Fees")}
                 </span>
                 <span className="text-[#F79330] font-semibold">
-                  ${totalFees.toFixed(2)}
+                  ${commissionAmount.toFixed(2)}
                 </span>
               </div>
             </div>
@@ -1159,23 +1153,6 @@ const MoneyXRates = () => {
                   ❌ {bankAddressError}
                 </p>
               )}
-
-              {/* Confirmation checkbox */}
-              <label
-                className={`flex mb-4 items-center gap-2 mt-4 text-sm ${isDark ? "text-[#788099]" : "text-[#475569]"}`}
-              >
-                <input
-                  type="checkbox"
-                  checked={isAddressConfirmed}
-                  onChange={(event) =>
-                    setIsAddressConfirmed(event.target.checked)
-                  }
-                  className="w-4 h-4 rounded border-[#1D8751] text-[#1D8751] focus:ring-[#1D8751]"
-                />
-                <span>
-                  {t("rates.confirmAddress", "I confirm that this bank account address is correct.")}
-                </span>
-              </label>
 
               {/* Terms and Conditions Summary */}
               <div className="flex items-center mb-2 mt-4 gap-2">

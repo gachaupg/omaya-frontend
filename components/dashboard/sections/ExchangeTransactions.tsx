@@ -24,6 +24,14 @@ interface RootState {
   };
 }
 
+// Format amount to 2 decimal places
+const formatAmount = (amount: string | number | undefined | null): string => {
+  if (amount === undefined || amount === null || amount === "") return "0.00";
+  const numAmount = typeof amount === "string" ? parseFloat(amount) : amount;
+  if (isNaN(numAmount)) return "0.00";
+  return numAmount.toFixed(2);
+};
+
 const getAssetName = (symbol: string) => {
   switch (symbol) {
     case "BTC":
@@ -307,7 +315,7 @@ const ExchangeTransactions = ({itemsPerPage=10}) => {
                       : "text-red-500 dark:text-red-400"
                       }`}
                   >
-                    {tx.amount || tx.requested_amount || tx.total_amount_due || "0.00"}
+                    {formatAmount(tx.amount || tx.requested_amount || tx.total_amount_due)}
                   </div>
                 </div>
                 <div>
@@ -420,7 +428,7 @@ const ExchangeTransactions = ({itemsPerPage=10}) => {
                       : "text-red-500 dark:text-red-400"
                       }`}
                   >
-                    {tx.amount || tx.requested_amount || tx.total_amount_due || "0.00"}
+                    {formatAmount(tx.amount || tx.requested_amount || tx.total_amount_due)}
                   </td>
 
                   {/* Payment Method */}

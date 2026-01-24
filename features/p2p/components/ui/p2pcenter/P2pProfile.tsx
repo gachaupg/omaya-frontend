@@ -103,10 +103,13 @@ const P2pProfile = ({
           <div className="flex items-center gap-3 sm:gap-4">
             {/* User Avatar */}
             <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full overflow-hidden bg-gray-200 dark:bg-[#35353E] flex items-center justify-center">
-              {userProfile?.photo ? (
+              {userProfile?.photo && userProfile.photo.trim() !== '' ? (
                 <img  
                   key={profilePhotoKey}
-                  src={userProfile.photo.includes('?') ? `${userProfile.photo}&t=${Date.now()}` : `${userProfile.photo}?t=${Date.now()}`}
+                  src={(() => {
+                    const photoUrl = userProfile.photo || '';
+                    return photoUrl.includes('?') ? `${photoUrl}&t=${Date.now()}` : `${photoUrl}?t=${Date.now()}`;
+                  })()}
                   alt="User Avatar"
                   className="w-full h-full object-cover rounded-full"
                   onError={(e) => {
