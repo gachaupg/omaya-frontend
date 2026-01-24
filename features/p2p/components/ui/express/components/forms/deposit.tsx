@@ -2460,9 +2460,10 @@ export default function DepositForm({
                   </p>
                 )}
                 {walletAddress.trim() && !walletError && selectedAsset && !isFirstCardSubmitted && (
-                  <p className="text-[#1D8751] text-sm mt-2 font-medium">
-                    ✅ Valid address
-                  </p>
+                  // <p className="text-[#1D8751] text-sm mt-2 font-medium">
+                  //   ✅ Valid address
+                  // </p>
+                  ''
                 )}
 
 
