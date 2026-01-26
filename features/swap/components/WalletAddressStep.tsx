@@ -169,9 +169,10 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
 
   return (
     <div className="w-full flex flex-col gap-2 sm:gap-4">
-      <div className="mb-1 sm:mb-2 text-base sm:text-lg md:text-xl font-bold text-[#788099]">
-        Your Wallet Address
-      </div>
+<h2 className="mb-1 sm:mb-2 text-base sm:text-lg md:text-xl font-bold text-gray-900 dark:text-[#788099]">
+  Your Wallet Address
+</h2>
+
       <div className="w-full">
         {/* Combined Wallet Address and Terms Card */}
         <div className={`bg-white dark:bg-[var(--card-color)] ${strongBorder} rounded-2xl p-3 sm:p-4 md:p-6 lg:p-8 w-full text-gray-900 dark:text-white`}>

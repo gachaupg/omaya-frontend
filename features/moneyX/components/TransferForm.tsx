@@ -900,9 +900,11 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
 
   return (
     <div className="flex flex-col dark:bg-(--bg-color) pl-0 sm:pl-4 pr-2 sm:pr-0 w-full sm:max-w-3xl mx-auto">
-      <h2 className="text-lg sm:text-xl font-bold mb-1 sm:mb-2 text-[#788099] dark:text-[#788099] inline-flex items-center gap-2">
-        Transfer Information
-      </h2>
+<h2 className="text-lg sm:text-xl font-semibold mb-1 sm:mb-2 text-gray-800 dark:text-[#788099] inline-flex items-center gap-2">
+  Transfer Information
+</h2>
+
+
 
       {/* API Validation Error - Show as simple red text */}
       {apiValidationError && (
@@ -1162,17 +1164,27 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
 
       {isFirstCardSubmitted && (
         <>
-          {/* Bank Account Address Section */}
-          <h2 className="text-xl font-bold mb-2 text-[#788099] dark:text-[#788099] inline-flex items-center gap-2">
-            Bank Account Address
-          </h2>
+{/* Bank Account Address Section - Dynamic Title */}
+ <h2 className="text-xl font-semibold mb-2 text-gray-900 dark:text-[#788099] inline-flex items-center gap-2">
+  {selectedToPaymentDetail?.payment_method?.toLowerCase().includes('mobile') ||
+   selectedToPaymentDetail?.payment_method_type?.toLowerCase().includes('mobile') ||
+   selectedToPaymentDetail?.method?.toLowerCase().includes('mobile')
+    ? `${getProviderName(selectedToPaymentDetail)} Details`
+    : `${getProviderName(selectedToPaymentDetail)} Account Details`}
+</h2>
+
+
           <div
             ref={paymentDetailsRef}
             className="flex flex-col bg-white dark:bg-[#18181D] border-2 border-[#35353E] rounded-2xl p-3 sm:p-4 md:p-5 shadow-lg w-full text-[#35353e] dark:text-[#788099] mb-4 sm:mb-6"
           >
-            {/* Bank Account Address Label */}
+            {/* Dynamic Address Label */}
             <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
-              Bank Account Address
+              {selectedToPaymentDetail?.payment_method?.toLowerCase().includes('mobile') ||
+               selectedToPaymentDetail?.payment_method_type?.toLowerCase().includes('mobile') ||
+               selectedToPaymentDetail?.method?.toLowerCase().includes('mobile')
+                ? `${getProviderName(selectedToPaymentDetail)} Number`
+                : `${getProviderName(selectedToPaymentDetail)} Account Number`}
             </label>
             {/* Input group */}
             <div className="flex items-center bg-white dark:bg-[#18181D] border border-[#39394a] dark:border-[#35353E] rounded-2xl px-2 sm:px-4 py-2 mb-0 overflow-hidden gap-1 sm:gap-2">
@@ -1208,7 +1220,13 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
                   setIsAddressConfirmed(false);
                   setBankAddressError(null);
                 }}
-                placeholder="Paste here your Bank Account Address"
+                placeholder={
+                  selectedToPaymentDetail?.payment_method?.toLowerCase().includes('mobile') ||
+                  selectedToPaymentDetail?.payment_method_type?.toLowerCase().includes('mobile') ||
+                  selectedToPaymentDetail?.method?.toLowerCase().includes('mobile')
+                    ? `Enter your ${getProviderName(selectedToPaymentDetail)} Number`
+                    : `Enter your ${getProviderName(selectedToPaymentDetail)} Account Number`
+                }
                 className={`flex-1 min-w-0 bg-transparent border-none outline-none text-[#35353e] dark:text-[#788099] placeholder-[#788099] text-sm sm:text-base ${bankAddressError
                   ? "border-red-500"
                   : bankAccountAddress.trim() && !bankAddressError
@@ -1239,19 +1257,19 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
                     showToast.error("Failed to paste from clipboard");
                   }
                 }}
-                className="flex items-center justify-center gap-1 bg-white dark:bg-[#18181D] border border-[#1D8751] 
-                text-[#1D8751] rounded-full p-0 w-9 h-9 sm:w-auto sm:h-auto sm:px-3 sm:py-2 ml-1 sm:ml-2 font-semibold text-xs sm:text-sm hover:bg-[#1D8751] hover:text-white transition-colors sm:min-h-[44px] touch-manipulation flex-shrink-0 whitespace-nowrap"
+                className="flex items-center justify-center gap-2 bg-[#1D8751] hover:bg-[#166b3e]
+                text-white rounded-xl px-4 py-2 font-semibold text-sm transition-colors min-h-[44px] touch-manipulation flex-shrink-0 whitespace-nowrap"
               >
-                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" className="w-4 h-4 sm:w-[18px] sm:h-[18px]">
+                <svg width="18" height="18" fill="none" viewBox="0 0 24 24" className="text-white">
                   <path
-                    d="M19 21H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h4l2-2h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2z"
+                    d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
                     stroke="currentColor"
                     strokeWidth="2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   />
                 </svg>
-                <span className="hidden sm:inline">Paste</span>
+                <span>Paste</span>
               </button>
             </div>
 
