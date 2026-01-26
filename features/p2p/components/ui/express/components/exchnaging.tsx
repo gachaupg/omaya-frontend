@@ -65,7 +65,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
     useState<any>(null);
   const [wsError, setWsError] = useState<string | null>(null);
   const [connectionAttempts, setConnectionAttempts] = useState<number>(0);
-  
+
   // Timer state - 15 minutes in seconds
   const [timeRemaining, setTimeRemaining] = useState<number>(15 * 60);
   const [timerActive, setTimerActive] = useState<boolean>(true);
@@ -162,10 +162,10 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
 
     try {
       await dispatch(cancelP2PDepositTransaction(effectiveTransactionData.transactionId)).unwrap();
-      
+
       // Clear localStorage
       localStorage.removeItem("express_transaction_data");
-      
+
       // Redirect to home page
       router.push("/");
     } catch (error) {
@@ -241,7 +241,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
         "express_transaction_data",
         JSON.stringify(transactionData)
       );
-    
+
     }
   }, [transactionData]);
 
@@ -346,7 +346,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
             setPreviousAmount(liveAmount);
 
             setLiveAmount(amountToUpdate);
-            logger.debug('p2p', 
+            logger.debug('p2p',
               "Updated live amount from WebSocket:",
               amountToUpdate,
               "currency:",
@@ -378,7 +378,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
 
           if (currencyToUpdate) {
             setLiveCurrency(currencyToUpdate);
-            logger.debug('p2p', 
+            logger.debug('p2p',
               "Updated live currency from WebSocket:",
               currencyToUpdate
             );
@@ -488,14 +488,14 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
 
             // Auto-navigate to success page when transaction is completed
             const shouldAutoNavigate = status === "completed" && (
-              data.type === "final_status" || 
-              data.is_final === true || 
+              data.type === "final_status" ||
+              data.is_final === true ||
               (data as any).is_final === true ||
               data.data?.is_final === true ||
               // For direct exchanges, completed status should always trigger navigation
               (data.type === "status_update" && status === "completed")
             );
-            
+
             if (shouldAutoNavigate) {
               // Store final websocket data
               setFinalWebsocketData(data);
@@ -522,14 +522,14 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
           // Check if this is a P2P deposit status update (has receiver_wallet field)
           if (data.type === "status_update" && data.data) {
             const depositData = data.data as any;
-            
+
             // Check if this is a P2P deposit transaction (has receiver_wallet field)
             if (depositData.receiver_wallet || depositData.transaction_type === "deposit") {
               logger.debug('p2p', "📥 P2P DEPOSIT STATUS UPDATE DETECTED:", depositData);
-              
+
               // Store websocket data for success page
               setFinalWebsocketData(data);
-              
+
               // Update live amount and currency from P2P deposit data
               if (depositData.amount && depositData.currency) {
                 const amount = parseFloat(depositData.amount);
@@ -539,12 +539,12 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                   logger.debug('p2p', "Updated live amount from P2P deposit:", amount, depositData.currency);
                 }
               }
-              
+
               // Log specific status updates for debugging
               if (depositData.status === "pending_blockchain") {
                 logger.debug('p2p', "⏳ P2P DEPOSIT PENDING BLOCKCHAIN - Transaction hash:", depositData.transaction_hash);
               }
-              
+
               // Check if P2P deposit is completed
               if (depositData.status === "completed") {
                 // Give users time to see the completion status before reloading
@@ -573,9 +573,8 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
           // Only show error in UI after multiple attempts
           // This prevents showing errors for initial connection attempts
           if (!isConnected && connectionAttempts > 2) {
-            const userFriendlyError = `Connection issue (attempt ${connectionAttempts}). ${
-              finalWebsocketUrl ? "Retrying..." : "No WebSocket URL available"
-            }`;
+            const userFriendlyError = `Connection issue (attempt ${connectionAttempts}). ${finalWebsocketUrl ? "Retrying..." : "No WebSocket URL available"
+              }`;
 
             setWsError(userFriendlyError);
 
@@ -584,7 +583,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
 
             // Start fallback polling after 5 failed attempts
             if (connectionAttempts >= 5 && !fallbackPolling) {
-              logger.debug('p2p', 
+              logger.debug('p2p',
                 "Starting fallback polling mechanism due to WebSocket failures"
               );
               setFallbackPolling(true);
@@ -610,11 +609,11 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
   // Debug logging
   useEffect(() => {
     if (shouldUseWebSocket) {
-      logger.debug('p2p', 
+      logger.debug('p2p',
         "WebSocket enabled for transaction:",
         effectiveTransactionData?.transactionId
       );
-      logger.debug('p2p', 
+      logger.debug('p2p',
         "Transaction ID source:",
         effectiveTransactionData?.transactionId ? "provided" : "missing"
       );
@@ -634,9 +633,8 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
   if (!effectiveTransactionData) {
     return (
       <div
-        className={`w-full min-h-screen flex flex-col items-center justify-center pt-2 ${
-          isDark ? "bg-[#0A0A0A]" : "bg-gray-50"
-        }`}
+        className={`w-full min-h-screen flex flex-col items-center justify-center pt-2 ${isDark ? "bg-[#0A0A0A]" : "bg-gray-50"
+          }`}
       >
         <div className={`${isDark ? "text-white" : "text-gray-900"} text-lg`}>
           Loading transaction data...
@@ -649,88 +647,80 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
     <div className={`w-full min-h-screen flex flex-col items-center pt-2`}>
       {/* Timer Banner */}
       {timerActive && timeRemaining > 0 && (
-        <div className={`w-full max-w-4xl mb-4 ${
-          timeRemaining <= 60 
-            ? 'bg-red-500/20 border-red-500' 
-            : timeRemaining <= 300 
-              ? 'bg-orange-500/20 border-orange-500'
-              : 'bg-[#1D8751]/20 border-[#1D8751]'
-        } border-2 rounded-2xl p-4 flex items-center justify-between`}>
+        <div className={`w-full max-w-4xl mb-4 ${timeRemaining <= 60
+          ? 'bg-red-500/20 border-red-500'
+          : timeRemaining <= 300
+            ? 'bg-orange-500/20 border-orange-500'
+            : 'bg-[#1D8751]/20 border-[#1D8751]'
+          } border-2 rounded-2xl p-4 flex items-center justify-between`}>
           <div className="flex items-center gap-3">
-            <svg 
-              className={`w-6 h-6 ${
-                timeRemaining <= 60 
-                  ? 'text-red-500' 
-                  : timeRemaining <= 300 
-                    ? 'text-orange-500'
-                    : 'text-[#1D8751]'
-              }`}
-              fill="none" 
-              viewBox="0 0 24 24" 
+            <svg
+              className={`w-6 h-6 ${timeRemaining <= 60
+                ? 'text-red-500'
+                : timeRemaining <= 300
+                  ? 'text-orange-500'
+                  : 'text-[#1D8751]'
+                }`}
+              fill="none"
+              viewBox="0 0 24 24"
               stroke="currentColor"
             >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth={2} 
-                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" 
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
             <div>
-              <div className={`text-sm font-semibold ${
-                isDark ? 'text-white' : 'text-gray-900'
-              }`}>
+              <div className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'
+                }`}>
                 Transaction Timeout
               </div>
-              <div className={`text-xs ${
-                isDark ? 'text-gray-300' : 'text-gray-600'
-              }`}>
-                {timeRemaining <= 60 
-                  ? 'Transaction will be cancelled soon!' 
+              <div className={`text-xs ${isDark ? 'text-gray-300' : 'text-gray-600'
+                }`}>
+                {timeRemaining <= 60
+                  ? 'Transaction will be cancelled soon!'
                   : 'Complete your transaction before time expires'}
               </div>
             </div>
           </div>
-          <div className={`text-2xl font-bold ${
-            timeRemaining <= 60 
-              ? 'text-red-500' 
-              : timeRemaining <= 300 
-                ? 'text-orange-500'
-                : 'text-[#1D8751]'
-          }`}>
+          <div className={`text-2xl font-bold ${timeRemaining <= 60
+            ? 'text-red-500'
+            : timeRemaining <= 300
+              ? 'text-orange-500'
+              : 'text-[#1D8751]'
+            }`}>
             {formatTime(timeRemaining)}
           </div>
         </div>
       )}
-      
+
       {/* Top Card */}
       <div
-        className={`flex flex-col md:flex-row justify-between items-stretch bg-[#FFFFFF] dark:${
-          isDark
-            ? "bg-[#23232B]  border:[#E8EFF5] dark:border-[#35353E]"
-            : "bg-white border-gray-200"
-        } border-2 rounded-2xl p-4 shadow-lg w-full  mb-4 min-h-[180px]`}
+        className={`flex flex-col md:flex-row justify-between items-stretch bg-[#FFFFFF] dark:${isDark
+          ? "bg-[#23232B]  border:[#E8EFF5] dark:border-[#35353E]"
+          : "bg-white border-gray-200"
+          } border-2 rounded-2xl p-4 shadow-lg w-full  mb-4 min-h-[180px]`}
       >
         <div className="flex-1 flex flex-col justify-between py-2 pr-2">
           <div>
             <div
-              className={`${
-                isDark ? "text-[#7B7B7B]" : "text-gray-600"
-              } text-xs font-semibold mb-0.5`}
+              className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                } text-xs font-semibold mb-0.5`}
             >
               Amount:
             </div>
             <div
-              className={`${
-                isDark ? "text-white" : "text-gray-900"
-              } text-base font-semibold mb-1 flex items-center gap-2`}
+              className={`${isDark ? "text-white" : "text-gray-900"
+                } text-base font-semibold mb-1 flex items-center gap-2`}
             >
-             <span>
+              <span>
                 {liveAmount !== null
                   ? liveAmount
-                  :  0}{" "}
+                  : 0}{" "}
                 <span className="uppercase">
-                {liveCurrency ||
+                  {liveCurrency ||
                     effectiveTransactionData?.asset?.ticker ||
                     effectiveTransactionData?.asset?.symbol ||
                     effectiveTransactionData?.asset?.name ||
@@ -754,23 +744,20 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               liveAmount !== null &&
               previousAmount !== liveAmount && (
                 <div
-                  className={`mt-2 p-2 ${
-                    isDark
-                      ? "bg-[#1A1A1A] border-[#35353E]"
-                      : "bg-gray-100 border-gray-300"
-                  } rounded border`}
+                  className={`mt-2 p-2 ${isDark
+                    ? "bg-[#1A1A1A] border-[#35353E]"
+                    : "bg-gray-100 border-gray-300"
+                    } rounded border`}
                 >
                   <div
-                    className={`${
-                      isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                    } text-xs font-semibold mb-1`}
+                    className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                      } text-xs font-semibold mb-1`}
                   >
                     Amount Change:
                   </div>
                   <div
-                    className={`${
-                      isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                    } text-xs mb-0.5`}
+                    className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                      } text-xs mb-0.5`}
                   >
                     Previous: {previousAmount.toFixed(8)}{" "}
                     {liveCurrency ||
@@ -791,158 +778,146 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               )}
             {/* Deposit-specific information display */}
             {effectiveTransactionData?.type === "deposit" && (
-                <>
-                  {/* Deposit Code - Most important for deposits */}
-                 
+              <>
+                {/* Deposit Code - Most important for deposits */}
 
-                  {/* Asset and Network Information */}
-                  <div
-                    className={`${
-                      isDark ? "text-[#7B7B7B]" : "text-gray-600"
+
+                {/* Asset and Network Information */}
+                <div
+                  className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
                     } text-xs font-semibold mb-0.5 mt-3`}
-                  >
-                    Asset & Network:
-                  </div>
-                  <div className="flex items-center mb-2">
-                    <img
-                      src={
-                        effectiveTransactionData?.asset?.icon ||
-                        effectiveTransactionData?.asset?.icon_url ||
-                        effectiveTransactionData?.asset?.image_url ||
-                        effectiveTransactionData?.asset?.image ||
-                        "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
-                      }
-                      alt={effectiveTransactionData?.asset?.ticker || effectiveTransactionData?.asset?.symbol || effectiveTransactionData?.asset?.name || "Asset"}
-                      className="w-6 h-6 rounded-full mr-2"
-                      onError={(e) => {
-                        e.currentTarget.src = "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
-                      }}
-                    />
-                    <span
-                      className={`${
-                        isDark ? "text-white" : "text-gray-900"
+                >
+                  Asset & Network:
+                </div>
+                <div className="flex items-center mb-2">
+                  <img
+                    src={
+                      effectiveTransactionData?.asset?.icon ||
+                      effectiveTransactionData?.asset?.icon_url ||
+                      effectiveTransactionData?.asset?.image_url ||
+                      effectiveTransactionData?.asset?.image ||
+                      "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                    }
+                    alt={effectiveTransactionData?.asset?.ticker || effectiveTransactionData?.asset?.symbol || effectiveTransactionData?.asset?.name || "Asset"}
+                    className="w-6 h-6 rounded-full mr-2"
+                    onError={(e) => {
+                      e.currentTarget.src = "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                    }}
+                  />
+                  <span
+                    className={`${isDark ? "text-white" : "text-gray-900"
                       } text-sm font-semibold`}
-                    >
-                      {effectiveTransactionData?.asset?.ticker || effectiveTransactionData?.asset?.symbol || effectiveTransactionData?.asset?.name || "USDT"}
-                    </span>
-                    <span className="ml-2 bg-[#1D8751] text-white text-xs font-semibold px-2 py-0.5 rounded-full">
-                      {effectiveTransactionData?.asset?.network || effectiveTransactionData?.network?.network_type || "BSC"}
-                    </span>
-                  </div>
+                  >
+                    {effectiveTransactionData?.asset?.ticker || effectiveTransactionData?.asset?.symbol || effectiveTransactionData?.asset?.name || "USDT"}
+                  </span>
+                  <span className="ml-2 bg-[#1D8751] text-white text-xs font-semibold px-2 py-0.5 rounded-full">
+                    {effectiveTransactionData?.asset?.network || effectiveTransactionData?.network?.network_type || "BSC"}
+                  </span>
+                </div>
 
-                
 
-                  {/* Wallet Address (if provided) */}
-                  {effectiveTransactionData?.walletAddress && (
-                    <>
-                      <div
-                        className={`${
-                          isDark ? "text-[#1D8751]" : "text-[#1D8751]"
+
+                {/* Wallet Address (if provided) */}
+                {effectiveTransactionData?.walletAddress && (
+                  <>
+                    <div
+                      className={`${isDark ? "text-[#1D8751]" : "text-[#1D8751]"
                         } text-sm font-semibold mb-1 mt-3`}
-                      >
-                        USDT Wallet Address:
-                      </div>
-                      <div className="flex items-center mb-2 p-2 rounded-lg border border-[#1D8751]/30 bg-[#1D8751]/5">
-                        <span
-                          className={`${
-                            isDark ? "text-white" : "text-gray-900"
+                    >
+                      USDT Wallet Address:
+                    </div>
+                    <div className="flex items-center mb-2 p-2 rounded-lg border border-[#1D8751]/30 bg-[#1D8751]/5">
+                      <span
+                        className={`${isDark ? "text-white" : "text-gray-900"
                           } text-sm font-mono break-all flex-1 leading-relaxed`}
-                          style={{ wordBreak: 'break-all', lineHeight: '1.5' }}
-                        >
-                          {effectiveTransactionData.walletAddress}
-                        </span>
-                        <CopyButton
-                          value={effectiveTransactionData.walletAddress}
-                          className="ml-2 flex-shrink-0"
-                        />
-                      </div>
-                    </>
-                  )}
+                        style={{ wordBreak: 'break-all', lineHeight: '1.5' }}
+                      >
+                        {effectiveTransactionData.walletAddress}
+                      </span>
+                      <CopyButton
+                        value={effectiveTransactionData.walletAddress}
+                        className="ml-2 flex-shrink-0"
+                      />
+                    </div>
+                  </>
+                )}
 
-                  {/* Status from WebSocket */}
-                 
+                {/* Status from WebSocket */}
 
-                 
-                </>
-              )}
+
+
+              </>
+            )}
 
             {/* Bank Information (for non-direct deposits) */}
             {effectiveTransactionData?.type === "deposit" && effectiveTransactionData?.paymentDetail && effectiveTransactionData.paymentDetail.provider_name !== "direct" && (
-                    <>
-                      <div
-                        className={`${
-                          isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                        } text-xs font-semibold mb-0.5 mt-3`}
-                  >
-                    Bank:
-                  </div>
-                  <div className="flex items-center mb-1">
-                    <img
-                      src={
-                        effectiveTransactionData.paymentDetail.logo_url ||
-                        effectiveTransactionData.paymentDetail.logo ||
-                        effectiveTransactionData.paymentDetail.provider_logo ||
-                        "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
+              <>
+                <div
+                  className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                    } text-xs font-semibold mb-0.5 mt-3`}
+                >
+                  Bank:
+                </div>
+                <div className="flex items-center mb-1">
+                  <img
+                    src={
+                      effectiveTransactionData.paymentDetail.logo_url ||
+                      effectiveTransactionData.paymentDetail.logo ||
+                      effectiveTransactionData.paymentDetail.provider_logo ||
+                      "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
+                    }
+                    alt={effectiveTransactionData.paymentDetail.provider_name}
+                    className="w-5 h-5 rounded-full mr-2"
+                    onError={(e) => {
+                      if (e.currentTarget.src !== "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png") {
+                        e.currentTarget.src = "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
                       }
-                      alt={effectiveTransactionData.paymentDetail.provider_name}
-                      className="w-5 h-5 rounded-full mr-2"
-                      onError={(e) => {
-                        if (e.currentTarget.src !== "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png") {
-                          e.currentTarget.src = "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
-                        }
-                      }}
-                    />
-                    <span
-                      className={`${
-                        isDark ? "text-white" : "text-gray-900"
+                    }}
+                  />
+                  <span
+                    className={`${isDark ? "text-white" : "text-gray-900"
                       } text-sm font-semibold`}
-                    >
-                      {effectiveTransactionData.paymentDetail.provider_name}
-                    </span>
-                  </div>
-                  <div
-                    className={`${
-                      isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                    } text-xs font-semibold mb-0.5`}
                   >
-                    Account Name:
-                  </div>
-                  <div
-                    className={`${
-                      isDark ? "text-white" : "text-gray-900"
+                    {effectiveTransactionData.paymentDetail.provider_name}
+                  </span>
+                </div>
+                <div
+                  className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                    } text-xs font-semibold mb-0.5`}
+                >
+                  Account Name:
+                </div>
+                <div
+                  className={`${isDark ? "text-white" : "text-gray-900"
                     } text-sm mb-1`}
-                  >
-                    {effectiveTransactionData.paymentDetail.account_name}
-                  </div>
-                  <div
-                    className={`${
-                      isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                >
+                  {effectiveTransactionData.paymentDetail.account_name}
+                </div>
+                <div
+                  className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
                     } text-xs font-semibold mb-0.5`}
-                  >
-                    Account Number:
-                  </div>
-                  <div
-                    className={`${
-                      isDark ? "text-white" : "text-gray-900"
+                >
+                  Account Number:
+                </div>
+                <div
+                  className={`${isDark ? "text-white" : "text-gray-900"
                     } text-sm font-mono`}
-                  >
-                    {effectiveTransactionData.paymentDetail.account_number}
-                  </div>
-                </>
-              )}
+                >
+                  {effectiveTransactionData.paymentDetail.account_number}
+                </div>
+              </>
+            )}
             {effectiveTransactionData?.type === "withdrawal" && (
               <>
                 <div
-                  className={`${
-                    isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                  } text-xs font-semibold mb-0.5`}
+                  className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                    } text-xs font-semibold mb-0.5`}
                 >
                   Wallet Address:
                 </div>
                 <div
-                  className={`${
-                    isDark ? "text-white" : "text-gray-900"
-                  } text-sm font-mono break-all`}
+                  className={`${isDark ? "text-white" : "text-gray-900"
+                    } text-sm font-mono break-all`}
                 >
                   {effectiveTransactionData.walletAddress}
                 </div>
@@ -955,7 +930,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
           {(() => {
             // For deposits, use wallet address first (for crypto), then account number; for withdrawals, use wallet address
             let qrData = "";
-            
+
             if (effectiveTransactionData?.type === "deposit") {
               // For deposits, first check wallet address (for USDT/crypto deposits)
               if (effectiveTransactionData?.walletAddress) {
@@ -974,7 +949,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               // For withdrawals, show wallet address
               qrData = effectiveTransactionData.walletAddress;
             }
-            
+
             if (!qrData) {
               return (
                 <div className="w-36 h-36 bg-white rounded-lg flex items-center justify-center">
@@ -1004,40 +979,38 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
           })()}
         </div>
       </div>
-      
+
       <div className="flex items-center justify-between w-full  mb-4 relative">
         {/* Connecting Lines */}
         <div className="absolute top-5 left-[16.66%] right-[16.66%] h-0.5 z-0">
           <div
-            className={`h-0.5 transition-all duration-500 ${
-              currentStatus === "completed" || currentStatus === "finished"
+            className={`h-0.5 transition-all duration-500 ${currentStatus === "completed" || currentStatus === "finished"
+              ? "bg-[#1D8751] w-full"
+              : currentStatus === "sending"
                 ? "bg-[#1D8751] w-full"
-                : currentStatus === "sending"
-                  ? "bg-[#1D8751] w-full"
-                  : currentStatus === "confirming"
-                    ? "bg-[#FF9500] w-1/2"
-                    : currentStatus === "pending" ||
-                        currentStatus === "waiting"
-                      ? "bg-[#FF9500] w-1/3"
-                      : "bg-[#7B7B7B] w-0"
-            }`}
+                : currentStatus === "confirming"
+                  ? "bg-[#FF9500] w-1/2"
+                  : currentStatus === "pending" ||
+                    currentStatus === "waiting"
+                    ? "bg-[#FF9500] w-1/3"
+                    : "bg-[#7B7B7B] w-0"
+              }`}
           ></div>
         </div>
 
         {/* Step 1: Awaiting Deposit */}
         <div className="flex flex-col items-center flex-1 relative z-10">
           <div
-            className={`w-10 h-10 rounded-full flex items-center justify-center mb-1 border-4 ${
-              currentStatus === "pending" ||
+            className={`w-10 h-10 rounded-full flex items-center justify-center mb-1 border-4 ${currentStatus === "pending" ||
               currentStatus === "waiting"
-                ? "bg-[#FF9500] border-[#FF95001A]"
-                : currentStatus === "confirming" ||
-                    currentStatus === "sending" ||
-                    currentStatus === "completed" ||
-                    currentStatus === "finished"
-                  ? "bg-[#1D8751] border-[#1D87511A]"
-                  : "bg-[#23232B] border-[#35353E]"
-            }`}
+              ? "bg-[#FF9500] border-[#FF95001A]"
+              : currentStatus === "confirming" ||
+                currentStatus === "sending" ||
+                currentStatus === "completed" ||
+                currentStatus === "finished"
+                ? "bg-[#1D8751] border-[#1D87511A]"
+                : "bg-[#23232B] border-[#35353E]"
+              }`}
           >
             <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
               <circle
@@ -1046,12 +1019,12 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                 r="10"
                 stroke={
                   currentStatus === "pending" ||
-                  currentStatus === "waiting"
+                    currentStatus === "waiting"
                     ? "#fff"
                     : currentStatus === "confirming" ||
-                        currentStatus === "sending" ||
-                        currentStatus === "completed" ||
-                        currentStatus === "finished"
+                      currentStatus === "sending" ||
+                      currentStatus === "completed" ||
+                      currentStatus === "finished"
                       ? "#fff"
                       : "#7B7B7B"
                 }
@@ -1061,12 +1034,12 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                 d="M12 8v4l2 2"
                 stroke={
                   currentStatus === "pending" ||
-                  currentStatus === "waiting"
+                    currentStatus === "waiting"
                     ? "#fff"
                     : currentStatus === "confirming" ||
-                        currentStatus === "sending" ||
-                        currentStatus === "completed" ||
-                        currentStatus === "finished"
+                      currentStatus === "sending" ||
+                      currentStatus === "completed" ||
+                      currentStatus === "finished"
                       ? "#fff"
                       : "#7B7B7B"
                 }
@@ -1078,67 +1051,65 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
           </div>
           <div className="flex items-center gap-1">
             <span
-              className={`font-semibold text-base ${
-                currentStatus === "pending" ||
+              className={`font-semibold text-base ${currentStatus === "pending" ||
                 currentStatus === "waiting"
-                  ? "text-[#FF9500]"
-                  : currentStatus === "confirming" ||
-                      currentStatus === "sending" ||
-                      currentStatus === "completed" ||
-                      currentStatus === "finished"
-                    ? "text-[#1D8751]"
-                    : "text-[#7B7B7B]"
-              }`}
+                ? "text-[#FF9500]"
+                : currentStatus === "confirming" ||
+                  currentStatus === "sending" ||
+                  currentStatus === "completed" ||
+                  currentStatus === "finished"
+                  ? "text-[#1D8751]"
+                  : "text-[#7B7B7B]"
+                }`}
             >
               Awaiting Deposit
             </span>
             {(currentStatus === "pending" ||
               currentStatus === "waiting") && (
-              <div className="flex gap-1">
-                <span
-                  className="w-2 h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
-                  style={{ animationDelay: "0ms" }}
-                ></span>
-                <span
-                  className="w-2 h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
-                  style={{ animationDelay: "150ms" }}
-                ></span>
-                <span
-                  className="w-2 h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
-                  style={{ animationDelay: "300ms" }}
-                ></span>
-              </div>
-            )}
+                <div className="flex gap-1">
+                  <span
+                    className="w-2 h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
+                    style={{ animationDelay: "0ms" }}
+                  ></span>
+                  <span
+                    className="w-2 h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
+                    style={{ animationDelay: "150ms" }}
+                  ></span>
+                  <span
+                    className="w-2 h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
+                    style={{ animationDelay: "300ms" }}
+                  ></span>
+                </div>
+              )}
             {(currentStatus === "confirming" ||
               currentStatus === "sending" ||
               currentStatus === "completed" ||
               currentStatus === "finished") && (
-              <div className="flex items-center gap-1">
-                <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
-                  <path
-                    d="M9 12l2 2 4-4"
-                    stroke="#1D8751"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
-            )}
+                <div className="flex items-center gap-1">
+                  <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
+                    <path
+                      d="M9 12l2 2 4-4"
+                      stroke="#1D8751"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
+              )}
           </div>
         </div>
         {/* Step 2: Confirming */}
         <div className="flex flex-col items-center flex-1 relative z-10">
           <div
-            className={`w-10 h-10 rounded-full flex items-center justify-center mb-1 border-4 ${
-              currentStatus === "confirming"
-                ? "bg-[#FF9500] border-[#FF95001A]"
-                : currentStatus === "sending" ||
-                    currentStatus === "completed" ||
-                    currentStatus === "finished"
-                  ? "bg-[#1D8751] border-[#1D87511A]"
-                  : `${isDark ? "bg-[#23232B] border-[#35353E]" : "bg-gray-200 border-gray-300"}`
-            }`}
+            className={`w-10 h-10 rounded-full flex items-center justify-center mb-1 border-4 ${currentStatus === "confirming"
+              ? "bg-[#FF9500] border-[#FF95001A]"
+              : currentStatus === "sending" ||
+                currentStatus === "completed" ||
+                currentStatus === "finished"
+                ? "bg-[#1D8751] border-[#1D87511A]"
+                : `${isDark ? "bg-[#23232B] border-[#35353E]" : "bg-gray-200 border-gray-300"}`
+              }`}
           >
             <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
               <circle
@@ -1147,9 +1118,9 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                 r="10"
                 stroke={
                   currentStatus === "confirming" ||
-                  currentStatus === "sending" ||
-                  currentStatus === "completed" ||
-                  currentStatus === "finished"
+                    currentStatus === "sending" ||
+                    currentStatus === "completed" ||
+                    currentStatus === "finished"
                     ? "#fff"
                     : "#7B7B7B"
                 }
@@ -1159,9 +1130,9 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                 d="M9 12l2 2 4-4"
                 stroke={
                   currentStatus === "confirming" ||
-                  currentStatus === "sending" ||
-                  currentStatus === "completed" ||
-                  currentStatus === "finished"
+                    currentStatus === "sending" ||
+                    currentStatus === "completed" ||
+                    currentStatus === "finished"
                     ? "#fff"
                     : "#7B7B7B"
                 }
@@ -1173,15 +1144,14 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
           </div>
           <div className="flex items-center gap-1">
             <span
-              className={`font-semibold text-base ${
-                currentStatus === "confirming"
-                  ? "text-[#FF9500]"
-                  : currentStatus === "sending" ||
-                      currentStatus === "completed" ||
-                      currentStatus === "finished"
-                    ? "text-[#1D8751]"
-                    : "text-[#7B7B7B]"
-              }`}
+              className={`font-semibold text-base ${currentStatus === "confirming"
+                ? "text-[#FF9500]"
+                : currentStatus === "sending" ||
+                  currentStatus === "completed" ||
+                  currentStatus === "finished"
+                  ? "text-[#1D8751]"
+                  : "text-[#7B7B7B]"
+                }`}
             >
               Confirming
             </span>
@@ -1204,30 +1174,29 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
             {(currentStatus === "sending" ||
               currentStatus === "completed" ||
               currentStatus === "finished") && (
-              <div className="flex items-center gap-1">
-                <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
-                  <path
-                    d="M9 12l2 2 4-4"
-                    stroke="#1D8751"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
-            )}
+                <div className="flex items-center gap-1">
+                  <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
+                    <path
+                      d="M9 12l2 2 4-4"
+                      stroke="#1D8751"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
+              )}
           </div>
         </div>
         {/* Step 3: Sending to you */}
         <div className="flex flex-col items-center flex-1 relative z-10">
           <div
-            className={`w-10 h-10 rounded-full flex items-center justify-center mb-1 border-4 ${
-              currentStatus === "sending"
-                ? "bg-[#FF9500] border-[#FF95001A]"
-                : currentStatus === "completed" || currentStatus === "finished"
-                  ? "bg-[#1D8751] border-[#1D87511A]"
-                  : "bg-[#23232B] border-[#35353E]"
-            }`}
+            className={`w-10 h-10 rounded-full flex items-center justify-center mb-1 border-4 ${currentStatus === "sending"
+              ? "bg-[#FF9500] border-[#FF95001A]"
+              : currentStatus === "completed" || currentStatus === "finished"
+                ? "bg-[#1D8751] border-[#1D87511A]"
+                : "bg-[#23232B] border-[#35353E]"
+              }`}
           >
             <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
               <circle
@@ -1238,7 +1207,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                   currentStatus === "sending"
                     ? "#fff"
                     : currentStatus === "completed" ||
-                        currentStatus === "finished"
+                      currentStatus === "finished"
                       ? "#fff"
                       : "#7B7B7B"
                 }
@@ -1250,7 +1219,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                   currentStatus === "sending"
                     ? "#fff"
                     : currentStatus === "completed" ||
-                        currentStatus === "finished"
+                      currentStatus === "finished"
                       ? "#fff"
                       : "#7B7B7B"
                 }
@@ -1261,14 +1230,13 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
           </div>
           <div className="flex items-center gap-1">
             <span
-              className={`font-semibold text-base ${
-                currentStatus === "sending"
-                  ? "text-[#FF9500]"
-                  : currentStatus === "completed" ||
-                      currentStatus === "finished"
-                    ? "text-[#1D8751]"
-                    : "text-[#7B7B7B]"
-              }`}
+              className={`font-semibold text-base ${currentStatus === "sending"
+                ? "text-[#FF9500]"
+                : currentStatus === "completed" ||
+                  currentStatus === "finished"
+                  ? "text-[#1D8751]"
+                  : "text-[#7B7B7B]"
+                }`}
             >
               {currentStatus === "completed" ? "Transaction Completed" : "Completed"}
             </span>
@@ -1304,51 +1272,47 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
             )}
             {(currentStatus === "completed" ||
               currentStatus === "finished") && (
-              <div className="flex items-center gap-1">
-                <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
-                  <path
-                    d="M9 12l2 2 4-4"
-                    stroke="#1D8751"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
-            )}
+                <div className="flex items-center gap-1">
+                  <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
+                    <path
+                      d="M9 12l2 2 4-4"
+                      stroke="#1D8751"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
+              )}
           </div>
         </div>
       </div>
       {/* Completion Status */}
-      
+
       {/* Transaction Details Card */}
       <div
-        className={`${
-          isDark ? "bg-[#23232B] border-[#35353E]" : "bg-white border-gray-200"
-        } border-2 rounded-2xl p-4 sm:p-6 shadow-lg w-full mb-4`}
+        className={`${isDark ? "bg-[#23232B] border-[#35353E]" : "bg-white border-gray-200"
+          } border-2 rounded-2xl p-4 sm:p-6 shadow-lg w-full mb-4`}
       >
         {/* Title */}
         <div
-          className={`${
-            isDark ? "text-white" : "text-gray-900"
-          } text-xl sm:text-2xl font-semibold mb-4`}
+          className={`${isDark ? "text-white" : "text-gray-900"
+            } text-xl sm:text-2xl font-semibold mb-4`}
         >
           Transaction Details
         </div>
         {/* Transaction ID Row */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mb-1">
           <div
-            className={`${
-              isDark ? "text-[#7B7B7B]" : "text-gray-600"
-            } text-sm sm:text-base font-medium`}
+            className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+              } text-sm sm:text-base font-medium`}
           >
             Transaction ID
           </div>
           <div className="flex items-center gap-2 min-w-0">
             <span
-              className={`${
-                isDark ? "text-white" : "text-gray-900"
-              } text-sm sm:text-base font-mono font-semibold break-all`}
+              className={`${isDark ? "text-white" : "text-gray-900"
+                } text-sm sm:text-base font-mono font-semibold break-all`}
             >
               {liveTransactionId || effectiveTransactionData?.transactionId}
             </span>
@@ -1361,23 +1325,20 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
         </div>
         {/* Dashed Divider */}
         <div
-          className={`border-t border-dashed ${
-            isDark ? "border-[#7B7B7B]" : "border-gray-400"
-          } mb-4 mt-4`}
+          className={`border-t border-dashed ${isDark ? "border-[#7B7B7B]" : "border-gray-400"
+            } mb-4 mt-4`}
         ></div>
         {/* From/To Labels Row */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-0 mb-2">
           <div
-            className={`${
-              isDark ? "text-[#7B7B7B]" : "text-gray-600"
-            } text-sm sm:text-base font-medium`}
+            className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+              } text-sm sm:text-base font-medium`}
           >
             From
           </div>
           <div
-            className={`${
-              isDark ? "text-[#7B7B7B]" : "text-gray-600"
-            } text-sm sm:text-base font-medium`}
+            className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+              } text-sm sm:text-base font-medium`}
           >
             To
           </div>
@@ -1387,7 +1348,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
           {/* From */}
           <div className="flex items-center gap-2 min-w-0 flex-1 sm:flex-initial">
             {effectiveTransactionData?.type === "deposit" &&
-            effectiveTransactionData?.paymentDetail ? (
+              effectiveTransactionData?.paymentDetail ? (
               <>
                 <img
                   src={
@@ -1406,16 +1367,14 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                 />
                 <div className="min-w-0 flex-1">
                   <div
-                    className={`${
-                      isDark ? "text-white" : "text-gray-900"
-                    } text-sm sm:text-base font-semibold truncate`}
+                    className={`${isDark ? "text-white" : "text-gray-900"
+                      } text-sm sm:text-base font-semibold truncate`}
                   >
                     {effectiveTransactionData.paymentDetail.provider_name || "direct"}
                   </div>
                   <div
-                    className={`${
-                      isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                    } text-xs sm:text-sm font-mono break-all`}
+                    className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                      } text-xs sm:text-sm font-mono break-all`}
                   >
                     {effectiveTransactionData.paymentDetail.account_number || "direct"}
                   </div>
@@ -1439,16 +1398,14 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                 />
                 <div className="min-w-0 flex-1">
                   <div
-                    className={`${
-                      isDark ? "text-white" : "text-gray-900"
-                    } text-sm sm:text-base font-semibold truncate`}
+                    className={`${isDark ? "text-white" : "text-gray-900"
+                      } text-sm sm:text-base font-semibold truncate`}
                   >
                     {effectiveTransactionData?.asset?.ticker || effectiveTransactionData?.asset?.symbol || effectiveTransactionData?.asset?.name || "USDT"}
                   </div>
                   <div
-                    className={`${
-                      isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                    } text-xs sm:text-sm font-mono break-all`}
+                    className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                      } text-xs sm:text-sm font-mono break-all`}
                   >
                     {effectiveTransactionData?.walletAddress ||
                       "TQn9Y2khEsLJW1ChVWFM...RDow5oRP7bX"}
@@ -1477,25 +1434,22 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                 />
                 <div className="text-left sm:text-right min-w-0 flex-1">
                   <div
-                    className={`${
-                      isDark ? "text-white" : "text-gray-900"
-                    } text-sm sm:text-base font-semibold truncate`}
+                    className={`${isDark ? "text-white" : "text-gray-900"
+                      } text-sm sm:text-base font-semibold truncate`}
                   >
                     {effectiveTransactionData?.asset?.ticker || effectiveTransactionData?.asset?.symbol || effectiveTransactionData?.asset?.name || "USDT"}
                   </div>
                   {effectiveTransactionData?.asset?.description && (
                     <span
-                      className={`${
-                        isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                      } text-xs sm:text-sm font-normal block sm:inline sm:ml-1`}
+                      className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                        } text-xs sm:text-sm font-normal block sm:inline sm:ml-1`}
                     >
                       {effectiveTransactionData?.asset?.description}
                     </span>
                   )}
                   <div
-                    className={`${
-                      isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                    } text-xs sm:text-sm font-mono break-all mt-1`}
+                    className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                      } text-xs sm:text-sm font-mono break-all mt-1`}
                   >
                     {effectiveTransactionData?.walletAddress ||
                       "TQn9Y2khEsLJW1ChVWFM...RDow5oRP7bX"}
@@ -1511,23 +1465,20 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                 />
                 <div className="text-left sm:text-right min-w-0 flex-1">
                   <div
-                    className={`${
-                      isDark ? "text-white" : "text-gray-900"
-                    } text-sm sm:text-base font-semibold truncate`}
+                    className={`${isDark ? "text-white" : "text-gray-900"
+                      } text-sm sm:text-base font-semibold truncate`}
                   >
                     Bank Transfer
                   </div>
                   <span
-                    className={`${
-                      isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                    } text-xs sm:text-sm font-normal block sm:inline sm:ml-1`}
+                    className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                      } text-xs sm:text-sm font-normal block sm:inline sm:ml-1`}
                   >
                     To your account
                   </span>
                   <div
-                    className={`${
-                      isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                    } text-xs sm:text-sm font-mono break-all mt-1`}
+                    className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                      } text-xs sm:text-sm font-mono break-all mt-1`}
                   >
                     {effectiveTransactionData?.paymentDetails?.[0]
                       ?.account_number || "Account Number"}
@@ -1539,17 +1490,17 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
         </div>
       </div>
 
-     
+
       <div className="w-full  rounded-2xl flex ">
-       
+
         <div className="w-full bg-[#FF9500]/50 border-2 border-solid border-[#FF9500]/50 rounded-[18px] flex flex-col gap-2 p-3">
           <h2 className="text-white text-base font-semibold">
             Terms and Conditions Summary
           </h2>
-          <ul className="list-disc list-inside space-y-1">
+          <ul className="list-disc list-outside ml-4 space-y-1">
             <li className="text-white text-sm">
               Only send
-              {`${ transactionData?.asset?.ticker || transactionData?.asset?.symbol || transactionData?.asset?.name || "USDT"} (${transactionData?.asset?.network})`}{" "}
+              {` ${transactionData?.asset?.ticker || transactionData?.asset?.symbol || transactionData?.asset?.name || "USDT"} (${transactionData?.asset?.network})`}{" "}
               to this address{" "}
             </li>
             <li className="text-white text-sm">

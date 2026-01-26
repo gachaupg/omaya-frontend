@@ -1,5 +1,4 @@
-import React from "react";
-import { showToast } from "@/lib/utils/toast";
+import React, { useState } from "react";
 
 interface CopyButtonProps {
   value: string;
@@ -14,11 +13,18 @@ const CopyButton: React.FC<CopyButtonProps> = ({
   children,
   showIcon = true,
 }) => {
+  const [isCopied, setIsCopied] = useState(false);
+
   const handleCopy = () => {
     if (!value) return;
 
     navigator.clipboard.writeText(value);
-    showToast.success("Copied to clipboard");
+    setIsCopied(true);
+
+    // Reset the "Copied" state after 2 seconds
+    setTimeout(() => {
+      setIsCopied(false);
+    }, 2000);
   };
 
   return (
@@ -28,7 +34,9 @@ const CopyButton: React.FC<CopyButtonProps> = ({
       type="button"
     >
       {children}
-      {showIcon && (
+      {isCopied ? (
+        <span className="text-sm font-medium">Copied</span>
+      ) : showIcon ? (
         <svg
           className="w-4 h-4"
           fill="none"
@@ -39,7 +47,7 @@ const CopyButton: React.FC<CopyButtonProps> = ({
           <rect x="9" y="9" width="13" height="13" rx="2" />
           <rect x="3" y="3" width="13" height="13" rx="2" />
         </svg>
-      )}
+      ) : null}
     </button>
   );
 };
