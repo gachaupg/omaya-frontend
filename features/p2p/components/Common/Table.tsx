@@ -621,16 +621,16 @@ export const Table: React.FC<TableProps> = ({
             )}
 
             {showExportButton && type !== "orders" && (
-              <div className="relative w-full sm:w-auto">
+              <div className="relative w-full sm:w-auto flex-shrink-0">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowExportOptions(!showExportOptions)}
-                  className="text-xs sm:text-sm md:text-base font-semibold w-full sm:w-auto"
+                  className="text-xs sm:text-sm md:text-base font-semibold w-full sm:w-auto whitespace-nowrap"
                 >
-                  <p className="text-xs md:text-sm md:text-[14px] text-[#1D8751] wrap-normal ">
-                    <span className="hidden sm:inline ">Export Transactions</span>
-                    <span className="sm:hidden">Export</span>
+                  <p className="text-xs md:text-sm md:text-[14px] text-[#1D8751] whitespace-nowrap">
+                    <span className="hidden md:inline">Export Transactions</span>
+                    <span className="md:hidden">Export</span>
                   </p>
                 </Button>
 

@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { fetchMerchantApplicationStatusThunk } from "@/features/p2p/slices/merchantSlice";
 import { fetchFeedback } from "@/features/p2p/slices/feedbackSlice";
 import { getUserProfile } from "@/features/auth/slices/authSlice";
+import { getP2PProfileThunk } from "@/features/p2p/slices/orderSlice";
 
 import { logger } from '@/lib/utils/logger';
 
@@ -32,6 +33,9 @@ const P2pProfile = ({
     (state: RootState) => state.feedback
   );
 
+  // Local state for profile image (more reliable than Redux state)
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+
   // Fetch merchant status, feedback, and user profile on component mount
   useEffect(() => {
     dispatch(fetchMerchantApplicationStatusThunk() as any);
@@ -39,8 +43,24 @@ const P2pProfile = ({
     // Fetch fresh user profile to ensure photo is synced
     if (isAuthenticated) {
       dispatch(getUserProfile());
+      // Also fetch P2P profile which has photo
+      dispatch(getP2PProfileThunk())
+        .unwrap()
+        .then((response: any) => {
+          if (response?.profile?.photo) {
+            setProfileImage(response.profile.photo);
+            // Cache profile image to localStorage
+            if (typeof window !== "undefined") {
+              localStorage.setItem("p2p_profile_image", response.profile.photo);
+            }
+          }
+        })
+        .catch(() => {});
     }
   }, [dispatch, isAuthenticated]);
+
+  // Use profile.photo as fallback if profileImage is not set
+  const displayImage = profileImage || userProfile?.photo || null;
 
   // Force re-render when profile photo is updated
   const [profilePhotoKey, setProfilePhotoKey] = useState(0);
@@ -102,12 +122,12 @@ const P2pProfile = ({
         <div className="flex flex-col gap-3">
           <div className="flex items-center gap-3 sm:gap-4">
             {/* User Avatar */}
-            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full overflow-hidden bg-gray-200 dark:bg-[#35353E] flex items-center justify-center">
-              {userProfile?.photo && userProfile.photo.trim() !== '' ? (
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full overflow-hidden bg-[#1D8751] flex items-center justify-center">
+              {displayImage && displayImage.trim() !== '' ? (
                 <img  
                   key={profilePhotoKey}
                   src={(() => {
-                    const photoUrl = userProfile.photo || '';
+                    const photoUrl = displayImage || '';
                     return photoUrl.includes('?') ? `${photoUrl}&t=${Date.now()}` : `${photoUrl}?t=${Date.now()}`;
                   })()}
                   alt="User Avatar"
