@@ -79,10 +79,20 @@ const extractPaymentInfo = (tx: any) => {
     detailWithLogo?.method ||
     null;
 
+  // Extract asset info for To column
+  const assetSymbol = tx?.currency || tx?.asset_symbol || "USDT";
+  const assetNetwork = tx?.network || tx?.asset_network || "BSC";
+  const assetImage = tx?.asset_image || null;
+  const walletAddress = tx?.wallet_address || tx?.destination_address || null;
+
   return {
     displayImage,
     providerName,
     methodLabel,
+    assetSymbol,
+    assetNetwork,
+    assetImage,
+    walletAddress,
   };
 };
 
@@ -302,9 +312,71 @@ const ExchangeTransactions = ({itemsPerPage=10}) => {
 
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
-                  <div className="text-xs text-gray-500 dark:text-[#A0A3BC] mb-1">Type</div>
-                  <div className="font-medium text-sm sm:text-base text-gray-500 dark:text-[#A0A3BC] capitalize">
-                    {tx.transaction_type}
+                  <div className="text-xs text-gray-500 dark:text-[#A0A3BC] mb-1">From</div>
+                  <div className="flex items-center gap-2">
+                    {tx.transaction_type === "deposit" ? (
+                      <>
+                        {paymentInfo.displayImage && (
+                          <img
+                            src={paymentInfo.displayImage}
+                            alt={paymentInfo.providerName || "Payment"}
+                            className="w-6 h-6 rounded-full"
+                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                          />
+                        )}
+                        <span className="font-medium text-sm text-gray-900 dark:text-white truncate">
+                          {paymentInfo.providerName || "Bank"}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        {tx.asset_image && (
+                          <img
+                            src={tx.asset_image}
+                            alt={tx.currency || "Asset"}
+                            className="w-6 h-6 rounded-full"
+                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                          />
+                        )}
+                        <span className="font-medium text-sm text-gray-900 dark:text-white">
+                          {tx.currency || "USDT"}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-500 dark:text-[#A0A3BC] mb-1">To</div>
+                  <div className="flex items-center gap-2">
+                    {tx.transaction_type === "deposit" ? (
+                      <>
+                        {tx.asset_image && (
+                          <img
+                            src={tx.asset_image}
+                            alt={tx.currency || "Asset"}
+                            className="w-6 h-6 rounded-full"
+                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                          />
+                        )}
+                        <span className="font-medium text-sm text-gray-900 dark:text-white">
+                          {tx.currency || "USDT"}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        {paymentInfo.displayImage && (
+                          <img
+                            src={paymentInfo.displayImage}
+                            alt={paymentInfo.providerName || "Payment"}
+                            className="w-6 h-6 rounded-full"
+                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                          />
+                        )}
+                        <span className="font-medium text-sm text-gray-900 dark:text-white truncate">
+                          {paymentInfo.providerName || "Bank"}
+                        </span>
+                      </>
+                    )}
                   </div>
                 </div>
                 <div>
@@ -367,9 +439,9 @@ const ExchangeTransactions = ({itemsPerPage=10}) => {
             <tr className="border-b border-gray-200 dark:border-[#35353E]">
               {[
                 t("transactions.asset", "Asset"),
-                t("transactions.transactionType", "Transaction Type"),
+                t("transactions.from", "From"),
+                t("transactions.to", "To"),
                 t("transactions.amount", "Amount"),
-                t("transactions.paymentMethod", "Payment Method"),
                 t("transactions.status", "Status"),
                 t("transactions.when", "When"),
               ].map((h) => (
@@ -416,9 +488,101 @@ const ExchangeTransactions = ({itemsPerPage=10}) => {
                     </div>
                   </td>
 
-                  {/* Type */}
-                  <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E] text-sm sm:text-base text-gray-500 dark:text-[#A0A3BC] capitalize">
-                    {tx.transaction_type}
+                  {/* From - Bank/Mobile or Asset based on transaction type */}
+                  <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E]">
+                    <div className="flex items-center gap-2 min-w-0">
+                      {tx.transaction_type === "deposit" ? (
+                        <>
+                          {paymentInfo.displayImage && (
+                            <img
+                              src={paymentInfo.displayImage}
+                              alt={paymentInfo.providerName || "Payment method"}
+                              className="w-7 h-7 rounded-full border border-[#E8EFF5] dark:border-[#35353E] bg-white dark:bg-[#1D1D23] flex-shrink-0"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                              }}
+                            />
+                          )}
+                          <span className="font-medium text-sm text-gray-900 dark:text-white truncate">
+                            {paymentInfo.providerName || paymentInfo.methodLabel || "Bank"}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          {tx.asset_image && (
+                            <img
+                              src={tx.asset_image}
+                              alt={tx.currency || "Asset"}
+                              className="w-7 h-7 rounded-full shadow-sm flex-shrink-0"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                              }}
+                            />
+                          )}
+                          <div className="flex flex-col min-w-0">
+                            <div className="flex items-center gap-1">
+                              <span className="font-medium text-sm text-gray-900 dark:text-white">
+                                {tx.currency || "USDT"}
+                              </span>
+                              <span className="text-[10px] bg-[#1D8751] text-white px-1.5 py-0.5 rounded-full">
+                                {paymentInfo.assetNetwork}
+                              </span>
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </td>
+
+                  {/* To - Asset or Bank based on transaction type */}
+                  <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E]">
+                    <div className="flex items-center gap-2 min-w-0">
+                      {tx.transaction_type === "deposit" ? (
+                        <>
+                          {tx.asset_image && (
+                            <img
+                              src={tx.asset_image}
+                              alt={tx.currency || "Asset"}
+                              className="w-7 h-7 rounded-full shadow-sm flex-shrink-0"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                              }}
+                            />
+                          )}
+                          <div className="flex flex-col min-w-0">
+                            <div className="flex items-center gap-1">
+                              <span className="font-medium text-sm text-gray-900 dark:text-white">
+                                {tx.currency || "USDT"}
+                              </span>
+                              <span className="text-[10px] bg-[#1D8751] text-white px-1.5 py-0.5 rounded-full">
+                                {paymentInfo.assetNetwork}
+                              </span>
+                            </div>
+                            {paymentInfo.walletAddress && (
+                              <span className="text-[10px] text-gray-500 dark:text-[#A0A3BC] truncate max-w-[120px]">
+                                {paymentInfo.walletAddress.slice(0, 8)}...{paymentInfo.walletAddress.slice(-6)}
+                              </span>
+                            )}
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          {paymentInfo.displayImage && (
+                            <img
+                              src={paymentInfo.displayImage}
+                              alt={paymentInfo.providerName || "Payment method"}
+                              className="w-7 h-7 rounded-full border border-[#E8EFF5] dark:border-[#35353E] bg-white dark:bg-[#1D1D23] flex-shrink-0"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                              }}
+                            />
+                          )}
+                          <span className="font-medium text-sm text-gray-900 dark:text-white truncate">
+                            {paymentInfo.providerName || paymentInfo.methodLabel || "Bank"}
+                          </span>
+                        </>
+                      )}
+                    </div>
                   </td>
 
                   {/* Amount */}
@@ -429,33 +593,6 @@ const ExchangeTransactions = ({itemsPerPage=10}) => {
                       }`}
                   >
                     {formatAmount(tx.amount || tx.requested_amount || tx.total_amount_due)}
-                  </td>
-
-                  {/* Payment Method */}
-                  <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E]">
-                    <div className="flex items-center gap-3 min-w-0">
-                      {paymentInfo.displayImage && (
-                        <img
-                          src={paymentInfo.displayImage}
-                          alt={paymentInfo.providerName || "Payment method"}
-                          className="w-8 h-8 rounded-full border border-[#E8EFF5] dark:border-[#35353E] bg-white dark:bg-[#1D1D23] flex-shrink-0"
-                          onError={(e) => {
-                            e.currentTarget.style.display = 'none';
-                          }}
-                        />
-                      )}
-                      <div className="flex flex-col min-w-0">
-                        <span className="font-medium text-sm sm:text-base text-gray-900 dark:text-white truncate">
-                          {paymentInfo.methodLabel ||
-                            t("transactions.notAvailable", "N/A")}
-                        </span>
-                        {paymentInfo.providerName && (
-                          <span className="text-xs text-gray-500 dark:text-[#A0A3BC] truncate">
-                            {paymentInfo.providerName}
-                          </span>
-                        )}
-                      </div>
-                    </div>
                   </td>
 
                   {/* Status */}

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { showToast } from "@/lib/utils/toast";
 
 interface CopyButtonProps {
@@ -6,6 +6,7 @@ interface CopyButtonProps {
   className?: string;
   children?: React.ReactNode;
   showIcon?: boolean;
+  showInlineMessage?: boolean;
 }
 
 const CopyButton: React.FC<CopyButtonProps> = ({
@@ -13,18 +14,31 @@ const CopyButton: React.FC<CopyButtonProps> = ({
   className = "",
   children,
   showIcon = true,
+  showInlineMessage = true,
 }) => {
+  const [copied, setCopied] = useState(false);
+
   const handleCopy = () => {
     if (!value) return;
 
     navigator.clipboard.writeText(value);
-    showToast.success("Copied to clipboard");
+    setCopied(true);
+    
+    // Only show toast if inline message is disabled
+    if (!showInlineMessage) {
+      showToast.success("Copied to clipboard");
+    }
+    
+    // Reset copied state after 2 seconds
+    setTimeout(() => {
+      setCopied(false);
+    }, 2000);
   };
 
   return (
     <button
       onClick={handleCopy}
-      className={`flex items-center gap-2 ${className}`}
+      className={`flex items-center gap-2 relative ${className}`}
       type="button"
     >
       {children}
@@ -39,6 +53,12 @@ const CopyButton: React.FC<CopyButtonProps> = ({
           <rect x="9" y="9" width="13" height="13" rx="2" />
           <rect x="3" y="3" width="13" height="13" rx="2" />
         </svg>
+      )}
+      {/* Inline copied message */}
+      {showInlineMessage && copied && (
+        <span className="text-xs text-[#1D8751] font-medium animate-fade-in whitespace-nowrap">
+          Copied!
+        </span>
       )}
     </button>
   );

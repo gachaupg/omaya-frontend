@@ -449,28 +449,17 @@ function Cash({ sharedFeesError }: CashProps) {
                     <circle cx="12" cy="16" r="1" fill="#1D8751" />
                   </svg>
                 </div>
-              <div className="bg-white dark:bg-[var(--bg-color)] border border-[#1D8751] rounded-xl p-4 mb-4">
-               
-                <ul className="list-none space-y-2">
-                  <li className="flex items-start">
-                    <span className="w-2 h-2 mt-1.5 rounded-full bg-[#1D8751] dark:bg-[#1D8751] flex-shrink-0 mr-3"></span>
-                    <span className="text-[#051015] dark:text-[#A3A3A3] text-sm">
-                      Please send the money from your own account Only
-                    </span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="w-2 h-2 mt-1.5 rounded-full bg-[#1D8751] dark:bg-[#1D8751] flex-shrink-0 mr-3"></span>
-                    <span className="text-[#051015] dark:text-[#A3A3A3] text-sm">
-                      Put transaction ID in the description field of the bank
-                    </span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="w-2 h-2 mt-1.5 rounded-full bg-[#1D8751] dark:bg-[#1D8751] flex-shrink-0 mr-3"></span>
-                    <span className="text-[#051015] dark:text-[#A3A3A3] text-sm">
-                      Please note, If you do not follow above conditions, we
-                      will reject your transaction and send you back your money.
-                    </span>
-                  </li>
+              <div className="bg-[#F5F7FA] dark:bg-[#1A1A1F] border border-[#1D8751]/30 rounded-lg p-4 mb-4">
+                <style jsx>{`
+                  .custom-bullet-list li::marker {
+                    color: #1D8751;
+                    font-size: 1.2rem;
+                  }
+                `}</style>
+                <ul className="custom-bullet-list list-disc pl-5 text-[#788099] dark:text-[#C1C1C1] text-[13px] leading-relaxed space-y-1 marker:text-[#1D8751] font-normal">
+                  <li>Please send the money from your own account Only</li>
+                  <li>Put transaction ID in the description field of the bank</li>
+                  <li>Please note, If you do not follow above conditions, we will reject your transaction and send you back your money.</li>
                 </ul>
               </div>
 
