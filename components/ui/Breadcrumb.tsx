@@ -31,7 +31,7 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({ items, className }) => {
                             {index > 0 && (
                                 <ChevronRight
                                     size={16}
-                                    className="text-zinc-600 shrink-0"
+                                    className="text-muted-foreground shrink-0"
                                     strokeWidth={2}
                                 />
                             )}
@@ -43,12 +43,12 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({ items, className }) => {
                             ) : item.href ? (
                                 <Link
                                     href={item.href}
-                                    className="text-sm text-zinc-400 hover:text-zinc-100 transition-colors whitespace-nowrap flex items-center"
+                                    className="text-sm text-muted-foreground transition-colors whitespace-nowrap flex items-center"
                                 >
                                     {item.label}
                                 </Link>
                             ) : (
-                                <span className="text-sm text-zinc-400 whitespace-nowrap flex items-center">
+                                <span className="text-sm text-muted-foreground whitespace-nowrap flex items-center">
                                     {item.label}
                                 </span>
                             )}
