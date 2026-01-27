@@ -36,33 +36,35 @@ const CopyButton: React.FC<CopyButtonProps> = ({
   };
 
   return (
-    <button
-      onClick={handleCopy}
-      className={`flex items-center gap-2 relative ${className}`}
-      type="button"
-    >
-      {children}
-      {isCopied ? (
-        <span className="text-sm font-medium">Copied</span>
-      ) : showIcon ? (
-        <svg
-          className="w-4 h-4"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          viewBox="0 0 24 24"
-        >
-          <rect x="9" y="9" width="13" height="13" rx="2" />
-          <rect x="3" y="3" width="13" height="13" rx="2" />
-        </svg>
-      )}
-      {/* Inline copied message */}
-      {showInlineMessage && copied && (
-        <span className="text-xs text-[#1D8751] font-medium animate-fade-in whitespace-nowrap">
-          Copied!
-        </span>
-      )}
-    </button>
+    <>
+      <button
+        onClick={handleCopy}
+        className={`flex items-center gap-2 relative ${className}`}
+        type="button"
+      >
+        {children}
+        {copied ? (
+          <span className="text-sm font-medium">Copied</span>
+        ) : showIcon ? (
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            viewBox="0 0 24 24"
+          >
+            <rect x="9" y="9" width="13" height="13" rx="2" />
+            <rect x="3" y="3" width="13" height="13" rx="2" />
+          </svg>
+        ) : null}
+        {/* Inline copied message */}
+        {showInlineMessage && copied && (
+          <span className="text-xs text-[#1D8751] font-medium animate-fade-in whitespace-nowrap">
+            Copied!
+          </span>
+        )}
+      </button>
+    </>
   );
 };
 
