@@ -2368,44 +2368,44 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
             {t("rates.paymentDetails", "Payment Details")}
           </h2>
           <div className="mt-1 mb-2 w-full flex flex-col gap-3 max-w-4xl mx-auto px-2">
-            <div className="flex-1 dark:bg-[#1D1D23] rounded-2xl border border-[#39394a] dark:border-[#35353E] flex flex-col justify-between p-5 relative min-h-[120px]">
+            <div className="flex-1 dark:bg-[#1D1D23] rounded-2xl border border-[#39394a] dark:border-[#35353E] flex flex-col justify-between p-3 sm:p-5 relative min-h-[120px]">
               {/* Bank and logo */}
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-[#7e7e8f] dark:text-[#788099] text-base font-semibold">
+              <div className="flex items-center justify-between mb-4 gap-2">
+                <span className="text-[#7e7e8f] dark:text-[#788099] text-sm sm:text-base font-semibold flex-shrink-0">
                   {t("rates.bankLabel", "Bank:")}
                 </span>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 min-w-0">
                   <img
                     src={
                       selectedPaymentDetail.logo ||
                       "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
                     }
                     alt="Bank Logo"
-                    className="w-8 h-8 rounded-full object-contain"
+                    className="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-contain flex-shrink-0"
                   />
-                  <span className="text-[#35353e] dark:text-[#788099] text-base font-semibold">
+                  <span className="text-[#35353e] dark:text-[#788099] text-sm sm:text-base font-semibold truncate">
                     {selectedPaymentDetail.payment_provider_name}
                   </span>
                 </div>
               </div>
               <div className="border-t border-dashed border-[#39394a] mb-2"></div>
               {/* Account Name */}
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[#7e7e8f] dark:text-[#788099] text-base font-medium">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2 gap-1">
+                <span className="text-[#7e7e8f] dark:text-[#788099] text-sm sm:text-base font-medium flex-shrink-0">
                   {t("rates.accountNameLabel", "Account Name :")}
                 </span>
-                <span className="text-[#35353e] dark:text-[#788099] text-base font-medium">
+                <span className="text-[#35353e] dark:text-[#788099] text-sm sm:text-base font-medium break-all">
                   {selectedPaymentDetail.account_name}
                 </span>
               </div>
               <div className="border-t border-dashed border-[#39394a] mb-2"></div>
               {/* Account Number */}
-              <div className="flex items-center justify-between">
-                <span className="text-[#7e7e8f] dark:text-[#788099] text-base font-medium">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                <span className="text-[#7e7e8f] dark:text-[#788099] text-sm sm:text-base font-medium flex-shrink-0">
                   {t("rates.accountNumberLabel", "Account Number :")}
                 </span>
                 <div className="flex items-center gap-2">
-                  <span className="text-[#35353e] dark:text-[#788099] text-base font-medium">
+                  <span className="text-[#35353e] dark:text-[#788099] text-sm sm:text-base font-medium break-all">
                     {selectedPaymentDetail.account_number}
                   </span>
                   <button
@@ -2609,10 +2609,10 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                 {walletError && (
                   <p className="text-red-500 text-sm mb-4">{walletError}</p>
                 )}
-                <div className="flex gap-3">
+                <div className="flex gap-2 sm:gap-3 flex-col sm:flex-row">
                   <button
                     onClick={resetTransaction}
-                    className="flex-1 bg-gray-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-gray-600 transition-colors"
+                    className="flex-1 bg-gray-500 text-white font-semibold py-2 sm:py-2 px-3 sm:px-4 rounded-lg hover:bg-gray-600 transition-colors text-sm sm:text-base"
                   >
                     {t("rates.cancel", "Cancel")}
                   </button>
@@ -2621,26 +2621,27 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                     disabled={
                       isSubmitting || !walletAddress.trim() || !!walletError
                     }
-                    className={`flex-1 font-semibold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 ${isSubmitting || !walletAddress.trim() || !!walletError
+                    className={`flex-1 font-semibold py-2 sm:py-2 px-3 sm:px-4 rounded-lg transition-colors flex items-center justify-center gap-1 sm:gap-2 text-sm sm:text-base ${isSubmitting || !walletAddress.trim() || !!walletError
                       ? "bg-gray-500 cursor-not-allowed text-white"
                       : "bg-[#1D8751] hover:bg-[#166b3f] text-white"
                       }`}
                   >
                     {isSubmitting ? (
                       <>
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                        <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-white"></div>
                         <span>{t("rates.processing", "Processing...")}</span>
                       </>
                     ) : (
                       <>
                         <img
                           src="https://res.cloudinary.com/pitz/image/upload/v1752429993/Express_1_ggdxth.png"
-                          alt=""
+                          alt="Express"
+                          className="h-4 sm:h-5 w-auto"
                         />
                         <img
-                          className="mt-2"
+                          className="mt-1 sm:mt-2 h-3 sm:h-4 w-auto"
                           src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
-                          alt=""
+                          alt="XCHANGE"
                         />
                       </>
                     )}

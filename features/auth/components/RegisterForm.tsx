@@ -8,7 +8,7 @@ import Image from "next/image";
 import { useDispatch } from "react-redux";
 import { registerUser, verifyOTP } from "@/features/auth/slices/authSlice";
 import { AppDispatch } from "@/features/auth/store";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { showToast } from "@/lib/utils/toast";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -339,10 +339,14 @@ export default function RegistrationPage() {
   const { t } = useI18n("auth");
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const termsAgreementError = t(
     "auth.register.mustAgree",
     "You must agree to the terms and conditions"
   );
+
+  // Get referral code from URL parameter
+  const refCodeFromUrl = searchParams.get("ref") || "";
 
   // Form state
   const [firstName, setFirstName] = useState("");
@@ -351,7 +355,7 @@ export default function RegistrationPage() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [referralCode, setReferralCode] = useState("");
+  const [referralCode, setReferralCode] = useState(refCodeFromUrl);
   const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showVerificationModal, setShowVerificationModal] = useState(false);

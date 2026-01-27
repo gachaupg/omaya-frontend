@@ -794,6 +794,9 @@ export default function DepositForm({
   // Add transaction code state
   const [transactionCode, setTransactionCode] = useState<string>("");
   const paymentDetailsRef = useRef<HTMLDivElement>(null);
+  
+  // Inline copy feedback state
+  const [copiedField, setCopiedField] = useState<string | null>(null);
 
   // Asset selection state for search functionality
   const [isAssetDropdownOpen, setIsAssetDropdownOpen] = useState(false);
@@ -4169,31 +4172,36 @@ export default function DepositForm({
                       navigator.clipboard.writeText(
                         selectedPaymentDetail.account_number
                       );
-                      showToast.success("copied!");
+                      setCopiedField("accountNumber");
+                      setTimeout(() => setCopiedField(null), 2000);
                     }}
-                    className="text-[#F79330] hover:text-white transition-colors p-1 rounded"
+                    className="flex items-center gap-1 text-[#F79330] hover:text-white transition-colors p-1 rounded"
                     title="Copy Account Number"
                   >
-                    <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
-                      <rect
-                        x="9"
-                        y="9"
-                        width="13"
-                        height="13"
-                        rx="2"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      />
-                      <rect
-                        x="3"
-                        y="3"
-                        width="13"
-                        height="13"
-                        rx="2"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      />
-                    </svg>
+                    {copiedField === "accountNumber" ? (
+                      <span className="text-xs text-[#1D8751] font-medium">copied!</span>
+                    ) : (
+                      <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
+                        <rect
+                          x="9"
+                          y="9"
+                          width="13"
+                          height="13"
+                          rx="2"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        />
+                        <rect
+                          x="3"
+                          y="3"
+                          width="13"
+                          height="13"
+                          rx="2"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        />
+                      </svg>
+                    )}
                   </button>
                 </div>
               </div>
