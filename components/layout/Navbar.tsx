@@ -469,12 +469,12 @@ export default function Navbar() {
         <>
           <span>E</span>
           <img
-            className="mt-[4.5px] block dark:hidden"
+            className="mt-2 block dark:hidden"
             src="https://res.cloudinary.com/pitz/image/upload/v1764698096/Group_9_momvgo.png"
             alt=""
           />
           <img
-            className="mt-[4.5px] hidden dark:block"
+            className="mt-2 hidden dark:block"
             src="https://res.cloudinary.com/pitz/image/upload/v1764698106/Group_8_hjhlxe.png"
             alt=""
           />
@@ -489,12 +489,12 @@ export default function Navbar() {
         <>
           <span>Money</span>
           <img
-            className="mt-[4.5px] block dark:hidden"
+            className="mt-2 block dark:hidden"
             src="https://res.cloudinary.com/pitz/image/upload/v1764661972/Group_6_ohph9q.png"
             alt=""
           />
           <img
-            className="mt-[4.5px] hidden dark:block"
+            className="mt-2 hidden dark:block"
             src="https://res.cloudinary.com/pitz/image/upload/v1764663236/Group_7_ichuyz.png"
             alt=""
           />
@@ -1000,7 +1000,7 @@ export default function Navbar() {
                                 />
                               </div>
                               <div className="flex-1">
-                                <h4 className="dark:text-white flex flex-row items-center text-gray-900 font-medium text-base mb-0.5">
+                                <h4 className="dark:text-white flex flex-row items-center text-[#727272] font-semibold text-base mb-0.5">
                                   {item.title}
                                 </h4>
                                 <p className="dark:text-gray-400 text-gray-500 text-xs leading-relaxed">

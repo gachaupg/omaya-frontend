@@ -2148,7 +2148,7 @@ export default function DepositForm({
                         alt="network icon"
                         className="w-6 h-6"
                       />
-                      <span className="text-[#35353e] dark:text-[#788099] font-medium">
+                      <span className="text-muted-foreground font-medium">
                         {selectedNetwork?.name || "Binance Smart Chain BEP20"}
                       </span>
                     </div>

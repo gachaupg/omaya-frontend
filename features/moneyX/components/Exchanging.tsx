@@ -75,7 +75,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
   const { isDark } = useTheme();
   const [showSuccess, setShowSuccess] = useState(false);
   const [currentStatus, setCurrentStatus] = useState<string>("pending");
-  
+
   // Initialize persistedTransactionData synchronously from localStorage to prevent redirect on refresh
   const [persistedTransactionData, setPersistedTransactionData] = useState<any>(() => {
     if (typeof window !== "undefined") {
@@ -90,7 +90,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
     }
     return null;
   });
-  
+
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [wsError, setWsError] = useState<string | null>(null);
   const [connectionAttempts, setConnectionAttempts] = useState<number>(0);
@@ -310,12 +310,12 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
   }, [showSuccess]);
 
   // Check if this is a MoneyX transaction
-  const isMoneyXTransaction = effectiveTransactionData?.isMoneyX || 
-    effectiveTransactionData?.moneyxTransactionId || 
+  const isMoneyXTransaction = effectiveTransactionData?.isMoneyX ||
+    effectiveTransactionData?.moneyxTransactionId ||
     localStorage.getItem("moneyx_transaction_data");
 
   // Get MoneyX transaction ID
-  const moneyXTransactionId = effectiveTransactionData?.moneyxTransactionId || 
+  const moneyXTransactionId = effectiveTransactionData?.moneyxTransactionId ||
     effectiveTransactionData?.transactionId;
 
   // Use WebSocket for both deposit and withdrawal transactions
@@ -452,226 +452,225 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
     !isMoneyXTransaction && effectiveTransactionData?.transactionId ? effectiveTransactionData.transactionId : "",
     effectiveTransactionData?.type || "deposit",
     !isMoneyXTransaction ? finalWebsocketUrl : undefined,
-      {
-        onMessage: (data: TransactionStatusMessage) => {
-          setWsError(null);
-          setConnectionAttempts(0);
+    {
+      onMessage: (data: TransactionStatusMessage) => {
+        setWsError(null);
+        setConnectionAttempts(0);
 
-          if (data.data?.transaction_id) {
-            setLiveTransactionId(data.data.transaction_id);
-          }
+        if (data.data?.transaction_id) {
+          setLiveTransactionId(data.data.transaction_id);
+        }
 
-          let amountToUpdate: number | null = null;
-          let currencyToUpdate: string | null = null;
+        let amountToUpdate: number | null = null;
+        let currencyToUpdate: string | null = null;
 
-          setFinalWebsocketData(data);
+        setFinalWebsocketData(data);
 
-          if (data.data?.amount) {
-            const amount = parseFloat(data.data.amount);
-            if (!isNaN(amount)) {
-              amountToUpdate = amount;
-              currencyToUpdate =
-                data.data?.currency ||
-                (effectiveTransactionData?.type === "deposit"
+        if (data.data?.amount) {
+          const amount = parseFloat(data.data.amount);
+          if (!isNaN(amount)) {
+            amountToUpdate = amount;
+            currencyToUpdate =
+              data.data?.currency ||
+              (effectiveTransactionData?.type === "deposit"
+                ? "USD"
+                : effectiveTransactionData?.type === "withdrawal"
                   ? "USD"
-                  : effectiveTransactionData?.type === "withdrawal"
-                    ? "USD"
-                    : "USD");
+                  : "USD");
+          }
+        }
+
+        if (data.type === "status_update" && data.data) {
+          const wsData = data.data as any;
+
+          if (
+            wsData.amount_from !== null &&
+            wsData.amount_from !== undefined
+          ) {
+            const amountFrom = parseFloat(wsData.amount_from);
+            if (!isNaN(amountFrom)) {
+              amountToUpdate = amountFrom;
+              currencyToUpdate =
+                wsData.from_currency?.toUpperCase() || "USD";
             }
           }
 
-          if (data.type === "status_update" && data.data) {
+          if (wsData.amount_to !== null && wsData.amount_to !== undefined) {
+            setLiveAmount(parseFloat(wsData.amount_to));
+            setLiveCurrency(
+              wsData.to_currency?.toUpperCase() || "USD"
+            );
+          }
+        }
+
+        if (amountToUpdate !== null) {
+          setPreviousAmount(liveAmount);
+          setLiveAmount(amountToUpdate);
+
+          setAmountHistory((prev) => {
             const wsData = data.data as any;
+            const newEntry = {
+              amount: amountToUpdate!,
+              timestamp:
+                data.timestamp ||
+                wsData?.last_checked ||
+                new Date().toISOString(),
+              currency: currencyToUpdate || "USD",
+            };
 
             if (
-              wsData.amount_from !== null &&
-              wsData.amount_from !== undefined
+              prev.length === 0 ||
+              prev[prev.length - 1].amount !== amountToUpdate
             ) {
-              const amountFrom = parseFloat(wsData.amount_from);
-              if (!isNaN(amountFrom)) {
-                amountToUpdate = amountFrom;
-                currencyToUpdate =
-                  wsData.from_currency?.toUpperCase() || "USD";
-              }
+              return [...prev, newEntry];
             }
+            return prev;
+          });
+        }
 
-            if (wsData.amount_to !== null && wsData.amount_to !== undefined) {
-              setLiveAmount(parseFloat(wsData.amount_to));
-              setLiveCurrency(
-                wsData.to_currency?.toUpperCase() || "USD"
-              );
-            }
-          }
+        if (currencyToUpdate) {
+          setLiveCurrency(currencyToUpdate);
+        }
 
-          if (amountToUpdate !== null) {
-            setPreviousAmount(liveAmount);
-            setLiveAmount(amountToUpdate);
+        let status: string | undefined;
+        let message: string | undefined;
 
-            setAmountHistory((prev) => {
-              const wsData = data.data as any;
-              const newEntry = {
-                amount: amountToUpdate!,
-                timestamp:
-                  data.timestamp ||
-                  wsData?.last_checked ||
-                  new Date().toISOString(),
-                currency: currencyToUpdate || "USD",
-              };
+        if (data.type === "final_status" && data.data?.status) {
+          status = data.data.status;
+          message = data.data.message;
+        } else if (data.type === "status_update" && data.data?.status) {
+          status = data.data.status;
+          message = data.data.message;
+        } else if (data.status && typeof data.status === "string") {
+          status = data.status;
+          message = (data as any).message;
+        } else if (data.data?.status) {
+          status = data.data.status;
+          message = data.data.message;
+        }
 
-              if (
-                prev.length === 0 ||
-                prev[prev.length - 1].amount !== amountToUpdate
-              ) {
-                return [...prev, newEntry];
-              }
-              return prev;
-            });
-          }
+        const validStatuses = [
+          "pending",
+          "pending_blockchain",
+          "processing",
+          "completed",
+          "failed",
+          "awaiting_payment",
+          "exchanging",
+          "sending",
+          "finished",
+          "confirming",
+          "transaction_created",
+          "processing_transfer",
+          "approval_required",
+          "admin_approval_required",
+          "agent_approve",
+          "waiting",
+          "approved",
+        ];
 
-          if (currencyToUpdate) {
-            setLiveCurrency(currencyToUpdate);
-          }
+        if (status && validStatuses.includes(status)) {
+          let uiStatus = status;
 
-          let status: string | undefined;
-          let message: string | undefined;
-
-          if (data.type === "final_status" && data.data?.status) {
-            status = data.data.status;
-            message = data.data.message;
-          } else if (data.type === "status_update" && data.data?.status) {
-            status = data.data.status;
-            message = data.data.message;
-          } else if (data.status && typeof data.status === "string") {
-            status = data.status;
-            message = (data as any).message;
-          } else if (data.data?.status) {
-            status = data.data.status;
-            message = data.data.message;
-          }
-
-          const validStatuses = [
-            "pending",
-            "pending_blockchain",
-            "processing",
-            "completed",
-            "failed",
-            "awaiting_payment",
-            "exchanging",
-            "sending",
-            "finished",
-            "confirming",
-            "transaction_created",
-            "processing_transfer",
-            "approval_required",
-            "admin_approval_required",
-            "agent_approve",
-            "waiting",
-            "approved",
-          ];
-
-          if (status && validStatuses.includes(status)) {
-            let uiStatus = status;
-
-            if (status === "pending_blockchain") {
-              uiStatus = "confirming";
-            } else if (status === "transaction_created") {
-              uiStatus = "confirming";
-            } else if (status === "processing_transfer") {
-              uiStatus = "exchanging";
-            } else if (status === "approval_required") {
-              uiStatus = "exchanging";
-            } else if (status === "admin_approval_required") {
-              uiStatus = "sending";
-            } else if (status === "completed" || status === "finished" || status === "approved") {
-              if (
-                data.is_final === true ||
-                data.type === "final_status" ||
-                (data as any).is_final === true ||
-                data.data?.is_final === true ||
-                status === "approved"
-              ) {
-                uiStatus = "completed";
-              } else {
-                uiStatus = "sending";
-              }
-            } else if (status === "agent_approve") {
+          if (status === "pending_blockchain") {
+            uiStatus = "confirming";
+          } else if (status === "transaction_created") {
+            uiStatus = "confirming";
+          } else if (status === "processing_transfer") {
+            uiStatus = "exchanging";
+          } else if (status === "approval_required") {
+            uiStatus = "exchanging";
+          } else if (status === "admin_approval_required") {
+            uiStatus = "sending";
+          } else if (status === "completed" || status === "finished" || status === "approved") {
+            if (
+              data.is_final === true ||
+              data.type === "final_status" ||
+              (data as any).is_final === true ||
+              data.data?.is_final === true ||
+              status === "approved"
+            ) {
+              uiStatus = "completed";
+            } else {
               uiStatus = "sending";
             }
+          } else if (status === "agent_approve") {
+            uiStatus = "sending";
+          }
 
-            setCurrentStatus(uiStatus);
+          setCurrentStatus(uiStatus);
 
-            const shouldAutoNavigate =
-              uiStatus === "completed" || status === "completed" || status === "approved";
+          const shouldAutoNavigate =
+            uiStatus === "completed" || status === "completed" || status === "approved";
 
-            if (shouldAutoNavigate) {
-              setFinalWebsocketData(data);
+          if (shouldAutoNavigate) {
+            setFinalWebsocketData(data);
+            setSnapshotWebsocketData(data);
+            setTimeout(() => {
+              setShowSuccess(true);
+            }, 2000);
+          }
+
+          if (status === "agent_approve") {
+            setFinalWebsocketData(data);
+            setSnapshotWebsocketData(data);
+            setTimeout(() => {
+              setShowSuccess(true);
+            }, 1000);
+          }
+        }
+
+        if (data.type === "status_update" && data.data) {
+          const depositData = data.data as any;
+
+          if (
+            depositData.receiver_wallet ||
+            depositData.transaction_type === "deposit"
+          ) {
+            setFinalWebsocketData(data);
+
+            if (depositData.amount && depositData.currency) {
+              const amount = parseFloat(depositData.amount);
+              if (!isNaN(amount)) {
+                setLiveAmount(amount);
+                setLiveCurrency(depositData.currency);
+              }
+            }
+
+            if (depositData.status === "completed" || depositData.status === "approved") {
               setSnapshotWebsocketData(data);
               setTimeout(() => {
                 setShowSuccess(true);
               }, 2000);
             }
-
-            if (status === "agent_approve") {
-              setFinalWebsocketData(data);
-              setSnapshotWebsocketData(data);
-              setTimeout(() => {
-                setShowSuccess(true);
-              }, 1000);
-            }
           }
+        }
+      },
+      onError: (error) => {
+        if (finalWebsocketUrl) {
+          console.warn(`URL: ${finalWebsocketUrl}`);
+        } else {
+          console.warn("No WebSocket URL provided");
+        }
 
-          if (data.type === "status_update" && data.data) {
-            const depositData = data.data as any;
+        setConnectionAttempts((prev) => prev + 1);
 
-            if (
-              depositData.receiver_wallet ||
-              depositData.transaction_type === "deposit"
-            ) {
-              setFinalWebsocketData(data);
-
-              if (depositData.amount && depositData.currency) {
-                const amount = parseFloat(depositData.amount);
-                if (!isNaN(amount)) {
-                  setLiveAmount(amount);
-                  setLiveCurrency(depositData.currency);
-                }
-              }
-
-              if (depositData.status === "completed" || depositData.status === "approved") {
-                setSnapshotWebsocketData(data);
-                setTimeout(() => {
-                  setShowSuccess(true);
-                }, 2000);
-              }
-            }
-          }
-        },
-        onError: (error) => {
-          if (finalWebsocketUrl) {
-            console.warn(`URL: ${finalWebsocketUrl}`);
-          } else {
-            console.warn("No WebSocket URL provided");
-          }
-
-          setConnectionAttempts((prev) => prev + 1);
-
-          if (!isConnected && connectionAttempts > 2) {
-            const userFriendlyError = `Connection issue (attempt ${connectionAttempts}). ${
-              finalWebsocketUrl ? "Retrying..." : "No WebSocket URL available"
+        if (!isConnected && connectionAttempts > 2) {
+          const userFriendlyError = `Connection issue (attempt ${connectionAttempts}). ${finalWebsocketUrl ? "Retrying..." : "No WebSocket URL available"
             }`;
 
-            setWsError(userFriendlyError);
-            setTimeout(() => setWsError(null), 5000);
+          setWsError(userFriendlyError);
+          setTimeout(() => setWsError(null), 5000);
 
-            if (connectionAttempts >= 5 && !fallbackPolling) {
-              setFallbackPolling(true);
-              startFallbackPolling();
-            }
+          if (connectionAttempts >= 5 && !fallbackPolling) {
+            setFallbackPolling(true);
+            startFallbackPolling();
           }
-        },
-        autoReconnect: true,
-      }
-    );
+        }
+      },
+      autoReconnect: true,
+    }
+  );
 
   // Select the appropriate WebSocket result based on transaction type
   const { isConnected, lastMessage, disconnect, sendMessage } = isMoneyXTransaction ? moneyXWs : standardWs;
@@ -711,9 +710,8 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
   if (isLoadingData) {
     return (
       <div
-        className={`w-full min-h-screen flex flex-col items-center justify-center pt-0 sm:pt-1 md:pt-2 px-0 sm:px-2 md:px-0 pr-2 sm:pr-0 ${
-          isDark ? "bg-[var(--bg-color)]" : "bg-gray-50"
-        }`}
+        className={`w-full min-h-screen flex flex-col items-center justify-center pt-0 sm:pt-1 md:pt-2 px-0 sm:px-2 md:px-0 pr-2 sm:pr-0 ${isDark ? "bg-[var(--bg-color)]" : "bg-gray-50"
+          }`}
       >
         <div className={`${isDark ? "text-white" : "text-gray-900"} text-lg`}>
           Loading transaction...
@@ -726,9 +724,8 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
   if (!effectiveTransactionData) {
     return (
       <div
-        className={`w-full min-h-screen flex flex-col items-center justify-center pt-0 sm:pt-1 md:pt-2 px-0 sm:px-2 md:px-0 pr-2 sm:pr-0 ${
-          isDark ? "bg-[var(--bg-color)]" : "bg-gray-50"
-        }`}
+        className={`w-full min-h-screen flex flex-col items-center justify-center pt-0 sm:pt-1 md:pt-2 px-0 sm:px-2 md:px-0 pr-2 sm:pr-0 ${isDark ? "bg-[var(--bg-color)]" : "bg-gray-50"
+          }`}
       >
         <div className={`${isDark ? "text-white" : "text-gray-900"} text-lg`}>
           No transaction data found. Redirecting...
@@ -742,23 +739,21 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
       {/* Timer Banner */}
       {timerActive && timeRemaining > 0 && (
         <div
-          className={`w-full mb-3 sm:mb-4 ${
-            timeRemaining <= 60
+          className={`w-full mb-3 sm:mb-4 ${timeRemaining <= 60
               ? "bg-red-500/20 border-red-500"
               : timeRemaining <= 300
                 ? "bg-orange-500/20 border-orange-500"
                 : "bg-[#1D8751]/20 border-[#1D8751]"
-          } border-2 rounded-xl sm:rounded-2xl p-2.5 sm:p-3 md:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-3`}
+            } border-2 rounded-xl sm:rounded-2xl p-2.5 sm:p-3 md:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-3`}
         >
           <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
             <svg
-              className={`w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0 ${
-                timeRemaining <= 60
+              className={`w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0 ${timeRemaining <= 60
                   ? "text-red-500"
                   : timeRemaining <= 300
                     ? "text-orange-500"
                     : "text-[#1D8751]"
-              }`}
+                }`}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -772,16 +767,14 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
             </svg>
             <div className="min-w-0 flex-1">
               <div
-                className={`text-xs sm:text-sm font-semibold ${
-                  isDark ? "text-white" : "text-gray-900"
-                }`}
+                className={`text-xs sm:text-sm font-semibold ${isDark ? "text-white" : "text-gray-900"
+                  }`}
               >
                 Transaction Timeout
               </div>
               <div
-                className={`text-[10px] sm:text-xs ${
-                  isDark ? "text-gray-300" : "text-gray-600"
-                } break-words`}
+                className={`text-[10px] sm:text-xs ${isDark ? "text-gray-300" : "text-gray-600"
+                  } break-words`}
               >
                 {timeRemaining <= 60
                   ? "Transaction will be cancelled soon!"
@@ -790,13 +783,12 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
             </div>
           </div>
           <div
-            className={`text-xl sm:text-2xl font-bold flex-shrink-0 ${
-              timeRemaining <= 60
+            className={`text-xl sm:text-2xl font-bold flex-shrink-0 ${timeRemaining <= 60
                 ? "text-red-500"
                 : timeRemaining <= 300
                   ? "text-orange-500"
                   : "text-[#1D8751]"
-            }`}
+              }`}
           >
             {formatTime(timeRemaining)}
           </div>
@@ -805,25 +797,22 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
 
       {/* Top Card */}
       <div
-        className={`flex flex-col md:flex-row justify-between items-stretch bg-[#FFFFFF] dark:${
-          isDark
+        className={`flex flex-col md:flex-row justify-between items-stretch bg-[#FFFFFF] dark:${isDark
             ? "bg-[var(--card-color)]  border:[#E8EFF5] dark:border-[#35353E]"
             : "bg-white border-gray-200"
-        } border-2 rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 shadow-lg w-full mb-3 sm:mb-4 min-h-[160px] sm:min-h-[180px] overflow-hidden box-border`}
+          } border-2 rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 shadow-lg w-full mb-3 sm:mb-4 min-h-[160px] sm:min-h-[180px] overflow-hidden box-border`}
       >
         <div className="flex-1 flex flex-col justify-between py-1 sm:py-2 pr-0 sm:pr-2 w-full">
           <div className="w-full">
             <div
-              className={`${
-                isDark ? "text-[#7B7B7B]" : "text-gray-600"
-              } text-[10px] sm:text-xs font-semibold mb-0.5`}
+              className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                } text-[10px] sm:text-xs font-semibold mb-0.5`}
             >
               Amount:
             </div>
             <div
-              className={`${
-                isDark ? "text-white" : "text-gray-900"
-              } text-sm sm:text-base font-semibold mb-1 flex items-center gap-2`}
+              className={`${isDark ? "text-white" : "text-gray-900"
+                } text-sm sm:text-base font-semibold mb-1 flex items-center gap-2`}
             >
               <span className="break-words">
                 {liveAmount !== null
@@ -837,15 +826,14 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
             {effectiveTransactionData?.fromPaymentMethod && (
               <>
                 <div
-                  className={`${
-                    isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                  } text-[10px] sm:text-xs font-semibold mb-0.5 mt-2 sm:mt-3`}
+                  className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                    } text-[10px] sm:text-xs font-semibold mb-0.5 mt-2 sm:mt-3`}
                 >
                   From Payment Method:
                 </div>
                 <div className="flex items-center mb-2 gap-1 sm:gap-2 w-full min-w-0">
                   {effectiveTransactionData.fromPaymentMethod.provider_logo ||
-                  effectiveTransactionData.fromPaymentMethod.logo ? (
+                    effectiveTransactionData.fromPaymentMethod.logo ? (
                     <img
                       src={
                         effectiveTransactionData.fromPaymentMethod.provider_logo ||
@@ -860,9 +848,8 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                     />
                   ) : null}
                   <span
-                    className={`${
-                      isDark ? "text-white" : "text-gray-900"
-                    } text-xs sm:text-sm font-semibold break-words flex-1 min-w-0`}
+                    className={`${isDark ? "text-white" : "text-gray-900"
+                      } text-xs sm:text-sm font-semibold break-words flex-1 min-w-0`}
                   >
                     {effectiveTransactionData.fromPaymentMethod.provider_name}
                   </span>
@@ -873,15 +860,14 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
             {effectiveTransactionData?.toPaymentMethod && (
               <>
                 <div
-                  className={`${
-                    isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                  } text-[10px] sm:text-xs font-semibold mb-0.5 mt-2 sm:mt-3`}
+                  className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                    } text-[10px] sm:text-xs font-semibold mb-0.5 mt-2 sm:mt-3`}
                 >
                   To Payment Method:
                 </div>
                 <div className="flex items-center mb-2 gap-1 sm:gap-2 w-full min-w-0">
                   {effectiveTransactionData.toPaymentMethod.provider_logo ||
-                  effectiveTransactionData.toPaymentMethod.logo ? (
+                    effectiveTransactionData.toPaymentMethod.logo ? (
                     <img
                       src={
                         effectiveTransactionData.toPaymentMethod.provider_logo ||
@@ -896,9 +882,8 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                     />
                   ) : null}
                   <span
-                    className={`${
-                      isDark ? "text-white" : "text-gray-900"
-                    } text-xs sm:text-sm font-semibold break-words flex-1 min-w-0`}
+                    className={`${isDark ? "text-white" : "text-gray-900"
+                      } text-xs sm:text-sm font-semibold break-words flex-1 min-w-0`}
                   >
                     {effectiveTransactionData.toPaymentMethod.provider_name}
                   </span>
@@ -910,17 +895,15 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
             {effectiveTransactionData?.walletAddress && (
               <>
                 <div
-                  className={`${
-                    isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                  } text-[10px] sm:text-xs font-semibold mb-0.5 mt-2 sm:mt-3`}
+                  className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                    } text-[10px] sm:text-xs font-semibold mb-0.5 mt-2 sm:mt-3`}
                 >
                   Bank Account Address:
                 </div>
                 <div className="flex items-center mb-2 gap-2 w-full">
                   <span
-                    className={`${
-                      isDark ? "text-white" : "text-gray-900"
-                    } text-[10px] sm:text-xs font-mono bg-gray-500/10 dark:bg-gray-500/20 px-2 py-1.5 rounded break-all flex-1 min-w-0`}
+                    className={`${isDark ? "text-white" : "text-gray-900"
+                      } text-[10px] sm:text-xs font-mono bg-gray-500/10 dark:bg-gray-500/20 px-2 py-1.5 rounded break-all flex-1 min-w-0`}
                   >
                     {effectiveTransactionData.walletAddress}
                   </span>
@@ -937,9 +920,8 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
           {/* QR code */}
           <div className="w-28 h-28 sm:w-36 sm:h-36 bg-white rounded-lg flex items-center justify-center">
             <img
-              src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${
-                effectiveTransactionData?.walletAddress || ""
-              }`}
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${effectiveTransactionData?.walletAddress || ""
+                }`}
               alt="QR Code"
               className="w-24 h-24 sm:w-32 sm:h-32"
             />
@@ -952,8 +934,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
         {/* Connecting Lines - Responsive positioning */}
         <div className="absolute top-3 sm:top-4 md:top-5 left-[10%] sm:left-[12.5%] right-[10%] sm:right-[12.5%] h-0.5 z-0">
           <div
-            className={`h-0.5 transition-all duration-500 ${
-              currentStatus === "completed" || currentStatus === "finished"
+            className={`h-0.5 transition-all duration-500 ${currentStatus === "completed" || currentStatus === "finished"
                 ? "bg-[#1D8751] w-full"
                 : currentStatus === "sending"
                   ? "bg-[#1D8751] w-full"
@@ -962,29 +943,28 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                     : currentStatus === "confirming"
                       ? "bg-[#FF9500] w-1/2"
                       : currentStatus === "pending" ||
-                          currentStatus === "waiting"
+                        currentStatus === "waiting"
                         ? "bg-[#FF9500] w-1/4"
                         : "bg-[#7B7B7B] w-0"
-            }`}
+              }`}
           ></div>
         </div>
 
         {/* Step 1: Awaiting Deposit */}
         <div className="flex flex-col items-center flex-1 relative z-10 min-w-[60px] sm:min-w-[70px] md:min-w-0 flex-shrink-0">
           <div
-            className={`w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center mb-1 border-2 sm:border-3 md:border-4 ${
-              currentStatus === "pending" ||
-              currentStatus === "waiting" ||
-              !shouldUseWebSocket
+            className={`w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center mb-1 border-2 sm:border-3 md:border-4 ${currentStatus === "pending" ||
+                currentStatus === "waiting" ||
+                !shouldUseWebSocket
                 ? "bg-[#FF9500] border-[#FF95001A]"
                 : currentStatus === "confirming" ||
-                    currentStatus === "exchanging" ||
-                    currentStatus === "sending" ||
-                    currentStatus === "completed" ||
-                    currentStatus === "finished"
+                  currentStatus === "exchanging" ||
+                  currentStatus === "sending" ||
+                  currentStatus === "completed" ||
+                  currentStatus === "finished"
                   ? "bg-[#1D8751] border-[#1D87511A]"
                   : "bg-[var(--card-color)] border-[#35353E]"
-            }`}
+              }`}
           >
             <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-6 md:h-6" fill="none" viewBox="0 0 24 24">
               <circle
@@ -993,14 +973,14 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                 r="10"
                 stroke={
                   currentStatus === "pending" ||
-                  currentStatus === "waiting" ||
-                  !shouldUseWebSocket
+                    currentStatus === "waiting" ||
+                    !shouldUseWebSocket
                     ? "#fff"
                     : currentStatus === "confirming" ||
-                        currentStatus === "exchanging" ||
-                        currentStatus === "sending" ||
-                        currentStatus === "completed" ||
-                        currentStatus === "finished"
+                      currentStatus === "exchanging" ||
+                      currentStatus === "sending" ||
+                      currentStatus === "completed" ||
+                      currentStatus === "finished"
                       ? "#fff"
                       : "#7B7B7B"
                 }
@@ -1010,13 +990,13 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                 d="M12 8v4l2 2"
                 stroke={
                   currentStatus === "pending" ||
-                  currentStatus === "waiting" ||
-                  !shouldUseWebSocket
+                    currentStatus === "waiting" ||
+                    !shouldUseWebSocket
                     ? "#fff"
                     : currentStatus === "exchanging" ||
-                        currentStatus === "sending" ||
-                        currentStatus === "completed" ||
-                        currentStatus === "finished"
+                      currentStatus === "sending" ||
+                      currentStatus === "completed" ||
+                      currentStatus === "finished"
                       ? "#fff"
                       : "#7B7B7B"
                 }
@@ -1028,19 +1008,18 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
           </div>
           <div className="flex items-center gap-0.5 sm:gap-1 flex-wrap justify-center">
             <span
-              className={`font-semibold text-[10px] sm:text-xs md:text-sm lg:text-base whitespace-nowrap ${
-                currentStatus === "pending" ||
-                currentStatus === "waiting" ||
-                !shouldUseWebSocket
+              className={`font-semibold text-[10px] sm:text-xs md:text-sm lg:text-base whitespace-nowrap ${currentStatus === "pending" ||
+                  currentStatus === "waiting" ||
+                  !shouldUseWebSocket
                   ? "text-[#FF9500]"
                   : currentStatus === "confirming" ||
-                      currentStatus === "exchanging" ||
-                      currentStatus === "sending" ||
-                      currentStatus === "completed" ||
-                      currentStatus === "finished"
+                    currentStatus === "exchanging" ||
+                    currentStatus === "sending" ||
+                    currentStatus === "completed" ||
+                    currentStatus === "finished"
                     ? "text-[#1D8751]"
                     : "text-[#7B7B7B]"
-              }`}
+                }`}
             >
               <span className="hidden sm:inline">Awaiting Deposit</span>
               <span className="sm:hidden">Awaiting</span>
@@ -1048,54 +1027,53 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
             {(currentStatus === "pending" ||
               currentStatus === "waiting" ||
               !shouldUseWebSocket) && (
-              <div className="flex gap-1">
-                <span
-                  className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
-                  style={{ animationDelay: "0ms" }}
-                ></span>
-                <span
-                  className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
-                  style={{ animationDelay: "150ms" }}
-                ></span>
-                <span
-                  className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
-                  style={{ animationDelay: "300ms" }}
-                ></span>
-              </div>
-            )}
+                <div className="flex gap-1">
+                  <span
+                    className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
+                    style={{ animationDelay: "0ms" }}
+                  ></span>
+                  <span
+                    className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
+                    style={{ animationDelay: "150ms" }}
+                  ></span>
+                  <span
+                    className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
+                    style={{ animationDelay: "300ms" }}
+                  ></span>
+                </div>
+              )}
             {(currentStatus === "confirming" ||
               currentStatus === "exchanging" ||
               currentStatus === "sending" ||
               currentStatus === "completed" ||
               currentStatus === "finished") && (
-              <div className="flex items-center gap-1">
-                <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-4 md:h-4" fill="none" viewBox="0 0 24 24">
-                  <path
-                    d="M9 12l2 2 4-4"
-                    stroke="#1D8751"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
-            )}
+                <div className="flex items-center gap-1">
+                  <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-4 md:h-4" fill="none" viewBox="0 0 24 24">
+                    <path
+                      d="M9 12l2 2 4-4"
+                      stroke="#1D8751"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
+              )}
           </div>
         </div>
 
         {/* Step 2: Confirming */}
         <div className="flex flex-col items-center flex-1 relative z-10 min-w-[60px] sm:min-w-[70px] md:min-w-0 flex-shrink-0">
           <div
-            className={`w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center mb-1 border-2 sm:border-3 md:border-4 ${
-              currentStatus === "confirming"
+            className={`w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center mb-1 border-2 sm:border-3 md:border-4 ${currentStatus === "confirming"
                 ? "bg-[#FF9500] border-[#FF95001A]"
                 : currentStatus === "exchanging" ||
-                    currentStatus === "sending" ||
-                    currentStatus === "completed" ||
-                    currentStatus === "finished"
+                  currentStatus === "sending" ||
+                  currentStatus === "completed" ||
+                  currentStatus === "finished"
                   ? "bg-[#1D8751] border-[#1D87511A]"
                   : `${isDark ? "bg-[var(--card-color)] border-[#35353E]" : "bg-gray-200 border-gray-300"}`
-            }`}
+              }`}
           >
             <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-6 md:h-6" fill="none" viewBox="0 0 24 24">
               <circle
@@ -1104,10 +1082,10 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                 r="10"
                 stroke={
                   currentStatus === "confirming" ||
-                  currentStatus === "exchanging" ||
-                  currentStatus === "sending" ||
-                  currentStatus === "completed" ||
-                  currentStatus === "finished"
+                    currentStatus === "exchanging" ||
+                    currentStatus === "sending" ||
+                    currentStatus === "completed" ||
+                    currentStatus === "finished"
                     ? "#fff"
                     : "#7B7B7B"
                 }
@@ -1117,10 +1095,10 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                 d="M9 12l2 2 4-4"
                 stroke={
                   currentStatus === "confirming" ||
-                  currentStatus === "exchanging" ||
-                  currentStatus === "sending" ||
-                  currentStatus === "completed" ||
-                  currentStatus === "finished"
+                    currentStatus === "exchanging" ||
+                    currentStatus === "sending" ||
+                    currentStatus === "completed" ||
+                    currentStatus === "finished"
                     ? "#fff"
                     : "#7B7B7B"
                 }
@@ -1132,16 +1110,15 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
           </div>
           <div className="flex items-center gap-0.5 sm:gap-1 flex-wrap justify-center">
             <span
-              className={`font-semibold text-[10px] sm:text-xs md:text-sm lg:text-base whitespace-nowrap ${
-                currentStatus === "confirming"
+              className={`font-semibold text-[10px] sm:text-xs md:text-sm lg:text-base whitespace-nowrap ${currentStatus === "confirming"
                   ? "text-[#FF9500]"
                   : currentStatus === "exchanging" ||
-                      currentStatus === "sending" ||
-                      currentStatus === "completed" ||
-                      currentStatus === "finished"
+                    currentStatus === "sending" ||
+                    currentStatus === "completed" ||
+                    currentStatus === "finished"
                     ? "text-[#1D8751]"
                     : "text-[#7B7B7B]"
-              }`}
+                }`}
             >
               Confirming
             </span>
@@ -1165,33 +1142,32 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
               currentStatus === "sending" ||
               currentStatus === "completed" ||
               currentStatus === "finished") && (
-              <div className="flex items-center gap-1">
-                <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-4 md:h-4" fill="none" viewBox="0 0 24 24">
-                  <path
-                    d="M9 12l2 2 4-4"
-                    stroke="#1D8751"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
-            )}
+                <div className="flex items-center gap-1">
+                  <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-4 md:h-4" fill="none" viewBox="0 0 24 24">
+                    <path
+                      d="M9 12l2 2 4-4"
+                      stroke="#1D8751"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
+              )}
           </div>
         </div>
 
         {/* Step 3: Exchanging */}
         <div className="flex flex-col items-center flex-1 relative z-10 min-w-[60px] sm:min-w-[70px] md:min-w-0 flex-shrink-0">
           <div
-            className={`w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center mb-1 border-2 sm:border-3 md:border-4 ${
-              currentStatus === "exchanging"
+            className={`w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center mb-1 border-2 sm:border-3 md:border-4 ${currentStatus === "exchanging"
                 ? "bg-[#FF9500] border-[#FF95001A]"
                 : currentStatus === "sending" ||
-                    currentStatus === "completed" ||
-                    currentStatus === "finished"
+                  currentStatus === "completed" ||
+                  currentStatus === "finished"
                   ? "bg-[#1D8751] border-[#1D87511A]"
                   : "bg-[var(--card-color)] border-[#35353E]"
-            }`}
+              }`}
           >
             <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-6 md:h-6" fill="none" viewBox="0 0 24 24">
               <circle
@@ -1200,9 +1176,9 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                 r="10"
                 stroke={
                   currentStatus === "exchanging" ||
-                  currentStatus === "sending" ||
-                  currentStatus === "completed" ||
-                  currentStatus === "finished"
+                    currentStatus === "sending" ||
+                    currentStatus === "completed" ||
+                    currentStatus === "finished"
                     ? "#fff"
                     : "#7B7B7B"
                 }
@@ -1212,9 +1188,9 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                 d="M8 12h8M12 8v8"
                 stroke={
                   currentStatus === "exchanging" ||
-                  currentStatus === "sending" ||
-                  currentStatus === "completed" ||
-                  currentStatus === "finished"
+                    currentStatus === "sending" ||
+                    currentStatus === "completed" ||
+                    currentStatus === "finished"
                     ? "#fff"
                     : "#7B7B7B"
                 }
@@ -1225,15 +1201,14 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
           </div>
           <div className="flex items-center gap-0.5 sm:gap-1 flex-wrap justify-center">
             <span
-              className={`font-semibold text-[10px] sm:text-xs md:text-sm lg:text-base whitespace-nowrap ${
-                currentStatus === "exchanging"
+              className={`font-semibold text-[10px] sm:text-xs md:text-sm lg:text-base whitespace-nowrap ${currentStatus === "exchanging"
                   ? "text-[#FF9500]"
                   : currentStatus === "sending" ||
-                      currentStatus === "completed" ||
-                      currentStatus === "finished"
+                    currentStatus === "completed" ||
+                    currentStatus === "finished"
                     ? "text-[#1D8751]"
                     : "text-[#7B7B7B]"
-              }`}
+                }`}
             >
               Exchanging
             </span>
@@ -1256,31 +1231,30 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
             {(currentStatus === "sending" ||
               currentStatus === "completed" ||
               currentStatus === "finished") && (
-              <div className="flex items-center gap-1">
-                <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-4 md:h-4" fill="none" viewBox="0 0 24 24">
-                  <path
-                    d="M9 12l2 2 4-4"
-                    stroke="#1D8751"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
-            )}
+                <div className="flex items-center gap-1">
+                  <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-4 md:h-4" fill="none" viewBox="0 0 24 24">
+                    <path
+                      d="M9 12l2 2 4-4"
+                      stroke="#1D8751"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
+              )}
           </div>
         </div>
 
         {/* Step 4: Sending to you */}
         <div className="flex flex-col items-center flex-1 relative z-10 min-w-[60px] sm:min-w-[70px] md:min-w-0 flex-shrink-0">
           <div
-            className={`w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center mb-1 border-2 sm:border-3 md:border-4 ${
-              currentStatus === "sending"
+            className={`w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center mb-1 border-2 sm:border-3 md:border-4 ${currentStatus === "sending"
                 ? "bg-[#FF9500] border-[#FF95001A]"
                 : currentStatus === "completed" || currentStatus === "finished"
                   ? "bg-[#1D8751] border-[#1D87511A]"
                   : "bg-[var(--card-color)] border-[#35353E]"
-            }`}
+              }`}
           >
             <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-6 md:h-6" fill="none" viewBox="0 0 24 24">
               <circle
@@ -1291,7 +1265,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                   currentStatus === "sending"
                     ? "#fff"
                     : currentStatus === "completed" ||
-                        currentStatus === "finished"
+                      currentStatus === "finished"
                       ? "#fff"
                       : "#7B7B7B"
                 }
@@ -1303,7 +1277,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                   currentStatus === "sending"
                     ? "#fff"
                     : currentStatus === "completed" ||
-                        currentStatus === "finished"
+                      currentStatus === "finished"
                       ? "#fff"
                       : "#7B7B7B"
                 }
@@ -1314,14 +1288,13 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
           </div>
           <div className="flex items-center gap-0.5 sm:gap-1 flex-wrap justify-center">
             <span
-              className={`font-semibold text-[10px] sm:text-xs md:text-sm lg:text-base whitespace-nowrap ${
-                currentStatus === "sending"
+              className={`font-semibold text-[10px] sm:text-xs md:text-sm lg:text-base whitespace-nowrap ${currentStatus === "sending"
                   ? "text-[#FF9500]"
                   : currentStatus === "completed" ||
-                      currentStatus === "finished"
+                    currentStatus === "finished"
                     ? "text-[#1D8751]"
                     : "text-[#7B7B7B]"
-              }`}
+                }`}
             >
               {currentStatus === "completed" ? (
                 <>
@@ -1373,31 +1346,27 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
 
       {/* Transaction Details Card */}
       <div
-        className={`${
-          isDark ? "bg-[var(--card-color)] border-[#35353E]" : "bg-white border-gray-200"
-        } border-2 rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 shadow-lg w-full mb-2 sm:mb-4 overflow-hidden box-border`}
+        className={`${isDark ? "bg-[var(--card-color)] border-[#35353E]" : "bg-white border-gray-200"
+          } border-2 rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 shadow-lg w-full mb-2 sm:mb-4 overflow-hidden box-border`}
       >
         <div
-          className={`${
-            isDark ? "text-white" : "text-gray-900"
-          } text-lg sm:text-xl md:text-2xl font-semibold mb-3 sm:mb-4`}
+          className={`${isDark ? "text-white" : "text-gray-900"
+            } text-lg sm:text-xl md:text-2xl font-semibold mb-3 sm:mb-4`}
         >
           Transaction Details
         </div>
         {/* Transaction ID Row */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mb-2 sm:mb-1">
           <div
-            className={`${
-              isDark ? "text-[#7B7B7B]" : "text-gray-600"
-            } text-sm sm:text-base font-medium`}
+            className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+              } text-sm sm:text-base font-medium`}
           >
             Transaction ID
           </div>
           <div className="flex items-center gap-2 min-w-0 flex-1 sm:flex-initial">
             <span
-              className={`${
-                isDark ? "text-white" : "text-gray-900"
-              } text-xs sm:text-sm md:text-base font-mono font-semibold break-all sm:break-normal`}
+              className={`${isDark ? "text-white" : "text-gray-900"
+                } text-xs sm:text-sm md:text-base font-mono font-semibold break-all sm:break-normal`}
             >
               {liveTransactionId || effectiveTransactionData?.transactionId || "Pending..."}
             </span>
@@ -1416,23 +1385,20 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
         </div>
         {/* Dashed Divider */}
         <div
-          className={`border-t border-dashed ${
-            isDark ? "border-[#7B7B7B]" : "border-gray-400"
-          } mb-4`}
+          className={`border-t border-dashed ${isDark ? "border-[#7B7B7B]" : "border-gray-400"
+            } mb-4`}
         ></div>
         {/* From/To Labels Row */}
         <div className="flex items-center justify-between mb-2">
           <div
-            className={`${
-              isDark ? "text-[#7B7B7B]" : "text-gray-600"
-            } text-sm sm:text-base font-medium`}
+            className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+              } text-sm sm:text-base font-medium`}
           >
             From
           </div>
           <div
-            className={`${
-              isDark ? "text-[#7B7B7B]" : "text-gray-600"
-            } text-sm sm:text-base font-medium`}
+            className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+              } text-sm sm:text-base font-medium`}
           >
             To
           </div>
@@ -1445,32 +1411,30 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
               <>
                 {(effectiveTransactionData.fromPaymentMethod.provider_logo ||
                   effectiveTransactionData.fromPaymentMethod.logo) && (
-                  <img
-                    src={
-                      effectiveTransactionData.fromPaymentMethod.provider_logo ||
-                      effectiveTransactionData.fromPaymentMethod.logo
-                    }
-                    alt={effectiveTransactionData.fromPaymentMethod.provider_name}
-                    className="w-6 h-6 sm:w-8 sm:h-8 rounded-md object-contain bg-white flex-shrink-0"
-                    onError={(e) => {
-                      e.currentTarget.src =
-                        "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
-                    }}
-                  />
-                )}
+                    <img
+                      src={
+                        effectiveTransactionData.fromPaymentMethod.provider_logo ||
+                        effectiveTransactionData.fromPaymentMethod.logo
+                      }
+                      alt={effectiveTransactionData.fromPaymentMethod.provider_name}
+                      className="w-6 h-6 sm:w-8 sm:h-8 rounded-md object-contain bg-white flex-shrink-0"
+                      onError={(e) => {
+                        e.currentTarget.src =
+                          "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+                      }}
+                    />
+                  )}
                 <div className="min-w-0">
                   <div
-                    className={`${
-                      isDark ? "text-white" : "text-gray-900"
-                    } text-sm sm:text-base font-semibold break-words`}
+                    className={`${isDark ? "text-white" : "text-gray-900"
+                      } text-sm sm:text-base font-semibold break-words`}
                   >
                     {effectiveTransactionData.fromPaymentMethod.provider_name}
                   </div>
                   {effectiveTransactionData.fromPaymentMethod.account_number && (
                     <div
-                      className={`${
-                        isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                      } text-xs sm:text-sm font-mono break-all`}
+                      className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                        } text-xs sm:text-sm font-mono break-all`}
                     >
                       {effectiveTransactionData.fromPaymentMethod.account_number}
                     </div>
@@ -1479,9 +1443,8 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
               </>
             ) : (
               <div
-                className={`${
-                  isDark ? "text-white" : "text-gray-900"
-                } text-sm sm:text-base font-semibold`}
+                className={`${isDark ? "text-white" : "text-gray-900"
+                  } text-sm sm:text-base font-semibold`}
               >
                 N/A
               </div>
@@ -1493,32 +1456,30 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
               <>
                 {(effectiveTransactionData.toPaymentMethod.provider_logo ||
                   effectiveTransactionData.toPaymentMethod.logo) && (
-                  <img
-                    src={
-                      effectiveTransactionData.toPaymentMethod.provider_logo ||
-                      effectiveTransactionData.toPaymentMethod.logo
-                    }
-                    alt={effectiveTransactionData.toPaymentMethod.provider_name}
-                    className="w-6 h-6 sm:w-8 sm:h-8 rounded-md object-contain bg-white flex-shrink-0"
-                    onError={(e) => {
-                      e.currentTarget.src =
-                        "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
-                    }}
-                  />
-                )}
+                    <img
+                      src={
+                        effectiveTransactionData.toPaymentMethod.provider_logo ||
+                        effectiveTransactionData.toPaymentMethod.logo
+                      }
+                      alt={effectiveTransactionData.toPaymentMethod.provider_name}
+                      className="w-6 h-6 sm:w-8 sm:h-8 rounded-md object-contain bg-white flex-shrink-0"
+                      onError={(e) => {
+                        e.currentTarget.src =
+                          "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+                      }}
+                    />
+                  )}
                 <div className="text-right min-w-0">
                   <div
-                    className={`${
-                      isDark ? "text-white" : "text-gray-900"
-                    } text-sm sm:text-base font-semibold break-words`}
+                    className={`${isDark ? "text-white" : "text-gray-900"
+                      } text-sm sm:text-base font-semibold break-words`}
                   >
                     {effectiveTransactionData.toPaymentMethod.provider_name}
                   </div>
                   {effectiveTransactionData.toPaymentMethod.account_number && (
                     <div
-                      className={`${
-                        isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                      } text-xs sm:text-sm font-mono break-all`}
+                      className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                        } text-xs sm:text-sm font-mono break-all`}
                     >
                       {effectiveTransactionData.toPaymentMethod.account_number}
                     </div>
@@ -1527,9 +1488,8 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
               </>
             ) : (
               <div
-                className={`${
-                  isDark ? "text-white" : "text-gray-900"
-                } text-sm sm:text-base font-semibold`}
+                className={`${isDark ? "text-white" : "text-gray-900"
+                  } text-sm sm:text-base font-semibold`}
               >
                 N/A
               </div>
@@ -1544,14 +1504,14 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
           <h2 className="text-white text-sm sm:text-base md:text-lg font-semibold">
             Terms and Conditions Summary
           </h2>
-          <ul className="list-disc list-inside space-y-0.5 sm:space-y-1">
-            <li className="text-white text-xs sm:text-sm break-words">
+          <ul className="list-disc list-outside ml-4 space-y-0.5 sm:space-y-1">
+            <li className="text-white text-xs sm:text-sm break-normal">
               Please send the money from your own account Only
             </li>
-            <li className="text-white text-xs sm:text-sm break-words">
+            <li className="text-white text-xs sm:text-sm break-normal">
               Put transaction ID in the description field of the bank
             </li>
-            <li className="text-white text-xs sm:text-sm break-words">
+            <li className="text-white text-xs sm:text-sm break-normal">
               Please note, If you do not follow above conditions, we will reject
               your transaction and send you back your money.
             </li>

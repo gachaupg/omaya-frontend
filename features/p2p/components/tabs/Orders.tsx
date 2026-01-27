@@ -54,8 +54,19 @@ const Orders = memo(() => {
     dispatch(fetchUserTrades({ page, ...filters }));
   };
 
-  const handleFilterChange = (newFilters: typeof filters) => {
-    setFilters(newFilters);
+  const handleFilterChange = (newFilters: {
+    type: string;
+    status: string;
+    date: string;
+    currency: string;
+    customDateFrom?: string | undefined;
+    customDateTo?: string | undefined;
+  }) => {
+    setFilters({
+      ...newFilters,
+      customDateFrom: newFilters.customDateFrom ?? undefined,
+      customDateTo: newFilters.customDateTo ?? undefined,
+    });
     dispatch(setCurrentPage(1)); // Reset to first page when filters change
   };
 

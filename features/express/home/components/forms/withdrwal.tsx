@@ -2115,7 +2115,7 @@ export default function WithdrawalForm({
       const searchTerm = assetSearchTerm.toUpperCase();
 
       // Apply search filter
-      const matchesSearch = !searchTerm || 
+      const matchesSearch = !searchTerm ||
         ticker.includes(searchTerm) ||
         name.includes(searchTerm) ||
         symbol.includes(searchTerm);
@@ -2351,11 +2351,11 @@ export default function WithdrawalForm({
       (
         <div
           ref={assetDropdownContentRef}
-          className="bg-white dark:bg-[#1D1D23] border border-gray-300 dark:border-[#35353E] rounded-2xl shadow-xl z-[9999] max-h-[70vh] sm:max-h-[60vh] overflow-hidden"
+          className="bg-white dark:bg-[#1D1D23] border border-gray-300 dark:border-[#35353E] rounded-2xl shadow-xl z-[9999] max-h-[70vh] sm:max-h-[60vh] overflow-hidden flex flex-col"
           style={dropdownStyle}
         >
           {/* Dropdown Title */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-600">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-600 shrink-0">
             <h3 className="text-base font-semibold text-gray-900 dark:text-white">Currency from</h3>
             <button
               onClick={() => {
@@ -2372,7 +2372,7 @@ export default function WithdrawalForm({
           </div>
 
           {/* Search Input */}
-          <div className="p-2 border-b border-gray-200 dark:border-gray-600">
+          <div className="p-2 border-b border-gray-200 dark:border-gray-600 shrink-0">
             <div className="relative">
               <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#7e7e8f] w-4 h-4" />
               <input
@@ -2387,51 +2387,47 @@ export default function WithdrawalForm({
 
           {/* Filter Tabs - Only show for home page */}
           {isHomePage && (
-            <div className="flex items-center gap-2 px-2 py-2 border-b border-gray-200 dark:border-gray-600 overflow-x-auto">
+            <div className="flex items-center gap-2 px-2 py-2 border-b border-gray-200 dark:border-gray-600 overflow-x-auto shrink-0">
               <button
                 onClick={() => setAssetFilterTab("all")}
-                className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-2xl whitespace-nowrap transition-colors ${
-                  assetFilterTab === "all"
+                className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-2xl whitespace-nowrap transition-colors ${assetFilterTab === "all"
                     ? "bg-[#1D8751] text-white"
                     : "bg-[#35353E] text-gray-300 hover:bg-[#40404A]"
-                }`}
+                  }`}
               >
                 All
               </button>
               <button
                 onClick={() => setAssetFilterTab("new")}
-                className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-2xl whitespace-nowrap transition-colors ${
-                  assetFilterTab === "new"
+                className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-2xl whitespace-nowrap transition-colors ${assetFilterTab === "new"
                     ? "bg-[#1D8751] text-white"
                     : "bg-[#35353E] text-gray-300 hover:bg-[#40404A]"
-                }`}
+                  }`}
               >
                 New
               </button>
               <button
                 onClick={() => setAssetFilterTab("gainers")}
-                className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-2xl whitespace-nowrap transition-colors ${
-                  assetFilterTab === "gainers"
+                className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-2xl whitespace-nowrap transition-colors ${assetFilterTab === "gainers"
                     ? "bg-[#1D8751] text-white"
                     : "bg-[#35353E] text-gray-300 hover:bg-[#40404A]"
-                }`}
+                  }`}
               >
                 Gainers
               </button>
               <button
                 onClick={() => setAssetFilterTab("losers")}
-                className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-2xl whitespace-nowrap transition-colors ${
-                  assetFilterTab === "losers"
+                className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-2xl whitespace-nowrap transition-colors ${assetFilterTab === "losers"
                     ? "bg-[#1D8751] text-white"
                     : "bg-[#35353E] text-gray-300 hover:bg-[#40404A]"
-                }`}
+                  }`}
               >
                 Losers
               </button>
             </div>
           )}
 
-          <div className="max-h-[60vh] sm:max-h-[50vh] overflow-y-auto p-1">
+          <div className="overflow-y-auto p-1 flex-1 min-h-0">
             {sortedSwapAssets.length > 0 ? (
               <>
                 {!assetSearchTerm && sortedSwapAssets.length > 3 && (
@@ -3026,7 +3022,7 @@ export default function WithdrawalForm({
         try {
           const kycResult = await dispatch(checkKYCStatus()).unwrap();
           const kycStatus = kycResult as any;
-          
+
           // Only open modal if API confirms user is NOT verified
           if (kycStatus && kycStatus.is_verified === false) {
             dispatch(openKYCModal());
@@ -3237,7 +3233,7 @@ export default function WithdrawalForm({
       try {
         const kycResult = await dispatch(checkKYCStatus()).unwrap();
         const kycStatus = kycResult as any;
-        
+
         // Only open modal if API confirms user is NOT verified
         if (kycStatus && kycStatus.is_verified === false) {
           dispatch(openKYCModal());

@@ -11,7 +11,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { FaExchangeAlt, FaExclamationCircle } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
-import { AppDispatch } from "@/store";  
+import { AppDispatch } from "@/store";
 import {
   fetchAdminPaymentDetails,
   fetchUserPaymentDetails,
@@ -451,10 +451,10 @@ export default function WithdrawalForm({
     const fetchWithCache = async () => {
       try {
         const { sliceCache } = await import("@/lib/utils/sliceCache");
-        
+
         // Try to get from cache first
         const cachedData = await sliceCache.get<any>('paymentMethods', 'fetchPublicPaymentMethods');
-        
+
         if (cachedData) {
           // Use cached data
           dispatch({
@@ -473,7 +473,7 @@ export default function WithdrawalForm({
         dispatch(fetchPublicPaymentMethods());
       }
     };
-    
+
     fetchWithCache();
   }, [dispatch]);
 
@@ -936,10 +936,10 @@ export default function WithdrawalForm({
     const fetchWithCache = async () => {
       try {
         const { sliceCache } = await import("@/lib/utils/sliceCache");
-        
+
         // Try to get from cache first
         const cachedData = await sliceCache.get<any[]>('payment', 'fetchAdminPaymentDetails');
-        
+
         if (cachedData && cachedData.length > 0) {
           // Update ref immediately
           paymentMethodsRef.current = cachedData.filter((p: any) =>
@@ -996,10 +996,10 @@ export default function WithdrawalForm({
     const fetchWithCache = async () => {
       try {
         const { sliceCache } = await import("@/lib/utils/sliceCache");
-        
+
         // Try to get from cache first
         const cachedData = await sliceCache.get<any>('payment', 'fetchAdminWalletList');
-        
+
         if (cachedData && cachedData.results && cachedData.results.length > 0) {
           setHasFetchedAdminWallet(true);
           setAdminWalletRetryCount(0);
@@ -1098,7 +1098,7 @@ export default function WithdrawalForm({
     const fetchWithCache = async () => {
       try {
         const { sliceCache } = await import("@/lib/utils/sliceCache");
-        
+
         // If user just logged in, clear cache and force refresh
         if (justLoggedIn) {
           await sliceCache.delete('payment', 'fetchUserPaymentDetails');
@@ -2525,105 +2525,105 @@ export default function WithdrawalForm({
                     selectedAsset?.ticker === asset.ticker &&
                     selectedAsset?.network === asset.network;
                   return (
-                  <div
-                    key={`${asset.asset_id}-${asset.ticker}-${asset.network}-${index}`}
-                    className={`flex items-center gap-3 p-3 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-b transition-all duration-150 last:border-b-0 ${isCurrentlySelected ? "bg-blue-50 dark:bg-blue-900/20" : ""}`}
-                    onClick={() => {
-                      if (calculationTimeout) {
-                        clearTimeout(calculationTimeout);
-                      }
-                      if (estimateTimeout) {
-                        clearTimeout(estimateTimeout);
-                      }
+                    <div
+                      key={`${asset.asset_id}-${asset.ticker}-${asset.network}-${index}`}
+                      className={`flex items-center gap-3 p-3 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-b transition-all duration-150 last:border-b-0 ${isCurrentlySelected ? "bg-blue-50 dark:bg-blue-900/20" : ""}`}
+                      onClick={() => {
+                        if (calculationTimeout) {
+                          clearTimeout(calculationTimeout);
+                        }
+                        if (estimateTimeout) {
+                          clearTimeout(estimateTimeout);
+                        }
 
-                      setEstimate(null);
-                      setEstimateError(null);
-                      setEstimateLoading(false);
-                      setCalculationError(null);
-                      setReceiveAmountError(null);
-                      setApiValidationError(null);
-                      setApiValidationError(null);
+                        setEstimate(null);
+                        setEstimateError(null);
+                        setEstimateLoading(false);
+                        setCalculationError(null);
+                        setReceiveAmountError(null);
+                        setApiValidationError(null);
+                        setApiValidationError(null);
 
-                      setSelectedAsset(asset);
-                      setIsAssetDropdownOpen(false);
-                      setAssetSearchTerm("");
+                        setSelectedAsset(asset);
+                        setIsAssetDropdownOpen(false);
+                        setAssetSearchTerm("");
 
-                      if (isSimpleCalculationAsset(asset)) {
-                        setIsCalculatingFromPay(true);
-                        if (!isUserModifiedAmount) {
-                          const defaultAmount = getDefaultAmount(asset);
-                          setPayAmount(defaultAmount);
-                          setPayAmountInput(defaultAmount.toString());
-                          calculateAmounts(defaultAmount, true);
+                        if (isSimpleCalculationAsset(asset)) {
+                          setIsCalculatingFromPay(true);
+                          if (!isUserModifiedAmount) {
+                            const defaultAmount = getDefaultAmount(asset);
+                            setPayAmount(defaultAmount);
+                            setPayAmountInput(defaultAmount.toString());
+                            calculateAmounts(defaultAmount, true);
+                          } else {
+                            calculateAmounts(payAmount, true);
+                          }
+                        } else if (isForexAsset(asset)) {
+                          setIsCalculatingFromPay(true);
+                          if (!isUserModifiedAmount) {
+                            const defaultAmount = 1000;
+                            setPayAmount(defaultAmount);
+                            setPayAmountInput(defaultAmount.toString());
+                            calculateAmounts(defaultAmount, true);
+                          } else {
+                            calculateAmounts(payAmount, true);
+                          }
                         } else {
-                          calculateAmounts(payAmount, true);
+                          setIsCalculatingFromPay(true);
+                          setIsCalculating(true);
+                          setIsCalculatingReceive(true);
+                          setEstimateLoading(true);
+                          if (!isUserModifiedAmount) {
+                            const defaultAmount = getDefaultAmount(asset);
+                            setPayAmount(defaultAmount);
+                            setPayAmountInput(defaultAmount.toString());
+                          }
                         }
-                      } else if (isForexAsset(asset)) {
-                        setIsCalculatingFromPay(true);
-                        if (!isUserModifiedAmount) {
-                          const defaultAmount = 1000;
-                          setPayAmount(defaultAmount);
-                          setPayAmountInput(defaultAmount.toString());
-                          calculateAmounts(defaultAmount, true);
-                        } else {
-                          calculateAmounts(payAmount, true);
-                        }
-                      } else {
-                        setIsCalculatingFromPay(true);
-                        setIsCalculating(true);
-                        setIsCalculatingReceive(true);
-                        setEstimateLoading(true);
-                        if (!isUserModifiedAmount) {
-                          const defaultAmount = getDefaultAmount(asset);
-                          setPayAmount(defaultAmount);
-                          setPayAmountInput(defaultAmount.toString());
-                        }
-                      }
-                    }}
-                  >
-                    <img
-                      src={
-                        asset?.image_url ||
-                        asset?.asset_image ||
-                        (asset as any)?.image ||
-                        "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
-                      }
-                      alt={
-                        asset?.name || asset?.ticker || asset?.symbol || "Asset"
-                      }
-                      className="w-10 h-10 rounded-full object-cover"
-                      onError={(e) => {
-                        e.currentTarget.src =
-                          "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
                       }}
-                    />
-                    <div className="flex-1">
-                      <div className="text-[#1F2937] dark:text-[#ffffff] font-medium text-base flex items-center gap-2">
-                        {(asset.ticker ||
-                          asset.symbol ||
-                          asset.name ||
-                          "Unknown"
-                        ).toUpperCase()}
-                        <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-normal px-2 py-0.5 rounded-full">
-                          {getNetworkDisplayName(asset.network)}
-                        </span>
-                      </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
-                        {asset.name ||
-                          (asset.ticker || "").toUpperCase() ||
-                          (asset.symbol || "").toUpperCase() ||
-                          "Unknown Asset"}
-                        {asset.legacy_ticker && (
-                          <span className="text-xs text-[#f7c624] dark:text-[#f7c624] bg-[#f7c6241a] px-1 py-0.5 rounded-full">
-                            {asset.legacy_ticker}
+                    >
+                      <img
+                        src={
+                          asset?.image_url ||
+                          asset?.asset_image ||
+                          (asset as any)?.image ||
+                          "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                        }
+                        alt={
+                          asset?.name || asset?.ticker || asset?.symbol || "Asset"
+                        }
+                        className="w-10 h-10 rounded-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.src =
+                            "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                        }}
+                      />
+                      <div className="flex-1">
+                        <div className="text-[#1F2937] dark:text-[#ffffff] font-medium text-base flex items-center gap-2">
+                          {(asset.ticker ||
+                            asset.symbol ||
+                            asset.name ||
+                            "Unknown"
+                          ).toUpperCase()}
+                          <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-normal px-2 py-0.5 rounded-full">
+                            {getNetworkDisplayName(asset.network)}
                           </span>
-                        )}
+                        </div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400">
+                          {asset.name ||
+                            (asset.ticker || "").toUpperCase() ||
+                            (asset.symbol || "").toUpperCase() ||
+                            "Unknown Asset"}
+                          {asset.legacy_ticker && (
+                            <span className="text-xs text-[#f7c624] dark:text-[#f7c624] bg-[#f7c6241a] px-1 py-0.5 rounded-full">
+                              {asset.legacy_ticker}
+                            </span>
+                          )}
+                        </div>
                       </div>
+                      {selectedAsset?.asset_id === asset.asset_id && (
+                        <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
+                      )}
                     </div>
-                    {selectedAsset?.asset_id === asset.asset_id && (
-                      <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
-                    )}
-                  </div>
                   );
                 })}
               </>
@@ -2991,7 +2991,7 @@ export default function WithdrawalForm({
         try {
           const kycResult = await dispatch(checkKYCStatus()).unwrap();
           const kycStatus = kycResult as any;
-          
+
           // Only open modal if API confirms user is NOT verified
           if (kycStatus && kycStatus.is_verified === false) {
             dispatch(openKYCModal());
@@ -3202,7 +3202,7 @@ export default function WithdrawalForm({
       try {
         const kycResult = await dispatch(checkKYCStatus()).unwrap();
         const kycStatus = kycResult as any;
-        
+
         // Only open modal if API confirms user is NOT verified
         if (kycStatus && kycStatus.is_verified === false) {
           dispatch(openKYCModal());
