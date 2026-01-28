@@ -346,7 +346,7 @@ export default function RegistrationPage() {
   );
 
   // Get referral code from URL parameter
-  const refCodeFromUrl = searchParams.get("ref") || "";
+  const refCodeFromUrl = searchParams?.get("ref") ?? "";
 
   // Form state
   const [firstName, setFirstName] = useState("");
@@ -657,6 +657,7 @@ export default function RegistrationPage() {
           user_type: "individual",
           phone_number: phoneNumber,
           referred_by: referralCode || undefined,
+          country: selectedCountryData?.name || selectedCountry,
         })
       );
 
@@ -730,6 +731,7 @@ export default function RegistrationPage() {
           user_type: "individual",
           phone_number: phoneNumber,
           referred_by: referralCode || undefined,
+          country: selectedCountryData?.name || selectedCountry,
         })
       );
 
