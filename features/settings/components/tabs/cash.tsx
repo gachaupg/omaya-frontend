@@ -286,13 +286,13 @@ function Cash({ sharedFeesError }: CashProps) {
               </div>
             </div>
             
-            <div className="flex items-center text- text-sm mb-2 mt-1">
+            <div className="flex items-center text-sm mb-2 mt-1">
               <svg
-                width="18"
-                height="18"
+                width="16"
+                height="16"
                 fill="none"
                 viewBox="0 0 24 24"
-                className="mr-1"
+                className="mr-1 shrink-0"
               >
                 <circle
                   cx="12"

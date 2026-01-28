@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "../../../../store";
 import {
@@ -67,7 +67,7 @@ const use2FAState = () => {
   const update2FA = (enabled: boolean, responseText?: string) => {
     logger.debug('dashboard', `Updating 2FA state from ${twoFA} to ${enabled}`);
     setTwoFA(enabled);
-    
+
     // Always store the actual response text, never boolean
     if (responseText) {
       localStorage.setItem('twoFA_enabled', responseText);
@@ -95,7 +95,7 @@ const PrivacySecurity = () => {
 
   // Use custom hook for 2FA state management
   const { twoFA, update2FA, isInitialized } = use2FAState();
-  
+
   const [fallbackSessions, setFallbackSessions] = useState<DeviceSession[]>([]);
   const [show2FAModal, setShow2FAModal] = useState(false);
   const [showDisable2FAModal, setShowDisable2FAModal] = useState(false);
@@ -108,6 +108,7 @@ const PrivacySecurity = () => {
   const [disableLoading, setDisableLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const sessionsPerPage = 5;
+  const sessionsContainerRef = useRef<HTMLDivElement>(null);
 
   // Enhanced logout states
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -156,7 +157,7 @@ const PrivacySecurity = () => {
       })
       .catch(async (error: unknown) => {
         console.error("Error loading device sessions:", error);
-        
+
         // Only use fallback if it's a network error, not an auth error
         const errorMessage = error instanceof Error ? error.message : String(error);
         if (!errorMessage.includes("401") && !errorMessage.includes("403")) {
@@ -184,9 +185,9 @@ const PrivacySecurity = () => {
         logger.debug('dashboard', "2FA is not enabled on server");
       } catch (error: any) {
         // If we get "2FA already enabled" error, update local state
-        if (error?.error === "2FA already enabled." || 
-            error?.message === "2FA already enabled." ||
-            error?.includes("2FA already enabled")) {
+        if (error?.error === "2FA already enabled." ||
+          error?.message === "2FA already enabled." ||
+          error?.includes("2FA already enabled")) {
           update2FA(true, error.message); // Store the actual error message
           logger.debug('dashboard', "2FA is already enabled on server - setting state to enabled");
         } else {
@@ -215,7 +216,7 @@ const PrivacySecurity = () => {
     // Only sync if we don't already have a valid localStorage value
     const stored2FA = localStorage.getItem('twoFA_enabled');
     const hasValidStoredValue = stored2FA && (stored2FA === 'true' || stored2FA === '{"error":"2FA already enabled."}' || stored2FA?.includes('2FA already enabled'));
-    
+
     if (isInitialized && security?.two_factor_enabled !== undefined && !hasValidStoredValue) {
       update2FA(security.two_factor_enabled);
     }
@@ -226,7 +227,7 @@ const PrivacySecurity = () => {
       try {
         setVerifyError(null);
         setVerifyLoading(true);
-        
+
         // Try to enable 2FA
         const result = await dispatch(enable2FA()).unwrap();
         // If we reach here, 2FA was not enabled, show QR code for setup
@@ -234,9 +235,9 @@ const PrivacySecurity = () => {
         setShow2FAModal(true);
       } catch (error: any) {
         // If we get "2FA already enabled" error, it means 2FA is enabled
-        if (error?.error === "2FA already enabled." || 
-            error?.message === "2FA already enabled." ||
-            error?.includes("2FA already enabled")) {
+        if (error?.error === "2FA already enabled." ||
+          error?.message === "2FA already enabled." ||
+          error?.includes("2FA already enabled")) {
           update2FA(true, error.message); // Store the actual error message
           showToast.success("2FA is already enabled!");
         } else {
@@ -401,10 +402,10 @@ const PrivacySecurity = () => {
 
   const handleConfirmDelete = async () => {
     if (!sessionToDelete) return;
-    
+
     setDeletingSessionId(sessionToDelete.session_id);
     setShowDeleteConfirmModal(false);
-    
+
     try {
       await dispatch(logoutDevice(sessionToDelete.session_id)).unwrap();
       showToast.success("Device session removed successfully");
@@ -511,7 +512,7 @@ const PrivacySecurity = () => {
           deviceSessionsLoading,
           isAuthenticated
         });
-        
+
         showToast.info("No active devices detected, logging out automatically");
 
         // Auto logout after a short delay
@@ -555,6 +556,13 @@ const PrivacySecurity = () => {
       checkAndAutoLogout();
     }
   }, [deviceSessionsLoading, allSessions, isAuthenticated, isCreatingSession, dispatch]);
+
+  // Scroll to top when page changes
+  useEffect(() => {
+    if (sessionsContainerRef.current) {
+      sessionsContainerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [currentPage]);
 
   const totalPages = Math.ceil(allSessions.length / sessionsPerPage);
   const paginatedSessions = allSessions.slice(
@@ -764,22 +772,20 @@ const PrivacySecurity = () => {
                   </button>
 
                   <button
-                    className={`w-full py-2.5 sm:py-3 px-4 rounded-xl border transition font-semibold text-sm ${
-                      hasOtherActiveSessions
-                        ? "border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751] hover:text-white"
-                        : "border-[#808080] text-[#808080] cursor-not-allowed"
-                    }`}
+                    className={`w-full py-2.5 sm:py-3 px-4 rounded-xl border transition font-semibold text-sm ${hasOtherActiveSessions
+                      ? "border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751] hover:text-white"
+                      : "border-[#808080] text-[#808080] cursor-not-allowed"
+                      }`}
                     onClick={handleLogoutOneByOne}
                     disabled={!hasOtherActiveSessions}
                   >
                     Sign out from other devices only
                     <div className="text-xs mt-1 opacity-75">
                       {hasOtherActiveSessions
-                        ? `${
-                            allSessions.filter(
-                              (s: DeviceSession) => s.is_active && !s.is_current
-                            ).length
-                          } other active sessions`
+                        ? `${allSessions.filter(
+                          (s: DeviceSession) => s.is_active && !s.is_current
+                        ).length
+                        } other active sessions`
                         : "No other active sessions"}
                     </div>
                   </button>
@@ -830,19 +836,18 @@ const PrivacySecurity = () => {
       <div className="px-2 sm:px-3 py-3 dark:text-white text-gray-900 flex flex-col gap-4 w-full">
         {/* 2 Factor Authentication */}
         <div className="text-base font-bold mb-2 dark:text-white text-gray-900">
-            Privacy & Security
-          </div>
+          Privacy & Security
+        </div>
         <div className="w-full rounded-2xl px-3 sm:px-4 md:px-5 py-4 sm:py-5 flex flex-col gap-4 max-w-none mx-auto bg-white dark:bg-[var(--card-color)] border border-[#E4E6F0] dark:border-[#35353E] shadow-sm">
           <div className="text-base font-semibold mb-2 dark:text-white text-gray-900">
             2 Factor Authentication
           </div>
           <div className="flex gap-3 mb-2">
             <button
-              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-semibold border transition-all ${
-                twoFA
-                  ? "bg-[#1D8751] text-white border-[#1D8751]"
-                  : "bg-transparent dark:text-[#808080] text-gray-600 dark:border-[#35353E] border-gray-300"
-              }`}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-semibold border transition-all ${twoFA
+                ? "bg-[#1D8751] text-white border-[#1D8751]"
+                : "bg-transparent dark:text-[#808080] text-gray-600 dark:border-[#35353E] border-gray-300"
+                }`}
               onClick={() => handleTwoFactorToggle(true)}
               disabled={updating}
             >
@@ -866,11 +871,10 @@ const PrivacySecurity = () => {
               Yes
             </button>
             <button
-              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-semibold border transition-all ${
-                !twoFA
-                  ? "bg-[#E23D3A] text-white border-[#E23D3A]"
-                  : "bg-transparent dark:text-[#808080] text-gray-600 dark:border-[#35353E] border-gray-300"
-              }`}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-semibold border transition-all ${!twoFA
+                ? "bg-[#E23D3A] text-white border-[#E23D3A]"
+                : "bg-transparent dark:text-[#808080] text-gray-600 dark:border-[#35353E] border-gray-300"
+                }`}
               onClick={() => handleTwoFactorToggle(false)}
               disabled={updating}
             >
@@ -903,35 +907,33 @@ const PrivacySecurity = () => {
             </div>
           )}
           <button
-            className={`w-full py-2 rounded-xl border font-semibold text-sm transition ${
-              hasAnyActiveSessions
-                ? "border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751] hover:text-white"
-                : "border-[#808080] text-[#808080] cursor-not-allowed"
-            }`}
+            className={`w-full py-2 rounded-xl border font-semibold text-sm transition ${hasAnyActiveSessions
+              ? "border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751] hover:text-white"
+              : "border-[#808080] text-[#808080] cursor-not-allowed"
+              }`}
             onClick={handleSignOutAllDevices}
             disabled={!hasAnyActiveSessions}
           >
             {hasAnyActiveSessions
-              ? `Sign out from all devices (${
-                  allSessions.filter((s: DeviceSession) => s.is_active).length
-                } active)`
+              ? `Sign out from all devices (${allSessions.filter((s: DeviceSession) => s.is_active).length
+              } active)`
               : "No active sessions to sign out from"}
           </button>
-         {/* Active Browser Sessions */}
-        <div className="w-full max-w-none mx-auto rounded-2xl border border-[#E4E6F0] dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] shadow-sm px-3 sm:px-4 md:px-5 py-4 sm:py-5 space-y-4">
-          <div className="flex items-center justify-between mb-2">
-            <div className="text-base font-semibold">
-              Active Browser Session
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => dispatch(fetchDeviceSessions())}
-                className="text-[#1D8751] text-sm hover:underline"
-                disabled={deviceSessionsLoading}
-              >
-                {deviceSessionsLoading ? "Refreshing..." : "Refresh"}
-              </button>
-              {/* <button
+          {/* Active Browser Sessions */}
+          <div ref={sessionsContainerRef} className="w-full max-w-none mx-auto rounded-2xl border border-[#E4E6F0] dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] shadow-sm px-3 sm:px-4 md:px-5 py-4 sm:py-5 space-y-4">
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-base font-semibold">
+                Active Browser Session
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => dispatch(fetchDeviceSessions())}
+                  className="text-[#1D8751] text-sm hover:underline"
+                  disabled={deviceSessionsLoading}
+                >
+                  {deviceSessionsLoading ? "Refreshing..." : "Refresh"}
+                </button>
+                {/* <button
               onClick={async () => {
                 // Load fallback sessions for testing
                 try {
@@ -948,19 +950,19 @@ const PrivacySecurity = () => {
             >
               Load Local
             </button> */}
-            </div>
-          </div>
-          <div className="dark:text-[#808080] text-gray-600 text-sm mb-3">
-            Review every browser that currently has access to your account. If something looks unfamiliar, disconnect the session right away.
-            {isCreatingSession && (
-              <div className="text-[#FACC15] text-xs mt-1">
-                🔄 Creating new session...
               </div>
-            )}
-            {/* <div className="text-[#1D8751] text-xs mt-1">
+            </div>
+            <div className="dark:text-[#808080] text-gray-600 text-sm mb-3">
+              Review every browser that currently has access to your account. If something looks unfamiliar, disconnect the session right away.
+              {isCreatingSession && (
+                <div className="text-[#FACC15] text-xs mt-1">
+                  🔄 Creating new session...
+                </div>
+              )}
+              {/* <div className="text-[#1D8751] text-xs mt-1">
             Total Sessions: {allSessions.length}
           </div> */}
-            {/* {fallbackSessions.length > 0 && validDeviceSessions.length === 0 && (
+              {/* {fallbackSessions.length > 0 && validDeviceSessions.length === 0 && (
             <div className="text-[#FACC15] text-xs mt-1">
               ⚠️ Using local session data (API unavailable)
             </div>
@@ -970,208 +972,207 @@ const PrivacySecurity = () => {
               ✅ Using API data ({validDeviceSessions.length} sessions)
             </div>
           )} */}
-          </div>
+            </div>
 
-          {deviceSessionsError && (
-            <div className="text-red-500 text-sm mb-3">
-              Error: {deviceSessionsError}
-            </div>
-          )}
+            {deviceSessionsError && (
+              <div className="text-red-500 text-sm mb-3">
+                Error: {deviceSessionsError}
+              </div>
+            )}
 
-          {deviceSessionsLoading ? (
-            <div className="flex items-center justify-center py-6">
-              <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-[#1D8751]"></div>
-              <span className="ml-3 dark:text-[#808080] text-gray-600 text-sm">
-                Loading device sessions...
-              </span>
-            </div>
-          ) : paginatedSessions.length === 0 ? (
-            <div className="text-center py-6 dark:text-[#808080] text-gray-600 text-sm">
-              No active device sessions found
-              {deviceSessionsError && (
-                <div className="mt-2 text-xs text-red-400">
-                  API Error: {deviceSessionsError}
-                </div>
-              )}
-              {/* Debug info */}
-              <div className="mt-2 text-xs text-gray-500">
-                Raw sessions: {deviceSessions?.length || 0} | Valid sessions:{" "}
-                {validDeviceSessions.length} | Fallback:{" "}
-                {fallbackSessions.length} | Total: {allSessions.length}
+            {deviceSessionsLoading ? (
+              <div className="flex items-center justify-center py-6">
+                <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-[#1D8751]"></div>
+                <span className="ml-3 dark:text-[#808080] text-gray-600 text-sm">
+                  Loading device sessions...
+                </span>
               </div>
-                             {/* Manual session creation button for testing */}
-               {isAuthenticated && (
-                 <button
-                   onClick={async () => {
-                     try {
-                       setIsCreatingSession(true);
-                       const ipAddress = await getCurrentIPAddress();
-                       const location = await getLocationFromIP(ipAddress);
-                       
-                       // Check if a session with the same IP address already exists
-                       const existingSessionWithSameIP = allSessions.find((session: DeviceSession) => 
-                         session.ip_address === ipAddress && session.is_active
-                       );
-                       
-                       if (existingSessionWithSameIP) {
-                         logger.debug('dashboard', "Session with IP address already exists:", existingSessionWithSameIP);
-                         showToast.info("Session with this IP address already exists");
-                         return;
-                       }
-                       
-                       const payload: CreateDeviceSessionPayload = {
-                         ip_address: ipAddress,
-                         location: location,
-                         browser: getBrowserInfo(navigator.userAgent),
-                         sign_in_time: new Date().toISOString(),
-                         user_agent: navigator.userAgent,
-                         device_type: getDeviceType(),
-                         description: `${getDeviceType()} - ${getBrowserInfo(navigator.userAgent)}`,
-                       };
-                       
-                       await dispatch(createDeviceSession(payload)).unwrap();
-                       dispatch(fetchDeviceSessions(undefined));
-                       showToast.success("Session created successfully!");
-                     } catch (error) {
-                       console.error("Failed to create session:", error);
-                       showToast.error("Failed to create session");
-                     } finally {
-                       setIsCreatingSession(false);
-                     }
-                   }}
-                   className="mt-4 px-4 py-2 bg-[#1D8751] text-white rounded-lg text-sm hover:bg-[#1a7a47] transition-colors disabled:opacity-50"
-                   disabled={isCreatingSession}
-                 >
-                   {isCreatingSession ? "Creating Session..." : "Create Session"}
-                 </button>
-               )}
-            </div>
-          ) : (
-            <div className="border-t dark:border-[#35353E] border-gray-200 rounded-xl overflow-hidden">
-              <div className="px-2 sm:px-3 md:px-4 py-3 text-xs font-semibold uppercase tracking-wide dark:text-[#8C8CA1] text-gray-500 space-y-1 bg-gray-50 dark:bg-[var(--card-color)]">
-                <div>Signed In</div>
-                <div>Location</div>
-                <div>IP Address</div>
-                <div>Browser</div>
-              </div>
-              <div className="divide-y dark:divide-[#2F2C3C] divide-gray-200 dark:text-white text-gray-800 bg-white dark:bg-[var(--card-color)]">
-                {paginatedSessions.map((session: DeviceSession) => (
-                  <div key={session.session_id} className="px-2 sm:px-3 md:px-4 py-4 text-sm space-y-2 relative group">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 space-y-2">
-                        <p className="font-semibold">
-                          {formatRelativeTime(session.sign_in_time)}
-                          {session.is_current && (
-                            <span className="ml-2 text-xs px-2 py-0.5 rounded bg-[#1D8751]/20 text-[#1D8751] dark:bg-[#1D8751]/30 dark:text-[#1D8751]">
-                              Current
-                            </span>
-                          )}
-                        </p>
-                        <p>{session.location || "Unknown location"}</p>
-                        <p className="font-mono break-all">
-                          {session.ip_address || "Unknown IP"}
-                        </p>
-                        <p>
-                          {session.browser || "Unknown browser"}
-                          {session.device_type && ` (${session.device_type})`}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => handleRemoveSessionClick(session)}
-                        disabled={deletingSessionId === session.session_id || session.is_current}
-                        className="p-2 hover:bg-gray-100 dark:hover:bg-[#2A2A2A] rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        title={session.is_current ? "Cannot delete current session" : "Delete session"}
-                      >
-                        {deletingSessionId === session.session_id ? (
-                          <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-[#1D8751]"></div>
-                        ) : (
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="w-5 h-5 text-red-500 cursor-pointer"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"
-                            />
-                          </svg>
-                        )}
-                      </button>
-                    </div>
+            ) : paginatedSessions.length === 0 ? (
+              <div className="text-center py-6 dark:text-[#808080] text-gray-600 text-sm">
+                No active device sessions found
+                {deviceSessionsError && (
+                  <div className="mt-2 text-xs text-red-400">
+                    API Error: {deviceSessionsError}
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
-          {totalPages > 1 && (
-            <div className="flex flex-col sm:flex-row justify-center items-center gap-2 sm:gap-2 mt-4 w-full overflow-hidden">
-              {/* Mobile: Show only Prev/Next with page indicator */}
-              <div className="flex items-center gap-2 sm:hidden w-full px-1">
-                <button
-                  className="flex-1 px-4 py-3 rounded-lg dark:bg-[#35353E] bg-gray-400 dark:text-white text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base font-medium min-h-[44px] flex items-center justify-center transition-colors active:opacity-70"
-                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                >
-                  ← Prev
-                </button>
-                <div className="flex-shrink-0 px-3 py-2 rounded-lg dark:bg-[var(--card-color)] bg-gray-100 border dark:border-[#35353E] border-gray-300">
-                  <span className="text-sm sm:text-base dark:text-[#8C8CA1] text-gray-600 font-semibold whitespace-nowrap">
-                    {currentPage} / {totalPages}
-                  </span>
+                )}
+                {/* Debug info */}
+                <div className="mt-2 text-xs text-gray-500">
+                  Raw sessions: {deviceSessions?.length || 0} | Valid sessions:{" "}
+                  {validDeviceSessions.length} | Fallback:{" "}
+                  {fallbackSessions.length} | Total: {allSessions.length}
                 </div>
-                <button
-                  className="flex-1 px-4 py-3 rounded-lg dark:bg-[#35353E] bg-gray-400 dark:text-white text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base font-medium min-h-[44px] flex items-center justify-center transition-colors active:opacity-70"
-                  onClick={() =>
-                    setCurrentPage((p) => Math.min(totalPages, p + 1))
-                  }
-                  disabled={currentPage === totalPages}
-                >
-                  Next →
-                </button>
-              </div>
-              
-              {/* Desktop: Show all page numbers */}
-              <div className="hidden sm:flex justify-center items-center gap-1.5 flex-wrap">
-                <button
-                  className="px-3 py-1.5 rounded-lg dark:bg-[#35353E] bg-gray-400 dark:text-white text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors hover:opacity-80"
-                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                >
-                  Prev
-                </button>
-                {[...Array(totalPages)].map((_, idx) => (
+                {/* Manual session creation button for testing */}
+                {isAuthenticated && (
                   <button
-                    key={idx}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors min-w-[36px] ${
-                      currentPage === idx + 1
+                    onClick={async () => {
+                      try {
+                        setIsCreatingSession(true);
+                        const ipAddress = await getCurrentIPAddress();
+                        const location = await getLocationFromIP(ipAddress);
+
+                        // Check if a session with the same IP address already exists
+                        const existingSessionWithSameIP = allSessions.find((session: DeviceSession) =>
+                          session.ip_address === ipAddress && session.is_active
+                        );
+
+                        if (existingSessionWithSameIP) {
+                          logger.debug('dashboard', "Session with IP address already exists:", existingSessionWithSameIP);
+                          showToast.info("Session with this IP address already exists");
+                          return;
+                        }
+
+                        const payload: CreateDeviceSessionPayload = {
+                          ip_address: ipAddress,
+                          location: location,
+                          browser: getBrowserInfo(navigator.userAgent),
+                          sign_in_time: new Date().toISOString(),
+                          user_agent: navigator.userAgent,
+                          device_type: getDeviceType(),
+                          description: `${getDeviceType()} - ${getBrowserInfo(navigator.userAgent)}`,
+                        };
+
+                        await dispatch(createDeviceSession(payload)).unwrap();
+                        dispatch(fetchDeviceSessions(undefined));
+                        showToast.success("Session created successfully!");
+                      } catch (error) {
+                        console.error("Failed to create session:", error);
+                        showToast.error("Failed to create session");
+                      } finally {
+                        setIsCreatingSession(false);
+                      }
+                    }}
+                    className="mt-4 px-4 py-2 bg-[#1D8751] text-white rounded-lg text-sm hover:bg-[#1a7a47] transition-colors disabled:opacity-50"
+                    disabled={isCreatingSession}
+                  >
+                    {isCreatingSession ? "Creating Session..." : "Create Session"}
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="border-t dark:border-[#35353E] border-gray-200 rounded-xl overflow-hidden">
+                <div className="px-2 sm:px-3 md:px-4 py-3 text-xs font-semibold uppercase tracking-wide dark:text-[#8C8CA1] text-gray-500 space-y-1 bg-gray-50 dark:bg-[var(--card-color)]">
+                  <div>Signed In</div>
+                  <div>Location</div>
+                  <div>IP Address</div>
+                  <div>Browser</div>
+                </div>
+                <div className="divide-y dark:divide-[#2F2C3C] divide-gray-200 dark:text-white text-gray-800 bg-white dark:bg-[var(--card-color)]">
+                  {paginatedSessions.map((session: DeviceSession) => (
+                    <div key={session.session_id} className="px-2 sm:px-3 md:px-4 py-4 text-sm space-y-2 relative group">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 space-y-2">
+                          <p className="font-semibold">
+                            {formatRelativeTime(session.sign_in_time)}
+                            {session.is_current && (
+                              <span className="ml-2 text-xs px-2 py-0.5 rounded bg-[#1D8751]/20 text-[#1D8751] dark:bg-[#1D8751]/30 dark:text-[#1D8751]">
+                                Current
+                              </span>
+                            )}
+                          </p>
+                          <p>{session.location || "Unknown location"}</p>
+                          <p className="font-mono break-all">
+                            {session.ip_address || "Unknown IP"}
+                          </p>
+                          <p>
+                            {session.browser || "Unknown browser"}
+                            {session.device_type && ` (${session.device_type})`}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => handleRemoveSessionClick(session)}
+                          disabled={deletingSessionId === session.session_id || session.is_current}
+                          className="p-2 hover:bg-gray-100 dark:hover:bg-[#2A2A2A] rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          title={session.is_current ? "Cannot delete current session" : "Delete session"}
+                        >
+                          {deletingSessionId === session.session_id ? (
+                            <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-[#1D8751]"></div>
+                          ) : (
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="w-5 h-5 text-red-500 cursor-pointer"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"
+                              />
+                            </svg>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {totalPages > 1 && (
+              <div className="flex flex-col sm:flex-row justify-center items-center gap-2 sm:gap-2 mt-4 w-full overflow-hidden">
+                {/* Mobile: Show only Prev/Next with page indicator */}
+                <div className="flex items-center gap-2 sm:hidden w-full px-1">
+                  <button
+                    className="flex-1 px-4 py-3 rounded-lg dark:bg-[#35353E] bg-gray-400 dark:text-white text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base font-medium min-h-[44px] flex items-center justify-center transition-colors active:opacity-70"
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    ← Prev
+                  </button>
+                  <div className="flex-shrink-0 px-3 py-2 rounded-lg dark:bg-[var(--card-color)] bg-gray-100 border dark:border-[#35353E] border-gray-300">
+                    <span className="text-sm sm:text-base dark:text-[#8C8CA1] text-gray-600 font-semibold whitespace-nowrap">
+                      {currentPage} / {totalPages}
+                    </span>
+                  </div>
+                  <button
+                    className="flex-1 px-4 py-3 rounded-lg dark:bg-[#35353E] bg-gray-400 dark:text-white text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base font-medium min-h-[44px] flex items-center justify-center transition-colors active:opacity-70"
+                    onClick={() =>
+                      setCurrentPage((p) => Math.min(totalPages, p + 1))
+                    }
+                    disabled={currentPage === totalPages}
+                  >
+                    Next →
+                  </button>
+                </div>
+
+                {/* Desktop: Show all page numbers */}
+                <div className="hidden sm:flex justify-center items-center gap-1.5 flex-wrap">
+                  <button
+                    className="px-3 py-1.5 rounded-lg dark:bg-[#35353E] bg-gray-400 dark:text-white text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors hover:opacity-80"
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    Prev
+                  </button>
+                  {[...Array(totalPages)].map((_, idx) => (
+                    <button
+                      key={idx}
+                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors min-w-[36px] ${currentPage === idx + 1
                         ? "bg-[#1D8751] text-white hover:bg-[#166b3e]"
                         : "dark:bg-[#35353E] bg-gray-400 dark:text-[#8C8CA1] text-gray-600 hover:opacity-80"
-                    }`}
-                    onClick={() => setCurrentPage(idx + 1)}
+                        }`}
+                      onClick={() => setCurrentPage(idx + 1)}
+                    >
+                      {idx + 1}
+                    </button>
+                  ))}
+                  <button
+                    className="px-3 py-1.5 rounded-lg dark:bg-[#35353E] bg-gray-400 dark:text-white text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors hover:opacity-80"
+                    onClick={() =>
+                      setCurrentPage((p) => Math.min(totalPages, p + 1))
+                    }
+                    disabled={currentPage === totalPages}
                   >
-                    {idx + 1}
+                    Next
                   </button>
-                ))}
-                <button
-                  className="px-3 py-1.5 rounded-lg dark:bg-[#35353E] bg-gray-400 dark:text-white text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors hover:opacity-80"
-                  onClick={() =>
-                    setCurrentPage((p) => Math.min(totalPages, p + 1))
-                  }
-                  disabled={currentPage === totalPages}
-                >
-                  Next
-                </button>
+                </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
         </div>
 
-       
+
       </div>
     </>
   );

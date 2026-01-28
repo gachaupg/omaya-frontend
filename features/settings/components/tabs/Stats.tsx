@@ -260,7 +260,7 @@ const Stats = ({ onSupportClick }: StatsProps) => {
             </span>
           </div>
         </div>
-        <div className="flex gap-2 sm:gap-3 flex-shrink-0 ml-auto">
+        <div className="flex gap-4 sm:gap-5 shrink-0 ml-auto">
           <div 
             className="p-2 rounded-full border border-[#1D8751] flex items-center justify-center relative cursor-pointer"
             onClick={() => router.push("/dashboard/notifications")}
