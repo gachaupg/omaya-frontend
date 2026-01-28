@@ -21,6 +21,7 @@ const FaceDetectionKYC: React.FC<FaceDetectionKYCProps> = ({
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const manualFileInputRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [faceCount, setFaceCount] = useState(0);
   const [isModelLoaded, setIsModelLoaded] = useState(false);
@@ -30,6 +31,7 @@ const FaceDetectionKYC: React.FC<FaceDetectionKYCProps> = ({
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [validationStatus, setValidationStatus] = useState<string>('');
   const [isFaceValid, setIsFaceValid] = useState(false);
+  const [isManualUploadInProgress, setIsManualUploadInProgress] = useState(false);
 
   useEffect(() => {
     loadModels();
@@ -307,6 +309,43 @@ const FaceDetectionKYC: React.FC<FaceDetectionKYCProps> = ({
     }
   };
 
+  const handleManualFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      logger.error("general", "Manual face upload: not an image file");
+      return;
+    }
+
+    const reader = new FileReader();
+    setIsManualUploadInProgress(true);
+
+    reader.onload = () => {
+      const result = reader.result;
+      if (typeof result === "string") {
+        setCapturedImage(result);
+        setIsVerified(true);
+        stopVideo();
+
+        if (onVerificationComplete) {
+          onVerificationComplete({
+            faceDetected: true,
+            capturedImage: result,
+          });
+        }
+      }
+      setIsManualUploadInProgress(false);
+    };
+
+    reader.onerror = (err) => {
+      logger.error("general", "Error reading manual face image:", err);
+      setIsManualUploadInProgress(false);
+    };
+
+    reader.readAsDataURL(file);
+  };
+
   useEffect(() => {
     if (videoRef.current && isModelLoaded && !isVerified) {
       videoRef.current.addEventListener('play', detectFaces);
@@ -434,36 +473,59 @@ const FaceDetectionKYC: React.FC<FaceDetectionKYCProps> = ({
       </div>
 
       {/* Controls */}
-      <div className="flex gap-3 w-full max-w-md">
-        {isVerified && (
-          <button
-            onClick={() => {
-              setIsVerified(false);
-              setCountdown(null);
-              setCapturedImage(null);
-              setDetectionData(null);
-              setValidationStatus('');
-              setIsFaceValid(false);
-              // Restart video
-              startVideo();
-            }}
-            className="flex-1 px-6 py-3 text-white bg-[#ff9800] hover:bg-[#f57c00] rounded-lg transition-colors"
-          >
-            Retake Photo
-          </button>
-        )}
-        
-        {!isVerified && onClose && (
-          <button
-            onClick={() => {
-              // Stop camera before closing
-              stopVideo();
-              onClose();
-            }}
-            className="flex-1 px-6 py-3 text-white bg-[#f44336] hover:bg-[#d32f2f] rounded-lg transition-colors"
-          >
-            Cancel
-          </button>
+      <div className="flex flex-col gap-3 w-full max-w-md">
+        <div className="flex gap-3">
+          {isVerified && (
+            <button
+              onClick={() => {
+                setIsVerified(false);
+                setCountdown(null);
+                setCapturedImage(null);
+                setDetectionData(null);
+                setValidationStatus('');
+                setIsFaceValid(false);
+                // Restart video
+                startVideo();
+              }}
+              className="flex-1 px-6 py-3 text-white bg-[#ff9800] hover:bg-[#f57c00] rounded-lg transition-colors"
+            >
+              Retake Photo
+            </button>
+          )}
+          
+          {!isVerified && onClose && (
+            <button
+              onClick={() => {
+                // Stop camera before closing
+                stopVideo();
+                onClose();
+              }}
+              className="flex-1 px-6 py-3 text-white bg-[#f44336] hover:bg-[#d32f2f] rounded-lg transition-colors"
+            >
+              Cancel
+            </button>
+          )}
+        </div>
+
+        {/* Manual upload option */}
+        {!isVerified && (
+          <>
+            <input
+              ref={manualFileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleManualFileChange}
+            />
+            <button
+              type="button"
+              onClick={() => manualFileInputRef.current?.click()}
+              disabled={isManualUploadInProgress}
+              className="w-full px-6 py-3 text-sm text-white bg-[#2563eb] hover:bg-[#1d4ed8] rounded-lg transition-colors disabled:opacity-50"
+            >
+              {isManualUploadInProgress ? "Uploading selfie..." : "Upload Selfie Manually"}
+            </button>
+          </>
         )}
       </div>
 
