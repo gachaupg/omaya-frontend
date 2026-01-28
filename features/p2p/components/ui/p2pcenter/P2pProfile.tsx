@@ -34,7 +34,13 @@ const P2pProfile = ({
   );
 
   // Local state for profile image (more reliable than Redux state)
-  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [profileImage, setProfileImage] = useState<string | null>(() => {
+    // Try to get cached image from localStorage on initial render
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("p2p_profile_image") || null;
+    }
+    return null;
+  });
 
   // Fetch merchant status, feedback, and user profile on component mount
   useEffect(() => {
@@ -55,7 +61,15 @@ const P2pProfile = ({
             }
           }
         })
-        .catch(() => {});
+        .catch(() => {
+          // If fetch fails, try to use cached image
+          if (typeof window !== "undefined") {
+            const cachedImage = localStorage.getItem("p2p_profile_image");
+            if (cachedImage) {
+              setProfileImage(cachedImage);
+            }
+          }
+        });
     }
   }, [dispatch, isAuthenticated]);
 
@@ -153,7 +167,7 @@ const P2pProfile = ({
             </div>
             <div className="flex items-center gap-1.5">
               <span className="text-gray-900 dark:text-white text-base sm:text-lg font-semibold">
-                {user?.first_name || 'User Name'}
+                {user?.first_name && user?.last_name ? `${user.first_name} ${user.last_name}` : user?.first_name || 'User Name'}
               </span>
               {/* Edit Icon */}
               <button

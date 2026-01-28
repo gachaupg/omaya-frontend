@@ -301,8 +301,8 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className={`w-full py-3 px-4 pl-10 rounded-full bg-white dark:bg-[var(--card-color)] border ${errors.email
-                      ? "border-[#FDA29B]"
-                      : "border-gray-300 dark:border-[#35353E]"
+                    ? "border-[#FDA29B]"
+                    : "border-gray-300 dark:border-[#35353E]"
                     } text-gray-900 dark:text-white focus:outline-none focus:border-[#13B562]`}
                   placeholder={t(
                     "auth.login.email.placeholder",
@@ -372,8 +372,8 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className={`w-full py-3 px-4 pl-10 pr-12 rounded-full bg-white dark:bg-[var(--card-color)] border ${errors.password
-                      ? "border-[#FDA29B]"
-                      : "border-gray-300 dark:border-[#35353E]"
+                    ? "border-[#FDA29B]"
+                    : "border-gray-300 dark:border-[#35353E]"
                     } text-gray-900 dark:text-white focus:outline-none focus:border-[#13B562]`}
                   placeholder={t(
                     "auth.login.password.placeholder",
@@ -477,8 +477,8 @@ export default function LoginPage() {
                   />
                   <div
                     className={`border ${errors.rememberMe
-                        ? "border-[#F04438]"
-                        : "border-[#1D8751]"
+                      ? "border-[#F04438]"
+                      : "border-[#1D8751]"
                       } rounded h-4 w-4 flex flex-shrink-0 justify-center items-center mr-2 ${rememberMe ? "bg-[#1D8751]" : "bg-transparent"
                       }`}
                   >
@@ -494,8 +494,8 @@ export default function LoginPage() {
                   <label
                     htmlFor="remember-me"
                     className={`text-sm cursor-pointer ${errors.rememberMe
-                        ? "text-[#F04438]"
-                        : "dark:text-white text-gray-900"
+                      ? "text-[#F04438]"
+                      : "dark:text-white text-gray-900"
                       }`}
                   >
                     {t("auth.login.remember", "Remember me")}
@@ -584,95 +584,98 @@ export default function LoginPage() {
             </div>
           </form>
 
-          {/* Captcha Modal - On top of form inputs only */}
+          {/* Captcha Modal - Perfectly centered on screen */}
           {showCaptchaModal && (
-            <div className="absolute -top-4 sm:-top-6 md:-top-8 lg:-top-12 left-0 right-0 bottom-0 z-[9999] flex items-center justify-center pointer-events-none py-2 sm:py-3 md:py-4 lg:py-6 overflow-y-auto">
-              {/* Backdrop - covers the form inputs area */}
-              <div className="absolute inset-0 bg-transparent pointer-events-auto" onClick={handleCloseCaptchaModal}></div>
-               {/* Modal */}
-               <div
-                 className="relative bg-white dark:bg-[var(--card-color)] rounded-lg sm:rounded-xl md:rounded-2xl shadow-2xl w-[95%] sm:w-[90%] md:w-[85%] lg:w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl my-auto pointer-events-auto border border-gray-200 dark:border-[#35353E] z-10 p-3 sm:p-4 md:p-5 lg:p-6 max-h-[90vh] sm:max-h-[88vh] md:max-h-[85vh] overflow-y-auto"
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none p-4">
+              {/* Backdrop - covers the entire screen */}
+              <div
+                className="absolute inset-0 bg-[#18181D]/80 pointer-events-auto"
+                onClick={handleCloseCaptchaModal}
+              ></div>
+              {/* Modal */}
+              <div
+                className="relative bg-white dark:bg-[var(--card-color)] rounded-lg sm:rounded-xl md:rounded-2xl shadow-2xl w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg pointer-events-auto border border-gray-200 dark:border-[#35353E] z-10 p-4 sm:p-6 max-h-[90vh] overflow-y-auto"
                 onClick={(e) => e.stopPropagation()}
               >
-            {/* Header */}
-            <div className="flex items-center justify-between mb-4 sm:mb-6">
-              <h2 className="text-lg sm:text-xl font-semibold dark:text-white text-gray-900">
-                {t("auth.login.captcha", "Security Verification")}
-              </h2>
-              <button
-                onClick={handleCloseCaptchaModal}
-                disabled={captchaSuccess}
-                className="p-1.5 sm:p-2 hover:bg-gray-100 dark:hover:bg-[#35353E] rounded-full transition-colors flex-shrink-0"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500 dark:text-gray-400"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </button>
-            </div>
-
-            {/* Captcha Content */}
-            <div className="flex flex-col items-center w-full">
-              {captchaSuccess ? (
-                <div className="flex flex-col items-center text-center py-4 sm:py-6 w-full">
-                  <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-[#E6F4EC] dark:bg-[#1F3B2C] flex items-center justify-center mb-3 sm:mb-4">
+                {/* Header */}
+                <div className="flex items-center justify-between mb-4 sm:mb-6">
+                  <h2 className="text-lg sm:text-xl font-semibold dark:text-white text-gray-900">
+                    {t("auth.login.captcha", "Security Verification")}
+                  </h2>
+                  <button
+                    onClick={handleCloseCaptchaModal}
+                    disabled={captchaSuccess}
+                    className="p-1.5 sm:p-2 hover:bg-gray-100 dark:hover:bg-[#35353E] rounded-full transition-colors flex-shrink-0"
+                  >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      className="w-6 h-6 sm:w-8 sm:h-8 text-[#1D8751]"
+                      className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500 dark:text-gray-400"
                       viewBox="0 0 20 20"
                       fill="currentColor"
                     >
                       <path
                         fillRule="evenodd"
-                        d="M16.704 5.29a1 1 0 010 1.42l-7.778 7.777a1 1 0 01-1.414 0L3.296 10.27a1 1 0 111.414-1.414l3.095 3.094 7.071-7.071a1 1 0 011.414 0z"
+                        d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
                         clipRule="evenodd"
                       />
                     </svg>
-                  </div>
-                  <p className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white px-2">
-                    {t("auth.login.captchaSuccessTitle", "Verification complete")}
-                  </p>
-                  <p className="mt-2 text-xs sm:text-sm text-gray-500 dark:text-[#9CA3AF] px-2">
-                    {t("auth.login.captchaSuccessDescription", "Redirecting to your account...")}
-                  </p>
+                  </button>
                 </div>
-              ) : (
-                <>
-                  <div className="w-full flex justify-center">
-                    <DragFitCaptcha
-                      imgSrc="https://picsum.photos/280/140?random=10"
-                      onSuccess={handleCaptchaSuccess}
-                      darkMode={isDark}
-                    />
-                  </div>
-                  {errors.captcha && (
-                    <p className="mt-3 sm:mt-4 text-xs sm:text-sm text-[#F04438] flex items-center px-2 text-center">
-                      <svg
-                        className="w-3 h-3 sm:w-4 sm:h-4 mr-1 flex-shrink-0"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                          clipRule="evenodd"
+
+                {/* Captcha Content */}
+                <div className="flex flex-col items-center w-full">
+                  {captchaSuccess ? (
+                    <div className="flex flex-col items-center text-center py-4 sm:py-6 w-full">
+                      <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-[#E6F4EC] dark:bg-[#1F3B2C] flex items-center justify-center mb-3 sm:mb-4">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="w-6 h-6 sm:w-8 sm:h-8 text-[#1D8751]"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M16.704 5.29a1 1 0 010 1.42l-7.778 7.777a1 1 0 01-1.414 0L3.296 10.27a1 1 0 111.414-1.414l3.095 3.094 7.071-7.071a1 1 0 011.414 0z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </div>
+                      <p className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white px-2">
+                        {t("auth.login.captchaSuccessTitle", "Verification complete")}
+                      </p>
+                      <p className="mt-2 text-xs sm:text-sm text-gray-500 dark:text-[#9CA3AF] px-2">
+                        {t("auth.login.captchaSuccessDescription", "Redirecting to your account...")}
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="w-full flex justify-center">
+                        <DragFitCaptcha
+                          imgSrc="https://picsum.photos/280/140?random=10"
+                          onSuccess={handleCaptchaSuccess}
+                          darkMode={isDark}
                         />
-                      </svg>
-                      <span>{errors.captcha}</span>
-                    </p>
+                      </div>
+                      {errors.captcha && (
+                        <p className="mt-3 sm:mt-4 text-xs sm:text-sm text-[#F04438] flex items-center px-2 text-center">
+                          <svg
+                            className="w-3 h-3 sm:w-4 sm:h-4 mr-1 flex-shrink-0"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                          <span>{errors.captcha}</span>
+                        </p>
+                      )}
+                    </>
                   )}
-                </>
-              )}
-            </div>
-          </div>
+                </div>
+              </div>
             </div>
           )}
         </div>

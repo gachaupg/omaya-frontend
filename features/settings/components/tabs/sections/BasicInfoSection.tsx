@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/store";
 import { updateProfile } from "@/features/settings/slices/settingsSlice";
@@ -41,6 +41,16 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ user }) => {
     };
   }, []);
 
+  // Check if form data has actually changed from original user data
+  const hasChanges = useMemo(() => {
+    if (!user) return false;
+    return (
+      formData.first_name.trim() !== (user.first_name || "").trim() ||
+      formData.last_name.trim() !== (user.last_name || "").trim() ||
+      formData.phone_number.trim() !== (user.phone_number || "").trim()
+    );
+  }, [formData, user]);
+
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({
       ...prev,
@@ -51,6 +61,12 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ user }) => {
   const handleUpdate = async () => {
     // Prevent update if component is unmounting (navigation in progress)
     if (!isMountedRef.current) {
+      return;
+    }
+
+    // Check if there are actual changes
+    if (!hasChanges) {
+      showToast.info("No changes to update");
       return;
     }
 
@@ -145,10 +161,10 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ user }) => {
           </div>
         </div>
         <button
-          className="w-full mt-3 py-2.5 rounded-xl bg-transparent border border-[#1D8751] text-[#1D8751] font-semibold text-sm hover:bg-[#1D8751] hover:text-white transition disabled:opacity-50 disabled:cursor-not-allowed"
+          className={`w-full mt-3 py-2.5 rounded-xl bg-transparent border border-[#1D8751] text-[#1D8751] font-semibold text-sm hover:bg-[#1D8751] hover:text-white transition disabled:opacity-50 disabled:cursor-not-allowed ${!hasChanges ? 'opacity-50' : ''}`}
           type="button"
           onClick={handleUpdate}
-          disabled={isUpdating}
+          disabled={isUpdating || !hasChanges}
         >
           {isUpdating ? "Updating..." : "Update"}
         </button>

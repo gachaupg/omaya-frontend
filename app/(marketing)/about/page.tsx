@@ -921,7 +921,7 @@ const AboutPage = () => {
                   sizes="(max-width: 768px) 100vw, 33vw"
                   style={{ objectPosition: 'center' }}
                 />
-                <div className="absolute top-3 right-2 px-3 py-1 rounded-lg bg-[#1D8751] text-white text-xs font-medium">2023</div>
+                <div className="absolute top-2 right-1 sm:top-3 sm:right-2 px-2 sm:px-3 py-0.5 sm:py-1 rounded-lg bg-[#1D8751] text-white text-[10px] sm:text-xs font-medium whitespace-nowrap">2023</div>
                 <div className="absolute bottom-3 left-6 w-11 h-11 rounded-xl bg-[#1D8751] flex items-center justify-center z-10">
                   <Award className="w-5 h-5 text-white" />
                 </div>
@@ -952,7 +952,7 @@ const AboutPage = () => {
                   sizes="(max-width: 768px) 100vw, 33vw"
                   style={{ objectPosition: 'center' }}
                 />
-                <div className="absolute top-3 right-3 px-3 py-1 rounded-lg bg-[#1D8751] text-white text-xs font-medium">2022</div>
+                <div className="absolute top-2 right-1 sm:top-3 sm:right-3 px-2 sm:px-3 py-0.5 sm:py-1 rounded-lg bg-[#1D8751] text-white text-[10px] sm:text-xs font-medium whitespace-nowrap">2022</div>
                 <div className="absolute bottom-3 left-4 w-11 h-11 rounded-xl bg-[#1D8751] flex items-center justify-center z-10">
                   <Shield className="w-5 h-5 text-white" />
                 </div>
@@ -982,7 +982,7 @@ const AboutPage = () => {
                   sizes="(max-width: 768px) 100vw, 33vw"
                   style={{ objectPosition: 'center' }}
                 />
-                <div className="absolute top-3 right-2 px-3 py-1 rounded-lg bg-[#1D8751] text-white text-xs font-medium">2024</div>
+                <div className="absolute top-3 right-2 px-2 sm:px-3 py-1 rounded-lg bg-[#1D8751] text-white text-[10px] sm:text-xs font-medium whitespace-nowrap">2024</div>
                 <div className="absolute bottom-3 left-6 w-11 h-11 rounded-xl bg-[#1D8751] flex items-center justify-center z-10">
                   <Users className="w-5 h-5 text-white" />
                 </div>
@@ -1034,9 +1034,9 @@ const AboutPage = () => {
       {/* Security Section - Figma Match */}
 
       {/* Security Section */}
-      <section className="py-20 px-4 bg-white dark:bg-[var(--bg-color)]">
+      <section className="py-10 sm:py-16 md:py-20 px-4 bg-white dark:bg-[var(--bg-color)]">
         <div className="max-w-6xl mx-auto">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
+          <div className="grid md:grid-cols-2 gap-6 sm:gap-8 md:gap-12 items-center">
             {/* Left Column - Padlock Image - NO OVERLAY (image has badge baked in) */}
             <div className="relative">
               <div className="relative w-full h-[400px] rounded-3xl overflow-hidden bg-gray-100 dark:bg-[var(--bg-color)]">
@@ -1073,7 +1073,7 @@ const AboutPage = () => {
               </p>
 
               {/* Security Features Grid */}
-              <div className="grid grid-cols-2 gap-4 mb-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-6 sm:mb-8">
                 <div className="flex items-start gap-3 p-4 rounded-2xl border border-gray-200 dark:border-[#2A2A35] bg-white dark:bg-[#14141A]">
                   <div className="w-10 h-10 rounded-xl bg-[#1D8751]/10 border border-[#1D8751]/30 flex items-center justify-center flex-shrink-0">
                     <Lock className="w-5 h-5 text-[#1D8751]" />

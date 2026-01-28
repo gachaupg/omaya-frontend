@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useState, useRef } from "react";
+import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { tokens } from "@/styles/tokens";
 import { P2POrder } from "@/features/p2p/types";
 import { useParams, useRouter, usePathname } from "next/navigation";
@@ -391,53 +392,14 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   return (
     <div className="min-[900px]:mt-20">
       {/* Breadcrumb */}
-      <nav
-        aria-label="Breadcrumb"
-        className="flex items-center text-xs sm:text-sm text-gray-500 dark:text-[#A3A3C2] mt-1 overflow-x-auto pb-2"
-      >
-        <ol className="inline-flex items-center space-x-1 sm:space-x-2 min-w-max">
-
-          <li className="inline-flex items-center">
-            <a 
-              href="/dashboard" 
-              className={`px-2 py-1 rounded transition-colors ${
-                pathname === "/dashboard" || pathname?.startsWith("/dashboard/")
-                  ? "bg-[#35353E] text-white"
-                  : "dark:hover:text-muted hover:text-accent hover:bg-[#35353E] hover:text-white"
-              }`}
-            >
-              Dashboard
-            </a>
-          </li>
-
-          <li>
-            <div className="flex items-center">
-              <FaChevronRight className="mx-2 text-muted-foreground " size={12} />
-
-              <a 
-                href="/dashboard/notifications" 
-                className={`px-2 py-1 rounded transition-colors ${
-                  pathname === "/dashboard/notifications" || pathname?.startsWith("/dashboard/notifications/")
-                    ? "bg-[#35353E] text-white"
-                    : "dark:hover:text-muted hover:text-accent hover:bg-[#35353E] hover:text-white"
-                }`}
-              >
-                Notification center
-              </a>
-            </div>
-          </li>
-
-          <li aria-current="page">
-            <div className="flex items-center">
-              <FaChevronRight className="mx-2 text-muted-foreground " size={12} />
-              <span className="font-medium text-secondary">
-                View order
-              </span>
-            </div>
-          </li>
-
-        </ol>
-      </nav>
+      <Breadcrumb
+        items={[
+          { label: "Dashboard", href: "/dashboard" },
+          { label: "Notification center", href: "/dashboard/notifications" },
+          { label: "View order" },
+        ]}
+        className="mt-1 overflow-x-auto pb-2"
+      />
       <div className="grid grid-cols-1 mt-6 sm:mt-10 min-[900px]:grid-cols-3 gap-4 sm:gap-6 p-3 sm:p-4 min-[900px]:p-6 min-h-screen bg-[#EEF1F4] dark:bg-[var(--bg-color)]">
         {/* Left: Timeline/Steps */}
         <div className="min-[900px]:col-span-2 flex flex-col gap-4">
@@ -674,8 +636,8 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
               </button>
               <button
                 className={`${confirmOrder?.status === "matched"
-                    ? "bg-gray-100 dark:bg-[var(--card-color)]"
-                    : "bg-[#1D8751] text-white"
+                  ? "bg-gray-100 dark:bg-[var(--card-color)]"
+                  : "bg-[#1D8751] text-white"
                   } dark:text-white rounded-lg px-4 sm:px-6 py-2 text-sm sm:text-base font-semibold w-full sm:w-auto ${(() => {
                     const isThisTradeLoading =
                       confirmTradeLoading &&
@@ -875,8 +837,8 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                   <button
                     onClick={() => setFeedbackRating(true)}
                     className={`flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg text-sm sm:text-base font-semibold transition-all duration-200 ${feedbackRating === true
-                        ? "bg-[#1D8751] text-white shadow-lg scale-105"
-                        : "bg-gray-100 dark:bg-[#35353E] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-[#404040] hover:scale-105"
+                      ? "bg-[#1D8751] text-white shadow-lg scale-105"
+                      : "bg-gray-100 dark:bg-[#35353E] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-[#404040] hover:scale-105"
                       }`}
                   >
                     <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 24 24">
@@ -887,8 +849,8 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                   <button
                     onClick={() => setFeedbackRating(false)}
                     className={`flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg text-sm sm:text-base font-semibold transition-all duration-200 ${feedbackRating === false
-                        ? "bg-[#E23D3A] text-white shadow-lg scale-105"
-                        : "bg-gray-100 dark:bg-[#35353E] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-[#404040] hover:scale-105"
+                      ? "bg-[#E23D3A] text-white shadow-lg scale-105"
+                      : "bg-gray-100 dark:bg-[#35353E] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-[#404040] hover:scale-105"
                       }`}
                   >
                     <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 24 24">

@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useState, useRef } from "react";
+import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { useParams, useRouter, usePathname } from "next/navigation";
 import CopyButton from "@/components/ui/CopyButton";
 import { useSelector, useDispatch } from "react-redux";
@@ -387,47 +388,14 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   return (
     <div className="md:mt-20">
       {/* Breadcrumb */}
-      <nav
-        aria-label="Breadcrumb"
-        className="flex items-center text-sm text-gray-500 dark:text-[#A3A3C2]"
-      >
-        <ol className="inline-flex items-center md:space-x-2">
-          <li className="inline-flex items-center">
-            <a
-              href="/dashboard"
-              className={`px-2 py-1 rounded transition-colors ${pathname === "/dashboard" || pathname?.startsWith("/dashboard/")
-                ? "bg-[#35353E] text-white"
-                : "dark:hover:text-muted hover:text-accent hover:bg-[#35353E] hover:text-white"
-                }`}
-            >
-              Dashboard
-            </a>
-          </li>
-          <li>
-            <div className="flex items-center">
-              <FaChevronRight className="mx-2 text-muted-foreground " size={12} />
-              <a
-                href="/dashboard/notifications"
-                className={`px-2 py-1 rounded transition-colors ${pathname === "/dashboard/notifications" || pathname?.startsWith("/dashboard/notifications/")
-                  ? "bg-[#35353E] text-white"
-                  : "dark:hover:text-muted hover:text-accent hover:bg-[#35353E] hover:text-white"
-                  }`}
-              >
-                Notification center
-              </a>
-            </div>
-          </li>
-          <li aria-current="page">
-            <div className="flex items-center">
-              <FaChevronRight className="mx-2 text-muted-foreground " size={12} />
-              <span className="font-medium text-secondary">
-                View order
-              </span>
-            </div>
-          </li>
-        </ol>
-      </nav>
-      <div className="final-buy-container grid grid-cols-1 md:grid-cols-3 gap-2 sm:gap-3 md:gap-6 p-1 sm:p-2 md:p-6 min-h-screen bg-[#EEF1F4] dark:bg-[var(--bg-color)]">
+      <Breadcrumb
+        items={[
+          { label: "Dashboard", href: "/dashboard" },
+          { label: "Notification center", href: "/dashboard/notifications" },
+          { label: "View order" },
+        ]}
+      />
+      <div className="final-buy-container grid grid-cols-1 md:grid-cols-3 gap-2 sm:gap-3 md:gap-6 p-1 sm:p-2 md:p-6 min-h-screen bg-[#EEF1F4] dark:bg-(--bg-color)">
         <div className="md:col-span-2 flex flex-col gap-4 md:gap-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">

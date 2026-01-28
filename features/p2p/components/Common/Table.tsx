@@ -621,16 +621,16 @@ export const Table: React.FC<TableProps> = ({
             )}
 
             {showExportButton && type !== "orders" && (
-              <div className="relative w-full sm:w-auto flex-shrink-0">
+              <div className="relative flex-shrink-0">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowExportOptions(!showExportOptions)}
-                  className="text-xs sm:text-sm md:text-base font-semibold w-full sm:w-auto whitespace-nowrap"
+                  className="text-xs sm:text-sm font-semibold whitespace-nowrap px-2 sm:px-3"
                 >
-                  <p className="text-xs md:text-sm md:text-[14px] text-[#1D8751] whitespace-nowrap">
-                    <span className="hidden md:inline">Export Transactions</span>
-                    <span className="md:hidden">Export</span>
+                  <p className="text-xs sm:text-sm text-[#1D8751] whitespace-nowrap">
+                    <span className="hidden lg:inline">Export Transactions</span>
+                    <span className="lg:hidden">Export</span>
                   </p>
                 </Button>
 
@@ -1148,12 +1148,11 @@ export const Table: React.FC<TableProps> = ({
             className="bg-white dark:bg-[var(--card-color)] rounded-[24px] p-4 sm:p-6 w-full max-w-[500px] max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Image at the top */}
-            <img
-              src="https://res.cloudinary.com/pitz/image/upload/v1749881460/Group_3_uwzqa8.png"
-              alt="Transaction"
-              className="block mx-auto mb-3 sm:mb-4 max-w-[100px] sm:max-w-[120px] w-full h-auto"
-            />
+            {/* OMAYA.io Logo at the top */}
+            <div className="flex flex-col items-center justify-center mb-3 sm:mb-4">
+              <span className="text-[#1D8751] font-bold text-xl sm:text-2xl tracking-wide">OMAYA</span>
+              <span className="text-gray-400 dark:text-gray-300 text-xs sm:text-sm font-medium -mt-1">.io</span>
+            </div>
             {/* Header: Coin, Type, Date, Share/Note */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
               <div className="flex items-center gap-2 sm:gap-3">
