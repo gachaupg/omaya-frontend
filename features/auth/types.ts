@@ -37,6 +37,7 @@ export interface RegisterPayload {
   user_type: "individual" | "business";
   phone_number: string;
   referred_by?: string;
+  country?: string;
 }
 
 // Login payload
