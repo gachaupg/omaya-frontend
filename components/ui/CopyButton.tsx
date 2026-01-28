@@ -44,7 +44,7 @@ const CopyButton: React.FC<CopyButtonProps> = ({
       >
         {children}
         {copied ? (
-          <span className="text-sm font-medium">Copied</span>
+          <span className="text-sm font-medium text-[#1D8751]">Copied!</span>
         ) : showIcon ? (
           <svg
             className="w-4 h-4"
@@ -57,12 +57,6 @@ const CopyButton: React.FC<CopyButtonProps> = ({
             <rect x="3" y="3" width="13" height="13" rx="2" />
           </svg>
         ) : null}
-        {/* Inline copied message */}
-        {showInlineMessage && copied && (
-          <span className="text-xs text-[#1D8751] font-medium animate-fade-in whitespace-nowrap">
-            Copied!
-          </span>
-        )}
       </button>
     </>
   );

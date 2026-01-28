@@ -900,9 +900,14 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
 
   return (
     <div className="flex flex-col dark:bg-(--bg-color) pl-0 sm:pl-4 pr-2 sm:pr-0 w-full sm:max-w-3xl mx-auto">
-<h2 className="text-lg sm:text-xl font-semibold mb-1 sm:mb-2 text-gray-800 dark:text-[#788099] inline-flex items-center gap-2">
-  Transfer Information
-</h2>
+      {/* Money X Page Title */}
+      <h1 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-gray-900 dark:text-white">
+        Money X
+      </h1>
+      
+      <h2 className="text-lg sm:text-xl font-semibold mb-1 sm:mb-2 text-gray-800 dark:text-[#788099] inline-flex items-center gap-2">
+        1- Transfer Information
+      </h2>
 
 
 

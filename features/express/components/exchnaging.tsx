@@ -982,7 +982,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                   </div>
                   <div className="flex items-center mb-1">
                     <img
-                      src="https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
+                      src={effectiveTransactionData.paymentDetail.logo_url || effectiveTransactionData.paymentDetail.logo || effectiveTransactionData.paymentDetail.provider_logo || "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"}
                       alt={effectiveTransactionData.paymentDetail.provider_name}
                       className="w-6 h-6 rounded-full mr-2"
                     />

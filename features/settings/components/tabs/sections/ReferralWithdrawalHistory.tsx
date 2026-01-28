@@ -158,16 +158,16 @@ const ReferralWithdrawalHistory: React.FC = () => {
   const totalPages = Math.ceil(data.count / itemsPerPage);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 w-full">
       <div className="mb-4">
         <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
           History of Withdrawal
         </h2>
       </div>
 
-      {/* Desktop Table View */}
-      <div className="hidden md:block overflow-x-auto">
-        <div className="bg-white dark:bg-[var(--card-color)] border border-[#E8EFF5] dark:border-[#35353F] rounded-xl overflow-hidden">
+      {/* Desktop Table View - with proper horizontal scroll */}
+      <div className="hidden md:block overflow-x-auto -mx-2 px-2">
+        <div className="bg-white dark:bg-[var(--card-color)] border border-[#E8EFF5] dark:border-[#35353F] rounded-xl overflow-hidden min-w-[700px]">
           <table className="w-full border-collapse">
             <thead className="bg-gray-100 dark:bg-[#35353E]">
               <tr className="border-b border-[#E8EFF5] dark:border-[#35353F]">

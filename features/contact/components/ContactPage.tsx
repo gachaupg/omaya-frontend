@@ -78,7 +78,7 @@ const ContactPage: React.FC<ContactPageProps> = ({ showFileUpload = true }) => {
   return (
     <div className="w-full relative z-10 min-h-screen p-0 sm:p-6 lg:p-8 mt-4 sm:mt-0">
       <div className="w-full max-w-3xl mx-auto px-4 sm:px-0">
-        <h1 className="text-base sm:text-lg font-medium text-gray-700 dark:text-[#788099] mb-3 sm:mb-4">
+        <h1 className="text-base sm:text-lg font-medium text-gray-700 dark:text-white mb-3 sm:mb-4">
           {t("contact.title", "Help & Support")}
         </h1>
 
