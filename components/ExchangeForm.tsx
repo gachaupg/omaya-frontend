@@ -1566,7 +1566,7 @@ export default function ExchangeForm({
 
     return (
       <div
-        className="relative flex w-full overflow-hidden mt-0 mb-0 rounded-t-2xl bg-gray-300 dark:bg-[#18181D] gap-0 border border-b-0 dark:border-accent border-border"
+        className="relative flex w-full overflow-hidden mt-0 mb-0 rounded-t-2xl bg-gray-300 dark:bg-[#18181D] gap-0 border border-b-0 dark:border-accent border-gray-400"
       >
         {/* Uniform OUTER border that DOES NOT touch the active tab area (segmented). */}
         {/* Left / Right borders (hide the side border next to the active outer tab) */}

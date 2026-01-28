@@ -353,7 +353,7 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
             
             return (
               <React.Fragment key={`text-${step.key}`}>
-                <div className={`flex flex-col items-center ${isHomePage ? 'w-6 sm:w-7' : 'w-8 sm:w-10'} flex-shrink-0`}>
+                <div className={`flex flex-col items-center ${isHomePage ? 'w-6 sm:w-10' : 'w-8 sm:w-12'} shrink-0`}>
                   <span
                     className={`font-medium ${isHomePage ? 'text-[9px] sm:text-[10px]' : 'text-[10px] sm:text-xs'} text-center leading-tight ${
                       isActive

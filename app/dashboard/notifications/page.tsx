@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
+import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState, AppDispatch } from "@/store/rootReducer";
 import { FaUserCircle, FaChevronRight } from "react-icons/fa";
@@ -165,26 +166,12 @@ const Notifications = () => {
       <div className="w-full px-2">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 mb-4 sm:mb-6">
           {/* Breadcrumb */}
-          <nav
-            aria-label="Breadcrumb"
-            className="flex items-center text-xs sm:text-sm text-gray-500 dark:text-[#A3A3C2]"
-          >
-            <ol className="flex items-center flex-nowrap">
-              <li className="flex-shrink-0">
-                <a onClick={() => router.push("/dashboard")} className="hover:text-muted transition-colors cursor-pointer whitespace-nowrap">
-                  Dashboard
-                </a>
-              </li>
-              <li className="flex-shrink-0 px-2 flex items-center justify-center">
-                <FaChevronRight className="text-muted-foreground" size={10} />
-              </li>
-              <li className="flex-shrink-0">
-                <a href="/dashboard/notifications" className="text-secondary transition-colors whitespace-nowrap">
-                  Notification center
-                </a>
-              </li>
-            </ol>
-          </nav>
+          <Breadcrumb
+            items={[
+              { label: "Dashboard", href: "/dashboard" },
+              { label: "Notification center", href: "/dashboard/notifications" },
+            ]}
+          />
           <span className="text-xs sm:text-sm dark:text-[#A3A3C2] text-gray-600 whitespace-nowrap">0 notifications</span>
         </div>
 
@@ -238,26 +225,12 @@ const Notifications = () => {
     <div className="w-full px-2">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 mb-4 sm:mb-6">
         {/* Breadcrumb */}
-        <nav
-          aria-label="Breadcrumb"
-          className="flex items-center text-xs sm:text-sm text-gray-500 dark:text-[#A3A3C2]"
-        >
-          <ol className="flex items-center flex-nowrap">
-            <li className="flex-shrink-0">
-              <a href="/dashboard" className="hover:text-muted transition-colors cursor-pointer whitespace-nowrap">
-                Dashboard
-              </a>
-            </li>
-            <li className="flex-shrink-0 px-2 flex items-center justify-center">
-              <FaChevronRight className="text-muted-foreground" size={10} />
-            </li>
-            <li className="flex-shrink-0">
-              <a href="/dashboard/notifications" className="text-secondary transition-colors whitespace-nowrap">
-                Notification center
-              </a>
-            </li>
-          </ol>
-        </nav>
+        <Breadcrumb
+          items={[
+            { label: "Dashboard", href: "/dashboard" },
+            { label: "Notification center", href: "/dashboard/notifications" },
+          ]}
+        />
 
 
         <span className="text-xs sm:text-sm text-gray-500 dark:text-[#A3A3C2] whitespace-nowrap">
@@ -269,94 +242,91 @@ const Notifications = () => {
       </div>
 
       {matchedTrades.results.map((trade: any) => {
-          const orderType = getOrderType(trade.order_type);
-          const status = getStatus(trade, user?.email || "");
-          const owner = trade.owner === user?.email ? trade.buyer : trade.seller
-          const name = trade.advertiser_name === user?.first_name ? trade.order_type === "sell" ? truncate(trade.buyer, 10) : truncate(trade.seller, 10) : trade.advertiser_name
-          const profileImage = trade.order_type === "sell" &&
-            trade.owner === user?.email ? trade.buyer_photo : trade.seller_photo
+        const orderType = getOrderType(trade.order_type);
+        const status = getStatus(trade, user?.email || "");
+        const owner = trade.owner === user?.email ? trade.buyer : trade.seller
+        const name = trade.advertiser_name === user?.first_name ? trade.order_type === "sell" ? truncate(trade.buyer, 10) : truncate(trade.seller, 10) : trade.advertiser_name
+        const profileImage = trade.order_type === "sell" &&
+          trade.owner === user?.email ? trade.buyer_photo : trade.seller_photo
 
-          return (
-            <div
-              key={trade.id}
-              className="group flex flex-col sm:flex-row sm:items-center justify-between bg-white dark:bg-[#1f1f27] border border-gray-100 dark:border-[#35353E] rounded-xl p-3 sm:p-4 mb-3 shadow-sm hover:shadow-md transition-all duration-200 gap-3"
-            >
-              {/* Left Section: Avatar + Details */}
-              <div className="flex items-start gap-3 flex-1 min-w-0">
-                {/* Avatar with Status Dot */}
-                <div className="relative shrink-0">
-                  {profileImage ? (
-                    <img
-                      src={profileImage}
-                      alt=""
-                      className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover ring-2 ring-gray-100 dark:ring-[#35353E]"
-                    />
-                  ) : (
-                    <FaUserCircle
-                      size={40}
-                      className="sm:w-12 sm:h-12 text-gray-300 dark:text-[#555566]"
-                    />
-                  )}
-                  <span
-                    className={`absolute bottom-0.5 right-0.5 w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full border-[2px] sm:border-[2.5px] border-white dark:border-[#1f1f27] ${
-                      orderType.color === "text-[#1D8751]" ? "bg-[#1D8751]" : "bg-red-500"
-                      }`}
-                  ></span>
-                </div>
-
-                {/* Name + Amount + Date */}
-                <div className="flex flex-col flex-grow min-w-0">
-                  <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                    <span className="font-bold text-sm sm:text-base text-gray-900 dark:text-gray-100 truncate">
-                      {name}
-                    </span>
-                    <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded border whitespace-nowrap ${
-                      orderType.color === "text-[#1D8751]" ? "border-[#1D8751]/20 text-[#1D8751] bg-[#1D8751]/5" : "border-red-400/20 text-red-400 bg-red-400/5"
-                    }`}>
-                      {orderType.label}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-2 text-xs sm:text-sm flex-wrap">
-                    <span className="font-semibold text-gray-900 dark:text-white whitespace-nowrap">
-                      {trade.amount} <span className="text-xs text-gray-500 font-normal">USDT</span>
-                    </span>
-                    <span className="hidden sm:inline text-gray-300 dark:text-gray-600">|</span>
-                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                      {new Date(trade.timestamp).toLocaleString(undefined, {
-                        month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-                      })}
-                    </span>
-                  </div>
-                </div>
+        return (
+          <div
+            key={trade.id}
+            className="group flex flex-col sm:flex-row sm:items-center justify-between bg-white dark:bg-[#1f1f27] border border-gray-100 dark:border-[#35353E] rounded-xl p-3 sm:p-4 mb-3 shadow-sm hover:shadow-md transition-all duration-200 gap-3"
+          >
+            {/* Left Section: Avatar + Details */}
+            <div className="flex items-start gap-3 flex-1 min-w-0">
+              {/* Avatar with Status Dot */}
+              <div className="relative shrink-0">
+                {profileImage ? (
+                  <img
+                    src={profileImage}
+                    alt=""
+                    className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover ring-2 ring-gray-100 dark:ring-[#35353E]"
+                  />
+                ) : (
+                  <FaUserCircle
+                    size={40}
+                    className="sm:w-12 sm:h-12 text-gray-300 dark:text-[#555566]"
+                  />
+                )}
+                <span
+                  className={`absolute bottom-0.5 right-0.5 w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full border-[2px] sm:border-[2.5px] border-white dark:border-[#1f1f27] ${orderType.color === "text-[#1D8751]" ? "bg-[#1D8751]" : "bg-red-500"
+                    }`}
+                ></span>
               </div>
 
-              {/* Right Section: Status + View Button */}
-              <div className="flex items-center gap-2 sm:gap-3 ml-0 sm:ml-auto flex-shrink-0">
-                {/* Status Badge */}
-                <span
-                  className={`inline-flex items-center px-2 sm:px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-semibold bg-opacity-10 whitespace-nowrap ${
-                    status.color === "text-[#1D8751]"
-                    ? "bg-green-100 text-[#1D8751] dark:bg-green-900/30 dark:text-[#1D8751]"
-                    : "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-500"
-                    }`}
-                >
-                  <span className="hidden sm:inline">{status.text}</span>
-                  <span className="sm:hidden">Pending</span>
-                </span>
+              {/* Name + Amount + Date */}
+              <div className="flex flex-col flex-grow min-w-0">
+                <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                  <span className="font-bold text-sm sm:text-base text-gray-900 dark:text-gray-100 truncate">
+                    {name}
+                  </span>
+                  <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded border whitespace-nowrap ${orderType.color === "text-[#1D8751]" ? "border-[#1D8751]/20 text-[#1D8751] bg-[#1D8751]/5" : "border-red-400/20 text-red-400 bg-red-400/5"
+                    }`}>
+                    {orderType.label}
+                  </span>
+                </div>
 
-                {/* View Button */}
-                <button
-                  onClick={() => handleViewOrder(trade)}
-                  className="bg-[#1D8751] hover:bg-[#16663d] text-white py-1.5 px-4 sm:py-2 sm:px-5 rounded-lg font-medium text-xs sm:text-sm transition-colors shadow-sm whitespace-nowrap active:scale-95"
-                >
-                  View
-                </button>
+                <div className="flex items-center gap-2 text-xs sm:text-sm flex-wrap">
+                  <span className="font-semibold text-gray-900 dark:text-white whitespace-nowrap">
+                    {trade.amount} <span className="text-xs text-gray-500 font-normal">USDT</span>
+                  </span>
+                  <span className="hidden sm:inline text-gray-300 dark:text-gray-600">|</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                    {new Date(trade.timestamp).toLocaleString(undefined, {
+                      month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                    })}
+                  </span>
+                </div>
               </div>
             </div>
-          );
-        })}
-      
+
+            {/* Right Section: Status + View Button */}
+            <div className="flex items-center gap-2 sm:gap-3 ml-0 sm:ml-auto flex-shrink-0">
+              {/* Status Badge */}
+              <span
+                className={`inline-flex items-center px-2 sm:px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-semibold bg-opacity-10 whitespace-nowrap ${status.color === "text-[#1D8751]"
+                  ? "bg-green-100 text-[#1D8751] dark:bg-green-900/30 dark:text-[#1D8751]"
+                  : "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-500"
+                  }`}
+              >
+                <span className="hidden sm:inline">{status.text}</span>
+                <span className="sm:hidden">Pending</span>
+              </span>
+
+              {/* View Button */}
+              <button
+                onClick={() => handleViewOrder(trade)}
+                className="bg-[#1D8751] hover:bg-[#16663d] text-white py-1.5 px-4 sm:py-2 sm:px-5 rounded-lg font-medium text-xs sm:text-sm transition-colors shadow-sm whitespace-nowrap active:scale-95"
+              >
+                View
+              </button>
+            </div>
+          </div>
+        );
+      })}
+
 
       {/* Pagination */}
       {totalPages > 1 && (
