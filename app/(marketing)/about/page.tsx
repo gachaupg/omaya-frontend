@@ -982,7 +982,7 @@ const AboutPage = () => {
                   sizes="(max-width: 768px) 100vw, 33vw"
                   style={{ objectPosition: 'center' }}
                 />
-                <div className="absolute top-3 right-2 px-2 sm:px-3 py-1 rounded-lg bg-[#1D8751] text-white text-[10px] sm:text-xs font-medium whitespace-nowrap">2024</div>
+                <div className="absolute top-2 right-1 sm:top-3 sm:right-2 px-2 sm:px-3 py-0.5 sm:py-1 rounded-lg bg-[#1D8751] text-white text-[10px] sm:text-xs font-medium whitespace-nowrap">2024</div>
                 <div className="absolute bottom-3 left-6 w-11 h-11 rounded-xl bg-[#1D8751] flex items-center justify-center z-10">
                   <Users className="w-5 h-5 text-white" />
                 </div>

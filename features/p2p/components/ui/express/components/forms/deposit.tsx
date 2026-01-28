@@ -2324,6 +2324,23 @@ export default function DepositForm({
               <h2 className="text-lg sm:text-xl font-bold mb-2 text-[#788099]">
                 <span className="text-[#7e7e8f]">3-</span> Wallet Address
               </h2>
+              
+              {/* Dynamic Crypto Warning Banner */}
+              {selectedAsset && (
+                <div className="mb-4 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl">
+                  <div className="flex items-start gap-2">
+                    <span className="text-amber-500 mt-0.5 flex-shrink-0">
+                      <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
+                        <path d="M12 9v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </span>
+                    <p className="text-sm text-amber-600 dark:text-amber-400 font-medium">
+                      Please send only <span className="font-bold">{selectedAsset?.ticker || selectedAsset?.symbol || 'crypto'}</span> on <span className="font-bold">{selectedAsset?.network || 'the selected network'}</span>. Any other Crypto or Network will be lost Permanently.
+                    </p>
+                  </div>
+                </div>
+              )}
+              
               <div className="flex flex-col dark:bg-[#1D1D23] border-2 border-[#35353E] rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-5 shadow-lg w-full mx-auto text-[#35353e] dark:text-[#788099] mb-4 sm:mb-6">
                 {/* Wallet/Account Address Label */}
                 <label className="block text-sm sm:text-[17px] text-[#7e7e8f] mb-2 font-semibold">

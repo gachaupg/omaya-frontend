@@ -31,6 +31,7 @@ import {
 import { useRatesI18n } from "@/lib/useRatesI18n";
 import { FaSearch } from "react-icons/fa";
 import { showToast } from "@/lib/utils/toast";
+import { openKYCModal } from "@/features/auth/slices/authSlice";
 import Exchanging from "../../express/components/exchnaging";
 import { useTheme } from "@/context/theme";
 import MoneyXRates from "./MoneyXRates";
@@ -1588,7 +1589,19 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
         errorMessage = error.message;
       }
 
-      showToast.error(errorMessage);
+      // Check if error is about account verification - show KYC modal instead of toast
+      const isVerificationError = 
+        errorMessage.toLowerCase().includes("account_not_verified") ||
+        errorMessage.toLowerCase().includes("not verified") ||
+        errorMessage.toLowerCase().includes("verification") ||
+        errorMessage.toLowerCase().includes("pending verification") ||
+        errorMessage.toLowerCase().includes("admin approval");
+      
+      if (isVerificationError) {
+        dispatch(openKYCModal());
+      } else {
+        showToast.error(errorMessage);
+      }
     } finally {
       setIsSubmitting(false);
     }

@@ -513,10 +513,26 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
               <div className="flex flex-col gap-4">
                 <div className="flex flex-col md:flex-row gap-3 md:gap-4">
                   <div className="flex p-2 md:p-3 gap-2 w-full md:w-1/4 min-h-[100px] md:min-h-[180px] border border-gray-200 dark:border-[#3C3C47] rounded-2xl bg-white dark:bg-[var(--bg-color)] mb-4 md:mb-0">
-                    {/* Replace with actual logo if available */}
-                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white flex items-center justify-center mb-2">
-                      <span className="text-[#1D8751] font-bold text-xs">
-                        {paymentDetails?.provider[0]}
+                    {/* Bank Logo */}
+                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white flex items-center justify-center mb-2 overflow-hidden border border-gray-200 dark:border-[#3C3C47]">
+                      {(paymentDetails?.logo || paymentDetails?.logo_url || paymentDetails?.provider_logo) ? (
+                        <img
+                          src={paymentDetails?.logo || paymentDetails?.logo_url || paymentDetails?.provider_logo}
+                          alt={paymentDetails?.provider || 'Bank'}
+                          className="w-full h-full object-contain p-1"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            const fallback = target.nextElementSibling as HTMLElement;
+                            if (fallback) fallback.style.display = 'flex';
+                          }}
+                        />
+                      ) : null}
+                      <span 
+                        className="text-[#1D8751] font-bold text-xs"
+                        style={{ display: (paymentDetails?.logo || paymentDetails?.logo_url || paymentDetails?.provider_logo) ? 'none' : 'flex' }}
+                      >
+                        {paymentDetails?.provider?.[0] || '?'}
                       </span>
                     </div>
                     <span className="text-gray-900 dark:text-white text-xs md:text-[13px] font-medium">

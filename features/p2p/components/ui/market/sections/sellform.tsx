@@ -588,11 +588,31 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
               <div className="flex flex-col gap-4">
                 <div className="flex flex-col md:flex-row gap-3 md:gap-4">
                   <div className="flex p-2 md:p-3 gap-2 w-full md:w-1/4 min-h-[100px] md:min-h-[180px] border border-gray-200 dark:border-[#3C3C47] rounded-2xl bg-white dark:bg-[var(--bg-color)] mb-4 md:mb-0">
-                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white flex items-center justify-center mb-2">
-                      <span className="text-[#1D8751] font-bold text-xs">
-                        {paymentDetails?.provider[0]}
-                      </span>
-                    </div>
+                    {/* Bank Logo */}
+                    {paymentDetails?.logo || paymentDetails?.logo_url || paymentDetails?.provider_logo ? (
+                      <img 
+                        src={paymentDetails?.logo || paymentDetails?.logo_url || paymentDetails?.provider_logo}
+                        alt={paymentDetails?.provider}
+                        className="w-8 h-8 md:w-10 md:h-10 rounded-full object-contain flex-shrink-0"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          const parent = target.parentElement;
+                          if (parent && !parent.querySelector('.fallback-initial')) {
+                            const fallback = document.createElement('div');
+                            fallback.className = 'fallback-initial w-8 h-8 md:w-10 md:h-10 rounded-full bg-[#1D8751] flex items-center justify-center';
+                            fallback.innerHTML = `<span class="text-white font-bold text-xs">${paymentDetails?.provider?.[0]?.toUpperCase() || 'B'}</span>`;
+                            parent.insertBefore(fallback, parent.firstChild);
+                          }
+                        }}
+                      />
+                    ) : (
+                      <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-[#1D8751] flex items-center justify-center mb-2 flex-shrink-0">
+                        <span className="text-white font-bold text-xs">
+                          {paymentDetails?.provider?.[0]?.toUpperCase() || 'B'}
+                        </span>
+                      </div>
+                    )}
                     <span className="text-gray-900 dark:text-white text-xs md:text-[13px] font-medium">
                       {paymentDetails?.provider}
                     </span>

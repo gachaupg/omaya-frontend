@@ -628,9 +628,14 @@ export const Table: React.FC<TableProps> = ({
                   onClick={() => setShowExportOptions(!showExportOptions)}
                   className="text-xs sm:text-sm font-semibold whitespace-nowrap px-2 sm:px-3"
                 >
-                  <p className="text-xs sm:text-sm text-[#1D8751] whitespace-nowrap">
-                    <span className="hidden lg:inline">Export Transactions</span>
-                    <span className="lg:hidden">Export</span>
+                  <p className="text-xs sm:text-sm text-[#1D8751] whitespace-nowrap flex items-center gap-1">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="flex-shrink-0">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="7 10 12 15 17 10" />
+                      <line x1="12" y1="15" x2="12" y2="3" />
+                    </svg>
+                    <span className="hidden xl:inline">Export Transactions</span>
+                    <span className="xl:hidden">Export</span>
                   </p>
                 </Button>
 
