@@ -109,6 +109,7 @@ const PrivacySecurity = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const sessionsPerPage = 5;
   const sessionsContainerRef = useRef<HTMLDivElement>(null);
+  const prevPageRef = useRef<number | null>(null);
 
   // Enhanced logout states
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -557,11 +558,16 @@ const PrivacySecurity = () => {
     }
   }, [deviceSessionsLoading, allSessions, isAuthenticated, isCreatingSession, dispatch]);
 
-  // Scroll to top when page changes
+  // Scroll to top when page changes (but not on initial load)
   useEffect(() => {
-    if (sessionsContainerRef.current) {
-      sessionsContainerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // Only scroll if we have a previous page and it's different from current
+    if (prevPageRef.current !== null && prevPageRef.current !== currentPage) {
+      if (sessionsContainerRef.current) {
+        sessionsContainerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
     }
+    // Update the previous page reference
+    prevPageRef.current = currentPage;
   }, [currentPage]);
 
   const totalPages = Math.ceil(allSessions.length / sessionsPerPage);

@@ -33,6 +33,7 @@ import {
   Trophy,
 } from "lucide-react";
 import FloatingParticles from "@/components/ui/floating-particles";
+import Link from "next/link";
 
 const AboutPage = () => {
   const stats = [
@@ -1134,14 +1135,13 @@ const AboutPage = () => {
                   </div>
                 </div>
               </div>
-
               {/* CTA Button */}
-              <a
-                href="/security"
+              <Link
+                href="/dashboard/account/?tab=privacy"
                 className="inline-block px-6 py-3 bg-[#1D8751] text-white text-sm font-semibold rounded-full hover:bg-[#166b3e] transition-all duration-300"
               >
                 Learn About Our Security
-              </a>
+              </Link>
             </div>
           </div>
         </div>
