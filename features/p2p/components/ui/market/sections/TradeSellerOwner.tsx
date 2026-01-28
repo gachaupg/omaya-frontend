@@ -613,22 +613,22 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                     </div>
                   </div>
                 </div>
-                <div className="flex flex-col  gap-4">
-                  <div className="flex-1">
-                    <div className="rounded-2xl border border-[#1D8751] bg-gray-50 dark:bg-[var(--bg-color)] p-6 mt-2 text-base flex flex-col gap-2">
-                      <div className="flex items-center gap-3 text-gray-900 dark:text-white">
-                        <span className="w-3 h-3 rounded-full bg-[#1D8751] inline-block"></span>
-                        Please send the money from your own account Only
-                      </div>
-                      <div className="flex items-center gap-3 text-gray-900 dark:text-white">
-                        <span className="w-3 h-3 rounded-full bg-[#1D8751] inline-block"></span>
-                        Put transaction ID in the description field of the bank
-                      </div>
-                      <div className="flex items-center gap-3 text-gray-900 dark:text-white">
-                        <span className="w-3 h-3 rounded-full bg-[#1D8751] inline-block"></span>
-                        Please note, If you do not follow above conditions, we
-                        will reject your transaction and send you back your money.
-                      </div>
+              </div>
+              <div className="flex flex-col  gap-4">
+                <div className="flex-1">
+                  <div className="rounded-2xl border border-[#1D8751] bg-gray-50 dark:bg-(--bg-color) p-6 mt-2 text-base flex flex-col gap-2">
+                    <div className="flex items-center gap-3 text-gray-900 dark:text-white">
+                      <span className="w-3 h-3 rounded-full bg-[#1D8751] inline-block shrink-0"></span>
+                      Please send the money from your own account Only
+                    </div>
+                    <div className="flex items-center gap-3 text-gray-900 dark:text-white">
+                      <span className="w-3 h-3 rounded-full bg-[#1D8751] inline-block shrink-0"></span>
+                      Put transaction ID in the description field of the bank
+                    </div>
+                    <div className="flex items-center gap-3 text-gray-900 dark:text-white">
+                      <span className="w-3 h-3 rounded-full bg-[#1D8751] inline-block shrink-0"></span>
+                      Please note, If you do not follow above conditions, we
+                      will reject your transaction and send you back your money.
                     </div>
                   </div>
                   <div className="flex-1">

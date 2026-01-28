@@ -1189,7 +1189,7 @@ const MoneyXRates = () => {
               >
                 <ul className="list-none space-y-1.5 sm:space-y-2">
                   <li className="flex items-start gap-2 sm:gap-3">
-                    <span className="w-2 h-2 sm:w-3 sm:h-3 mt-0.5 sm:mt-1 rounded-full bg-[#1D8751] inline-block flex-shrink-0"></span>
+                    <span className="w-2 h-2 sm:w-3 sm:h-3 mt-0.5 sm:mt-1 rounded-full bg-[#1D8751] inline-block shrink-0"></span>
                     <span
                       className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-xs sm:text-sm leading-relaxed`}
                     >
@@ -1197,7 +1197,7 @@ const MoneyXRates = () => {
                     </span>
                   </li>
                   <li className="flex items-start gap-2 sm:gap-3">
-                    <span className="w-2 h-2 sm:w-3 sm:h-3 mt-0.5 sm:mt-1 rounded-full bg-[#1D8751] inline-block flex-shrink-0"></span>
+                    <span className="w-2 h-2 sm:w-3 sm:h-3 mt-0.5 sm:mt-1 rounded-full bg-[#1D8751] inline-block shrink-0"></span>
                     <span
                       className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-xs sm:text-sm leading-relaxed`}
                     >
@@ -1205,7 +1205,7 @@ const MoneyXRates = () => {
                     </span>
                   </li>
                   <li className="flex items-start gap-2 sm:gap-3">
-                    <span className="w-2 h-2 sm:w-3 sm:h-3 mt-0.5 sm:mt-1 rounded-full bg-[#1D8751] inline-block flex-shrink-0"></span>
+                    <span className="w-2 h-2 sm:w-3 sm:h-3 mt-0.5 sm:mt-1 rounded-full bg-[#1D8751] inline-block shrink-0"></span>
                     <span
                       className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-xs sm:text-sm leading-relaxed`}
                     >
