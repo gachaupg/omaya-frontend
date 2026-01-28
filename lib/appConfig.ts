@@ -23,7 +23,10 @@ export const API_CONFIG = {
     REFRESH_TOKEN: "/api/token/refresh/",
     PROFILE: "/api/profile/",
     KYC_STATUS: "/api/kyc/status/",
+    // Legacy KYC verify endpoint (no longer used for manual document submit)
     KYC_VERIFY: "/api/kyc/verify/",
+    // New KYC submit endpoint for documents + selfies
+    KYC_SUBMIT: "/api/kyc/submit/",
     KYC_PHONE_SEND_OTP: "/api/kyc/phone/send-otp/",
     KYC_PHONE_VERIFY_OTP: "/api/kyc/phone/verify-otp/",
     SUMSUB_INITIATE: "/api/sumsub/initiate/",

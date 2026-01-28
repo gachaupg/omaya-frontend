@@ -3,7 +3,7 @@
  */
 import { createSlice, PayloadAction, createAsyncThunk } from "@reduxjs/toolkit";
 import { API_CONFIG } from "@/lib/appConfig";
-import { get, post, AxiosError } from "@/lib/apiClient";
+import { get, post, put, AxiosError } from "@/lib/apiClient";
 import { logger } from '@/lib/utils/logger';
 
 import {
@@ -70,125 +70,76 @@ export const verifyKYCStatus = createAsyncThunk<KYCVerificationResponse, KYCVeri
   "kyc/verifyStatus",
   async (payload, { rejectWithValue }) => {
     try {
-      // If kyc_images are provided, send as FormData
-      if (payload.kyc_images && payload.kyc_images.length > 0) {
-        logger.debug('general', '📤 KYC Verification Payload (FormData):', {
-          user_id: payload.user_id,
-          status: payload.status,
-          is_verified: payload.is_verified,
-          verification_method: payload.verification_method,
-          country: payload.country,
-          document_type: payload.document_type,
-          document_number: payload.document_number,
-          images_count: payload.kyc_images.length,
-        });
-        
-        const formData = new FormData();
-        formData.append('user_id', payload.user_id);
-        formData.append('status', payload.status.toString());
-        
-        // Add is_verified field
-        if (payload.is_verified !== undefined) {
-          formData.append('is_verified', payload.is_verified.toString());
-        }
-        
-        if (payload.verification_method) {
-          formData.append('verification_method', payload.verification_method);
-        }
-        if (payload.country) {
-          formData.append('country', payload.country);
-        }
-        if (payload.document_type) {
-          formData.append('document_type', payload.document_type);
-        }
-        if (payload.document_number) {
-          formData.append('document_number', payload.document_number);
-        }
-        if (payload.face_data) {
-          formData.append('face_data', JSON.stringify(payload.face_data));
-        }
-        if (payload.facial_id) {
-          formData.append('facial_id', payload.facial_id);
-        }
-        
-        // Append all images
-        payload.kyc_images.forEach((image, index) => {
-          if (image) {
-            formData.append('kyc_images', image);
-          }
-        });
-        
-        // Log FormData entries
-        logger.debug('general', '📋 FormData entries being sent:');
-        for (let [key, value] of formData.entries()) {
-          if (value instanceof File) {
-            logger.debug('general', `  ${key}: [File: ${value.name}, Size: ${value.size} bytes]`);
-          } else {
-            logger.debug('general', `  ${key}:`, value);
-          }
-        }
-        
-        // Send FormData (First request with all document data)
-        const response = await post<KYCVerificationResponse>(
-          API_CONFIG.AUTH.KYC_VERIFY,
-          formData,
-          {
-            headers: {
-              'Content-Type': 'multipart/form-data',
-            },
-          }
-        );
-        
-        logger.debug('general', '✅ KYC Verification Response (FormData - First Request):', response.data);
-        
-        // Send second request with just user_id and status
-        logger.debug('general', '📤 Sending second KYC verification request with user_id and status...');
-        const secondRequestPayload = {
-          user_id: payload.user_id,
-          status: true,
-        };
-        logger.debug('general', '📤 Second Request Payload:', secondRequestPayload);
-        
-        const secondResponse = await post<KYCVerificationResponse>(
-          API_CONFIG.AUTH.KYC_VERIFY,
-          secondRequestPayload
-        );
-        
-        logger.debug('general', '✅ KYC Verification Response (Second Request):', secondResponse.data);
-        
-        // Return the first response data
-        return response.data;
-      } else {
-        // Send as JSON if no images - payload already includes user_id and status
-        const jsonPayload = payload;
-        
-        logger.debug('general', '📤 KYC Verification Payload (JSON - First Request):', jsonPayload);
-        
-        const response = await post<KYCVerificationResponse>(
-          API_CONFIG.AUTH.KYC_VERIFY,
-          jsonPayload
-        );
-        
-        logger.debug('general', '✅ KYC Verification Response (First Request):', response.data);
-        
-        // Send second request with just user_id and status
-        logger.debug('general', '📤 Sending second KYC verification request with user_id and status...');
-        const secondRequestPayload = {
-          user_id: payload.user_id,
-          status: true,
-        };
-        logger.debug('general', '📤 Second Request Payload:', secondRequestPayload);
-        
-        const secondResponse = await post<KYCVerificationResponse>(
-          API_CONFIG.AUTH.KYC_VERIFY,
-          secondRequestPayload
-        );
-        
-        logger.debug('general', '✅ KYC Verification Response (Second Request):', secondResponse.data);
-        
-        // Return the first response data
-        return response.data;
+      // The backend expects a multipart/form-data PUT to /api/kyc/submit/
+      const formData = new FormData();
+
+      // Required string fields
+      if (payload.country) {
+        formData.append("country", payload.country);
       }
+      if (payload.document_type) {
+        formData.append("document_type", payload.document_type);
+      }
+      if (payload.document_number) {
+        formData.append("document_number", payload.document_number);
+      }
+
+      // Map kyc_images to specific fields expected by the API
+      // 0: document front, 1: document back (optional extra), 2: selfie
+      const images = payload.kyc_images || [];
+      const [frontImage, backImage, selfieImage] = images;
+
+      if (frontImage instanceof File) {
+        formData.append("document_image", frontImage);
+      }
+
+      if (selfieImage instanceof File) {
+        formData.append("selfie_image", selfieImage);
+      }
+
+      // Optionally send all images again as uploaded_images + image_types
+      const uploadedImages: File[] = [];
+      const imageTypes: string[] = [];
+
+      if (frontImage instanceof File) {
+        uploadedImages.push(frontImage);
+        imageTypes.push("front");
+      }
+      if (backImage instanceof File) {
+        uploadedImages.push(backImage);
+        imageTypes.push("back");
+      }
+      if (selfieImage instanceof File) {
+        uploadedImages.push(selfieImage);
+        imageTypes.push("selfie");
+      }
+
+      uploadedImages.forEach((file) => {
+        formData.append("uploaded_images", file);
+      });
+      if (imageTypes.length > 0) {
+        imageTypes.forEach((type) => formData.append("image_types", type));
+      }
+
+      const response = await put<any>(API_CONFIG.AUTH.KYC_SUBMIT, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      // Normalise backend response into KYCVerificationResponse shape
+      const data = response.data;
+      const isVerified =
+        typeof data?.is_verified === "boolean"
+          ? data.is_verified
+          : typeof data?.data?.is_verified === "boolean"
+          ? data.data.is_verified
+          : false;
+
+      return {
+        message: data?.message ?? "KYC details submitted successfully.",
+        is_verified: isVerified,
+      };
     } catch (error) {
       return rejectWithValue(handleApiError(error));
     }

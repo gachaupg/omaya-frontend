@@ -47,17 +47,17 @@ const KYCVerificationModal: React.FC = () => {
   const [documentFrontPreview, setDocumentFrontPreview] = useState<string | null>(null);
   const [documentBackPreview, setDocumentBackPreview] = useState<string | null>(null);
   const [facePreview, setFacePreview] = useState<string | null>(null);
+  const [kycSubmitMessage, setKycSubmitMessage] = useState<string | null>(null);
+  const isWaitingApproval =
+    kycStatus?.status === "waiting_approval" && kycStatus?.is_verified === false;
 
   useEffect(() => {
     // Update email when user changes
     if (user?.email) {
       setVerificationData(prev => ({ ...prev, email: user.email }));
     }
-    // Initialize phone number from user
-    if (user?.phone_number) {
-      setPhoneNumber(user.phone_number);
-    }
-  }, [user?.email, user?.phone_number]);
+    // Do NOT auto-fill phone number; user must type it manually
+  }, [user?.email]);
 
   // Check KYC status for phone verification
   useEffect(() => {
@@ -69,9 +69,7 @@ const KYCVerificationModal: React.FC = () => {
           if (status.phone_verified === true) {
             setPhoneVerified(true);
           }
-          if (status.phone_number) {
-            setPhoneNumber(status.phone_number);
-          }
+          // Do NOT auto-fill phone number from KYC status; user must type it manually
         }
       });
     }
@@ -423,7 +421,14 @@ const KYCVerificationModal: React.FC = () => {
         document_number: verificationData.documentNumber,
       })).unwrap();
 
-      // Always show success modal and close
+      // Store backend message to show in the modal
+      if (result?.message) {
+        setKycSubmitMessage(result.message);
+      } else {
+        setKycSubmitMessage("Your KYC has been submitted. Please wait for admin approval.");
+      }
+
+      // Always show success modal and close form
       localStorage.removeItem('kyc_verification_status');
       setShowManualVerification(false);
       setShowSuccessModal(true);
@@ -492,6 +497,37 @@ const KYCVerificationModal: React.FC = () => {
     }
   };
 
+  const handleCheckStatusClick = async () => {
+    setIsSubmitting(true);
+    try {
+      const kycResult = await dispatch(checkKYCStatus());
+      if ((kycResult.payload as any)?.is_verified) {
+        localStorage.removeItem("kyc_verification_status");
+        showToast.success(
+          "Account Verified",
+          "Your account verification is complete"
+        );
+        setShowPendingModal(false);
+        dispatch(closeKYCModal());
+      } else {
+        // Still under review – show pending modal
+        setShowPendingModal(true);
+        showToast.info(
+          "Verification Pending",
+          "Your verification is still under review"
+        );
+      }
+    } catch (error) {
+      console.error("Error checking KYC status:", error);
+      showToast.error(
+        "Verification Error",
+        "Failed to check verification status"
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleClose = () => {
     dispatch(closeKYCModal());
     setShowManualVerification(false);
@@ -533,7 +569,8 @@ const KYCVerificationModal: React.FC = () => {
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Verification Submitted!</h2>
             </div>
             <p className="text-gray-600 dark:text-gray-300 text-sm mb-6">
-              Your verification has been submitted successfully. You can now continue using the platform.
+              {kycSubmitMessage ??
+                "Your verification has been submitted successfully. You can now continue using the platform."}
             </p>
             
             <button
@@ -1056,7 +1093,14 @@ const KYCVerificationModal: React.FC = () => {
             <p className="text-sm text-gray-600 dark:text-gray-400">
               This process helps us ensure the security of your account and comply 
               with regulatory requirements.
-              </p>
+            </p>
+
+            {isWaitingApproval && (
+              <div className="bg-green-50 dark:bg-green-900/20 border border-green-400 dark:border-green-500 text-green-700 dark:text-green-300 p-3 rounded-lg text-sm">
+                {kycStatus?.message ??
+                  "Your KYC is under verification. Please wait for admin approval."}
+              </div>
+            )}
               
               {error && (
                 <div className="bg-red-50 dark:bg-red-900/20 border border-red-400 dark:border-red-500 text-red-600 dark:text-red-400 p-3 rounded-lg">
@@ -1067,16 +1111,16 @@ const KYCVerificationModal: React.FC = () => {
               <div className="flex justify-between mb-6 items-center w-full mt-6">
                 <button
                   className="bg-[#1D8751] hover:bg-[#167a47] text-white w-full h-10 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                onClick={handleManualVerificationClick}
-                disabled={loading}
+                  onClick={isWaitingApproval ? handleCheckStatusClick : handleManualVerificationClick}
+                  disabled={loading || isSubmitting}
                 >
-                  {loading ? (
+                  {loading || isSubmitting ? (
                     <>
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                      <span>Loading...</span>
+                      <span>{isWaitingApproval ? "Checking Status..." : "Loading..."}</span>
                     </>
                   ) : (
-                    "Start Manual Verification"
+                    isWaitingApproval ? "Check Status" : "Start Manual Verification"
                   )}
                 </button>
               </div>
