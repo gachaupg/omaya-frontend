@@ -233,7 +233,7 @@ const AboutPage = () => {
           <div className="text-center">
             {/* Welcome Banner */}
             <div className="inline-block mb-8">
-              <div className="px-4 py-1.5 rounded-3xl bg-white/20 border border-white/30 dark:bg-[#1D8751]/10 dark:border-[#1D8751]/30">
+              <div className="px-4 py-1.5 rounded-3xl bg-white/5 border border-border dark:bg-[#1D8751]/10 dark:border-[#1D8751]/30">
                 <p className="text-sm md:text-sm text-white dark:text-[#1D8751] font-medium">
                   Welcome to OMAYA Exchange
                 </p>
@@ -242,12 +242,12 @@ const AboutPage = () => {
 
             {/* Main Heading */}
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6">
-              <div className="text-white dark:text-white">About</div>
+              <div className="text-white">About</div>
               <div className="text-white dark:text-[#1D8751]">OMAYA Exchange</div>
             </h1>
 
             {/* Tagline */}
-            <p className="text-xl text-[#788099] max-w-3xl mx-auto mb-10">
+            <p className="text-xl dark:text-muted-foreground text-muted max-w-3xl mx-auto mb-10">
               Leading the future of digital asset exchange with innovation, security, and trust
             </p>
 
@@ -1035,12 +1035,12 @@ const AboutPage = () => {
       {/* Security Section - Figma Match */}
 
       {/* Security Section */}
-      <section className="py-10 sm:py-16 md:py-20 px-4 bg-white dark:bg-[var(--bg-color)]">
+      <section className="py-10 sm:py-16 md:py-20 px-4 bg-white dark:bg-(--bg-color)">
         <div className="max-w-6xl mx-auto">
           <div className="grid md:grid-cols-2 gap-6 sm:gap-8 md:gap-12 items-center">
             {/* Left Column - Padlock Image - NO OVERLAY (image has badge baked in) */}
             <div className="relative">
-              <div className="relative w-full h-[400px] rounded-3xl overflow-hidden bg-gray-100 dark:bg-[var(--bg-color)]">
+              <div className="relative w-full h-[400px] overflow-hidden">
                 <Image
                   src="https://res.cloudinary.com/pitz/image/upload/v1764575591/Container_11_tss9j7.png"
                   alt="Security Padlock"
