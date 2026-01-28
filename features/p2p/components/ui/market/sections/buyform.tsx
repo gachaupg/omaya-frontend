@@ -652,15 +652,15 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
                   <div className="flex-1">
                     <div className="rounded-2xl border border-[#1D8751] bg-white dark:bg-[var(--bg-color)] p-6 mt-2 text-base flex flex-col gap-2">
                       <div className="flex items-center gap-3 text-gray-900 dark:text-white">
-                        <span className="w-3 h-3 rounded-full bg-[#1D8751] inline-block"></span>
+                        <span className="w-3 h-3 rounded-full bg-[#1D8751] inline-block shrink-0"></span>
                         Please send the money from your own account Only
                       </div>
                       <div className="flex items-center gap-3 text-gray-900 dark:text-white">
-                        <span className="w-3 h-3 rounded-full bg-[#1D8751] inline-block"></span>
+                        <span className="w-3 h-3 rounded-full bg-[#1D8751] inline-block shrink-0"></span>
                         Put transaction ID in the description field of the bank
                       </div>
                       <div className="flex items-center gap-3 text-gray-900 dark:text-white">
-                        <span className="w-3 h-3 rounded-full bg-[#1D8751] inline-block"></span>
+                        <span className="w-3 h-3 rounded-full bg-[#1D8751] inline-block shrink-0"></span>
                         Please note, If you do not follow above conditions, we
                         will reject your transaction and send you back your money.
                       </div>

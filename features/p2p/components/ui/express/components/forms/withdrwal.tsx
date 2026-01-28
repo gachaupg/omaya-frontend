@@ -2752,19 +2752,19 @@ export default function WithdrawalForm({
             <div className="bg-white dark:bg-[var(--card-color)] border border-[#1D8751] rounded-lg sm:rounded-xl p-4">
               <ul className="space-y-3">
                 <li className="flex items-start gap-3">
-                  <div className="w-2 h-2 rounded-full bg-[#1D8751] mt-1.5 flex-shrink-0" />
+                  <div className="w-2 h-2 rounded-full bg-[#1D8751] mt-1.5 shrink-0" />
                   <span className="text-sm text-[#35353e] dark:text-[#788099]">
                     Please send the money from your own account Only
                   </span>
                 </li>
                 <li className="flex items-start gap-3">
-                  <div className="w-2 h-2 rounded-full bg-[#1D8751] mt-1.5 flex-shrink-0" />
+                  <div className="w-2 h-2 rounded-full bg-[#1D8751] mt-1.5 shrink-0" />
                   <span className="text-sm text-[#35353e] dark:text-[#788099]">
                     Put transaction ID in the description field of the bank
                   </span>
                 </li>
                 <li className="flex items-start gap-3">
-                  <div className="w-2 h-2 rounded-full bg-[#1D8751] mt-1.5 flex-shrink-0" />
+                  <div className="w-2 h-2 rounded-full bg-[#1D8751] mt-1.5 shrink-0" />
                   <span className="text-sm text-[#35353e] dark:text-[#788099]">
                     Please note, If you do not follow above conditions, we will reject your transaction and send you back your money.
                   </span>
