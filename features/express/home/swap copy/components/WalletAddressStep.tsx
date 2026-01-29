@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useTheme } from "@/context/theme";
 import { logger } from "@/lib/utils/logger";
 
@@ -22,6 +22,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
   isLoading = false,
 }) => {
   const { isDark } = useTheme();
+  const [termsAndWalletConfirmed, setTermsAndWalletConfirmed] = useState(false);
 
   const handlePaste = async () => {
     try {
@@ -48,7 +49,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
       <div className="w-full mx-auto">
         {/* Combined Wallet Address and Terms Card */}
         <div className={`flex flex-col rounded-2xl p-3 sm:p-5 shadow-lg w-full ${
-          isDark ? "bg-[#1D1D23] border-2 border-[#35353E]" : "bg-white border-2 border-[#E2E8F0]"
+          isDark ? "bg-[#0F0F17] border-1 border-[#35353E]" : "bg-white border-1 border-[#E2E8F0]"
         } text-[#35353e] dark:text-[#788099]`}>
           <div className="flex flex-col gap-4 sm:gap-6">
             {/* Wallet Address Input Section */}
@@ -178,6 +179,26 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                 </li>
               </ul>
             </div>
+
+            {/* Confirm terms and wallet checkbox */}
+            <label
+              className={`flex items-start gap-3 cursor-pointer select-none mt-2 p-3 rounded-xl border ${
+                isDark
+                  ? "border-[#35353E] hover:bg-[#1a1a22]"
+                  : "border-[#E2E8F0] hover:bg-[#f8fafc]"
+              } transition-colors`}
+            >
+              <input
+                type="checkbox"
+                checked={termsAndWalletConfirmed}
+                onChange={(e) => setTermsAndWalletConfirmed(e.target.checked)}
+                disabled={isLoading}
+                className="mt-0.5 w-4 h-4 sm:w-5 sm:h-5 rounded border-2 border-[#1D8751] text-[#1D8751] focus:ring-[#1D8751] focus:ring-offset-0 cursor-pointer"
+              />
+              <span className={`text-xs sm:text-sm ${isDark ? "text-[#788099]" : "text-[#475569]"}`}>
+                I confirm that I have read the terms above and that the wallet address I entered is correct. I understand that sending to a wrong address may result in permanent loss of funds.
+              </span>
+            </label>
           </div>
         </div>
 
@@ -185,9 +206,9 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
         <div className="flex flex-col gap-3 w-full px-0 sm:px-2 mt-3 sm:mt-4">
           <button
             onClick={handleNext}
-            disabled={!walletAddress.trim() || isLoading}
+            disabled={!walletAddress.trim() || !termsAndWalletConfirmed || isLoading}
             className={`w-full text-sm sm:text-base font-medium py-2.5 sm:py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors text-white ${
-              isLoading || !walletAddress.trim()
+              isLoading || !walletAddress.trim() || !termsAndWalletConfirmed
                 ? "bg-gray-500 cursor-not-allowed"
                 : "bg-[#1D8751] hover:bg-[#166b3e]"
             }`}

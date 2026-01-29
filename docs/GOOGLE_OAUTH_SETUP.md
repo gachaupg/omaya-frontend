@@ -11,27 +11,29 @@ Your Google OAuth credentials have been integrated into the following files:
 
 ### Current Configuration
 
-**Client ID:** `866830600136-atu6lg341gn9snr1pkbmjhssebh9luqb.apps.googleusercontent.com`
-**Client Secret:** `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`
+**Client ID:** `454150377252-nhnl44hh48rfh8v2hdt0skagf03vr05r.apps.googleusercontent.com`  
+**Client Secret:** (set in backend env only; see below)
 
-**Authorized JavaScript Origins:**
+**Authorised JavaScript origins:** (add every origin you use)
 - `http://localhost:3000`
+- `http://127.0.0.1:3000` ← add if you open the app via 127.0.0.1
 - `https://dev.omaya.io`
 
-**Authorized Redirect URIs:**
-- `http://localhost:3000/`
-- `https://dev.omaya.io`
+**Authorised redirect URIs:** (must match exactly; no trailing slash)
+- `http://localhost:3000/auth/google/callback`
+- `http://127.0.0.1:3000/auth/google/callback` ← add if you use 127.0.0.1
+- `https://dev.omaya.io/auth/google/callback`
 
 ## Environment Variables Setup
 
-### For Local Development
+### For Local Development (Frontend)
 
 Create a `.env.local` file in your project root with:
 
 ```env
-# Google OAuth Configuration
-NEXT_PUBLIC_GOOGLE_CLIENT_ID=866830600136-atu6lg341gn9snr1pkbmjhssebh9luqb.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=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
+# Google OAuth – Frontend (Login with Google)
+NEXT_PUBLIC_GOOGLE_CLIENT_ID=454150377252-nhnl44hh48rfh8v2hdt0skagf03vr05r.apps.googleusercontent.com
+NEXT_PUBLIC_GOOGLE_REDIRECT_URI=https://dev.omaya.io/auth/google/callback
 
 # Application Configuration
 NEXT_PUBLIC_APP_URL=http://localhost:3000
@@ -40,15 +42,29 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 NEXT_PUBLIC_BASE_URL=http://localhost:8000/api/v1
 ```
 
-### For Production (dev.omaya.io)
+### For Production (dev.omaya.io) – Frontend
 
-Set these environment variables in your deployment platform:
+Set these in your frontend deployment (Vercel, Docker, etc.):
 
 ```env
-NEXT_PUBLIC_GOOGLE_CLIENT_ID=866830600136-atu6lg341gn9snr1pkbmjhssebh9luqb.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=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
+NEXT_PUBLIC_GOOGLE_CLIENT_ID=454150377252-nhnl44hh48rfh8v2hdt0skagf03vr05r.apps.googleusercontent.com
+NEXT_PUBLIC_GOOGLE_REDIRECT_URI=https://dev.omaya.io/auth/google/callback
 NEXT_PUBLIC_APP_URL=https://dev.omaya.io
 NEXT_PUBLIC_BASE_URL=https://your-backend-api-url.com/api/v1
+```
+
+### Backend / Django Allauth
+
+Set these **only in your backend** environment (never in frontend):
+
+```env
+GOOGLE_OAUTH_CLIENT_ID=454150377252-nhnl44hh48rfh8v2hdt0skagf03vr05r.apps.googleusercontent.com
+GOOGLE_OAUTH_CLIENT_SECRET=GOCSPX-***
+GOOGLE_REDIRECT_URI=https://dev.omaya.io/auth/google/callback
+
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY=454150377252-nhnl44hh48rfh8v2hdt0skagf03vr05r.apps.googleusercontent.com
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET=GOCSPX-***
+SOCIAL_AUTH_GOOGLE_OAUTH2_REDIRECT_URI=https://dev.omaya.io/auth/google/callback
 ```
 
 ## How It Works
@@ -104,9 +120,11 @@ NEXT_PUBLIC_BASE_URL=https://your-backend-api-url.com/api/v1
 **1. "Popup blocked" error**
 - Solution: Allow popups for localhost:3000 in your browser settings
 
-**2. "redirect_uri_mismatch" error**
-- Solution: Ensure your redirect URI in Google Console exactly matches your app URL
-- Check: `http://localhost:3000/` vs `http://localhost:3000` (trailing slash matters)
+**2. "redirect_uri_mismatch" (Error 400)**  
+   When you see: *"redirect_uri=..."* in the error:
+   - **Cause:** That exact redirect URI is not in your OAuth client’s **Authorised redirect URIs** in Google Cloud Console.
+   - **Fix:** Copy the `redirect_uri` from the error and add it **exactly** in Console (no trailing slash). Also add the same origin to **Authorised JavaScript origins**.
+   - If you use **127.0.0.1** instead of localhost, add `http://127.0.0.1:3000` and `http://127.0.0.1:3000/auth/google/callback`; the app sends the **current page origin**, so it must be listed.
 
 **3. "invalid_client" error**
 - Solution: Verify your Client ID and Client Secret are correct
@@ -116,14 +134,24 @@ NEXT_PUBLIC_BASE_URL=https://your-backend-api-url.com/api/v1
 - Solution: Ensure JavaScript origins are configured in Google Console
 - Check: Both `http://localhost:3000` and `https://dev.omaya.io` are listed
 
-## Google Cloud Console Configuration
+## Google Cloud Console – Fix redirect_uri_mismatch
 
-To modify these settings, go to:
-1. [Google Cloud Console](https://console.cloud.google.com/)
-2. Select project: **farmedge-4b422**
-3. Navigate to: **APIs & Services > Credentials**
-4. Find your OAuth 2.0 Client ID
-5. Edit the authorized domains and redirect URIs as needed
+1. Open **[Google Cloud Console](https://console.cloud.google.com/)** and sign in.
+2. Select the project that owns the OAuth client (Client ID: `454150377252-...`).
+3. Go to **APIs & Services** → **Credentials**.
+4. Under **OAuth 2.0 Client IDs**, click the client you use for this app (e.g. "Web client").
+5. Under **Authorized redirect URIs**, click **+ ADD URI** and add **each** of these (if not already there):
+   - `http://localhost:3000/auth/google/callback`  ← required for local dev
+   - `https://dev.omaya.io/auth/google/callback`  ← for production/dev.omaya.io
+6. Under **Authorized JavaScript origins**, ensure you have:
+   - `http://localhost:3000`
+   - `https://dev.omaya.io`
+7. Click **Save**. Changes can take 5 minutes to a few hours to apply.
+
+**If you still get redirect_uri_mismatch:**
+- Open the error details and copy the exact `redirect_uri=` value. Add that **exact** URI (and its origin in JavaScript origins) in the Console.
+- If you open the app at **http://127.0.0.1:3000**, add `http://127.0.0.1:3000` and `http://127.0.0.1:3000/auth/google/callback`; the app sends the current page origin.
+- Ensure the **frontend** has `NEXT_PUBLIC_GOOGLE_CLIENT_ID` set in `.env.local` (same value as backend; the frontend uses the `NEXT_PUBLIC_` prefix).
 
 ## Additional OAuth Endpoints
 

@@ -104,11 +104,13 @@ export const getGoogleOAuthUrl = (state?: string): string => {
     // Prefer runtime config values if available
     const runtimeCfg = getRuntimeConfigSync();
     const clientId = runtimeCfg.NEXT_PUBLIC_GOOGLE_CLIENT_ID || GOOGLE_OAUTH_CONFIG.clientId;
-    const redirectUri =
-      runtimeCfg.NEXT_PUBLIC_GOOGLE_REDIRECT_URI ||
-      (typeof window !== 'undefined'
+    // In the browser, always use current origin so redirect_uri matches the page (avoids mismatch)
+    const rawRedirectUri =
+      typeof window !== 'undefined'
         ? `${window.location.origin}/auth/google/callback`
-        : GOOGLE_OAUTH_CONFIG.redirectUri);
+        : (runtimeCfg.NEXT_PUBLIC_GOOGLE_REDIRECT_URI || GOOGLE_OAUTH_CONFIG.redirectUri);
+    // Normalize: no trailing slash so it always matches Google Console exactly
+    const redirectUri = rawRedirectUri.replace(/\/$/, '');
 
     if (!clientId) {
       console.warn('Google OAuth client ID is not configured; proceeding to Google which will show an error.');
