@@ -73,8 +73,8 @@ const P2pProfile = ({
     }
   }, [dispatch, isAuthenticated]);
 
-  // Use profile.photo as fallback if profileImage is not set
-  const displayImage = profileImage || userProfile?.photo || null;
+  // Use profile.photo as fallback if profileImage is not set, also check user.photo
+  const displayImage = profileImage || userProfile?.photo || (user as any)?.photo || null;
 
   // Force re-render when profile photo is updated
   const [profilePhotoKey, setProfilePhotoKey] = useState(0);
@@ -137,13 +137,10 @@ const P2pProfile = ({
           <div className="flex items-center gap-3 sm:gap-4">
             {/* User Avatar */}
             <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full overflow-hidden bg-[#1D8751] flex items-center justify-center">
-              {displayImage && displayImage.trim() !== '' ? (
+              {displayImage ? (
                 <img  
                   key={profilePhotoKey}
-                  src={(() => {
-                    const photoUrl = displayImage || '';
-                    return photoUrl.includes('?') ? `${photoUrl}&t=${Date.now()}` : `${photoUrl}?t=${Date.now()}`;
-                  })()}
+                  src={displayImage}
                   alt="User Avatar"
                   className="w-full h-full object-cover rounded-full"
                   onError={(e) => {

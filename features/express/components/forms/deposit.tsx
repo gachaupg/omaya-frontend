@@ -2996,7 +2996,6 @@ export default function DepositForm({
                   <span className="text-xs text-[#1D8751] font-medium">(Active)</span>
                 )} */}
               </label>
-              <div className="text-xs text-[#788099] dark:text-[#788099] mb-1">{t("express.amount", "Amount")}</div>
               <div className="relative">
                 {/* <input
                   type="text"
@@ -3445,7 +3444,6 @@ export default function DepositForm({
                   </span>
                 )}
               </label>
-              <div className="text-xs text-[#788099] dark:text-[#788099] mb-1">{t("express.amount", "Amount")}</div>
               <div className="relative">
                 <input
                   type="text"
@@ -4329,6 +4327,23 @@ export default function DepositForm({
           <h2 className="text-xl font-bold mb-2 text-[#788099] dark:text-[#788099] inline-flex items-center gap-2">
             {t("express.walletAddress", "Wallet Address")}
           </h2>
+          
+          {/* Dynamic Crypto Warning Banner */}
+          {selectedAsset && (
+            <div className="mb-4 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl">
+              <div className="flex items-start gap-2">
+                <span className="text-amber-500 mt-0.5">
+                  <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
+                    <path d="M12 9v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </span>
+                <p className="text-sm text-amber-600 dark:text-amber-400 font-medium">
+                  Please send only <span className="font-bold">{selectedAsset?.symbol || selectedAsset?.ticker || 'crypto'}</span> on <span className="font-bold">{currentNetwork || selectedAsset?.network || 'the selected network'}</span>. Any other Crypto or Network will be lost Permanently.
+                </p>
+              </div>
+            </div>
+          )}
+          
           <div className="flex flex-col bg-white dark:bg-[#1D1D23] border-2 border-[#35353E] rounded-2xl p-5 shadow-lg w-full text-[#35353e] dark:text-[#788099] mb-6">
             {/* Wallet/Account Address Label */}
             <label className="block text-sm sm:text-[17px] text-[#7e7e8f] mb-2 font-semibold">
@@ -4380,7 +4395,7 @@ export default function DepositForm({
                     setForceUpdate((prev) => prev + 1);
                   }}
                   placeholder="Paste your crypto address"
-                  className={`flex-1 bg-transparent border-none outline-none text-[#35353e] dark:text-[#788099] placeholder-[#788099] text-sm sm:text-base min-w-0 ${walletError
+                  className={`flex-1 bg-transparent border-none outline-none text-gray-900 dark:text-white placeholder-[#788099] text-sm sm:text-base font-mono tracking-wide min-w-0 ${walletError
                     ? "border-red-500"
                     : walletAddress.trim() && !walletError && addressValidationResult?.isValid
                       ? "border-green-500"

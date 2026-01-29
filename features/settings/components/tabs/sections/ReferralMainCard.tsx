@@ -209,14 +209,43 @@ const ReferralMainCard: React.FC<Props> = ({
                 {typeof window !== 'undefined' ? `${window.location.origin}/auth/register?ref=${referralCode}` : `https://omaya.io/auth/register?ref=${referralCode}`}
               </span>
             </div>
-            <CopyButton
-              value={typeof window !== 'undefined' ? `${window.location.origin}/auth/register?ref=${referralCode}` : `https://omaya.io/auth/register?ref=${referralCode}`}
-              className="bg-gray-200 dark:bg-[#1A1A1F] text-[#1D8751] font-semibold border border-[#E2E8F0] dark:border-[#35353e]
-                         hover:opacity-80 rounded-[999px] px-4 py-3 text-sm transition-opacity flex-shrink-0"
-              showIcon={true}
-            >
-              Copy
-            </CopyButton>
+            <div className="flex gap-2">
+              <CopyButton
+                value={typeof window !== 'undefined' ? `${window.location.origin}/auth/register?ref=${referralCode}` : `https://omaya.io/auth/register?ref=${referralCode}`}
+                className="bg-gray-200 dark:bg-[#1A1A1F] text-[#1D8751] font-semibold border border-[#E2E8F0] dark:border-[#35353e]
+                           hover:opacity-80 rounded-[999px] px-4 py-3 text-sm transition-opacity flex-shrink-0"
+                showIcon={true}
+              >
+                Copy
+              </CopyButton>
+              <button
+                onClick={() => {
+                  const referralLink = typeof window !== 'undefined' ? `${window.location.origin}/auth/register?ref=${referralCode}` : `https://omaya.io/auth/register?ref=${referralCode}`;
+                  if (navigator.share) {
+                    navigator.share({
+                      title: 'Join OMAYA.io',
+                      text: 'Sign up on OMAYA.io using my referral link and start trading crypto!',
+                      url: referralLink,
+                    }).catch(() => {});
+                  } else {
+                    // Fallback: copy to clipboard
+                    navigator.clipboard.writeText(referralLink);
+                    alert('Link copied to clipboard! Share it with your friends.');
+                  }
+                }}
+                className="bg-[#1D8751] text-white font-semibold border border-[#1D8751]
+                           hover:bg-[#166b3e] rounded-[999px] px-4 py-3 text-sm transition-colors flex-shrink-0 flex items-center gap-2"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="18" cy="5" r="3"/>
+                  <circle cx="6" cy="12" r="3"/>
+                  <circle cx="18" cy="19" r="3"/>
+                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+                  <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                </svg>
+                Share
+              </button>
+            </div>
           </div>
         </div>
       </div>
