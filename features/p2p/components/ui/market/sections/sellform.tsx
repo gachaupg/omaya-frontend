@@ -19,9 +19,10 @@ import AppealModal from "./appeal";
 import ChatBox from "./ChatBox";
 import { showToast } from "@/lib/utils/toast";
 import dynamic from "next/dynamic";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Copy } from "lucide-react";
 import { FaChevronRight } from "react-icons/fa";
 import { useTradeStatusWebSocket } from "@/features/p2p/hooks/useTradeStatusWebSocket";
+import { handleCopyToClipboard } from "@/features/p2p/components/Common/utils";
 
 import { logger } from '@/lib/utils/logger';
 
@@ -348,13 +349,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     }
   };
 
-  // Custom copy handler that shows "Copied" in button
-  const handleCopyToClipboard = (value: string | undefined, buttonId: string) => {
-    if (!value) return;
-    navigator.clipboard.writeText(value);
-    setCopiedButton(buttonId);
-    setTimeout(() => setCopiedButton(null), 2000);
-  };
+
 
   const handleFeedbackSubmit = () => {
     if (feedbackRating === null) {
@@ -626,17 +621,18 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                             Account Name
                           </span>
                           <span className="flex-1 min-w-0 px-3 md:px-4 py-2 rounded-full border border-[#1D8751] text-[#1D8751] bg-transparent font-semibold text-sm md:text-base flex items-center truncate">
-                            <span className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-[#1D8751] inline-block mr-2 flex-shrink-0"></span>
+                            <span className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-[#1D8751] inline-block mr-2 shrink-0"></span>
                             <span className="truncate">{paymentDetails?.account_name}</span>
                           </span>
                         </div>
                         <button
-                          className="w-full sm:w-auto px-3 md:px-4 py-2 rounded-full border border-gray-200 dark:border-[#35353E] text-[#1D8751] bg-gray-100 dark:bg-[var(--card-color)] font-semibold text-sm flex items-center justify-center gap-1.5 flex-shrink-0"
+                          className="w-full sm:w-auto px-3 md:px-4 py-2 rounded-full border border-gray-200 dark:border-accent text-[#1D8751] bg-gray-100 dark:bg-(--card-color) font-semibold text-sm flex items-center justify-center gap-1.5 shrink-0"
                           onClick={() =>
-                            handleCopyToClipboard(paymentDetails?.account_name || "", "account-name")
+                            handleCopyToClipboard(paymentDetails?.account_name || "", "account-name", setCopiedButton)
                           }
                         >
                           {copiedButton === "account-name" ? "Copied!" : "Copy"}
+                          <Copy className="w-2 h-2 md:w-3 md:h-3" />
                         </button>
                       </div>
 
@@ -653,10 +649,11 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                         <button
                           className="w-full sm:w-auto px-3 md:px-4 py-2 rounded-full border border-gray-200 dark:border-[#35353E] text-[#1D8751] bg-gray-100 dark:bg-[var(--card-color)] font-semibold text-sm flex items-center justify-center gap-1.5 flex-shrink-0"
                           onClick={() =>
-                            handleCopyToClipboard(paymentDetails?.account_number || "", "account-number")
+                            handleCopyToClipboard(paymentDetails?.account_number || "", "account-number", setCopiedButton)
                           }
                         >
                           {copiedButton === "account-number" ? "Copied!" : "Copy"}
+                          <Copy className="w-2 h-2 md:w-3 md:h-3" />
                         </button>
                       </div>
 
@@ -671,9 +668,10 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                         </div>
                         <button
                           className="w-full sm:w-auto px-3 md:px-4 py-2 font-[11px] md:font-[13px] rounded-full border border-gray-200 dark:border-[#35353E] text-[#1D8751] bg-gray-100 dark:bg-[var(--card-color)] flex items-center justify-center gap-1.5 flex-shrink-0"
-                          onClick={() => handleCopyToClipboard(singleOrder?.id || "", "transaction-id")}
+                          onClick={() => handleCopyToClipboard(singleOrder?.id || "", "transaction-id", setCopiedButton)}
                         >
                           {copiedButton === "transaction-id" ? "Copied!" : "Copy"}
+                          <Copy className="w-2 h-2 md:w-3 md:h-3" />
                         </button>
                       </div>
                     </div>

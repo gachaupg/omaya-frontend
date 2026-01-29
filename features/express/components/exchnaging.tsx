@@ -1550,6 +1550,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               }
               className="text-[#FFA200] hover:text-[#FFB833] transition-colors flex-shrink-0"
               showIcon={true}
+              showInlineMessage={true}
             />
           </div>
         </div>

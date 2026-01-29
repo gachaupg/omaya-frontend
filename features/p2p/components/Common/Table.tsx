@@ -61,7 +61,7 @@ export const Table: React.FC<TableProps> = ({
   const dateDropdownRef = useRef<HTMLDivElement>(null);
 
   const dateFilterOptions = ["ALL", "Today", "Week", "Month", "Year"];
-  
+
   // Use external date filter if provided, otherwise use internal state
   const dateFilter = externalDateFilter !== undefined ? externalDateFilter : internalDateFilter;
 
@@ -96,7 +96,7 @@ export const Table: React.FC<TableProps> = ({
       let itemDate: Date;
       try {
         itemDate = new Date(item.date);
-        
+
         // Check if the date is valid
         if (isNaN(itemDate.getTime())) {
           return false;
@@ -165,13 +165,13 @@ export const Table: React.FC<TableProps> = ({
 
   const handleExport = async (format: "csv" | "pdf") => {
     setShowExportOptions(false);
-    
+
     // Priority order:
     // 1. If parent provides custom export handler, use it (but warn if onFetchAllDataForExport is also provided)
     // 2. Try onFetchAllDataForExport callback (best for fetching all data)
     // 3. Try allDataForExport prop (if parent provides all data)
     // 4. Finally fall back to data prop (current page only)
-    
+
     if (onExport && !onFetchAllDataForExport) {
       // Use parent's export handler only if no fetch callback is provided
       try {
@@ -270,7 +270,7 @@ export const Table: React.FC<TableProps> = ({
         const worksheet = XLSX.utils.json_to_sheet(exportData);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Transactions");
-        
+
         const fileName = `${title.toLowerCase().replace(/\s+/g, "_")}_${new Date().toISOString().split("T")[0]}.csv`;
         XLSX.writeFile(workbook, fileName);
       } catch (error) {
@@ -305,7 +305,7 @@ export const Table: React.FC<TableProps> = ({
         });
 
         // Define headers based on type
-        const headers = type === "p2p" 
+        const headers = type === "p2p"
           ? [["Asset", "ID", "Type", "Date", "Amount", "Status"]]
           : [["Asset", "Type", "Date", "Amount", "Status"]];
 
@@ -359,10 +359,10 @@ export const Table: React.FC<TableProps> = ({
   // Function to download modal as image
   const handleDownloadCard = async () => {
     if (!modalContentRef.current) return;
-    
+
     try {
       const canvas = await html2canvas(modalContentRef.current);
-      
+
       const image = canvas.toDataURL('image/png');
       const link = document.createElement('a');
       link.href = image;
@@ -523,11 +523,10 @@ export const Table: React.FC<TableProps> = ({
                       type="button"
                       onClick={() => setIsDateDropdownOpen((prev) => !prev)}
                       disabled={loading}
-                      className={`w-full sm:w-auto px-3 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium bg-[#E6E7EC] dark:bg-[var(--bg-color)] flex items-center gap-1 border-none outline-none focus:outline-none focus:ring-0 ${
-                        isAllFilterSelected
-                          ? "text-[#8E939E] dark:text-[#8C8CA1]"
-                          : "text-[#1F1F23] dark:text-white"
-                      }`}
+                      className={`w-full sm:w-auto px-3 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium bg-[#E6E7EC] dark:bg-[var(--bg-color)] flex items-center gap-1 border-none outline-none focus:outline-none focus:ring-0 ${isAllFilterSelected
+                        ? "text-[#8E939E] dark:text-[#8C8CA1]"
+                        : "text-[#1F1F23] dark:text-white"
+                        }`}
                     >
                       <span className="whitespace-nowrap">{dateFilter}</span>
                       <svg
@@ -571,11 +570,10 @@ export const Table: React.FC<TableProps> = ({
                             handleDateFilterChange(option);
                             setIsDateDropdownOpen(false);
                           }}
-                          className={`w-full flex items-center px-3 py-1.5 text-left hover:bg-gray-100 dark:hover:bg-[#1b1b22] ${
-                            isSelected
-                              ? "text-white bg-[#1D8751] dark:bg-[#1D8751]"
-                              : "text-gray-700 dark:text-[#C7CAD1]"
-                          }`}
+                          className={`w-full flex items-center px-3 py-1.5 text-left hover:bg-gray-100 dark:hover:bg-[#1b1b22] ${isSelected
+                            ? "text-white bg-[#1D8751] dark:bg-[#1D8751]"
+                            : "text-gray-700 dark:text-[#C7CAD1]"
+                            }`}
                         >
                           <span className="text-xs font-medium">{option}</span>
                         </button>
@@ -781,193 +779,193 @@ export const Table: React.FC<TableProps> = ({
                 </div>
               ) : (
                 filteredData.map((row, idx) => {
-                const isLastRow = idx === filteredData.length - 1;
-                return (
-                <React.Fragment key={idx}>
-                  {/* Desktop Grid View */}
-                <div
-                    className={`hidden md:grid ${desktopGridCols} mx-2 py-2 px-2 items-center hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors duration-200 bg-white dark:bg-[var(--card-color)] relative`}
-                >
-                  <div className="flex items-center gap-2">
-                    <img
-                      src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
-                      alt={row.asset || "Asset"}
-                      className="w-6 h-6"
-                    />
-                    {getAssetLabel(row.asset) && (
-                      <span className="text-sm font-medium text-[#1D8751] dark:text-[#1D8751]">
-                        {getAssetLabel(row.asset)}
-                      </span>
-                    )}
-                  </div>
-                  {type === "p2p" && (
-                    <div
-                      className={`text-sm text-left text-gray-600 dark:text-[#788099] cursor-pointer relative -ml-4 pl-0`}
-                      onMouseEnter={() => setTooltipId(row.id || "")}
-                      onMouseLeave={() => setTooltipId(null)}
-                      onClick={() => {
-                        if (row.id) {
-                          navigator.clipboard.writeText(row.id);
-                          setCopiedId(row.id);
-                          setTimeout(() => setCopiedId(null), 2000);
-                        }
-                      }}
-                      title={`Click to copy full ID: ${row.id || ""}`}
-                    >
-                      {row.id ? `${row.id.slice(0, 3)}...${row.id.slice(-3)}` : "--"}
-                      {tooltipId === row.id && row.id && (
-                        <div className="absolute z-50 px-3 py-2 text-xs text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-900 rounded-lg shadow-xl whitespace-nowrap -top-10 left-1/2 transform -translate-x-1/2 border border-gray-300 dark:border-gray-700">
-                          <div className="flex items-center gap-2">
-                            <span>{row.id}</span>
-                            <svg
-                              className="w-3 h-3"
-                              fill="currentColor"
-                              viewBox="0 0 20 20"
-                            >
-                              <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
-                              <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
-                            </svg>
-                          </div>
-                          <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-100 dark:border-t-gray-900"></div>
-                        </div>
-                      )}
-                      {copiedId === row.id && (
-                        <div className="absolute z-50 px-2 py-1 text-xs text-white bg-green-600 rounded shadow-lg whitespace-nowrap -top-8 left-1/2 transform -translate-x-1/2">
-                          Copied!
-                          <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-green-600"></div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  <div className={`text-sm ${getAmountColor(String(row.type))}`}>
-                    {formatTypeLabel(row.type)}
-                  </div>
-                  <div
-                    className={`text-sm text-gray-600 dark:text-[#788099]`}
-                  >
-                    {formatP2PDate(row.date)}
-                  </div>
-                  <div className={`text-sm font-semibold ${getAmountColor(String(row.type))}`}>
-                    {formatNumber(Number(row.amount)).toString()} USD
-                  </div>
-                  <div
-                    className={`text-sm ${getStatusColor(String(row.status))}`}
-                  >
-                    {row.status}
-                  </div>
-                  <div className="flex items-center">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-[#1D8751]"
-                      onClick={() => handleViewTransaction(row)}
-                    >
-                      <Eye size={18} />
-                    </Button>
-                  </div>
-                  {!isLastRow && (
-                    <div
-                      className={`absolute bottom-0 left-4 right-4 h-px bg-gray-200 dark:bg-gray-800`}
-                    />
-                  )}
-                </div>
-
-                  {/* Mobile Card View */}
-                  <div
-                    className={`md:hidden flex flex-col gap-2 p-3 mx-4 relative hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors duration-200 bg-white dark:bg-[var(--card-color)]`}
-                  >
-                    {/* Top Row: Asset and Type */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <img
-                          src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
-                          alt={row.asset || "Asset"}
-                          className="w-6 h-6"
-                        />
-                        {getAssetLabel(row.asset) && (
-                          <span className="text-sm font-medium text-[#1D8751] dark:text-[#1D8751]">
-                            {getAssetLabel(row.asset)}
-                          </span>
-                        )}
-                      </div>
+                  const isLastRow = idx === filteredData.length - 1;
+                  return (
+                    <React.Fragment key={idx}>
+                      {/* Desktop Grid View */}
                       <div
-                        className={`text-sm font-semibold ${getAmountColor(String(row.type))}`}
+                        className={`hidden md:grid ${desktopGridCols} mx-2 py-2 px-2 items-center hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors duration-200 bg-white dark:bg-[var(--card-color)] relative`}
                       >
-                        {formatTypeLabel(row.type)}
-                      </div>
-                    </div>
-
-                    {/* Amount Row */}
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-gray-500 dark:text-[#788099]">Amount</span>
-                      <span
-                        className={`text-sm font-semibold ${getAmountColor(String(row.type))}`}
-                      >
-                        {formatNumber(Number(row.amount)).toString()} USD
-                      </span>
-                    </div>
-
-                    {/* Date and Status Row */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex flex-col">
-                        <span className="text-xs text-gray-500 dark:text-[#788099]">Date</span>
-                        <span className={`text-sm text-gray-600 dark:text-[#788099]`}>
-                          {formatP2PDate(row.date)}
-                        </span>
-                      </div>
-                      <div className="flex flex-col items-end">
-                        <span className="text-xs text-gray-500 dark:text-[#788099]">Status</span>
-                        <span className={`text-sm ${getStatusColor(String(row.status))}`}>
-                          {row.status}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* ID Row (only for p2p type) */}
-                    {type === "p2p" && row.id && (
-                      <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-800">
-                        <span className="text-xs text-gray-500 dark:text-[#788099]">ID</span>
-                        <div
-                          className={`text-xs text-gray-600 dark:text-[#788099] cursor-pointer relative`}
-                          onClick={() => {
-                            if (row.id) {
-                              navigator.clipboard.writeText(row.id);
-                              setCopiedId(row.id);
-                              setTimeout(() => setCopiedId(null), 2000);
-                            }
-                          }}
-                        >
-                          {row.id.slice(0, 8)}...{row.id.slice(-6)}
-                          {copiedId === row.id && (
-                            <div className="absolute z-50 px-2 py-1 text-xs text-white bg-green-600 rounded shadow-lg whitespace-nowrap -top-8 right-0">
-                              Copied!
-                              <div className="absolute top-full right-4 transform w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-green-600"></div>
-                            </div>
+                        <div className="flex items-center gap-2">
+                          <img
+                            src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                            alt={row.asset || "Asset"}
+                            className="w-6 h-6"
+                          />
+                          {getAssetLabel(row.asset) && (
+                            <span className="text-sm font-medium text-[#1D8751] dark:text-[#1D8751]">
+                              {getAssetLabel(row.asset)}
+                            </span>
                           )}
                         </div>
+                        {type === "p2p" && (
+                          <div
+                            className={`text-sm text-left text-gray-600 dark:text-[#788099] cursor-pointer relative -ml-4 pl-0`}
+                            onMouseEnter={() => setTooltipId(row.id || "")}
+                            onMouseLeave={() => setTooltipId(null)}
+                            onClick={() => {
+                              if (row.id) {
+                                navigator.clipboard.writeText(row.id);
+                                setCopiedId(row.id);
+                                setTimeout(() => setCopiedId(null), 2000);
+                              }
+                            }}
+                            title={`Click to copy full ID: ${row.id || ""}`}
+                          >
+                            {row.id ? `${row.id.slice(0, 3)}...${row.id.slice(-3)}` : "--"}
+                            {tooltipId === row.id && row.id && (
+                              <div className="absolute z-50 px-3 py-2 text-xs text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-900 rounded-lg shadow-xl whitespace-nowrap -top-10 left-1/2 transform -translate-x-1/2 border border-gray-300 dark:border-gray-700">
+                                <div className="flex items-center gap-2">
+                                  <span>{row.id}</span>
+                                  <svg
+                                    className="w-3 h-3"
+                                    fill="currentColor"
+                                    viewBox="0 0 20 20"
+                                  >
+                                    <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
+                                    <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
+                                  </svg>
+                                </div>
+                                <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-100 dark:border-t-gray-900"></div>
+                              </div>
+                            )}
+                            {copiedId === row.id && (
+                              <div className="absolute z-50 px-2 py-1 text-xs text-white bg-green-600 rounded shadow-lg whitespace-nowrap -top-8 left-1/2 transform -translate-x-1/2">
+                                Copied!
+                                <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-green-600"></div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        <div className={`text-sm ${getAmountColor(String(row.type))}`}>
+                          {formatTypeLabel(row.type)}
+                        </div>
+                        <div
+                          className={`text-sm text-gray-600 dark:text-[#788099]`}
+                        >
+                          {formatP2PDate(row.date)}
+                        </div>
+                        <div className={`text-sm font-semibold ${getAmountColor(String(row.type))}`}>
+                          {formatNumber(Number(row.amount)).toString()} USD
+                        </div>
+                        <div
+                          className={`text-sm ${getStatusColor(String(row.status))}`}
+                        >
+                          {row.status}
+                        </div>
+                        <div className="flex items-center">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-[#1D8751]"
+                            onClick={() => handleViewTransaction(row)}
+                          >
+                            <Eye size={18} />
+                          </Button>
+                        </div>
+                        {!isLastRow && (
+                          <div
+                            className={`absolute bottom-0 left-4 right-4 h-px bg-gray-200 dark:bg-gray-800`}
+                          />
+                        )}
                       </div>
-                    )}
 
-                    {/* Action Button */}
-                    <div className="pt-2 border-t border-gray-200 dark:border-gray-800">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="w-full text-[#1D8751] justify-center"
-                        onClick={() => handleViewTransaction(row)}
-                      >
-                        <Eye size={18} className="mr-2" />
-                        View Receipt
-                      </Button>
-                    </div>
-                    {!isLastRow && (
+                      {/* Mobile Card View */}
                       <div
-                        className={`absolute bottom-0 left-4 right-4 h-px bg-gray-200 dark:bg-gray-800`}
-                      />
-                    )}
-                  </div>
-                </React.Fragment>
-                );
+                        className={`md:hidden flex flex-col gap-2 p-3 mx-4 relative hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors duration-200 bg-white dark:bg-[var(--card-color)]`}
+                      >
+                        {/* Top Row: Asset and Type */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <img
+                              src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                              alt={row.asset || "Asset"}
+                              className="w-6 h-6"
+                            />
+                            {getAssetLabel(row.asset) && (
+                              <span className="text-sm font-medium text-[#1D8751] dark:text-[#1D8751]">
+                                {getAssetLabel(row.asset)}
+                              </span>
+                            )}
+                          </div>
+                          <div
+                            className={`text-sm font-semibold ${getAmountColor(String(row.type))}`}
+                          >
+                            {formatTypeLabel(row.type)}
+                          </div>
+                        </div>
+
+                        {/* Amount Row */}
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-gray-500 dark:text-[#788099]">Amount</span>
+                          <span
+                            className={`text-sm font-semibold ${getAmountColor(String(row.type))}`}
+                          >
+                            {formatNumber(Number(row.amount)).toString()} USD
+                          </span>
+                        </div>
+
+                        {/* Date and Status Row */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex flex-col">
+                            <span className="text-xs text-gray-500 dark:text-[#788099]">Date</span>
+                            <span className={`text-sm text-gray-600 dark:text-[#788099]`}>
+                              {formatP2PDate(row.date)}
+                            </span>
+                          </div>
+                          <div className="flex flex-col items-end">
+                            <span className="text-xs text-gray-500 dark:text-[#788099]">Status</span>
+                            <span className={`text-sm ${getStatusColor(String(row.status))}`}>
+                              {row.status}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* ID Row (only for p2p type) */}
+                        {type === "p2p" && row.id && (
+                          <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-800">
+                            <span className="text-xs text-gray-500 dark:text-[#788099]">ID</span>
+                            <div
+                              className={`text-xs text-gray-600 dark:text-[#788099] cursor-pointer relative`}
+                              onClick={() => {
+                                if (row.id) {
+                                  navigator.clipboard.writeText(row.id);
+                                  setCopiedId(row.id);
+                                  setTimeout(() => setCopiedId(null), 2000);
+                                }
+                              }}
+                            >
+                              {row.id.slice(0, 8)}...{row.id.slice(-6)}
+                              {copiedId === row.id && (
+                                <div className="absolute z-50 px-2 py-1 text-xs text-white bg-green-600 rounded shadow-lg whitespace-nowrap -top-8 right-0">
+                                  Copied!
+                                  <div className="absolute top-full right-4 transform w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-green-600"></div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Action Button */}
+                        <div className="pt-2 border-t border-gray-200 dark:border-gray-800">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full text-[#1D8751] justify-center"
+                            onClick={() => handleViewTransaction(row)}
+                          >
+                            <Eye size={18} className="mr-2" />
+                            View Receipt
+                          </Button>
+                        </div>
+                        {!isLastRow && (
+                          <div
+                            className={`absolute bottom-0 left-4 right-4 h-px bg-gray-200 dark:bg-gray-800`}
+                          />
+                        )}
+                      </div>
+                    </React.Fragment>
+                  );
                 })
               )}
             </div>
@@ -978,7 +976,7 @@ export const Table: React.FC<TableProps> = ({
                   onClick={() => {
                     logger.debug('p2p', "Previous page clicked, current:", currentPage);
                     if (onPageChange) {
-                      logger.debug('p2p', 
+                      logger.debug('p2p',
                         "Calling onPageChange with:",
                         currentPage - 1
                       );
@@ -988,19 +986,18 @@ export const Table: React.FC<TableProps> = ({
                     }
                   }}
                   disabled={currentPage === 1}
-                  className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] text-gray-400 dark:text-[#8C8CA1] ${
-                    currentPage === 1
-                      ? "opacity-50 cursor-not-allowed"
-                      : "hover:bg-gray-100 dark:hover:bg-[#35353E]"
-                  }`}
+                  className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] text-gray-400 dark:text-[#8C8CA1] ${currentPage === 1
+                    ? "opacity-50 cursor-not-allowed"
+                    : "hover:bg-gray-100 dark:hover:bg-[#35353E]"
+                    }`}
                 >
-                    &lt;
+                  &lt;
                 </button>
                 {(() => {
                   const pageButtons = [];
                   const maxPagesToShow = 7; // Show up to 7 page numbers
                   const sidePages = 2; // Pages to show on each side of current page
-                  
+
                   if (totalPages <= maxPagesToShow) {
                     // Show all pages if total is 7 or less
                     for (let i = 1; i <= totalPages; i++) {
@@ -1011,11 +1008,10 @@ export const Table: React.FC<TableProps> = ({
                             logger.debug('p2p', "Page clicked:", i);
                             onPageChange?.(i);
                           }}
-                          className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] ${
-                            currentPage === i
-                              ? "bg-[#1D8751] text-white"
-                              : "bg-white text-gray-400 hover:bg-gray-100 dark:bg-[var(--card-color)] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]"
-                          }`}
+                          className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] ${currentPage === i
+                            ? "bg-[#1D8751] text-white"
+                            : "bg-white text-gray-400 hover:bg-gray-100 dark:bg-[var(--card-color)] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]"
+                            }`}
                         >
                           {i}
                         </button>
@@ -1028,11 +1024,10 @@ export const Table: React.FC<TableProps> = ({
                       <button
                         key={1}
                         onClick={() => onPageChange?.(1)}
-                        className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] ${
-                          currentPage === 1
-                            ? "bg-[#1D8751] text-white"
-                            : "bg-white text-gray-400 hover:bg-gray-100 dark:bg-[var(--card-color)] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]"
-                        }`}
+                        className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] ${currentPage === 1
+                          ? "bg-[#1D8751] text-white"
+                          : "bg-white text-gray-400 hover:bg-gray-100 dark:bg-[var(--card-color)] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]"
+                          }`}
                       >
                         1
                       </button>
@@ -1071,11 +1066,10 @@ export const Table: React.FC<TableProps> = ({
                             logger.debug('p2p', "Page clicked:", i);
                             onPageChange?.(i);
                           }}
-                          className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] ${
-                            currentPage === i
-                              ? "bg-[#1D8751] text-white"
-                              : "bg-white text-gray-400 hover:bg-gray-100 dark:bg-[var(--card-color)] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]"
-                          }`}
+                          className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] ${currentPage === i
+                            ? "bg-[#1D8751] text-white"
+                            : "bg-white text-gray-400 hover:bg-gray-100 dark:bg-[var(--card-color)] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]"
+                            }`}
                         >
                           {i}
                         </button>
@@ -1100,25 +1094,24 @@ export const Table: React.FC<TableProps> = ({
                             logger.debug('p2p', "Last page clicked:", totalPages);
                             onPageChange?.(totalPages);
                           }}
-                          className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] ${
-                            currentPage === totalPages
-                              ? "bg-[#1D8751] text-white"
-                              : "bg-white text-gray-400 hover:bg-gray-100 dark:bg-[var(--card-color)] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]"
-                          }`}
+                          className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] ${currentPage === totalPages
+                            ? "bg-[#1D8751] text-white"
+                            : "bg-white text-gray-400 hover:bg-gray-100 dark:bg-[var(--card-color)] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]"
+                            }`}
                         >
                           {totalPages}
                         </button>
                       );
                     }
                   }
-                  
+
                   return pageButtons;
                 })()}
                 <button
                   onClick={() => {
                     logger.debug('p2p', "Next page clicked, current:", currentPage);
                     if (onPageChange) {
-                      logger.debug('p2p', 
+                      logger.debug('p2p',
                         "Calling onPageChange with:",
                         currentPage + 1
                       );
@@ -1128,13 +1121,12 @@ export const Table: React.FC<TableProps> = ({
                     }
                   }}
                   disabled={currentPage === totalPages}
-                  className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] text-gray-400 dark:text-[#8C8CA1] ${
-                    currentPage === totalPages
-                      ? "opacity-50 cursor-not-allowed"
-                      : "hover:bg-gray-100 dark:hover:bg-[#35353E]"
-                  }`}
+                  className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] text-gray-400 dark:text-[#8C8CA1] ${currentPage === totalPages
+                    ? "opacity-50 cursor-not-allowed"
+                    : "hover:bg-gray-100 dark:hover:bg-[#35353E]"
+                    }`}
                 >
-                   &gt;
+                  &gt;
                 </button>
               </div>
             )}
@@ -1150,9 +1142,18 @@ export const Table: React.FC<TableProps> = ({
         >
           <div
             ref={modalContentRef}
-            className="bg-white dark:bg-[var(--card-color)] rounded-[24px] p-4 sm:p-6 w-full max-w-[500px] max-h-[90vh] overflow-y-auto"
+            className="bg-white dark:bg-[var(--card-color)] rounded-[24px] p-4 sm:p-6 w-full max-w-[500px] max-h-[90vh] overflow-y-auto relative"
             onClick={(e) => e.stopPropagation()}
           >
+            {/* Close button at top-left */}
+            <button
+              onClick={() => setSelectedTransaction(null)}
+              className="absolute top-3 right-3 text-muted-foreground hover:text-gray-900 dark:hover:text-white transition-colors p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+              aria-label="Close modal"
+            >
+              <X size={18} />
+            </button>
+
             {/* OMAYA.io Logo at the top */}
             <div className="flex flex-col items-center justify-center mb-3 sm:mb-4">
               <span className="text-[#1D8751] font-bold text-xl sm:text-2xl tracking-wide">OMAYA</span>
@@ -1192,14 +1193,14 @@ export const Table: React.FC<TableProps> = ({
               </div>
               <div className="flex gap-2 justify-end sm:justify-start">
                 {/* Share button */}
-                <button 
+                <button
                   onClick={() => {
                     const shareData = {
                       title: `${selectedTransaction.asset} ${selectedTransaction.type} Transaction`,
                       text: `Transaction ID: ${selectedTransaction.id}\nAmount: ${selectedTransaction.amount} ${selectedTransaction.assetSymbol}\nStatus: ${selectedTransaction.status}`,
                       url: window.location.href
                     };
-                    
+
                     if (navigator.share) {
                       navigator.share(shareData).catch(err => logger.debug('p2p', 'Share failed:', err));
                     } else {
@@ -1208,7 +1209,7 @@ export const Table: React.FC<TableProps> = ({
                       alert('Transaction details copied to clipboard!');
                     }
                   }}
-                  className="text-[#1D8751] hover:text-[#166b3e] transition-colors" 
+                  className="text-[#1D8751] hover:text-[#166b3e] transition-colors"
                   title="Share Transaction"
                 >
                   <svg
@@ -1332,7 +1333,7 @@ export const Table: React.FC<TableProps> = ({
                   >
                     <Download size={16} className="sm:w-[18px] sm:h-[18px]" />
                   </button>
-                  
+
                 </div>
               </div>
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-0">

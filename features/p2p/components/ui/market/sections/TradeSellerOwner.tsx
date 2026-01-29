@@ -15,12 +15,12 @@ import {
   completeP2PTradeThunk,
   confirmP2PTradeThunk,
 } from "@/features/p2p/slices/orderSlice";
-import { FileIcon, SendIcon } from "lucide-react";
+import { FileIcon, SendIcon, Copy } from "lucide-react";
 import { FaChevronRight } from "react-icons/fa";
 import AppealModal from "./appeal";
 import ChatBox from "./ChatBox";
 import { showToast } from "@/lib/utils/toast";
-import { handleCopy } from "@/features/p2p/components/Common/utils";
+import { handleCopyToClipboard } from "@/features/p2p/components/Common/utils";
 import { Dialog } from "@headlessui/react";
 import { RefreshCw } from "lucide-react";
 import { useTradeStatusWebSocket } from "@/features/p2p/hooks/useTradeStatusWebSocket";
@@ -47,6 +47,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [tradeDataJson, setTradeDataJson] = useState<any>({});
+  const [copiedButton, setCopiedButton] = useState<string | null>(null);
   const prevStatusRef = useRef<string | undefined>(undefined);
   const prevTradeIdRef = useRef<string | null>(null);
   const { user, isAuthenticated } = useSelector(
@@ -429,10 +430,10 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
               Order Number:{" "}
               <button
                 className="underline text-[#1D8751] cursor-pointer bg-transparent border-none p-0 break-all text-left sm:text-right"
-                onClick={() => handleCopy(singleOrder?.id)}
+                onClick={() => handleCopyToClipboard(confirmOrder?.id || singleOrder?.id, "order-number", setCopiedButton)}
                 aria-label="Copy order number"
               >
-                <span className="break-all">{confirmOrder?.id || "9346457687345"}</span>
+                <span className="break-all">{copiedButton === "order-number" ? "Copied!" : (confirmOrder?.id || "9346457687345")}</span>
               </button>
             </div>
           </div>
@@ -554,19 +555,10 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                         </div>
                         <button
                           className="w-full sm:w-auto px-3 md:px-4 py-2 rounded-full border border-gray-200 dark:border-[#35353E] text-[#1D8751] bg-gray-100 dark:bg-[var(--card-color)] font-semibold text-sm flex items-center justify-center gap-1.5 flex-shrink-0"
-                          onClick={() => handleCopy(paymentDetails?.account_name)}
+                          onClick={() => handleCopyToClipboard(paymentDetails?.account_name, "account-name", setCopiedButton)}
                         >
-                          Copy
-                          <svg
-                            className="w-3 h-3 md:w-4 md:h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            viewBox="0 0 24 24"
-                          >
-                            <rect x="9" y="9" width="13" height="13" rx="2" />
-                            <rect x="3" y="3" width="13" height="13" rx="2" />
-                          </svg>
+                          {copiedButton === "account-name" ? "Copied!" : "Copy"}
+                          <Copy className="w-2 h-2 md:w-3 md:h-3" />
                         </button>
                       </div>
                       {/* Account Number */}
@@ -583,20 +575,11 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                         <button
                           className="w-full sm:w-auto px-3 md:px-4 py-2 rounded-full border border-gray-200 dark:border-[#35353E] text-[#1D8751] bg-gray-100 dark:bg-[var(--card-color)] font-semibold text-sm flex items-center justify-center gap-1.5 flex-shrink-0"
                           onClick={() =>
-                            handleCopy(paymentDetails?.account_number)
+                            handleCopyToClipboard(paymentDetails?.account_number, "account-number", setCopiedButton)
                           }
                         >
-                          Copy
-                          <svg
-                            className="w-3 h-3 md:w-4 md:h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            viewBox="0 0 24 24"
-                          >
-                            <rect x="9" y="9" width="13" height="13" rx="2" />
-                            <rect x="3" y="3" width="13" height="13" rx="2" />
-                          </svg>
+                          {copiedButton === "account-number" ? "Copied!" : "Copy"}
+                          <Copy className="w-2 h-2 md:w-3 md:h-3" />
                         </button>
                       </div>
                       {/* Transaction ID */}
@@ -611,19 +594,10 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                         </div>
                         <button
                           className="w-full sm:w-auto px-3 md:px-4 py-2 font-[11px] md:font-[13px] rounded-full border border-gray-200 dark:border-[#35353E] text-[#1D8751] bg-gray-100 dark:bg-[var(--card-color)] flex items-center justify-center gap-1.5 flex-shrink-0"
-                          onClick={() => handleCopy(singleOrder?.id)}
+                          onClick={() => handleCopyToClipboard(singleOrder?.id, "transaction-id", setCopiedButton)}
                         >
-                          Copy
-                          <svg
-                            className="w-3 h-3 md:w-4 md:h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            viewBox="0 0 24 24"
-                          >
-                            <rect x="9" y="9" width="13" height="13" rx="2" />
-                            <rect x="3" y="3" width="13" height="13" rx="2" />
-                          </svg>
+                          {copiedButton === "transaction-id" ? "Copied!" : "Copy"}
+                          <Copy className="w-2 h-2 md:w-3 md:h-3" />
                         </button>
                       </div>
                     </div>

@@ -168,7 +168,7 @@ const LanguageSelector = () => {
           xmlns="http://www.w3.org/2000/svg"
           width="12"
           height="12"
-          className="fill-white ml-0.5 sm:ml-1 lg:ml-1 w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-3 md:h-3 lg:w-4 lg:h-4"
+          className="dark:fill-white text-gray-900 ml-0.5 sm:ml-1 lg:ml-1 w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-3 md:h-3 lg:w-4 lg:h-4"
           viewBox="0 0 16 16"
         >
           <path d="M1.5 6.5l6 6 6-6h-12z" />
@@ -1547,7 +1547,7 @@ export default function Navbar() {
                       </div>
                       <div className="text-left flex-1 min-w-0">
                         <div className="flex items-center gap-1.5">
-                          <h4 className="text-white font-medium text-sm truncate">
+                          <h4 className="dark:text-white text-gray-900 font-medium text-sm truncate">
                             {user?.first_name && user?.last_name
                               ? `${user.first_name} ${user.last_name}`
                               : user?.email}
@@ -1570,7 +1570,7 @@ export default function Navbar() {
                             </span>
                           )}
                         </div>
-                        <p className="text-gray-400 text-xs truncate">{user?.email}</p>
+                        <p className="text-muted-foreground text-xs truncate">{user?.email}</p>
                       </div>
                     </div>
                   </div>
@@ -1582,7 +1582,7 @@ export default function Navbar() {
                         className="absolute inset-0 bg-black bg-opacity-50"
                         onClick={() => setProfileModalOpen(false)}
                       />
-                      <div className="absolute bottom-0 left-0 right-0 bg-[#1E2329] border-t border-[#35353E] rounded-t-lg">
+                      <div className="absolute bottom-0 left-0 right-0 bg-[#1E2329] border-t border-accent rounded-t-lg">
                         <div className="p-6">
                           {/* User Info */}
                           <div className="flex items-center mb-6">

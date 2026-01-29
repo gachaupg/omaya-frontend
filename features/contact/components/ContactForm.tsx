@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useMarketingI18n } from "@/lib/useMarketingI18n";
 import { useContact } from "../hooks/useContact";
 import type { ContactFormData } from "../types";
@@ -13,6 +14,7 @@ interface ContactFormProps {
 
 const ContactForm: React.FC<ContactFormProps> = ({ onSuccess, onError }) => {
   const { t } = useMarketingI18n();
+  const router = useRouter();
   const [formData, setFormData] = useState<ContactFormData & { name?: string; subject?: string }>({
     name: "",
     email_address: "",
@@ -53,13 +55,13 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSuccess, onError }) => {
         'image/jpeg',
         'image/jpg'
       ];
-      
+
       if (!allowedTypes.includes(file.type)) {
         onError?.("Invalid file type. Please upload PDF, DOC, DOCX, TXT, PNG, JPG, or JPEG files only.");
         e.target.value = '';
         return;
       }
-      
+
       // Validate file size (max 10MB)
       const maxSize = 10 * 1024 * 1024; // 10MB
       if (file.size > maxSize) {
@@ -67,7 +69,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSuccess, onError }) => {
         e.target.value = '';
         return;
       }
-      
+
       setFormData((prev) => ({
         ...prev,
         supporting_file: file,
@@ -119,6 +121,11 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSuccess, onError }) => {
     if (result.success) {
       setFormData({ name: "", email_address: "", subject: "", question: "", supporting_file: null });
       onSuccess?.();
+
+      // Redirect after 4 seconds
+      setTimeout(() => {
+        router.back();
+      }, 3000);
     } else {
       onError?.(result.error || "Failed to submit support request");
     }

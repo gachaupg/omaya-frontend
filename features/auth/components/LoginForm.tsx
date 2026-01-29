@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import GoogleAuthButton from "./GoogleAuthButton";
 import FacebookAuthButton from "@/features/auth/components/FacebookAuthButton";
 import { useI18n } from "@/lib/useI18n";
+import { Mail, Lock, LockOpen, Eye, EyeOff } from "lucide-react";
 
 import { logger } from '@/lib/utils/logger';
 import DragFitCaptcha from "./capture";
@@ -310,30 +311,7 @@ export default function LoginPage() {
                   )}
                 />
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg
-                    width="20"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <rect
-                      x="2"
-                      y="4"
-                      width="20"
-                      height="16"
-                      rx="2"
-                      stroke="#1D8751"
-                      strokeWidth="1.5"
-                    />
-                    <path
-                      d="M22 6L12 13L2 6"
-                      stroke="#1D8751"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
+                  <Mail className="w-5 h-5 text-[#1D8751]" />
                 </div>
                 {errors.email && (
                   <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
@@ -381,39 +359,11 @@ export default function LoginPage() {
                   )}
                 />
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    width="20"
-                    height="20"
-                  >
-                    <path
-                      d="M8,10 L8,7 C8,4.791 9.791,3 12,3 C14.209,3 16,4.791 16,7 L16,10"
-                      stroke="#1D8751"
-                      strokeWidth="1.5"
-                      fill="none"
-                      strokeLinecap="round"
-                    />
-                    <rect
-                      x="7"
-                      y="10"
-                      width="10"
-                      height="8"
-                      rx="1"
-                      stroke="#1D8751"
-                      strokeWidth="1.5"
-                      fill="none"
-                    />
-                    <line
-                      x1="12"
-                      y1="13.5"
-                      x2="12"
-                      y2="14.5"
-                      stroke="#1D8751"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                    />
-                  </svg>
+                  {showPassword ? (
+                    <LockOpen className="w-5 h-5 text-[#1D8751]" />
+                  ) : (
+                    <Lock className="w-5 h-5 text-[#1D8751]" />
+                  )}
                 </div>
                 <button
                   type="button"
@@ -421,35 +371,9 @@ export default function LoginPage() {
                   className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-200"
                 >
                   {showPassword ? (
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      width="20"
-                      height="20"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-                      <line x1="1" y1="1" x2="23" y2="23" />
-                    </svg>
+                    <EyeOff className="w-5 h-5" />
                   ) : (
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      width="20"
-                      height="20"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                      <circle cx="12" cy="12" r="3" />
-                    </svg>
+                    <Eye className="w-5 h-5" />
                   )}
                 </button>
               </div>
