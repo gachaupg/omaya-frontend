@@ -1002,7 +1002,7 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
           </h2>
           <div
             ref={paymentDetailsRef}
-            className="flex flex-col dark:bg-[#1D1D23] border-2 border-[#35353E] rounded-2xl p-3 sm:p-5 shadow-lg w-full text-[#35353e] dark:text-[#788099] mb-6"
+            className="flex flex-col dark:bg-[#0F0F17] border-1 border-[#35353E] rounded-2xl p-3 sm:p-5 shadow-lg w-full text-[#35353e] dark:text-[#788099] mb-6"
           >
             {/* Bank Account Address Label */}
             <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">

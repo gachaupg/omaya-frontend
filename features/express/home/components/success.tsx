@@ -393,7 +393,7 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
       {/* Main Content Container */}
       <div className={`w-full rounded-[18px] shadow-xl border-2 ${
         isDark 
-          ? "bg-[#1D1D23] border-[#35353E]" 
+          ? "bg-black border-[#35353E]" 
           : "bg-white border-gray-200"
       }`}>
         {/* Transaction Details Section */}
@@ -474,7 +474,7 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
             </div>
             <div className={`my-4 rounded-[18px] shadow-xl border-1 ${
               isDark 
-                ? "bg-[#1D1D23] border-[#35353E]" 
+                ? "bg-black border-[#35353E]" 
                 : "bg-gray-50 border-gray-200"
             }`}></div>
             <div className="flex justify-between mb-3">
