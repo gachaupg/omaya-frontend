@@ -1536,8 +1536,6 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
         setDepositCode(depositResponse.deposit_code || "");
         setIsFirstCardSubmitted(true);
         setForceUpdate((prev) => prev + 1);
-
-        showToast.success("Deposit transaction submitted successfully!");
       } else {
         // Withdrawal API structure - same as withdrawal.tsx
         const withdrawalPayload: ExpressWithdrawalPayload = {
@@ -2465,14 +2463,14 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                 {t("rates.transactionCode", "Transaction Code")}
               </h2>
               <div className="mb-6 flex flex-col gap-3 max-w-4xl mx-auto w-full px-2">
-                <div className="dark:bg-[#1D1D23] border-2 border-[#35353E] rounded-2xl p-4 shadow-lg w-full text-[#35353e] dark:text-[#788099]">
+                <div className="bg-white dark:bg-[#1D1D23] border-2 border-gray-200 dark:border-[#35353E] rounded-2xl p-4 shadow-lg w-full text-gray-700 dark:text-[#788099]">
                   {/* Transaction Code Row */}
                   <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-3">
-                    <span className="text-[#7e7e8f] dark:text-[#788099] text-base font-semibold">
+                    <span className="text-gray-600 dark:text-[#788099] text-base font-semibold">
                       {t("rates.transactionCodeLabel", "Transaction Code:")}
                     </span>
                     <div className="flex items-center gap-2">
-                      <span className="text-[#35353e] dark:text-[#788099] text-lg font-mono font-bold">
+                      <span className="text-[#1D8751] dark:text-[#1D8751] text-lg font-mono font-bold">
                         {responseData.deposit_code}
                       </span>
                       <button
@@ -2482,7 +2480,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                           );
                           showToast.success("Copied!");
                         }}
-                        className="flex items-center gap-1 bg-[#23232b] dark:bg-[#35353E] border border-[#1D8751] text-[#1D8751] rounded-full px-4 py-1 font-semibold text-base hover:bg-[#1D8751] hover:text-[#35353e] transition-colors"
+                        className="flex items-center gap-1 bg-gray-100 dark:bg-[#35353E] border border-[#1D8751] text-[#1D8751] rounded-full px-4 py-1 font-semibold text-base hover:bg-[#1D8751] hover:text-white transition-colors"
                       >
                         <svg
                           width="16"

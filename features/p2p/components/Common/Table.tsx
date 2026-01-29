@@ -1325,16 +1325,9 @@ export const Table: React.FC<TableProps> = ({
                 <span className="text-xs sm:text-sm text-gray-400 dark:text-[#8C8CA1]">
                   Receipt:
                 </span>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={handleDownloadCard}
-                    className="text-[#1D8751] hover:text-[#166b3e] transition-colors cursor-pointer"
-                    title="Download Receipt as Image"
-                  >
-                    <Download size={16} className="sm:w-[18px] sm:h-[18px]" />
-                  </button>
-
-                </div>
+                <span className="text-[#1D8751] text-xs sm:text-sm">
+                  Available above ↑
+                </span>
               </div>
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-0">
                 <span className="text-xs sm:text-sm text-gray-400 dark:text-[#8C8CA1]">

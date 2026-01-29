@@ -667,9 +667,6 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
         })
       ).unwrap();
 
-      // Show success message
-      showToast.success("Transfer request submitted successfully!");
-
       setIsFirstCardSubmitted(true);
       
       // Scroll to the next section

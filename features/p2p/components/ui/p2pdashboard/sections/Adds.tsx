@@ -939,7 +939,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
 
             <Button
               borderRadius={24}
-              className="flex-1 rounded-[24px] border border-[#1D8751] dark:text-white text-black bg-transparent text-base py-2 hover:bg-[#1D8751]/10 transition"
+              className="flex-1 rounded-[24px] border border-[#1D8751] dark:text-white text-gray-900 bg-transparent text-base py-2 hover:bg-[#1D8751]/10 dark:hover:bg-[#1D8751]/10 transition"
               variant="outline"
               onClick={() => {
                 setShowPaymentModal(true);

@@ -3590,7 +3590,7 @@ export default function DepositForm({
                 type="text"
                 value={forexAccountNumber}
                 onChange={(e) => setForexAccountNumber(e.target.value)}
-                placeholder="Enter your forex account number (e.g., EUR9876543210)"
+                placeholder="Enter your forex account number"
                 className={`w-full rounded-2xl px-4 py-2 text-lg focus:outline-none border bg-transparent ${isDark ? "text-white border-[#35353E]" : "text-[#111827] border-[#CBD5F5]"
                   }`}
               />

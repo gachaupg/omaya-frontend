@@ -724,10 +724,8 @@ export default function Navbar() {
         ? "dark:bg-[var(--bg-color)] bg-white backdrop-blur-sm"
         : "bg-transparent";
     } else if (isAboutPage) {
-      // About page: dark green background to match hero section
-      return scrolled
-        ? "dark:bg-[var(--bg-color)] bg-white backdrop-blur-sm shadow-sm"
-        : "bg-[#0E5531] dark:bg-[#0E5531]";
+      // About page: always show solid white/dark background for visibility
+      return "dark:bg-[var(--bg-color)] bg-white backdrop-blur-sm shadow-sm border-b border-gray-100 dark:border-transparent";
     } else if (isDashboardPage) {
       // Dashboard pages: always have solid background for visibility
       return scrolled
@@ -741,9 +739,8 @@ export default function Navbar() {
     }
   };
 
-  // Check if navbar should show white text (transparent on home page or about page when not scrolled)
-  const isTransparentNavbar =
-    (pathname === "/" && !scrolled) || (pathname === "/about" && !scrolled);
+  // Check if navbar should show white text (only transparent on home page when not scrolled)
+  const isTransparentNavbar = pathname === "/" && !scrolled;
 
   // Use theme context instead of manual localStorage parsing
   const { theme } = useTheme();
@@ -763,8 +760,8 @@ export default function Navbar() {
     const isNotScrolled = !scrolled;
     const isDarkTheme = theme === "dark";
 
-    if ((isHomePage && isNotScrolled) || (isAboutPage && isNotScrolled)) {
-      // Home page or About page, not scrolled: white logo for transparent/green background
+    if ((isHomePage && isNotScrolled)) {
+      // Home page, not scrolled: white logo for transparent/green background
       return {
         src: "https://res.cloudinary.com/pitz/image/upload/v1764572384/bad9edd9da5201cb8f8f9cea35bf46f4fb541bd6_lplbyc.png",
         alt: "OMAYA Exchange",

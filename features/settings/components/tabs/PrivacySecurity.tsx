@@ -852,7 +852,7 @@ const PrivacySecurity = () => {
             <button
               className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-semibold border transition-all ${twoFA
                 ? "bg-[#1D8751] text-white border-[#1D8751]"
-                : "bg-transparent dark:text-[#808080] text-gray-600 dark:border-[#35353E] border-gray-300"
+                : "bg-transparent dark:text-[#808080] text-gray-600 dark:border-[#35353E] border-gray-300 hover:bg-[#1D8751]/10 hover:border-[#1D8751] hover:text-[#1D8751] dark:hover:text-[#1D8751]"
                 }`}
               onClick={() => handleTwoFactorToggle(true)}
               disabled={updating}
@@ -863,12 +863,12 @@ const PrivacySecurity = () => {
                     cx="12"
                     cy="12"
                     r="10"
-                    stroke="#fff"
+                    stroke={twoFA ? "#fff" : "currentColor"}
                     strokeWidth="2"
                   />
                   <path
                     d="M9 12l2 2 4-4"
-                    stroke="#fff"
+                    stroke={twoFA ? "#fff" : "currentColor"}
                     strokeWidth="2"
                     fill="none"
                   />
@@ -879,7 +879,7 @@ const PrivacySecurity = () => {
             <button
               className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-semibold border transition-all ${!twoFA
                 ? "bg-[#E23D3A] text-white border-[#E23D3A]"
-                : "bg-transparent dark:text-[#808080] text-gray-600 dark:border-[#35353E] border-gray-300"
+                : "bg-transparent dark:text-[#808080] text-gray-600 dark:border-[#35353E] border-gray-300 hover:bg-[#E23D3A]/10 hover:border-[#E23D3A] hover:text-[#E23D3A] dark:hover:text-[#E23D3A]"
                 }`}
               onClick={() => handleTwoFactorToggle(false)}
               disabled={updating}
@@ -890,12 +890,12 @@ const PrivacySecurity = () => {
                     cx="12"
                     cy="12"
                     r="10"
-                    stroke="#fff"
+                    stroke={!twoFA ? "#fff" : "currentColor"}
                     strokeWidth="2"
                   />
                   <path
                     d="M9 9l6 6M15 9l-6 6"
-                    stroke="#fff"
+                    stroke={!twoFA ? "#fff" : "currentColor"}
                     strokeWidth="2"
                     fill="none"
                   />

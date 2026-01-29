@@ -514,9 +514,6 @@ const MoneyXRates = () => {
         })
       ).unwrap();
 
-      // Show success message
-      showToast.success("Transfer request submitted successfully!");
-
       // Store the transaction result
       setMoneyXTransactionResult(result);
       setIsFirstCardSubmitted(true);
