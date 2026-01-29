@@ -75,11 +75,11 @@ const P2pWallet = memo(
           {getTitle()}
         </p>
         <Card
-          borderColor="border-[#35353E]"
+          borderColor="border-border dark:border-accent"
           width="w-full"
           bgColor="bg-transparent"
           borderRadius="rounded-[24px]"
-          className="p-0 mb-2 shadow-none dark:bg-[#18181D] bg-white border border-[#35353E]"
+          className="p-0 mb-2 shadow-none dark:bg-[#18181D] bg-white border "
         >
           <div className="flex flex-col gap-2 sm:gap-3 px-2 sm:px-3 md:px-4 py-2 sm:py-3">
             <div className="flex flex-col sm:flex-row sm:flex-wrap justify-between items-start sm:items-center w-full gap-3">

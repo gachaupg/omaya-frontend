@@ -82,7 +82,7 @@ const HelpSupportForm: React.FC = () => {
   return (
     <div className="min-h-screen">
       <div>
-        <h1 className="text-base sm:text-lg font-medium text-[#788099] mb-3 sm:mb-4">Help & Support</h1>
+        <h1 className="text-base sm:text-lg font-medium text-muted-foreground dark:text-muted mb-3 sm:mb-4">Help & Support</h1>
         
         <div className="container mx-auto bg-white dark:bg-[var(--bg-color)] border border-[#E8EFF5] dark:border-[#35353E] rounded-2xl shadow-sm p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6">
           {/* Email Address Field */}

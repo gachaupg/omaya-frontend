@@ -29,7 +29,7 @@ const ClientIdSection: React.FC<ClientIdSectionProps> = ({ user }) => {
       if (!validId) {
         throw new Error("Invalid or empty user ID");
       }
-      
+
       const qrDataUrl = await QRCode.toDataURL(validId, {
         width: 300,
         margin: 2,
@@ -64,75 +64,75 @@ const ClientIdSection: React.FC<ClientIdSectionProps> = ({ user }) => {
       <div className="text-sm font-bold dark:text-white text-gray-900 mb-1">
         Client ID
       </div>
-      <section className="dark:bg-[var(--card-color)] bg-white rounded-xl border border-[#E8EFF5] dark:border-[#35353E] w-full relative">
+      <section className="dark:bg-[var(--card-color)] bg-white rounded-xl border border-[#E8EFF5] dark:border-accent w-full relative">
         <div className="p-4 sm:p-6">
           <label className="dark:text-[#fff] text-gray-700 text-xs mb-1 block">
             Your unique ID
           </label>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-            <div className="flex flex-1 items-center border border-[#1D8751] rounded-full px-2 sm:px-3 py-2 bg-transparent min-w-0">
-              <span className="w-3 h-3 rounded-full bg-[#1D8751] inline-block mr-2 flex-shrink-0"></span>
-              <span className="text-[#1D8751] text-xs sm:text-sm font-semibold truncate min-w-0">
-                {user?.user_id || ""}
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={handleQRCodeClick}
-              className="flex items-center justify-center gap-1 px-3 py-2 rounded-xl bg-transparent text-[#1D8751] font-semibold hover:bg-gray-100 dark:hover:bg-[#2A2A2F] transition text-sm whitespace-nowrap flex-shrink-0"
-              title="Show QR Code"
-            >
-              <span>QR</span>
-              <svg
-                width="14"
-                height="14"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                className="flex-shrink-0 text-[#1D8751]"
+            <div className="flex flex-1 items-center justify-between border border-[#1D8751] rounded-full px-2 sm:px-3 py-1 bg-transparent min-w-0">
+              <div className="flex items-center sm:gap-1"> <span className="w-3 h-3 rounded-full bg-[#1D8751] inline-block mr-2 shrink-0"></span>
+                <span className="text-[#1D8751] text-xs sm:text-sm font-semibold truncate min-w-0">
+                  {user?.user_id || ""}
+                </span> </div>
+              <button
+                type="button"
+                onClick={handleQRCodeClick}
+                className="flex items-center justify-center gap-1 px-2 rounded-xl bg-transparent text-[#1D8751] font-semibold hover:bg-gray-100 dark:hover:bg-[#2A2A2F] transition text-sm whitespace-nowrap shrink-0"
+                title="Show QR Code"
               >
-                <rect
-                  x="3"
-                  y="3"
-                  width="6"
-                  height="6"
-                  rx="1.5"
-                  strokeWidth="2"
-                />
-                <rect
-                  x="15"
-                  y="3"
-                  width="6"
-                  height="6"
-                  rx="1.5"
-                  strokeWidth="2"
-                />
-                <rect
-                  x="3"
-                  y="15"
-                  width="6"
-                  height="6"
-                  rx="1.5"
-                  strokeWidth="2"
-                />
-                <rect
-                  x="15"
-                  y="15"
-                  width="2"
-                  height="2"
-                  rx="1"
-                  strokeWidth="2"
-                />
-                <rect
-                  x="19"
-                  y="19"
-                  width="2"
-                  height="2"
-                  rx="1"
-                  strokeWidth="2"
-                />
-              </svg>
-            </button>
+                <span>QR</span>
+                <svg
+                  width="14"
+                  height="14"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  className="flex-shrink-0 text-[#1D8751]"
+                >
+                  <rect
+                    x="3"
+                    y="3"
+                    width="6"
+                    height="6"
+                    rx="1.5"
+                    strokeWidth="2"
+                  />
+                  <rect
+                    x="15"
+                    y="3"
+                    width="6"
+                    height="6"
+                    rx="1.5"
+                    strokeWidth="2"
+                  />
+                  <rect
+                    x="3"
+                    y="15"
+                    width="6"
+                    height="6"
+                    rx="1.5"
+                    strokeWidth="2"
+                  />
+                  <rect
+                    x="15"
+                    y="15"
+                    width="2"
+                    height="2"
+                    rx="1"
+                    strokeWidth="2"
+                  />
+                  <rect
+                    x="19"
+                    y="19"
+                    width="2"
+                    height="2"
+                    rx="1"
+                    strokeWidth="2"
+                  />
+                </svg>
+              </button>
+            </div>
             <button
               className={`flex items-center justify-center gap-1 px-3 py-2 rounded-xl bg-gray-200 dark:bg-[#2A2A2F] text-[#1D8751] font-semibold hover:bg-gray-300 dark:hover:bg-[#35353E] transition text-sm whitespace-nowrap flex-shrink-0 ${copied ? "bg-gray-300 dark:bg-[#35353E]" : ""
                 }`}
