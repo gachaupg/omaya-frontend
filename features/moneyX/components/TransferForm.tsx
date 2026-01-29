@@ -49,7 +49,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
     error: moneyXError,
   } = useSelector((state: any) => state.moneyX);
 
-  const { isAuthenticated } = useSelector((state: any) => state.auth);
+  const { isAuthenticated, user } = useSelector((state: any) => state.auth);
 
   // Use state to hold payment methods - will trigger re-render when updated
   const [stablePaymentMethods, setStablePaymentMethods] = useState<any[]>([]);
@@ -854,13 +854,19 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
         throw new Error("Provider IDs not found in payment methods");
       }
 
+      // Use logged-in user's full name for recipient_name
+      const recipientName =
+        user?.first_name && user?.last_name
+          ? `${user.first_name} ${user.last_name}`.trim()
+          : user?.first_name || user?.last_name || "";
+
       // Create MoneyX transaction
       const result = await dispatch(
         createMoneyXTransaction({
           amount: payAmount.toFixed(2),
           sender_provider: senderProviderId,
           receiver_provider: receiverProviderId,
-          recipient_name: "John Doe", // TODO: Add recipient name input field if needed
+          recipient_name: recipientName,
         })
       ).unwrap();
 
