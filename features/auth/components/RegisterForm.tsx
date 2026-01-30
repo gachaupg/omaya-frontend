@@ -403,22 +403,25 @@ export default function RegistrationPage() {
     }
   }, [showCountryDropdown]);
 
+  // Effect to scroll to error banner when form errors appear
+  React.useEffect(() => {
+    if (formErrors.length === 0 || typeof document === "undefined") {
+      return;
+    }
+
+    if (errorBannerRef.current) {
+      errorBannerRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }
+  }, [formErrors]);
+
+  // Effect to handle referral tooltip click outside and escape key
   React.useEffect(() => {
     if (!showReferralTooltip) {
       return;
     }
-    React.useEffect(() => {
-      if (formErrors.length === 0 || typeof document === "undefined") {
-        return;
-      }
-
-      if (errorBannerRef.current) {
-        errorBannerRef.current.scrollIntoView({
-          behavior: "smooth",
-          block: "center",
-        });
-      }
-    }, [formErrors]);
 
     const handleClickOutside = (event: MouseEvent) => {
       if (

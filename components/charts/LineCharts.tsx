@@ -843,7 +843,7 @@ const LineCharts = React.memo(
       <div className="w-full">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8 w-full">
           {/* Exchange Overview */}
-          <Card className="w-full rounded-none lg:rounded-2xl bg-card">
+          <Card className="w-full rounded-none lg:rounded-2xl bg-gray-50 dark:bg-card shadow-sm">
             <h3 className="text-black dark:text-white text-xs sm:text-sm md:text-[14px] mb-2 font-semibold">
               Exchange Overview (USDT)
             </h3>
@@ -893,7 +893,7 @@ const LineCharts = React.memo(
             </div>
           </Card>
           {/* P2P Overview */}
-          <Card className="w-full rounded-none lg:rounded-2xl bg-card">
+          <Card className="w-full rounded-none lg:rounded-2xl bg-gray-50 dark:bg-card shadow-sm">
             <h3 className="dark:text-wh text-[#051015] dark:text-white text-xs sm:text-sm md:text-[14px] mb-2 font-semibold">
               P2P Overview (USDT)
             </h3>
@@ -942,7 +942,7 @@ const LineCharts = React.memo(
               />
             </div>
           </Card>
-          <Card className="w-full rounded-none lg:rounded-2xl bg-card flex flex-col">
+          <Card className="w-full rounded-none lg:rounded-2xl bg-gray-50 dark:bg-card shadow-sm flex flex-col">
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 pt-4 pb-3">
               <h3 className="text-sm sm:text-base md:text-lg font-semibold dark:text-white text-gray-900">
@@ -989,10 +989,10 @@ const LineCharts = React.memo(
             </div>
           </Card>
 
-          <Card className="w-full rounded-none lg:rounded-2xl bg-card border border-[#35353E] flex flex-col">
+          <Card className="w-full rounded-none lg:rounded-2xl bg-gray-50 dark:bg-card shadow-sm dark:border dark:border-[#35353E] flex flex-col">
             {/* Header */}
             <div className="flex items-center justify-between px-4 pt-4 pb-3">
-              <h3 className="text-sm sm:text-base md:text-lg font-semibold dark:text-white">
+              <h3 className="text-sm sm:text-base md:text-lg font-semibold dark:text-white text-gray-900">
                 Your Referral Commissions
               </h3>
 

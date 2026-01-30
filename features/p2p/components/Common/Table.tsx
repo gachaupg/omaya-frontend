@@ -1154,10 +1154,14 @@ export const Table: React.FC<TableProps> = ({
               <X size={18} />
             </button>
 
-            {/* OMAYA.io Logo at the top */}
-            <div className="flex flex-col items-center justify-center mb-3 sm:mb-4">
-              <span className="text-[#1D8751] font-bold text-xl sm:text-2xl tracking-wide">OMAYA</span>
-              <span className="text-gray-400 dark:text-gray-300 text-xs sm:text-sm font-medium -mt-1">.io</span>
+            {/* Omaya.io Logo at the top */}
+            <div className="flex items-center justify-center mb-3 sm:mb-4">
+              <img
+                src="https://res.cloudinary.com/pitz/image/upload/v1764572384/bad9edd9da5201cb8f8f9cea35bf46f4fb541bd6_lplbyc.png"
+                alt="OMAYA"
+                className="h-6 sm:h-8 w-auto object-contain"
+              />
+              <span className="text-gray-500 dark:text-gray-400 text-xl sm:text-2xl font-medium ml-0.5"></span>
             </div>
             {/* Header: Coin, Type, Date, Share/Note */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">

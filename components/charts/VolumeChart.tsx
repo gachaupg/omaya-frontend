@@ -44,16 +44,16 @@ const VolumeChart: React.FC<VolumeChartProps> = ({ transactionSummary }) => {
       <h2 className="dark:text-white text-gray-900 text-sm sm:text-base mb-3 sm:mb-4">
         Transaction Volume
       </h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 overflow-x-auto pb-2 sm:pb-4">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 overflow-x-auto pb-2 sm:pb-4">
         {volumeData.map((item, idx) => (
           <div
             key={idx}
-            className="relative flex flex-col items-center justify-center w-full h-[150px] sm:h-[175px] bg-white dark:bg-[var(--card-color)] rounded-2xl sm:rounded-[24px] p-4 sm:p-6"
+            className="relative flex flex-col items-center justify-center w-full min-h-[120px] sm:min-h-[140px] bg-white dark:bg-[var(--card-color)] rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-sm border border-gray-100 dark:border-[#35353E]"
           >
-            <span className="dark:text-white text-gray-900 text-xs sm:text-sm md:text-base mb-2 sm:mb-3 text-center relative z-10">
+            <span className="dark:text-gray-400 text-gray-600 text-xs sm:text-sm mb-2 text-center relative z-10">
               {item.title}
             </span>
-            <span className="text-[#F79330] text-lg sm:text-xl md:text-2xl font-semibold text-center relative z-10">
+            <span className="text-[#F79330] text-base sm:text-lg md:text-xl font-bold text-center relative z-10">
               {item.value}
             </span>
           </div>
