@@ -3497,7 +3497,7 @@ export default function WithdrawalForm({
               <div
                 data-asset-card="true"
                 data-select-card="true"
-                className="relative flex flex-col sm:flex-row border border-[#35353E] dark:border-[#35353E] rounded-xl sm:rounded-2xl p-2 sm:p-3 md:p-4 overflow-visible gap-2 sm:gap-3 md:gap-0 bg-white dark:bg-[#18181D]"
+                className="relative flex flex-col sm:flex-row border border-border dark:border-accent rounded-xl sm:rounded-2xl p-2 sm:p-3 md:p-4 overflow-visible gap-2 sm:gap-3 md:gap-0 bg-white dark:bg-[#18181D]"
               >
                 {/* You Send Section */}
                 <div className="flex-1 min-w-0">
@@ -3834,7 +3834,7 @@ export default function WithdrawalForm({
             <div className="relative mb-2 sm:mb-3 md:mb-4">
               <div
                 data-select-card="true"
-                className="relative flex flex-col sm:flex-row border border-[#35353E] dark:border-[#35353E] rounded-xl sm:rounded-2xl p-2 sm:p-3 md:p-4 overflow-visible gap-2 sm:gap-3 md:gap-0 bg-white dark:bg-[#18181D]"
+                className="relative flex flex-col sm:flex-row border border-border dark:border-accent rounded-xl sm:rounded-2xl p-2 sm:p-3 md:p-4 overflow-visible gap-2 sm:gap-3 md:gap-0 bg-white dark:bg-[#18181D]"
               >
                 {/* You Receive Section */}
                 <div className="flex-1 min-w-0">

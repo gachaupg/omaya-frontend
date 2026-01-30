@@ -493,8 +493,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
             <div 
               className="overflow-y-auto p-1"
               style={{ 
-                maxHeight: 'calc(70vh - 120px)',
-                minHeight: '200px',
+                maxHeight: 'calc(70vh - 120px)'
               }}
             >
               {filteredOptions.length === 0 ? (

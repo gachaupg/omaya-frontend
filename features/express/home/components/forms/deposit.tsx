@@ -3692,7 +3692,7 @@ export default function DepositForm({
             className="mt-1 mb-2 w-full flex flex-col gap-3 px-2 "
           >
             <div
-              className={`flex-1 rounded-2xl flex flex-col justify-between p-3 sm:p-5 relative min-h-[120px] ${isDark ? "bg-[#1D1D23] border border-[#35353E]" : "bg-white border border-[#E2E8F0] shadow-sm"
+              className={`flex-1 rounded-2xl flex flex-col justify-between p-3 sm:p-5 relative min-h-[120px] ${isDark ? "bg-[#0F0F17] border border-[#35353E]" : "bg-white border border-[#E2E8F0] shadow-sm"
                 }`}
             >
               {/* Bank and logo */}
@@ -3782,7 +3782,7 @@ export default function DepositForm({
               </h2>
               <div className="mb-6 flex flex-col gap-3 w-full px-0 sm:px-2">
                 <div
-                  className={`border-2 rounded-2xl p-3 sm:p-4 shadow-lg w-full ${isDark ? "bg-[#1D1D23] border-[#35353E] text-[#788099]" : "bg-white border-[#E2E8F0] text-[#1F2937]"
+                  className={`border-1 rounded-2xl p-3 sm:p-4 shadow-lg w-full ${isDark ? "bg-[#0F0F17] border-[#35353E] text-[#788099]" : "bg-white border-[#E2E8F0] text-[#1F2937]"
                     }`}
                 >
                   {/* Transaction Code Row */}
@@ -3891,7 +3891,7 @@ export default function DepositForm({
           <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
             Wallet Address
           </h2>
-          <div className="flex flex-col dark:bg-[#1D1D23] border-2 border-[#35353E] rounded-2xl p-3 sm:p-5 shadow-lg w-full text-[#35353e] dark:text-[#788099] mb-6">
+          <div className="flex flex-col dark:bg-[#0F0F17] border-1 border-[#35353E] rounded-2xl p-3 sm:p-5 shadow-lg w-full text-[#35353e] dark:text-[#788099] mb-6">
             {/* Wallet/Account Address Label */}
             <label className="block text-sm sm:text-[17px] text-[#7e7e8f] mb-2 font-semibold">
               Wallet/Account Address

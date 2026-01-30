@@ -4589,10 +4589,9 @@ export default function WithdrawalForm({
               className="mb-6 flex flex-col gap-3 w-full px-0 sm:px-2"
             >
               <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
-                <span className="text-[#7e7e8f] dark:text-[#788099]">2-</span>
                 Wallet Address
               </h2>
-              <div className="dark:bg-[#1D1D23] border-2 border-[#35353e] rounded-2xl p-3 sm:p-5 shadow-lg w-full text-[#35353e] dark:text-[#788099]">
+              <div className="dark:bg-[#0F0F17] border-1 border-[#35353e] rounded-2xl p-3 sm:p-5 shadow-lg w-full text-[#35353e] dark:text-[#788099]">
                 {/* USDT Wallet Address */}
                 <div className="mb-4">
                   <h3 className="text-sm sm:text-base text-[#35353e] dark:text-[#788099] font-semibold mb-2">

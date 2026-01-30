@@ -30,5 +30,9 @@
   "common.next": "Xiga",
   "common.previous": "Hore",
   "common.error": "Qalad",
-  "common.loading": "La soo dejinayaa..."
+  "common.loading": "La soo dejinayaa...",
+  "transactions.noTransactionsFound": "Ma jiro wax macaamil ganacsi oo P2P ah oo la helay",
+  "transactions.noTransactionsMessage": "Hadda ma jiraan wax macaamil ganacsi oo P2P ah oo la soo bandhigo. Fadlan dib u hubi mar dambe ama isku day inaad hagaajiso filtarradaada.",
+  "transactions.noWithdrawalDepositFound": "Lacag bixinta/Dhigashada P2P lama helin",
+  "transactions.noWithdrawalDepositMessage": "Hadda ma jiraan wax macaamil ganacsi oo lacag bixinta/dhigashada P2P ah oo la soo bandhigo. Fadlan dib u hubi mar dambe ama isku day inaad hagaajiso filtarradaada."
 }
