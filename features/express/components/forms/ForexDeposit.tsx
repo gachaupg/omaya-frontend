@@ -197,7 +197,7 @@ export default function ForexDeposit() {
                 type="text"
                 value={userForexAccount}
                 onChange={(e) => setUserForexAccount(e.target.value)}
-                placeholder="e.g., EUR9876543210"
+                placeholder="Enter your forex account number"
                 className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#D1D2D4] rounded-xl px-3 py-2.5 text-base focus:outline-none border border-[#D1D2D4FF] dark:border-[#35353E]"
               />
             </div>

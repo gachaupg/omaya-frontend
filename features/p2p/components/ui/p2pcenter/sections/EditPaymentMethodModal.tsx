@@ -322,7 +322,7 @@ const EditPaymentMethodModal: React.FC<EditPaymentMethodModalProps> = ({
               variant="outline"
               onClick={onClose}
               disabled={patchLoading}
-              className="flex-1"
+              className="flex-1 py-3 text-base"
             >
               Cancel
             </Button>
@@ -330,7 +330,7 @@ const EditPaymentMethodModal: React.FC<EditPaymentMethodModalProps> = ({
               type="submit"
               variant="secondary"
               disabled={patchLoading}
-              className="flex-1"
+              className="flex-1 py-3 text-base"
             >
               {patchLoading ? "Updating..." : "Update"}
             </Button>

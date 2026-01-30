@@ -3930,7 +3930,7 @@ export default function DepositForm({
                       {t("express.accountName", "Account Name :")}
                     </span>
                     <span className="text-[#35353e] dark:text-[#788099] text-base font-medium">
-                      {selectedPaymentDetail.account_name}
+                      {selectedPaymentDetail.account_name || selectedPaymentDetail?.payment_details?.[0]?.account_name || "N/A"}
                     </span>
                   </div>
                   <div className="border-t border-dashed border-[#39394a] mb-2"></div>
@@ -3941,13 +3941,12 @@ export default function DepositForm({
                     </span>
                     <div className="flex items-center gap-2">
                       <span className="text-[#35353e] dark:text-[#788099] text-base font-medium">
-                        {selectedPaymentDetail.account_number}
+                        {selectedPaymentDetail.account_number || selectedPaymentDetail?.payment_details?.[0]?.account_number || selectedPaymentDetail?.payment_details?.[0]?.mobile_number || "N/A"}
                       </span>
                       <button
                         onClick={() => {
-                          navigator.clipboard.writeText(
-                            selectedPaymentDetail.account_number
-                          );
+                          const accNumber = selectedPaymentDetail.account_number || selectedPaymentDetail?.payment_details?.[0]?.account_number || selectedPaymentDetail?.payment_details?.[0]?.mobile_number || "";
+                          navigator.clipboard.writeText(accNumber);
                           showToast.success(t("express.accountNumberCopied", "Account number copied!"));
                         }}
                         className="text-[#F79330] hover:text-white transition-colors p-2 sm:p-1 rounded min-h-[44px] sm:min-h-0 flex items-center justify-center touch-manipulation"
@@ -3999,7 +3998,7 @@ export default function DepositForm({
                 type="text"
                 value={forexAccountNumber}
                 onChange={(e) => setForexAccountNumber(e.target.value)}
-                placeholder="Enter your forex account number (e.g., EUR9876543210)"
+                placeholder="Enter your forex account number"
                 className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 py-2 text-lg focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E]"
               />
             </div>
@@ -4152,7 +4151,7 @@ export default function DepositForm({
                   {t("express.accountName", "Account Name :")}
                 </span>
                 <span className="text-[#35353e] dark:text-[#788099] text-base font-medium">
-                  {selectedPaymentDetail.account_name}
+                  {selectedPaymentDetail.account_name || selectedPaymentDetail?.payment_details?.[0]?.account_name || "N/A"}
                 </span>
               </div>
               <div className="border-t border-dashed border-[#39394a] mb-2"></div>
@@ -4163,13 +4162,12 @@ export default function DepositForm({
                 </span>
                 <div className="flex items-center gap-2">
                   <span className="text-[#35353e] dark:text-[#788099] text-base font-medium">
-                    {selectedPaymentDetail.account_number}
+                    {selectedPaymentDetail.account_number || selectedPaymentDetail?.payment_details?.[0]?.account_number || selectedPaymentDetail?.payment_details?.[0]?.mobile_number || "N/A"}
                   </span>
                   <button
                     onClick={() => {
-                      navigator.clipboard.writeText(
-                        selectedPaymentDetail.account_number
-                      );
+                      const accNumber = selectedPaymentDetail.account_number || selectedPaymentDetail?.payment_details?.[0]?.account_number || selectedPaymentDetail?.payment_details?.[0]?.mobile_number || "";
+                      navigator.clipboard.writeText(accNumber);
                       setCopiedField("accountNumber");
                       setTimeout(() => setCopiedField(null), 2000);
                     }}

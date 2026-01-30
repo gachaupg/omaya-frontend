@@ -2,7 +2,6 @@
  * VolumeChart.tsx – Transaction Volume Summary
  */
 
-import Card from "../ui/Card";
 import React from "react";
 import { TransactionSummary } from "../types";
 
@@ -42,22 +41,22 @@ const VolumeChart: React.FC<VolumeChartProps> = ({ transactionSummary }) => {
 
   return (
     <div className="w-full">
-      <h2 className="dark:text-white text-sm sm:text-base mb-3 sm:mb-4">
+      <h2 className="dark:text-white text-gray-900 text-sm sm:text-base mb-3 sm:mb-4">
         Transaction Volume
       </h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 overflow-x-auto pb-2 sm:pb-4">
         {volumeData.map((item, idx) => (
-          <Card
+          <div
             key={idx}
-            className="flex flex-col items-center justify-center w-full h-[150px] sm:h-[175px] border border-[#35353E] bg-card rounded-2xl sm:rounded-[24px] p-4 sm:p-6"
+            className="relative flex flex-col items-center justify-center w-full h-[150px] sm:h-[175px] bg-white dark:bg-[var(--card-color)] rounded-2xl sm:rounded-[24px] p-4 sm:p-6"
           >
-            <span className="dark:text-[#ffff] text-[#0D0D0D] text-xs sm:text-sm md:text-base mb-2 sm:mb-3 text-center">
+            <span className="dark:text-white text-gray-900 text-xs sm:text-sm md:text-base mb-2 sm:mb-3 text-center relative z-10">
               {item.title}
             </span>
-            <span className="text-[#F79330] text-lg sm:text-xl md:text-2xl font-semibold text-center">
+            <span className="text-[#F79330] text-lg sm:text-xl md:text-2xl font-semibold text-center relative z-10">
               {item.value}
             </span>
-          </Card>
+          </div>
         ))}
       </div>
     </div>

@@ -228,6 +228,13 @@ const KYC = () => {
                       </svg>
                     </span>
               </div>
+              {/* Edit Profile Button */}
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="mt-2 px-4 py-1.5 text-xs font-medium text-[#1D8751] border border-[#1D8751] rounded-full hover:bg-[#1D8751] hover:text-white transition-colors"
+              >
+                Edit Profile
+              </button>
             </div>
           </div>
         </div>

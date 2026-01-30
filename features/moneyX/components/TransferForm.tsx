@@ -870,9 +870,6 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
         })
       ).unwrap();
 
-      // Show success message
-      showToast.success("Transfer request submitted successfully!");
-
       setIsFirstCardSubmitted(true);
 
       // Scroll to the next section

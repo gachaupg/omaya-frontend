@@ -171,58 +171,61 @@ const ClientIdSection: React.FC<ClientIdSectionProps> = ({ user }) => {
         </div>
       </section>
 
-      {/* QR Code Display - Inside the ID card */}
+      {/* QR Code Modal Popup */}
       {showQRCode && (
-        <div className="mt-4 pt-4 border-t border-[#E8EFF5] dark:border-[#35353E]">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
-              Client ID QR Code
-            </h3>
-            <button
-              onClick={() => setShowQRCode(false)}
-              className="text-[#4C526A] dark:text-[#A3AED0] hover:text-gray-900 dark:hover:text-white transition-colors"
-              aria-label="Close"
-            >
-              <X size={18} />
-            </button>
-          </div>
-          {qrCodeError ? (
-            <div className="flex flex-col items-center">
-              <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg border border-red-200 dark:border-red-800 mb-4">
-                <p className="text-sm text-red-600 dark:text-red-400 text-center">
-                  Failed to generate QR code
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowQRCode(false)}>
+          <div 
+            className="bg-white dark:bg-[#1D1D23] rounded-2xl p-6 max-w-sm w-full shadow-2xl animate-in fade-in zoom-in duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Client ID QR Code
+              </h3>
+              <button
+                onClick={() => setShowQRCode(false)}
+                className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors p-1 rounded-full hover:bg-gray-100 dark:hover:bg-[#35353E]"
+                aria-label="Close"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            {qrCodeError ? (
+              <div className="flex flex-col items-center">
+                <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg border border-red-200 dark:border-red-800 mb-4">
+                  <p className="text-sm text-red-600 dark:text-red-400 text-center">
+                    Failed to generate QR code
+                  </p>
+                </div>
+                <p className="text-sm text-gray-600 dark:text-gray-400 text-center mb-2">
+                  Your Client ID:
+                </p>
+                <p className="text-xs text-gray-600 dark:text-gray-400 text-center font-mono break-all bg-gray-100 dark:bg-[#2A2A2F] p-3 rounded-lg">
+                  {user?.user_id || ""}
                 </p>
               </div>
-              <p className="text-sm text-gray-600 dark:text-gray-400 text-center mb-2">
-                Your Client ID:
-              </p>
-              <p className="text-xs text-gray-600 dark:text-gray-400 text-center font-mono break-all bg-gray-100 dark:bg-[#2A2A2F] p-3 rounded-lg">
-                {user?.user_id || ""}
-              </p>
-            </div>
-          ) : qrCodeDataUrl ? (
-            <div className="flex flex-col items-center">
-              <div className="bg-white dark:bg-[#1A1A1F] p-4 rounded-lg border border-[#E2E8F0] dark:border-[#35353e] mb-4">
-                <img
-                  src={qrCodeDataUrl}
-                  alt="Client ID QR Code"
-                  className="w-48 h-48 sm:w-64 sm:h-64"
-                />
+            ) : qrCodeDataUrl ? (
+              <div className="flex flex-col items-center">
+                <div className="bg-white p-4 rounded-lg border border-gray-200 dark:border-[#35353e] mb-4">
+                  <img
+                    src={qrCodeDataUrl}
+                    alt="Client ID QR Code"
+                    className="w-48 h-48 sm:w-56 sm:h-56"
+                  />
+                </div>
+                <p className="text-sm text-gray-600 dark:text-gray-400 text-center mb-2">
+                  Scan this QR code to see your Client ID
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 text-center font-mono break-all bg-gray-100 dark:bg-[#2A2A2F] p-2 rounded-lg w-full">
+                  {user?.user_id || ""}
+                </p>
               </div>
-              <p className="text-sm text-gray-600 dark:text-gray-400 text-center mb-2">
-                Scan this QR code to see your Client ID
-              </p>
-              <p className="text-xs text-gray-600 dark:text-gray-400 text-center font-mono break-all">
-                {user?.user_id || ""}
-              </p>
-            </div>
-          ) : (
-            <div className="flex items-center justify-center py-8">
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Generating QR code...
-              </p>
-            </div>
-          )}
+            ) : (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1D8751]"></div>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </>

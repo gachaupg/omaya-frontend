@@ -4262,7 +4262,7 @@ export default function WithdrawalForm({
                                   onClick={async () => {
                                     try {
                                       await dispatch(fetchUserPaymentDetails(true)).unwrap();
-                                      showToast.success("Payment details refreshed!");
+                                      // Toast removed - silent refresh
                                     } catch (error) {
                                       showToast.error("Failed to refresh payment details");
                                     }

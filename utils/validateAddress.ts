@@ -103,6 +103,20 @@ export async function validateAddress(
     };
   }
 
+  // Basic format validation - only reject obviously invalid addresses
+  const trimmedAddress = address.trim();
+  
+  // Check for obviously invalid addresses - all same character
+  const isRepeatingChar = /^(.)\1+$/.test(trimmedAddress);
+  
+  if (isRepeatingChar) {
+    return {
+      isValid: false,
+      message: "Invalid address format - address appears to be invalid",
+      isActivated: null,
+    };
+  }
+
   try {
     // Get endpoint exactly as defined in config (matching pattern used in other API calls)
     const endpoint = API_CONFIG.SWAP.VALIDATE_ADDRESS;
