@@ -105,5 +105,9 @@
     "copied": "Copied!",
     "view": "View",
     "details": "Details"
+  },
+  "swapTransactions": {
+    "noTransactionsFound": "No Swap Transactions Found",
+    "noTransactionsDescription": "There are currently no swap transactions to display. Please check back later or try adjusting your filters."
   }
 }

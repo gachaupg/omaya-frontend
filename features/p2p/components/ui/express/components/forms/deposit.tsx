@@ -2411,7 +2411,7 @@ export default function DepositForm({
                       }
                     }}
                     placeholder="Paste your crypto address"
-                    className={`flex-1 bg-transparent border-none outline-none text-[#35353e] dark:text-[#788099] placeholder-[#788099] text-sm sm:text-base min-w-0 ${walletError
+                    className={`flex-1 bg-transparent border-none outline-none text-muted-foreground dark:text-muted placeholder-muted-foreground text-sm sm:text-base min-w-0 ${walletError
                       ? "border-red-500"
                       : walletAddress.trim() && !walletError
                         ? "border-green-500"

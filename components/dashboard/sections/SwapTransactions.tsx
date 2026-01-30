@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { useSwapHistory } from "@/features/swap/hooks/useSwapHistory";
 import { SwapTransaction } from "@/features/swap/types";
+import { useDashboardI18n } from "@/lib/useDashboardI18n";
 
 const getStatusColor = (status: string) => {
   switch (status.toLowerCase()) {
@@ -29,6 +30,7 @@ const getStatusColor = (status: string) => {
 const SwapTransactions = () => {
   const [page, setPage] = useState(1);
   const { data, loading, error } = useSwapHistory({ page, limit: 10 });
+  const { t } = useDashboardI18n();
 
   if (loading) {
     return (
@@ -84,11 +86,10 @@ const SwapTransactions = () => {
               </svg>
             </div>
             <h3 className="text-lg font-semibold dark:text-[#788099] mb-2">
-              No Swap Transactions Found
+              {t("swapTransactions.noTransactionsFound", "No Swap Transactions Found")}
             </h3>
             <p className="text-sm text-[#8C8CA1] text-center max-w-md">
-              There are currently no swap transactions to display. Please check
-              back later or try adjusting your filters.
+              {t("swapTransactions.noTransactionsDescription", "There are currently no swap transactions to display. Please check back later or try adjusting your filters.")}
             </p>
           </div>
         </div>
