@@ -7,6 +7,7 @@ interface CopyButtonProps {
   children?: React.ReactNode;
   showIcon?: boolean;
   showInlineMessage?: boolean;
+  showText?: boolean;
 }
 
 const CopyButton: React.FC<CopyButtonProps> = ({
@@ -15,6 +16,7 @@ const CopyButton: React.FC<CopyButtonProps> = ({
   children,
   showIcon = true,
   showInlineMessage = true,
+  showText = false,
 }) => {
   const [copied, setCopied] = useState(false);
 
@@ -23,12 +25,12 @@ const CopyButton: React.FC<CopyButtonProps> = ({
 
     navigator.clipboard.writeText(value);
     setCopied(true);
-    
+
     // Only show toast if inline message is disabled
     if (!showInlineMessage) {
       showToast.success("Copied to clipboard");
     }
-    
+
     // Reset copied state after 2 seconds
     setTimeout(() => {
       setCopied(false);
@@ -45,18 +47,23 @@ const CopyButton: React.FC<CopyButtonProps> = ({
         {children}
         {copied ? (
           <span className="text-sm font-medium text-[#1D8751]">Copied!</span>
-        ) : showIcon ? (
-          <svg
-            className="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            viewBox="0 0 24 24"
-          >
-            <rect x="9" y="9" width="13" height="13" rx="2" />
-            <rect x="3" y="3" width="13" height="13" rx="2" />
-          </svg>
-        ) : null}
+        ) : (
+          <>
+            {showText && <span className="text-sm font-medium">Copy</span>}
+            {showIcon && (
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+              >
+                <rect x="9" y="9" width="13" height="13" rx="2" />
+                <rect x="3" y="3" width="13" height="13" rx="2" />
+              </svg>
+            )}
+          </>
+        )}
       </button>
     </>
   );

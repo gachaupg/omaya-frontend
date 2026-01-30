@@ -532,8 +532,8 @@ export default function Navbar() {
   const profileModalRef = useRef<HTMLDivElement>(null);
 
   // Use KYC state for verification status, fallback to user.is_verified
-  const isVerified = kycState.isVerified !== undefined 
-    ? kycState.isVerified 
+  const isVerified = kycState.isVerified !== undefined
+    ? kycState.isVerified
     : (user?.is_verified ?? false);
 
   useEffect(() => {
@@ -560,16 +560,16 @@ export default function Navbar() {
       }
     }
   }, []);
-  
+
   // Listen for profile photo updates from other components
   useEffect(() => {
     if (typeof window === "undefined") return;
-    
+
     const handleProfilePhotoUpdate = (event: CustomEvent) => {
       const newPhotoUrl = event.detail?.photoUrl;
       if (newPhotoUrl) {
         // Add cache-busting parameter to force browser to reload the image
-        const photoWithTimestamp = newPhotoUrl.includes('?') 
+        const photoWithTimestamp = newPhotoUrl.includes('?')
           ? `${newPhotoUrl}&t=${Date.now()}`
           : `${newPhotoUrl}?t=${Date.now()}`;
         setCachedProfilePhoto(photoWithTimestamp);
@@ -580,9 +580,9 @@ export default function Navbar() {
         dispatch(getUserProfile());
       }
     };
-    
+
     window.addEventListener('profilePhotoUpdated', handleProfilePhotoUpdate as EventListener);
-    
+
     return () => {
       window.removeEventListener('profilePhotoUpdated', handleProfilePhotoUpdate as EventListener);
     };
@@ -817,16 +817,16 @@ export default function Navbar() {
     if (isProtectedRoute && isAuthenticated) {
       // Check if user is verified
       const isUnverified = isVerified === false;
-      
+
       if (isUnverified) {
         e.preventDefault();
         e.stopPropagation();
-        
+
         // Double-check with API
         try {
           const result = await dispatch(checkKYCStatus()).unwrap();
           const kycStatus = result as any;
-          
+
           if (kycStatus?.is_verified === false) {
             dispatch(openKYCModal());
             return;
@@ -1017,7 +1017,7 @@ export default function Navbar() {
                 )}
               </div>
 
-              <div className="relative flex-shrink-0" ref={profileModalRef}>
+              <div className={`relative flex-shrink-0 ${depositDropdownOpen ? 'invisible' : ''}`} ref={profileModalRef}>
                 <button
                   onClick={toggleProfileModal}
                   className="text-white focus:outline-none relative"
@@ -1224,7 +1224,7 @@ export default function Navbar() {
                       {/* Menu Items */}
                       <div className="space-y-2">
                         <Link
-                          href="/dashboard/account"
+                          href="/dashboard/account?tab=profile"
                           className="flex items-center w-full px-3 py-2 dark:text-gray-300 text-gray-700 dark:hover:text-white hover:text-gray-900 dark:hover:bg-[#35353E] hover:bg-gray-100 rounded-md transition-colors duration-200"
                           onClick={() => setProfileModalOpen(false)}
                         >
@@ -1244,6 +1244,7 @@ export default function Navbar() {
                   </div>
                 )}
               </div>
+
             </div>
           ) : (
             <>
@@ -1256,7 +1257,7 @@ export default function Navbar() {
             </>
           )}
 
-          <div className="flex items-center space-x-1 sm:space-x-1.5 md:space-x-1.5 lg:space-x-2 xl:space-x-3 2xl:space-x-4">
+          <div className={`flex items-center space-x-1 sm:space-x-1.5 md:space-x-1.5 lg:space-x-2 xl:space-x-3 2xl:space-x-4 ${depositDropdownOpen ? 'invisible' : ''}`}>
             <LanguageSelector />
             <ThemeSelector isTransparentNavbar={isTransparentNavbar} />
           </div>
@@ -1264,39 +1265,36 @@ export default function Navbar() {
 
         {/* Mobile Menu Button */}
         <button
-          className={`md:hidden p-1.5 sm:p-2 flex items-center justify-center rounded-md focus:outline-none transition-colors ${
-            theme === "light"
-              ? "text-black" // Always black in light mode
-              : isTransparentNavbar
+          className={`md:hidden p-1.5 sm:p-2 flex items-center justify-center rounded-md focus:outline-none transition-colors ${theme === "light"
+            ? "text-black" // Always black in light mode
+            : isTransparentNavbar
               ? "text-white" // White when navbar is transparent in dark mode
               : "text-white" // White in dark mode
-          }`}
+            }`}
           onClick={toggleMobileMenu}
           aria-label="Toggle menu"
         >
           {mobileMenuOpen ? (
-            <X 
-              size={20} 
-              className={`sm:w-6 sm:h-6 ${
-                theme === "light"
-                  ? "text-black"
-                  : isTransparentNavbar
+            <X
+              size={20}
+              className={`sm:w-6 sm:h-6 ${theme === "light"
+                ? "text-black"
+                : isTransparentNavbar
                   ? "text-white"
                   : "text-white"
-              }`} 
-              strokeWidth={2.5} 
+                }`}
+              strokeWidth={2.5}
             />
           ) : (
-            <Menu 
-              size={20} 
-              className={`sm:w-6 sm:h-6 ${
-                theme === "light"
-                  ? "text-black"
-                  : isTransparentNavbar
+            <Menu
+              size={20}
+              className={`sm:w-6 sm:h-6 ${theme === "light"
+                ? "text-black"
+                : isTransparentNavbar
                   ? "text-white"
                   : "text-white"
-              }`} 
-              strokeWidth={2.5} 
+                }`}
+              strokeWidth={2.5}
             />
           )}
         </button>
@@ -1460,7 +1458,7 @@ export default function Navbar() {
                     </svg>
                   </span> */}
                   </div>
-                  <div className="flex flex-col items-center space-y-3 mt-4">
+                  <div className={`flex flex-col items-center space-y-3 mt-4 ${mobileDepositDropdownOpen ? 'invisible' : ''}`}>
                     <div className="flex items-center space-x-3 justify-between w-full">
                       <div>
                         <Link
@@ -1574,6 +1572,7 @@ export default function Navbar() {
                       </div>
                     </div>
                   </div>
+
 
                   {/* Mobile Profile Modal */}
                   {profileModalOpen && (
@@ -1748,7 +1747,7 @@ export default function Navbar() {
               )}
             </div>
 
-            <div className="flex items-center justify-center gap-6 pt-4 border-t dark:border-gray-700 border-gray-200">
+            <div className={`flex items-center justify-center gap-6 pt-4 border-t dark:border-gray-700 border-gray-200 ${mobileDepositDropdownOpen ? 'invisible' : ''}`}>
               <LanguageSelector />
               <ThemeSelector isTransparentNavbar={isTransparentNavbar} />
             </div>

@@ -190,16 +190,16 @@ const UserCard = () => {
 
   return (
     <Card
-      borderColor="border-[#35353E]"
+      borderColor="border-border dark:border-accent"
       width="w-full"
       bgColor="bg-transparent"
       borderRadius="rounded-xl sm:rounded-xl lg:rounded-[20px]"
-      className="p-3 sm:p-3 lg:p-2 dark:bg-[#18181D] bg-white overflow-hidden border border-[#35353E]"
+      className="p-3 sm:p-3 lg:p-2 dark:bg-[#18181D] bg-white overflow-hidden border"
     >
       {showHelpSupport ? (
         <div className="w-full mt-4">
           <button
-            className="mb-2 sm:mb-4 px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 bg-gray-200 dark:bg-[#35353E] dark:text-white rounded"
+            className="mb-2 sm:mb-4 px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 bg-gray-200 dark:bg-accent dark:text-white rounded"
             onClick={() => setShowHelpSupport(false)}
           >
             Back
@@ -212,7 +212,7 @@ const UserCard = () => {
           <div className="flex items-center gap-3 w-full md:w-auto">
             {/* User Avatar with Edit Button */}
             <div className="relative">
-              <div className="h-14 w-14 rounded-full overflow-hidden relative bg-gray-200 dark:bg-[#35353E] flex items-center justify-center">
+              <div className="h-14 w-14 rounded-full overflow-hidden relative bg-gray-200 dark:bg-accent flex items-center justify-center">
                 {displayImage ? (
                   <Image
                     src={displayImage}
@@ -231,7 +231,7 @@ const UserCard = () => {
                     }}
                   />
                 ) : (
-                  <div className="w-full h-full dark:bg-[#35353E] bg-[#E5E7EB] flex items-center justify-center">
+                  <div className="w-full h-full dark:bg-accent bg-[#E5E7EB] flex items-center justify-center">
                     <svg
                       width="24"
                       height="24"

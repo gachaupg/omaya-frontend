@@ -98,11 +98,11 @@ const P2PWithdrawalDepositTransactions = () => {
     return (
       <NoDataFound
         title={t(
-          "transactions.noTransactions",
+          "transactions.noWithdrawalDepositFound",
           "No P2P Withdrawal/Deposit Transactions Found"
         )}
         message={t(
-          "transactions.noTransactions",
+          "transactions.noWithdrawalDepositMessage",
           "There are currently no P2P withdrawal/deposit transactions to display. Please check back later or try adjusting your filters."
         )}
       />

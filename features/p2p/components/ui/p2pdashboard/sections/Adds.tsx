@@ -1013,8 +1013,8 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
             <div className="flex gap-6 mt-6">
               <Button
                 borderRadius={24}
-                className="flex-1 rounded-[24px] border-1 border-[#1D8751]
-              dark:text-white text-black bg-transparent text-base py-2 hover:bg-[#23232B] transition"
+                className="flex-1 rounded-[24px] border border-[#1D8751]
+              dark:text-white text-black bg-transparent text-base py-2 dark:hover:bg-[#23232B] hover:bg-[#1D8751]/10 transition"
                 variant="outline"
                 onClick={() => {
                   router.push("/dashboard/p2p/");
@@ -1024,7 +1024,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
               </Button>
               <Button
                 borderRadius={24}
-                className={`flex-1 rounded-[24px] border-1 text-white text-base py-2 ${type === "buy"
+                className={`flex-1 rounded-[24px] border text-white text-base py-2 ${type === "buy"
                     ? "bg-[#1D8751] border-[#1D8751]"
                     : "bg-[#E23D3A] border-[#E23D3A]"
                   } ${postOrderLoading ||

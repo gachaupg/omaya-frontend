@@ -7,9 +7,10 @@ import {
   setCurrentPage,
 } from "@/features/p2p/slices/userTradesSlice";
 import { TransactionType } from "@/features/p2p/types";
-// TODO: If not installed, run: npm install date-fns
+// TODO: If not instaplled, run: npm install date-fns
 import { formatDistanceToNow } from "date-fns";
 import { NoDataFound } from "../ui/Transactions";
+import { useDashboardI18n } from "@/lib/useDashboardI18n";
 
 const COIN_ICONS: Record<string, string> = {
   USDT: "https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png",
@@ -23,6 +24,7 @@ const BANK_ICONS: Record<string, string> = {
 };
 
 const P2PTransactions = () => {
+  const { t } = useDashboardI18n();
   const dispatch = useDispatch<AppDispatch>();
   const { trades, loading, error, currentPage } = useSelector(
     (state: RootState) => state.userTrades
@@ -84,8 +86,11 @@ const P2PTransactions = () => {
   if (!paginatedData.length) {
     return (
       <NoDataFound
-        title="No P2P Transactions Found"
-        message="There are currently no P2P transactions to display. Please check back later or try adjusting your filters."
+        title={t("transactions.noTransactionsFound", "No P2P Transactions Found")}
+        message={t(
+          "transactions.noTransactionsMessage",
+          "There are currently no P2P transactions to display. Please check back later or try adjusting your filters."
+        )}
       />
     );
   }
