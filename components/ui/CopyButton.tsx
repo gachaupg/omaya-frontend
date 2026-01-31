@@ -44,7 +44,6 @@ const CopyButton: React.FC<CopyButtonProps> = ({
         className={`flex items-center gap-2 relative ${className}`}
         type="button"
       >
-        {children}
         {copied ? (
           <span className="text-sm font-medium text-[#1D8751]">Copied!</span>
         ) : (

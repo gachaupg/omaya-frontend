@@ -682,12 +682,26 @@ const ChatBox: React.FC<{
         {uploaded_images.length > 0 && (
           <div className="flex gap-2 mt-2 flex-wrap">
             {uploaded_images.map((file, idx) => (
-              <img
-                key={idx}
-                src={URL.createObjectURL(file)}
-                alt={`preview-${idx}`}
-                className="w-12 h-12 object-cover rounded border border-[#35353E]"
-              />
+              <div key={idx} className="relative w-12 h-12">
+                <img
+                  src={URL.createObjectURL(file)}
+                  alt={`preview-${idx}`}
+                  className="w-full h-full object-cover rounded border border-[#35353E]"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const newImages = uploaded_images.filter((_, i) => i !== idx);
+                    dispatch(setUploadedImages(newImages));
+                  }}
+                  className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
+                  title="Remove image"
+                >
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path d="M9 3L3 9M3 3l6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                </button>
+              </div>
             ))}
           </div>
         )}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useRouter } from "next/navigation";
 import { AppDispatch } from "../../../../store";
 import {
   fetchDeviceSessions,
@@ -84,6 +85,7 @@ const use2FAState = () => {
 
 const PrivacySecurity = () => {
   const dispatch = useDispatch<AppDispatch>();
+  const router = useRouter();
   const {
     security,
     deviceSessions,
@@ -412,6 +414,11 @@ const PrivacySecurity = () => {
       showToast.success("Device session removed successfully");
       // Refresh the sessions list after deletion
       dispatch(fetchDeviceSessions());
+      
+      // If this was the current session, redirect back to previous page
+      if (sessionToDelete.is_current) {
+        router.back();
+      }
     } catch (error: any) {
       console.error("Failed to remove device session:", error);
       showToast.error(error?.message || "Failed to remove device session");
@@ -1047,7 +1054,7 @@ const PrivacySecurity = () => {
                         setIsCreatingSession(false);
                       }
                     }}
-                    className="mt-4 px-4 py-2 bg-[#1D8751] text-white rounded-lg text-sm hover:bg-[#1a7a47] transition-colors disabled:opacity-50"
+                    className="mt-4 px-4 py-2 bg-[#1D8751] text-white rounded-lg text-sm hover:bg-[#1a7a47] transition-colors disabled:opacity-50 relative z-50 cursor-pointer"
                     disabled={isCreatingSession}
                   >
                     {isCreatingSession ? "Creating Session..." : "Create Session"}

@@ -724,8 +724,8 @@ export default function Navbar() {
         ? "dark:bg-[var(--bg-color)] bg-white backdrop-blur-sm"
         : "bg-transparent";
     } else if (isAboutPage) {
-      // About page: always show solid white/dark background for visibility
-      return "dark:bg-[var(--bg-color)] bg-white backdrop-blur-sm shadow-sm border-b border-gray-100 dark:border-transparent";
+      // About page: always show solid white/dark background
+      return "dark:bg-[var(--bg-color)] bg-white shadow-sm border-b border-gray-100 dark:border-transparent";
     } else if (isDashboardPage) {
       // Dashboard pages: always have solid background for visibility
       return scrolled

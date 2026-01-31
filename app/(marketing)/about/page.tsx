@@ -226,7 +226,8 @@ const AboutPage = () => {
   return (
     <div className="min-h-screen bg-white dark:bg-(--bg-color)">
       {/* Hero Section */}
-      <section className="relative pt-24 md:pt-32 pb-20 px-4 overflow-hidden bg-linear-to-br from-[#1D8751] via-[#16864a] to-[#0e5c33] dark:from-[#0A0A0F] dark:via-[#0A0A0F]/5 dark:to-[#0A0A0F]">
+
+      <section className="relative pt-24 md:pt-32 pb-20 px-4 overflow-hidden bg-gradient-to-br from-[#1D8751] via-[#16864a] to-[#0e5c33] dark:from-[#0A0A0F] dark:via-[#0A0A0F]/5 dark:to-[#0A0A0F]">
         <FloatingParticles count={15} size={4} />
 
         <div className="max-w-7xl mx-auto relative z-10">
@@ -1074,64 +1075,64 @@ const AboutPage = () => {
               </p>
 
               {/* Security Features Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-6 sm:mb-8">
-                <div className="flex items-start gap-3 p-4 rounded-2xl border border-gray-200 dark:border-[#2A2A35] bg-white dark:bg-[#14141A]">
-                  <div className="w-10 h-10 rounded-xl bg-[#1D8751]/10 border border-[#1D8751]/30 flex items-center justify-center flex-shrink-0">
+              <div className="grid grid-cols-2 gap-2 sm:gap-4 mb-6 sm:mb-8">
+                <div className="flex flex-col items-center text-center p-3 sm:p-4 rounded-2xl border border-gray-200 dark:border-[#2A2A35] bg-white dark:bg-[#14141A]">
+                  <div className="w-10 h-10 rounded-xl bg-[#1D8751]/10 border border-[#1D8751]/30 flex items-center justify-center flex-shrink-0 mb-2">
                     <Lock className="w-5 h-5 text-[#1D8751]" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-0.5">Cold Storage</h3>
-                    <p className="text-xs text-gray-600 dark:text-gray-500 leading-relaxed">95% of assets stored offline in bank-grade vaults.</p>
+                    <h3 className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white mb-0.5">Cold Storage</h3>
+                    <p className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-500 leading-relaxed">95% of assets stored offline in bank-grade vaults.</p>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3 p-4 rounded-2xl border border-gray-200 dark:border-[#2A2A35] bg-white dark:bg-[#14141A]">
-                  <div className="w-10 h-10 rounded-xl bg-[#1D8751]/10 border border-[#1D8751]/30 flex items-center justify-center flex-shrink-0">
+                <div className="flex flex-col items-center text-center p-3 sm:p-4 rounded-2xl border border-gray-200 dark:border-[#2A2A35] bg-white dark:bg-[#14141A]">
+                  <div className="w-10 h-10 rounded-xl bg-[#1D8751]/10 border border-[#1D8751]/30 flex items-center justify-center flex-shrink-0 mb-2">
                     <ShieldCheck className="w-5 h-5 text-[#1D8751]" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-0.5">Multi-Signature</h3>
-                    <p className="text-xs text-gray-600 dark:text-gray-500 leading-relaxed">Multiple approvals required for all transactions.</p>
+                    <h3 className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white mb-0.5">Multi-Signature</h3>
+                    <p className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-500 leading-relaxed">Multiple approvals required for all transactions.</p>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3 p-4 rounded-2xl border border-gray-200 dark:border-[#2A2A35] bg-white dark:bg-[#14141A]">
-                  <div className="w-10 h-10 rounded-xl bg-[#1D8751]/10 border border-[#1D8751]/30 flex items-center justify-center flex-shrink-0">
+                <div className="flex flex-col items-center text-center p-3 sm:p-4 rounded-2xl border border-gray-200 dark:border-[#2A2A35] bg-white dark:bg-[#14141A]">
+                  <div className="w-10 h-10 rounded-xl bg-[#1D8751]/10 border border-[#1D8751]/30 flex items-center justify-center flex-shrink-0 mb-2">
                     <Fingerprint className="w-5 h-5 text-[#1D8751]" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-0.5">Biometric Auth</h3>
-                    <p className="text-xs text-gray-600 dark:text-gray-500 leading-relaxed">Face ID and fingerprint recognition.</p>
+                    <h3 className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white mb-0.5">Biometric Auth</h3>
+                    <p className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-500 leading-relaxed">Face ID and fingerprint recognition.</p>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3 p-4 rounded-2xl border border-gray-200 dark:border-[#2A2A35] bg-white dark:bg-[#14141A]">
-                  <div className="w-10 h-10 rounded-xl bg-[#1D8751]/10 border border-[#1D8751]/30 flex items-center justify-center flex-shrink-0">
+                <div className="flex flex-col items-center text-center p-3 sm:p-4 rounded-2xl border border-gray-200 dark:border-[#2A2A35] bg-white dark:bg-[#14141A]">
+                  <div className="w-10 h-10 rounded-xl bg-[#1D8751]/10 border border-[#1D8751]/30 flex items-center justify-center flex-shrink-0 mb-2">
                     <Eye className="w-5 h-5 text-[#1D8751]" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-0.5">24/7 Monitoring</h3>
-                    <p className="text-xs text-gray-600 dark:text-gray-500 leading-relaxed">Real-time threat detection and prevention.</p>
+                    <h3 className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white mb-0.5">24/7 Monitoring</h3>
+                    <p className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-500 leading-relaxed">Real-time threat detection and prevention.</p>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3 p-4 rounded-2xl border border-gray-200 dark:border-[#2A2A35] bg-white dark:bg-[#14141A]">
-                  <div className="w-10 h-10 rounded-xl bg-[#1D8751]/10 border border-[#1D8751]/30 flex items-center justify-center flex-shrink-0">
+                <div className="flex flex-col items-center text-center p-3 sm:p-4 rounded-2xl border border-gray-200 dark:border-[#2A2A35] bg-white dark:bg-[#14141A]">
+                  <div className="w-10 h-10 rounded-xl bg-[#1D8751]/10 border border-[#1D8751]/30 flex items-center justify-center flex-shrink-0 mb-2">
                     <Key className="w-5 h-5 text-[#1D8751]" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-0.5">2FA Protection</h3>
-                    <p className="text-xs text-gray-600 dark:text-gray-500 leading-relaxed">Two-factor authentication on all accounts.</p>
+                    <h3 className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white mb-0.5">2FA Protection</h3>
+                    <p className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-500 leading-relaxed">Two-factor authentication on all accounts.</p>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3 p-4 rounded-2xl border border-gray-200 dark:border-[#2A2A35] bg-white dark:bg-[#14141A]">
-                  <div className="w-10 h-10 rounded-xl bg-[#1D8751]/10 border border-[#1D8751]/30 flex items-center justify-center flex-shrink-0">
+                <div className="flex flex-col items-center text-center p-3 sm:p-4 rounded-2xl border border-gray-200 dark:border-[#2A2A35] bg-white dark:bg-[#14141A]">
+                  <div className="w-10 h-10 rounded-xl bg-[#1D8751]/10 border border-[#1D8751]/30 flex items-center justify-center flex-shrink-0 mb-2">
                     <FileLock className="w-5 h-5 text-[#1D8751]" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-0.5">Data Encryption</h3>
-                    <p className="text-xs text-gray-600 dark:text-gray-500 leading-relaxed">Military-grade SSL encryption.</p>
+                    <h3 className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white mb-0.5">Data Encryption</h3>
+                    <p className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-500 leading-relaxed">Military-grade SSL encryption.</p>
                   </div>
                 </div>
               </div>
