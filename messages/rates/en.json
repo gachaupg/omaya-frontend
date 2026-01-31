@@ -33,6 +33,7 @@
   "rates.feeInfo": "Transactions are subject to commission, above is the information on the commission rates",
   "rates.processing": "Processing...",
   "rates.exchangeNow": "Exchange Now",
+  "rates.verifyToContinue": "Verify account to continue",
   "rates.alert.estimate": "This is only estimated price and its based on current Market Price. We will fix the price when we receive the funds.",
   "rates.searchPlaceholder": "Search...",
   "rates.bankAccountAddress": "Bank Account Address",

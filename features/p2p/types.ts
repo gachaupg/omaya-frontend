@@ -274,7 +274,9 @@ export interface PaymentDetail {
   payment_method: string;
   account_name: string;
   account_number: string;
-  provider_logo: string;
+  logo?: string;
+  logo_url?: string;
+  provider_logo?: string;
 }
 
 export interface P2POrder {
