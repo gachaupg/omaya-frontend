@@ -636,91 +636,91 @@ const AboutPage = () => {
           </div>
 
           {/* Bento Grid Timeline */}
-        <div className="relative">
-          {/* Center vertical line */}
-          <div className="absolute left-1/2 top-0 bottom-0 w-[2px] bg-gray-300 dark:bg-[#25252F] transform -translate-x-1/2 hidden md:block" />
+          <div className="relative">
+            {/* Center vertical line */}
+            <div className="absolute left-1/2 top-0 bottom-0 w-[2px] bg-gray-300 dark:bg-[#25252F] transform -translate-x-1/2 hidden md:block" />
 
-          {/* Timeline Rows - Use journeySteps.map for all steps */}
-          {journeySteps.map((step, index) => (
-            <div key={step.year} className="grid md:grid-cols-2 gap-6 mb-6 relative">
-              {/* Center dot */}
-              <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-[#1D8751] z-10 hidden md:block" />
-              {step.align === "right" ? (
-                <>
-                  {/* Left - Text Card (Aligned Right) */}
-                  <div className="group bg-white dark:bg-linear-to-b dark:from-[#18181D] dark:to-[#0F0F13] border border-border dark:border-accent rounded-2xl p-7 flex flex-col min-h-[200px] max-h-80 items-end text-right transition-all duration-300">
-                    <div className="grid grid-cols-[1fr_auto] gap-x-3 mb-3 items-center justify-items-end">
-                      <span className="text-4xl md:text-5xl font-bold bg-linear-to-b from-[#1D8751] to-[#309A64] group-hover:from-[#00C950] group-hover:to-[#00BC7D] bg-clip-text text-transparent transition-all duration-300 leading-none">
-                        {step.year}
-                      </span>
-                      <div className="row-span-2 w-15 h-15 rounded-2xl bg-linear-to-b from-[#1D8751] to-[#309A64] group-hover:from-[#00C950] group-hover:to-[#00BC7D] flex items-center justify-center transition-all duration-300 shadow-md">
-                        <step.icon className="w-7 h-7 text-white" />
-                      </div>
-                      <span className="text-muted-foreground text-sm leading-none">{step.quarter}</span>
-                    </div>
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">{step.title}</h3>
-                    <p className="text-muted-foreground text-sm leading-relaxed mb-6 flex-1 max-w-md">
-                      {step.description}
-                    </p>
-                    <div className="flex flex-wrap gap-2 justify-end">
-                      {step.pills.map((pill) => (
-                        <span key={pill} className="px-4 py-2 rounded-full bg-linear-to-b from-[#1D8751] to-[#309A64] group-hover:from-[#00C950] group-hover:to-[#00BC7D] text-white text-xs font-medium transition-all duration-300">
-                          {pill}
+            {/* Timeline Rows - Use journeySteps.map for all steps */}
+            {journeySteps.map((step, index) => (
+              <div key={step.year} className="grid md:grid-cols-2 gap-6 mb-6 relative">
+                {/* Center dot */}
+                <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-[#1D8751] z-10 hidden md:block" />
+                {step.align === "right" ? (
+                  <>
+                    {/* Left - Text Card (Aligned Right) */}
+                    <div className="group bg-white dark:bg-linear-to-b dark:from-[#18181D] dark:to-[#0F0F13] border border-border dark:border-accent rounded-2xl p-7 flex flex-col min-h-[200px] max-h-80 items-end text-right transition-all duration-300">
+                      <div className="grid grid-cols-[1fr_auto] gap-x-3 mb-3 items-center justify-items-end">
+                        <span className="text-4xl md:text-5xl font-bold bg-linear-to-b from-[#1D8751] to-[#309A64] group-hover:from-[#00C950] group-hover:to-[#00BC7D] bg-clip-text text-transparent transition-all duration-300 leading-none">
+                          {step.year}
                         </span>
-                      ))}
-                    </div>
-                  </div>
-                  {/* Right - Image Card */}
-                  <div className="relative rounded-3xl overflow-hidden min-h-[320px]">
-                    <Image
-                      src={step.image}
-                      alt={step.title}
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 768px) 100vw, 50vw"
-                    />
-                  </div>
-                </>
-              ) : (
-                <>
-                  {/* Left - Image Card */}
-                  <div className="relative rounded-3xl overflow-hidden min-h-[320px] order-2 md:order-1">
-                    <Image
-                      src={step.image}
-                      alt={step.title}
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 768px) 100vw, 50vw"
-                    />
-                  </div>
-                  {/* Right - Text Card */}
-                  <div className="group bg-white dark:bg-linear-to-b dark:from-[#18181D] dark:to-[#0F0F13] border border-border dark:border-accent rounded-2xl p-7 flex flex-col min-h-[200px] max-h-80 items-start text-left transition-all duration-300 order-1 md:order-2">
-                    <div className="grid grid-cols-[auto_1fr] gap-x-3 mb-3 items-center justify-items-start">
-                      <div className="row-span-2 w-15 h-15 rounded-2xl bg-linear-to-b from-[#1D8751] to-[#309A64] group-hover:from-[#00C950] group-hover:to-[#00BC7D] flex items-center justify-center transition-all duration-300 shadow-md">
-                        <step.icon className="w-7 h-7 text-white" />
+                        <div className="row-span-2 w-15 h-15 rounded-2xl bg-linear-to-b from-[#1D8751] to-[#309A64] group-hover:from-[#00C950] group-hover:to-[#00BC7D] flex items-center justify-center transition-all duration-300 shadow-md">
+                          <step.icon className="w-7 h-7 text-white" />
+                        </div>
+                        <span className="text-muted-foreground text-sm leading-none">{step.quarter}</span>
                       </div>
-                      <span className="text-4xl md:text-5xl font-bold bg-linear-to-b from-[#1D8751] to-[#309A64] group-hover:from-[#00C950] group-hover:to-[#00BC7D] bg-clip-text text-transparent transition-all duration-300 leading-none">
-                        {step.year}
-                      </span>
-                      <span className="text-muted-foreground text-sm leading-none">{step.quarter}</span>
+                      <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">{step.title}</h3>
+                      <p className="text-muted-foreground text-sm leading-relaxed mb-6 flex-1 max-w-md">
+                        {step.description}
+                      </p>
+                      <div className="flex flex-wrap gap-2 justify-end">
+                        {step.pills.map((pill) => (
+                          <span key={pill} className="px-4 py-2 rounded-full bg-linear-to-b from-[#1D8751] to-[#309A64] group-hover:from-[#00C950] group-hover:to-[#00BC7D] text-white text-xs font-medium transition-all duration-300">
+                            {pill}
+                          </span>
+                        ))}
+                      </div>
                     </div>
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">{step.title}</h3>
-                    <p className="text-muted-foreground text-sm leading-relaxed mb-6 flex-1 max-w-md">
-                      {step.description}
-                    </p>
-                    <div className="flex flex-wrap gap-2 justify-start">
-                      {step.pills.map((pill) => (
-                        <span key={pill} className="px-4 py-2 rounded-full bg-linear-to-b from-[#1D8751] to-[#309A64] group-hover:from-[#00C950] group-hover:to-[#00BC7D] text-white text-xs font-medium transition-all duration-300">
-                          {pill}
+                    {/* Right - Image Card */}
+                    <div className="relative rounded-3xl overflow-hidden min-h-[320px]">
+                      <Image
+                        src={step.image}
+                        alt={step.title}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 100vw, 50vw"
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {/* Left - Image Card */}
+                    <div className="relative rounded-3xl overflow-hidden min-h-[320px] order-2 md:order-1">
+                      <Image
+                        src={step.image}
+                        alt={step.title}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 100vw, 50vw"
+                      />
+                    </div>
+                    {/* Right - Text Card */}
+                    <div className="group bg-white dark:bg-linear-to-b dark:from-[#18181D] dark:to-[#0F0F13] border border-border dark:border-accent rounded-2xl p-7 flex flex-col min-h-[200px] max-h-80 items-start text-left transition-all duration-300 order-1 md:order-2">
+                      <div className="grid grid-cols-[auto_1fr] gap-x-3 mb-3 items-center justify-items-start">
+                        <div className="row-span-2 w-15 h-15 rounded-2xl bg-linear-to-b from-[#1D8751] to-[#309A64] group-hover:from-[#00C950] group-hover:to-[#00BC7D] flex items-center justify-center transition-all duration-300 shadow-md">
+                          <step.icon className="w-7 h-7 text-white" />
+                        </div>
+                        <span className="text-4xl md:text-5xl font-bold bg-linear-to-b from-[#1D8751] to-[#309A64] group-hover:from-[#00C950] group-hover:to-[#00BC7D] bg-clip-text text-transparent transition-all duration-300 leading-none">
+                          {step.year}
                         </span>
-                      ))}
+                        <span className="text-muted-foreground text-sm leading-none">{step.quarter}</span>
+                      </div>
+                      <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">{step.title}</h3>
+                      <p className="text-muted-foreground text-sm leading-relaxed mb-6 flex-1 max-w-md">
+                        {step.description}
+                      </p>
+                      <div className="flex flex-wrap gap-2 justify-start">
+                        {step.pills.map((pill) => (
+                          <span key={pill} className="px-4 py-2 rounded-full bg-linear-to-b from-[#1D8751] to-[#309A64] group-hover:from-[#00C950] group-hover:to-[#00BC7D] text-white text-xs font-medium transition-all duration-300">
+                            {pill}
+                          </span>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                </>
-              )}
-            </div>
-          ))}
-        </div>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       </section>
       {/* Achievements Section - Figma Match */}
@@ -861,26 +861,36 @@ const AboutPage = () => {
                 </div>
 
                 {/* Contact Rows */}
-                <div className="space-y-4 pt-4">
-                  {/* Email Card */}
-                  <div className="p-6 rounded-2xl bg-gray-50/50 dark:bg-(--bg-color) border border-border dark:border-accent flex items-center gap-5 transition-colors group/item shrink-0">
-                    <div className="w-12 h-12 rounded-2xl bg-[#1D8751]/10 flex items-center justify-center shrink-0 group-hover/item:bg-[#1D8751]/20 transition-colors">
+                <div className="space-y-6">
+                  {/* Email */}
+                  <div className="flex items-center gap-5 group/item">
+                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0">
                       <Mail className="w-6 h-6 text-[#1D8751]" />
                     </div>
                     <div>
                       <div className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-1">Email</div>
-                      <div className="text-base md:text-lg text-[#1D8751] font-bold">info@omaya.io</div>
+                      <a
+                        href="mailto:info@omaya.io"
+                        className="text-base md:text-lg text-[#1D8751] font-bold hover:underline transition-all"
+                      >
+                        info@omaya.io
+                      </a>
                     </div>
                   </div>
 
-                  {/* Phone Card */}
-                  <div className="p-6 rounded-2xl bg-gray-50/50 dark:bg-(--bg-color) border border-border dark:border-accent flex items-center gap-5 transition-colors group/item shrink-0">
-                    <div className="w-12 h-12 rounded-2xl bg-[#1D8751]/10 flex items-center justify-center shrink-0 group-hover/item:bg-[#1D8751]/20 transition-colors">
+                  {/* Phone */}
+                  <div className="flex items-center gap-5 group/item">
+                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0">
                       <Phone className="w-6 h-6 text-[#1D8751]" />
                     </div>
                     <div>
                       <div className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-1">Phone</div>
-                      <div className="text-base md:text-lg text-gray-900 dark:text-white font-bold">+252771000777</div>
+                      <a
+                        href="tel:+252771000777"
+                        className="text-base md:text-lg text-gray-900 dark:text-white font-bold hover:text-[#1D8751] transition-colors"
+                      >
+                        +252771000777
+                      </a>
                     </div>
                   </div>
                 </div>
