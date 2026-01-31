@@ -21,6 +21,7 @@ interface UserPaymentSelectorProps {
   userPaymentDetails: UserPaymentDetail[];
   adminMethods?: AdminPaymentMethod[];
   onSelect: (detail: UserPaymentDetail) => void;
+  onRemove?: (detail: UserPaymentDetail) => void;
   selectedDetails: UserPaymentDetail[];
 }
 

@@ -96,8 +96,9 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
     console.log('Will render MoneyX?', activeTab === 'moneyx');
   }, [activeTab]);
 
-  // Get authentication state
-  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
+  // Get authentication state and user (for verification check)
+  const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
+  const isVerified = user?.is_verified === true;
 
   // Network mapping function
   const getNetworkDisplayName = (network: string) => {
@@ -2378,13 +2379,15 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
 
       <button
         onClick={handleSubmit}
-        disabled={isSubmitting}
-        className={`w-full py-3 px-4 rounded-xl font-semibold text-white bg-[#1D8751] hover:bg-[#0f8f4d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""
+        disabled={isSubmitting || !isVerified}
+        className={`w-full py-3 px-4 rounded-xl font-semibold text-white bg-[#1D8751] hover:bg-[#0f8f4d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${(isSubmitting || !isVerified) ? "opacity-50 cursor-not-allowed" : ""
           }`}
       >
         {isSubmitting
           ? t("rates.processing", "Processing...")
-          : t("rates.exchangeNow", "Exchange Now")}
+          : !isVerified
+            ? t("rates.verifyToContinue", "Verify account to continue")
+            : t("rates.exchangeNow", "Exchange Now")}
       </button>
 
       {/* Expanded Pages - shown after first card submission */}
@@ -2608,9 +2611,9 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                   <button
                     onClick={handleProceedToExchanging}
                     disabled={
-                      isSubmitting || !walletAddress.trim() || !!walletError
+                      isSubmitting || !isVerified || !walletAddress.trim() || !!walletError
                     }
-                    className={`flex-1 font-semibold py-2 sm:py-2 px-3 sm:px-4 rounded-lg transition-colors flex items-center justify-center gap-1 sm:gap-2 text-sm sm:text-base ${isSubmitting || !walletAddress.trim() || !!walletError
+                    className={`flex-1 font-semibold py-2 sm:py-2 px-3 sm:px-4 rounded-lg transition-colors flex items-center justify-center gap-1 sm:gap-2 text-sm sm:text-base ${isSubmitting || !isVerified || !walletAddress.trim() || !!walletError
                       ? "bg-gray-500 cursor-not-allowed text-white"
                       : "bg-[#1D8751] hover:bg-[#166b3f] text-white"
                       }`}
@@ -2642,8 +2645,8 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
               <div className="mt-6 p-1 bg-[#1D8751] bg-opacity-10 border border-[#1D8751] rounded-xl">
                 <button
                   onClick={handleProceedToExchanging}
-                  disabled={isSubmitting}
-                  className={`w-full font-semibold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 ${isSubmitting
+                  disabled={isSubmitting || !isVerified}
+                  className={`w-full font-semibold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 ${(isSubmitting || !isVerified)
                     ? "bg-gray-500 cursor-not-allowed text-white"
                     : "bg-[#1D8751] hover:bg-[#166b3f] text-white"
                     }`}

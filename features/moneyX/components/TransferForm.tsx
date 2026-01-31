@@ -359,18 +359,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
       return;
     }
 
-    console.log("🔄 [Dashboard] Starting payment method restoration");
-    console.log("🔄 [Dashboard] Restoring payment methods - From:", restoreFrom, "To:", restoreTo);
-    console.log("🔄 [Dashboard] Available payment methods count:", methodsToCheck.length);
-    console.log("🔄 [Dashboard] Available payment methods (cleaned):", methodsToCheck.map((m: any) => getProviderName(m)));
-    console.log("🔄 [Dashboard] Available payment methods (raw):", methodsToCheck.map((m: any) => ({
-      provider_name: m.provider_name,
-      provider: m.provider,
-      method: m.method,
-      method_display: m.method_display,
-      id: m.id,
-      provider_id: m.provider_id
-    })));
+   
 
     paymentMethodRestoreAttempted.current = true;
 
@@ -479,10 +468,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
         setFromPaymentMethod(matchedName);
         setSelectedFromPaymentDetail(matchedFromMethod);
       } else {
-        console.warn("⚠️ [Dashboard] Could not match from payment method:", restoreFrom);
-        console.warn("Cleaned restore name:", getProviderName({ provider_name: restoreFrom }));
-        console.warn("Available methods (cleaned):", methodsToCheck.map((m: any) => getProviderName(m)));
-        console.warn("Available methods (raw provider_name):", methodsToCheck.map((m: any) => m.provider_name || "N/A"));
+       
         console.warn("Available methods (raw provider):", methodsToCheck.map((m: any) => m.provider || "N/A"));
       }
     }
@@ -902,7 +888,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
     !selectedToPaymentDetail;
 
   return (
-    <div className="flex flex-col dark:bg-(--bg-color) pl-0 sm:pl-4 pr-2 sm:pr-0 w-full sm:max-w-3xl mx-auto">
+    <div className="flex flex-col dark:bg-(--bg-color) pl-0 sm:pl-4 pr-2 sm:pr-0 w-full mx-auto">
       {/* Money X Page Title */}
       <h1 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-gray-900 dark:text-white">
         Money X
