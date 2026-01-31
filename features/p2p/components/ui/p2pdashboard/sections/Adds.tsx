@@ -116,13 +116,13 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
   useEffect(() => {
     if (selectedPaymentDetails.length > 0) {
       logger.debug('p2p', "Selected Payment Details:", selectedPaymentDetails);
-      
+
       // Auto-populate Terms field with payment method names
       const paymentMethodNames = selectedPaymentDetails
         .map((detail) => detail.payment_provider_name || detail.payment_method_name)
         .filter((name) => name) // Filter out empty/null names
         .join(", ");
-      
+
       if (paymentMethodNames) {
         setTerms(paymentMethodNames);
       }
@@ -364,8 +364,8 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
           >
             <button
               className={`px-2 py-1.5 text-sm transition rounded-l-[6px] ${type === "buy"
-                  ? "bg-[#1D8751] text-white"
-                  : "bg-transparent text-[#051015] dark:text-white"
+                ? "bg-[#1D8751] text-white"
+                : "bg-transparent text-[#051015] dark:text-white"
                 }`}
               onClick={() => setType("buy")}
               type="button"
@@ -374,8 +374,8 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
             </button>
             <button
               className={`px-4 py-1.5 text-sm transition rounded-r-[6px] ${type === "sell"
-                  ? "bg-[#E23D3A] text-white"
-                  : "bg-transparent text-[#051015] dark:text-white"
+                ? "bg-[#E23D3A] text-white"
+                : "bg-transparent text-[#051015] dark:text-white"
                 }`}
               onClick={() => setType("sell")}
               type="button"
@@ -419,8 +419,8 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                 </span>
                 <div
                   className={`flex w-full items-center justify-between bg-card border ${errors.commission
-                      ? "border-red-500"
-                      : "border-gray-200 dark:border-[#35353E]"
+                    ? "border-red-500"
+                    : "border-gray-200 dark:border-[#35353E]"
                     } rounded-[19px] min-h-[40px]`}
                 >
                   <div className="flex items-center flex-1">
@@ -602,8 +602,8 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                       }
                     }}
                     className={`w-full bg-transparent border-none text-gray-900 dark:text-white text-base focus:outline-none ${errors.amount
-                        ? "border-2 border-red-500 rounded-[19px]"
-                        : ""
+                      ? "border-2 border-red-500 rounded-[19px]"
+                      : ""
                       }`}
                     placeholder="0.000"
                   />
@@ -624,8 +624,8 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                   Order Min.
                 </label>
                 <div className={`flex items-center bg-card border ${errors.orderMin
-                    ? "border-red-500"
-                    : "border-gray-200 dark:border-[#35353E]"
+                  ? "border-red-500"
+                  : "border-gray-200 dark:border-[#35353E]"
                   } rounded-[19px] px-2 py-2 min-h-[40px]`}>
                   <span className="text-[#1D8751] text-lg mr-1">$</span>
                   <input
@@ -708,8 +708,8 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                   Order Max
                 </label>
                 <div className={`flex items-center bg-card border ${errors.orderMax
-                    ? "border-red-500"
-                    : "border-gray-200 dark:border-[#35353E]"
+                  ? "border-red-500"
+                  : "border-gray-200 dark:border-[#35353E]"
                   } rounded-[19px] px-2 py-2 min-h-[40px]`}>
                   <span className="text-[#1D8751] text-lg mr-1">$</span>
                   <input
@@ -809,7 +809,6 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                     userPaymentDetails={userPaymentDetails || []}
                     adminMethods={adminMethods || []}
                     onSelect={handleSelectPaymentDetail}
-                    onRemove={handleRemovePaymentDetail}
                     selectedDetails={selectedPaymentDetails}
                   />
 
@@ -912,8 +911,8 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                     </label>
                     <select
                       className={`bg-card border ${errors.timeLimit
-                          ? "border-red-500"
-                          : "border-gray-200 dark:border-[#35353E]"
+                        ? "border-red-500"
+                        : "border-border dark:border-accent"
                         } rounded-[16px] sm:rounded-[20px] px-3 sm:px-4 py-2.5 sm:py-3 text-gray-900 dark:text-white text-sm sm:text-base focus:outline-none w-full`}
                       value={timeLimit}
                       onChange={(e) => {
@@ -967,11 +966,11 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
               </label>
               <textarea
                 className={`w-full bg-card border ${errors.terms
-                    ? "border-red-500"
-                    : "border-gray-200 dark:border-[#35353E]"
+                  ? "border-red-500"
+                  : "border-gray-200 dark:border-[#35353E]"
                   } rounded-[24px] px-6 py-5 text-gray-600 dark:text-[#788099] min-h-[120px] mb-6 resize-none`}
-                placeholder={selectedPaymentDetails.length > 0 
-                  ? "Payment methods will be auto-filled here..." 
+                placeholder={selectedPaymentDetails.length > 0
+                  ? "Payment methods will be auto-filled here..."
                   : "Select payment methods above to auto-fill..."}
                 value={terms}
                 onChange={(e) => {
@@ -994,8 +993,8 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
               </label>
               <textarea
                 className={`w-full bg-card border ${errors.autoReply
-                    ? "border-red-500"
-                    : "border-gray-200 dark:border-[#35353E]"
+                  ? "border-red-500"
+                  : "border-gray-200 dark:border-[#35353E]"
                   } rounded-[24px] px-6 py-5 text-gray-600 dark:text-[#788099] min-h-[120px] mb-6 resize-none`}
                 placeholder="Enter auto-reply..."
                 value={autoReply}
@@ -1025,8 +1024,8 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
               <Button
                 borderRadius={24}
                 className={`flex-1 rounded-[24px] border text-white text-base py-2 ${type === "buy"
-                    ? "bg-[#1D8751] border-[#1D8751]"
-                    : "bg-[#E23D3A] border-[#E23D3A]"
+                  ? "bg-[#1D8751] border-[#1D8751]"
+                  : "bg-[#E23D3A] border-[#E23D3A]"
                   } ${postOrderLoading ||
                     Object.values(errors).some(error => error !== undefined) ||
                     !amount.trim() ||

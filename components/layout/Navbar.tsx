@@ -126,6 +126,7 @@ const AuthButton = ({
 const LanguageSelector = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const ctx = useLanguageOptional();
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const [selectedLanguage, setSelectedLanguage] = useState(
     ctx?.locale === "so" ? "Somali" : "English"
   );
@@ -147,8 +148,28 @@ const LanguageSelector = () => {
     } catch { }
   };
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setDropdownOpen(false);
+      }
+    };
+
+    if (dropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [dropdownOpen]);
+
   return (
-    <div className="relative">
+    <div className="relative" ref={dropdownRef}>
       <div
         className="flex items-center justify-center cursor-pointer min-h-[44px] sm:min-h-0 lg:min-h-0 px-1 sm:px-0 lg:px-0"
         onClick={toggleDropdown}

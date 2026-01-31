@@ -4400,7 +4400,7 @@ export default function DepositForm({
                       : ""
                     }`}
                 />
-                {/* Bookmark icon */}
+                {/* Bookmark icon
                 <span className="mx-2 text-[#788099] cursor-pointer">
                   <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
                     <path
@@ -4428,15 +4428,12 @@ export default function DepositForm({
                       strokeLinecap="round"
                     />
                     {/* Inner QR pattern */}
-                    <rect x="7" y="7" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.5" />
+                    {/* <rect x="7" y="7" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.5" />
                     <rect x="13" y="7" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.5" />
                     <rect x="7" y="13" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.5" />
                     <rect x="13" y="13" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.5" />
                   </svg>
-                </span>
-              </div>
-
-              {/* Paste button - same row as input */}
+                </span>  */}
               <button
                 onClick={async () => {
                   try {
@@ -4453,11 +4450,11 @@ export default function DepositForm({
                     showToast.error("Failed to paste from clipboard");
                   }
                 }}
-                className="mt-3 sm:mt-0 flex items-center justify-center gap-2 bg-[#2A2A35] dark:bg-[#2A2A35] border border-[#4A4A5A] dark:border-[#4A4A5A] 
-                text-[#1D8751] dark:text-[#1D8751] rounded-2xl px-4 py-2 font-semibold text-sm sm:text-base hover:bg-[#35353E] dark:hover:bg-[#35353E] hover:text-[#1D8751] dark:hover:text-[#1D8751] transition-colors min-h-[44px] sm:min-h-0 touch-manipulation w-full sm:w-auto"
+                className="mt-3 sm:mt-0 flex items-center justify-center gap-2 bg-[#1D8751]  border border-[#4A4A5A] dark:border-[#4A4A5A] 
+                text-muted  rounded-2xl px-4 py-2 font-semibold text-sm sm:text-base hover:bg-[#1D8751]/90 ] transition-colors min-h-[44px] sm:min-h-0 touch-manipulation w-full sm:w-auto"
               >
                 <span>{t("express.paste", "Paste")}</span>
-                <svg width="18" height="18" fill="none" viewBox="0 0 24 24" className="text-[#1D8751]">
+                <svg width="18" height="18" fill="none" viewBox="0 0 24 24" className="text-muted">
                   <path
                     d="M19 21H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h4l2-2h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2z"
                     stroke="currentColor"
@@ -4467,6 +4464,10 @@ export default function DepositForm({
                   />
                 </svg>
               </button>
+              </div>
+
+              {/* Paste button - same row as input */}
+              
             </div>
 
             {/* Show validation messages below the wallet address input */}

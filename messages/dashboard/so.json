@@ -99,5 +99,9 @@
     "copied": "La nuqulay!",
     "view": "Eeg",
     "details": "Faahfaahin"
+  },
+  "swapTransactions": {
+    "noTransactionsFound": "Lama Helin Macaamilka Bedelaada",
+    "noTransactionsDescription": "Hadda ma jiraan wax macaamilka bedelaada ah oo la soo bandhigayo. Fadlan dib u hubi mar dambe ama isku day inaad shaandhada wax ka beddesho."
   }
 }

@@ -720,9 +720,9 @@ const DepositModal: React.FC<DepositModalProps> = ({ asset, assetType, onClose }
           </div>
           <div className="mt-4 bg-transparent border border-[#1D8751] rounded-xl p-4">
             <ul className="space-y-1 mt-2">
-              <li className="flex items-start text-white text-sm"><span className="w-3 h-3 rounded-full bg-[#1D8751] inline-block mr-2 mt-1 flex-shrink-0"></span>Please send the money from your own account Only</li>
-              <li className="flex items-start text-white text-sm"><span className="w-3 h-3 rounded-full bg-[#1D8751] inline-block mr-2 mt-1 flex-shrink-0"></span>Put transaction ID in the description field of the bank</li>
-              <li className="flex items-start text-white text-sm"><span className="w-3 h-3 rounded-full bg-[#1D8751] inline-block mr-2 mt-1 flex-shrink-0"></span>Please note, If you do not follow above conditions, we will reject your transaction and send you back your money.</li>
+              <li className="flex items-start text-white text-sm"><span className="w-3 h-3 rounded-full bg-[#1D8751] inline-block mr-2 mt-1 shrink-0"></span>Please send the money from your own account Only</li>
+              <li className="flex items-start text-white text-sm"><span className="w-3 h-3 rounded-full bg-[#1D8751] inline-block mr-2 mt-1 shrink-0"></span>Put transaction ID in the description field of the bank</li>
+              <li className="flex items-start text-white text-sm"><span className="w-3 h-3 rounded-full bg-[#1D8751] inline-block mr-2 mt-1 shrink-0"></span>Please note, If you do not follow above conditions, we will reject your transaction and send you back your money.</li>
             </ul>
           </div>
         </div>

@@ -21,7 +21,6 @@ interface UserPaymentSelectorProps {
   userPaymentDetails: UserPaymentDetail[];
   adminMethods?: AdminPaymentMethod[];
   onSelect: (detail: UserPaymentDetail) => void;
-  onRemove: (detail: UserPaymentDetail) => void;
   selectedDetails: UserPaymentDetail[];
 }
 
@@ -32,7 +31,6 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
   userPaymentDetails,
   adminMethods = [],
   onSelect,
-  onRemove,
   selectedDetails,
 }) => {
   const [selectedMethod, setSelectedMethod] = useState("");
@@ -42,7 +40,7 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
   const methodOptions = useMemo(() => {
     const seen = new Set<string>();
     const options: Array<{ value: string; label: string; logo?: string }> = [];
-    
+
     // First, add all admin payment method types
     adminMethods.forEach((m) => {
       if (m.payment_method_type && !seen.has(m.payment_method_type)) {
@@ -54,7 +52,7 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
         });
       }
     });
-    
+
     // Then, add user payment methods that aren't already in the list
     userPaymentDetails.forEach((d) => {
       if (d.payment_method_name && !seen.has(d.payment_method_name)) {
@@ -67,7 +65,7 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
         });
       }
     });
-    
+
     return options;
   }, [userPaymentDetails, adminMethods]);
 
@@ -75,7 +73,7 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
   const providerOptions = useMemo(() => {
     const seen = new Set<string>();
     const options: Array<{ value: string; label: string; logo?: string }> = [];
-    
+
     // First, add all admin providers for the selected method
     adminMethods
       .filter((m) => m.payment_method_type === selectedMethod)
@@ -89,7 +87,7 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
           });
         }
       });
-    
+
     // Then, add user providers for the selected method
     userPaymentDetails
       .filter((d) => d.payment_method_name === selectedMethod)
@@ -104,7 +102,7 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
           });
         }
       });
-    
+
     return options;
   }, [userPaymentDetails, adminMethods, selectedMethod]);
 
@@ -114,11 +112,12 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
       userPaymentDetails.filter(
         (d) =>
           d.payment_method_name === selectedMethod &&
-          d.payment_provider_name === selectedProvider
+          d.payment_provider_name === selectedProvider &&
+          !selectedDetails.some((selected) => selected.id === d.id)
       ),
-    [userPaymentDetails, selectedMethod, selectedProvider]
+    [userPaymentDetails, selectedMethod, selectedProvider, selectedDetails]
   );
-  
+
   // Check if there are admin methods for the selected provider (to show "Add Account" message)
   const hasAdminMethod = useMemo(
     () =>
@@ -130,9 +129,6 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
     [adminMethods, selectedMethod, selectedProvider]
   );
 
-  // Check if detail is selected
-  const isSelected = (detail: UserPaymentDetail) =>
-    selectedDetails.some((d) => d.id === detail.id);
 
   return (
     <div className="space-y-6">
@@ -222,21 +218,12 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
                       </div>
                     </div>
                   </div>
-                  {isSelected(detail) ? (
-                    <button
-                      onClick={() => onRemove(detail)}
-                      className="px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-md hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
-                    >
-                      Remove
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => onSelect(detail)}
-                      className="px-4 py-2 text-sm font-medium text-[#1D8751] dark:text-[#1D8751] bg-[#1D8751]/10 dark:bg-[#1D8751]/20 border border-[#1D8751] rounded-md hover:bg-[#1D8751]/20 dark:hover:bg-[#1D8751]/30 transition-colors"
-                    >
-                      Select
-                    </button>
-                  )}
+                  <button
+                    onClick={() => onSelect(detail)}
+                    className="px-4 py-2 text-sm font-medium text-[#1D8751] dark:text-[#1D8751] bg-[#1D8751]/10 dark:bg-[#1D8751]/20 border border-[#1D8751] rounded-md hover:bg-[#1D8751]/20 dark:hover:bg-[#1D8751]/30 transition-colors"
+                  >
+                    Select
+                  </button>
                 </div>
               </div>
             ))
