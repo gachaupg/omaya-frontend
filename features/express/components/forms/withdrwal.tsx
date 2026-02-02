@@ -4545,7 +4545,7 @@ export default function WithdrawalForm({
                 <span className="text-[#7e7e8f] dark:text-[#788099]">2-</span>
                 Wallet Address
               </h2>
-              <div className="dark:bg-[#1D1D23] border-2 border-[#35353e] rounded-2xl p-3 sm:p-5 shadow-lg w-full text-[#35353e] dark:text-[#788099]">
+              <div className="bg-white dark:bg-[#1D1D23] border border-border dark:border-[#35353e] rounded-2xl p-3 sm:p-5 shadow-lg w-full text-[#35353e] dark:text-[#788099]">
                 {/* USDT Wallet Address */}
                 <div className="mb-4">
                   <h3 className="text-sm sm:text-base text-[#35353e] dark:text-[#788099] font-semibold mb-2">
@@ -4567,7 +4567,7 @@ export default function WithdrawalForm({
                                 setIsWalletAddressCopied(false);
                               }, 2000);
                             }}
-                            className="flex items-center gap-1 bg-[#23232b] dark:bg-[#35353E] border border-[#1D8751] text-[#1D8751] rounded-full px-2 sm:px-4 py-1 font-semibold text-xs sm:text-base hover:bg-[#1D8751] hover:text-[#35353e] transition-colors"
+                            className="flex items-center gap-1 bg-[#E8EFF5] dark:bg-[#35353E] border border-[#1D8751] text-[#1D8751] rounded-full px-2 sm:px-4 py-1 font-semibold text-xs sm:text-base hover:bg-[#1D8751] hover:text-[#35353e] transition-colors"
                           >
                             {isWalletAddressCopied ? (
                               <>
