@@ -227,7 +227,7 @@ const AboutPage = () => {
     <div className="min-h-screen bg-white dark:bg-(--bg-color)">
       {/* Hero Section */}
 
-      <section className="relative pt-24 md:pt-32 pb-20 px-4 overflow-hidden bg-gradient-to-br from-[#1D8751] via-[#16864a] to-[#0e5c33] dark:from-[#0A0A0F] dark:via-[#0A0A0F]/5 dark:to-[#0A0A0F]">
+      <section className="relative mt-16 md:mt-20 pt-12 md:pt-16 pb-20 px-4 overflow-hidden bg-gradient-to-br from-[#1D8751] via-[#16864a] to-[#0e5c33] dark:from-[#0A0A0F] dark:via-[#0A0A0F]/5 dark:to-[#0A0A0F]">
         <FloatingParticles count={15} size={4} />
 
         <div className="max-w-7xl mx-auto relative z-10">

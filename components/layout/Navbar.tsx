@@ -1046,7 +1046,7 @@ export default function Navbar() {
                       key={`${userProfile?.photo || cachedProfilePhoto}-${Date.now()}`} // Force re-render when photo changes with timestamp
                       src={userProfile?.photo || cachedProfilePhoto || ""}
                       alt="Profile"
-                      className="w-8 h-8 md:w-9 md:h-9 lg:w-10 lg:h-10 rounded-full object-cover border-2 border-white"
+                      className="w-8 h-8 md:w-9 md:h-9 lg:w-10 lg:h-10 rounded-full object-cover border-2 border-white dark:border-gray-600 shadow-lg"
                       onError={(e) => {
                         console.error("Profile image failed to load:", userProfile?.photo || cachedProfilePhoto);
                         // Only set error if we actually have a photo URL
@@ -1068,7 +1068,7 @@ export default function Navbar() {
                       loading="eager"
                     />
                   ) : (
-                    <div className="w-8 h-8 md:w-9 md:h-9 lg:w-10 lg:h-10 rounded-full flex items-center justify-center bg-[#1D8751] border-2 border-white">
+                    <div className="w-8 h-8 md:w-9 md:h-9 lg:w-10 lg:h-10 rounded-full flex items-center justify-center bg-[#1D8751] border-2 border-white dark:border-gray-600 shadow-lg">
                       <User className="w-4 h-4 md:w-5 md:h-5 lg:w-6 lg:h-6 text-white" />
                     </div>
                   )}
@@ -1144,7 +1144,7 @@ export default function Navbar() {
                                     ""
                                   }
                                   alt="Profile"
-                                  className="w-12 h-12 rounded-full object-cover border-2 border-transparent"
+                                  className="w-12 h-12 rounded-full object-cover border-2 border-gray-200 dark:border-gray-600 shadow-lg"
                                   onError={(e) => {
                                     console.error("Dropdown profile image failed to load:", userProfile?.photo || cachedProfilePhoto);
                                     if (userProfile?.photo || cachedProfilePhoto) {
@@ -1492,7 +1492,7 @@ export default function Navbar() {
                                   userProfile?.photo || cachedProfilePhoto || ""
                                 }
                                 alt="Profile"
-                                className="w-10 h-10 rounded-full object-cover"
+                                className="w-10 h-10 rounded-full object-cover border-2 border-white dark:border-gray-600 shadow-lg"
                                 onError={() => {
                                   setProfileImageError(true);
                                   // Clear invalid cached photo
@@ -1620,7 +1620,7 @@ export default function Navbar() {
                                         ""
                                       }
                                       alt="Profile"
-                                      className="w-16 h-16 rounded-full object-cover border-2 border-white"
+                                      className="w-16 h-16 rounded-full object-cover border-2 border-white dark:border-gray-600 shadow-lg"
                                       onError={() => {
                                         console.error("Mobile profile image failed to load:", userProfile?.photo || cachedProfilePhoto);
                                         if (userProfile?.photo || cachedProfilePhoto) {

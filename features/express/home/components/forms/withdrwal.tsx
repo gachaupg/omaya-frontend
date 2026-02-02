@@ -694,6 +694,8 @@ export default function WithdrawalForm({
   // Add calculation error state for display below "You Send" input
   const [calculationError, setCalculationError] = useState<string | null>(null);
 
+  // Add state for refresh loading
+  const [isRefreshingAccounts, setIsRefreshingAccounts] = useState(false);
 
   // Add retry counters for remaining fetches (admin wallet, assets, swap assets)
   const [adminWalletRetryCount, setAdminWalletRetryCount] = useState(0);
@@ -4299,17 +4301,21 @@ export default function WithdrawalForm({
                                 </span>
                                 <button
                                   type="button"
+                                  disabled={isRefreshingAccounts}
                                   onClick={async () => {
                                     try {
+                                      setIsRefreshingAccounts(true);
                                       await dispatch(fetchUserPaymentDetails(true)).unwrap();
-                                      // Toast removed - silent refresh
+                                      showToast.success("Accounts refreshed");
                                     } catch (error) {
                                       showToast.error("Failed to refresh payment details");
+                                    } finally {
+                                      setIsRefreshingAccounts(false);
                                     }
                                   }}
-                                  className="text-xs text-[#1D8751] hover:text-[#166b3e] underline"
+                                  className="text-xs text-[#1D8751] hover:text-[#166b3e] underline disabled:opacity-50"
                                 >
-                                  Refresh
+                                  {isRefreshingAccounts ? "Refreshing..." : "Refresh"}
                                 </button>
                               </div>
                               <div className="w-full min-w-0 relative z-[100] isolate">
