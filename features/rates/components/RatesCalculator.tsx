@@ -1725,6 +1725,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
             <div className="flex flex-col sm:flex-row gap-6">
               {/* Amount Section */}
               <div className="flex-1 min-w-0">
+                <div className="hidden sm:block text-[15px] mb-2 font-semibold invisible" aria-hidden="true">&nbsp;</div>
                 <div className="relative">
                   <input
                     type="text"
@@ -2020,6 +2021,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
             <div className="flex flex-col sm:flex-row gap-6">
               {/* You Get Section */}
               <div className="flex-1 min-w-0">
+                <div className="hidden sm:block text-[15px] mb-2 font-semibold invisible" aria-hidden="true">&nbsp;</div>
                 <div className="relative">
                   <input
                     type="text"
@@ -2576,7 +2578,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                   {t("rates.walletAccountAddress", "Wallet/Account Address")}
                 </label>
                 <div className="flex items-center dark:bg-[#1D1D23] border border-[#39394a] dark:border-[#35353E] rounded-2xl px-4 py-2 mb-4">
-                 
+
                   <input
                     type="text"
                     value={walletAddress}
