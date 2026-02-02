@@ -2367,8 +2367,8 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
 
 
 
-      <div className="flex items-start sm:items-center text-[#F79330] text-sm sm:text-lg mb-6 p-3 rounded-md gap-2 sm:gap-0">
-        <FiInfo className="text-red-600 flex-shrink-0 w-5 h-5 sm:w-5 sm:h-5 mt-0.5 sm:mt-0" />
+      <div className="flex items-start sm:items-center text-[#F79330] text-sm sm:text-lg mb-6 py-3 rounded-md gap-2 sm:gap-0">
+        <FiInfo className="text-red-600 flex-shrink-0 w-5 h-5 sm:w-4 sm:h-4 mt-0.5 sm:mt-0" />
         <p className="ml-0 sm:ml-2 text-gray-700 dark:text-gray-300 text-xs sm:text-base">
           {t(
             "rates.feeInfo",
