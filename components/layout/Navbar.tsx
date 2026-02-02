@@ -1477,91 +1477,88 @@ export default function Navbar() {
                   </span> */}
                   </div>
                   <div className={`flex flex-col items-center space-y-3 mt-4 ${mobileDepositDropdownOpen ? 'invisible' : ''}`}>
-                    <div className="flex items-center space-x-3 justify-between w-full">
-                      <div>
-                        <Link
-                          href="/dashboard/account"
-                          onClick={toggleMobileMenu}
-                          className="text-white relative inline-block"
-                        >
-                          {(userProfile?.photo || cachedProfilePhoto) &&
-                            !profileImageError ? (
-                            <>
-                              <img
-                                src={
-                                  userProfile?.photo || cachedProfilePhoto || ""
+                    <button
+                      onClick={toggleProfileModal}
+                      className="flex items-center space-x-3 justify-between w-full text-left focus:outline-none"
+                    >
+                      <div className="relative">
+                        {(userProfile?.photo || cachedProfilePhoto) &&
+                          !profileImageError ? (
+                          <>
+                            <img
+                              src={
+                                userProfile?.photo || cachedProfilePhoto || ""
+                              }
+                              alt="Profile"
+                              className="w-10 h-10 rounded-full object-cover"
+                              onError={() => {
+                                setProfileImageError(true);
+                                // Clear invalid cached photo
+                                if (typeof window !== "undefined") {
+                                  localStorage.removeItem("profile_photo");
+                                  setCachedProfilePhoto(null);
                                 }
-                                alt="Profile"
-                                className="w-10 h-10 rounded-full object-cover"
-                                onError={() => {
-                                  setProfileImageError(true);
-                                  // Clear invalid cached photo
-                                  if (typeof window !== "undefined") {
-                                    localStorage.removeItem("profile_photo");
-                                    setCachedProfilePhoto(null);
-                                  }
-                                }}
-                              />
-                              {/* Verification Badge - only show for verified users */}
-                              {isVerified && (
-                                <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 z-10">
-                                  <svg
-                                    width="20"
-                                    height="20"
-                                    viewBox="0 0 20 20"
-                                    className="absolute"
-                                  >
-                                    <circle cx="10" cy="10" r="9" fill="white" />
-                                    <circle
-                                      cx="10"
-                                      cy="10"
-                                      r="7.5"
-                                      fill="#1D8751"
-                                    />
-                                    {/* Serrated edge using small circles */}
-                                    {[
-                                      0, 30, 60, 90, 120, 150, 180, 210, 240, 270,
-                                      300, 330,
-                                    ].map((angle) => {
-                                      const rad = (angle * Math.PI) / 180;
-                                      const x = 10 + 8.5 * Math.cos(rad);
-                                      const y = 10 + 8.5 * Math.sin(rad);
-                                      return (
-                                        <circle
-                                          key={angle}
-                                          cx={x}
-                                          cy={y}
-                                          r="1"
-                                          fill="white"
-                                        />
-                                      );
-                                    })}
-                                  </svg>
-                                  <svg
-                                    width="10"
-                                    height="10"
-                                    viewBox="0 0 10 10"
-                                    fill="none"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    className="relative z-10"
-                                  >
-                                    <path
-                                      d="M2 5L4 7L8 3"
-                                      stroke="#FFFFFF"
-                                      strokeWidth="1.5"
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                    />
-                                  </svg>
-                                </span>
-                              )}
-                            </>
-                          ) : (
-                            <DefaultProfileIcon />
-                          )}
-                        </Link>
+                              }}
+                            />
+                            {/* Verification Badge - only show for verified users */}
+                            {isVerified && (
+                              <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 z-10">
+                                <svg
+                                  width="20"
+                                  height="20"
+                                  viewBox="0 0 20 20"
+                                  className="absolute"
+                                >
+                                  <circle cx="10" cy="10" r="9" fill="white" />
+                                  <circle
+                                    cx="10"
+                                    cy="10"
+                                    r="7.5"
+                                    fill="#1D8751"
+                                  />
+                                  {/* Serrated edge using small circles */}
+                                  {[
+                                    0, 30, 60, 90, 120, 150, 180, 210, 240, 270,
+                                    300, 330,
+                                  ].map((angle) => {
+                                    const rad = (angle * Math.PI) / 180;
+                                    const x = 10 + 8.5 * Math.cos(rad);
+                                    const y = 10 + 8.5 * Math.sin(rad);
+                                    return (
+                                      <circle
+                                        key={angle}
+                                        cx={x}
+                                        cy={y}
+                                        r="1"
+                                        fill="white"
+                                      />
+                                    );
+                                  })}
+                                </svg>
+                                <svg
+                                  width="10"
+                                  height="10"
+                                  viewBox="0 0 10 10"
+                                  fill="none"
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  className="relative z-10"
+                                >
+                                  <path
+                                    d="M2 5L4 7L8 3"
+                                    stroke="#FFFFFF"
+                                    strokeWidth="1.5"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  />
+                                </svg>
+                              </span>
+                            )}
+                          </>
+                        ) : (
+                          <DefaultProfileIcon />
+                        )}
                       </div>
-                      <div className="text-left flex-1 min-w-0">
+                      <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5">
                           <h4 className="dark:text-white text-gray-900 font-medium text-sm truncate">
                             {user?.first_name && user?.last_name
@@ -1588,7 +1585,7 @@ export default function Navbar() {
                         </div>
                         <p className="text-muted-foreground text-xs truncate">{user?.email}</p>
                       </div>
-                    </div>
+                    </button>
                   </div>
 
 
