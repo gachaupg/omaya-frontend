@@ -1046,7 +1046,7 @@ export default function Navbar() {
                       key={`${userProfile?.photo || cachedProfilePhoto}-${Date.now()}`} // Force re-render when photo changes with timestamp
                       src={userProfile?.photo || cachedProfilePhoto || ""}
                       alt="Profile"
-                      className="w-8 h-8 md:w-9 md:h-9 lg:w-10 lg:h-10 rounded-full object-cover border-2 border-white"
+                      className="w-8 h-8 md:w-9 md:h-9 lg:w-10 lg:h-10 rounded-full object-cover border-2 border-white dark:border-gray-600 shadow-lg"
                       onError={(e) => {
                         console.error("Profile image failed to load:", userProfile?.photo || cachedProfilePhoto);
                         // Only set error if we actually have a photo URL
@@ -1068,7 +1068,7 @@ export default function Navbar() {
                       loading="eager"
                     />
                   ) : (
-                    <div className="w-8 h-8 md:w-9 md:h-9 lg:w-10 lg:h-10 rounded-full flex items-center justify-center bg-[#1D8751] border-2 border-white">
+                    <div className="w-8 h-8 md:w-9 md:h-9 lg:w-10 lg:h-10 rounded-full flex items-center justify-center bg-[#1D8751] border-2 border-white dark:border-gray-600 shadow-lg">
                       <User className="w-4 h-4 md:w-5 md:h-5 lg:w-6 lg:h-6 text-white" />
                     </div>
                   )}
@@ -1144,7 +1144,7 @@ export default function Navbar() {
                                     ""
                                   }
                                   alt="Profile"
-                                  className="w-12 h-12 rounded-full object-cover border-2 border-transparent"
+                                  className="w-12 h-12 rounded-full object-cover border-2 border-gray-200 dark:border-gray-600 shadow-lg"
                                   onError={(e) => {
                                     console.error("Dropdown profile image failed to load:", userProfile?.photo || cachedProfilePhoto);
                                     if (userProfile?.photo || cachedProfilePhoto) {
@@ -1490,73 +1490,81 @@ export default function Navbar() {
                                 userProfile?.photo || cachedProfilePhoto || ""
                               }
                               alt="Profile"
-                              className="w-10 h-10 rounded-full object-cover"
+                              className="w-10 h-10 rounded-full object-cover border-2 border-white dark:border-gray-600 shadow-lg"
                               onError={() => {
-                                setProfileImageError(true);
+                                // Only mark error when we actually have a URL
+                                if (userProfile?.photo || cachedProfilePhoto) {
+                                  setProfileImageError(true);
+                                }
                                 // Clear invalid cached photo
                                 if (typeof window !== "undefined") {
                                   localStorage.removeItem("profile_photo");
                                   setCachedProfilePhoto(null);
                                 }
                               }}
+                              onLoad={() => {
+                                if (profileImageError) {
+                                  setProfileImageError(false);
+                                }
+                              }}
                             />
-                            {/* Verification Badge - only show for verified users */}
-                            {isVerified && (
-                              <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 z-10">
-                                <svg
-                                  width="20"
-                                  height="20"
-                                  viewBox="0 0 20 20"
-                                  className="absolute"
-                                >
-                                  <circle cx="10" cy="10" r="9" fill="white" />
-                                  <circle
-                                    cx="10"
-                                    cy="10"
-                                    r="7.5"
-                                    fill="#1D8751"
-                                  />
-                                  {/* Serrated edge using small circles */}
-                                  {[
-                                    0, 30, 60, 90, 120, 150, 180, 210, 240, 270,
-                                    300, 330,
-                                  ].map((angle) => {
-                                    const rad = (angle * Math.PI) / 180;
-                                    const x = 10 + 8.5 * Math.cos(rad);
-                                    const y = 10 + 8.5 * Math.sin(rad);
-                                    return (
-                                      <circle
-                                        key={angle}
-                                        cx={x}
-                                        cy={y}
-                                        r="1"
-                                        fill="white"
-                                      />
-                                    );
-                                  })}
-                                </svg>
-                                <svg
-                                  width="10"
-                                  height="10"
-                                  viewBox="0 0 10 10"
-                                  fill="none"
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  className="relative z-10"
-                                >
-                                  <path
-                                    d="M2 5L4 7L8 3"
-                                    stroke="#FFFFFF"
-                                    strokeWidth="1.5"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                  />
-                                </svg>
-                              </span>
-                            )}
-                          </>
-                        ) : (
-                          <DefaultProfileIcon />
-                        )}
+                              {/* Verification Badge - only show for verified users */}
+                              {isVerified && (
+                                <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 z-10">
+                                  <svg
+                                    width="20"
+                                    height="20"
+                                    viewBox="0 0 20 20"
+                                    className="absolute"
+                                  >
+                                    <circle cx="10" cy="10" r="9" fill="white" />
+                                    <circle
+                                      cx="10"
+                                      cy="10"
+                                      r="7.5"
+                                      fill="#1D8751"
+                                    />
+                                    {/* Serrated edge using small circles */}
+                                    {[
+                                      0, 30, 60, 90, 120, 150, 180, 210, 240, 270,
+                                      300, 330,
+                                    ].map((angle) => {
+                                      const rad = (angle * Math.PI) / 180;
+                                      const x = 10 + 8.5 * Math.cos(rad);
+                                      const y = 10 + 8.5 * Math.sin(rad);
+                                      return (
+                                        <circle
+                                          key={angle}
+                                          cx={x}
+                                          cy={y}
+                                          r="1"
+                                          fill="white"
+                                        />
+                                      );
+                                    })}
+                                  </svg>
+                                  <svg
+                                    width="10"
+                                    height="10"
+                                    viewBox="0 0 10 10"
+                                    fill="none"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="relative z-10"
+                                  >
+                                    <path
+                                      d="M2 5L4 7L8 3"
+                                      stroke="#FFFFFF"
+                                      strokeWidth="1.5"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                    />
+                                  </svg>
+                                </span>
+                              )}
+                            </>
+                          ) : (
+                            <DefaultProfileIcon />
+                          )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5">
@@ -1617,7 +1625,7 @@ export default function Navbar() {
                                         ""
                                       }
                                       alt="Profile"
-                                      className="w-16 h-16 rounded-full object-cover border-2 border-white"
+                                      className="w-16 h-16 rounded-full object-cover border-2 border-white dark:border-gray-600 shadow-lg"
                                       onError={() => {
                                         console.error("Mobile profile image failed to load:", userProfile?.photo || cachedProfilePhoto);
                                         if (userProfile?.photo || cachedProfilePhoto) {
@@ -1776,14 +1784,14 @@ export default function Navbar() {
         !profileImageError && (
           <div
             className="fixed inset-0 z-[10000] flex items-center justify-center bg-black bg-opacity-75 p-4"
-            onClick={closeImageModal}
+            onClick={() => setShowImagePreview(false)}
           >
             <div
               className="relative max-w-2xl max-h-[90vh] w-full"
               onClick={(e) => e.stopPropagation()}
             >
               <button
-                onClick={closeImageModal}
+                onClick={() => setShowImagePreview(false)}
                 className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors z-10 bg-black bg-opacity-50 rounded-full p-2 hover:bg-opacity-70"
                 aria-label="Close image preview"
               >
@@ -1795,7 +1803,7 @@ export default function Navbar() {
                 className="w-full h-auto rounded-lg shadow-2xl object-contain max-h-[90vh]"
                 onError={() => {
                   setProfileImageError(true);
-                  closeImageModal();
+                  setShowImagePreview(false);
                 }}
               />
             </div>

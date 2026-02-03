@@ -466,7 +466,7 @@ const Filters: React.FC<FiltersProps> = ({
                 type="date"
                 value={customDateFrom}
                 onChange={(e) => setCustomDateFrom(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#1D1D23] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1D8751]"
+                className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#1D1D23] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1D8751] [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-100 [&::-webkit-calendar-picker-indicator]:w-5 [&::-webkit-calendar-picker-indicator]:h-5 [&::-webkit-calendar-picker-indicator]:dark:invert [&::-webkit-calendar-picker-indicator]:dark:brightness-[3]"
               />
             </div>
             <div className="flex-1">
@@ -477,7 +477,7 @@ const Filters: React.FC<FiltersProps> = ({
                 type="date"
                 value={customDateTo}
                 onChange={(e) => setCustomDateTo(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#1D1D23] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1D8751]"
+                className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#1D1D23] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1D8751] [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-100 [&::-webkit-calendar-picker-indicator]:w-5 [&::-webkit-calendar-picker-indicator]:h-5 [&::-webkit-calendar-picker-indicator]:dark:invert [&::-webkit-calendar-picker-indicator]:dark:brightness-[3]"
               />
             </div>
             <div className="flex gap-2">

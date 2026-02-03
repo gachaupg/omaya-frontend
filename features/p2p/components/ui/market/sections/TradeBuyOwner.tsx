@@ -548,9 +548,9 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
             <div className="bg-white dark:bg-[var(--card-color)] rounded-2xl p-4 sm:p-6 mt-4 flex flex-col gap-4 sm:gap-6 border border-gray-200 dark:border-[#35353E]">
               {/* Bank Info */}
               <div className="flex items-center bg-white dark:bg-[var(--card-color)] gap-3 sm:gap-4 border border-gray-200 dark:border-[#35353E] rounded-xl px-3 sm:px-4 py-2 sm:py-3 w-fit mb-2">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full text-black bg-white flex items-center justify-center overflow-hidden text-sm sm:text-base">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#1D8751] flex items-center justify-center overflow-hidden text-sm sm:text-base font-bold text-white shadow-sm">
                   {/* Use logo mapped from provider */}
-                  {paymentDetails?.provider[0]}
+                  {paymentDetails?.provider?.[0]?.toUpperCase() || "B"}
                 </div>
                 <span className="text-gray-900 dark:text-white font-medium text-sm sm:text-lg">
                   {paymentDetails?.provider}
