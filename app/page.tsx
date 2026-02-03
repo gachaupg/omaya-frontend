@@ -2186,6 +2186,8 @@ export default function MarketingPage() {
                       "SUPPORT",
                     ];
                     const category = categories[globalIndex] || "GENERAL";
+                    const answerHtml =
+                      decodeHtml(item.answer || item.content || "") || "";
 
                     return (
                       <div
@@ -2230,9 +2232,12 @@ export default function MarketingPage() {
                             <div className="bg-gray-50 dark:bg-[#18181D]">
                               <div className="px-5 pt-4 pb-4">
                                 <div className="border-t border-accent dark:border-[#2A2A2A] pt-5 -mt-4">
-                                  <p className="text-gray-700 dark:text-white/80 text-sm md:text-base leading-relaxed">
-                                    {item.answer}
-                                  </p>
+                                  <div
+                                    className="text-gray-700 dark:text-white/80 text-sm md:text-base leading-relaxed prose prose-sm dark:prose-invert max-w-none prose-p:my-2 prose-ul:my-2 prose-li:my-0"
+                                    dangerouslySetInnerHTML={{
+                                      __html: answerHtml,
+                                    }}
+                                  />
                                 </div>
                               </div>
                             </div>
