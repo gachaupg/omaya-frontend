@@ -15,26 +15,26 @@ interface TransactionRowProps {
 
 const TransactionRow: React.FC<TransactionRowProps> = ({ tx, handleEyeClick }) => {
   return (
-    <div className="border-b border-[#2D2E3A] last:border-b-0 hover:bg-[#232430] transition-colors group">
+    <div className="border-b border-gray-200 dark:border-[#2D2E3A] last:border-b-0 hover:bg-gray-50 dark:hover:bg-[#232430] transition-colors group">
       <div className="px-4 sm:px-6 py-4">
-        <div className="grid grid-cols-12 items-center w-[800px]">
+        <div className="grid grid-cols-12 items-center min-w-[800px]">
           {/* ID with Bitcoin Icon and colored left border */}
           <div className="col-span-2 flex items-center gap-3 relative">
             <div className={`absolute left-[-16px] sm:left-[-24px] top-0 bottom-0 w-1 rounded-r ${
               tx.transaction_type === "deposit" ? "bg-[#10B981]" : "bg-[#EF4444]"
             }`}></div>
             <BitcoinIcon />
-            <span className="text-[#788099] text-sm font-medium truncate">{tx.transaction_id}</span>
+            <span className="text-gray-500 dark:text-[#788099] text-sm font-medium truncate">{tx.transaction_id}</span>
           </div>
           {/* Type */}
           <div className="col-span-2">
-            <span className="text-white text-sm truncate">
+            <span className="text-gray-900 dark:text-white text-sm truncate">
               {tx.transaction_type.charAt(0).toUpperCase() + tx.transaction_type.slice(1)}
             </span>
           </div>
           {/* Date */}
           <div className="col-span-2">
-            <span className="text-[#788099] text-sm truncate">
+            <span className="text-gray-500 dark:text-[#788099] text-sm truncate">
               {new Date(tx.timestamp).toLocaleDateString()}
             </span>
           </div>
@@ -43,12 +43,12 @@ const TransactionRow: React.FC<TransactionRowProps> = ({ tx, handleEyeClick }) =
             <span className={`text-sm font-medium truncate ${
               tx.transaction_type === 'deposit' ? "text-[#10B981]" : "text-[#EF4444]"
             }`}>
-              {tx.transaction_type === 'deposit' ? '+' : '-'}{tx.amount.toFixed(2)} <span className="text-[#788099] ml-1">{tx.currency}</span>
+              {tx.transaction_type === 'deposit' ? '+' : '-'}{tx.amount.toFixed(2)} <span className="text-gray-500 dark:text-[#788099] ml-1">{tx.currency}</span>
             </span>
           </div>
           {/* Status */}
           <div className="col-span-2">
-            <span className="text-[#788099] text-sm rounded-md text-xs truncate">
+            <span className="text-gray-500 dark:text-[#788099] text-sm rounded-md text-xs truncate">
               {tx.status}
             </span>
           </div>
@@ -60,7 +60,7 @@ const TransactionRow: React.FC<TransactionRowProps> = ({ tx, handleEyeClick }) =
           </div>
           {/* More */}
           <div className="col-span-1">
-            <button className="text-[#9CA3AF] hover:text-white transition-colors p-1 rounded">
+            <button className="text-gray-500 dark:text-[#9CA3AF] hover:text-gray-700 dark:hover:text-white transition-colors p-1 rounded">
               <MoreHorizontal className="w-4 h-4" />
             </button>
           </div>

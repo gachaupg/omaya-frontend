@@ -144,7 +144,7 @@ const UserProfileCard: React.FC<UserProfileCardProps> = ({
   const imageSrc = profileImage || defaultAvatar;
 
   return (
-    <div className="flex items-center gap-4 p-2 rounded-2xl bg-[#1D1D23] border border-[#35353E]">
+    <div className="flex items-center gap-4 p-2 rounded-2xl bg-white dark:bg-[#1D1D23] border border-gray-200 dark:border-[#35353E]">
       <div className="flex flex-col w-full gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4 min-w-0">
           {/* User Avatar with Edit Button */}
@@ -191,7 +191,7 @@ const UserProfileCard: React.FC<UserProfileCardProps> = ({
           {/* User Info */}
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <h2 className="text-lg text-[14px] font-semibold text-[#FFFFFF] truncate">
+              <h2 className="text-lg text-[14px] font-semibold text-gray-900 dark:text-[#FFFFFF] truncate">
                 Hello, {name}!
               </h2>
             </div>
@@ -237,9 +237,9 @@ const UserProfileCard: React.FC<UserProfileCardProps> = ({
         <div className="flex flex-wrap gap-4 sm:gap-6 items-start sm:items-center">
           {/* User ID */}
           <div className="min-w-0">
-            <p className="text-xs text-[#788099]">User ID</p>
+            <p className="text-xs text-gray-500 dark:text-[#788099]">User ID</p>
             <div className="flex items-center gap-2">
-              <p className="text-base text-[#FFFFFF] truncate">{userId}</p>
+              <p className="text-base text-gray-900 dark:text-[#FFFFFF] truncate">{userId}</p>
               <button
                 className="flex-shrink-0"
                 onClick={() => {
@@ -270,8 +270,8 @@ const UserProfileCard: React.FC<UserProfileCardProps> = ({
 
           {/* User Type */}
           <div className="min-w-0">
-            <p className="text-xs text-[#788099]">User Type</p>
-            <p className="text-base text-[#FFFFFF] truncate">
+            <p className="text-xs text-gray-500 dark:text-[#788099]">User Type</p>
+            <p className="text-base text-gray-900 dark:text-[#FFFFFF] truncate">
               {userType ? userType.charAt(0).toUpperCase() + userType.slice(1) : ''}
             </p>
           </div>
