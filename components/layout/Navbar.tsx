@@ -1490,25 +1490,24 @@ export default function Navbar() {
                                 userProfile?.photo || cachedProfilePhoto || ""
                               }
                               alt="Profile"
-                              className="w-10 h-10 rounded-full object-cover"
+                              className="w-10 h-10 rounded-full object-cover border-2 border-white dark:border-gray-600 shadow-lg"
                               onError={() => {
-                                setProfileImageError(true);
+                                // Only mark error when we actually have a URL
+                                if (userProfile?.photo || cachedProfilePhoto) {
+                                  setProfileImageError(true);
+                                }
                                 // Clear invalid cached photo
                                 if (typeof window !== "undefined") {
                                   localStorage.removeItem("profile_photo");
                                   setCachedProfilePhoto(null);
                                 }
-                                alt="Profile"
-                                className="w-10 h-10 rounded-full object-cover border-2 border-white dark:border-gray-600 shadow-lg"
-                                onError={() => {
-                                  setProfileImageError(true);
-                                  // Clear invalid cached photo
-                                  if (typeof window !== "undefined") {
-                                    localStorage.removeItem("profile_photo");
-                                    setCachedProfilePhoto(null);
-                                  }
-                                }}
-                              />
+                              }}
+                              onLoad={() => {
+                                if (profileImageError) {
+                                  setProfileImageError(false);
+                                }
+                              }}
+                            />
                               {/* Verification Badge - only show for verified users */}
                               {isVerified && (
                                 <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 z-10">
@@ -1566,7 +1565,6 @@ export default function Navbar() {
                           ) : (
                             <DefaultProfileIcon />
                           )}
-                        </Link>
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5">
@@ -1786,14 +1784,14 @@ export default function Navbar() {
         !profileImageError && (
           <div
             className="fixed inset-0 z-[10000] flex items-center justify-center bg-black bg-opacity-75 p-4"
-            onClick={closeImageModal}
+            onClick={() => setShowImagePreview(false)}
           >
             <div
               className="relative max-w-2xl max-h-[90vh] w-full"
               onClick={(e) => e.stopPropagation()}
             >
               <button
-                onClick={closeImageModal}
+                onClick={() => setShowImagePreview(false)}
                 className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors z-10 bg-black bg-opacity-50 rounded-full p-2 hover:bg-opacity-70"
                 aria-label="Close image preview"
               >
@@ -1805,7 +1803,7 @@ export default function Navbar() {
                 className="w-full h-auto rounded-lg shadow-2xl object-contain max-h-[90vh]"
                 onError={() => {
                   setProfileImageError(true);
-                  closeImageModal();
+                  setShowImagePreview(false);
                 }}
               />
             </div>
