@@ -6,6 +6,7 @@ import { fetchMyTransactions, setCurrentPage } from "@/features/p2p/slices/p2pWi
 import { formatDistanceToNow } from "date-fns";
 import { NoDataFound } from "../ui/Transactions";
 import { useDashboardI18n } from "@/lib/useDashboardI18n";
+import { SortArrowsIcon } from "@/components/ui/SortArrowsIcon";
 
 interface RootState {
   p2pWithdrawalDeposit: {
@@ -327,7 +328,10 @@ const P2PWithdrawalDepositTransactions = () => {
                   key={h}
                   className="px-3 sm:px-4 lg:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-600 dark:text-[#788099]"
                 >
-                  {h}
+                  <span className="inline-flex items-center">
+                    {h}
+                    <SortArrowsIcon />
+                  </span>
                 </th>
               ))}
             </tr>

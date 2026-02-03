@@ -1047,23 +1047,28 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
         <div className="flex-shrink-0 ml-0 md:ml-6 flex items-center justify-center py-2">
           {/* QR code */}
           {(() => {
-            // For deposits, use account number; for withdrawals, use wallet address
+            // For deposits: crypto = wallet address, bank = account number. For withdrawals: wallet address.
             let qrData = "";
 
-            if (effectiveTransactionData?.type === "deposit" && effectiveTransactionData?.paymentDetail?.account_number) {
-              // For deposits, show account number in QR code
-              qrData = effectiveTransactionData.paymentDetail.account_number;
-            } else if (effectiveTransactionData?.type === "withdrawal" && effectiveTransactionData?.walletAddress) {
-              // For withdrawals, show wallet address
-              qrData = effectiveTransactionData.walletAddress;
-            } else if (effectiveTransactionData?.type === "deposit" && effectiveTransactionData?.paymentDetail) {
-              // Fallback: try to get account_number from payment_details array if not at root level
-              const firstDetail = effectiveTransactionData.paymentDetail.payment_details?.[0];
-              if (firstDetail?.account_number || firstDetail?.mobile_number) {
-                qrData = firstDetail.account_number || firstDetail.mobile_number;
+            if (effectiveTransactionData?.type === "deposit") {
+              // Crypto deposit: use wallet address (deposit address) first
+              if (effectiveTransactionData?.walletAddress) {
+                qrData = effectiveTransactionData.walletAddress;
+              } else if (effectiveTransactionData?.paymentDetail?.account_number) {
+                qrData = effectiveTransactionData.paymentDetail.account_number;
+              } else if (effectiveTransactionData?.paymentDetail?.mobile_number) {
+                qrData = effectiveTransactionData.paymentDetail.mobile_number;
+              } else if (effectiveTransactionData?.paymentDetail) {
+                const firstDetail = effectiveTransactionData.paymentDetail.payment_details?.[0];
+                if (firstDetail?.account_number || firstDetail?.mobile_number) {
+                  qrData = firstDetail.account_number || firstDetail.mobile_number;
+                }
               }
-            } else {
-              // Final fallback to transaction ID
+            } else if (effectiveTransactionData?.type === "withdrawal" && effectiveTransactionData?.walletAddress) {
+              qrData = effectiveTransactionData.walletAddress;
+            }
+
+            if (!qrData) {
               qrData = liveTransactionId || effectiveTransactionData?.transactionId || "";
             }
 
@@ -1559,148 +1564,147 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
           className={`border-t border-dashed ${isDark ? "border-[#7B7B7B]" : "border-gray-400"
             } mb-4`}
         ></div>
-        {/* From/To Content Row - Responsive with Labels */}
-        <div className="flex flex-col gap-4 sm:gap-2 mt-2 min-w-0 sm:flex-row sm:items-start sm:justify-between">
-          {/* From Section - Label and Content */}
-          <div className="flex-1">
-            <div
-              className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                } text-sm sm:text-base font-medium mb-2`}
-            >
-              From
-            </div>
-            <div className="flex items-center gap-2 min-w-0">
-              {effectiveTransactionData?.type === "deposit" &&
-                effectiveTransactionData?.paymentDetail ? (
-                <>
-                  <img
-                    src={
-                      effectiveTransactionData.paymentDetail.logo_url ||
-                      effectiveTransactionData.paymentDetail.logo ||
-                      effectiveTransactionData.paymentDetail.provider_logo ||
-                      "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
-                    }
-                    alt={effectiveTransactionData.paymentDetail.provider_name}
-                    className="w-8 h-8 rounded-full flex-shrink-0"
-                    onError={(e) => {
-                      e.currentTarget.src =
-                        "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
-                    }}
-                  />
-                  <div className="min-w-0 flex-1">
+        {/* From (left) | To (start of second part) — aligned UI */}
+        <div className="flex mb-2">
+          <div
+            className={`flex-shrink-0 w-1/2 ${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+              } text-sm sm:text-base font-medium`}
+          >
+            From
+          </div>
+          <div
+            className={`flex-1 min-w-0 text-left pl-2 sm:pl-4 ${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+              } text-sm sm:text-base font-medium`}
+          >
+            To
+          </div>
+        </div>
+        <div className="flex mt-2 items-start gap-0">
+          {/* Left: From */}
+          <div className="flex items-start gap-3 min-w-0 w-1/2 flex-shrink-0 pr-2 sm:pr-4">
+            {effectiveTransactionData?.type === "deposit" &&
+              effectiveTransactionData?.paymentDetail ? (
+              <>
+                <img
+                  src={
+                    effectiveTransactionData.paymentDetail.logo_url ||
+                    effectiveTransactionData.paymentDetail.logo ||
+                    effectiveTransactionData.paymentDetail.provider_logo ||
+                    "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
+                  }
+                  alt={effectiveTransactionData.paymentDetail.provider_name}
+                  className="w-8 h-8 rounded-full flex-shrink-0 mt-0.5"
+                  onError={(e) => {
+                    e.currentTarget.src =
+                      "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+                  }}
+                />
+                <div className="min-w-0 flex-1 space-y-0.5">
+                  <div
+                    className={`${isDark ? "text-white" : "text-gray-900"
+                      } text-sm sm:text-base font-semibold truncate`}
+                  >
+                    {effectiveTransactionData.paymentDetail.provider_name}
+                  </div>
+                  <div
+                    className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                      } text-xs sm:text-sm font-mono break-all max-w-[200px] sm:max-w-[250px] leading-tight`}
+                    style={{ wordBreak: 'break-all', lineHeight: '1.3' }}
+                  >
+                    {effectiveTransactionData.paymentDetail.account_number ||
+                      effectiveTransactionData.paymentDetail.mobile_number ||
+                      "N/A"}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <img
+                  src={
+                    effectiveTransactionData?.asset?.icon ||
+                    effectiveTransactionData?.asset?.icon_url ||
+                    effectiveTransactionData?.asset?.image_url ||
+                    effectiveTransactionData?.asset?.image ||
+                    "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                  }
+                  alt={
+                    effectiveTransactionData?.asset?.symbol ||
+                    (effectiveTransactionData?.type === "deposit"
+                      ? "USD"
+                      : effectiveTransactionData?.type === "withdrawal"
+                        ? "USD"
+                        : "USDT")
+                  }
+                  className="w-8 h-8 rounded-full flex-shrink-0 mt-0.5"
+                  onError={(e) => {
+                    e.currentTarget.src =
+                      "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                  }}
+                />
+                <div className="min-w-0 flex-1 space-y-0.5">
+                  <div className="flex items-center gap-1 flex-wrap">
                     <div
                       className={`${isDark ? "text-white" : "text-gray-900"
-                        } text-sm sm:text-base font-semibold truncate`}
+                        } text-sm sm:text-base font-semibold truncate uppercase`}
                     >
-                      {effectiveTransactionData.paymentDetail.provider_name}
-                    </div>
-                    <div
-                      className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                        } text-xs sm:text-sm font-mono break-all max-w-[200px] sm:max-w-[250px] leading-tight`}
-                      style={{ wordBreak: 'break-all', lineHeight: '1.3' }}
-                    >
-                      {effectiveTransactionData.paymentDetail.account_number ||
-                        effectiveTransactionData.paymentDetail.mobile_number ||
-                        "N/A"}
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <img
-                    src={
-                      effectiveTransactionData?.asset?.icon ||
-                      effectiveTransactionData?.asset?.icon_url ||
-                      effectiveTransactionData?.asset?.image_url ||
-                      effectiveTransactionData?.asset?.image ||
-                      "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
-                    }
-                    alt={
-                      effectiveTransactionData?.asset?.symbol ||
-                      (effectiveTransactionData?.type === "deposit"
-                        ? "USD"
-                        : effectiveTransactionData?.type === "withdrawal"
-                          ? "USD"
-                          : "USDT")
-                    }
-                    className="w-8 h-8 rounded-full flex-shrink-0"
-                    onError={(e) => {
-                      e.currentTarget.src =
-                        "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
-                    }}
-                  />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1 flex-wrap">
-                      <div
-                        className={`${isDark ? "text-white" : "text-gray-900"
-                          } text-sm sm:text-base font-semibold truncate uppercase`}
-                      >
-                        {effectiveTransactionData?.asset?.ticker ||
-                          effectiveTransactionData?.asset?.symbol ||
-                          effectiveTransactionData?.asset?.name ||
-                          (effectiveTransactionData?.type === "deposit"
-                            ? "USD"
-                            : effectiveTransactionData?.type === "withdrawal"
-                              ? "USD"
-                              : "USDT")}
-                      </div>
-                      {effectiveTransactionData?.asset?.description && (
-                        <span
-                          className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                            } text-xs sm:text-sm font-normal truncate`}
-                        >
-                          {effectiveTransactionData?.asset?.description}
-                        </span>
-                      )}
-                    </div>
-                    <div
-                      className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                        } text-xs sm:text-sm font-mono break-all mt-0.5 max-w-[200px] sm:max-w-[250px] leading-tight`}
-                      style={{ wordBreak: 'break-all', lineHeight: '1.3' }}
-                    >
-                      {effectiveTransactionData?.walletAddress ||
-                        "TQn9Y2khEsLJW1ChVWFM...RDow5oRP7bX"}
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-          {/* To Section - Label and Content */}
-          <div className="flex-1">
-            <div
-              className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                } text-sm sm:text-base font-medium mb-2 sm:text-right`}
-            >
-              To
-            </div>
-            <div className="flex flex-col items-start sm:items-end gap-2 min-w-0">
-              {effectiveTransactionData?.type === "deposit" ? (
-                <>
-                  {/* Asset info row - logo, name, network */}
-                  <div className="flex items-center gap-2">
-                    <img
-                      src={
-                        effectiveTransactionData?.asset?.icon ||
-                        effectiveTransactionData?.asset?.icon_url ||
-                        effectiveTransactionData?.asset?.image_url ||
-                        effectiveTransactionData?.asset?.image ||
-                        "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
-                      }
-                      alt={
+                      {effectiveTransactionData?.asset?.ticker ||
                         effectiveTransactionData?.asset?.symbol ||
+                        effectiveTransactionData?.asset?.name ||
                         (effectiveTransactionData?.type === "deposit"
                           ? "USD"
                           : effectiveTransactionData?.type === "withdrawal"
                             ? "USD"
-                            : "USDT")
-                      }
-                      className="w-8 h-8 rounded-full flex-shrink-0"
-                      onError={(e) => {
-                        e.currentTarget.src =
-                          "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
-                      }}
-                    />
+                            : "USDT")}
+                    </div>
+                    {effectiveTransactionData?.asset?.description && (
+                      <span
+                        className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                          } text-xs sm:text-sm font-normal truncate`}
+                      >
+                        {effectiveTransactionData?.asset?.description}
+                      </span>
+                    )}
+                  </div>
+                  <div
+                    className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                      } text-xs sm:text-sm font-mono break-all max-w-[200px] sm:max-w-[250px] leading-tight`}
+                    style={{ wordBreak: 'break-all', lineHeight: '1.3' }}
+                  >
+                    {effectiveTransactionData?.walletAddress ||
+                      "TQn9Y2khEsLJW1ChVWFM...RDow5oRP7bX"}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+          {/* Right: To — from center to end */}
+          <div className="flex items-start gap-3 min-w-0 flex-1 pl-2 sm:pl-4 border-l border-dashed border-gray-300 dark:border-[#35353E]">
+            {effectiveTransactionData?.type === "deposit" ? (
+              <>
+                <img
+                  src={
+                    effectiveTransactionData?.asset?.icon ||
+                    effectiveTransactionData?.asset?.icon_url ||
+                    effectiveTransactionData?.asset?.image_url ||
+                    effectiveTransactionData?.asset?.image ||
+                    "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                  }
+                  alt={
+                    effectiveTransactionData?.asset?.symbol ||
+                    (effectiveTransactionData?.type === "deposit"
+                      ? "USD"
+                      : effectiveTransactionData?.type === "withdrawal"
+                        ? "USD"
+                        : "USDT")
+                  }
+                  className="w-8 h-8 rounded-full flex-shrink-0 mt-0.5"
+                  onError={(e) => {
+                    e.currentTarget.src =
+                      "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                  }}
+                />
+                <div className="min-w-0 flex-1 space-y-0.5">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <div
                       className={`${isDark ? "text-white" : "text-gray-900"
                         } text-sm sm:text-base font-semibold uppercase truncate`}
@@ -1716,63 +1720,62 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                       </span>
                     )}
                   </div>
-                  {/* Address row - below asset info */}
                   <div
                     className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                      } text-xs sm:text-sm font-mono break-all max-w-[200px] sm:max-w-[300px] leading-tight text-left sm:text-right`}
+                      } text-xs sm:text-sm font-mono break-all max-w-[200px] sm:max-w-[300px] leading-tight`}
                     style={{ wordBreak: 'break-all', lineHeight: '1.3' }}
                   >
                     {effectiveTransactionData?.walletAddress ||
                       "TQn9Y2khEsLJW1ChVWFM...RDow5oRP7bX"}
                   </div>
-                </>
-              ) : (
-                <>
-                  <img
-                    src={
-                      effectiveTransactionData?.paymentDetails?.[0]?.logo_url ||
-                      effectiveTransactionData?.paymentDetails?.[0]?.logo ||
-                      effectiveTransactionData?.paymentDetails?.[0]?.provider_logo ||
-                      effectiveTransactionData?.paymentDetail?.logo_url ||
-                      effectiveTransactionData?.paymentDetail?.logo ||
-                      effectiveTransactionData?.paymentDetail?.provider_logo ||
-                      "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
-                    }
-                    alt={
-                      effectiveTransactionData?.paymentDetails?.[0]?.provider_name ||
+                </div>
+              </>
+            ) : (
+              <>
+                <img
+                  src={
+                    effectiveTransactionData?.paymentDetails?.[0]?.logo_url ||
+                    effectiveTransactionData?.paymentDetails?.[0]?.logo ||
+                    effectiveTransactionData?.paymentDetails?.[0]?.provider_logo ||
+                    effectiveTransactionData?.paymentDetail?.logo_url ||
+                    effectiveTransactionData?.paymentDetail?.logo ||
+                    effectiveTransactionData?.paymentDetail?.provider_logo ||
+                    "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
+                  }
+                  alt={
+                    effectiveTransactionData?.paymentDetails?.[0]?.provider_name ||
+                    effectiveTransactionData?.paymentDetail?.provider_name ||
+                    "Bank"
+                  }
+                  className="w-8 h-8 rounded-full flex-shrink-0 mt-0.5"
+                  onError={(e) => {
+                    e.currentTarget.src =
+                      "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+                  }}
+                />
+                <div className="min-w-0 flex-1 space-y-0.5">
+                  <div
+                    className={`${isDark ? "text-white" : "text-gray-900"
+                      } text-sm sm:text-base font-semibold truncate`}
+                  >
+                    {effectiveTransactionData?.paymentDetails?.[0]?.provider_name ||
                       effectiveTransactionData?.paymentDetail?.provider_name ||
-                      "Bank"
-                    }
-                    className="w-8 h-8 rounded-full flex-shrink-0"
-                    onError={(e) => {
-                      e.currentTarget.src =
-                        "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
-                    }}
-                  />
-                  <div className="text-left sm:text-right min-w-0 flex-1">
-                    <div
-                      className={`${isDark ? "text-white" : "text-gray-900"
-                        } text-sm sm:text-base font-semibold truncate`}
-                    >
-                      {effectiveTransactionData?.paymentDetails?.[0]?.provider_name ||
-                        effectiveTransactionData?.paymentDetail?.provider_name ||
-                        "Bank Transfer"}
-                    </div>
-                    <div
-                      className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                        } text-xs sm:text-sm font-mono break-all mt-0.5 max-w-[200px] sm:max-w-[250px] leading-tight`}
-                      style={{ wordBreak: 'break-all', lineHeight: '1.3' }}
-                    >
-                      {effectiveTransactionData?.paymentDetails?.[0]?.account_number ||
-                        effectiveTransactionData?.paymentDetail?.account_number ||
-                        effectiveTransactionData?.paymentDetails?.[0]?.mobile_number ||
-                        effectiveTransactionData?.paymentDetail?.mobile_number ||
-                        "N/A"}
-                    </div>
+                      "Bank Transfer"}
                   </div>
-                </>
-              )}
-            </div>
+                  <div
+                    className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                      } text-xs sm:text-sm font-mono break-all max-w-[200px] sm:max-w-[250px] leading-tight`}
+                    style={{ wordBreak: 'break-all', lineHeight: '1.3' }}
+                  >
+                    {effectiveTransactionData?.paymentDetails?.[0]?.account_number ||
+                      effectiveTransactionData?.paymentDetail?.account_number ||
+                      effectiveTransactionData?.paymentDetails?.[0]?.mobile_number ||
+                      effectiveTransactionData?.paymentDetail?.mobile_number ||
+                      "N/A"}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>

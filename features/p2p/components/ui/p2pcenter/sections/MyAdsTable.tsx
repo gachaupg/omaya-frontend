@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useDispatch, useSelector } from "react-redux";
 import {
   deleteP2POrderThunk,
@@ -11,6 +12,7 @@ import { toast } from "sonner";
 import EditAdModal from "./EditAdModal";
 import { formatDate, formatNumber } from "@/utils/formatters";
 import { NoDataFound } from "@/components/dashboard/ui/Transactions";
+import { SortArrowsIcon } from "@/components/ui/SortArrowsIcon";
 import { ArrowUpCircle, MoreVertical, Pencil, Upload, XCircle } from "lucide-react";
 
 const columns = [
@@ -18,7 +20,7 @@ const columns = [
   "Type",
   "Limit",
   "Price",
-  "Commission",
+  "Rates",
   "Payment",
   "Last Update",
   "Status",
@@ -42,6 +44,7 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
   /** Local state */
   const [currentPage, setCurrentPage] = useState(1);
   const [openMenuIdx, setOpenMenuIdx] = useState<number | null>(null);
+  const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedTrade, setSelectedTrade] = useState<any>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -68,6 +71,7 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setOpenMenuIdx(null);
+        setMenuPosition(null);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -75,11 +79,21 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
   }, []);
 
   /** Handlers */
-  const handleMenuToggle = (idx: number) =>
-    setOpenMenuIdx(openMenuIdx === idx ? null : idx);
+  const handleMenuToggle = (idx: number, event: React.MouseEvent) => {
+    if (openMenuIdx === idx) {
+      setOpenMenuIdx(null);
+      setMenuPosition(null);
+      return;
+    }
+    const target = event.currentTarget as HTMLElement;
+    const rect = target.getBoundingClientRect();
+    setMenuPosition({ top: rect.bottom + 4, left: rect.right - 128 });
+    setOpenMenuIdx(idx);
+  };
 
   const handleMenuAction = async (action: string, trade: any) => {
     setOpenMenuIdx(null);
+    setMenuPosition(null);
     try {
       switch (action) {
         case "Delete":
@@ -145,6 +159,44 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
   }
   return (
     <div className="w-full min-h-[600px] bg-white dark:bg-[var(--card-color)] rounded-2xl p-4 text-gray-900 dark:text-white">
+      {/* Popout menu (fixed position, renders outside table) */}
+      {openMenuIdx !== null &&
+        menuPosition !== null &&
+        paginatedTrades[openMenuIdx] != null &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            ref={menuRef}
+            className="fixed w-32 rounded-md shadow-xl bg-white dark:bg-[var(--card-color)] border border-[#1D8751] dark:border-[#1D8751] z-[100] py-1"
+            style={{ top: menuPosition.top, left: menuPosition.left }}
+          >
+            <ul className="py-1">
+              {getActionOptions(paginatedTrades[openMenuIdx]).map((option) => (
+                <li
+                  key={option}
+                  className="px-4 py-2.5 text-base font-medium text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-[#35353E] cursor-pointer flex items-center gap-2.5"
+                  onClick={() => handleMenuAction(option, paginatedTrades[openMenuIdx])}
+                >
+                  {(option === "Put Offline" || option === "Publish") && (
+                    <ArrowUpCircle size={20} className="text-[#1D8751]" />
+                  )}
+                  {option === "Edit" && (
+                    <Pencil size={20} className="text-[#1D8751]" />
+                  )}
+                  {option === "Delete" && (
+                    <XCircle size={20} className="text-[#1D8751]" />
+                  )}
+                  {option === "Duplicate" && (
+                    <Upload size={20} className="text-[#1D8751] rotate-90" />
+                  )}
+                  {option}
+                </li>
+              ))}
+            </ul>
+          </div>,
+          document.body
+        )}
+
       {/* Desktop Table View */}
       <div className="hidden md:block overflow-x-auto rounded-[16px]">
         <table className="w-full text-left">
@@ -155,7 +207,10 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
                   key={col}
                   className="px-4 py-4 text-base font-bold text-gray-900 dark:text-white whitespace-nowrap"
                 >
-                  {col}
+                  <span className="inline-flex items-center">
+                    {col}
+                    <SortArrowsIcon />
+                  </span>
                 </th>
               ))}
             </tr>
@@ -201,7 +256,7 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
                 <td className="px-4 py-4">
                   <span className="text-base font-semibold text-gray-900 dark:text-white">{trade.amount}</span>
                 </td>
-                {/* Commission */}
+                {/* Rates */}
                 <td className="px-4 py-4">
                   <span className="text-base font-semibold text-gray-900 dark:text-white">{trade.commission_rate}%</span>
                 </td>
@@ -251,43 +306,13 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
                   </span>
                 </td>
                 {/* Action */}
-                <td className="px-4 py-4 relative">
+                <td className="px-4 py-4">
                   <button
-                  className="bg-[#1D8751] p-2.5 rounded-full hover:bg-[#176e43] transition-colors"
-                  onClick={() => handleMenuToggle(idx)}
+                    className="bg-[#1D8751] p-2.5 rounded-full hover:bg-[#176e43] transition-colors"
+                    onClick={(e) => handleMenuToggle(idx, e)}
                   >
-                  <MoreVertical className="w-5 h-5 text-white" />
+                    <MoreVertical className="w-5 h-5 text-white" />
                   </button>
-                  {openMenuIdx === idx && (
-                  <div
-                    ref={menuRef}
-                    className="absolute right-0 mt-2 w-32 rounded-md shadow-lg bg-white dark:bg-[var(--card-color)] border border-[#1D8751] dark:border-[#1D8751] z-10"
-                  >
-                    <ul className="py-1">
-                    {getActionOptions(trade).map((option) => (
-                        <li
-                        key={option}
-                        className="px-4 py-2.5 text-base font-medium text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-[#35353E] cursor-pointer flex items-center gap-2.5"
-                        onClick={() => handleMenuAction(option, trade)}
-                        >
-                        {(option === "Put Offline" || option === "Publish") && (
-                          <ArrowUpCircle size={20} className="text-[#1D8751]" />
-                        )}
-                        {option === "Edit" && (
-                          <Pencil size={20} className="text-[#1D8751]" />
-                        )}
-                        {option === "Delete" && (
-                          <XCircle size={20} className="text-[#1D8751]" />
-                        )}
-                        {option === "Duplicate" && (
-                          <Upload size={20} className="text-[#1D8751] rotate-90" />
-                        )}
-                        {option}
-                        </li>
-                    ))}
-                    </ul>
-                  </div>
-                  )}
                 </td>
               </tr>
             ))}
@@ -327,51 +352,21 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
                 </span>
                 <button
                   className="bg-[#1D8751] p-2 rounded-full hover:bg-[#176e43] transition-colors"
-                  onClick={() => handleMenuToggle(idx)}
+                  onClick={(e) => handleMenuToggle(idx, e)}
                 >
                   <MoreVertical className="w-5 h-5 text-white" />
                 </button>
-                {openMenuIdx === idx && (
-                  <div
-                    ref={menuRef}
-                    className="absolute top-12 right-4 w-32 rounded-md shadow-lg bg-white dark:bg-[var(--card-color)] border border-[#1D8751] dark:border-[#1D8751] z-10"
-                  >
-                    <ul className="py-1">
-                      {getActionOptions(trade).map((option) => (
-                        <li
-                          key={option}
-                          className="px-4 py-2.5 text-base font-medium text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-[#35353E] cursor-pointer flex items-center gap-2.5"
-                          onClick={() => handleMenuAction(option, trade)}
-                        >
-                          {(option === "Put Offline" || option === "Publish") && (
-                            <ArrowUpCircle size={20} className="text-[#1D8751]" />
-                          )}
-                          {option === "Edit" && (
-                            <Pencil size={20} className="text-[#1D8751]" />
-                          )}
-                          {option === "Delete" && (
-                            <XCircle size={20} className="text-[#1D8751]" />
-                          )}
-                          {option === "Duplicate" && (
-                            <Upload size={20} className="text-[#1D8751] rotate-90" />
-                          )}
-                          {option}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
               </div>
             </div>
 
-            {/* Price and Commission Row */}
+            {/* Price and Rates Row */}
             <div className="flex items-center justify-between">
               <div className="flex flex-col">
                 <span className="text-sm font-medium text-gray-500 dark:text-[#8C8CA1] mb-1">Price</span>
                 <span className="text-base font-bold text-gray-900 dark:text-white">{trade.amount}</span>
               </div>
               <div className="flex flex-col items-end">
-                <span className="text-sm font-medium text-gray-500 dark:text-[#8C8CA1] mb-1">Commission</span>
+                <span className="text-sm font-medium text-gray-500 dark:text-[#8C8CA1] mb-1">Rates</span>
                 <span className="text-base font-bold text-gray-900 dark:text-white">{trade.commission_rate}%</span>
               </div>
             </div>

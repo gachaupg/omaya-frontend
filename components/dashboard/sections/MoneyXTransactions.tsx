@@ -6,6 +6,7 @@ import { fetchMoneyXTransactions } from "@/features/moneyX/slices/moneyXSlice";
 import { formatDistanceToNow } from "date-fns";
 import { NoDataFound } from "../ui/Transactions";
 import { useDashboardI18n } from "@/lib/useDashboardI18n";
+import { SortArrowsIcon } from "@/components/ui/SortArrowsIcon";
 import { formatCurrency } from "@/lib/globalFormatter";
 
 const getStatusColor = (status: string) => {
@@ -83,13 +84,13 @@ const MoneyXTransactions = () => {
         <table className="w-full">
           <thead>
             <tr className="border-b border-gray-200 dark:border-[#35353E]">
-              <th className="py-3 px-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]">Transaction ID</th>
-              <th className="py-3 px-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]">From</th>
-              <th className="py-3 px-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]">To</th>
-              <th className="py-3 px-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]">Amount Sent</th>
-              <th className="py-3 px-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]">Amount Received</th>
-              <th className="py-3 px-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]">Status</th>
-              <th className="py-3 px-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]">Date</th>
+              <th className="py-3 px-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]"><span className="inline-flex items-center">Transaction ID<SortArrowsIcon /></span></th>
+              <th className="py-3 px-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]"><span className="inline-flex items-center">From<SortArrowsIcon /></span></th>
+              <th className="py-3 px-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]"><span className="inline-flex items-center">To<SortArrowsIcon /></span></th>
+              <th className="py-3 px-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]"><span className="inline-flex items-center">Amount Sent<SortArrowsIcon /></span></th>
+              <th className="py-3 px-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]"><span className="inline-flex items-center">Amount Received<SortArrowsIcon /></span></th>
+              <th className="py-3 px-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]"><span className="inline-flex items-center">Status<SortArrowsIcon /></span></th>
+              <th className="py-3 px-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]"><span className="inline-flex items-center">Date<SortArrowsIcon /></span></th>
             </tr>
           </thead>
           <tbody>

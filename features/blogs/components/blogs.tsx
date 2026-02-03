@@ -128,8 +128,8 @@ const BlogPage = () => {
   }
 
   return (
-    <div className="bg-white dark:bg-[var(--bg-color)] text-gray-900 dark:text-white min-h-screen p-0 sm:p-6 md:p-8 mt-20">
-      <div className="w-full px-0 sm:px-4 md:px-6 lg:px-8">
+    <div className="bg-white dark:bg-[var(--bg-color)] text-gray-900 dark:text-white min-h-screen px-4 sm:p-6 md:p-8 mt-20">
+      <div className="w-full max-w-full min-w-0 px-0 sm:px-4 md:px-6 lg:px-8">
         <header className="mb-4 md:mb-6 text-center md:text-left">
           <h1 className="text-2xl sm:text-2xl md:text-3xl font-bold leading-tight">
             {(() => {

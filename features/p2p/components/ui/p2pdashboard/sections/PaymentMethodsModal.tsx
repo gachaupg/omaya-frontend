@@ -270,7 +270,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                Payment Method
              </label>
              <select
-               className="w-full p-2.5 sm:p-3 rounded-[24px] bg-white dark:bg-[#18181D] border border-gray-200 dark:border-[#35353E] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1D8751] text-sm sm:text-base"
+               className="w-full p-2.5 sm:p-3 rounded-[24px] bg-white dark:bg-[#18181D] border border-gray-200 dark:border-[#35353E] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1D8751] text-sm sm:text-base [&_option]:bg-white dark:[&_option]:bg-[#18181D] [&_option]:text-gray-900 dark:[&_option]:text-white"
                value={method}
                onChange={(e) => setMethod(e.target.value)}
                disabled={publicMethodsLoading || methodTypes.length === 0}
@@ -297,7 +297,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                </label>
                <div className="relative">
                  <select
-                   className="w-full p-2.5 sm:p-3 rounded-[24px] bg-white dark:bg-[#18181D] border border-gray-200 dark:border-[#35353E] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1D8751] appearance-none pr-10 text-sm sm:text-base"
+                   className="w-full p-2.5 sm:p-3 rounded-[24px] bg-white dark:bg-[#18181D] border border-gray-200 dark:border-[#35353E] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1D8751] appearance-none pr-10 text-sm sm:text-base [&_option]:bg-white dark:[&_option]:bg-[#18181D] [&_option]:text-gray-900 dark:[&_option]:text-white"
                    value={provider}
                    onChange={(e) => setProvider(e.target.value)}
                   disabled={publicMethodsLoading || providers.length === 0}

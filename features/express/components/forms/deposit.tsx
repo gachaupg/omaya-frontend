@@ -3996,8 +3996,10 @@ export default function DepositForm({
               </label>
               <input
                 type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 value={forexAccountNumber}
-                onChange={(e) => setForexAccountNumber(e.target.value)}
+                onChange={(e) => setForexAccountNumber(e.target.value.replace(/\D/g, ""))}
                 placeholder="Enter your forex account number"
                 className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 py-2 text-lg focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E]"
               />
@@ -4347,12 +4349,12 @@ export default function DepositForm({
             <label className="block text-sm sm:text-[17px] text-[#7e7e8f] mb-2 font-semibold">
               {t("express.walletAccountAddress", "Wallet/Account Address")}
             </label>
-            {/* Input + Paste row */}
+            {/* Input + Paste row - stacked on small screens so input is always visible */}
             <div className="flex flex-col sm:flex-row gap-3 items-stretch">
-              {/* Input group */}
-              <div className="relative flex items-center bg-white dark:bg-[#18181D] border border-[#39394a] dark:border-[#35353E] rounded-2xl px-2 sm:px-3 md:px-4 py-2 mb-0 flex-1 min-w-0">
+              {/* Input group - icon + input only; full width on small so input is visible */}
+              <div className="relative flex items-center bg-white dark:bg-[#18181D] border border-[#39394a] dark:border-[#35353E] rounded-2xl px-2 sm:px-3 md:px-4 py-2 mb-0 flex-1 min-w-0 w-full">
                 {/* Left icon */}
-                <span className="mr-2 text-[#1D8751]">
+                <span className="mr-2 flex-shrink-0 text-[#1D8751]">
                   <svg width="22" height="22" fill="none" viewBox="0 0 24 24">
                     <path
                       d="M7 17v2a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"
@@ -4393,7 +4395,7 @@ export default function DepositForm({
                     setForceUpdate((prev) => prev + 1);
                   }}
                   placeholder="Paste your crypto address"
-                  className={`flex-1 bg-transparent border-none outline-none text-gray-900 dark:text-white placeholder-[#788099] text-sm sm:text-base font-mono tracking-wide min-w-0 ${walletError
+                  className={`flex-1 min-w-[120px] sm:min-w-0 bg-transparent border-none outline-none text-gray-900 dark:text-white placeholder-[#788099] text-sm sm:text-base font-mono tracking-wide w-full ${walletError
                     ? "border-red-500"
                     : walletAddress.trim() && !walletError && addressValidationResult?.isValid
                       ? "border-green-500"
@@ -4434,6 +4436,7 @@ export default function DepositForm({
                     <rect x="13" y="13" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.5" />
                   </svg>
                 </span>  */}
+              </div>
               <button
                 onClick={async () => {
                   try {
@@ -4464,10 +4467,6 @@ export default function DepositForm({
                   />
                 </svg>
               </button>
-              </div>
-
-              {/* Paste button - same row as input */}
-              
             </div>
 
             {/* Show validation messages below the wallet address input */}

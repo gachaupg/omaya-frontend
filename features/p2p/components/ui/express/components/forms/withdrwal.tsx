@@ -297,8 +297,8 @@ export default function WithdrawalForm({
 
   const [payAmount, setPayAmount] = useState(0);
   const [getAmount, setGetAmount] = useState(0);
-  const [payAmountInput, setPayAmountInput] = useState("0");
-  const [getAmountInput, setGetAmountInput] = useState("0");
+  const [payAmountInput, setPayAmountInput] = useState("");
+  const [getAmountInput, setGetAmountInput] = useState("");
   const [selectedAsset, setSelectedAsset] = useState<any>(null);
   const [selectedNetwork, setSelectedNetwork] = useState<any>(() => {
     // Initialize with BSC network immediately
@@ -2611,7 +2611,18 @@ export default function WithdrawalForm({
                   inputMode="decimal"
                   value={payAmountInput}
                   onChange={(e) => {
-                    const inputValue = e.target.value;
+                    let inputValue = e.target.value;
+
+                    // Strip leading zeros to avoid "0545" when typing (keep "0" or "0.5")
+                    if (inputValue.length > 1) {
+                      if (inputValue.startsWith("-")) {
+                        const rest = inputValue.slice(1);
+                        if (rest.startsWith("0") && rest[1] !== ".")
+                          inputValue = "-" + (rest.replace(/^0+/, "") || "0");
+                      } else if (inputValue.startsWith("0") && inputValue[1] !== ".") {
+                        inputValue = inputValue.replace(/^0+/, "") || "0";
+                      }
+                    }
 
                     // Allow any numeric input including negative numbers and 0
                     if (inputValue === "" || /^-?\d*\.?\d*$/.test(inputValue)) {
@@ -3086,7 +3097,7 @@ export default function WithdrawalForm({
           setIsSuccessModalOpen(false);
           // Reset form after success
           setPayAmount(0);
-          setPayAmountInput("0");
+          setPayAmountInput("");
           setWalletAddress("");
           setIsTransactionSubmitted(false);
           // Reload the page after closing the success modal

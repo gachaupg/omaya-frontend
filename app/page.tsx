@@ -180,10 +180,17 @@ export default function MarketingPage() {
   const [showContactSuccess, setShowContactSuccess] = useState(false);
   const [showContactError, setShowContactError] = useState(false);
   const [contactErrorMessage, setContactErrorMessage] = useState("");
-  const [showAllFAQs, setShowAllFAQs] = useState(false);
+  const [faqPage, setFaqPage] = useState(1);
+  const FAQ_PER_PAGE = 5;
   const [showAllAssets, setShowAllAssets] = useState(false);
   const { blogs, news, allPosts, loading, error } = useBlog();
   const { faqs: faqItems, loading: faqLoading, error: faqError } = useFAQ();
+
+  // Clamp FAQ page when list length changes (e.g. refetch) so we don't show an empty page
+  useEffect(() => {
+    const totalPages = Math.ceil((faqItems?.length ?? 0) / FAQ_PER_PAGE) || 1;
+    setFaqPage((p) => Math.min(p, totalPages));
+  }, [faqItems?.length]);
   const { statistics, loading: statsLoading, error: statsError } = useHighlightStatistics();
   const {
     markets: marketAssets,
@@ -2108,7 +2115,7 @@ export default function MarketingPage() {
 
             {/* Main Title */}
             <h2 className="text-3xl sm:text-4xl md:text-5xl 2xl:text-6xl font-bold mb-4">
-              Frequently Asked <span className="text-[#1D8751]">Questions</span>
+              Frequehntly Asked <span className="text-[#1D8751]">Questions</span>
             </h2>
 
             {/* Subtitle */}
@@ -2120,8 +2127,8 @@ export default function MarketingPage() {
           {/* FAQ Accordion */}
           <div className="space-y-4 mb-12">
             {faqLoading ? (
-              // Loading state
-              Array.from({ length: 8 }).map((_, index) => (
+              // Loading state (5 placeholders)
+              Array.from({ length: 5 }).map((_, index) => (
                 <div key={index} className="relative animate-pulse">
                   <div className="bg-gray-50 dark:bg-[#1D1D23] border border-gray-200 dark:border-[#2A2A2A] rounded-xl overflow-hidden">
                     <div className="w-full flex justify-between items-center px-5 py-4">
@@ -2159,93 +2166,122 @@ export default function MarketingPage() {
               </div>
             ) : (
               <>
-                {/* FAQ items */}
-                {faqItems.slice(0, showAllFAQs ? faqItems.length : 8).map((item, index) => {
-                  const isOpen = openFAQ === (item.id || index);
+                {/* FAQ items - 5 per page */}
+                {faqItems
+                  .slice((faqPage - 1) * FAQ_PER_PAGE, faqPage * FAQ_PER_PAGE)
+                  .map((item, index) => {
+                    const globalIndex = (faqPage - 1) * FAQ_PER_PAGE + index;
+                    const isOpen = openFAQ === globalIndex;
 
-                  // Category mapping (you can customize this based on your FAQ data)
-                  const categories = [
-                    'GETTING STARTED',
-                    'TRADING',
-                    'SECURITY',
-                    'FEES',
-                    'WITHDRAWALS',
-                    'AVAILABILITY',
-                    'P2P TRADING',
-                    'SUPPORT'
-                  ];
-                  const category = categories[index] || 'GENERAL';
+                    const categories = [
+                      "GETTING STARTED",
+                      "TRADING",
+                      "SECURITY",
+                      "FEES",
+                      "WITHDRAWALS",
+                      "AVAILABILITY",
+                      "P2P TRADING",
+                      "SUPPORT",
+                    ];
+                    const category = categories[globalIndex] || "GENERAL";
 
-                  return (
-                    <div key={item.id || item._id || index} className="relative">
+                    return (
                       <div
-                        className={`bg-gray-50 dark:bg-[#18181D] border rounded-xl overflow-hidden ${isOpen
-                          ? "dark:border-accent border-border"
-                          : "border-gray-200 dark:border-[#2A2A2A]"
-                          }`}
+                        key={item.id || item._id || globalIndex}
+                        className="relative"
                       >
-                        {/* Accordion Header */}
-                        <button
-                          onClick={() => toggleFAQ(item.id || index)}
-                          className="w-full flex justify-between items-start px-5 py-4 text-left hover:bg-gray-100 dark:hover:bg-[#23232B] transition-colors"
+                        <div
+                          className={`bg-gray-50 dark:bg-[#18181D] border rounded-xl overflow-hidden ${
+                            isOpen
+                              ? "dark:border-accent border-border"
+                              : "border-gray-200 dark:border-[#2A2A2A]"
+                          }`}
                         >
-                          <div className="flex flex-col gap-1 flex-1">
-                            <span className="text-[#1D8751] text-xs font-semibold uppercase">
-                              {category}
-                            </span>
-                            <span className="text-gray-900 dark:text-white font-medium text-base">
-                              {item.question}
-                            </span>
-                          </div>
-                          <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ml-4 transition-colors ${isOpen
-                            ? "bg-[#1D8751]"
-                            : "bg-gray-200 dark:bg-[#2A2A2A]"
-                            }`}>
-                            {isOpen ? (
-                              <ChevronUp className="w-4 h-4 text-white" />
-                            ) : (
-                              <ChevronDown className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                            )}
-                          </div>
-                        </button>
+                          <button
+                            onClick={() => toggleFAQ(globalIndex)}
+                            className="w-full flex justify-between items-start px-5 py-4 text-left hover:bg-gray-100 dark:hover:bg-[#23232B] transition-colors"
+                          >
+                            <div className="flex flex-col gap-1 flex-1">
+                              <span className="text-[#1D8751] text-xs font-semibold uppercase">
+                                {category}
+                              </span>
+                              <span className="text-gray-900 dark:text-white font-medium text-base">
+                                {item.question}
+                              </span>
+                            </div>
+                            <div
+                              className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ml-4 transition-colors ${
+                                isOpen
+                                  ? "bg-[#1D8751]"
+                                  : "bg-gray-200 dark:bg-[#2A2A2A]"
+                              }`}
+                            >
+                              {isOpen ? (
+                                <ChevronUp className="w-4 h-4 text-white" />
+                              ) : (
+                                <ChevronDown className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                              )}
+                            </div>
+                          </button>
 
-                        {/* Accordion Content */}
-                        {isOpen && (
-                          <div className="bg-gray-50 dark:bg-[#18181D]">
-                            <div className="px-5 pt-4 pb-4">
-                              <div className="border-t border-accent dark:border-[#2A2A2A] pt-5 -mt-4">
-                                <p className="text-gray-700 dark:text-white/80 text-sm md:text-base leading-relaxed">
-                                  {item.answer}
-                                </p>
+                          {isOpen && (
+                            <div className="bg-gray-50 dark:bg-[#18181D]">
+                              <div className="px-5 pt-4 pb-4">
+                                <div className="border-t border-accent dark:border-[#2A2A2A] pt-5 -mt-4">
+                                  <p className="text-gray-700 dark:text-white/80 text-sm md:text-base leading-relaxed">
+                                    {item.answer}
+                                  </p>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        )}
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
 
-                {/* Load All Button - only show if there are more than 8 FAQs */}
-                {faqItems.length > 8 && !showAllFAQs && (
-                  <div className="text-center pt-4">
+                {/* Pagination - only show if more than 1 page */}
+                {faqItems.length > FAQ_PER_PAGE && (
+                  <div className="flex flex-wrap items-center justify-center gap-2 pt-6">
                     <button
-                      onClick={() => setShowAllFAQs(true)}
-                      className="bg-[#1D8751] text-white px-6 py-3 rounded-lg hover:bg-[#167a47] transition-colors font-medium"
+                      onClick={() => setFaqPage((p) => Math.max(1, p - 1))}
+                      disabled={faqPage <= 1}
+                      className="px-3 py-2 rounded-lg border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#23232B] text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-[#2A2A2A] transition-colors text-sm font-medium"
                     >
-                      {t("marketing.faq.loadAll", "Load All FAQs")} ({faqItems.length - 8} more)
+                      {t("marketing.faq.prev", "Prev")}
                     </button>
-                  </div>
-                )}
-
-                {/* Show Less Button - only show when all FAQs are displayed */}
-                {faqItems.length > 8 && showAllFAQs && (
-                  <div className="text-center pt-4">
+                    <div className="flex items-center gap-1">
+                      {Array.from({
+                        length: Math.ceil(faqItems.length / FAQ_PER_PAGE),
+                      }).map((_, i) => (
+                        <button
+                          key={i}
+                          onClick={() => setFaqPage(i + 1)}
+                          className={`min-w-[36px] h-9 px-2 rounded-lg text-sm font-medium transition-colors ${
+                            faqPage === i + 1
+                              ? "bg-[#1D8751] text-white"
+                              : "border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#23232B] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#2A2A2A]"
+                          }`}
+                        >
+                          {i + 1}
+                        </button>
+                      ))}
+                    </div>
                     <button
-                      onClick={() => setShowAllFAQs(false)}
-                      className="bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition-colors font-medium"
+                      onClick={() =>
+                        setFaqPage((p) =>
+                          Math.min(
+                            Math.ceil(faqItems.length / FAQ_PER_PAGE),
+                            p + 1
+                          )
+                        )
+                      }
+                      disabled={
+                        faqPage >= Math.ceil(faqItems.length / FAQ_PER_PAGE)
+                      }
+                      className="px-3 py-2 rounded-lg border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#23232B] text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-[#2A2A2A] transition-colors text-sm font-medium"
                     >
-                      {t("marketing.faq.showLess", "Show Less")}
+                      {t("marketing.faq.next", "Next")}
                     </button>
                   </div>
                 )}

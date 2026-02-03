@@ -183,10 +183,10 @@ const Merchant = () => {
   // Show loading state while fetching status
   if (statusLoading && !status) {
     return (
-      <div className="min-h-screen text-white flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-[#18181D] text-gray-900 dark:text-white flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1D8751] mx-auto mb-4"></div>
-          <p className="text-gray-400">Loading application status...</p>
+          <p className="text-gray-600 dark:text-gray-400">Loading application status...</p>
         </div>
       </div>
     )
@@ -196,9 +196,9 @@ const Merchant = () => {
   const showStatusBanner = status && status.status !== 'not_submitted'
 
   return (
-    <div className="min-h-screen text-foreground ">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#18181D] text-gray-900 dark:text-white">
       {/* Background with subtle chart pattern */}
-      <div className="absolute inset-0 opacity-5">
+      <div className="absolute inset-0 opacity-5 pointer-events-none">
         <div className="w-full h-full bg-gradient-to-br from-[#1D8751]/10 to-transparent"></div>
       </div>
 
@@ -270,8 +270,8 @@ const Merchant = () => {
 
         {/* Main Content */}
         <div className="mb-4 pl-6 pr-6">
-          <h2 className="text-2xl font-semibold mb-2">P2P Merchant Application</h2>
-          <div className="space-y-4 text-muted-foreground">
+          <h2 className="text-2xl font-semibold mb-2 text-gray-900 dark:text-white">P2P Merchant Application</h2>
+          <div className="space-y-4 text-gray-600 dark:text-gray-400">
             <p>The P2P Merchant Program allows experienced traders to provide liquidity in our marketplace and earn profits by connecting with buyers and sellers directly. As a merchant, you'll receive exclusive benefits such as increased visibility, higher trade limits, and a verified badge that builds user confidence.</p>
           </div>
         </div>
@@ -279,54 +279,54 @@ const Merchant = () => {
         {/* Four Cards Section */}
         <div className="grid grid-cols-1 pl-6 pr-6 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
           {/* Box 1: Verified Identity */}
-          <div className="border border-[#1D8751]/30 rounded-lg p-6 bg-card">
+          <div className="border border-gray-200 dark:border-[#1D8751]/30 rounded-lg p-6 bg-white dark:bg-[var(--card-color)] shadow-sm dark:shadow-none">
             <div className="flex flex-col items-center text-center">
               <div className="w-16 h-16 mb-4 flex items-center justify-center">
                 <svg className="w-12 h-12 text-blue-500 dark:text-blue-400" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold mb-2 text-foreground">Verified Identity</h3>
-              <p className="text-sm text-muted-foreground">Gain trust and credibility with a merchant badge after successful verification.</p>
+              <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-white">Verified Identity</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Gain trust and credibility with a merchant badge after successful verification.</p>
             </div>
           </div>
 
           {/* Box 2: Higher Limits */}
-          <div className="border border-[#1D8751]/30 rounded-lg p-6 bg-card">
+          <div className="border border-gray-200 dark:border-[#1D8751]/30 rounded-lg p-6 bg-white dark:bg-[var(--card-color)] shadow-sm dark:shadow-none">
             <div className="flex flex-col items-center text-center">
               <div className="w-16 h-16 mb-4 flex items-center justify-center">
                 <svg className="w-12 h-12 text-green-500 dark:text-green-400" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M7 4V2c0-1.1.9-2 2-2h6c1.1 0 2 .9 2 2v2h4c1.1 0 2 .9 2 2v2c0 1.1-.9 2-2 2h-1v10c0 1.1-.9 2-2 2H6c-1.1 0-2-.9-2-2V10H3c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2h4zm2 0h6V2H9v2z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold mb-2 text-foreground">Higher Limits</h3>
-              <p className="text-sm text-muted-foreground">Enjoy increased daily and monthly trading volume once approved.</p>
+              <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-white">Higher Limits</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Enjoy increased daily and monthly trading volume once approved.</p>
             </div>
           </div>
 
           {/* Box 3: Exclusive Badge */}
-          <div className="border border-[#1D8751]/30 rounded-lg p-6 bg-card">
+          <div className="border border-gray-200 dark:border-[#1D8751]/30 rounded-lg p-6 bg-white dark:bg-[var(--card-color)] shadow-sm dark:shadow-none">
             <div className="flex flex-col items-center text-center">
               <div className="w-16 h-16 mb-4 flex items-center justify-center">
                 <svg className="w-12 h-12 text-purple-500 dark:text-purple-400" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold mb-2 text-foreground">Exclusive Badge</h3>
-              <p className="text-sm text-muted-foreground">Stand out in the marketplace with a visible merchant verification badge.</p>
+              <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-white">Exclusive Badge</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Stand out in the marketplace with a visible merchant verification badge.</p>
             </div>
           </div>
 
           {/* Box 4: Priority Support */}
-          <div className="border border-[#1D8751]/30 rounded-lg p-6 bg-card">
+          <div className="border border-gray-200 dark:border-[#1D8751]/30 rounded-lg p-6 bg-white dark:bg-[var(--card-color)] shadow-sm dark:shadow-none">
             <div className="flex flex-col items-center text-center">
               <div className="w-16 h-16 mb-4 flex items-center justify-center">
                 <svg className="w-12 h-12 text-orange-500 dark:text-orange-400" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold mb-2 text-foreground">Priority Support</h3>
-              <p className="text-sm text-muted-foreground">Get faster customer support to resolve trading-related issues quickly.</p>
+              <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-white">Priority Support</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Get faster customer support to resolve trading-related issues quickly.</p>
             </div>
           </div>
         </div>

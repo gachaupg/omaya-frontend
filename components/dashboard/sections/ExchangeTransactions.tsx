@@ -7,6 +7,7 @@ import { formatDistanceToNow } from "date-fns";
 import { P2PTransaction } from "@/features/p2p/types";
 import { NoDataFound } from "../ui/Transactions";
 import { useDashboardI18n } from "@/lib/useDashboardI18n";
+import { SortArrowsIcon } from "@/components/ui/SortArrowsIcon";
 
 interface RootState {
   p2pTransactions: {
@@ -449,7 +450,10 @@ const ExchangeTransactions = ({itemsPerPage=10}) => {
                   key={h}
                   className="px-3 sm:px-4 lg:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-600 dark:text-[#788099]"
                 >
-                  {h}
+                  <span className="inline-flex items-center">
+                    {h}
+                    <SortArrowsIcon />
+                  </span>
                 </th>
               ))}
             </tr>
