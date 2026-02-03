@@ -389,7 +389,7 @@ export const Chats: React.FC = () => {
     return name.charAt(0).toUpperCase();
   };
 
-  const getDisplayName = (userGroup: GroupedUser) => {
+  const getDisplayName = React.useCallback((userGroup: GroupedUser) => {
     if (userGroup.message_type === "p2p") {
       return (
         userGroup.peer_name ||
@@ -405,7 +405,7 @@ export const Chats: React.FC = () => {
       (userGroup as any).sender_email?.split("@")[0] ||
       "Unknown"
     );
-  };
+  }, []);
 
   const filteredConversations = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
@@ -413,27 +413,38 @@ export const Chats: React.FC = () => {
 
     return conversations.filter((group: any) => {
       // Search by display name (sender/buyer name)
-      const displayName = getDisplayName(group)?.toLowerCase?.() || "";
+      const displayName = (getDisplayName(group) ?? "").toString().toLowerCase();
 
       // Search by peer name (for P2P conversations)
-      const peerName = (group.peer_name || "").toString().toLowerCase();
+      const peerName = (group.peer_name ?? "").toString().toLowerCase();
 
       // Search by sender name
-      const senderName = ((group as any).sender_name || "").toString().toLowerCase();
+      const senderName = (group.sender_name ?? "").toString().toLowerCase();
 
       // Search by emails
-      const peerEmail = (group.peer_email || "").toString().toLowerCase();
-      const senderEmail = ((group as any).sender_email || "").toString().toLowerCase();
+      const peerEmail = (group.peer_email ?? "").toString().toLowerCase();
+      const senderEmail = (group.sender_email ?? "").toString().toLowerCase();
+
+      // Search in latest message content
+      const latestMsg = group.messages?.[0];
+      const messageContent = (
+        latestMsg?.content ??
+        latestMsg?.message ??
+        ""
+      )
+        .toString()
+        .toLowerCase();
 
       return (
         displayName.includes(term) ||
         peerName.includes(term) ||
         senderName.includes(term) ||
         peerEmail.includes(term) ||
-        senderEmail.includes(term)
+        senderEmail.includes(term) ||
+        messageContent.includes(term)
       );
     });
-  }, [conversations, searchTerm]);
+  }, [conversations, searchTerm, getDisplayName]);
 
   const getPhotoUrl = (userGroup: GroupedUser, latestMessage: any) => {
     if (userGroup.message_type === "p2p") {
@@ -770,7 +781,9 @@ useEffect(() => {
           <div className="px-2 pb-2 space-y-1 flex-1 overflow-y-auto max-h-[30dvh] lg:max-h-[calc(100vh-200px)]">
             {filteredConversations.length === 0 && (
               <div className="px-3 py-4 text-xs text-gray-600 dark:text-[#9CA3AF]">
-                No conversations yet.
+                {searchTerm.trim()
+                  ? "No matching conversations."
+                  : "No conversations yet."}
               </div>
             )}
             {filteredConversations.map((group: any) => {

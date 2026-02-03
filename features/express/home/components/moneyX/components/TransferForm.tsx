@@ -1256,7 +1256,7 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
                     })
                   ).unwrap();
 
-                  showToast.success("Account number updated successfully!");
+                  showToast.success("Transaction is successful", "Account updated successfully.");
                   
                   // Call onTransfer callback with transaction data including MoneyX transaction ID
                   if (onTransfer) {

@@ -3674,7 +3674,7 @@ export default function DepositForm({
                   <span>Creating Forex Exchange...</span>
                 </div>
               ) : (
-                <span>Submit Forex Exchange</span>
+                <span>Submit </span>
               )}
             </button>
           </div>

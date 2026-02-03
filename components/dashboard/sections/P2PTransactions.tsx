@@ -11,6 +11,7 @@ import { TransactionType } from "@/features/p2p/types";
 import { formatDistanceToNow } from "date-fns";
 import { NoDataFound } from "../ui/Transactions";
 import { useDashboardI18n } from "@/lib/useDashboardI18n";
+import { SortArrowsIcon } from "@/components/ui/SortArrowsIcon";
 
 const COIN_ICONS: Record<string, string> = {
   USDT: "https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png",
@@ -207,11 +208,11 @@ const P2PTransactions = () => {
         <table className="min-w-full text-sm text-left bg-transparent">
           <thead>
             <tr className="border-b border-gray-200 dark:border-[#35353E]">
-              <th className="px-3 sm:px-4 lg:px-4 py-3 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]">Asset</th>
-              <th className="px-3 sm:px-4 lg:px-4 py-3 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]">Transaction Type</th>
-              <th className="px-3 sm:px-4 lg:px-4 py-3 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]">Amount</th>
-              <th className="px-3 sm:px-4 lg:px-4 py-3 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]">Payment Method</th>
-              <th className="px-3 sm:px-4 lg:px-4 py-3 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]">When</th>
+              <th className="px-3 sm:px-4 lg:px-4 py-3 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]"><span className="inline-flex items-center">Asset<SortArrowsIcon /></span></th>
+              <th className="px-3 sm:px-4 lg:px-4 py-3 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]"><span className="inline-flex items-center">Transaction Type<SortArrowsIcon /></span></th>
+              <th className="px-3 sm:px-4 lg:px-4 py-3 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]"><span className="inline-flex items-center">Amount<SortArrowsIcon /></span></th>
+              <th className="px-3 sm:px-4 lg:px-4 py-3 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]"><span className="inline-flex items-center">Payment Method<SortArrowsIcon /></span></th>
+              <th className="px-3 sm:px-4 lg:px-4 py-3 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]"><span className="inline-flex items-center">When<SortArrowsIcon /></span></th>
             </tr>
           </thead>
           <tbody>

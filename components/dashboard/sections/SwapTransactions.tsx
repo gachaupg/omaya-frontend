@@ -4,6 +4,7 @@ import { formatDistanceToNow } from "date-fns";
 import { useSwapHistory } from "@/features/swap/hooks/useSwapHistory";
 import { SwapTransaction } from "@/features/swap/types";
 import { useDashboardI18n } from "@/lib/useDashboardI18n";
+import { SortArrowsIcon } from "@/components/ui/SortArrowsIcon";
 
 const getStatusColor = (status: string) => {
   switch (status.toLowerCase()) {
@@ -166,16 +167,16 @@ const SwapTransactions = () => {
           <thead>
             <tr className="border-b border-[#E8EFF5] dark:border-[#35353E]">
               <th className="text-left py-3 px-3 sm:px-4 text-xs sm:text-sm font-medium text-[#788099]">
-                Transaction
+                <span className="inline-flex items-center">Transaction<SortArrowsIcon /></span>
               </th>
               <th className="text-left py-3 px-3 sm:px-4 text-xs sm:text-sm font-medium text-[#788099]">
-                Amount
+                <span className="inline-flex items-center">Amount<SortArrowsIcon /></span>
               </th>
               <th className="text-left py-3 px-3 sm:px-4 text-xs sm:text-sm font-medium text-[#788099]">
-                Status
+                <span className="inline-flex items-center">Status<SortArrowsIcon /></span>
               </th>
               <th className="text-left py-3 px-3 sm:px-4 text-xs sm:text-sm font-medium text-[#788099]">
-                Date
+                <span className="inline-flex items-center">Date<SortArrowsIcon /></span>
               </th>
             </tr>
           </thead>

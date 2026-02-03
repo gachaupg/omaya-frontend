@@ -734,6 +734,9 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
     );
   }
 
+  const ussdAmount = liveAmount ?? effectiveTransactionData?.amount ?? 0;
+  const ussdCode = `*789*75466*${ussdAmount}#`;
+
   return (
     <div className={`w-full min-h-screen flex flex-col pt-0 sm:pt-1 md:pt-2 pl-0 sm:pl-4 pr-2 sm:pr-0 mr-0 sm:mr-40 max-w-full sm:max-w-5xl overflow-x-hidden box-border`}>
       {/* Timer Banner */}
@@ -820,6 +823,22 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                   : effectiveTransactionData?.amount || 0}{" "}
                 USD
               </span>
+            </div>
+
+            {/* How to send - USSD code next to amount */}
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-2">
+              <span className={`text-[10px] sm:text-xs font-semibold ${isDark ? "text-[#7B7B7B]" : "text-gray-600"}`}>
+                How to send:
+              </span>
+              <code className={`font-mono text-xs sm:text-sm font-semibold break-all ${isDark ? "text-white" : "text-gray-900"}`}>
+                *789*75466*{ussdAmount}#
+              </code>
+              <CopyButton
+                value={ussdCode}
+                className="flex-shrink-0 p-1.5 sm:p-2 rounded-lg border border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751]/10 transition-colors"
+                showText
+                showInlineMessage
+              />
             </div>
 
             {/* MoneyX specific: Show From and To payment methods */}
@@ -1388,25 +1407,24 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
           className={`border-t border-dashed ${isDark ? "border-[#7B7B7B]" : "border-gray-400"
             } mb-4`}
         ></div>
-        {/* From/To Labels Row */}
-        <div className="flex items-center justify-between mb-2">
+        {/* From (left) | To (start of second part) — aligned UI */}
+        <div className="flex mb-2">
           <div
-            className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+            className={`flex-shrink-0 w-1/2 ${isDark ? "text-[#7B7B7B]" : "text-gray-600"
               } text-sm sm:text-base font-medium`}
           >
             From
           </div>
           <div
-            className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+            className={`flex-1 min-w-0 text-left pl-2 sm:pl-4 ${isDark ? "text-[#7B7B7B]" : "text-gray-600"
               } text-sm sm:text-base font-medium`}
           >
             To
           </div>
         </div>
-        {/* From/To Content Row */}
-        <div className="flex flex-row items-center justify-between gap-2 sm:gap-4 mt-2">
-          {/* From */}
-          <div className="flex items-center gap-2 min-w-0 flex-1">
+        <div className="flex mt-2 items-start gap-0">
+          {/* Left: From */}
+          <div className="flex items-start gap-3 min-w-0 w-1/2 flex-shrink-0 pr-2 sm:pr-4">
             {effectiveTransactionData?.fromPaymentMethod ? (
               <>
                 {(effectiveTransactionData.fromPaymentMethod.provider_logo ||
@@ -1417,14 +1435,14 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                         effectiveTransactionData.fromPaymentMethod.logo
                       }
                       alt={effectiveTransactionData.fromPaymentMethod.provider_name}
-                      className="w-6 h-6 sm:w-8 sm:h-8 rounded-md object-contain bg-white flex-shrink-0"
+                      className="w-6 h-6 sm:w-8 sm:h-8 rounded-md object-contain bg-white flex-shrink-0 mt-0.5"
                       onError={(e) => {
                         e.currentTarget.src =
                           "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
                       }}
                     />
                   )}
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1 space-y-0.5">
                   <div
                     className={`${isDark ? "text-white" : "text-gray-900"
                       } text-sm sm:text-base font-semibold break-words`}
@@ -1450,8 +1468,8 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
               </div>
             )}
           </div>
-          {/* To */}
-          <div className="flex items-center gap-2 min-w-0 flex-1 justify-end">
+          {/* Right: To — from center to end */}
+          <div className="flex items-start gap-3 min-w-0 flex-1 pl-2 sm:pl-4 border-l border-dashed border-gray-300 dark:border-[#35353E]">
             {effectiveTransactionData?.toPaymentMethod ? (
               <>
                 {(effectiveTransactionData.toPaymentMethod.provider_logo ||
@@ -1462,14 +1480,14 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                         effectiveTransactionData.toPaymentMethod.logo
                       }
                       alt={effectiveTransactionData.toPaymentMethod.provider_name}
-                      className="w-6 h-6 sm:w-8 sm:h-8 rounded-md object-contain bg-white flex-shrink-0"
+                      className="w-6 h-6 sm:w-8 sm:h-8 rounded-md object-contain bg-white flex-shrink-0 mt-0.5"
                       onError={(e) => {
                         e.currentTarget.src =
                           "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
                       }}
                     />
                   )}
-                <div className="text-right min-w-0">
+                <div className="min-w-0 flex-1 space-y-0.5">
                   <div
                     className={`${isDark ? "text-white" : "text-gray-900"
                       } text-sm sm:text-base font-semibold break-words`}

@@ -806,7 +806,13 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
               <div className="my-4 sm:my-6 gap-6 sm:gap-10 flex flex-col lg:flex-row p-2">
                 <div className="flex-1">
                   <UserPaymentSelector
-                    userPaymentDetails={userPaymentDetails || []}
+                    userPaymentDetails={
+                      (userPaymentDetails || []).filter(
+                        (d) =>
+                          !d.status ||
+                          d.status?.toLowerCase() === "approved"
+                      )
+                    }
                     adminMethods={adminMethods || []}
                     onSelect={handleSelectPaymentDetail}
                     selectedDetails={selectedPaymentDetails}

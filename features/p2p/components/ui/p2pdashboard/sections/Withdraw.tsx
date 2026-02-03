@@ -57,6 +57,7 @@ const Withdraw: React.FC = () => {
   const [showOTPModal, setShowOTPModal] = useState(false);
   const [withdrawalId, setWithdrawalId] = useState("");
   const [showInfoDropdown, setShowInfoDropdown] = useState(false);
+  const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
 
   /* --------------------------------------------------------------------- */
   /*                                Effects                                */
@@ -117,6 +118,7 @@ const Withdraw: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setHasAttemptedSubmit(true);
 
     // Validate wallet address is not empty first
     const trimmedAddress = usdtAddress?.trim() || "";
@@ -320,13 +322,17 @@ const Withdraw: React.FC = () => {
               >
                 <span className="text-[#1D8751] font-semibold mr-1">$</span>
                 <Input
-                  type="number"
-                  value={amount}
+                  type="number"                  value={amount}
                   onChange={(e) => {
-                    setAmount(e.target.value);
+                    let v = e.target.value;
+                    // When value is "0" and user types a digit we get "06" etc. Strip leading zeros so it becomes "6".
+                    if (v && v.startsWith("0") && v.length > 1 && v[1] !== ".") {
+                      v = v.replace(/^0+/, "") || "0";
+                    }
+                    setAmount(v);
                     setErrors(errors.filter((er) => er.field !== "amount"));
                   }}
-                  placeholder="0"
+                  placeholder=""
                   className="w-full bg-transparent border-none focus:outline-none"
                   min="0"
                   disabled={!selectedAssetId || !selectedNetworkId}
@@ -343,7 +349,7 @@ const Withdraw: React.FC = () => {
                   <span className="text-[10px] text-gray-400">(Available)</span>
                 </span>
               </div>
-              {getFieldError("amount", errors) && (
+              {hasAttemptedSubmit && getFieldError("amount", errors) && (
                 <span className="text-red-500 text-sm mt-1">
                   {getFieldError("amount", errors)}
                 </span>

@@ -483,9 +483,9 @@ const Dropdown = ({
   options: string[];
   onChange: (v: string) => void;
 }) => (
-  <div className="relative w-auto inline-flex min-w-0">
+  <div className="relative inline-flex min-w-0 max-w-full">
     <select
-      className="appearance-none bg-white dark:bg-[#23232B] dark:text-white text-gray-700 rounded-full px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs md:text-sm pr-5 sm:pr-6 md:pr-7 focus:outline-none w-auto min-w-[60px] sm:min-w-[80px] border border-gray-300 dark:border-[#35353E]"
+      className="appearance-none bg-white dark:bg-[#23232B] dark:text-white text-gray-700 rounded-full px-1.5 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs md:text-sm pr-4 sm:pr-6 md:pr-7 focus:outline-none w-full min-w-0 border border-gray-300 dark:border-[#35353E] max-w-[80px] sm:max-w-none"
       value={value}
       onChange={(e) => onChange(e.target.value)}
     >
@@ -847,39 +847,37 @@ const LineCharts = React.memo(
             <h3 className="text-black dark:text-white text-xs sm:text-sm md:text-[14px] mb-2 font-semibold">
               Exchange Overview (USDT)
             </h3>
-            <div className="flex flex-wrap justify-between items-center mb-4 sm:mb-6 gap-1 sm:gap-2">
-              <div className="flex flex-wrap items-center gap-0.5 sm:gap-2 w-full sm:w-auto">
-                <Button
-                  size="sm"
-                  variant={filter === "All" ? "primary" : "outline"}
-                  onClick={() => setFilter("All")}
-                  className="whitespace-nowrap text-xs sm:text-sm"
-                >
-                  All
-                </Button>
-                <Button
-                  size="sm"
-                  variant={filter === "Deposits" ? "primary" : "outline"}
-                  onClick={() => setFilter("Deposits")}
-                  className="whitespace-nowrap text-xs sm:text-sm"
-                >
-                  Deposits
-                </Button>
-                <Button
-                  size="sm"
-                  variant={filter === "Withdrawals" ? "primary" : "outline"}
-                  onClick={() => setFilter("Withdrawals")}
-                  className="whitespace-nowrap text-xs sm:text-sm"
-                >
-                  Withdrawals
-                </Button>
-                <div className="ml-0 sm:ml-6 w-full sm:w-auto mt-2 sm:mt-0">
-                  <Dropdown
-                    value={exchangeTimePeriod}
-                    options={["All", "Last Week", "Month", "One Year"]}
-                    onChange={setExchangeTimePeriod}
-                  />
-                </div>
+            <div className="flex flex-nowrap overflow-x-auto overflow-y-hidden scrollbar-thin items-center gap-1 sm:gap-2 mb-4 sm:mb-6 min-w-0 pb-1">
+              <Button
+                size="sm"
+                variant={filter === "All" ? "primary" : "outline"}
+                onClick={() => setFilter("All")}
+                className="whitespace-nowrap text-xs sm:text-sm flex-shrink-0"
+              >
+                All
+              </Button>
+              <Button
+                size="sm"
+                variant={filter === "Deposits" ? "primary" : "outline"}
+                onClick={() => setFilter("Deposits")}
+                className="whitespace-nowrap text-xs sm:text-sm flex-shrink-0"
+              >
+                Deposits
+              </Button>
+              <Button
+                size="sm"
+                variant={filter === "Withdrawals" ? "primary" : "outline"}
+                onClick={() => setFilter("Withdrawals")}
+                className="whitespace-nowrap text-xs sm:text-sm flex-shrink-0"
+              >
+                Withdrawalsfff
+              </Button>
+              <div className="ml-1 sm:ml-4 flex-shrink-0">
+                <Dropdown
+                  value={exchangeTimePeriod}
+                  options={["All", "Last Week", "Month", "One Year"]}
+                  onChange={setExchangeTimePeriod}
+                />
               </div>
             </div>
             <div className="w-full">
@@ -897,39 +895,37 @@ const LineCharts = React.memo(
             <h3 className="dark:text-wh text-[#051015] dark:text-white text-xs sm:text-sm md:text-[14px] mb-2 font-semibold">
               P2P Overview (USDT)
             </h3>
-            <div className="flex flex-wrap justify-between items-center mb-4 sm:mb-6 gap-1 sm:gap-2">
-              <div className="flex flex-wrap items-center gap-0.5 sm:gap-2 w-full sm:w-auto">
-                <Button
-                  size="sm"
-                  variant={p2pFilter === "All" ? "primary" : "outline"}
-                  onClick={() => setP2pFilter("All")}
-                  className="whitespace-nowrap rounded-3xl text-xs sm:text-sm"
-                >
-                  All
-                </Button>
-                <Button
-                  size="sm"
-                  variant={p2pFilter === "Sells" ? "primary" : "outline"}
-                  onClick={() => setP2pFilter("Sells")}
-                  className="whitespace-nowrap rounded-3xl text-xs sm:text-sm"
-                >
-                  Sells
-                </Button>
-                <Button
-                  size="sm"
-                  variant={p2pFilter === "Buys" ? "primary" : "outline"}
-                  onClick={() => setP2pFilter("Buys")}
-                  className="whitespace-nowrap rounded-3xl text-xs sm:text-sm"
-                >
-                  Buys
-                </Button>
-                <div className="ml-0 sm:ml-6 w-full sm:w-auto mt-2 sm:mt-0">
-                  <Dropdown
-                    value={p2pTimePeriod}
-                    options={["All", "Last Week", "Month", "One Year"]}
-                    onChange={setP2pTimePeriod}
-                  />
-                </div>
+            <div className="flex flex-nowrap overflow-x-auto overflow-y-hidden scrollbar-thin items-center gap-1 sm:gap-2 mb-4 sm:mb-6 min-w-0 pb-1">
+              <Button
+                size="sm"
+                variant={p2pFilter === "All" ? "primary" : "outline"}
+                onClick={() => setP2pFilter("All")}
+                className="whitespace-nowrap rounded-3xl text-xs sm:text-sm flex-shrink-0"
+              >
+                All
+              </Button>
+              <Button
+                size="sm"
+                variant={p2pFilter === "Sells" ? "primary" : "outline"}
+                onClick={() => setP2pFilter("Sells")}
+                className="whitespace-nowrap rounded-3xl text-xs sm:text-sm flex-shrink-0"
+              >
+                Sells
+              </Button>
+              <Button
+                size="sm"
+                variant={p2pFilter === "Buys" ? "primary" : "outline"}
+                onClick={() => setP2pFilter("Buys")}
+                className="whitespace-nowrap rounded-3xl text-xs sm:text-sm flex-shrink-0"
+              >
+                Buys
+              </Button>
+              <div className="ml-1 sm:ml-4 flex-shrink-0 min-w-0 w-[80px] sm:w-auto">
+                <Dropdown
+                  value={p2pTimePeriod}
+                  options={["All", "Last Week", "Month", "One Year"]}
+                  onChange={setP2pTimePeriod}
+                />
               </div>
             </div>
             <div className="w-full">

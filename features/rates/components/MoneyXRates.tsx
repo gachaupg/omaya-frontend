@@ -573,7 +573,7 @@ const MoneyXRates = () => {
         })
       ).unwrap();
 
-      showToast.success("Account number updated successfully!");
+      showToast.success("Transaction is successful", "Account updated successfully.");
 
       // Create transaction data for Exchanging component
       const moneyxTransactionData = {

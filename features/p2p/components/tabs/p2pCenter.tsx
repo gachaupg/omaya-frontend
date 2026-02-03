@@ -240,7 +240,15 @@ const P2PCenter: React.FC = () => {
           assetImage:
                 (typeof trade?.asset_image === 'string' && trade.asset_image) ||
             "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png",
-              commission_rate: typeof trade?.commission_rate === 'number' ? trade.commission_rate : 0,
+              commission_rate: (() => {
+              const cr = trade?.commission_rate;
+              if (typeof cr === 'number' && !Number.isNaN(cr)) return cr;
+              if (typeof cr === 'string') {
+                const parsed = parseFloat(cr);
+                return Number.isNaN(parsed) ? 0 : parsed;
+              }
+              return 0;
+            })(),
               payment: safePaymentDetails
                 .filter((detail: any) => {
                   // Extra defensive check - ensure detail exists and is a valid object

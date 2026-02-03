@@ -1614,36 +1614,35 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
             isDark ? "border-[#7B7B7B]" : "border-gray-400"
           } mb-4`}
         ></div>
-        {/* From/To Labels Row */}
-        <div className="flex items-center justify-between mb-2">
+        {/* From (left) | To (start of second part) — aligned UI */}
+        <div className="flex mb-2">
           <div
-            className={`${
+            className={`flex-shrink-0 w-1/2 ${
               isDark ? "text-[#7B7B7B]" : "text-gray-600"
             } text-sm sm:text-base font-medium`}
           >
             From
           </div>
           <div
-            className={`${
+            className={`flex-1 min-w-0 text-left pl-2 sm:pl-4 ${
               isDark ? "text-[#7B7B7B]" : "text-gray-600"
             } text-sm sm:text-base font-medium`}
           >
             To
           </div>
         </div>
-        {/* From/To Content Row */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-2 mt-2 min-w-0">
-          {/* From */}
-          <div className="flex items-center gap-2 min-w-0 flex-1 sm:flex-initial">
+        <div className="flex mt-2 items-start gap-0">
+          {/* Left: From */}
+          <div className="flex items-start gap-3 min-w-0 w-1/2 flex-shrink-0 pr-2 sm:pr-4">
             {effectiveTransactionData?.type === "deposit" &&
             effectiveTransactionData?.paymentDetail ? (
               <>
                 <img
                   src="https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
                   alt={effectiveTransactionData.paymentDetail.provider_name}
-                  className="w-8 h-8 rounded-full flex-shrink-0"
+                  className="w-8 h-8 rounded-full flex-shrink-0 mt-0.5"
                 />
-                <div className="min-w-0 flex-1">
+                <div className="min-w-0 flex-1 space-y-0.5">
                   <div
                     className={`${
                       isDark ? "text-white" : "text-gray-900"
@@ -1678,13 +1677,13 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                         ? "USD"
                         : "USDT")
                   }
-                  className="w-8 h-8 rounded-full flex-shrink-0"
+                  className="w-8 h-8 rounded-full flex-shrink-0 mt-0.5"
                   onError={(e) => {
                     e.currentTarget.src =
                       "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
                   }}
                 />
-                <div className="min-w-0 flex-1">
+                <div className="min-w-0 flex-1 space-y-0.5">
                   <div
                     className={`${
                       isDark ? "text-white" : "text-gray-900"
@@ -1711,8 +1710,8 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
               </>
             )}
           </div>
-          {/* To */}
-          <div className="flex items-center gap-2 min-w-0 flex-1 sm:flex-initial sm:justify-end">
+          {/* Right: To — from center to end */}
+          <div className="flex items-start gap-3 min-w-0 flex-1 pl-2 sm:pl-4 border-l border-dashed border-gray-300 dark:border-[#35353E]">
             {effectiveTransactionData?.type === "deposit" ? (
               <>
                 <img
@@ -1731,13 +1730,13 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                         ? "USD"
                         : "USDT")
                   }
-                  className="w-8 h-8 rounded-full flex-shrink-0"
+                  className="w-8 h-8 rounded-full flex-shrink-0 mt-0.5"
                   onError={(e) => {
                     e.currentTarget.src =
                       "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
                   }}
                 />
-                <div className="text-left sm:text-right min-w-0 flex-1">
+                <div className="min-w-0 flex-1 space-y-0.5">
                   <div
                     className={`${
                       isDark ? "text-white" : "text-gray-900"
@@ -1756,7 +1755,7 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                     <span
                       className={`${
                         isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                      } text-xs sm:text-sm font-normal block sm:inline sm:ml-1 truncate`}
+                      } text-xs sm:text-sm font-normal block truncate`}
                     >
                       {effectiveTransactionData?.asset?.description}
                     </span>
@@ -1776,9 +1775,9 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                 <img
                   src="https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
                   alt="Bank"
-                  className="w-8 h-8 rounded-full flex-shrink-0"
+                  className="w-8 h-8 rounded-full flex-shrink-0 mt-0.5"
                 />
-                <div className="text-left sm:text-right min-w-0 flex-1">
+                <div className="min-w-0 flex-1 space-y-0.5">
                   <div
                     className={`${
                       isDark ? "text-white" : "text-gray-900"
@@ -1789,7 +1788,7 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                   <span
                     className={`${
                       isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                    } text-xs sm:text-sm font-normal block sm:inline sm:ml-1 truncate`}
+                    } text-xs sm:text-sm font-normal block truncate`}
                   >
                     To your account
                   </span>

@@ -109,16 +109,41 @@ const Deposit: React.FC = () => {
       if (createDeposit.rejected.match(res))
         throw new Error(res.error.message || "Failed to submit deposit");
 
+      const result = res.payload as {
+        id: string;
+        amount: number;
+        currency: string;
+        network: string;
+        wallet_type: string;
+        timestamp: string;
+      };
+
       showToast.success(
         "Deposit submitted successfully",
         "Your deposit request has been received and is being processed."
       );
+
+      // Store data for deposit status page
+      const statusData = {
+        id: result.id,
+        amount: result.amount,
+        currency: result.currency,
+        network: result.network,
+        wallet_type: result.wallet_type,
+        walletAddress,
+        timestamp: result.timestamp,
+      };
+      sessionStorage.setItem(
+        "p2pDepositStatusData",
+        JSON.stringify(statusData)
+      );
+
       // reset
       setAmount("");
       setSelectedFile(null);
       setConfirmPayment(false);
       setErrors([]);
-      router.push("/dashboard/p2p/");
+      router.push(`/dashboard/p2p/deposit/status?id=${result.id}`);
     } catch (err) {
       setErrors([
         {

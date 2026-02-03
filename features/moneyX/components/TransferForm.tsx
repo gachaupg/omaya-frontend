@@ -890,15 +890,11 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
   return (
     <div className="flex flex-col dark:bg-(--bg-color) pl-0 sm:pl-4 pr-2 sm:pr-0 w-full mx-auto">
       {/* Money X Page Title */}
-      <h1 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-gray-900 dark:text-white">
-        Money X
+      <h1 className=" flex items-center text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-[#76777B] dark:text-white">
+        Money <span>
+          {isDark ? <img src="/images/xwhite.png" alt="MoneyX" /> : <img src="/images/x.png" alt="MoneyX" />}
+        </span>
       </h1>
-      
-      <h2 className="text-lg sm:text-xl font-semibold mb-1 sm:mb-2 text-gray-800 dark:text-[#788099] inline-flex items-center gap-2">
-        1- Transfer Information
-      </h2>
-
-
 
       {/* API Validation Error - Show as simple red text */}
       {apiValidationError && (
@@ -1389,7 +1385,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
                     })
                   ).unwrap();
 
-                  showToast.success("Account number updated successfully!");
+                  showToast.success("Transaction is successful", "Account updated successfully.");
 
                   // Scroll to top of page after successful submission
                   window.scrollTo({ top: 0, behavior: 'smooth' });

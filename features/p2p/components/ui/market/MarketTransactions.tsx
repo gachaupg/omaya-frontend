@@ -686,30 +686,32 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
   }
 
   return (
-    <div className="flex flex-col gap-1 w-full">
+    <div className="flex flex-col gap-1 w-full pr-3 sm:pr-0 max-w-full">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-1 overflow-visible">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full md:w-auto overflow-visible">
-          <div className="flex items-center w-full sm:w-auto bg-gray-100 dark:bg-[#18181D] border border-gray-200 dark:border-[#35353E] rounded-[22px] px-4 py-2.5 gap-3 min-h-[48px]">
-            <div className="flex items-center gap-3 w-full">
-              <Input
-                bgColor="transparent"
-                borderColor="transparent"
-                type="number"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="Enter amount"
-                className="bg-transparent border-none focus:ring-0 text-gray-900 dark:text-white w-full text-[15px] font-medium placeholder:text-gray-400 dark:placeholder:text-[#6E7081]"
-              />
-              <span className="w-px h-6 bg-gray-200 dark:bg-[#35353E]" />
-              <div className="relative" ref={currencyDropdownRef}>
+        <div className="flex flex-col gap-1 sm:gap-2 w-full md:w-auto overflow-visible sm:flex-row sm:flex-wrap sm:items-center min-w-0">
+          {/* Row 1 on small: Amount+Currency, Payment */}
+          <div className="flex flex-col sm:flex-row gap-1 sm:gap-2 w-full sm:w-auto">
+            <div className="flex items-center w-full sm:w-auto bg-gray-100 dark:bg-[#18181D] border border-gray-200 dark:border-[#35353E] rounded-lg sm:rounded-[22px] px-2.5 py-1.5 sm:px-4 sm:py-2.5 gap-1.5 sm:gap-3 min-h-[36px] sm:min-h-[48px]">
+              <div className="flex items-center gap-1.5 sm:gap-3 w-full min-w-0">
+                <Input
+                  bgColor="transparent"
+                  borderColor="transparent"
+                  type="number"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder="Enter amount"
+                  className="bg-transparent border-none focus:ring-0 text-gray-900 dark:text-white w-full text-xs sm:text-[15px] font-medium placeholder:text-gray-400 dark:placeholder:text-[#6E7081] min-w-0"
+                />
+              <span className="w-px h-4 sm:h-6 bg-gray-200 dark:bg-[#35353E] flex-shrink-0" />
+              <div className="relative flex-shrink-0" ref={currencyDropdownRef}>
                 <button
                   type="button"
                   onClick={() => setIsCurrencyDropdownOpen((prev) => !prev)}
-                  className="flex items-center gap-1.5 text-gray-900 dark:text-white text-[15px] font-semibold whitespace-nowrap"
+                  className="flex items-center gap-0.5 sm:gap-1 text-gray-900 dark:text-white text-xs sm:text-[15px] font-semibold whitespace-nowrap"
                 >
                   {formatCurrencyLabel(selectedCurrency)}
                   <svg
-                    className="w-4 h-4 text-gray-500 dark:text-[#788099]"
+                    className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500 dark:text-[#788099]"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -718,7 +720,7 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
                   </svg>
                 </button>
                 {isCurrencyDropdownOpen && (
-                  <div className="absolute right-0 mt-3 rounded-2xl border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[var(--bg-color)] shadow-2xl z-30 min-w-[140px]">
+                  <div className="absolute right-0 mt-1.5 sm:mt-3 rounded-lg sm:rounded-2xl border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[var(--bg-color)] shadow-2xl z-30 min-w-[100px] sm:min-w-[140px]">
                     {currencyOptions.map((option) => (
                       <button
                         key={option.value}
@@ -727,7 +729,7 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
                           setSelectedCurrency(option.value);
                           setIsCurrencyDropdownOpen(false);
                         }}
-                        className={`w-full text-left px-4 py-3 text-[15px] font-medium hover:bg-gray-50 dark:hover:bg-[#1b1b22] transition-colors ${
+                        className={`w-full text-left px-2.5 py-2 sm:px-4 sm:py-3 text-xs sm:text-[15px] font-medium hover:bg-gray-50 dark:hover:bg-[#1b1b22] transition-colors ${
                           option.value === selectedCurrency ? "text-gray-900 dark:text-white" : "text-gray-600 dark:text-[#C7CAD1]"
                         }`}
                       >
@@ -739,41 +741,41 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
               </div>
             </div>
           </div>
-          <div
-            className="flex items-center gap-3 bg-gray-100 dark:bg-[#18181D] border border-gray-200 dark:border-[#35353E] rounded-[22px] px-4 py-2.5 w-full sm:w-[260px] min-h-[48px]"
-            ref={paymentDropdownRef}
-          >
-            <div className="flex h-8 w-8 items-center justify-center rounded-full border bg-[#F5F7FB]/80 border-gray-200 dark:bg-[#1B1E2B]/80 dark:border-white/10 flex-shrink-0">
-              <Image
-                src="https://res.cloudinary.com/pitz/image/upload/v1746710370/coins-rotate_d278mb.png"
-                alt="Payment Method"
-                width={20}
-                height={20}
-                className="object-contain"
-              />
-            </div>
-            <div className="relative w-full min-w-[180px] sm:min-w-[210px]">
-              <button
-                type="button"
-                onClick={() => setIsPaymentDropdownOpen((prev) => !prev)}
-                className={`w-full rounded-lg bg-transparent border-none focus:outline-none py-0 pr-8 text-[15px] font-semibold text-left flex items-center justify-between gap-2 ${
-                  isPaymentSummaryDefault
-                    ? "text-gray-500 dark:text-[#7F889F]"
-                    : "text-gray-900 dark:text-white"
-                }`}
-              >
-                <span className="truncate">{paymentSummary}</span>
-                <svg
-                  className="w-4 h-4 text-gray-500 dark:text-[#788099]"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+            <div
+              className="flex items-center gap-1.5 sm:gap-3 bg-gray-100 dark:bg-[#18181D] border border-gray-200 dark:border-[#35353E] rounded-lg sm:rounded-[22px] px-2.5 py-1.5 sm:px-4 sm:py-2.5 w-full sm:w-[260px] min-h-[36px] sm:min-h-[48px]"
+              ref={paymentDropdownRef}
+            >
+              <div className="flex h-5 w-5 sm:h-8 sm:w-8 items-center justify-center rounded-full border bg-[#F5F7FB]/80 border-gray-200 dark:bg-[#1B1E2B]/80 dark:border-white/10 flex-shrink-0">
+                <Image
+                  src="https://res.cloudinary.com/pitz/image/upload/v1746710370/coins-rotate_d278mb.png"
+                  alt="Payment Method"
+                  width={20}
+                  height={20}
+                  className="object-contain w-3.5 h-3.5 sm:w-5 sm:h-5"
+                />
+              </div>
+              <div className="relative w-full min-w-0 sm:min-w-[210px]">
+                <button
+                  type="button"
+                  onClick={() => setIsPaymentDropdownOpen((prev) => !prev)}
+                  className={`w-full rounded-md sm:rounded-lg bg-transparent border-none focus:outline-none py-0 pr-6 sm:pr-8 text-xs sm:text-[15px] font-semibold text-left flex items-center justify-between gap-2 min-w-0 ${
+                    isPaymentSummaryDefault
+                      ? "text-gray-500 dark:text-[#7F889F]"
+                      : "text-gray-900 dark:text-white"
+                  }`}
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
+                  <span className="truncate">{paymentSummary}</span>
+                  <svg
+                    className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500 dark:text-[#788099] flex-shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
               {isPaymentDropdownOpen && (
-                <div className="absolute top-full left-0 right-0 mt-3 rounded-2xl border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[var(--bg-color)] shadow-2xl z-30 max-h-72 overflow-y-auto">
+                <div className="absolute top-full left-0 right-0 mt-1.5 sm:mt-3 rounded-lg sm:rounded-2xl border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[var(--bg-color)] shadow-2xl z-30 max-h-72 overflow-y-auto">
                   {paymentMethodOptions.map((option) => {
                     const isSelected =
                       option.value === ""
@@ -784,19 +786,19 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
                         key={option.value || option.label}
                         type="button"
                         onClick={() => handlePaymentSelection(option.value)}
-                        className={`w-full flex items-center gap-3 px-5 py-3.5 text-left hover:bg-gray-50 dark:hover:bg-[#1b1b22] transition-colors ${
+                        className={`w-full flex items-center gap-2 sm:gap-3 px-2.5 py-2 sm:px-5 sm:py-3.5 text-left hover:bg-gray-50 dark:hover:bg-[#1b1b22] transition-colors ${
                           isSelected ? "text-gray-900 dark:text-white" : "text-gray-600 dark:text-[#C7CAD1]"
                         }`}
                       >
                         <span
-                          className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
+                          className={`w-4 h-4 sm:w-5 sm:h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all ${
                             isSelected ? "border-[#1D8751] bg-[#1D8751]" : "border-gray-300 dark:border-[#4A4A56]"
                           }`}
                         >
                           {isSelected && (
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
-                              className="h-3.5 w-3.5 text-white"
+                              className="h-2.5 w-2.5 sm:h-3.5 sm:w-3.5 text-white"
                               viewBox="0 0 24 24"
                               fill="none"
                               stroke="currentColor"
@@ -806,7 +808,7 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
                             </svg>
                           )}
                         </span>
-                        <span className="text-[15px] font-medium">{option.label}</span>
+                        <span className="text-xs sm:text-[15px] font-medium truncate">{option.label}</span>
                       </button>
                     );
                   })}
@@ -814,42 +816,45 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
               )}
             </div>
           </div>
+          </div>
 
-          <div
-            className="flex items-center gap-3 bg-gray-100 dark:bg-[#18181D] border border-gray-200 dark:border-[#35353E] rounded-[22px] px-4 py-2.5 w-full sm:w-[260px] min-h-[48px]"
-            ref={providerDropdownRef}
-          >
-            <div className="flex h-8 w-8 items-center justify-center rounded-full border bg-[#F5F7FB]/80 border-gray-200 dark:bg-[#1B1E2B]/80 dark:border-white/10 flex-shrink-0">
-              <Image
-                src="https://res.cloudinary.com/pitz/image/upload/v1763535952/tdesign_undertake-transaction_s00yks.png"
-                alt="Bank Provider"
-                width={20}
-                height={20}
-                className="object-contain"
-              />
-            </div>
-            <div className="relative w-full min-w-[180px] sm:min-w-[210px]">
-              <button
-                type="button"
-                onClick={() => setIsProviderDropdownOpen((prev) => !prev)}
-                className={`w-full rounded-lg bg-transparent border-none focus:outline-none py-0 pr-8 text-[15px] font-semibold text-left flex items-center justify-between gap-2 ${
-                  isProviderSummaryDefault
-                    ? "text-gray-500 dark:text-[#7F889F]"
-                    : "text-gray-900 dark:text-white"
-                }`}
-              >
-                <span className="truncate">{providerSummary}</span>
-                <svg
-                  className="w-4 h-4 text-gray-500 dark:text-[#788099]"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+          {/* Row 2 on small: Provider + Filter in one row */}
+          <div className="flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto">
+            <div
+              className="flex items-center gap-1.5 sm:gap-3 bg-gray-100 dark:bg-[#18181D] border border-gray-200 dark:border-[#35353E] rounded-lg sm:rounded-[22px] px-2.5 py-1.5 sm:px-4 sm:py-2.5 flex-1 sm:flex-initial sm:w-[260px] min-h-[36px] sm:min-h-[48px] min-w-0"
+              ref={providerDropdownRef}
+            >
+              <div className="flex h-5 w-5 sm:h-8 sm:w-8 items-center justify-center rounded-full border bg-[#F5F7FB]/80 border-gray-200 dark:bg-[#1B1E2B]/80 dark:border-white/10 flex-shrink-0">
+                <Image
+                  src="https://res.cloudinary.com/pitz/image/upload/v1763535952/tdesign_undertake-transaction_s00yks.png"
+                  alt="Bank Provider"
+                  width={20}
+                  height={20}
+                  className="object-contain w-3.5 h-3.5 sm:w-5 sm:h-5"
+                />
+              </div>
+              <div className="relative w-full min-w-0 sm:min-w-[210px]">
+                <button
+                  type="button"
+                  onClick={() => setIsProviderDropdownOpen((prev) => !prev)}
+                  className={`w-full rounded-md sm:rounded-lg bg-transparent border-none focus:outline-none py-0 pr-6 sm:pr-8 text-xs sm:text-[15px] font-semibold text-left flex items-center justify-between gap-2 min-w-0 ${
+                    isProviderSummaryDefault
+                      ? "text-gray-500 dark:text-[#7F889F]"
+                      : "text-gray-900 dark:text-white"
+                  }`}
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-              {isProviderDropdownOpen && (
-                <div className="absolute top-full left-0 right-0 mt-3 rounded-2xl border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[var(--bg-color)] shadow-2xl z-30 max-h-72 overflow-y-auto">
+                  <span className="truncate">{providerSummary}</span>
+                  <svg
+                    className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500 dark:text-[#788099] flex-shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {isProviderDropdownOpen && (
+                <div className="absolute top-full left-0 right-0 mt-1.5 sm:mt-3 rounded-lg sm:rounded-2xl border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[var(--bg-color)] shadow-2xl z-30 max-h-72 overflow-y-auto">
                   {providerOptions.map((option) => {
                     const isSelected =
                       option.value === ""
@@ -860,19 +865,19 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
                         key={option.value || option.label}
                         type="button"
                         onClick={() => handleProviderSelection(option.value)}
-                        className={`w-full flex items-center gap-3 px-5 py-3.5 text-left hover:bg-gray-50 dark:hover:bg-[#1b1b22] transition-colors ${
+                        className={`w-full flex items-center gap-2 sm:gap-3 px-2.5 py-2 sm:px-5 sm:py-3.5 text-left hover:bg-gray-50 dark:hover:bg-[#1b1b22] transition-colors ${
                           isSelected ? "text-gray-900 dark:text-white" : "text-gray-600 dark:text-[#C7CAD1]"
                         }`}
                       >
                         <span
-                          className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
+                          className={`w-4 h-4 sm:w-5 sm:h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all ${
                             isSelected ? "border-[#1D8751] bg-[#1D8751]" : "border-gray-300 dark:border-[#4A4A56]"
                           }`}
                         >
                           {isSelected && (
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
-                              className="h-3.5 w-3.5 text-white"
+                              className="h-2.5 w-2.5 sm:h-3.5 sm:w-3.5 text-white"
                               viewBox="0 0 24 24"
                               fill="none"
                               stroke="currentColor"
@@ -882,7 +887,7 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
                             </svg>
                           )}
                         </span>
-                        <span className="text-[15px] font-medium">{option.label}</span>
+                        <span className="text-xs sm:text-[15px] font-medium truncate">{option.label}</span>
                       </button>
                     );
                   })}
@@ -890,14 +895,14 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
               )}
             </div>
           </div>
-          <div className="relative w-full sm:w-auto overflow-visible" ref={filterDropdownRef}>
-            <button
-              type="button"
-              onClick={() => setIsFilterDropdownOpen((prev) => !prev)}
-              className="w-12 h-12 bg-gray-100 dark:bg-[#18181D] border border-gray-200 dark:border-[#35353E] rounded-[22px] flex items-center justify-center text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1D8751] transition-all hover:border-[#1D8751]"
-            >
-              <FaFilter className="text-[#1D8751]" size={20} />
-            </button>
+            <div className="relative flex-shrink-0 overflow-visible" ref={filterDropdownRef}>
+              <button
+                type="button"
+                onClick={() => setIsFilterDropdownOpen((prev) => !prev)}
+                className="w-9 h-9 sm:w-12 sm:h-12 bg-gray-100 dark:bg-[#18181D] border border-gray-200 dark:border-[#35353E] rounded-lg sm:rounded-[22px] flex items-center justify-center text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1D8751] transition-all hover:border-[#1D8751]"
+              >
+                <FaFilter className="text-[#1D8751] w-3.5 h-3.5 sm:w-5 sm:h-5" />
+              </button>
             {isFilterDropdownOpen && (
               <div 
                 className="absolute top-full left-0 sm:left-auto sm:right-0 mt-3 border border-gray-200 dark:border-[#35353E] rounded-2xl bg-white dark:bg-[#18181D] text-gray-900 dark:text-white shadow-2xl z-[100] w-[calc(100vw-2rem)] sm:w-[300px] max-w-[300px] p-4 space-y-4 overflow-y-auto max-h-[60vh]"
@@ -1020,6 +1025,7 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
                 </div>
               </div>
             )}
+            </div>
           </div>
         </div>
 
