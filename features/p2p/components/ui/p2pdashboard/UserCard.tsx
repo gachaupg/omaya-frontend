@@ -26,7 +26,7 @@ const UserCard = () => {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   // Initialize profile image from localStorage or user photo
   const [profileImage, setProfileImage] = React.useState<string | null>(() => {
     if (typeof window !== "undefined") {
@@ -35,21 +35,21 @@ const UserCard = () => {
     }
     return null;
   });
-  
+
   const { data: matchedTrades } = useSelector(
     (state: RootState) => state.matchedTrades
   );
   const { user, isAuthenticated, profile } = useSelector(
     (state: RootState) => state.auth
   );
-  
+
   // Use profile.photo as fallback if profileImage is not set
   const displayImage = profileImage || profile?.photo || null;
-  
+
   const kycState = useSelector((state: RootState) => state.kyc);
   // KYC verification status from central KYC slice, fallback to user.is_verified
-  const isVerified = kycState.isVerified !== undefined 
-    ? kycState.isVerified 
+  const isVerified = kycState.isVerified !== undefined
+    ? kycState.isVerified
     : (user?.is_verified ?? false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [audioEnabled, setAudioEnabled] = useState(false);
@@ -83,7 +83,7 @@ const UserCard = () => {
           }
         })
         .catch((error) => { });
-      
+
       // Ensure KYC status (is_verified) is up to date
       dispatch(checkKYCStatus());
     }
@@ -358,11 +358,11 @@ const UserCard = () => {
           </div>
 
           {/* Center Section: User ID and User Type */}
-          <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6 w-full xl:flex-1 xl:justify-center">
+          <div className="flex flex-row items-start gap-4 sm:gap-6 w-full xl:flex-1 xl:justify-center">
             {/* User ID */}
             <div className="text-left flex-1 w-full sm:w-auto">
               <p className="text-xs dark:text-[#788099] text-[#788099] mb-1">User ID</p>
-              <div className="flex items-center gap-2 justify-start">
+              <div className="flex items-center gap-2 justify-start h-6">
                 <p className="text-base font-bold dark:text-[#FFFFFF] text-[#1D1D23]">{user?.user_id}</p>
                 <button className="cursor-pointer">
                   <svg
@@ -375,7 +375,7 @@ const UserCard = () => {
                     strokeWidth="2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    className="text-[#F79330] cursor-pointer"
+                    className="text-warning cursor-pointer"
                     onClick={() => {
                       navigator.clipboard.writeText(user?.user_id || "");
                       toast.success("Copied to clipboard");
@@ -390,10 +390,12 @@ const UserCard = () => {
 
             {/* User Type */}
             <div className="text-left flex-1 w-full sm:w-auto">
-              <p className="text-xs text-[#788099] mb-1">User Type</p>
-              <p className="text-base font-bold dark:text-[#FFFFFF] text-[#1D1D23]">
-                {user?.user_type ? user.user_type.charAt(0).toUpperCase() + user.user_type.slice(1) : ''}
-              </p>
+              <p className="text-xs dark:text-[#788099] text-[#788099] mb-1">User Type</p>
+              <div className="flex items-center h-6">
+                <p className="text-base font-bold dark:text-[#FFFFFF] text-[#1D1D23]">
+                  {user?.user_type ? user.user_type.charAt(0).toUpperCase() + user.user_type.slice(1) : ''}
+                </p>
+              </div>
             </div>
           </div>
 
@@ -427,92 +429,92 @@ const UserCard = () => {
                 onClick={() => router.push("/dashboard/notifications")}
                 icon={
                   <div className="w-10 h-10 rounded-full border border-[#1D8751] flex items-center justify-center p-1 relative">
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M18 8C18 6.4087 17.3679 4.88258 16.2426 3.75736C15.1174 2.63214 13.5913 2 12 2C10.4087 2 8.88258 2.63214 7.75736 3.75736C6.63214 4.88258 6 6.4087 6 8C6 15 3 17 3 17H21C21 17 18 15 18 8Z"
-                      className="stroke-[#1D8751]"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <path
-                      d="M13.73 21C13.5542 21.3031 13.3019 21.5547 12.9982 21.7295C12.6946 21.9044 12.3504 21.9965 12 21.9965C11.6496 21.9965 11.3054 21.9044 11.0018 21.7295C10.6982 21.5547 10.4458 21.3031 10.27 21"
-                      className="stroke-[#1D8751]"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                  {matchedTrades?.results &&
-                    matchedTrades.results.length > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-[#E23D3A] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                        {matchedTrades.results.length}
-                      </span>
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M18 8C18 6.4087 17.3679 4.88258 16.2426 3.75736C15.1174 2.63214 13.5913 2 12 2C10.4087 2 8.88258 2.63214 7.75736 3.75736C6.63214 4.88258 6 6.4087 6 8C6 15 3 17 3 17H21C21 17 18 15 18 8Z"
+                        className="stroke-[#1D8751]"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      <path
+                        d="M13.73 21C13.5542 21.3031 13.3019 21.5547 12.9982 21.7295C12.6946 21.9044 12.3504 21.9965 12 21.9965C11.6496 21.9965 11.3054 21.9044 11.0018 21.7295C10.6982 21.5547 10.4458 21.3031 10.27 21"
+                        className="stroke-[#1D8751]"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                    {matchedTrades?.results &&
+                      matchedTrades.results.length > 0 && (
+                        <span className="absolute -top-1 -right-1 bg-[#E23D3A] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                          {matchedTrades.results.length}
+                        </span>
+                      )}
+                    {/* WebSocket connection indicator */}
+                    {wsConnected ? (
+                      <span
+                        className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-[#1D8751] rounded-full border border-white dark:border-[#18181D]"
+                        title="Real-time WebSocket updates active"
+                      />
+                    ) : (
+                      <span
+                        className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-[#F79330] rounded-full border border-white dark:border-[#18181D]"
+                        title="Using HTTP polling (WebSocket unavailable)"
+                      />
                     )}
-                  {/* WebSocket connection indicator */}
-                  {wsConnected ? (
-                    <span
-                      className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-[#1D8751] rounded-full border border-white dark:border-[#18181D]"
-                      title="Real-time WebSocket updates active"
-                    />
-                  ) : (
-                    <span
-                      className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-[#F79330] rounded-full border border-white dark:border-[#18181D]"
-                      title="Using HTTP polling (WebSocket unavailable)"
-                    />
-                  )}
-                  {/* Update indicator pulse */}
-                  {showUpdateIndicator && (
-                    <span className="absolute inset-0 rounded-full bg-[#1D8751] opacity-75 animate-ping" />
-                  )}
-                </div>
-              }
-            />
-            <Button
-              variant="ghost"
-              size="sm"
-              className="flex items-center justify-center p-0"
-              onClick={() => router.push("/contactUs")}
-              icon={
-                <div className="w-10 h-10 rounded-[50%] border border-[#1D8751] flex items-center justify-center p-0">
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <circle
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      className="stroke-[#1D8751]"
-                      strokeWidth="2"
-                    />
-                    <path
-                      d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"
-                      className="stroke-[#1D8751]"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <circle
-                      cx="12"
-                      cy="17"
-                      r="0.5"
-                      className="fill-[#1D8751] stroke-[#1D8751]"
-                      strokeWidth="2"
-                    />
-                  </svg>
-                </div>
-              }
-            />
+                    {/* Update indicator pulse */}
+                    {showUpdateIndicator && (
+                      <span className="absolute inset-0 rounded-full bg-[#1D8751] opacity-75 animate-ping" />
+                    )}
+                  </div>
+                }
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                className="flex items-center justify-center p-0"
+                onClick={() => router.push("/contactUs")}
+                icon={
+                  <div className="w-10 h-10 rounded-[50%] border border-[#1D8751] flex items-center justify-center p-0">
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <circle
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        className="stroke-[#1D8751]"
+                        strokeWidth="2"
+                      />
+                      <path
+                        d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"
+                        className="stroke-[#1D8751]"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      <circle
+                        cx="12"
+                        cy="17"
+                        r="0.5"
+                        className="fill-[#1D8751] stroke-[#1D8751]"
+                        strokeWidth="2"
+                      />
+                    </svg>
+                  </div>
+                }
+              />
             </div>
           </div>
         </div>

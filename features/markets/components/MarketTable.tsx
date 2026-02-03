@@ -24,6 +24,8 @@ import {
   ArrowUpRight,
   Repeat,
   Users,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import Link from "next/link";
 import { TiArrowUnsorted } from "react-icons/ti";
@@ -40,6 +42,8 @@ import { Asset, FavoriteAsset } from "../../exchange/types";
 
 import { logger } from "@/lib/utils/logger";
 import { Chats } from "./chats";
+
+const ITEMS_PER_PAGE = 20;
 
 // Utility functions for formatting
 const formatPrice = (price: number | null | undefined): string => {
@@ -217,6 +221,7 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
   } | null>(null);
   const [favoritesUpdateTrigger, setFavoritesUpdateTrigger] = useState(0);
   const [localFavorites, setLocalFavorites] = useState<string[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
   const favScrollRef = useRef<HTMLDivElement>(null);
 
   const getStoredFavorites = useCallback((): string[] => {
@@ -411,6 +416,17 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
     return result;
   }, [markets, activeFilter, sortConfig]);
 
+  // Reset to page 1 when filters or sorting change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeFilter, sortConfig]);
+
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredMarkets.length / ITEMS_PER_PAGE);
+  const indexOfLastItem = currentPage * ITEMS_PER_PAGE;
+  const indexOfFirstItem = indexOfLastItem - ITEMS_PER_PAGE;
+  const paginatedMarkets = filteredMarkets.slice(indexOfFirstItem, indexOfLastItem);
+
   const localFavoriteMarkets = useMemo(() => {
     if (!localFavorites.length || !markets.length) return [];
 
@@ -449,7 +465,7 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
     );
     return uniqueLocalFavorites;
   }, [favoriteAssets, localFavoriteMarkets]);
-  
+
   const showLocalFavoriteFallback = allFavoriteMarketsToShow.length > 0;
 
   // Get top 3 markets for favorite assets - memoized
@@ -464,8 +480,7 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
       dispatch(getFavoriteAssets()); // Refresh the favorites list
     } catch (error: any) {
       toast.error(
-        `Failed to remove asset from favorites: ${
-          error || "Unknown error" || "unexpected error occured"
+        `Failed to remove asset from favorites: ${error || "Unknown error" || "unexpected error occured"
         }`
       );
     }
@@ -482,28 +497,28 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
   // Helper function to get asset_id from market symbol
   const getAssetIdFromMarket = (marketSymbol: string, marketName: string): string | null => {
     if (!allAvailableAssets?.assets) return null;
-    
+
     // Try exact symbol match first
     let asset = allAvailableAssets.assets.find(
       (asset: Asset) => asset.symbol.toLowerCase() === marketSymbol.toLowerCase()
     );
-    
+
     // If not found, try name match
     if (!asset) {
       asset = allAvailableAssets.assets.find(
         (asset: Asset) => asset.name.toLowerCase() === marketName.toLowerCase()
       );
     }
-    
+
     // If still not found, try partial matches
     if (!asset) {
       asset = allAvailableAssets.assets.find(
-        (asset: Asset) => 
+        (asset: Asset) =>
           asset.symbol.toLowerCase().includes(marketSymbol.toLowerCase()) ||
           marketSymbol.toLowerCase().includes(asset.symbol.toLowerCase())
       );
     }
-    
+
     return asset?.asset_id || null;
   };
 
@@ -528,7 +543,7 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
         fav.asset_symbol.toLowerCase() === marketSymbol.toLowerCase() ||
         fav.asset_symbol.toLowerCase() === marketName.toLowerCase()
     );
-    
+
     if (isInRedux) return true;
 
     // Check localStorage as fallback
@@ -547,7 +562,7 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
         console.warn("Error reading favorites from localStorage:", error);
       }
     }
-    
+
     return false;
   };
 
@@ -586,7 +601,7 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
     marketName: string
   ) => {
     e.stopPropagation(); // Prevent row click
-    
+
     const assetId = getAssetIdFromMarket(marketSymbol, marketName);
     const isFavorited = isMarketFavorited(marketSymbol, marketName);
 
@@ -727,11 +742,10 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
         <span
           key={tag}
           onClick={() => handleFilterClick(tag)}
-          className={`bg-gray-100 rounded-lg sm:rounded-xl lg:rounded-2xl px-2.5 sm:px-3 lg:px-4 py-1 sm:py-1.5 lg:py-1 text-[11px] sm:text-xs lg:text-sm font-medium border cursor-pointer transition-colors min-h-[36px] sm:min-h-[40px] lg:min-h-0 flex items-center justify-center whitespace-nowrap ${
-            activeFilter === tag
-              ? "bg-gray-100 dark:bg-[#35353E] text-green-700 border-green-700 "
-              : "text-gray-700 hover:bg-gray-200 dark:hover:bg-[#35353E] dark:bg-[#1D1D23] dark:text-[#788099] border-gray-300 dark:border-[#35353E]"
-          }`}
+          className={`bg-gray-100 rounded-lg sm:rounded-xl lg:rounded-2xl px-2.5 sm:px-3 lg:px-4 py-1 sm:py-1.5 lg:py-1 text-[11px] sm:text-xs lg:text-sm font-medium border cursor-pointer transition-colors min-h-[36px] sm:min-h-[40px] lg:min-h-0 flex items-center justify-center whitespace-nowrap ${activeFilter === tag
+            ? "bg-gray-100 dark:bg-[#35353E] text-green-700 border-green-700 "
+            : "text-gray-700 hover:bg-gray-200 dark:hover:bg-[#35353E] dark:bg-[#1D1D23] dark:text-[#788099] border-gray-300 dark:border-[#35353E]"
+            }`}
         >
           {tag}
         </span>
@@ -741,9 +755,8 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
 
   return (
     <div
-      className={`text-gray-900 dark:text-[#788099] font-sans ${
-        showFullLayout ? "bg-[#EEF1F4] dark:bg-background min-h-screen py-4 sm:py-6 lg:py-8" : ""
-      }`}
+      className={`text-gray-900 dark:text-[#788099] font-sans ${showFullLayout ? "bg-[#EEF1F4] dark:bg-background min-h-screen py-4 sm:py-6 lg:py-8" : ""
+        }`}
     >
       <div className={showFullLayout ? "max-w-[1400px] mx-auto" : ""}>
         {showFullLayout ? (
@@ -860,8 +873,8 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
                       >
                         <div className="w-8 h-8 sm:w-8 sm:h-8 lg:w-8 lg:h-8 rounded-full flex-shrink-0">
                           {asset.asset_image &&
-                          typeof asset.asset_image === "string" &&
-                          asset.asset_image.trim() !== "" ? (
+                            typeof asset.asset_image === "string" &&
+                            asset.asset_image.trim() !== "" ? (
                             <img
                               src={asset.asset_image}
                               alt={asset.asset_symbol}
@@ -896,11 +909,10 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
                             })}
                           </div>
                           <div
-                            className={`text-xs whitespace-nowrap ${
-                              dummyData.change.startsWith("+")
-                                ? "text-[#1D8751]"
-                                : "text-[#1D8751]"
-                            }`}
+                            className={`text-xs whitespace-nowrap ${dummyData.change.startsWith("+")
+                              ? "text-[#1D8751]"
+                              : "text-[#1D8751]"
+                              }`}
                           >
                             {dummyData.change}
                           </div>
@@ -934,9 +946,8 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
                             {formatPrice(market.current_price)}
                           </div>
                           <div
-                            className={`text-xs whitespace-nowrap ${
-                              isPositive ? "text-[#1D8751]" : "text-[#FF6B6B]"
-                            }`}
+                            className={`text-xs whitespace-nowrap ${isPositive ? "text-[#1D8751]" : "text-[#FF6B6B]"
+                              }`}
                           >
                             {formatPercentage(priceChange)}
                           </div>
@@ -958,9 +969,8 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
 
         {/* Table Section with rounded border */}
         <div
-          className={`rounded-xl sm:rounded-xl lg:rounded-2xl border border-gray-200 dark:border-[#35353E] overflow-hidden bg-white dark:bg-[#18181D] shadow-lg ${
-            showFullLayout ? "max-w-[1400px] mx-auto" : ""
-          }`}
+          className={`rounded-xl sm:rounded-xl lg:rounded-2xl border border-gray-200 dark:border-[#35353E] overflow-hidden bg-white dark:bg-[#18181D] shadow-lg ${showFullLayout ? "max-w-[1400px] mx-auto" : ""
+            }`}
         >
           {loading && markets.length === 0 ? (
             <div className="flex items-center justify-center py-8 sm:py-10 lg:py-12">
@@ -973,15 +983,14 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
             <>
               {/* Mobile: Card-based layout */}
               <div className="block sm:hidden space-y-3 p-2 sm:p-3">
-                {filteredMarkets.map((market, idx) => (
+                {paginatedMarkets.map((market, idx) => (
                   <div
                     key={market.id}
                     onClick={() => handleRowClick(market.id)}
-                    className={`bg-white dark:bg-[#1D1D23] rounded-lg p-4 border border-gray-200 dark:border-[#35353E] cursor-pointer transition-colors ${
-                      selectedCoinId === market.id
-                        ? "border-l-4 border-[#13B562] bg-gray-50 dark:bg-[#23232a]"
-                        : ""
-                    }`}
+                    className={`bg-white dark:bg-[#1D1D23] rounded-lg p-4 border border-gray-200 dark:border-[#35353E] cursor-pointer transition-colors ${selectedCoinId === market.id
+                      ? "border-l-4 border-[#13B562] bg-gray-50 dark:bg-[#23232a]"
+                      : ""
+                      }`}
                   >
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-3">
@@ -1027,12 +1036,11 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
                       </div>
                       <div>
                         <div className="text-xs text-gray-600 dark:text-[#788099] mb-1">24h Change</div>
-                        <div className={`font-medium ${
-                          market.price_change_percentage_24h !== null &&
+                        <div className={`font-medium ${market.price_change_percentage_24h !== null &&
                           market.price_change_percentage_24h >= 0
-                            ? "text-[#13B562]"
-                            : "text-[#FF6B6B]"
-                        }`}>
+                          ? "text-[#13B562]"
+                          : "text-[#FF6B6B]"
+                          }`}>
                           {formatPercentage(market.price_change_percentage_24h)}
                         </div>
                       </div>
@@ -1102,195 +1110,258 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
 
               {/* Desktop: Table layout */}
               <div className="hidden sm:block overflow-x-auto scrollbar-thin scroll-smooth">
-              <table className="w-full border-collapse min-w-[800px] table-fixed">
-                <thead>
-                  <tr>
-                    <th className="text-gray-900 dark:text-[#fff] bg-gray-50 dark:bg-[#35353E] px-2 sm:px-3 lg:px-4 py-2 sm:py-3 lg:py-4 text-left font-semibold border-b-2 border-gray-200 dark:border-[#35353E] text-xs sm:text-sm lg:text-base">
-                      Name
-                    </th>
-                    <th className="text-gray-900 dark:text-[#fff] bg-gray-50 dark:bg-[#35353E] px-2 sm:px-3 lg:px-4 py-2 sm:py-3 lg:py-4 text-right font-semibold border-b-2 border-gray-200 dark:border-[#35353E] text-xs sm:text-sm lg:text-base">
-                      <div className="flex items-center justify-end gap-1 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300" onClick={() => handleSort("price")}>
-                        Price
-                        {getSortIcon("price")}
-                      </div>
-                    </th>
-                    <th className="text-gray-900 dark:text-[#fff] bg-gray-50 dark:bg-[#35353E] px-2 sm:px-3 lg:px-4 py-2 sm:py-3 lg:py-4 text-center font-semibold border-b-2 border-gray-200 dark:border-[#35353E] text-xs sm:text-sm lg:text-base">
-                      <div className="flex items-center justify-center gap-2">
+                <table className="w-full border-collapse min-w-[800px] table-fixed">
+                  <thead>
+                    <tr>
+                      <th className="text-gray-900 dark:text-[#fff] bg-gray-50 dark:bg-[#35353E] px-2 sm:px-3 lg:px-4 py-2 sm:py-3 lg:py-4 text-left font-semibold border-b-2 border-gray-200 dark:border-[#35353E] text-xs sm:text-sm lg:text-base">
+                        Name
+                      </th>
+                      <th className="text-gray-900 dark:text-[#fff] bg-gray-50 dark:bg-[#35353E] px-2 sm:px-3 lg:px-4 py-2 sm:py-3 lg:py-4 text-right font-semibold border-b-2 border-gray-200 dark:border-[#35353E] text-xs sm:text-sm lg:text-base">
+                        <div className="flex items-center justify-end gap-1 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300" onClick={() => handleSort("price")}>
+                          Price
+                          {getSortIcon("price")}
+                        </div>
+                      </th>
+                      <th className="text-gray-900 dark:text-[#fff] bg-gray-50 dark:bg-[#35353E] px-2 sm:px-3 lg:px-4 py-2 sm:py-3 lg:py-4 text-center font-semibold border-b-2 border-gray-200 dark:border-[#35353E] text-xs sm:text-sm lg:text-base">
+                        <div className="flex items-center justify-center gap-2">
+                          <div className="flex items-center gap-1 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300" onClick={() => handleSort("24h_volume")}>
+                            24h
+                            {getSortIcon("24h_volume")}
+                          </div>
+                          <div className="flex items-center gap-1 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300" onClick={() => handleSort("change")}>
+                            Change
+                            {getSortIcon("change")}
+                          </div>
+                        </div>
+                      </th>
+                      <th className="text-gray-900 dark:text-[#fff] bg-gray-50 dark:bg-[#35353E] px-2 sm:px-3 lg:px-4 py-2 sm:py-3 lg:py-4 text-left font-semibold border-b-2 border-gray-200 dark:border-[#35353E] text-xs sm:text-sm lg:text-base">
                         <div className="flex items-center gap-1 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300" onClick={() => handleSort("24h_volume")}>
-                          24h
+                          24 Volume
                           {getSortIcon("24h_volume")}
                         </div>
-                        <div className="flex items-center gap-1 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300" onClick={() => handleSort("change")}>
-                          Change
-                          {getSortIcon("change")}
+                      </th>
+                      <th className="text-gray-900 dark:text-[#fff] bg-gray-50 dark:bg-[#35353E] px-2 sm:px-3 lg:px-4 py-2 sm:py-3 lg:py-4 text-left font-semibold border-b-2 border-gray-200 dark:border-[#35353E] text-xs sm:text-sm lg:text-base">
+                        <div className="flex items-center gap-1 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300" onClick={() => handleSort("market_cap")}>
+                          Market Cap
+                          {getSortIcon("market_cap")}
                         </div>
-                      </div>
-                    </th>
-                    <th className="text-gray-900 dark:text-[#fff] bg-gray-50 dark:bg-[#35353E] px-2 sm:px-3 lg:px-4 py-2 sm:py-3 lg:py-4 text-left font-semibold border-b-2 border-gray-200 dark:border-[#35353E] text-xs sm:text-sm lg:text-base">
-                      <div className="flex items-center gap-1 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300" onClick={() => handleSort("24h_volume")}>
-                        24 Volume
-                        {getSortIcon("24h_volume")}
-                      </div>
-                    </th>
-                    <th className="text-gray-900 dark:text-[#fff] bg-gray-50 dark:bg-[#35353E] px-2 sm:px-3 lg:px-4 py-2 sm:py-3 lg:py-4 text-left font-semibold border-b-2 border-gray-200 dark:border-[#35353E] text-xs sm:text-sm lg:text-base">
-                      <div className="flex items-center gap-1 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300" onClick={() => handleSort("market_cap")}>
-                        Market Cap
-                        {getSortIcon("market_cap")}
-                      </div>
-                    </th>
-                    <th className="text-gray-900 dark:text-[#fff] bg-gray-50 dark:bg-[#35353E] px-2 sm:px-3 lg:px-4 py-2 sm:py-3 lg:py-4 text-left font-semibold border-b-2 border-gray-200 dark:border-[#35353E] text-xs sm:text-sm lg:text-base">
-                      More
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredMarkets.map((market, idx) => {
-                    const priceChange = market.price_change_percentage_24h;
-                    const isPositiveChange =
-                      priceChange !== null && priceChange >= 0;
+                      </th>
+                      <th className="text-gray-900 dark:text-[#fff] bg-gray-50 dark:bg-[#35353E] px-2 sm:px-3 lg:px-4 py-2 sm:py-3 lg:py-4 text-left font-semibold border-b-2 border-gray-200 dark:border-[#35353E] text-xs sm:text-sm lg:text-base">
+                        More
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginatedMarkets.map((market, idx) => {
+                      const priceChange = market.price_change_percentage_24h;
+                      const isPositiveChange =
+                        priceChange !== null && priceChange >= 0;
 
-                    return (
-                    <React.Fragment key={market.id}>
-                      <tr
-                        onClick={() => handleRowClick(market.id)}
-                        className={
-                          "cursor-pointer transition-colors " +
-                          (selectedCoinId === market.id
-                            ? "bg-gray-100 dark:bg-[#23232a] border-l-4 border-[#13B562]"
-                            : idx % 2 === 0
-                              ? "bg-gray-50 dark:bg-[#1D1D23]"
-                              : "bg-white dark:bg-[#18181D]")
-                        }
-                      >
-                          <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-3 lg:py-3 text-gray-900 dark:text-[#fff] align-middle">
-                            <div className="flex items-center gap-2 sm:gap-3 lg:gap-3">
-                              <span className="w-6 h-6 sm:w-7 sm:h-7 lg:w-7 lg:h-7 flex items-center flex-shrink-0">
-                                <CoinIcon
-                                  image={market.image}
-                                  symbol={market.symbol}
-                                  size={28}
-                                />
-                              </span>
-                              <div className="min-w-0">
-                                <div className="font-semibold flex flex-row text-xs sm:text-sm lg:text-base items-center gap-1">
-                                  <div>
-                                  {market.symbol.toUpperCase()}
-                                  </div>
-                                  <div className="text-[10px] sm:text-xs lg:text-xs text-gray-600 dark:text-[#788099] ">
-                                  {market.name}
-                                </div>
-                                </div>
-                                
-                              </div>
-                            </div>
-                          </td>
-                          <td className="text-right text-[#1D8751] font-medium px-2 sm:px-3 lg:px-4 py-2 sm:py-3 lg:py-3 text-xs sm:text-sm lg:text-base whitespace-nowrap align-middle">
-                          {formatPrice(market.current_price)}
-                        </td>
-                        <td
-                            className={`font-medium px-2 sm:px-3 lg:px-4 py-2 sm:py-3 lg:py-3 text-xs sm:text-sm lg:text-base whitespace-nowrap text-center align-middle ${
-                            isPositiveChange ? "text-[#13B562]" : "text-[#FF6B6B]"
-                          }`}
-                        >
-                            <div className="flex items-center justify-center gap-1">
-                              {priceChange !== null && (
-                                isPositiveChange ? (
-                                  <ArrowUpRight className="w-4 h-4" />
-                                ) : (
-                                  <ArrowDownRight className="w-4 h-4" />
-                                )
-                              )}
-                              {formatPercentage(priceChange)}
-                            </div>
-                        </td>
-                          <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-3 lg:py-3 text-xs sm:text-sm lg:text-base whitespace-nowrap">
-                          {formatVolume(market.total_volume)}
-                        </td>
-                          <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-3 lg:py-3 text-xs sm:text-sm lg:text-base whitespace-nowrap">
-                          {formatMarketCap(market.market_cap)}
-                        </td>
-                          <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-3 lg:py-3 flex items-center gap-2 sm:gap-3 lg:gap-3">
-                          <span className="cursor-pointer">
-                            <ChartIcon />
-                          </span>
-                          <span
-                            className="cursor-pointer"
-                            onClick={(e) =>
-                              handleToggleFavorite(e, market.symbol, market.name)
+                      return (
+                        <React.Fragment key={market.id}>
+                          <tr
+                            onClick={() => handleRowClick(market.id)}
+                            className={
+                              "cursor-pointer transition-colors " +
+                              (selectedCoinId === market.id
+                                ? "bg-gray-100 dark:bg-[#23232a] border-l-4 border-[#13B562]"
+                                : idx % 2 === 0
+                                  ? "bg-gray-50 dark:bg-[#1D1D23]"
+                                  : "bg-white dark:bg-[#18181D]")
                             }
                           >
-                            <StarIcon
-                              filled={isMarketFavorited(market.symbol, market.name)}
-                            />
-                          </span>
-                        </td>
-                      </tr>
-                      {/* Details row */}
-                      {selectedCoinId === market.id && (
-                        <tr>
-                          <td
-                            colSpan={tableHeaders.length}
-                              className="bg-gray-100 dark:bg-[#23232a] px-3 sm:px-4 lg:px-6 py-3 sm:py-4 lg:py-4 border-t border-gray-200 dark:border-[#35353E]"
-                          >
-                            {/* Coin details */}
-                            {loadingDetails ? (
-                              <div className="flex items-center gap-2 text-[#13B562]">
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#13B562]"></div>
-                                Loading details...
-                              </div>
-                            ) : coinDetails ? (
-                              <div className="">
-                                {/* Action Buttons */}
-                                  <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 lg:gap-4">
-                                  <Link
-                                    href={{
-                                      pathname: "/market/chart",
-                                      query: { id: market.id },
-                                    }}
-                                      className="border border-[#1D8751] rounded-full p-2.5 sm:p-2 lg:p-2 px-4 text-[#1D8751] flex gap-2 items-center justify-center cursor-pointer hover:bg-[#1D8751]/10 text-sm sm:text-base lg:text-base min-h-[44px] sm:min-h-0 lg:min-h-0"
-                                  >
-                                    <ChartIcon />
-                                    <p>View Chart</p>
-                                  </Link>
-                                  <Link href="/dashboard/express-exchange">
-                                      <Button className="border border-[#1D8751] rounded-full p-2.5 sm:p-2 lg:p-2 px-4 text-[#1D8751] flex gap-2 items-center justify-center cursor-pointer hover:bg-[#1D8751]/10 transition-colors text-sm sm:text-base lg:text-base min-h-[44px] sm:min-h-0 lg:min-h-0">
-                                        <ArrowLeftRight className="w-4 h-4 sm:w-4 sm:h-5 lg:w-4 lg:h-5" />
-                                      <p>Exchange</p>
-                                    </Button>
-                                  </Link>
-                                  <Link href="/dashboard/p2p">
-                                    <Button className="border border-[#1D8751] rounded-full p-2.5 sm:p-2 lg:p-2 px-4 text-[#1D8751] flex gap-2 items-center justify-center cursor-pointer hover:bg-[#1D8751]/10 transition-colors text-sm sm:text-base lg:text-base min-h-[44px] sm:min-h-0 lg:min-h-0">
-                                      <Users className="w-4 h-4 sm:w-5 sm:h-5 lg:w-5 lg:h-5" />
-                                      <p>P2P</p>
-                                    </Button>
-                                  </Link>
+                            <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-3 lg:py-3 text-gray-900 dark:text-[#fff] align-middle">
+                              <div className="flex items-center gap-2 sm:gap-3 lg:gap-3">
+                                <span className="w-6 h-6 sm:w-7 sm:h-7 lg:w-7 lg:h-7 flex items-center flex-shrink-0">
+                                  <CoinIcon
+                                    image={market.image}
+                                    symbol={market.symbol}
+                                    size={28}
+                                  />
+                                </span>
+                                <div className="min-w-0">
+                                  <div className="font-semibold flex flex-row text-xs sm:text-sm lg:text-base items-center gap-1">
+                                    <div>
+                                      {market.symbol.toUpperCase()}
+                                    </div>
+                                    <div className="text-[10px] sm:text-xs lg:text-xs text-gray-600 dark:text-[#788099] ">
+                                      {market.name}
+                                    </div>
+                                  </div>
+
                                 </div>
                               </div>
-                            ) : (
-                              <div className="text-red-500 flex items-center gap-2">
-                                <svg
-                                  width="16"
-                                  height="16"
-                                  viewBox="0 0 16 16"
-                                  fill="none"
-                                >
-                                  <path
-                                    d="M8 1C4.13 1 1 4.13 1 8s3.13 7 7 7 7-3.13 7-7-3.13-7-7-7zm0 10.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"
-                                    fill="currentColor"
-                                  />
-                                </svg>
-                                Failed to load details. Please try again.
+                            </td>
+                            <td className="text-right text-[#1D8751] font-medium px-2 sm:px-3 lg:px-4 py-2 sm:py-3 lg:py-3 text-xs sm:text-sm lg:text-base whitespace-nowrap align-middle">
+                              {formatPrice(market.current_price)}
+                            </td>
+                            <td
+                              className={`font-medium px-2 sm:px-3 lg:px-4 py-2 sm:py-3 lg:py-3 text-xs sm:text-sm lg:text-base whitespace-nowrap text-center align-middle ${isPositiveChange ? "text-[#13B562]" : "text-[#FF6B6B]"
+                                }`}
+                            >
+                              <div className="flex items-center justify-center gap-1">
+                                {priceChange !== null && (
+                                  isPositiveChange ? (
+                                    <ArrowUpRight className="w-4 h-4" />
+                                  ) : (
+                                    <ArrowDownRight className="w-4 h-4" />
+                                  )
+                                )}
+                                {formatPercentage(priceChange)}
                               </div>
-                            )}
-                          </td>
-                        </tr>
-                      )}
-                    </React.Fragment>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                            </td>
+                            <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-3 lg:py-3 text-xs sm:text-sm lg:text-base whitespace-nowrap">
+                              {formatVolume(market.total_volume)}
+                            </td>
+                            <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-3 lg:py-3 text-xs sm:text-sm lg:text-base whitespace-nowrap">
+                              {formatMarketCap(market.market_cap)}
+                            </td>
+                            <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-3 lg:py-3 flex items-center gap-2 sm:gap-3 lg:gap-3">
+                              <span className="cursor-pointer">
+                                <ChartIcon />
+                              </span>
+                              <span
+                                className="cursor-pointer"
+                                onClick={(e) =>
+                                  handleToggleFavorite(e, market.symbol, market.name)
+                                }
+                              >
+                                <StarIcon
+                                  filled={isMarketFavorited(market.symbol, market.name)}
+                                />
+                              </span>
+                            </td>
+                          </tr>
+                          {/* Details row */}
+                          {selectedCoinId === market.id && (
+                            <tr>
+                              <td
+                                colSpan={tableHeaders.length}
+                                className="bg-gray-100 dark:bg-[#23232a] px-3 sm:px-4 lg:px-6 py-3 sm:py-4 lg:py-4 border-t border-gray-200 dark:border-[#35353E]"
+                              >
+                                {/* Coin details */}
+                                {loadingDetails ? (
+                                  <div className="flex items-center gap-2 text-[#13B562]">
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#13B562]"></div>
+                                    Loading details...
+                                  </div>
+                                ) : coinDetails ? (
+                                  <div className="">
+                                    {/* Action Buttons */}
+                                    <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 lg:gap-4">
+                                      <Link
+                                        href={{
+                                          pathname: "/market/chart",
+                                          query: { id: market.id },
+                                        }}
+                                        className="border border-[#1D8751] rounded-full p-2.5 sm:p-2 lg:p-2 px-4 text-[#1D8751] flex gap-2 items-center justify-center cursor-pointer hover:bg-[#1D8751]/10 text-sm sm:text-base lg:text-base min-h-[44px] sm:min-h-0 lg:min-h-0"
+                                      >
+                                        <ChartIcon />
+                                        <p>View Chart</p>
+                                      </Link>
+                                      <Link href="/dashboard/express-exchange">
+                                        <Button className="border border-[#1D8751] rounded-full p-2.5 sm:p-2 lg:p-2 px-4 text-[#1D8751] flex gap-2 items-center justify-center cursor-pointer hover:bg-[#1D8751]/10 transition-colors text-sm sm:text-base lg:text-base min-h-[44px] sm:min-h-0 lg:min-h-0">
+                                          <ArrowLeftRight className="w-4 h-4 sm:w-4 sm:h-5 lg:w-4 lg:h-5" />
+                                          <p>Exchange</p>
+                                        </Button>
+                                      </Link>
+                                      <Link href="/dashboard/p2p">
+                                        <Button className="border border-[#1D8751] rounded-full p-2.5 sm:p-2 lg:p-2 px-4 text-[#1D8751] flex gap-2 items-center justify-center cursor-pointer hover:bg-[#1D8751]/10 transition-colors text-sm sm:text-base lg:text-base min-h-[44px] sm:min-h-0 lg:min-h-0">
+                                          <Users className="w-4 h-4 sm:w-5 sm:h-5 lg:w-5 lg:h-5" />
+                                          <p>P2P</p>
+                                        </Button>
+                                      </Link>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="text-red-500 flex items-center gap-2">
+                                    <svg
+                                      width="16"
+                                      height="16"
+                                      viewBox="0 0 16 16"
+                                      fill="none"
+                                    >
+                                      <path
+                                        d="M8 1C4.13 1 1 4.13 1 8s3.13 7 7 7 7-3.13 7-7-3.13-7-7-7zm0 10.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"
+                                        fill="currentColor"
+                                      />
+                                    </svg>
+                                    Failed to load details. Please try again.
+                                  </div>
+                                )}
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 sm:px-6 py-4 border-t border-gray-200 dark:border-[#35353E] bg-white dark:bg-[#18181D]">
+                  <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                    Showing {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, filteredMarkets.length)} of {filteredMarkets.length} markets
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                      disabled={currentPage === 1}
+                      className={`px-3 py-1.5 rounded-md text-sm font-medium border transition-colors ${currentPage === 1
+                        ? "opacity-50 cursor-not-allowed border-gray-300 dark:border-[#35353E] bg-gray-100 dark:bg-[#161B22] text-gray-400 dark:text-gray-500"
+                        : "border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#161B22] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#1F2937]"
+                        }`}
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: totalPages }, (_, i) => i + 1)
+                        .filter((page) => {
+                          // Show first page, last page, current page, and pages around current
+                          if (page === 1 || page === totalPages) return true;
+                          if (Math.abs(page - currentPage) <= 1) return true;
+                          return false;
+                        })
+                        .map((page, index, array) => {
+                          // Add ellipsis if there's a gap
+                          const prevPage = array[index - 1];
+                          const showEllipsisBefore = prevPage && page - prevPage > 1;
+
+                          return (
+                            <React.Fragment key={page}>
+                              {showEllipsisBefore && (
+                                <span className="px-2 text-gray-500 dark:text-gray-400">...</span>
+                              )}
+                              <button
+                                onClick={() => setCurrentPage(page)}
+                                className={`px-3 py-1.5 rounded-md text-sm font-medium border transition-colors ${currentPage === page
+                                  ? "bg-[#1D8751] text-white border-[#1D8751]"
+                                  : "border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#161B22] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#1F2937]"
+                                  }`}
+                              >
+                                {page}
+                              </button>
+                            </React.Fragment>
+                          );
+                        })}
+                    </div>
+
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                      disabled={currentPage === totalPages}
+                      className={`px-3 py-1.5 rounded-md text-sm font-medium border transition-colors ${currentPage === totalPages
+                        ? "opacity-50 cursor-not-allowed border-gray-300 dark:border-[#35353E] bg-gray-100 dark:bg-[#161B22] text-gray-400 dark:text-gray-500"
+                        : "border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#161B22] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#1F2937]"
+                        }`}
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>
