@@ -254,55 +254,56 @@ const Notifications = () => {
             key={trade.id}
             className="group flex flex-col sm:flex-row sm:items-center justify-between bg-white dark:bg-[#1f1f27] border border-gray-100 dark:border-[#35353E] rounded-xl p-3 sm:p-4 mb-3 shadow-sm hover:shadow-md transition-all duration-200"
           >
-            {/* Left Section: Avatar + Details + Status Badge */}
-            <div className="flex items-center justify-between w-full sm:flex-1 sm:mr-6">
-              <div className="flex items-start gap-3 flex-1 min-w-0">
+            {/* Left Section: Avatar + Details */}
+            <div className="flex items-start gap-3 flex-1 min-w-0">
+              {/* Avatar with Status Dot */}
+              <div className="relative shrink-0">
+                {profileImage ? (
+                  <img
+                    src={profileImage}
+                    alt=""
+                    className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover ring-2 ring-gray-100 dark:ring-[#35353E]"
+                  />
+                ) : (
+                  <FaUserCircle
+                    size={40}
+                    className="sm:w-12 sm:h-12 text-gray-300 dark:text-[#555566]"
+                  />
+                )}
+                <span
+                  className={`absolute bottom-0.5 right-0.5 w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full border-2 sm:border-[2.5px] border-white dark:border-[#1f1f27] ${orderType.color === "text-[#1D8751]" ? "bg-[#1D8751]" : "bg-red-500"
+                    }`}
+                ></span>
+              </div>
 
-                {/* Avatar with Status Dot */}
-                <div className="relative shrink-0">
-                  {profileImage ? (
-                    <img
-                      src={profileImage}
-                      alt=""
-                      className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover ring-2 ring-gray-100 dark:ring-[#35353E]"
-                    />
-                  ) : (
-                    <FaUserCircle
-                      size={40}
-                      className="sm:w-12 sm:h-12 text-gray-300 dark:text-[#555566]"
-                    />
-                  )}
-                  <span
-                    className={`absolute bottom-0.5 right-0.5 w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full border-2 sm:border-[2.5px] border-white dark:border-[#1f1f27] ${orderType.color === "text-[#1D8751]" ? "bg-[#1D8751]" : "bg-red-500"
-                      }`}
-                  ></span>
+              {/* Name + Amount + Date */}
+              <div className="flex flex-col grow min-w-0">
+                <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                  <span className="font-bold text-sm sm:text-base text-gray-900 dark:text-gray-100 truancate">
+                    {name}
+                  </span>
+                  <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded border whitespace-nowrap ${orderType.color === "text-[#1D8751]" ? "border-[#1D8751]/20 text-[#1D8751] bg-[#1D8751]/5" : "border-red-400/20 text-red-400 bg-red-400/5"
+                    }`}>
+                    {orderType.label}
+                  </span>
                 </div>
 
-                {/* Name + Amount + Date */}
-                <div className="flex flex-col grow min-w-0">
-                  <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                    <span className="font-bold text-sm sm:text-base text-gray-900 dark:text-gray-100 truancate">
-                      {name}
-                    </span>
-                    <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded border whitespace-nowrap ${orderType.color === "text-[#1D8751]" ? "border-[#1D8751]/20 text-[#1D8751] bg-[#1D8751]/5" : "border-red-400/20 text-red-400 bg-red-400/5"
-                      }`}>
-                      {orderType.label}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-2 text-xs sm:text-sm flex-wrap">
-                    <span className="font-semibold text-gray-900 dark:text-white whitespace-nowrap">
-                      {trade.amount} <span className="text-xs text-gray-500 font-normal">USDT</span>
-                    </span>
-                    <span className="hidden sm:inline text-gray-300 dark:text-gray-600">|</span>
-                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                      {new Date(trade.timestamp).toLocaleString(undefined, {
-                        month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-                      })}
-                    </span>
-                  </div>
+                <div className="flex items-center gap-2 text-xs sm:text-sm flex-wrap">
+                  <span className="font-semibold text-gray-900 dark:text-white whitespace-nowrap">
+                    {trade.amount} <span className="text-xs text-gray-500 font-normal">USDT</span>
+                  </span>
+                  <span className="hidden sm:inline text-gray-300 dark:text-gray-600">|</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                    {new Date(trade.timestamp).toLocaleString(undefined, {
+                      month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                    })}
+                  </span>
                 </div>
               </div>
+            </div>
+
+            {/* Right Section: Status Badge + View Button */}
+            <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto mt-3 sm:mt-0 gap-3 shrink-0">
               {/* Status Badge */}
               <span
                 className={`inline-flex items-center px-2 sm:px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-semibold bg-opacity-10 whitespace-nowrap ${status.color === "text-[#1D8751]"
@@ -313,11 +314,6 @@ const Notifications = () => {
                 <span className="hidden sm:inline">{status.text}</span>
                 <span className="sm:hidden">Pending</span>
               </span>
-
-            </div>
-
-            {/* Right Section: View Button */}
-            <div className="flex items-center justify-end w-full sm:w-auto mt-3 sm:mt-0 shrink-0">
 
               {/* View Button */}
               <button
