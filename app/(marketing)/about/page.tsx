@@ -234,7 +234,7 @@ const AboutPage = () => {
           <div className="text-center">
             {/* Welcome Banner */}
             <div className="inline-block mb-8">
-              <div className="px-4 py-1.5 rounded-3xl bg-white/5 border border-border dark:bg-[#1D8751]/10 dark:border-[#1D8751]/30">
+              <div className="px-4 py-1.5 rounded-3xl bg-[#1D87511A] border border-[#1D87514D] dark:bg-[#1D8751]/10 dark:border-[#1D8751]/30">
                 <p className="text-sm md:text-sm text-white dark:text-[#1D8751] font-medium">
                   Welcome to OMAYA Exchange
                 </p>
@@ -256,14 +256,14 @@ const AboutPage = () => {
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <a
                 href="#story"
-                className="relative px-8 py-3 bg-white text-[#1D8751] hover:bg-white/90 transition-all duration-300 shadow-lg dark:bg-[#1D8751] dark:text-white dark:hover:bg-[#166b3e]"
+                className="relative px-8 py-3 bg-[#1D8751] text-white hover:bg-white/90 transition-all duration-300 shadow-lg dark:bg-[#1D8751] dark:text-white dark:hover:bg-[#166b3e]"
                 style={{ borderRadius: '2rem' }}
               >
                 Explore Our Journey
               </a>
               <a
                 href="/contactUs"
-                className="px-8 py-3 bg-transparent border-2 border-white text-white font-semibold hover:bg-white/10 transition-all duration-300 dark:border-[#1D8751] dark:text-[#1D8751] dark:hover:bg-[#1D8751]/10"
+                className="px-8 py-3 bg-transparent border-1 border-white text-white font-semibold hover:bg-white/10 transition-all duration-300 dark:border-[#1D8751] dark:text-[#1D8751] dark:hover:bg-[#1D8751]/10"
                 style={{ borderRadius: '2rem' }}
               >
                 Contact Us

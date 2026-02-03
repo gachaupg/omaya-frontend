@@ -54,6 +54,11 @@ const BlogPage = () => {
     setCurrentPage(1);
   }, [searchTerm]);
 
+  // Scroll to top when page changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [currentPage]);
+
   // Calculate pagination
   const totalPages = Math.ceil(filteredPosts.length / ITEMS_PER_PAGE);
   const indexOfLastItem = currentPage * ITEMS_PER_PAGE;
@@ -129,7 +134,7 @@ const BlogPage = () => {
 
   return (
     <div className="bg-white dark:bg-[var(--bg-color)] text-gray-900 dark:text-white min-h-screen p-0 sm:p-6 md:p-8 mt-20">
-      <div className="w-full px-0 sm:px-4 md:px-6 lg:px-8">
+      <div className="w-full px-4 md:px-6 lg:px-8">
         <header className="mb-4 md:mb-6 text-center md:text-left">
           <h1 className="text-2xl sm:text-2xl md:text-3xl font-bold leading-tight">
             {(() => {
@@ -137,17 +142,17 @@ const BlogPage = () => {
               // Find positions of "Blog" and "Latest"
               const blogIndex = title.indexOf("Blog");
               const latestIndex = title.indexOf("Latest");
-              
+
               if (blogIndex === -1 || latestIndex === -1) {
                 // Fallback if keywords not found
                 return title;
               }
-              
+
               // Split the title into parts
               const beforeBlog = title.substring(0, blogIndex);
               const afterBlog = title.substring(blogIndex + 4, latestIndex);
               const afterLatest = title.substring(latestIndex + 6);
-              
+
               return (
                 <>
                   {beforeBlog}
@@ -157,7 +162,7 @@ const BlogPage = () => {
                     Latest
                     <br />
                   </span>
-                    {afterLatest.trim()}
+                  {afterLatest.trim()}
                 </>
               );
             })()}
@@ -184,13 +189,13 @@ const BlogPage = () => {
             <p className="text-gray-600 dark:text-gray-400 text-lg">
               {searchTerm
                 ? t(
-                    "blogs.empty.search",
-                    "No posts found matching your search."
-                  )
+                  "blogs.empty.search",
+                  "No posts found matching your search."
+                )
                 : t(
-                    "blogs.empty.none",
-                    "No blog posts available."
-                  )}
+                  "blogs.empty.none",
+                  "No blog posts available."
+                )}
             </p>
             {!searchTerm && (
               <p className="text-gray-500 text-sm mt-2">
@@ -205,59 +210,59 @@ const BlogPage = () => {
           <>
             <main className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {paginatedPosts.map((post: BlogPost) => (
-              <article
-                key={getPostId(post)}
-                className="bg-gray-50 dark:bg-[#161B22] border border-gray-200 dark:border-[#30363D] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-[#1D87514f] transition-shadow duration-300 flex flex-col"
-              >
-                <div className="relative w-full h-56">
-                  <Image
-                    src={getImageUrl(post)}
-                    alt={post.title}
-                    fill
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    className="rounded-t-2xl object-cover"
-                  />
-                </div>
-                <div className="p-6 flex flex-col flex-grow">
-                  <div className="flex justify-between items-center text-sm text-gray-600 dark:text-gray-400 mb-4">
-                    <span>
-                      {formatDate(
-                        post.created_at ||
+                <article
+                  key={getPostId(post)}
+                  className="bg-gray-50 dark:bg-[#161B22] border border-gray-200 dark:border-[#30363D] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-[#1D87514f] transition-shadow duration-300 flex flex-col"
+                >
+                  <div className="relative w-full h-56">
+                    <Image
+                      src={getImageUrl(post)}
+                      alt={post.title}
+                      fill
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                      className="rounded-t-2xl object-cover"
+                    />
+                  </div>
+                  <div className="p-6 flex flex-col flex-grow">
+                    <div className="flex justify-between items-center text-sm text-gray-600 dark:text-gray-400 mb-4">
+                      <span>
+                        {formatDate(
+                          post.created_at ||
                           post.createdAt ||
                           new Date().toISOString()
-                      )}
-                    </span>
-                    <div className="flex flex-wrap gap-2">
-                      <span className="text-xs font-semibold bg-gray-200 dark:bg-[#30363D] text-gray-700 dark:text-gray-300 px-2 py-1 rounded-md">
-                        {post.category}
+                        )}
                       </span>
+                      <div className="flex flex-wrap gap-2">
+                        <span className="text-xs font-semibold bg-gray-200 dark:bg-[#30363D] text-gray-700 dark:text-gray-300 px-2 py-1 rounded-md">
+                          {post.category}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                  <h2 className="text-xl font-bold mb-3 flex-grow text-gray-900 dark:text-white">
-                    {post.title}
-                  </h2>
-                  {/* <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm line-clamp-3">
+                    <h2 className="text-xl font-bold mb-3 flex-grow text-gray-900 dark:text-white">
+                      {post.title}
+                    </h2>
+                    {/* <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm line-clamp-3">
                     {post.description.length > 300
                       ? post.description.substring(0, 300).trim() + "..."
                       : post.description}
                   </p> */}
-                  <div
-                    className="text-gray-600 dark:text-gray-400 mb-4 text-sm line-clamp-3 prose prose-sm dark:prose-invert max-w-none"
-                    dangerouslySetInnerHTML={{ __html: decodeHtml(post.description) }}
-                  />
-                  <p className="text-xs text-gray-500 dark:text-gray-500 mb-6">
-                    {t("blogs.byAuthor", "By {{author}}", {
-                      author: post.author_name || "Anonymous",
-                    })}
-                  </p>
-                  <button
-                    onClick={() => handleReadArticle(getPostId(post))}
-                    className="mt-auto w-fit text-[#1D8751] border border-[#1D8751] rounded-full px-6 py-2.5 text-base font-semibold hover:bg-[#1D8751] hover:text-white transition-colors duration-300 self-start"
-                  >
-                    {t("blogs.readArticle", "Read Article")}
-                  </button>
-                </div>
-              </article>
+                    <div
+                      className="text-gray-600 dark:text-gray-400 mb-4 text-sm line-clamp-3 prose prose-sm dark:prose-invert max-w-none"
+                      dangerouslySetInnerHTML={{ __html: decodeHtml(post.description) }}
+                    />
+                    <p className="text-xs text-gray-500 dark:text-gray-500 mb-6">
+                      {t("blogs.byAuthor", "By {{author}}", {
+                        author: post.author_name || "Anonymous",
+                      })}
+                    </p>
+                    <button
+                      onClick={() => handleReadArticle(getPostId(post))}
+                      className="mt-auto w-fit text-[#1D8751] border border-[#1D8751] rounded-full px-6 py-2.5 text-base font-semibold hover:bg-[#1D8751] hover:text-white transition-colors duration-300 self-start"
+                    >
+                      {t("blogs.readArticle", "Read Article")}
+                    </button>
+                  </div>
+                </article>
               ))}
             </main>
 
@@ -271,15 +276,14 @@ const BlogPage = () => {
                   <button
                     onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                     disabled={currentPage === 1}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
-                      currentPage === 1
+                    className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${currentPage === 1
                         ? "opacity-50 cursor-not-allowed border-gray-300 dark:border-[#35353E] bg-gray-100 dark:bg-[#161B22] text-gray-400 dark:text-gray-500"
                         : "border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#161B22] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#1F2937]"
-                    }`}
+                      }`}
                   >
                     <FaChevronLeft className="w-4 h-4" />
                   </button>
-                  
+
                   <div className="flex items-center gap-1">
                     {Array.from({ length: totalPages }, (_, i) => i + 1)
                       .filter((page) => {
@@ -292,7 +296,7 @@ const BlogPage = () => {
                         // Add ellipsis if there's a gap
                         const prevPage = array[index - 1];
                         const showEllipsisBefore = prevPage && page - prevPage > 1;
-                        
+
                         return (
                           <React.Fragment key={page}>
                             {showEllipsisBefore && (
@@ -300,11 +304,10 @@ const BlogPage = () => {
                             )}
                             <button
                               onClick={() => setCurrentPage(page)}
-                              className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
-                                currentPage === page
+                              className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${currentPage === page
                                   ? "bg-[#1D8751] text-white border-[#1D8751]"
                                   : "border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#161B22] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#1F2937]"
-                              }`}
+                                }`}
                             >
                               {page}
                             </button>
@@ -316,11 +319,10 @@ const BlogPage = () => {
                   <button
                     onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                     disabled={currentPage === totalPages}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
-                      currentPage === totalPages
+                    className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${currentPage === totalPages
                         ? "opacity-50 cursor-not-allowed border-gray-300 dark:border-[#35353E] bg-gray-100 dark:bg-[#161B22] text-gray-400 dark:text-gray-500"
                         : "border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#161B22] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#1F2937]"
-                    }`}
+                      }`}
                   >
                     <FaChevronRight className="w-4 h-4" />
                   </button>

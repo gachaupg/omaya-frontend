@@ -579,6 +579,7 @@ export default function WithdrawalForm({
   const [responseMessage, setResponseMessage] = useState<string>("");
   const [websocketUrl, setWebsocketUrl] = useState<string>("");
   const [transactionId, setTransactionId] = useState<string>("");
+  const [isTermsAccepted, setIsTermsAccepted] = useState(false);
 
   // Forex-specific state for withdrawal
   const [userNotesForex, setUserNotesForex] = useState<string>("");
@@ -2393,8 +2394,8 @@ export default function WithdrawalForm({
               <button
                 onClick={() => setAssetFilterTab("all")}
                 className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-2xl whitespace-nowrap transition-colors ${assetFilterTab === "all"
-                    ? "bg-[#1D8751] text-white"
-                    : "bg-[#35353E] text-gray-300 hover:bg-[#40404A]"
+                  ? "bg-[#1D8751] text-white"
+                  : "bg-[#35353E] text-gray-300 hover:bg-[#40404A]"
                   }`}
               >
                 All
@@ -2402,8 +2403,8 @@ export default function WithdrawalForm({
               <button
                 onClick={() => setAssetFilterTab("new")}
                 className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-2xl whitespace-nowrap transition-colors ${assetFilterTab === "new"
-                    ? "bg-[#1D8751] text-white"
-                    : "bg-[#35353E] text-gray-300 hover:bg-[#40404A]"
+                  ? "bg-[#1D8751] text-white"
+                  : "bg-[#35353E] text-gray-300 hover:bg-[#40404A]"
                   }`}
               >
                 New
@@ -2411,8 +2412,8 @@ export default function WithdrawalForm({
               <button
                 onClick={() => setAssetFilterTab("gainers")}
                 className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-2xl whitespace-nowrap transition-colors ${assetFilterTab === "gainers"
-                    ? "bg-[#1D8751] text-white"
-                    : "bg-[#35353E] text-gray-300 hover:bg-[#40404A]"
+                  ? "bg-[#1D8751] text-white"
+                  : "bg-[#35353E] text-gray-300 hover:bg-[#40404A]"
                   }`}
               >
                 Gainers
@@ -2420,8 +2421,8 @@ export default function WithdrawalForm({
               <button
                 onClick={() => setAssetFilterTab("losers")}
                 className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-2xl whitespace-nowrap transition-colors ${assetFilterTab === "losers"
-                    ? "bg-[#1D8751] text-white"
-                    : "bg-[#35353E] text-gray-300 hover:bg-[#40404A]"
+                  ? "bg-[#1D8751] text-white"
+                  : "bg-[#35353E] text-gray-300 hover:bg-[#40404A]"
                   }`}
               >
                 Losers
@@ -4799,6 +4800,8 @@ export default function WithdrawalForm({
                     <input
                       type="checkbox"
                       className="terms-checkbox-green mt-1 mr-3 w-4 h-4 rounded border-2 border-[#1D8751] focus:ring-[#1D8751] appearance-none bg-transparent checked:bg-[#1D8751] checked:border-[#1D8751] flex-shrink-0"
+                      checked={isTermsAccepted}
+                      onChange={(e) => setIsTermsAccepted(e.target.checked)}
                     />
                     <span className="text-[#35353e] dark:text-[#788099] text-sm">
                       I've read and agree to the{" "}
@@ -4848,7 +4851,7 @@ export default function WithdrawalForm({
                   </div>
                 )}
                 <button
-                  className={`w-full text-[#35353e] dark:text-[#788099] text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${isSubmitting || isInfoModalOpen || getAmount > 15000
+                  className={`w-full text-[#35353e] dark:text-[#788099] text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${isSubmitting || isInfoModalOpen || getAmount > 15000 || !isTermsAccepted
                     ? "bg-gray-500 cursor-not-allowed"
                     : "bg-[#1D8751] hover:bg-[#166b3e]"
                     }`}
@@ -4878,7 +4881,7 @@ export default function WithdrawalForm({
                       onExchange(transactionData);
                     }
                   }}
-                  disabled={isSubmitting || isInfoModalOpen || getAmount > 15000}
+                  disabled={isSubmitting || isInfoModalOpen || getAmount > 15000 || !isTermsAccepted}
                 >
                   {isSubmitting ? (
                     <div className="flex items-center gap-2">
@@ -4886,8 +4889,8 @@ export default function WithdrawalForm({
                       <span>Submitting...</span>
                     </div>
                   ) : (
-                    <span className="flex items-center justify-center">
-
+                    <span className="flex items-center justify-center text-muted">
+                      E
                       <img
                         className="mt-2"
                         src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"

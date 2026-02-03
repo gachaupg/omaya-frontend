@@ -1477,19 +1477,26 @@ export default function Navbar() {
                   </span> */}
                   </div>
                   <div className={`flex flex-col items-center space-y-3 mt-4 ${mobileDepositDropdownOpen ? 'invisible' : ''}`}>
-                    <div className="flex items-center space-x-3 justify-between w-full">
-                      <div>
-                        <Link
-                          href="/dashboard/account"
-                          onClick={toggleMobileMenu}
-                          className="text-white relative inline-block"
-                        >
-                          {(userProfile?.photo || cachedProfilePhoto) &&
-                            !profileImageError ? (
-                            <>
-                              <img
-                                src={
-                                  userProfile?.photo || cachedProfilePhoto || ""
+                    <button
+                      onClick={toggleProfileModal}
+                      className="flex items-center space-x-3 justify-between w-full text-left focus:outline-none"
+                    >
+                      <div className="relative">
+                        {(userProfile?.photo || cachedProfilePhoto) &&
+                          !profileImageError ? (
+                          <>
+                            <img
+                              src={
+                                userProfile?.photo || cachedProfilePhoto || ""
+                              }
+                              alt="Profile"
+                              className="w-10 h-10 rounded-full object-cover"
+                              onError={() => {
+                                setProfileImageError(true);
+                                // Clear invalid cached photo
+                                if (typeof window !== "undefined") {
+                                  localStorage.removeItem("profile_photo");
+                                  setCachedProfilePhoto(null);
                                 }
                                 alt="Profile"
                                 className="w-10 h-10 rounded-full object-cover border-2 border-white dark:border-gray-600 shadow-lg"
@@ -1561,7 +1568,7 @@ export default function Navbar() {
                           )}
                         </Link>
                       </div>
-                      <div className="text-left flex-1 min-w-0">
+                      <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5">
                           <h4 className="dark:text-white text-gray-900 font-medium text-sm truncate">
                             {user?.first_name && user?.last_name
@@ -1588,7 +1595,7 @@ export default function Navbar() {
                         </div>
                         <p className="text-muted-foreground text-xs truncate">{user?.email}</p>
                       </div>
-                    </div>
+                    </button>
                   </div>
 
 

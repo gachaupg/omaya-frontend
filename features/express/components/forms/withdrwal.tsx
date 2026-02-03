@@ -609,6 +609,7 @@ export default function WithdrawalForm({
   const [responseMessage, setResponseMessage] = useState<string>("");
   const [websocketUrl, setWebsocketUrl] = useState<string>("");
   const [transactionId, setTransactionId] = useState<string>("");
+  const [isTermsAccepted, setIsTermsAccepted] = useState(false);
 
   // Forex-specific state for withdrawal
   const [userNotesForex, setUserNotesForex] = useState<string>("");
@@ -4545,7 +4546,7 @@ export default function WithdrawalForm({
                 <span className="text-[#7e7e8f] dark:text-[#788099]">2-</span>
                 Wallet Address
               </h2>
-              <div className="dark:bg-[#1D1D23] border-2 border-[#35353e] rounded-2xl p-3 sm:p-5 shadow-lg w-full text-[#35353e] dark:text-[#788099]">
+              <div className="bg-white dark:bg-[#1D1D23] border border-border dark:border-[#35353e] rounded-2xl p-3 sm:p-5 shadow-lg w-full text-[#35353e] dark:text-[#788099]">
                 {/* USDT Wallet Address */}
                 <div className="mb-4">
                   <h3 className="text-sm sm:text-base text-[#35353e] dark:text-[#788099] font-semibold mb-2">
@@ -4567,7 +4568,7 @@ export default function WithdrawalForm({
                                 setIsWalletAddressCopied(false);
                               }, 2000);
                             }}
-                            className="flex items-center gap-1 bg-[#23232b] dark:bg-[#35353E] border border-[#1D8751] text-[#1D8751] rounded-full px-2 sm:px-4 py-1 font-semibold text-xs sm:text-base hover:bg-[#1D8751] hover:text-[#35353e] transition-colors"
+                            className="flex items-center gap-1 bg-[#E8EFF5] dark:bg-[#35353E] border border-[#1D8751] text-[#1D8751] rounded-full px-2 sm:px-4 py-1 font-semibold text-xs sm:text-base hover:bg-[#1D8751] hover:text-[#35353e] transition-colors"
                           >
                             {isWalletAddressCopied ? (
                               <>
@@ -4747,6 +4748,8 @@ export default function WithdrawalForm({
                     <input
                       type="checkbox"
                       className="terms-checkbox-green mt-1 mr-3 w-4 h-4 rounded border-2 border-[#1D8751] focus:ring-[#1D8751] appearance-none bg-transparent checked:bg-[#1D8751] checked:border-[#1D8751] flex-shrink-0"
+                      checked={isTermsAccepted}
+                      onChange={(e) => setIsTermsAccepted(e.target.checked)}
                     />
                     <span className="text-[#35353e] dark:text-[#788099] text-sm">
                       I've read and agree to the{" "}
@@ -4796,7 +4799,7 @@ export default function WithdrawalForm({
                   </div>
                 )}
                 <button
-                  className={`w-full text-[#35353e] dark:text-[#788099] text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${isSubmitting || isInfoModalOpen || getAmount > 15000
+                  className={`w-full text-[#35353e] dark:text-[#788099] text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${isSubmitting || isInfoModalOpen || getAmount > 15000 || !isTermsAccepted
                     ? "bg-gray-500 cursor-not-allowed"
                     : "bg-[#1D8751] hover:bg-[#166b3e]"
                     }`}
@@ -4826,7 +4829,7 @@ export default function WithdrawalForm({
                       onExchange(transactionData);
                     }
                   }}
-                  disabled={isSubmitting || isInfoModalOpen || getAmount > 15000}
+                  disabled={isSubmitting || isInfoModalOpen || getAmount > 15000 || !isTermsAccepted}
                 >
                   {isSubmitting ? (
                     <div className="flex items-center gap-2">
@@ -4834,8 +4837,8 @@ export default function WithdrawalForm({
                       <span>Submitting...</span>
                     </div>
                   ) : (
-                    <span className="flex items-center justify-center">
-
+                    <span className="flex items-center justify-center text-muted">
+                      E
                       <img
                         className="mt-2"
                         src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
