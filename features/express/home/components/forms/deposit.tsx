@@ -1603,7 +1603,7 @@ export default function DepositForm({
                 onClick={() => setAssetFilterTab("all")}
                 className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-2xl whitespace-nowrap transition-colors ${assetFilterTab === "all"
                   ? "bg-[#1D8751] text-white"
-                  : "bg-[#35353E] text-gray-300 hover:bg-[#40404A]"
+                  : "bg-[#E8EFF5] text-gray-700 hover:bg-[#D8E2EC] dark:bg-[#35353E] dark:text-gray-300 dark:hover:bg-[#40404A]"
                   }`}
               >
                 All
@@ -1612,7 +1612,7 @@ export default function DepositForm({
                 onClick={() => setAssetFilterTab("new")}
                 className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-2xl whitespace-nowrap transition-colors ${assetFilterTab === "new"
                   ? "bg-[#1D8751] text-white"
-                  : "bg-[#35353E] text-gray-300 hover:bg-[#40404A]"
+                  : "bg-[#E8EFF5] text-gray-700 hover:bg-[#D8E2EC] dark:bg-[#35353E] dark:text-gray-300 dark:hover:bg-[#40404A]"
                   }`}
               >
                 New
@@ -1621,7 +1621,7 @@ export default function DepositForm({
                 onClick={() => setAssetFilterTab("gainers")}
                 className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-2xl whitespace-nowrap transition-colors ${assetFilterTab === "gainers"
                   ? "bg-[#1D8751] text-white"
-                  : "bg-[#35353E] text-gray-300 hover:bg-[#40404A]"
+                  : "bg-[#E8EFF5] text-gray-700 hover:bg-[#D8E2EC] dark:bg-[#35353E] dark:text-gray-300 dark:hover:bg-[#40404A]"
                   }`}
               >
                 Gainers
@@ -1630,7 +1630,7 @@ export default function DepositForm({
                 onClick={() => setAssetFilterTab("losers")}
                 className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-2xl whitespace-nowrap transition-colors ${assetFilterTab === "losers"
                   ? "bg-[#1D8751] text-white"
-                  : "bg-[#35353E] text-gray-300 hover:bg-[#40404A]"
+                  : "bg-[#E8EFF5] text-gray-700 hover:bg-[#D8E2EC] dark:bg-[#35353E] dark:text-gray-300 dark:hover:bg-[#40404A]"
                   }`}
               >
                 Losers

@@ -1555,19 +1555,21 @@ export default function MarketingPage() {
                     href="#"
                     className="
                 inline-flex items-center justify-start gap-3
-                bg-gray-900 hover:bg-gray-800
+                bg-white hover:bg-gray-50
                 dark:bg-[#1A1A1F] dark:hover:bg-[#252530]
-                border border-gray-700 dark:border-[#2A2A35]
+                border border-gray-300 hover:border-gray-400
+                dark:border-[#2A2A35]
                 rounded-xl
                 px-4 py-2.5 sm:py-3
                 min-w-[160px] sm:min-w-[180px]
                 transition-colors
+                shadow-sm dark:shadow-none
               "
                   >
                     <HiOutlineDeviceMobile className="text-2xl text-[#22C55E]" />
                     <div className="flex flex-col items-start">
-                      <span className="text-gray-400 font-medium text-xs tracking-wide">{btn.pre}</span>
-                      <span className="text-white font-semibold text-sm tracking-wide">{btn.text}</span>
+                      <span className="text-gray-500 dark:text-gray-400 font-medium text-xs tracking-wide">{btn.pre}</span>
+                      <span className="text-gray-900 dark:text-white font-semibold text-sm tracking-wide">{btn.text}</span>
                     </div>
                   </a>
                 ))}

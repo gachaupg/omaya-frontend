@@ -278,11 +278,52 @@ export const Table: React.FC<TableProps> = ({
         alert("Failed to export CSV. Please try again.");
       }
     } else if (format === "pdf") {
-      // Export as PDF
+      // Export as PDF with OMAYA logo, title, and export info
       try {
         const doc = new jsPDF();
+        const margin = 14;
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const centerX = pageWidth / 2;
+        let currentY = 12;
+
+        // Load and add OMAYA logo at top (centered)
+        const logoUrl = "https://res.cloudinary.com/pitz/image/upload/v1764572384/bad9edd9da5201cb8f8f9cea35bf46f4fb541bd6_lplbyc.png";
+        const logoWidth = 48;
+        const logoHeight = 18;
+        try {
+          const imgResponse = await fetch(logoUrl);
+          const imgBlob = await imgResponse.blob();
+          const imgDataUrl = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(imgBlob);
+          });
+          const logoX = centerX - logoWidth / 2;
+          doc.addImage(imgDataUrl, "PNG", logoX, currentY, logoWidth, logoHeight);
+          currentY += logoHeight + 8;
+        } catch (logoErr) {
+          logger.debug('p2p', "PDF logo load failed, using text:", logoErr);
+          doc.setFontSize(18);
+          doc.setTextColor(29, 135, 81);
+          doc.text("OMAYA", centerX, currentY + 6, { align: "center" });
+          currentY += 14;
+        }
+
+        // Title (transaction history name, centered)
         doc.setFontSize(16);
-        doc.text(title, 14, 15);
+        doc.setTextColor(0, 0, 0);
+        doc.text(title, centerX, currentY, { align: "center" });
+        currentY += 8;
+
+        // Export date and info (centered)
+        const exportDate = new Date().toLocaleString();
+        doc.setFontSize(10);
+        doc.setTextColor(100, 100, 100);
+        doc.text(`Exported on: ${exportDate}`, centerX, currentY, { align: "center" });
+        currentY += 6;
+        doc.text(`Total records: ${dataToExport.length}`, centerX, currentY, { align: "center" });
+        currentY += 12;
 
         // Prepare table data
         const tableData = dataToExport.map((item) => {
@@ -312,7 +353,7 @@ export const Table: React.FC<TableProps> = ({
         autoTable(doc, {
           head: headers,
           body: tableData,
-          startY: 25,
+          startY: currentY,
           theme: "grid",
           styles: {
             fontSize: 8,
@@ -324,7 +365,9 @@ export const Table: React.FC<TableProps> = ({
           },
         });
 
-        const fileName = `${title.toLowerCase().replace(/\s+/g, "_")}_${new Date().toISOString().split("T")[0]}.pdf`;
+        const dateStr = new Date().toISOString().split("T")[0];
+        const safeTitle = title.replace(/\s+/g, "_").replace(/[^a-zA-Z0-9_-]/g, "");
+        const fileName = `OMAYA_${safeTitle}_Export_${dateStr}.pdf`;
         doc.save(fileName);
       } catch (error) {
         console.error("PDF export error:", error);

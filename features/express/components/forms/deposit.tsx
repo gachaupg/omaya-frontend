@@ -3749,7 +3749,7 @@ export default function DepositForm({
         </div>
 
         {/* Fee & Rate - Dynamic based on selected asset */}
-        {/* <div className="flex items-center rounded-2xl border border-[#39394a] bg-[#23232b] px-2 py-2 mb-3">
+        {/* <div className="flex items-center rounded-2xl border border-border bg-[#23232b] px-2 py-2 mb-3">
           <div className="flex flex-col gap-2 flex-1">
             <span className="flex items-center bg-[#F79330] text-white rounded-full px-5 py-1 text-sm font-medium w-fit">
               <span className="w-2 h-2 bg-white rounded-full mr-2 inline-block"></span>
@@ -3887,7 +3887,7 @@ export default function DepositForm({
                   <span className="text-[#7e7e8f] dark:text-[#788099]">2-</span>{" "}
                   {t("express.paymentDetails", "Payment Details")}
                 </h2>
-                <div className="flex-1 bg-white dark:bg-[#18181D] rounded-2xl border border-[#39394a] dark:border-[#35353E] flex flex-col justify-between p-3 sm:p-4 md:p-5 relative min-h-[120px]">
+                <div className="flex-1 bg-white dark:bg-[#18181D] rounded-2xl border border-border dark:border-[#35353E] flex flex-col justify-between p-3 sm:p-4 md:p-5 relative min-h-[120px]">
                   {/* Bank and logo */}
                   <div className="flex items-center justify-between mb-2 sm:mb-4">
                     <span className="text-[#7e7e8f] dark:text-[#788099] text-base font-semibold">
@@ -3923,7 +3923,7 @@ export default function DepositForm({
                       </span>
                     </div>
                   </div>
-                  <div className="border-t border-dashed border-[#39394a] mb-2"></div>
+                  <div className="border-t border-dashed border-border mb-2"></div>
                   {/* Account Name */}
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-[#7e7e8f] dark:text-[#788099] text-base font-medium">
@@ -3933,7 +3933,7 @@ export default function DepositForm({
                       {selectedPaymentDetail.account_name || selectedPaymentDetail?.payment_details?.[0]?.account_name || "N/A"}
                     </span>
                   </div>
-                  <div className="border-t border-dashed border-[#39394a] mb-2"></div>
+                  <div className="border-t border-dashed border-border mb-2"></div>
                   {/* Account Number */}
                   <div className="flex items-center justify-between">
                     <span className="text-[#7e7e8f] dark:text-[#788099] text-base font-medium">
@@ -3990,7 +3990,7 @@ export default function DepositForm({
             </h2>
 
             {/* Forex Account Number */}
-            <div className="flex flex-col bg-white dark:bg-[#18181D] border-2 border-[#35353E] rounded-2xl p-3 sm:p-4 md:p-5 shadow-lg">
+            <div className="flex flex-col bg-white dark:bg-[#18181D] border border-[#35353E] rounded-2xl p-3 sm:p-4 md:p-5 shadow-lg">
               <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
                 {t("express.yourForexAccountNumber", "Your Forex Account Number")}
               </label>
@@ -4006,7 +4006,7 @@ export default function DepositForm({
             </div>
 
             {/* User Notes */}
-            <div className="flex flex-col bg-white dark:bg-[#18181D] border-2 border-[#35353E] rounded-2xl p-3 sm:p-4 md:p-5 shadow-lg">
+            <div className="flex flex-col bg-white dark:bg-[#18181D] border border-[#35353E] rounded-2xl p-3 sm:p-4 md:p-5 shadow-lg">
               <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
                 {t("express.additionalNotesOptional", "Additional Notes (Optional)")}
               </label>
@@ -4110,7 +4110,7 @@ export default function DepositForm({
             ref={paymentDetailsRef}
             className="mt-1 mb-2 w-full flex flex-col gap-3 px-2 "
           >
-            <div className="flex-1  dark:bg-[#18181D] rounded-2xl border border-[#39394a] dark:border-[#35353E] flex flex-col justify-between p-3 sm:p-4 md:p-5 relative min-h-[120px]">
+            <div className="flex-1 bg-white dark:bg-[#18181D] rounded-2xl border border-border dark:border-[#35353E] flex flex-col justify-between p-3 sm:p-4 md:p-5 relative min-h-[120px]">
               {/* Bank and logo */}
               <div className="flex items-center justify-between mb-2 sm:mb-3 md:mb-4">
                 <span className="text-[#7e7e8f] dark:text-[#788099] text-base font-semibold">
@@ -4213,7 +4213,7 @@ export default function DepositForm({
                 {t("express.transactionCode", "Transaction Code")}
               </h2>
               <div className="mb-4 sm:mb-6 flex flex-col gap-2 sm:gap-3 w-full px-1 sm:px-2">
-                <div className="bg-white dark:bg-[#18181D] border-2 border-[#35353E] rounded-2xl p-3 sm:p-4 shadow-lg w-full text-[#35353e] dark:text-[#788099]">
+                <div className="bg-white dark:bg-[#18181D] border border-border dark:border-[#35353E] rounded-2xl p-3 sm:p-4 shadow-lg w-full text-[#35353e] dark:text-[#788099]">
                   {/* Transaction Code Row */}
                   <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-3">
                     {/* Display deposit code from API response - each character in its own box */}
@@ -4223,9 +4223,9 @@ export default function DepositForm({
                         .map((char: string, index: number) => (
                           <div
                             key={index}
-                            className="w-8 h-10 sm:w-10 sm:h-12 bg-[#35353E] border border-[#4A4A4A] rounded-lg flex items-center justify-center"
+                            className="w-8 h-10 sm:w-10 sm:h-12 text-gray-900 dark:text-white bg-[#E8EFF5] dark:bg-[#35353E] border border-border dark:border-[#4A4A4A] rounded-lg flex items-center justify-center"
                           >
-                            <span className="text-lg sm:text-xl font-bold text-white font-mono">
+                            <span className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white font-mono">
                               {char}
                             </span>
                           </div>
@@ -4236,7 +4236,7 @@ export default function DepositForm({
                         navigator.clipboard.writeText(apiResponse.deposit_code);
                         showToast.success(t("express.transactionCodeCopied", "Transaction code copied!"));
                       }}
-                      className="flex items-center gap-2 bg-[#35353E] border border-[#1D8751] text-white rounded-full px-3 py-2 sm:px-4 font-semibold text-xs sm:text-sm hover:bg-[#1D8751] hover:text-white transition-colors"
+                      className="flex items-center text-gray-900 dark:text-white gap-2 dark:bg-[#35353E] bg-[#E8EFF5] border border-[#1D8751] rounded-full px-3 py-2 sm:px-4 font-semibold text-xs sm:text-sm hover:bg-[#1D8751] hover:text-white transition-colors"
                     >
                       <svg
                         width="16"
@@ -4344,7 +4344,7 @@ export default function DepositForm({
             </div>
           )}
           
-          <div className="flex flex-col bg-white dark:bg-[#1D1D23] border-2 border-[#35353E] rounded-2xl p-5 shadow-lg w-full text-[#35353e] dark:text-[#788099] mb-6">
+          <div className="flex flex-col bg-white dark:bg-[#1D1D23] border border-border dark:border-[#35353E] rounded-2xl p-5 shadow-lg w-full text-[#35353e] dark:text-[#788099] mb-6">
             {/* Wallet/Account Address Label */}
             <label className="block text-sm sm:text-[17px] text-[#7e7e8f] mb-2 font-semibold">
               {t("express.walletAccountAddress", "Wallet/Account Address")}
