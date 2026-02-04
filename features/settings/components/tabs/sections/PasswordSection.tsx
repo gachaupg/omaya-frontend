@@ -19,14 +19,14 @@ const PasswordSection: React.FC = () => {
   const { error } = useSelector(
     (state: RootState) => state.settings
   );
-  
+
   // Local success state for password section only
   const [passwordSuccess, setPasswordSuccess] = useState(false);
-  
+
   // Local loading states for password section only
   const [sendingOtp, setSendingOtp] = useState(false);
   const [verifyingOtp, setVerifyingOtp] = useState(false);
-  
+
   // Track backend error separately to prioritize it
   const [backendError, setBackendError] = useState<string | null>(null);
 
@@ -86,7 +86,7 @@ const PasswordSection: React.FC = () => {
     if (backendError) {
       return false;
     }
-    
+
     const newErrors: Partial<PasswordChangeRequest> = {};
 
     if (!formData.new_password) {
@@ -195,7 +195,7 @@ const PasswordSection: React.FC = () => {
   const handleChangePassword = async () => {
     // Clear backend error when user tries again
     setBackendError(null);
-    
+
     if (!validatePasswordForm()) return;
 
     if (!otpVerified) {
@@ -249,7 +249,7 @@ const PasswordSection: React.FC = () => {
       return () => clearTimeout(timer);
     }
   }, [passwordSuccess]);
-  
+
   // Clear backend error when Redux error changes (from other actions)
   useEffect(() => {
     if (error && error !== backendError) {
@@ -280,7 +280,7 @@ const PasswordSection: React.FC = () => {
         Password
       </div>
 
-      <section className="dark:bg-card bg-card rounded-xl dark:border-[#35353E] border-[#E8EFF5] border p-3 sm:p-4">
+      <section className="dark:bg-card bg-card rounded-xl dark:border-accent border-border border p-3 sm:p-4">
 
         <div className="flex flex-col sm:grid sm:grid-cols-2 gap-2 sm:gap-3">
 
@@ -289,9 +289,9 @@ const PasswordSection: React.FC = () => {
               Password*
             </label>
 
-            <div className="flex items-center dark:bg-card bg-card rounded-[18px] px-3 sm:px-4 py-2 sm:py-2.5 border dark:border-[#35353E] border-[#E8EFF5]">
+            <div className="flex items-center dark:bg-card bg-card rounded-[18px] px-3 sm:px-4 py-1 sm:py-2.5 border dark:border-accent border-border">
 
-              <svg width="16" height="16" viewBox="0 0 24 24" stroke="#1D8751" fill="none">
+              <svg width="16" height="" viewBox="0 0 24 24" stroke="#1D8751" fill="none">
                 <rect x="3" y="11" width="18" height="8" rx="4" strokeWidth="2" />
                 <path d="M7 11V7a5 5 0 0110 0v4" strokeWidth="2" />
               </svg>
@@ -308,9 +308,9 @@ const PasswordSection: React.FC = () => {
               <button
                 type="button"
                 onClick={() => togglePasswordVisibility("new")}
-                className="dark:text-[#788099] text-gray-500 dark:hover:text-white hover:text-gray-700 transition-colors flex-shrink-0"
+                className="dark:text-[#788099] text-gray-500 dark:hover:text-white hover:text-gray-700 transition-colors shrink-0 p-0 leading-none"
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" stroke="currentColor" fill="none">
+                <svg width="16" height="" viewBox="0 0 24 24" stroke="currentColor" fill="none">
                   {showPasswords.new ? (
                     <path
                       d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24M1 1l22 22"
@@ -337,9 +337,9 @@ const PasswordSection: React.FC = () => {
               Confirm password*
             </label>
 
-            <div className="flex items-center dark:bg-card bg-card rounded-[18px] px-3 sm:px-4 py-2 sm:py-2.5 border dark:border-[#35353E] border-[#E8EFF5]">
+            <div className="flex items-center dark:bg-card bg-card rounded-[18px] px-3 sm:px-4 py-1 sm:py-2.5 border dark:border-accent border-border">
 
-              <svg width="16" height="16" viewBox="0 0 24 24" stroke="#1D8751" fill="none">
+              <svg width="16" height="" viewBox="0 0 24 24" stroke="#1D8751" fill="none">
                 <rect x="3" y="11" width="18" height="8" rx="4" strokeWidth="2" />
                 <path d="M7 11V7a5 5 0 0110 0v4" strokeWidth="2" />
               </svg>
@@ -356,9 +356,9 @@ const PasswordSection: React.FC = () => {
               <button
                 type="button"
                 onClick={() => togglePasswordVisibility("confirm")}
-                className="dark:text-[#788099] text-gray-500 dark:hover:text-white hover:text-gray-700 transition-colors flex-shrink-0"
+                className="dark:text-[#788099] text-gray-500 dark:hover:text-white hover:text-gray-700 transition-colors shrink-0 p-0 leading-none"
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" stroke="currentColor" fill="none">
+                <svg width="16" height="" viewBox="0 0 24 24" stroke="currentColor" fill="none">
                   {showPasswords.confirm ? (
                     <path
                       d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24M1 1l22 22"
@@ -440,7 +440,7 @@ const PasswordSection: React.FC = () => {
               ✓ Password Changed Successfully
             </div>
           )}
-          
+
           {otpSent && !otpVerified && (
             <button
               className="w-full py-2 sm:py-2.5 rounded-[18px] border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition text-sm sm:text-base"

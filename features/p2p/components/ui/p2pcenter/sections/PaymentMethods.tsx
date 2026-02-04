@@ -237,7 +237,7 @@ const PaymentMethods = () => {
     if (!method || typeof method !== 'object') {
       return null;
     }
-    
+
     return (
       <tr key={method.id} className="border-b border-gray-200 dark:border-[#35353E] hover:bg-gray-50 dark:hover:bg-[var(--card-color)] transition-colors">
         <td className="px-4 py-4">
@@ -265,7 +265,7 @@ const PaymentMethods = () => {
         <td className="px-4 py-4">
           <div className="flex items-center justify-end gap-2">
             {/* Edit Button */}
-          <button
+            <button
               onClick={() => {
                 setEditingPaymentMethod(method);
                 setIsEditModalOpen(true);
@@ -310,10 +310,10 @@ const PaymentMethods = () => {
                     strokeLinejoin="round"
                     strokeWidth={2}
                     d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"
-                />
-              </svg>
-            )}
-          </button>
+                  />
+                </svg>
+              )}
+            </button>
           </div>
         </td>
       </tr>
@@ -326,7 +326,7 @@ const PaymentMethods = () => {
     if (!method || typeof method !== 'object') {
       return null;
     }
-    
+
     return (
       <tr key={method.id} className="border-b border-gray-200 dark:border-[#35353E] hover:bg-gray-50 dark:hover:bg-[var(--card-color)] transition-colors">
         <td className="px-4 py-4">
@@ -353,7 +353,7 @@ const PaymentMethods = () => {
         <td className="px-4 py-4">
           <div className="flex items-center justify-end gap-2">
             {/* Edit Button */}
-          <button
+            <button
               onClick={() => {
                 setEditingPaymentMethod(method);
                 setIsEditModalOpen(true);
@@ -398,10 +398,10 @@ const PaymentMethods = () => {
                     strokeLinejoin="round"
                     strokeWidth={2}
                     d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"
-                />
-              </svg>
-            )}
-          </button>
+                  />
+                </svg>
+              )}
+            </button>
           </div>
         </td>
       </tr>
@@ -410,7 +410,7 @@ const PaymentMethods = () => {
 
   const renderEmptyState = () => (
     <div className="flex flex-col items-center justify-center py-12 px-4">
-      <div className="w-24 h-24 mb-6 rounded-full bg-gray-100 dark:bg-[var(--card-color)] flex items-center justify-center">
+      <div className="w-24 h-24 mb-6 rounded-full bg-gray-100 dark:bg-(--card-color) flex items-center justify-center">
         <svg
           className="w-12 h-12 text-[#1D8751]"
           fill="none"
@@ -486,10 +486,10 @@ const PaymentMethods = () => {
   // Group methods into two sections: Bank and Mobile Money
   // For now place the first available method under Mobile Money and the rest under Bank
   // Safely filter out any undefined/null methods
-  const safeUserPaymentDetails = Array.isArray(userPaymentDetails) 
+  const safeUserPaymentDetails = Array.isArray(userPaymentDetails)
     ? userPaymentDetails.filter((m: any) => m && typeof m === 'object')
     : [];
-  
+
   const mobileMoneyMethods: PaymentMethod[] = safeUserPaymentDetails.length > 22 && safeUserPaymentDetails[22]
     ? [safeUserPaymentDetails[22]]
     : [];
@@ -516,7 +516,7 @@ const PaymentMethods = () => {
     <div
       ref={dropdownRef}
       className={
-        `absolute top-full mt-2 ${showAddDropdown ? "" : "hidden"} sm:w-48 md:w-56 right-0 rounded-lg border border-[#49C476] bg-[#0F1219] text-white shadow-lg z-10`
+        `absolute top-full mt-2 ${showAddDropdown ? "" : "hidden"} sm:w-48 md:w-56 right-0 rounded-lg border border-gray-200 dark:border-[#49C476] bg-white dark:bg-(--card-color) dark:text-white text-gray-900 shadow-lg z-10`
       }
     >
       <div className="py-2">
@@ -526,7 +526,7 @@ const PaymentMethods = () => {
             <button
               type="button"
               key={type + idx}
-              className={`flex items-center gap-3 px-4 py-2.5 text-left transition w-full hover:bg-[#1a1f2e] ${isSelected ? "bg-[#1a1f2e]" : ""}`}
+              className={`flex items-center gap-3 px-4 py-2.5 text-left transition w-full hover:bg-gray-100 dark:hover:bg-[#2A2A2A] ${isSelected ? "bg-gray-100 dark:bg-[#2A2A2A]" : ""}`}
               onClick={() => { handleMethodSelection(type); setShowAddDropdown(false); }}
               disabled={adminLoading}
             >
@@ -569,7 +569,7 @@ const PaymentMethods = () => {
                 <span className="flex items-center justify-center  text-[#49C476] font-light text-3xl">+</span>
                 <span className="text-sm font-medium">Add Method</span>
               </span>
-              <ChevronDown className="w-4 h-4 text-neutral-200 ml-auto" />
+              <ChevronDown className="w-4 h-4 text-gray-500 dark:text-gray-400 ml-auto" />
             </Button>
             {renderAddMethodDropdown()}
           </div>
@@ -602,19 +602,17 @@ const PaymentMethods = () => {
                   type="button"
                   onClick={() => !adminLoading && setIsProviderDropdownOpen(!isProviderDropdownOpen)}
                   disabled={adminLoading}
-                  className={`w-full bg-white dark:bg-[var(--card-color)] text-gray-900 dark:text-white rounded-xl border border-gray-200 dark:border-[#35353E] h-12 px-4 text-sm flex items-center justify-between transition-all duration-200 ${
-                    adminLoading
-                      ? "opacity-50 cursor-not-allowed"
-                      : "hover:border-[#1D8751] dark:hover:border-[#1D8751] focus:outline-none focus:ring-2 focus:ring-[#1D8751]/20 cursor-pointer"
-                  } ${isProviderDropdownOpen ? "border-[#1D8751] dark:border-[#1D8751]" : ""}`}
+                  className={`w-full bg-white dark:bg-[var(--card-color)] text-gray-900 dark:text-white rounded-xl border border-gray-200 dark:border-[#35353E] h-12 px-4 text-sm flex items-center justify-between transition-all duration-200 ${adminLoading
+                    ? "opacity-50 cursor-not-allowed"
+                    : "hover:border-[#1D8751] dark:hover:border-[#1D8751] focus:outline-none focus:ring-2 focus:ring-[#1D8751]/20 cursor-pointer"
+                    } ${isProviderDropdownOpen ? "border-[#1D8751] dark:border-[#1D8751]" : ""}`}
                 >
                   <span className={selectedProvider ? "text-gray-900 dark:text-white" : "text-gray-500 dark:text-gray-400"}>
                     {selectedProvider || "Select Provider"}
                   </span>
                   <ChevronDown
-                    className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${
-                      isProviderDropdownOpen ? "transform rotate-180" : ""
-                    }`}
+                    className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${isProviderDropdownOpen ? "transform rotate-180" : ""
+                      }`}
                   />
                 </button>
 
@@ -624,11 +622,10 @@ const PaymentMethods = () => {
                     {providers.map((p: any, idx: number) => (
                       <div
                         key={p.provider_name + idx}
-                        className={`px-3 py-2.5 text-sm cursor-pointer transition-colors ${
-                          selectedProvider === p.provider_name
-                            ? "bg-[#1D8751]/10 dark:bg-[#1D8751]/20 text-[#1D8751] dark:text-[#1D8751] font-medium"
-                            : "text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-[#1F2937]"
-                        }`}
+                        className={`px-3 py-2.5 text-sm cursor-pointer transition-colors ${selectedProvider === p.provider_name
+                          ? "bg-[#1D8751]/10 dark:bg-[#1D8751]/20 text-[#1D8751] dark:text-[#1D8751] font-medium"
+                          : "text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-[#1F2937]"
+                          }`}
                         onClick={() => {
                           setSelectedProvider(p.provider_name);
                           setIsProviderDropdownOpen(false);

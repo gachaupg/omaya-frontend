@@ -813,8 +813,8 @@ useEffect(() => {
                         {/* Transfer Details */}
                         <div className="mt-4 bg-transparent">
                           <div className="flex items-center mb-2">
-                            <span className="text-[#788099] text-sm font-medium mr-2">Transfer Details</span>
-                            <AlertCircle className="w-4 h-4 text-[#1D8751]" />
+                            <AlertCircle className="w-4 h-4 text-[#1D8751] mr-1" />
+                            <span className="text-[#788099] text-sm font-medium">Transfer Details</span>
                           </div>
                           <ul className="space-y-1 mt-2 border border-[#1D8751] rounded-xl p-4">
                             <li className="flex items-center text-white text-sm"><span className="w-3 h-3 rounded-full bg-[#1D8751] inline-block mr-2 shrink-0"></span>Please send the money from your own account Only</li>

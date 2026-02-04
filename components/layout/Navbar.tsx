@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
-import { Menu, X, Check, Settings, LogOut, User, ChevronDown, ChevronRight } from "lucide-react";
+import { Menu, X, Check, Settings, LogOut, User, ChevronDown, ChevronRight, AlignRight } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/store/rootReducer";
 import { AppDispatch } from "@/store";
@@ -123,7 +123,7 @@ const AuthButton = ({
   </button>
 );
 
-const LanguageSelector = () => {
+const LanguageSelector = ({ isMobile = false }: { isMobile?: boolean }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const ctx = useLanguageOptional();
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -202,7 +202,10 @@ const LanguageSelector = () => {
             className="fixed inset-0 z-40 sm:hidden"
             onClick={() => setDropdownOpen(false)}
           />
-          <div className="absolute right-0 bottom-full mb-2 sm:mb-0 sm:bottom-auto sm:top-full sm:mt-2 w-[180px] sm:w-[200px] lg:w-[250px] dark:bg-[var(--card-color)] bg-white dark:border-[#35353E] border-gray-200 rounded-lg shadow-lg z-50 max-w-[calc(100vw-1.5rem)] sm:max-w-none origin-bottom sm:origin-top">
+          <div className={`absolute z-50 dark:bg-[var(--card-color)] bg-white dark:border-[#35353E] border-gray-200 rounded-lg shadow-lg w-[180px] sm:w-[200px] lg:w-[250px] max-w-[calc(100vw-1.5rem)] sm:max-w-none ${isMobile
+            ? "bottom-full mb-2 left-1/2 -translate-x-1/2 origin-bottom"
+            : "right-0 bottom-full mb-2 sm:mb-0 sm:bottom-auto sm:top-full sm:mt-2 origin-bottom sm:origin-top"
+            }`}>
             <button
               className="block w-full text-left px-3 sm:px-4 lg:px-4 py-2.5 sm:py-2 lg:py-2 dark:text-white text-gray-900 dark:hover:bg-[#35353E] hover:bg-gray-100 min-h-[44px] sm:min-h-0 lg:min-h-0 flex items-center transition-colors"
               onClick={() => selectLanguage("English")}
@@ -258,8 +261,10 @@ const LanguageSelector = () => {
 
 const ThemeSelector = ({
   isTransparentNavbar,
+  isMobile = false,
 }: {
   isTransparentNavbar: boolean;
+  isMobile?: boolean;
 }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const { theme, setTheme, isDark } = useTheme();
@@ -378,7 +383,10 @@ const ThemeSelector = ({
             className="fixed inset-0 z-40"
             onClick={() => setDropdownOpen(false)}
           />
-          <div className="absolute right-0 bottom-full mb-2 sm:mb-0 sm:bottom-auto sm:top-full sm:mt-2 w-[180px] sm:w-[200px] lg:w-[250px] dark:bg-[var(--card-color)] bg-white dark:border-[#35353E] border-gray-200 rounded-lg shadow-lg z-50 max-w-[calc(100vw-1.5rem)] sm:max-w-none origin-bottom sm:origin-top">
+          <div className={`absolute z-50 dark:bg-[var(--card-color)] bg-white dark:border-[#35353E] border-gray-200 rounded-lg shadow-lg w-[180px] sm:w-[200px] lg:w-[250px] max-w-[calc(100vw-1.5rem)] sm:max-w-none ${isMobile
+            ? "bottom-full mb-2 left-1/2 -translate-x-1/2 origin-bottom"
+            : "right-0 bottom-full mb-2 sm:mb-0 sm:bottom-auto sm:top-full sm:mt-2 origin-bottom sm:origin-top"
+            }`}>
             <button
               className="block w-full text-left px-3 sm:px-4 lg:px-4 py-2.5 sm:py-2 lg:py-2 dark:text-white text-gray-900 dark:hover:bg-[#35353E] hover:bg-gray-100 min-h-[44px] sm:min-h-0 lg:min-h-0 flex items-center transition-colors"
               onClick={() => selectTheme("light")}
@@ -386,7 +394,7 @@ const ThemeSelector = ({
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center space-x-2 sm:space-x-2 lg:space-x-2">
                   <svg
-                    className="w-5 h-5 sm:w-5 sm:h-5 lg:w-5 lg:h-5 flex-shrink-0"
+                    className="w-5 h-5 sm:w-5 sm:h-5 lg:w-5 lg:h-5 shrink-0"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -1288,100 +1296,109 @@ export default function Navbar() {
           onClick={toggleMobileMenu}
           aria-label="Toggle menu"
         >
-          {mobileMenuOpen ? (
-            <X
-              size={20}
-              className={`sm:w-6 sm:h-6 ${theme === "light"
-                ? "text-black"
-                : isTransparentNavbar
-                  ? "text-white"
-                  : "text-white"
-                }`}
-              strokeWidth={2.5}
-            />
-          ) : (
-            <Menu
-              size={20}
-              className={`sm:w-6 sm:h-6 ${theme === "light"
-                ? "text-black"
-                : isTransparentNavbar
-                  ? "text-white"
-                  : "text-white"
-                }`}
-              strokeWidth={2.5}
-            />
-          )}
+          <AlignRight
+            size={24}
+            className={`sm:w-7 sm:h-7 ${theme === "light"
+              ? "text-black"
+              : isTransparentNavbar
+                ? "text-white"
+                : "text-white"
+              }`}
+            strokeWidth={2.5}
+          />
         </button>
       </nav>
 
-      {/* Mobile Menu */}
-      {mobileMenuOpen && (
-        <>
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 bg-black/50 z-40 md:hidden"
-            onClick={toggleMobileMenu}
-          />
-          <div
-            className={`fixed top-16 left-0 right-0 z-50 md:hidden p-4 sm:p-6 space-y-4 sm:space-y-6 shadow-lg transition-all duration-300 dark:bg-[var(--bg-color)] bg-white border-b border-gray-200 dark:border-[#35353E] max-h-[calc(100vh-4rem)] overflow-y-auto`}
-          >
-            <MobileNavLink
-              href="/"
-              onClick={toggleMobileMenu}
-              pathname={pathname}
-            >
-              Home
-            </MobileNavLink>
-            {isAuthenticated && (
-              <MobileNavLink
-                href="/dashboard"
-                onClick={toggleMobileMenu}
-                pathname={pathname}
-              >
-                Dashboard
-              </MobileNavLink>
-            )}
-            <MobileNavLink
-              href="/market"
-              onClick={toggleMobileMenu}
-              pathname={pathname}
-            >
-              Market
-            </MobileNavLink>
-            <MobileNavLink
-              href="/rates"
-              onClick={toggleMobileMenu}
-              pathname={pathname}
-            >
-              Rates
-            </MobileNavLink>
-            <MobileNavLink
-              href="/blog"
-              onClick={toggleMobileMenu}
-              pathname={pathname}
-            >
-              Blog
-            </MobileNavLink>
-            <MobileNavLink
-              href="/about"
-              onClick={toggleMobileMenu}
-              pathname={pathname}
-            >
-              About Us
-            </MobileNavLink>
-            <MobileNavLink
-              href="/contactUs"
-              onClick={toggleMobileMenu}
-              pathname={pathname}
-            >
-              Contact Us
-            </MobileNavLink>
+      {/* Mobile Menu Overlay */}
+      <div
+        className={`fixed inset-0 bg-black/50 z-40 md:hidden transition-opacity duration-300 ${mobileMenuOpen ? "opacity-100 visible" : "opacity-0 invisible"
+          }`}
+        onClick={toggleMobileMenu}
+      />
 
-            <div className="flex flex-col space-y-4 pt-4">
-              {isAuthenticated ? (
-                <>
-                  <div className="relative">
-                    <button
+      {/* Mobile Sidebar */}
+      <div
+        className={`fixed top-0 right-0 h-full w-[300px] z-[60] md:hidden p-6 space-y-6 shadow-2xl transition-transform duration-300 ease-in-out dark:bg-[var(--bg-color)] bg-white border-l border-border dark:border-accent overflow-y-auto ${mobileMenuOpen ? "translate-x-0" : "translate-x-full"
+          }`}
+      >
+        <div className="flex justify-end mb-4">
+          <button
+            onClick={toggleMobileMenu}
+            className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          >
+            <X size={24} className="text-gray-900 dark:text-white" />
+          </button>
+        </div>
+        <MobileNavLink
+          href="/"
+          onClick={toggleMobileMenu}
+          pathname={pathname}
+        >
+          Home
+        </MobileNavLink>
+        {isAuthenticated && (
+          <MobileNavLink
+            href="/dashboard"
+            onClick={toggleMobileMenu}
+            pathname={pathname}
+          >
+            Dashboard
+          </MobileNavLink>
+        )}
+        <MobileNavLink
+          href="/market"
+          onClick={toggleMobileMenu}
+          pathname={pathname}
+        >
+          Market
+        </MobileNavLink>
+        <MobileNavLink
+          href="/rates"
+          onClick={toggleMobileMenu}
+          pathname={pathname}
+        >
+          Rates
+        </MobileNavLink>
+        <MobileNavLink
+          href="/blog"
+          onClick={toggleMobileMenu}
+          pathname={pathname}
+        >
+          Blog
+        </MobileNavLink>
+        <MobileNavLink
+          href="/about"
+          onClick={toggleMobileMenu}
+          pathname={pathname}
+        >
+          About Us
+        </MobileNavLink>
+        <MobileNavLink
+          href="/contactUs"
+          onClick={toggleMobileMenu}
+          pathname={pathname}
+        >
+          Contact Us
+        </MobileNavLink>
+
+        <div className="flex flex-col space-y-4 pt-4">
+          {isAuthenticated ? (
+            <>
+              <div className="relative">
+                <button
+                  onClick={toggleMobileDepositDropdown}
+                  className="flex items-center justify-center w-full bg-[#1D8751] hover:bg-[#13B562] text-white px-6 py-2 rounded-full transition-colors duration-200 text-base min-h-[44px]"
+                >
+                  Deposit
+                  <ChevronDown className={`ml-2 w-5 h-5 transition-transform duration-200 ${mobileDepositDropdownOpen ? "rotate-180" : ""}`} />
+                </button>
+
+                {/* Mobile Deposit Dropdown */}
+                {mobileDepositDropdownOpen && (
+                  <>
+                    {/* Backdrop */}
+                    <div
+                      className="fixed inset-0 bg-black/50 z-[60] md:hidden"
                       onClick={toggleMobileDepositDropdown}
                       className="flex items-center justify-center w-full bg-[#1D8751] hover:bg-[#13B562] text-white px-6 py-2 rounded-full transition-colors duration-200 text-base min-h-[44px]"
                     >
@@ -1471,126 +1488,126 @@ export default function Navbar() {
                       />
                     </svg>
                   </span> */}
+              </div>
+              <div className={`flex flex-col items-center space-y-3 mt-4 ${mobileDepositDropdownOpen ? 'invisible' : ''}`}>
+                <button
+                  onClick={toggleProfileModal}
+                  className="flex items-center space-x-3 justify-between w-full text-left focus:outline-none"
+                >
+                  <div className="relative">
+                    {(userProfile?.photo || cachedProfilePhoto) &&
+                      !profileImageError ? (
+                      <>
+                        <img
+                          src={
+                            userProfile?.photo || cachedProfilePhoto || ""
+                          }
+                          alt="Profile"
+                          className="w-10 h-10 rounded-full object-cover border-2 border-white dark:border-gray-600 shadow-lg"
+                          onError={() => {
+                            // Only mark error when we actually have a URL
+                            if (userProfile?.photo || cachedProfilePhoto) {
+                              setProfileImageError(true);
+                            }
+                            // Clear invalid cached photo
+                            if (typeof window !== "undefined") {
+                              localStorage.removeItem("profile_photo");
+                              setCachedProfilePhoto(null);
+                            }
+                          }}
+                          onLoad={() => {
+                            if (profileImageError) {
+                              setProfileImageError(false);
+                            }
+                          }}
+                        />
+                        {/* Verification Badge - only show for verified users */}
+                        {isVerified && (
+                          <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 z-10">
+                            <svg
+                              width="20"
+                              height="20"
+                              viewBox="0 0 20 20"
+                              className="absolute"
+                            >
+                              <circle cx="10" cy="10" r="9" fill="white" />
+                              <circle
+                                cx="10"
+                                cy="10"
+                                r="7.5"
+                                fill="#1D8751"
+                              />
+                              {/* Serrated edge using small circles */}
+                              {[
+                                0, 30, 60, 90, 120, 150, 180, 210, 240, 270,
+                                300, 330,
+                              ].map((angle) => {
+                                const rad = (angle * Math.PI) / 180;
+                                const x = 10 + 8.5 * Math.cos(rad);
+                                const y = 10 + 8.5 * Math.sin(rad);
+                                return (
+                                  <circle
+                                    key={angle}
+                                    cx={x}
+                                    cy={y}
+                                    r="1"
+                                    fill="white"
+                                  />
+                                );
+                              })}
+                            </svg>
+                            <svg
+                              width="10"
+                              height="10"
+                              viewBox="0 0 10 10"
+                              fill="none"
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="relative z-10"
+                            >
+                              <path
+                                d="M2 5L4 7L8 3"
+                                stroke="#FFFFFF"
+                                strokeWidth="1.5"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                            </svg>
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      <DefaultProfileIcon />
+                    )}
                   </div>
-                  <div className={`flex flex-col items-center space-y-3 mt-4 ${mobileDepositDropdownOpen ? 'invisible' : ''}`}>
-                    <button
-                      onClick={toggleProfileModal}
-                      className="flex items-center space-x-3 justify-between w-full text-left focus:outline-none"
-                    >
-                      <div className="relative">
-                        {(userProfile?.photo || cachedProfilePhoto) &&
-                          !profileImageError ? (
-                          <>
-                            <img
-                              src={
-                                userProfile?.photo || cachedProfilePhoto || ""
-                              }
-                              alt="Profile"
-                              className="w-10 h-10 rounded-full object-cover border-2 border-white dark:border-gray-600 shadow-lg"
-                              onError={() => {
-                                // Only mark error when we actually have a URL
-                                if (userProfile?.photo || cachedProfilePhoto) {
-                                  setProfileImageError(true);
-                                }
-                                // Clear invalid cached photo
-                                if (typeof window !== "undefined") {
-                                  localStorage.removeItem("profile_photo");
-                                  setCachedProfilePhoto(null);
-                                }
-                              }}
-                              onLoad={() => {
-                                if (profileImageError) {
-                                  setProfileImageError(false);
-                                }
-                              }}
-                            />
-                              {/* Verification Badge - only show for verified users */}
-                              {isVerified && (
-                                <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 z-10">
-                                  <svg
-                                    width="20"
-                                    height="20"
-                                    viewBox="0 0 20 20"
-                                    className="absolute"
-                                  >
-                                    <circle cx="10" cy="10" r="9" fill="white" />
-                                    <circle
-                                      cx="10"
-                                      cy="10"
-                                      r="7.5"
-                                      fill="#1D8751"
-                                    />
-                                    {/* Serrated edge using small circles */}
-                                    {[
-                                      0, 30, 60, 90, 120, 150, 180, 210, 240, 270,
-                                      300, 330,
-                                    ].map((angle) => {
-                                      const rad = (angle * Math.PI) / 180;
-                                      const x = 10 + 8.5 * Math.cos(rad);
-                                      const y = 10 + 8.5 * Math.sin(rad);
-                                      return (
-                                        <circle
-                                          key={angle}
-                                          cx={x}
-                                          cy={y}
-                                          r="1"
-                                          fill="white"
-                                        />
-                                      );
-                                    })}
-                                  </svg>
-                                  <svg
-                                    width="10"
-                                    height="10"
-                                    viewBox="0 0 10 10"
-                                    fill="none"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    className="relative z-10"
-                                  >
-                                    <path
-                                      d="M2 5L4 7L8 3"
-                                      stroke="#FFFFFF"
-                                      strokeWidth="1.5"
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                    />
-                                  </svg>
-                                </span>
-                              )}
-                            </>
-                          ) : (
-                            <DefaultProfileIcon />
-                          )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <h4 className="dark:text-white text-gray-900 font-medium text-sm truncate">
-                            {user?.first_name && user?.last_name
-                              ? `${user.first_name} ${user.last_name}`
-                              : user?.email}
-                          </h4>
-                          {isVerified && (
-                            <span className="inline-flex items-center justify-center w-4 h-4 shrink-0">
-                              <svg width="16" height="16" viewBox="0 0 20 20" className="absolute">
-                                <circle cx="10" cy="10" r="9" fill="white" />
-                                <circle cx="10" cy="10" r="7.5" fill="#1D8751" />
-                                {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map(angle => {
-                                  const rad = (angle * Math.PI) / 180;
-                                  const x = 10 + 8.5 * Math.cos(rad);
-                                  const y = 10 + 8.5 * Math.sin(rad);
-                                  return <circle key={angle} cx={x} cy={y} r="1" fill="white" />;
-                                })}
-                              </svg>
-                              <svg width="8" height="8" viewBox="0 0 10 10" fill="none" className="relative z-10">
-                                <path d="M2 5L4 7L8 3" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                              </svg>
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-muted-foreground text-xs truncate">{user?.email}</p>
-                      </div>
-                    </button>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <h4 className="dark:text-white text-gray-900 font-medium text-sm truncate">
+                        {user?.first_name && user?.last_name
+                          ? `${user.first_name} ${user.last_name}`
+                          : user?.email}
+                      </h4>
+                      {isVerified && (
+                        <span className="inline-flex items-center justify-center w-4 h-4 shrink-0">
+                          <svg width="16" height="16" viewBox="0 0 20 20" className="absolute">
+                            <circle cx="10" cy="10" r="9" fill="white" />
+                            <circle cx="10" cy="10" r="7.5" fill="#1D8751" />
+                            {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map(angle => {
+                              const rad = (angle * Math.PI) / 180;
+                              const x = 10 + 8.5 * Math.cos(rad);
+                              const y = 10 + 8.5 * Math.sin(rad);
+                              return <circle key={angle} cx={x} cy={y} r="1" fill="white" />;
+                            })}
+                          </svg>
+                          <svg width="8" height="8" viewBox="0 0 10 10" fill="none" className="relative z-10">
+                            <path d="M2 5L4 7L8 3" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-muted-foreground text-xs truncate">{user?.email}</p>
                   </div>
+                </button>
+              </div>
 
 
                   {/* Mobile Profile Modal */}
@@ -1737,45 +1754,50 @@ export default function Navbar() {
                               <span className="text-base">Settings</span>
                             </Link>
 
-                            <button
-                              onClick={handleLogout}
-                              className="flex items-center w-full px-4 py-3 text-gray-300 hover:text-white hover:bg-[#35353E] rounded-lg transition-colors duration-200"
-                            >
-                              <LogOut size={20} className="mr-4" />
-                              <span className="text-base">Logout</span>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <>
-                  <Link href="/auth/register" onClick={toggleMobileMenu}>
-                    <AuthButton variant="primary" fullWidth>
-                      Register
-                    </AuthButton>
-                  </Link>
-                  <Link href="/auth/login" onClick={toggleMobileMenu}>
-                    <AuthButton variant="secondary" fullWidth>
-                      Log In
-                    </AuthButton>
-                  </Link>
-                </>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setProfileModalOpen(false);
+                      handleLogout();
+                      setTimeout(() => {
+                        setMobileMenuOpen(false);
+                      }, 300);
+                    }}
+                    className="flex items-center w-full py-2 text-gray-600 dark:text-gray-300 hover:text-[#1D8751] dark:hover:text-white transition-colors"
+                  >
+                    <LogOut size={18} className="mr-3" />
+                    <span className="text-sm font-medium">Logout</span>
+                  </button>
+                </div>
               )}
-            </div>
+            </>
+          ) : (
+            <>
+              <Link href="/auth/register" onClick={toggleMobileMenu}>
+                <AuthButton variant="primary" fullWidth>
+                  Register
+                </AuthButton>
+              </Link>
+              <Link href="/auth/login" onClick={toggleMobileMenu}>
+                <AuthButton variant="secondary" fullWidth>
+                  Log In
+                </AuthButton>
+              </Link>
+            </>
+          )}
+        </div>
 
-            <div className={`flex items-center justify-center gap-6 pt-4 border-t dark:border-gray-700 border-gray-200 ${mobileDepositDropdownOpen ? 'invisible' : ''}`}>
-              <LanguageSelector />
-              <ThemeSelector isTransparentNavbar={isTransparentNavbar} />
-            </div>
-          </div>
-        </>
-      )}
+        <div className={`flex items-center justify-center gap-6 pt-4 border-t dark:border-gray-700 border-gray-200 ${mobileDepositDropdownOpen ? 'invisible' : ''}`}>
+          <LanguageSelector isMobile={true} />
+          <ThemeSelector isTransparentNavbar={isTransparentNavbar} isMobile={true} />
+        </div>
+      </div>
+
 
       {/* Image Preview Modal */}
-      {showImagePreview &&
+      {
+        showImagePreview &&
         (userProfile?.photo || cachedProfilePhoto) &&
         !profileImageError && (
           <div
@@ -1804,7 +1826,8 @@ export default function Navbar() {
               />
             </div>
           </div>
-        )}
-    </div>
+        )
+      }
+    </div >
   );
 }

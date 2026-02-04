@@ -14,6 +14,38 @@ import { logger } from '@/lib/utils/logger';
 
 const ITEMS_PER_PAGE = 12;
 
+// Category colors mapping - same as homepage (lowercase with underscores)
+const categoryColors: { [key: string]: string } = {
+  trading: "bg-gradient-to-r from-yellow-400 to-orange-500",
+  security: "bg-gradient-to-r from-red-500 to-orange-500",
+  defi: "bg-gradient-to-r from-green-400 to-green-600",
+  market_analysis: "bg-gradient-to-r from-blue-500 to-purple-500",
+  blog: "bg-gradient-to-r from-purple-500 to-pink-500",
+  news: "bg-gradient-to-r from-blue-500 to-indigo-500",
+  test: "bg-gradient-to-r from-green-400 to-green-600",
+  Trading: "bg-gradient-to-r from-yellow-400 to-orange-500",
+  Security: "bg-gradient-to-r from-red-500 to-orange-500",
+  DeFi: "bg-gradient-to-r from-green-400 to-green-600",
+  "Market Analysis": "bg-gradient-to-r from-blue-500 to-purple-500",
+  Blog: "bg-gradient-to-r from-purple-500 to-pink-500",
+  News: "bg-gradient-to-r from-blue-500 to-indigo-500",
+};
+const DEFAULT_CATEGORY_COLOR = "bg-gradient-to-r from-[#1D8751] to-green-600";
+
+const formatCategoryLabel = (category: string): string => {
+  if (!category) return "News";
+  return category
+    .split("_")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(" ");
+};
+
+const getCategoryColor = (category: string): string => {
+  if (!category) return DEFAULT_CATEGORY_COLOR;
+  const key = category.toLowerCase().replace(/\s+/g, "_");
+  return categoryColors[key] || categoryColors[category] || DEFAULT_CATEGORY_COLOR;
+};
+
 const BlogPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -222,6 +254,13 @@ const BlogPage = () => {
                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                       className="rounded-t-2xl object-cover"
                     />
+                    <span
+                      className={`absolute left-3 top-3 ${getCategoryColor(
+                        post.category || ""
+                      )} text-white text-xs font-semibold px-3 py-1 rounded-full shadow-lg`}
+                    >
+                      {formatCategoryLabel(post.category || "news")}
+                    </span>
                   </div>
                   <div className="p-6 flex flex-col flex-grow">
                     <div className="flex justify-between items-center text-sm text-gray-600 dark:text-gray-400 mb-4">
@@ -232,11 +271,6 @@ const BlogPage = () => {
                           new Date().toISOString()
                         )}
                       </span>
-                      <div className="flex flex-wrap gap-2">
-                        <span className="text-xs font-semibold bg-gray-200 dark:bg-[#30363D] text-gray-700 dark:text-gray-300 px-2 py-1 rounded-md">
-                          {post.category}
-                        </span>
-                      </div>
                     </div>
                     <h2 className="text-xl font-bold mb-3 flex-grow text-gray-900 dark:text-white">
                       {post.title}
