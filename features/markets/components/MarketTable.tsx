@@ -663,6 +663,11 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
     setActiveFilter(filter);
   }, []);
 
+  const handlePageChange = (newPage: number | ((prev: number) => number)) => {
+    setCurrentPage(newPage);
+    window.scrollTo({ top: 250, behavior: "smooth" });
+  };
+
   const handleRefresh = useCallback(() => {
     refetch();
   }, [refetch]);
@@ -1307,7 +1312,7 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
                   </div>
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                      onClick={() => handlePageChange(prev => Math.max(1, prev - 1))}
                       disabled={currentPage === 1}
                       className={`px-3 py-1.5 rounded-md text-sm font-medium border transition-colors ${currentPage === 1
                         ? "opacity-50 cursor-not-allowed border-gray-300 dark:border-[#35353E] bg-gray-100 dark:bg-[#161B22] text-gray-400 dark:text-gray-500"
@@ -1336,7 +1341,7 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
                                 <span className="px-2 text-gray-500 dark:text-gray-400">...</span>
                               )}
                               <button
-                                onClick={() => setCurrentPage(page)}
+                                onClick={() => handlePageChange(page)}
                                 className={`px-3 py-1.5 rounded-md text-sm font-medium border transition-colors ${currentPage === page
                                   ? "bg-[#1D8751] text-white border-[#1D8751]"
                                   : "border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#161B22] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#1F2937]"
@@ -1350,7 +1355,7 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
                     </div>
 
                     <button
-                      onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                      onClick={() => handlePageChange(prev => Math.min(totalPages, prev + 1))}
                       disabled={currentPage === totalPages}
                       className={`px-3 py-1.5 rounded-md text-sm font-medium border transition-colors ${currentPage === totalPages
                         ? "opacity-50 cursor-not-allowed border-gray-300 dark:border-[#35353E] bg-gray-100 dark:bg-[#161B22] text-gray-400 dark:text-gray-500"
