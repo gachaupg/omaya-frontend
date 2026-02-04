@@ -3829,9 +3829,9 @@ export default function DepositForm({
                       {apiResponse.deposit_code.split('').map((char: string, index: number) => (
                         <div
                           key={index}
-                          className="w-8 h-10 sm:w-10 sm:h-12 bg-[#35353E] border border-[#4A4A4A] rounded-lg flex items-center justify-center"
+                          className="w-8 h-10 sm:w-10 sm:h-12 text-gray-900 dark:text-white dark:bg-[#35353E] bg-[#F5F6F7] border dark:border-[#4A4A4A] border-[#E2E8F0] rounded-lg flex items-center justify-center"
                         >
-                          <span className="text-lg sm:text-xl font-bold text-white font-mono">
+                          <span className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white font-mono">
                             {char}
                           </span>
                         </div>
@@ -3842,7 +3842,7 @@ export default function DepositForm({
                         navigator.clipboard.writeText(apiResponse.deposit_code);
                         showToast.success("Transaction code copied!");
                       }}
-                      className="flex items-center gap-2 bg-[#35353E] border border-[#1D8751] text-white rounded-full px-3 py-2 sm:px-4 font-semibold text-xs sm:text-sm hover:bg-[#1D8751] hover:text-white transition-colors"
+                      className="flex items-center gap-2 dark:bg-[#35353E] bg-[#F5F6F7] border dark:border-[#1D8751] border-[#E2E8F0] text-gray-900 dark:text-white rounded-full px-3 py-2 sm:px-4 font-semibold text-xs sm:text-sm hover:bg-[#1D8751] hover:text-white transition-colors"
                     >
                       <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
                         <rect
@@ -3928,13 +3928,13 @@ export default function DepositForm({
           <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
             Wallet Address
           </h2>
-          <div className="flex flex-col dark:bg-[#0F0F17] border-1 border-[#35353E] rounded-2xl p-3 sm:p-5 shadow-lg w-full text-[#35353e] dark:text-[#788099] mb-6">
+          <div className="flex flex-col bg-white dark:bg-[#0F0F17] border-1 dark:border-[#35353E] border-[#E2E8F0] rounded-2xl p-3 sm:p-5 shadow-lg w-full text-[#35353e] dark:text-[#788099] mb-6">
             {/* Wallet/Account Address Label */}
             <label className="block text-sm sm:text-[17px] text-[#7e7e8f] mb-2 font-semibold">
               Wallet/Account Address
             </label>
             {/* Input group */}
-            <div className="flex flex-wrap items-center bg-transparent dark:bg-transparent border border-[#39394a] dark:border-[#39394A] rounded-2xl px-2 sm:px-4 py-2 mb-4 gap-2">
+            <div className="flex flex-wrap items-center bg-transparent dark:bg-transparent border border-border dark:border-[#39394A] rounded-2xl px-2 sm:px-4 py-2 mb-4 gap-2">
               {/* Left icon */}
               <span className="mr-2 text-[#1D8751]">
                 <svg width="22" height="22" fill="none" viewBox="0 0 24 24">
@@ -4172,7 +4172,7 @@ export default function DepositForm({
                 </div>
               ) : (
                 <span className="flex items-center justify-center">
-
+                  E
                   <img
                     className="mt-2"
                     src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
