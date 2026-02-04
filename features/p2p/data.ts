@@ -258,14 +258,14 @@ export const currencyOptions = [
 
 // Type options for Filters
 export const typeOptions = [
-  { value: "all", label: "Type" },
+  { value: "all", label: "All" },
   { value: "buy", label: "Buy" },
   { value: "sell", label: "Sell" },
 ];
 
 // Status options for Filters
 export const statusOptions = [
-  { value: "all", label: "Status" },
+  { value: "all", label: "All" },
   { value: "completed", label: "Completed" },
   { value: "processing", label: "Processing" },
   { value: "canceled", label: "Canceled" },
@@ -273,7 +273,7 @@ export const statusOptions = [
 
 // Date options for Filters
 export const dateOptions = [
-  { value: "all", label: "Date" },
+  { value: "all", label: "All" },
   { value: "today", label: "Today" },
   { value: "week", label: "This Week" },
   { value: "month", label: "This Month" },
