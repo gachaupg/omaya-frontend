@@ -104,53 +104,53 @@ const Charts: React.FC<ChartProps> = ({
     }
 
     const now = new Date();
-    // Helper to zero-pad
     const pad = (n: number) => n.toString().padStart(2, "0");
 
     let newData: { name: string; buyValue: number; sellValue: number }[] = [];
 
-    if (selectedTimeFilter === "Today") {
-      // 0-23 hours of the current day? Or last 24h?
-      // Based on usual UX, "Today" often means since 00:00.
-      // But let's check if there's any data from yesterday.
-      // If we use fixed 00:00-23:00 buckets:
-      for (let i = 0; i < 24; i++) {
-        const key = `${pad(i)}:00`;
-        newData.push({ name: key, buyValue: 0, sellValue: 0 });
-      }
-
     // Swap for graph: API "buy" -> show on Sells line, API "sell" -> show on Buys line
-    src.forEach((item: any) => {
-      const ts = new Date(item.lastUpdate || item.timestamp || item.date);
-      if (isNaN(ts.getTime())) return;
+    const addToSlot = (idx: number, amt: number, rawType: string) => {
+      if (newData[idx]) {
+        if (rawType === "sell") newData[idx].buyValue += amt;
+        else newData[idx].sellValue += amt;
+      }
+    };
 
+    if (selectedTimeFilter === "Today") {
+      for (let i = 0; i < 24; i++) {
+        newData.push({ name: `${pad(i)}:00`, buyValue: 0, sellValue: 0 });
+      }
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
       src.forEach((item: any) => {
-        const ts = new Date(item.lastUpdate || item.timestamp);
+        const ts = new Date(item.lastUpdate || item.timestamp || item.date);
+        if (isNaN(ts.getTime())) return;
+        if (ts.getTime() < todayStart) return;
+        const hour = ts.getHours();
+        const amt = parseFloat(item.amount) || 0;
+        const rawType = item.type || item.order_type || "";
+        addToSlot(hour, amt, rawType);
+      });
+    } else if (selectedTimeFilter === "Last Week") {
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(now);
+        d.setDate(d.getDate() - (6 - i));
+        newData.push({ name: months[d.getMonth()].slice(0, 3) + " " + d.getDate(), buyValue: 0, sellValue: 0 });
+      }
+      src.forEach((item: any) => {
+        const ts = new Date(item.lastUpdate || item.timestamp || item.date);
+        if (isNaN(ts.getTime())) return;
         const diffDays = Math.floor((now.getTime() - ts.getTime()) / (1000 * 60 * 60 * 24));
         if (diffDays >= 0 && diffDays < 7) {
           const idx = 6 - diffDays;
-          if (newData[idx]) {
-            const amt = parseFloat(item.amount) || 0;
-            if ((item.type || item.order_type) === "sell") newData[idx].sellValue += amt;
-            else newData[idx].buyValue += amt;
-          }
+          const amt = parseFloat(item.amount) || 0;
+          const rawType = item.type || item.order_type || "";
+          addToSlot(idx, amt, rawType);
         }
       });
-
-      if (diff >= 0 && diff < 12) {
-        const idx = 11 - diff;
-        const amt = parseFloat(item.amount) || 0;
-        const rawType = item.type || item.order_type;
-        if (rawType === "sell")
-          monthly[idx].buyValue += amt;  // sell -> Buys line
-        else
-          monthly[idx].sellValue += amt;  // buy -> Sells line
-      }
-
-    // Use actual month and date labels for each slot (slot 0 = 11 months ago, slot 11 = current month)
-    setChartData(
-      monthly.map((m, i) => {
-        const monthDate = new Date(now.getFullYear(), now.getMonth() - (11 - i), 1);
+    } else if (selectedTimeFilter === "Last Month" || selectedTimeFilter === "Last 6 Months" || selectedTimeFilter === "All Time") {
+      const slots = selectedTimeFilter === "Last Month" ? 4 : selectedTimeFilter === "Last 6 Months" ? 6 : 12;
+      for (let i = 0; i < slots; i++) {
+        const monthDate = new Date(now.getFullYear(), now.getMonth() - (slots - 1 - i), 1);
         const lastDay = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
         const monthName = months[monthDate.getMonth()];
         const day = lastDay.getDate();
@@ -158,14 +158,23 @@ const Charts: React.FC<ChartProps> = ({
         const label = isDifferentYear
           ? `${monthName} ${day}, '${String(monthDate.getFullYear()).slice(-2)}`
           : `${monthName} ${day}`;
-        return {
-          name: label,
-          buyValue: m.buyValue,
-          sellValue: m.sellValue,
-        };
-      })
-    );
-  }, [data, trades]);
+        newData.push({ name: label, buyValue: 0, sellValue: 0 });
+      }
+      src.forEach((item: any) => {
+        const ts = new Date(item.lastUpdate || item.timestamp || item.date);
+        if (isNaN(ts.getTime())) return;
+        const diffMonths = (now.getFullYear() - ts.getFullYear()) * 12 + (now.getMonth() - ts.getMonth());
+        if (diffMonths >= 0 && diffMonths < slots) {
+          const idx = slots - 1 - diffMonths;
+          const amt = parseFloat(item.amount) || 0;
+          const rawType = item.type || item.order_type || "";
+          addToSlot(idx, amt, rawType);
+        }
+      });
+    }
+
+    setChartData(newData);
+  }, [data, trades, selectedTimeFilter]);
 
   /* ------------------- Tooltip ----------------------------- */
   const CustomTooltip = ({ active, payload, label }: any) =>
