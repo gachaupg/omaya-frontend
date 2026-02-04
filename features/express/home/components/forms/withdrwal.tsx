@@ -212,6 +212,7 @@ export default function WithdrawalForm({
 
   // Declare all refs early to avoid initialization errors
   const paymentDetailsRef = useRef<HTMLDivElement>(null);
+  const assetListRef = useRef<HTMLDivElement>(null);
   const assetDropdownRef = useRef<HTMLDivElement>(null);
   const assetDropdownContentRef = useRef<HTMLDivElement | null>(null);
 
@@ -2392,7 +2393,10 @@ export default function WithdrawalForm({
           {isHomePage && (
             <div className="flex items-center gap-2 px-2 py-2 border-b border-gray-200 dark:border-gray-600 overflow-x-auto shrink-0">
               <button
-                onClick={() => setAssetFilterTab("all")}
+                onClick={() => {
+                  setAssetFilterTab("all");
+                  if (assetListRef.current) assetListRef.current.scrollTop = 0;
+                }}
                 className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-2xl whitespace-nowrap transition-colors ${assetFilterTab === "all"
                   ? "bg-[#1D8751] text-white"
                   : "bg-[#35353E] text-gray-300 hover:bg-[#40404A]"
@@ -2401,7 +2405,10 @@ export default function WithdrawalForm({
                 All
               </button>
               <button
-                onClick={() => setAssetFilterTab("new")}
+                onClick={() => {
+                  setAssetFilterTab("new");
+                  if (assetListRef.current) assetListRef.current.scrollTop = 0;
+                }}
                 className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-2xl whitespace-nowrap transition-colors ${assetFilterTab === "new"
                   ? "bg-[#1D8751] text-white"
                   : "bg-[#35353E] text-gray-300 hover:bg-[#40404A]"
@@ -2410,7 +2417,10 @@ export default function WithdrawalForm({
                 New
               </button>
               <button
-                onClick={() => setAssetFilterTab("gainers")}
+                onClick={() => {
+                  setAssetFilterTab("gainers");
+                  if (assetListRef.current) assetListRef.current.scrollTop = 0;
+                }}
                 className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-2xl whitespace-nowrap transition-colors ${assetFilterTab === "gainers"
                   ? "bg-[#1D8751] text-white"
                   : "bg-[#35353E] text-gray-300 hover:bg-[#40404A]"
@@ -2419,7 +2429,10 @@ export default function WithdrawalForm({
                 Gainers
               </button>
               <button
-                onClick={() => setAssetFilterTab("losers")}
+                onClick={() => {
+                  setAssetFilterTab("losers");
+                  if (assetListRef.current) assetListRef.current.scrollTop = 0;
+                }}
                 className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-2xl whitespace-nowrap transition-colors ${assetFilterTab === "losers"
                   ? "bg-[#1D8751] text-white"
                   : "bg-[#35353E] text-gray-300 hover:bg-[#40404A]"
@@ -2430,7 +2443,7 @@ export default function WithdrawalForm({
             </div>
           )}
 
-          <div className="overflow-y-auto p-1 flex-1 min-h-0">
+          <div ref={assetListRef} className="overflow-y-auto p-1 flex-1 min-h-0">
             {sortedSwapAssets.length > 0 ? (
               <>
                 {!assetSearchTerm && sortedSwapAssets.length > 3 && (

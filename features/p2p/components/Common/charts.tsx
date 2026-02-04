@@ -103,20 +103,39 @@ const Charts: React.FC<ChartProps> = ({
       return;
     }
 
-    const monthly: { buyValue: number; sellValue: number }[] = Array(12)
-      .fill(0)
-      .map(() => ({ buyValue: 0, sellValue: 0 }));
-
     const now = new Date();
+    // Helper to zero-pad
+    const pad = (n: number) => n.toString().padStart(2, "0");
+
+    let newData: { name: string; buyValue: number; sellValue: number }[] = [];
+
+    if (selectedTimeFilter === "Today") {
+      // 0-23 hours of the current day? Or last 24h?
+      // Based on usual UX, "Today" often means since 00:00.
+      // But let's check if there's any data from yesterday.
+      // If we use fixed 00:00-23:00 buckets:
+      for (let i = 0; i < 24; i++) {
+        const key = `${pad(i)}:00`;
+        newData.push({ name: key, buyValue: 0, sellValue: 0 });
+      }
 
     // Swap for graph: API "buy" -> show on Sells line, API "sell" -> show on Buys line
     src.forEach((item: any) => {
       const ts = new Date(item.lastUpdate || item.timestamp || item.date);
       if (isNaN(ts.getTime())) return;
 
-      const diff =
-        (now.getFullYear() - ts.getFullYear()) * 12 +
-        (now.getMonth() - ts.getMonth());
+      src.forEach((item: any) => {
+        const ts = new Date(item.lastUpdate || item.timestamp);
+        const diffDays = Math.floor((now.getTime() - ts.getTime()) / (1000 * 60 * 60 * 24));
+        if (diffDays >= 0 && diffDays < 7) {
+          const idx = 6 - diffDays;
+          if (newData[idx]) {
+            const amt = parseFloat(item.amount) || 0;
+            if ((item.type || item.order_type) === "sell") newData[idx].sellValue += amt;
+            else newData[idx].buyValue += amt;
+          }
+        }
+      });
 
       if (diff >= 0 && diff < 12) {
         const idx = 11 - diff;
@@ -127,7 +146,6 @@ const Charts: React.FC<ChartProps> = ({
         else
           monthly[idx].sellValue += amt;  // buy -> Sells line
       }
-    });
 
     // Use actual month and date labels for each slot (slot 0 = 11 months ago, slot 11 = current month)
     setChartData(
@@ -201,8 +219,8 @@ const Charts: React.FC<ChartProps> = ({
                 key={t}
                 onClick={() => setFilter(t)}
                 className={`px-4 py-1.5 text-sm font-medium rounded-full transition-colors border ${filter === t
-                    ? "bg-[#1D8751] text-white border-[#1D8751]"
-                    : "bg-transparent text-[#1D8751] dark:text-[#1D8751] border-[#1D8751]"
+                  ? "bg-[#1D8751] text-white border-[#1D8751]"
+                  : "bg-transparent text-[#1D8751] dark:text-[#1D8751] border-[#1D8751]"
                   }`}
               >
                 {t}
@@ -242,8 +260,8 @@ const Charts: React.FC<ChartProps> = ({
                       key={opt}
                       onClick={() => handleTimeFilterSelect(opt)}
                       className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-[#35353E] ${selectedTimeFilter === opt
-                          ? "text-[#1D8751] bg-gray-50 dark:bg-[#35353E]"
-                          : "text-gray-700 dark:text-white"
+                        ? "text-[#1D8751] bg-gray-50 dark:bg-[#35353E]"
+                        : "text-gray-700 dark:text-white"
                         } ${opt === timeFilterOptions[0] ? "rounded-t-lg" : ""
                         } ${opt === timeFilterOptions[timeFilterOptions.length - 1]
                           ? "rounded-b-lg"

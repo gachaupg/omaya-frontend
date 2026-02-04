@@ -231,7 +231,7 @@ const PaymentMethods = () => {
     if (!method || typeof method !== 'object') {
       return null;
     }
-    
+
     return (
       <tr key={method.id} className="border-b border-gray-200 dark:border-[#35353E] hover:bg-gray-50 dark:hover:bg-[var(--card-color)] transition-colors">
         <td className="px-4 py-4">
@@ -259,7 +259,7 @@ const PaymentMethods = () => {
         <td className="px-4 py-4">
           <div className="flex items-center justify-end gap-2">
             {/* Edit Button */}
-          <button
+            <button
               onClick={() => {
                 setEditingPaymentMethod(method);
                 setIsEditModalOpen(true);
@@ -304,10 +304,10 @@ const PaymentMethods = () => {
                     strokeLinejoin="round"
                     strokeWidth={2}
                     d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"
-                />
-              </svg>
-            )}
-          </button>
+                  />
+                </svg>
+              )}
+            </button>
           </div>
         </td>
       </tr>
@@ -320,7 +320,7 @@ const PaymentMethods = () => {
     if (!method || typeof method !== 'object') {
       return null;
     }
-    
+
     return (
       <tr key={method.id} className="border-b border-gray-200 dark:border-[#35353E] hover:bg-gray-50 dark:hover:bg-[var(--card-color)] transition-colors">
         <td className="px-4 py-4">
@@ -347,7 +347,7 @@ const PaymentMethods = () => {
         <td className="px-4 py-4">
           <div className="flex items-center justify-end gap-2">
             {/* Edit Button */}
-          <button
+            <button
               onClick={() => {
                 setEditingPaymentMethod(method);
                 setIsEditModalOpen(true);
@@ -392,10 +392,10 @@ const PaymentMethods = () => {
                     strokeLinejoin="round"
                     strokeWidth={2}
                     d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"
-                />
-              </svg>
-            )}
-          </button>
+                  />
+                </svg>
+              )}
+            </button>
           </div>
         </td>
       </tr>
@@ -404,7 +404,7 @@ const PaymentMethods = () => {
 
   const renderEmptyState = () => (
     <div className="flex flex-col items-center justify-center py-12 px-4">
-      <div className="w-24 h-24 mb-6 rounded-full bg-gray-100 dark:bg-[var(--card-color)] flex items-center justify-center">
+      <div className="w-24 h-24 mb-6 rounded-full bg-gray-100 dark:bg-(--card-color) flex items-center justify-center">
         <svg
           className="w-12 h-12 text-[#1D8751]"
           fill="none"
@@ -480,10 +480,10 @@ const PaymentMethods = () => {
   // Group methods into two sections: Bank and Mobile Money
   // For now place the first available method under Mobile Money and the rest under Bank
   // Safely filter out any undefined/null methods
-  const safeUserPaymentDetails = Array.isArray(userPaymentDetails) 
+  const safeUserPaymentDetails = Array.isArray(userPaymentDetails)
     ? userPaymentDetails.filter((m: any) => m && typeof m === 'object')
     : [];
-  
+
   const mobileMoneyMethods: PaymentMethod[] = safeUserPaymentDetails.length > 22 && safeUserPaymentDetails[22]
     ? [safeUserPaymentDetails[22]]
     : [];
@@ -591,7 +591,7 @@ const PaymentMethods = () => {
                 <span className="flex items-center justify-center  text-[#49C476] font-light text-3xl">+</span>
                 <span className="text-sm font-medium">Add Method</span>
               </span>
-              <ChevronDown className="w-4 h-4 text-neutral-200 ml-auto" />
+              <ChevronDown className="w-4 h-4 text-gray-500 dark:text-gray-400 ml-auto" />
             </Button>
             {renderAddMethodDropdown()}
           </div>

@@ -347,11 +347,11 @@ const MarketChartContent = () => {
   }
 
   return (
-    <div className="bg-white dark:bg-[#18181D] min-h-screen py-4 sm:py-6 lg:py-8 text-gray-900 dark:text-[#788099]">
+    <div className="dark:bg-(--bg-color) min-h-screen py-4 sm:py-6 lg:py-8 text-gray-900 dark:text-[#788099]">
       <div className="max-w-[1400px] mx-auto">
         <Link
           href="/market"
-          className="flex items-center gap-2 text-[#13B562] mb-4 sm:mb-6 lg:mb-6 hover:underline text-sm sm:text-base lg:text-base"
+          className="flex items-center gap-2 text-secondary mb-4 sm:mb-6 lg:mb-6 hover:underline text-sm sm:text-base lg:text-base"
         >
           <ArrowLeft size={16} className="sm:w-[18px] sm:h-[18px] lg:w-[18px] lg:h-[18px]" />
           Back to Markets
