@@ -1154,6 +1154,55 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
 
       {isFirstCardSubmitted && (
         <>
+          {/* Transaction Summary - Shows where to send and receive */}
+          <div className="bg-[#F5FFF9] dark:bg-[#1D2B25] border border-[#1D8751] rounded-2xl p-4 mb-4 sm:mb-6">
+            <h3 className="text-[#1D8751] font-semibold mb-3 flex items-center gap-2">
+              <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10" stroke="#1D8751" strokeWidth="2" />
+                <path d="M12 8v4M12 16h.01" stroke="#1D8751" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+              Transaction Summary
+            </h3>
+            <div className="space-y-3">
+              {/* From - Where they send from */}
+              <div className="flex items-center justify-between p-3 bg-white dark:bg-[#18181D] rounded-xl">
+                <div className="flex items-center gap-2">
+                  <span className="text-[#788099] text-sm">Send From:</span>
+                </div>
+                <span className="text-[#35353e] dark:text-white font-medium text-sm">
+                  {getProviderName(selectedFromPaymentDetail) || "Your Account"}
+                </span>
+              </div>
+              
+              {/* Arrow indicator */}
+              <div className="flex justify-center">
+                <svg width="24" height="24" fill="none" viewBox="0 0 24 24" className="text-[#1D8751]">
+                  <path d="M12 5v14M12 19l-4-4M12 19l4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+              
+              {/* To - Where they receive */}
+              <div className="flex items-center justify-between p-3 bg-white dark:bg-[#18181D] rounded-xl">
+                <div className="flex items-center gap-2">
+                  <span className="text-[#788099] text-sm">Receive To:</span>
+                </div>
+                <span className="text-[#35353e] dark:text-white font-medium text-sm">
+                  {getProviderName(selectedToPaymentDetail) || "Your Account"} (Enter below)
+                </span>
+              </div>
+              
+              {/* Amount Summary */}
+              <div className="flex items-center justify-between p-3 bg-white dark:bg-[#18181D] rounded-xl mt-2">
+                <span className="text-[#788099] text-sm">Amount to Send:</span>
+                <span className="text-[#1D8751] font-bold">${payAmount.toFixed(2)}</span>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-white dark:bg-[#18181D] rounded-xl">
+                <span className="text-[#788099] text-sm">Amount to Receive:</span>
+                <span className="text-[#1D8751] font-bold">${getAmount.toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+
 {/* Bank Account Address Section - Dynamic Title */}
  <h2 className="text-xl font-semibold mb-2 text-gray-900 dark:text-[#788099] inline-flex items-center gap-2">
   {selectedToPaymentDetail?.payment_method?.toLowerCase().includes('mobile') ||

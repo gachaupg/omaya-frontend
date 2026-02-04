@@ -495,7 +495,7 @@ export default function Navbar() {
       href: "/dashboard/express-exchange",
       icon: "https://res.cloudinary.com/pitz/image/upload/v1752243765/Vector_2_xauedx.png",
       title: (
-        <>
+        <span className="flex items-center gap-0.5">
           <span>E</span>
           <img
             className="mt-2 block dark:hidden"
@@ -507,28 +507,14 @@ export default function Navbar() {
             src="https://res.cloudinary.com/pitz/image/upload/v1764698106/Group_8_hjhlxe.png"
             alt=""
           />
-        </>
+        </span>
       ),
       description: "Trade cryptocurrencies on the exchange with advanced tools and features for optimal transactions",
     },
     {
       href: "/dashboard/exchange",
       icon: "https://res.cloudinary.com/pitz/image/upload/v1764568507/uil_exchange_1_okxkvb.png",
-      title: (
-        <>
-          <span>Money</span>
-          <img
-            className="mt-2 block dark:hidden"
-            src="https://res.cloudinary.com/pitz/image/upload/v1764661972/Group_6_ohph9q.png"
-            alt=""
-          />
-          <img
-            className="mt-2 hidden dark:block"
-            src="https://res.cloudinary.com/pitz/image/upload/v1764663236/Group_7_ichuyz.png"
-            alt=""
-          />
-        </>
-      ),
+      title: "Exchange",
       description: "Transfer money between different payment methods quickly and securely",
     },
     {
@@ -618,11 +604,11 @@ export default function Navbar() {
   }, [dispatch]);
 
   useEffect(() => {
-    // ✅ Only fetch profile if we don't have it (prevents refetch on every navigation)
-    if (isAuthenticated && !userProfile) {
+    // Fetch profile if we don't have it or if we have a cached photo but no profile
+    if (isAuthenticated && (!userProfile || (!userProfile.photo && cachedProfilePhoto))) {
       dispatch(getUserProfile());
     }
-  }, [isAuthenticated, dispatch, userProfile]);
+  }, [isAuthenticated, dispatch, userProfile, cachedProfilePhoto]);
 
   // Cache profile photo in localStorage when it's available
   useEffect(() => {
@@ -637,15 +623,25 @@ export default function Navbar() {
     }
   }, [userProfile?.photo]);
 
-  // Reset image error when profile photo changes (more aggressive reset)
+  // Reset image error when profile photo changes
   useEffect(() => {
     const currentPhoto = userProfile?.photo || cachedProfilePhoto;
     if (currentPhoto) {
-      // Always reset error when we have a photo URL, even if it's the same
-      // This helps with cases where the image failed to load but the URL is valid
+      // Reset error when we have a photo URL
       setProfileImageError(false);
     }
   }, [userProfile?.photo, cachedProfilePhoto]);
+
+  // Reload cached photo on route change (dashboard)
+  useEffect(() => {
+    if (isAuthenticated && pathname?.startsWith('/dashboard') && typeof window !== 'undefined') {
+      const cached = localStorage.getItem("profile_photo");
+      if (cached && !cachedProfilePhoto) {
+        setCachedProfilePhoto(cached);
+        setProfileImageError(false);
+      }
+    }
+  }, [pathname, isAuthenticated, cachedProfilePhoto]);
 
   // Profile data available for rendering
 
@@ -998,8 +994,8 @@ export default function Navbar() {
                 </button>
                 {/* Deposit Dropdown */}
                 {depositDropdownOpen && (
-                  <div className="absolute top-full right-0 mt-2 w-[400px] dark:bg-[#1E2329] bg-white dark:border-[#35353E] border-gray-200 border rounded shadow-xl z-[9999]">
-                    <div className="p-4">
+                  <div className="absolute top-full right-0 mt-2 w-[calc(100vw-2rem)] max-w-[400px] sm:w-[350px] md:w-[380px] lg:w-[400px] dark:bg-[#1E2329] bg-white dark:border-[#35353E] border-gray-200 border rounded shadow-xl z-[9999]">
+                    <div className="p-3 sm:p-4">
                       {depositItems.map((item, index) => {
                         const isActive = pathname === item.href || pathname?.startsWith(item.href + "/");
                         return (
@@ -1013,23 +1009,23 @@ export default function Navbar() {
                             }}
                           >
                             <div
-                              className={`flex items-center rounded-lg transition-colors duration-200 group p-3 ${isActive
+                              className={`flex items-center rounded-lg transition-colors duration-200 group p-2 sm:p-3 ${isActive
                                 ? "dark:bg-[#35353E] bg-gray-100"
                                 : "dark:hover:bg-[#35353E] hover:bg-gray-50"
                                 }`}
                             >
-                              <div className="w-10 h-10 flex items-center justify-center mr-4 shrink-0">
+                              <div className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center mr-2 sm:mr-4 shrink-0">
                                 <img
-                                  className="w-8 h-8 object-contain"
+                                  className="w-6 h-6 sm:w-8 sm:h-8 object-contain"
                                   src={item.icon}
                                   alt=""
                                 />
                               </div>
-                              <div className="flex-1">
-                                <h4 className="dark:text-white flex flex-row items-center text-[#727272] font-semibold text-base mb-0.5">
+                              <div className="flex-1 min-w-0">
+                                <h4 className="dark:text-white flex flex-row items-center text-[#727272] font-semibold text-sm sm:text-base mb-0.5">
                                   {item.title}
                                 </h4>
-                                <p className="dark:text-gray-400 text-gray-500 text-xs leading-relaxed">
+                                <p className="dark:text-gray-400 text-gray-500 text-xs leading-relaxed line-clamp-2">
                                   {item.description}
                                 </p>
                               </div>
@@ -1051,7 +1047,7 @@ export default function Navbar() {
                   {(userProfile?.photo || cachedProfilePhoto) &&
                     !profileImageError ? (
                     <img
-                      key={`${userProfile?.photo || cachedProfilePhoto}-${Date.now()}`} // Force re-render when photo changes with timestamp
+                      key={`profile-nav-${userProfile?.photo || cachedProfilePhoto}`}
                       src={userProfile?.photo || cachedProfilePhoto || ""}
                       alt="Profile"
                       className="w-8 h-8 md:w-9 md:h-9 lg:w-10 lg:h-10 rounded-full object-cover border-2 border-white dark:border-gray-600 shadow-lg"
@@ -1145,7 +1141,7 @@ export default function Navbar() {
                               !profileImageError ? (
                               <>
                                 <img
-                                  key={`${userProfile?.photo || cachedProfilePhoto}-${Date.now()}`} // Force re-render
+                                  key={`profile-modal-${userProfile?.photo || cachedProfilePhoto}`}
                                   src={
                                     userProfile?.photo ||
                                     cachedProfilePhoto ||
@@ -1406,54 +1402,54 @@ export default function Navbar() {
                       onClick={toggleMobileDepositDropdown}
                     />
                     {/* Dropdown Menu */}
-                    <div className="fixed inset-x-4 top-20 sm:top-24 z-[70] md:hidden dark:bg-[var(--card-color)] bg-white dark:border-[#35353E] border-gray-200 rounded-xl shadow-xl overflow-hidden">
-                      <div className="p-4 sm:p-6">
-                        {depositItems.map((item, index) => {
-                          const isActive = pathname === item.href || pathname?.startsWith(item.href + "/");
-                          return (
-                            <Link
-                              key={index}
-                              href={item.href}
-                              className="block mb-4 last:mb-0"
-                              onClick={(e) => {
-                                handleProtectedNavigation(e, item.href);
-                                setMobileDepositDropdownOpen(false);
-                                toggleMobileMenu();
-                              }}
-                            >
-                              <div
-                                className={`flex items-center rounded-lg transition-colors duration-200 group p-3 ${isActive
-                                  ? "dark:bg-[#35353E] bg-gray-100"
-                                  : "dark:hover:bg-[#35353E] hover:bg-gray-50"
-                                  }`}
-                              >
-                                <div className="w-10 h-10 flex items-center justify-center mr-4 shrink-0">
-                                  <img
-                                    className="w-8 h-8 object-contain"
-                                    src={item.icon}
-                                    alt=""
-                                  />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <h4 className="dark:text-white flex flex-row items-center text-gray-900 font-medium text-base mb-1">
-                                    {item.title}
-                                  </h4>
-                                  <p className="dark:text-gray-400 text-gray-600 text-sm leading-relaxed">
-                                    {item.description}
-                                  </p>
-                                </div>
-                                <ChevronRight className="w-5 h-5 dark:text-gray-400 text-gray-500 group-hover:text-[#1D8751] transition-colors shrink-0 ml-2" />
-                              </div>
-                            </Link>
-                          );
-                        })}
-                      </div>
-                    </div>
+                        <div className="fixed inset-x-2 sm:inset-x-4 top-[4.5rem] sm:top-20 z-[70] md:hidden dark:bg-[var(--card-color)] bg-white dark:border-[#35353E] border-gray-200 border rounded-xl shadow-xl overflow-hidden max-h-[calc(100vh-6rem)] overflow-y-auto">
+                          <div className="p-3 sm:p-4">
+                            {depositItems.map((item, index) => {
+                              const isActive = pathname === item.href || pathname?.startsWith(item.href + "/");
+                              return (
+                                <Link
+                                  key={index}
+                                  href={item.href}
+                                  className="block mb-2 last:mb-0"
+                                  onClick={(e) => {
+                                    handleProtectedNavigation(e, item.href);
+                                    setMobileDepositDropdownOpen(false);
+                                    toggleMobileMenu();
+                                  }}
+                                >
+                                  <div
+                                    className={`flex items-center rounded-lg transition-colors duration-200 group p-2 sm:p-3 ${isActive
+                                      ? "dark:bg-[#35353E] bg-gray-100"
+                                      : "dark:hover:bg-[#35353E] hover:bg-gray-50"
+                                      }`}
+                                  >
+                                    <div className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center mr-2 sm:mr-4 shrink-0">
+                                      <img
+                                        className="w-6 h-6 sm:w-8 sm:h-8 object-contain"
+                                        src={item.icon}
+                                        alt=""
+                                      />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <h4 className="dark:text-white flex flex-row items-center text-gray-900 font-medium text-sm sm:text-base mb-0.5 sm:mb-1">
+                                        {item.title}
+                                      </h4>
+                                      <p className="dark:text-gray-400 text-gray-600 text-xs sm:text-sm leading-relaxed line-clamp-2">
+                                        {item.description}
+                                      </p>
+                                    </div>
+                                    <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 dark:text-gray-400 text-gray-500 group-hover:text-[#1D8751] transition-colors shrink-0 ml-1 sm:ml-2" />
+                                  </div>
+                                </Link>
+                              );
+                            })}
+                          </div>
+                        </div>
                   </>
                 )}
-              </div>
-              <div className="relative mt-4 flex justify-center">
-                {/* <button
+                  </div>
+                  <div className="relative mt-4 flex justify-center">
+                    {/* <button
                     onClick={toggleProfileModal}
                     className="text-white focus:outline-none"
                   >
@@ -1601,43 +1597,170 @@ export default function Navbar() {
               </div>
 
 
-              {/* Mobile Profile Modal */}
-              {/* Mobile Profile Menu (Inline Expansion) */}
-              {profileModalOpen && (
-                <div className="mt-2 ml-4 space-y-2 border-l-2 border-gray-100 dark:border-gray-700 pl-4 animate-in slide-in-from-top-2 duration-200">
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setProfileModalOpen(false);
-                      router.push("/dashboard/account?tab=profile");
-                      setTimeout(() => {
-                        setMobileMenuOpen(false);
-                      }, 300);
-                    }}
-                    className="flex items-center w-full py-2 text-gray-600 dark:text-gray-300 hover:text-[#1D8751] dark:hover:text-white transition-colors"
-                  >
-                    <Settings size={18} className="mr-3" />
-                    <span className="text-sm font-medium">Account settings</span>
-                  </button>
+                  {/* Mobile Profile Modal */}
+                  {profileModalOpen && (
+                    <div className="fixed inset-0 z-[9999] md:hidden">
+                      <div
+                        className="absolute inset-0 bg-black bg-opacity-50"
+                        onClick={() => setProfileModalOpen(false)}
+                      />
+                      <div className="absolute bottom-0 left-0 right-0 bg-[#1E2329] border-t border-accent rounded-t-lg">
+                        <div className="p-6">
+                          {/* User Info */}
+                          <div className="flex items-center mb-6">
+                            <div className="mr-4 relative">
+                              <button
+                                className="relative cursor-pointer hover:opacity-80 transition-opacity"
+                                onClick={toggleImageModal}
+                                type="button"
+                              >
+                                {(userProfile?.photo || cachedProfilePhoto) &&
+                                  !profileImageError ? (
+                                  <>
+                                    <img
+                                      key={`profile-mobile-${userProfile?.photo || cachedProfilePhoto}`}
+                                      src={
+                                        userProfile?.photo ||
+                                        cachedProfilePhoto ||
+                                        ""
+                                      }
+                                      alt="Profile"
+                                      className="w-16 h-16 rounded-full object-cover border-2 border-white dark:border-gray-600 shadow-lg"
+                                      onError={() => {
+                                        console.error("Mobile profile image failed to load:", userProfile?.photo || cachedProfilePhoto);
+                                        if (userProfile?.photo || cachedProfilePhoto) {
+                                          setProfileImageError(true);
+                                          // Clear invalid cached photo
+                                          if (typeof window !== "undefined") {
+                                            localStorage.removeItem(
+                                              "profile_photo"
+                                            );
+                                            setCachedProfilePhoto(null);
+                                          }
+                                        }
+                                      }}
+                                      onLoad={() => {
+                                        if (profileImageError) {
+                                          setProfileImageError(false);
+                                        }
+                                      }}
+                                    />
+                                    {/* Verification Badge - only show for verified users */}
+                                    {isVerified && (
+                                      <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-6 h-6 z-10">
+                                        <svg
+                                          width="24"
+                                          height="24"
+                                          viewBox="0 0 24 24"
+                                          className="absolute"
+                                        >
+                                          <circle
+                                            cx="12"
+                                            cy="12"
+                                            r="11"
+                                            fill="white"
+                                          />
+                                          <circle
+                                            cx="12"
+                                            cy="12"
+                                            r="9"
+                                            fill="#1D8751"
+                                          />
+                                          {/* Serrated edge using small circles */}
+                                          {[
+                                            0, 30, 60, 90, 120, 150, 180, 210,
+                                            240, 270, 300, 330,
+                                          ].map((angle) => {
+                                            const rad = (angle * Math.PI) / 180;
+                                            const x = 12 + 10 * Math.cos(rad);
+                                            const y = 12 + 10 * Math.sin(rad);
+                                            return (
+                                              <circle
+                                                key={angle}
+                                                cx={x}
+                                                cy={y}
+                                                r="1.2"
+                                                fill="white"
+                                              />
+                                            );
+                                          })}
+                                        </svg>
+                                        <svg
+                                          width="12"
+                                          height="12"
+                                          viewBox="0 0 12 12"
+                                          fill="none"
+                                          xmlns="http://www.w3.org/2000/svg"
+                                          className="relative z-10"
+                                        >
+                                          <path
+                                            d="M2.5 6L5 8.5L9.5 4"
+                                            stroke="#FFFFFF"
+                                            strokeWidth="1.8"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                          />
+                                        </svg>
+                                      </span>
+                                    )}
+                                  </>
+                                ) : (
+                                  <div className="w-16 h-16 rounded-full flex items-center justify-center bg-[#1D8751] border-2 border-white">
+                                    <User className="w-8 h-8 text-white" />
+                                  </div>
+                                )}
+                              </button>
+                            </div>
+                            <div>
+                              <h4 className="text-white font-medium text-lg">
+                                {user?.first_name} {user?.last_name}
+                              </h4>
+                              <p className="text-gray-400 text-sm">
+                                {user?.email}
+                              </p>
+                            </div>
+                          </div>
 
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setProfileModalOpen(false);
-                      handleLogout();
-                      setTimeout(() => {
-                        setMobileMenuOpen(false);
-                      }, 300);
-                    }}
-                    className="flex items-center w-full py-2 text-gray-600 dark:text-gray-300 hover:text-[#1D8751] dark:hover:text-white transition-colors"
-                  >
-                    <LogOut size={18} className="mr-3" />
-                    <span className="text-sm font-medium">Logout</span>
-                  </button>
-                </div>
-              )}
+                          {/* Menu Items */}
+                          <div className="space-y-4">
+                            <Link
+                              href="/dashboard/account"
+                              className="flex items-center w-full px-4 py-3 text-gray-300 hover:text-white hover:bg-[#35353E] rounded-lg transition-colors duration-200"
+                              onClick={() => setProfileModalOpen(false)}
+                            >
+                              <User size={20} className="mr-3" />
+                              <span className="text-base whitespace-nowrap">Account</span>
+                            </Link>
+
+                            <Link
+                              href="/dashboard/settings"
+                              className="flex items-center w-full px-4 py-3 text-gray-300 hover:text-white hover:bg-[#35353E] rounded-lg transition-colors duration-200"
+                              onClick={() => setProfileModalOpen(false)}
+                            >
+                              <Settings size={20} className="mr-4" />
+                              <span className="text-base">Settings</span>
+                            </Link>
+
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setProfileModalOpen(false);
+                                handleLogout();
+                                setTimeout(() => {
+                                  setMobileMenuOpen(false);
+                                }, 300);
+                              }}
+                              className="flex items-center w-full px-4 py-3 text-gray-300 hover:text-white hover:bg-[#35353E] rounded-lg transition-colors duration-200"
+                            >
+                              <LogOut size={20} className="mr-3" />
+                              <span className="text-base">Logout</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
             </>
           ) : (
             <>
@@ -1695,6 +1818,6 @@ export default function Navbar() {
           </div>
         )
       }
-    </div >
+    </div>
   );
 }

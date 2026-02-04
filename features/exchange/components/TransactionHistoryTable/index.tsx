@@ -98,12 +98,12 @@ const TransactionHistoryTable: React.FC = () => {
   } = useTransactionHistory();
 
   return (
-    <div className="bg-[#1A1B23] rounded-lg p-4 sm:p-6">
+    <div className="bg-white dark:bg-[#1A1B23] rounded-lg p-4 sm:p-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-2">
           <h1 className="text-[#1D8751] text-xl font-medium">Transaction History</h1>
-          <div className="flex items-center gap-2 text-[#9CA3AF] cursor-pointer hover:text-white transition-colors">
+          <div className="flex items-center gap-2 text-gray-500 dark:text-[#9CA3AF] cursor-pointer hover:text-gray-700 dark:hover:text-white transition-colors">
             <span className="text-sm">Month</span>
             <ChevronDown className="w-4 h-4" />
           </div>
@@ -117,7 +117,7 @@ const TransactionHistoryTable: React.FC = () => {
               placeholder="Search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-transparent border border-[#2D2E3A] rounded-full pl-10 pr-4 py-2.5 text-sm text-white placeholder-[#9CA3AF] focus:outline-none focus:border-[#10B981]"
+              className="w-full bg-transparent border border-gray-300 dark:border-[#2D2E3A] rounded-full pl-10 pr-4 py-2.5 text-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-[#9CA3AF] focus:outline-none focus:border-[#10B981]"
             />
           </div>
           {/* Export Button */}
@@ -127,18 +127,19 @@ const TransactionHistoryTable: React.FC = () => {
         </div>
       </div>
       {/* Table Container */}
-      <div className="bg-[#1D1D23] rounded-2xl border border-[#2D2E3A] overflow-hidden w-full">
-        <div className="overflow-x-auto">
+      <div className="bg-gray-50 dark:bg-[#1D1D23] rounded-2xl border border-gray-200 dark:border-[#2D2E3A] overflow-hidden w-full max-w-full">
+        <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-400 dark:scrollbar-thumb-[#35353E] scrollbar-track-transparent"
+             style={{ WebkitOverflowScrolling: 'touch' }}>
           {/* Table Header */}
-          <div className="bg-[#35353E] border-b border-[#35353E] px-4 sm:px-6 py-4 sticky top-0 z-10">
-            <div className="grid grid-cols-12 items-center w-[800px]">
-              <div className="col-span-2 text-[#9CA3AF] text-sm font-medium flex items-center gap-1">ID <ChevronDown className="w-3 h-3" /></div>
-              <div className="col-span-2 text-[#9CA3AF] text-sm font-medium flex items-center gap-1">Type <ChevronDown className="w-3 h-3" /></div>
-              <div className="col-span-2 text-[#9CA3AF] text-sm font-medium flex items-center gap-1">Date <ChevronDown className="w-3 h-3" /></div>
-              <div className="col-span-2 text-[#9CA3AF] text-sm font-medium flex items-center gap-1">Amount <ChevronDown className="w-3 h-3" /></div>
-              <div className="col-span-2 text-[#9CA3AF] text-sm font-medium">Status</div>
-              <div className="col-span-1 text-[#9CA3AF] text-sm font-medium">Receipt</div>
-              <div className="col-span-1 text-[#9CA3AF] text-sm font-medium">More</div>
+          <div className="bg-gray-100 dark:bg-[#35353E] border-b border-gray-200 dark:border-[#35353E] px-4 sm:px-6 py-4 sticky top-0 z-10">
+            <div className="grid grid-cols-12 items-center min-w-[800px]">
+              <div className="col-span-2 text-gray-600 dark:text-[#9CA3AF] text-sm font-medium flex items-center gap-1">ID <ChevronDown className="w-3 h-3" /></div>
+              <div className="col-span-2 text-gray-600 dark:text-[#9CA3AF] text-sm font-medium flex items-center gap-1">Type <ChevronDown className="w-3 h-3" /></div>
+              <div className="col-span-2 text-gray-600 dark:text-[#9CA3AF] text-sm font-medium flex items-center gap-1">Date <ChevronDown className="w-3 h-3" /></div>
+              <div className="col-span-2 text-gray-600 dark:text-[#9CA3AF] text-sm font-medium flex items-center gap-1">Amount <ChevronDown className="w-3 h-3" /></div>
+              <div className="col-span-2 text-gray-600 dark:text-[#9CA3AF] text-sm font-medium">Status</div>
+              <div className="col-span-1 text-gray-600 dark:text-[#9CA3AF] text-sm font-medium">Receipt</div>
+              <div className="col-span-1 text-gray-600 dark:text-[#9CA3AF] text-sm font-medium">More</div>
             </div>
           </div>
           {/* Table Body */}
@@ -148,7 +149,7 @@ const TransactionHistoryTable: React.FC = () => {
                 <TransactionRow key={tx.transaction_id} tx={tx} handleEyeClick={handleEyeClick} />
               ))
             ) : (
-              <div className="text-center py-8 text-[#788099]">
+              <div className="text-center py-8 text-gray-500 dark:text-[#788099]">
                 {loading ? "Loading transactions..." : "No transactions found"}
               </div>
             )}
@@ -158,7 +159,7 @@ const TransactionHistoryTable: React.FC = () => {
       {/* Pagination */}
       <div className="flex flex-wrap items-center justify-center mt-6 gap-2">
         <button 
-          className="p-2 text-[#9CA3AF] hover:text-white hover:bg-[#232430] transition-colors disabled:opacity-50"
+          className="p-2 text-gray-500 dark:text-[#9CA3AF] hover:text-gray-700 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[#232430] transition-colors disabled:opacity-50"
           disabled={currentPage === 1}
           onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
         >
@@ -171,14 +172,14 @@ const TransactionHistoryTable: React.FC = () => {
             className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg text-sm font-medium transition-colors ${
               currentPage === i + 1
                 ? "bg-[#10B981] text-white"
-                : "text-[#9CA3AF] hover:text-white hover:bg-[#232430]"
+                : "text-gray-500 dark:text-[#9CA3AF] hover:text-gray-700 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[#232430]"
             }`}
           >
             {i + 1}
           </button>
         ))}
         <button 
-          className="p-2 text-[#9CA3AF] hover:text-white hover:bg-[#232430] transition-colors disabled:opacity-50"
+          className="p-2 text-gray-500 dark:text-[#9CA3AF] hover:text-gray-700 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[#232430] transition-colors disabled:opacity-50"
           disabled={currentPage === Math.ceil(filteredTransactions.length / itemsPerPage)}
           onClick={() => setCurrentPage(Math.min(Math.ceil(filteredTransactions.length / itemsPerPage), currentPage + 1))}
         >
