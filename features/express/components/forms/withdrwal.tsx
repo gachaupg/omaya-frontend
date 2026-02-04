@@ -4712,7 +4712,7 @@ export default function WithdrawalForm({
                       <li className="flex items-start">
                         <span className="w-2 h-2 mt-1.5 rounded-full bg-[#1D8751] dark:bg-[#1D8751] shrink-0 mr-3"></span>
                         <span className="text-[#35353e] dark:text-[#788099] text-sm">
-                          Please send the money from your own account Only
+                          We will send money to your <span className="font-semibold text-[#1D8751]">{selectedPaymentDetail?.provider_name || selectedProviderData?.provider_name || payBank || "the selected provider"}</span> account <span className="font-semibold text-[#1D8751]">{selectedPaymentDetail?.account_number || selectedPaymentDetail?.payment_details?.[0]?.account_number || selectedPaymentDetail?.payment_details?.[0]?.mobile_number || "—"}</span> for withdrawal of <span className="font-semibold text-[#1D8751]">{selectedAsset?.ticker || selectedAsset?.symbol || "crypto"}</span>. Please ensure this is your own account.
                         </span>
                       </li>
                       <li className="flex items-start">

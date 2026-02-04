@@ -33,6 +33,30 @@ import { SwapWidgetSkeleton } from "@/components/ui/Skeletons";
 
 import { logger } from "@/lib/utils/logger";
 
+// Minimum swap value in USD/USDT - smaller amounts can disappear due to fees
+const MIN_SWAP_USD = 30;
+
+const meetsMinimumSwap = (
+  fromAsset: SupportedAsset | null,
+  toAsset: SupportedAsset | null,
+  fromAmount: string,
+  toAmount: string
+): boolean => {
+  if (!fromAsset || !toAsset) return false;
+  const fromTicker = (fromAsset.ticker || "").toUpperCase();
+  const toTicker = (toAsset.ticker || "").toUpperCase();
+  const fromVal = parseFloat(fromAmount) || 0;
+  const toVal = parseFloat(toAmount) || 0;
+
+  if (fromTicker === "USDT" || fromTicker === "USD") {
+    if (fromVal < MIN_SWAP_USD) return false;
+  }
+  if (toTicker === "USDT" || toTicker === "USD") {
+    if (toVal < MIN_SWAP_USD) return false;
+  }
+  return true;
+};
+
 const SwapWidget = () => {
   const dispatch = useDispatch<AppDispatch>();
   const searchParams = useSearchParams();
@@ -473,6 +497,14 @@ const SwapWidget = () => {
       return;
     }
 
+    if (!meetsMinimumSwap(fromAsset, toAsset, fromAmount, toAmount)) {
+      showToast.error(
+        "Minimum Amount Required",
+        `Minimum swap value is ${MIN_SWAP_USD} USD/USDT. Smaller amounts can disappear due to fees.`
+      );
+      return;
+    }
+
     // Show wallet address form below
     setShowWalletAddress(true);
   };
@@ -779,6 +811,8 @@ const SwapWidget = () => {
             hideContinueButton={showWalletAddress}
             onSwapAssets={handleSwapAssets}
             activeInputField={activeInputField}
+            meetsMinimumAmount={meetsMinimumSwap(fromAsset, toAsset, fromAmount, toAmount)}
+            minSwapUsd={MIN_SWAP_USD}
           />
           {showWalletAddress && (
             <WalletAddressStep

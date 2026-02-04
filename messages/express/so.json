@@ -1,4 +1,10 @@
 {
+  "express.deposit.sendToAccount": "Fadlan u dir lacagta akoonkaaga kaliya ee {{provider}} akoonka {{account}} si loo geliyo Hantida {{asset}}.",
+  "express.deposit.sendToAccountPrefix": "Fadlan u dir lacagta akoonkaaga kaliya ee ",
+  "express.deposit.sendToAccountMiddle": " akoonka ",
+  "express.deposit.sendToAccountSuffix": " si loo geliyo Hantida ",
+  "express.viewMoreTerms": "Arag wax badan",
+  "express.withdrawal.receiveToAccount": "Waxaan u diri doonaa lacagta akoonkaaga {{provider}} akoonka {{account}} ee ka-bixinta {{asset}}. Fadlan xaqiiji in tani akoonkaaga yahay.",
   "express.amount": "Qadarka",
   "express.youWillReceive": "Waxaad Heli Doontaa",
   "express.youGet": "Waxaad Helaysaa",

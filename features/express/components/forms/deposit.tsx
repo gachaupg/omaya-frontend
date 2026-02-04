@@ -131,6 +131,20 @@ const extractLogoFromDetail = (detail?: any) => {
   );
 };
 
+// Helper to resolve admin_payment_detail_id from payment object (API may use id or nest in payment_details - e.g. FXPRIMUS)
+const getAdminPaymentDetailId = (payment: any): string | null => {
+  if (!payment) return null;
+  const p = payment as any;
+  const firstDetail = (p.payment_details?.[0] ?? p.admin_payment_details?.[0]) || null;
+  const id =
+    p.admin_payment_detail_id ??
+    p.id ??
+    firstDetail?.admin_payment_detail_id ??
+    firstDetail?.id ??
+    null;
+  return id != null ? String(id) : null;
+};
+
 // Helper function to normalize payment details and ensure account_name/account_number are extracted
 const normalizePaymentDetails = (payment: any): any => {
   if (!payment) return null;
@@ -167,6 +181,9 @@ const normalizePaymentDetails = (payment: any): any => {
     (firstDetail && firstDetail.wallet_address) ||
     null;
 
+  // Resolve admin_payment_detail_id (API may use id or nest in payment_details - e.g. FXPRIMUS)
+  const admin_payment_detail_id = getAdminPaymentDetailId(payment);
+
   // Return normalized payment object
   return {
     ...payment,
@@ -175,6 +192,7 @@ const normalizePaymentDetails = (payment: any): any => {
     account_number,
     mobile_number,
     wallet_address,
+    ...(admin_payment_detail_id != null && { admin_payment_detail_id }),
   };
 };
 
@@ -910,6 +928,15 @@ export default function DepositForm({
 
     dispatch(fetchAdminPaymentMethods());
   }, [dispatch, isHomePage]);
+
+  // Close expanded section when user changes payment method or asset (user must post again)
+  useEffect(() => {
+    if (isFirstCardSubmitted) {
+      setIsFirstCardSubmitted(false);
+      setApiResponse(null);
+      setTransactionCode("");
+    }
+  }, [selectedAsset, payBank]);
 
   // Fetch public payment methods for home page
   useEffect(() => {
@@ -4030,10 +4057,9 @@ export default function DepositForm({
                   return;
                 }
 
-                if (!selectedPaymentDetail?.admin_payment_detail_id) {
-                  showToast.error(
-                    "Invalid payment method selected. Please select a valid payment method."
-                  );
+                const adminPaymentDetailId = getAdminPaymentDetailId(selectedPaymentDetail);
+                if (!adminPaymentDetailId) {
+                  showToast.error("Please select a payment method");
                   return;
                 }
 
@@ -4056,8 +4082,7 @@ export default function DepositForm({
                       : "Wire transfer",
                     user_notes: userNotes.trim() || t("express.forexDepositExchange", "Forex deposit exchange"),
                     user_forex_account: forexAccountNumber.trim(),
-                    admin_payment_detail_id:
-                      selectedPaymentDetail.admin_payment_detail_id,
+                    admin_payment_detail_id: adminPaymentDetailId,
                   };
 
                   console.log("🚀 Forex Deposit Payload:", forexPayload);
@@ -4545,7 +4570,12 @@ export default function DepositForm({
                 <li className="flex items-start">
                   <span className="w-2 h-2 mt-1 rounded-full bg-[#1D8751] inline-block mr-3 shrink-0"></span>
                   <span className="text-[#35353e] dark:text-[#788099] text-sm">
-                    Please send the money from your own account Only
+                    {t("express.deposit.sendToAccountPrefix", "Please send money from your own account only to ")}
+                    <span className="font-semibold text-[#1D8751]">{selectedPaymentDetail?.provider_name || payBank || "the selected provider"}</span>
+                    {t("express.deposit.sendToAccountMiddle", " account ")}
+                    <span className="font-semibold text-[#1D8751]">{selectedPaymentDetail?.account_number || selectedPaymentDetail?.payment_details?.[0]?.account_number || selectedPaymentDetail?.payment_details?.[0]?.mobile_number || "—"}</span>
+                    {t("express.deposit.sendToAccountSuffix", " for Asset ")}
+                    <span className="font-semibold text-[#1D8751]">{selectedAsset?.ticker || selectedAsset?.symbol || "crypto"}</span>.
                   </span>
                 </li>
                 <li className="flex items-start">

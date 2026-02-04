@@ -109,29 +109,43 @@ const Charts: React.FC<ChartProps> = ({
 
     const now = new Date();
 
+    // Swap for graph: API "buy" -> show on Sells line, API "sell" -> show on Buys line
     src.forEach((item: any) => {
-      const ts = new Date(item.lastUpdate || item.timestamp);
+      const ts = new Date(item.lastUpdate || item.timestamp || item.date);
       if (isNaN(ts.getTime())) return;
 
       const diff =
         (now.getFullYear() - ts.getFullYear()) * 12 +
         (now.getMonth() - ts.getMonth());
 
-      if (diff < 12) {
+      if (diff >= 0 && diff < 12) {
         const idx = 11 - diff;
         const amt = parseFloat(item.amount) || 0;
-        if ((item.type || item.order_type) === "sell")
-          monthly[idx].sellValue += amt;
-        else monthly[idx].buyValue += amt;
+        const rawType = item.type || item.order_type;
+        if (rawType === "sell")
+          monthly[idx].buyValue += amt;  // sell -> Buys line
+        else
+          monthly[idx].sellValue += amt;  // buy -> Sells line
       }
     });
 
+    // Use actual month and date labels for each slot (slot 0 = 11 months ago, slot 11 = current month)
     setChartData(
-      monthly.map((m, i) => ({
-        name: months[i],
-        buyValue: m.buyValue,
-        sellValue: m.sellValue,
-      }))
+      monthly.map((m, i) => {
+        const monthDate = new Date(now.getFullYear(), now.getMonth() - (11 - i), 1);
+        const lastDay = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
+        const monthName = months[monthDate.getMonth()];
+        const day = lastDay.getDate();
+        const isDifferentYear = monthDate.getFullYear() !== now.getFullYear();
+        const label = isDifferentYear
+          ? `${monthName} ${day}, '${String(monthDate.getFullYear()).slice(-2)}`
+          : `${monthName} ${day}`;
+        return {
+          name: label,
+          buyValue: m.buyValue,
+          sellValue: m.sellValue,
+        };
+      })
     );
   }, [data, trades]);
 

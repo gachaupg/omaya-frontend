@@ -70,6 +70,7 @@ export const API_CONFIG = {
     FEEDBACK_SUBMIT: (tradeId: string) => `/trading_engine/trades/${tradeId}/feedback/`,
     ALL_TRANSACTIONS: "/trading_engine/all-transactions/",
     USER_TRANSACTIONS: "/trading_engine/transactions/",
+    USER_ALL_TRANSACTIONS: "/trading_engine/user/all-transactions/",
     DELETE_ORDER: "/trading_engine/p2p/orders/",
     TOGGLE_ORDER_STATUS: "/trading_engine/p2p/orders/",
     DUPLICATE_ORDER: "/trading_engine/p2p/orders/",

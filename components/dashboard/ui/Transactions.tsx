@@ -1,5 +1,6 @@
 "use client";
 import React, { useState } from "react";
+import AllTransactions from "../sections/AllTransactions";
 import ExchangeTransactions from "../sections/ExchangeTransactions";
 import P2PTransactions from "../sections/P2PTransactions";
 import SwapTransactions from "../sections/SwapTransactions";
@@ -7,7 +8,7 @@ import P2PWithdrawalDepositTransactions from "../sections/P2PWithdrawalDepositTr
 import MoneyXTransactions from "../sections/MoneyXTransactions";
 import { useDashboardI18n } from "@/lib/useDashboardI18n";
 
-type TabType = "exchange" | "p2p" | "swap" | "p2pWithdrawalDeposit" | "moneyx";
+type TabType = "all" | "exchange" | "p2p" | "swap" | "p2pWithdrawalDeposit" | "moneyx";
 
 // Reusable NoDataFound component
 export const NoDataFound = ({
@@ -66,11 +67,13 @@ export const NoDataFound = ({
 };
 
 const Transactions = () => {
-  const [activeTab, setActiveTab] = useState<TabType>("exchange");
+  const [activeTab, setActiveTab] = useState<TabType>("all");
   const { t } = useDashboardI18n();
 
   const renderContent = () => {
     switch (activeTab) {
+      case "all":
+        return <AllTransactions />;
       case "exchange":
         return <ExchangeTransactions />;
       case "p2p":
@@ -82,17 +85,28 @@ const Transactions = () => {
       case "moneyx":
         return <MoneyXTransactions />;
       default:
-        return <ExchangeTransactions />;
+        return <AllTransactions />;
     }
   };
 
   return (
     <div className="bg-card border border-[#E8EFF5] dark:border-accent rounded-xl sm:rounded-xl lg:rounded-2xl p-3 sm:p-4 lg:p-4 overflow-hidden">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-4 lg:mb-4 gap-3 sm:gap-4 lg:gap-4">
-        <h2 className="text-lg sm:text-xl lg:text-2xl font-semibold dark:text-white text-[#0D0D0D]">
+      <h2 className="text-lg mt-1 mb-2 sm:text-xl lg:text-2xl font-semibold dark:text-white text-[#0D0D0D]">
           {t("transactions.title", "Recent Transactions")}
         </h2>
+         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-4 lg:mb-4 gap-3 sm:gap-4 lg:gap-4">
+       
         <div className="flex flex-wrap gap-2 sm:gap-3 lg:gap-4 w-full sm:w-auto">
+          <button
+            onClick={() => setActiveTab("all")}
+            className={`${
+              activeTab === "all"
+                ? "bg-[#1D8751] text-white"
+                : "border border-[#1D8751] text-[#1D8751] dark:text-[#1D8751]"
+            } px-3 sm:px-4 lg:px-6 py-2 rounded-full font-medium text-xs sm:text-sm lg:text-base min-h-[44px] sm:min-h-0 lg:min-h-0 flex items-center justify-center transition-colors`}
+          >
+            {t("transactions.types.all", "All")}
+          </button>
           <button
             onClick={() => setActiveTab("exchange")}
             className={`${

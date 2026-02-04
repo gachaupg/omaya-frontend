@@ -12,6 +12,7 @@ import {
 import { getTradeMessages, postTradeMessage, GroupedMessage } from "@/features/p2p/api";
 import { MdAccountCircle } from "react-icons/md";
 import { useTradeMessagesWebSocket } from "@/features/p2p/hooks/useTradeMessagesWebSocket";
+import { Copy } from "lucide-react";
 
 interface MessageImage {
   id: string;
@@ -137,6 +138,15 @@ const ChatBox: React.FC<{
   }, [messagesFromRedux]);
   
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [copiedChatId, setCopiedChatId] = useState(false);
+
+  const handleCopyChatId = () => {
+    if (tradeId) {
+      navigator.clipboard.writeText(tradeId);
+      setCopiedChatId(true);
+      setTimeout(() => setCopiedChatId(false), 2000);
+    }
+  };
 
   // Add file input ref
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -430,10 +440,28 @@ const ChatBox: React.FC<{
       </div>
       <div className="chat-container mt-4 sm:mt-6 flex flex-col pr-2 sm:pr-10 mb-2 h-80 sm:h-96 bg-card border border-[#E8EFF5] dark:border-[#35353E] rounded-[18px] p-2 sm:p-4 relative">
         <div>
-          <div className="flex items-center justify-center gap-2">
-            {otherPersonData.photo ? <img className="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-cover flex-shrink-0" src={otherPersonData.photo} alt={otherPersonData.displayName} /> : <MdAccountCircle  className="w-5 h-5 sm:w-6 sm:h-6 text-[#1D8751] flex-shrink-0"/>}
-            <div className="flex-1 min-w-0">
-              <div className="font-semibold text-sm sm:text-md truncate">{otherPersonData.displayName}</div>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              {otherPersonData.photo ? <img className="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-cover flex-shrink-0" src={otherPersonData.photo} alt={otherPersonData.displayName} /> : <MdAccountCircle className="w-5 h-5 sm:w-6 sm:h-6 text-[#1D8751] flex-shrink-0"/>}
+              <div className="flex-1 min-w-0">
+                <div className="font-semibold text-sm sm:text-md truncate">{otherPersonData.displayName}</div>
+                {tradeId && (
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className="text-[10px] sm:text-xs text-gray-500 dark:text-[#788099]">ID: {tradeId}</span>
+                    <button
+                      onClick={handleCopyChatId}
+                      className="p-0.5 rounded hover:bg-gray-100 dark:hover:bg-[#35353E] transition-colors text-[#1D8751] flex-shrink-0"
+                      title={copiedChatId ? "Copied!" : "Copy chat ID"}
+                      aria-label="Copy chat ID"
+                    >
+                      <Copy className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                    </button>
+                    {copiedChatId && (
+                      <span className="text-[10px] text-[#1D8751] font-medium">Copied!</span>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

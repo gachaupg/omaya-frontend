@@ -32,6 +32,8 @@ interface TransactionInfoStepProps {
   hideContinueButton?: boolean;
   onSwapAssets?: () => void;
   activeInputField?: "from" | "to";
+  meetsMinimumAmount?: boolean;
+  minSwapUsd?: number;
 }
 
 const strongBorder =
@@ -72,6 +74,8 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
     hideContinueButton,
     onSwapAssets,
     activeInputField,
+    meetsMinimumAmount = true,
+    minSwapUsd = 30,
   } = props;
 
   const fromAssetDropdownRef = useRef<HTMLDivElement>(null);
@@ -597,6 +601,11 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
         </div>
       )}
 
+      {!meetsMinimumAmount && fromAsset && toAsset && fromAmount && parseFloat(fromAmount) > 0 && toAmount && parseFloat(toAmount) > 0 && (
+        <p className="text-amber-600 dark:text-amber-400 text-xs sm:text-sm mb-2">
+          Minimum swap value is {minSwapUsd} USD/USDT. Smaller amounts can disappear due to fees.
+        </p>
+      )}
       {!hideContinueButton && (
         <button
           type="button"
@@ -609,7 +618,8 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
             !estimate ||
             estimateLoading ||
             swapLoading ||
-            !!estimateError
+            !!estimateError ||
+            !meetsMinimumAmount
           }
           className={`w-full text-white text-sm sm:text-base font-medium py-3 sm:py-2.5 rounded-3xl flex items-center justify-center gap-2 transition-colors min-h-[48px] mb-2 ${!fromAsset ||
             !toAsset ||
@@ -618,7 +628,8 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
             !estimate ||
             estimateLoading ||
             swapLoading ||
-            !!estimateError
+            !!estimateError ||
+            !meetsMinimumAmount
             ? "bg-gray-500 cursor-not-allowed"
             : "bg-[#1D8751] hover:bg-[#147043]"
             }`}

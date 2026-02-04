@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback } from "react";
+import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import Button from "@/features/p2p/components/Common/Button";
 import Input from "@/features/p2p/components/Common/Input";
 import {
@@ -12,7 +12,7 @@ import EditPaymentMethodModal from "./EditPaymentMethodModal";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/store/rootReducer";
 import { showToast } from "@/lib/utils/toast";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Search } from "lucide-react";
 
 import { logger } from '@/lib/utils/logger';
 import { AdminPaymentMethod } from "@/features/p2p/types/paymentMethods";
@@ -41,13 +41,12 @@ const PaymentMethods = () => {
 
   // Inline add method states
   const [showAddDropdown, setShowAddDropdown] = useState(false);
+  const [providerSearch, setProviderSearch] = useState("");
   const [selectedMethod, setSelectedMethod] = useState<string>("");
   const [selectedProvider, setSelectedProvider] = useState<string>("");
   const [accountName, setAccountName] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
   const [isClient, setIsClient] = useState(false);
-  const [isProviderDropdownOpen, setIsProviderDropdownOpen] = useState(false);
-  const providerDropdownRef = useRef<HTMLDivElement>(null);
 
   // Edit modal states
   const [editingPaymentMethod, setEditingPaymentMethod] = useState<PaymentMethod | null>(null);
@@ -78,6 +77,7 @@ const PaymentMethods = () => {
   // Reset add form on dropdown open
   useEffect(() => {
     if (showAddDropdown) {
+      setProviderSearch("");
       setSelectedMethod("");
       setSelectedProvider("");
       setAccountName(user ? `${user.first_name || ""} ${user.last_name || ""}`.trim() : "");
@@ -108,40 +108,36 @@ const PaymentMethods = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [handleClickOutside]);
 
-  // Close provider dropdown on outside click
-  useEffect(() => {
-    const handleProviderDropdownClickOutside = (e: MouseEvent) => {
-      const target = e.target as Node;
-      if (
-        isProviderDropdownOpen &&
-        providerDropdownRef.current &&
-        !providerDropdownRef.current.contains(target)
-      ) {
-        setIsProviderDropdownOpen(false);
-      }
-    };
+  // Flat list of all providers (provider_name + method type) for direct selection
+  const allProviders = useMemo(() => {
+    const methods = (adminMethods || []) as AdminPaymentMethod[];
+    return methods
+      .filter((m) => m && m.provider_name)
+      .map((m) => ({
+        provider_name: m.provider_name,
+        payment_method_type: m.payment_method_type || "Bank",
+        logo: m.logo,
+        provider_logo: m.provider_logo,
+        wallet_address: m.wallet_address,
+      }));
+  }, [adminMethods]);
 
-    if (isProviderDropdownOpen) {
-      document.addEventListener("mousedown", handleProviderDropdownClickOutside);
-      return () => {
-        document.removeEventListener("mousedown", handleProviderDropdownClickOutside);
-      };
-    }
-  }, [isProviderDropdownOpen]);
+  // Filtered providers by search
+  const filteredProviders = useMemo(() => {
+    if (!providerSearch.trim()) return allProviders;
+    const q = providerSearch.toLowerCase().trim();
+    return allProviders.filter(
+      (p) =>
+        p.provider_name?.toLowerCase().includes(q) ||
+        p.payment_method_type?.toLowerCase().includes(q)
+    );
+  }, [allProviders, providerSearch]);
 
-  // Providers for selected method
-  const providers = (adminMethods || []).filter(
-    (m: AdminPaymentMethod) => m.payment_method_type === selectedMethod
+  // Selected provider object (when user has selected one)
+  const selectedProviderObj = useMemo(
+    () => allProviders.find((p) => p.provider_name === selectedProvider),
+    [allProviders, selectedProvider]
   );
-
-  // Unique method types for dropdown
-  const methodTypes = Array.from(
-    new Set(
-      (adminMethods || [])
-        .map((m: AdminPaymentMethod) => m.payment_method_type)
-        .filter(Boolean)
-    )
-  ) as string[];
 
   /** Handlers */
   const handleDeleteMethod = async (methodId: string) => {
@@ -178,9 +174,6 @@ const PaymentMethods = () => {
       showToast.error("Please fill all required fields");
       return;
     }
-    const selectedProviderObj = providers.find(
-      (p: any) => p.provider_name === selectedProvider
-    );
     const payload = {
       account_name: accountName,
       account_number: accountNumber,
@@ -195,9 +188,9 @@ const PaymentMethods = () => {
   const getDefaultAccountName = () =>
     user ? `${user.first_name || ""} ${user.last_name || ""}`.trim() : "";
 
-  const handleMethodSelection = (type: string) => {
-    setSelectedMethod(type);
-    setSelectedProvider("");
+  const handleProviderSelection = (provider: { provider_name: string; payment_method_type: string }) => {
+    setSelectedProvider(provider.provider_name);
+    setSelectedMethod(provider.payment_method_type);
     setAccountName(getDefaultAccountName());
     setShowAddDropdown(false);
   };
@@ -205,6 +198,7 @@ const PaymentMethods = () => {
   const handleCancelSelection = () => {
     setSelectedMethod("");
     setSelectedProvider("");
+    setProviderSearch("");
     setAccountNumber("");
     setAccountName(getDefaultAccountName());
   };
@@ -511,36 +505,64 @@ const PaymentMethods = () => {
     }
   }, [bankMethods.length]);
 
-  // Inline Add Method Dropdown
+  // Inline Add Method Dropdown - searchable list of all payment providers
   const renderAddMethodDropdown = () => (
     <div
       ref={dropdownRef}
-      className={
-        `absolute top-full mt-2 ${showAddDropdown ? "" : "hidden"} sm:w-48 md:w-56 right-0 rounded-lg border border-[#49C476] bg-[#0F1219] text-white shadow-lg z-10`
-      }
+      className={`absolute top-full mt-2 ${showAddDropdown ? "" : "hidden"} w-full sm:w-80 right-0 rounded-xl border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] shadow-lg z-20 overflow-hidden`}
     >
-      <div className="py-2">
-        {methodTypes.map((type, idx) => {
-          const isSelected = selectedMethod === type;
-          return (
+      <div className="p-2 border-b border-gray-200 dark:border-[#35353E]">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search payment methods..."
+            value={providerSearch}
+            onChange={(e) => setProviderSearch(e.target.value)}
+            className="w-full pl-9 pr-3 py-2.5 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-[#1D1D23] border border-gray-200 dark:border-[#35353E] rounded-lg outline-none focus:ring-2 focus:ring-[#1D8751]/30 focus:border-[#1D8751]"
+          />
+        </div>
+      </div>
+      <div className="max-h-60 overflow-y-auto py-2">
+        {adminLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#1D8751]" />
+          </div>
+        ) : filteredProviders.length === 0 ? (
+          <p className="px-4 py-6 text-sm text-gray-500 dark:text-[#788099] text-center">
+            {providerSearch ? "No matching payment methods." : "No payment methods available."}
+          </p>
+        ) : (
+          filteredProviders.map((p, idx) => (
             <button
               type="button"
-              key={type + idx}
-              className={`flex items-center gap-3 px-4 py-2.5 text-left transition w-full hover:bg-[#1a1f2e] ${isSelected ? "bg-[#1a1f2e]" : ""}`}
-              onClick={() => { handleMethodSelection(type); setShowAddDropdown(false); }}
-              disabled={adminLoading}
+              key={`${p.provider_name}-${idx}`}
+              className="flex items-center gap-3 px-4 py-2.5 text-left w-full hover:bg-gray-50 dark:hover:bg-[#1a1f2e] transition-colors"
+              onClick={() => handleProviderSelection(p)}
             >
-              <span className={`flex h-5 w-5 items-center justify-center rounded border-1 flex-shrink-0 ${isSelected ? "border-[#49C476] bg-[#49C476]" : "border-[#49C476]"}`}>
-                {isSelected ? (
-                  <svg className="w-3 h-3 text-[#0F1219]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3}>
-                    <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                ) : null}
-              </span>
-              <span className="text-sm">{type}</span>
+              {p.logo || p.provider_logo ? (
+                <img
+                  src={getHighResPaymentLogo(p.logo, p.provider_logo, PAYMENT_LOGO_SIZE)}
+                  alt={p.provider_name}
+                  className="w-8 h-8 rounded-full object-contain flex-shrink-0"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = "none";
+                  }}
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-[#35353E] flex-shrink-0" />
+              )}
+              <div className="flex-1 min-w-0">
+                <span className="text-sm font-medium text-gray-900 dark:text-white block truncate">
+                  {p.provider_name}
+                </span>
+                <span className="text-xs text-gray-500 dark:text-[#788099]">
+                  {p.payment_method_type}
+                </span>
+              </div>
             </button>
-          );
-        })}
+          ))
+        )}
       </div>
     </div>
   );
@@ -576,143 +598,38 @@ const PaymentMethods = () => {
         </div>
       </div>
 
-      {/* Selected Method Details */}
-      {selectedMethod && (
+      {/* Selected Provider Details - shown when user picks a provider from the dropdown */}
+      {selectedProvider && (
         <div className="w-full border border-gray-200 dark:border-[#35353E] rounded-2xl p-4 sm:p-5 mb-6 bg-gray-50 dark:bg-[var(--card-color)]">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-            <div>
-              <p className="text-xs sm:text-sm text-gray-500 dark:text-[#8C8CA1]">Selected Method</p>
-              <p className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">{selectedMethod}</p>
+            <div className="flex items-center gap-3">
+              <img
+                src={selectedProviderObj ? getHighResPaymentLogo(selectedProviderObj.logo, selectedProviderObj.provider_logo, PAYMENT_LOGO_SIZE * 2) : "/default-provider-logo.svg"}
+                alt={selectedProvider}
+                className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-contain flex-shrink-0"
+                loading="lazy"
+                onError={(e) => {
+                  e.currentTarget.src = "/default-provider-logo.svg";
+                }}
+              />
+              <div>
+                <p className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
+                  {selectedProvider}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-[#788099]">
+                  {selectedMethod}
+                </p>
+              </div>
             </div>
             <button
               className="text-xs sm:text-sm font-medium text-[#E23D3A] hover:opacity-80"
               onClick={handleCancelSelection}
             >
-              Cancel Selection
+              Cancel
             </button>
           </div>
 
           <div className="grid grid-cols-1 gap-4">
-            <div>
-              <label className="block text-gray-600 dark:text-[#788099] text-xs sm:text-sm mb-1">
-                Provider
-              </label>
-              <div className="relative" ref={providerDropdownRef}>
-                <button
-                  type="button"
-                  onClick={() => !adminLoading && setIsProviderDropdownOpen(!isProviderDropdownOpen)}
-                  disabled={adminLoading}
-                  className={`w-full bg-white dark:bg-[var(--card-color)] text-gray-900 dark:text-white rounded-xl border border-gray-200 dark:border-[#35353E] h-12 px-4 text-sm flex items-center justify-between transition-all duration-200 ${
-                    adminLoading
-                      ? "opacity-50 cursor-not-allowed"
-                      : "hover:border-[#1D8751] dark:hover:border-[#1D8751] focus:outline-none focus:ring-2 focus:ring-[#1D8751]/20 cursor-pointer"
-                  } ${isProviderDropdownOpen ? "border-[#1D8751] dark:border-[#1D8751]" : ""}`}
-                >
-                  <span className={selectedProvider ? "text-gray-900 dark:text-white" : "text-gray-500 dark:text-gray-400"}>
-                    {selectedProvider || "Select Provider"}
-                  </span>
-                  <ChevronDown
-                    className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${
-                      isProviderDropdownOpen ? "transform rotate-180" : ""
-                    }`}
-                  />
-                </button>
-
-                {/* Custom Dropdown */}
-                {isProviderDropdownOpen && !adminLoading && (
-                  <div className="absolute z-50 w-full mt-2 bg-white dark:bg-[var(--card-color)] border border-gray-200 dark:border-[#35353E] rounded-xl shadow-lg max-h-60 overflow-auto">
-                    {providers.map((p: any, idx: number) => (
-                      <div
-                        key={p.provider_name + idx}
-                        className={`px-3 py-2.5 text-sm cursor-pointer transition-colors ${
-                          selectedProvider === p.provider_name
-                            ? "bg-[#1D8751]/10 dark:bg-[#1D8751]/20 text-[#1D8751] dark:text-[#1D8751] font-medium"
-                            : "text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-[#1F2937]"
-                        }`}
-                        onClick={() => {
-                          setSelectedProvider(p.provider_name);
-                          setIsProviderDropdownOpen(false);
-                        }}
-                      >
-                        <span className="flex items-center gap-2">
-                          {p.logo || p.provider_logo ? (
-                            <img
-                              src={getHighResPaymentLogo(p.logo, p.provider_logo, PAYMENT_LOGO_SIZE)}
-                              alt={p.provider_name}
-                              className="w-5 h-5 rounded object-contain"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).style.display = "none";
-                              }}
-                            />
-                          ) : null}
-                          <span>{p.provider_name}</span>
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {selectedProvider && (
-              <div className="p-3 rounded-xl bg-white dark:bg-[var(--card-color)] border border-gray-200 dark:border-[#35353E] flex items-center gap-3">
-                {(() => {
-                  const selectedProviderObj = providers.find(
-                    (p: any) => p && typeof p === 'object' && p.provider_name === selectedProvider
-                  );
-                  // Safely handle case where provider object might not exist
-                  if (!selectedProviderObj || typeof selectedProviderObj !== 'object') {
-                    return (
-                      <>
-                        <img
-                          src="/default-provider-logo.svg"
-                          alt={`${selectedProvider} logo`}
-                          className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-contain flex-shrink-0"
-                          loading="lazy"
-                          onError={(e) => {
-                            e.currentTarget.src = "/default-provider-logo.svg";
-                          }}
-                        />
-                        <div>
-                          <p className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white">
-                            {selectedProvider}
-                          </p>
-                          <p className="text-xs text-gray-500 dark:text-[#788099]">
-                            Selected Provider
-                          </p>
-                        </div>
-                      </>
-                    );
-                  }
-                  return (
-                    <>
-                      <img
-                        src={getHighResPaymentLogo(
-                          selectedProviderObj?.logo,
-                          selectedProviderObj?.provider_logo,
-                          PAYMENT_LOGO_SIZE * 2
-                        )}
-                        alt={`${selectedProvider} logo`}
-                        className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-contain flex-shrink-0"
-                        loading="lazy"
-                        onError={(e) => {
-                          e.currentTarget.src = "/default-provider-logo.svg";
-                        }}
-                      />
-                      <div>
-                        <p className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white">
-                          {selectedProvider}
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-[#788099]">
-                          Selected Provider
-                        </p>
-                      </div>
-                    </>
-                  );
-                })()}
-              </div>
-            )}
-
             <div className="flex flex-col sm:flex-row gap-3 text-sm">
               <Input
                 placeholder="Account Name"
@@ -733,7 +650,7 @@ const PaymentMethods = () => {
               className="bg-[#1D8751] text-white w-full sm:w-auto px-8"
               onClick={handleAdd}
               disabled={
-                !selectedProvider || !accountName || !accountNumber || postLoading
+                !accountName || !accountNumber || postLoading
               }
               height={44}
               borderRadius={24}
@@ -764,7 +681,7 @@ const PaymentMethods = () => {
                     <table className="w-full">
                       <thead>
                         <tr className="border-b-2 border-gray-200 dark:border-[#35353E]">
-                          <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">Bank</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">Provider</th>
                           <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">Account Name</th>
                           <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">Account Number</th>
                           <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-white">Action</th>

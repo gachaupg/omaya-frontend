@@ -140,6 +140,34 @@ const policyContent: Record<string, PolicyConfig> = {
       },
     ],
   },
+  "express-terms": {
+    title: "Deposit, Withdrawal & Swap Terms",
+    description:
+      "These terms apply to deposit, withdrawal, and swap transactions on OMAYA Exchange. By using these services, you agree to comply with these terms.",
+    lastUpdated: "February 3, 2025",
+    sections: [
+      {
+        heading: "Deposit Terms",
+        body:
+          "When depositing, you must send funds from your own account only to the specified provider account. Include the transaction ID in the bank description field. Failure to follow these conditions may result in transaction rejection and refund.",
+      },
+      {
+        heading: "Withdrawal Terms",
+        body:
+          "When withdrawing, we will send funds to your specified provider account. Please ensure the account details are correct and belong to you. Incorrect account information may result in delayed or failed payouts.",
+      },
+      {
+        heading: "Swap Terms",
+        body:
+          "Swap transactions are subject to market rates and network conditions. Ensure you send the correct asset and network. Transactions sent to wrong addresses or networks cannot be recovered.",
+      },
+      {
+        heading: "General Conditions",
+        body:
+          "All deposit, withdrawal, and swap transactions must comply with our Terms of Service, Payment Policy, and AML requirements. We reserve the right to reject or hold transactions for compliance review.",
+      },
+    ],
+  },
   "risk-disclosure-statement": {
     title: "Risk Disclosure Statement",
     description: "This Risk Disclosure Statement provides you with information about the risks associated with trading digital assets.",

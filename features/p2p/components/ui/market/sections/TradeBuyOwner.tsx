@@ -24,6 +24,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import AppealModal from "./appeal";
+import { UserStatusBadge } from "./UserStatusBadge";
 import ChatBox from "./ChatBox";
 import { showToast } from "@/lib/utils/toast";
 import { handleCopy } from "../../../Common/utils";
@@ -299,6 +300,17 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   const formatAmount = (amt: number) =>
     amt.toLocaleString(undefined, { maximumFractionDigits: 6 });
 
+  // Format commission rate for display (e.g. 1.00 shows as "1.00", not "1")
+  const formatCommissionRate = (rate: number) =>
+    Number(rate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  // Format countdown seconds as M:SS for "Appeal after" display
+  const formatCountdown = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s.toString().padStart(2, "0")}`;
+  };
+
   const handleCancelTransaction = () => {
     if (confirmOrder?.id) {
       dispatch(cancelP2POrderThunk(confirmOrder.id))
@@ -413,15 +425,6 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                 <span className="text-gray-900 dark:text-white font-semibold text-base sm:text-lg">
                   Order Created
                 </span>
-                {statusWsConnected && (
-                  <span className="flex items-center gap-1.5 text-[10px] text-[#1D8751] font-medium">
-                    <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#1D8751] opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-[#1D8751]"></span>
-                    </span>
-                    Live Status
-                  </span>
-                )}
               </div>
               <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap">
                 <svg
@@ -538,11 +541,12 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
             </div>
             <span className="text-gray-900 dark:text-white font-semibold text-base sm:text-lg block pr-2">
               Confirm Payment is from{" "}
-              <span className="break-words">
+              <span className="break-words inline-flex items-center gap-2 flex-wrap">
                 {singleOrder?.advertiser_first_name || user?.first_name}{" "}
                 {singleOrder?.advertiser_last_name ||
                   user?.last_name ||
                   "Mohammed Zyad Yousef"}
+                <UserStatusBadge isLive={statusWsConnected} className="flex-shrink-0" />
               </span>
             </span>
             <div className="bg-white dark:bg-[var(--card-color)] rounded-2xl p-4 sm:p-6 mt-4 flex flex-col gap-4 sm:gap-6 border border-gray-200 dark:border-[#35353E]">
@@ -605,14 +609,15 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                 <p className="text-[#F79330] font-semibold text-sm sm:text-lg sm:mr-6">
                   Buyer&apos;s Name
                 </p>
-                <div className="flex items-center flex-wrap">
-                  <span className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-[#051015] dark:bg-white mr-2 sm:mr-3 inline-block flex-shrink-0"></span>
+                <div className="flex items-center flex-wrap gap-2">
+                  <span className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-[#051015] dark:bg-white flex-shrink-0"></span>
                   <span className="text-gray-900 dark:text-white font-semibold text-sm sm:text-lg break-words">
                     {singleOrder?.advertiser_first_name || user?.first_name}{" "}
                     {singleOrder?.advertiser_last_name ||
                       user?.last_name ||
                       "Mohammed Zyad Yousef"}
                   </span>
+                  <UserStatusBadge isLive={statusWsConnected} className="flex-shrink-0" />
                 </div>
               </div>
             </div>
@@ -631,9 +636,19 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
               button below
             </div>
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-4 sm:mt-6">
-              <button className="bg-gray-100 dark:bg-[var(--card-color)] text-gray-600 dark:text-[#A3A3C2] rounded-lg px-4 sm:px-6 py-2 text-sm sm:text-base border border-gray-200 dark:border-[#35353E] w-full sm:w-auto">
-                Appeal After 9:45
-              </button>
+              {confirmOrder?.status === "matched" && countdown > 0 && (
+                <span className="inline-flex items-center rounded-lg px-4 sm:px-6 py-2 text-sm sm:text-base border border-gray-200 dark:border-[#35353E] bg-gray-50 dark:bg-[var(--card-color)] text-gray-500 dark:text-[#A3A3C2] w-full sm:w-auto">
+                  Appeal after {formatCountdown(countdown)}
+                </span>
+              )}
+              {confirmOrder?.status === "matched" && countdown === 0 && (
+                <button
+                  onClick={() => setShowAppealModal(true)}
+                  className="bg-gray-100 dark:bg-[var(--card-color)] text-gray-600 dark:text-[#A3A3C2] rounded-lg px-4 sm:px-6 py-2 text-sm sm:text-base border border-gray-200 dark:border-[#35353E] w-full sm:w-auto hover:bg-gray-200 dark:hover:bg-[#404040] transition-colors"
+                >
+                  Appeal/Complain
+                </button>
+              )}
               <button
                 className={`${confirmOrder?.status === "matched"
                   ? "bg-gray-100 dark:bg-[var(--card-color)]"
@@ -722,6 +737,12 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
           </section>
         </div>
 
+        <AppealModal
+          open={showAppealModal}
+          onClose={() => setShowAppealModal(false)}
+          tradeId={confirmOrder?.id || ""}
+        />
+
         {/* Success Modal */}
         {showSuccessModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -764,7 +785,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                       Rate:
                     </span>
                     <span className="text-[#1D8751] font-semibold">
-                      {commissionRate}%
+                      {formatCommissionRate(commissionRate)}%
                     </span>
                   </div>
                   <div className="flex justify-between items-center text-sm sm:text-base">

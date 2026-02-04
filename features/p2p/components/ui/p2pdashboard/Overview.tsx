@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { tokens } from "@/styles/tokens";
 import Card from "../../Common/Card";
+import { formatCurrency } from "@/lib/globalFormatter";
 import { useDispatch, useSelector } from "react-redux";
 import { selectTransactionSummary } from "@/features/p2p/slices/transactionSummarySlice";
 import { fetchTransactionSummary } from "@/features/p2p/slices/transactionSummarySlice";
@@ -57,9 +58,10 @@ const Overview = () => {
   const chartTotal = deposits + withdrawals + inProgress + p2p;
   const transactionTotal = deposits + withdrawals + p2p;
   const circumference = 2 * Math.PI * 90;
+  // Order: Pending, Deposits, Withdrawals, P2P
+  const pendingDash = (inProgress / chartTotal) * circumference;
   const depositsDash = (deposits / chartTotal) * circumference;
   const withdrawalsDash = (withdrawals / chartTotal) * circumference;
-  const inProgressDash = (inProgress / chartTotal) * circumference;
   const p2pDash = (p2p / chartTotal) * circumference;
 
   // Calculate safe values to prevent NaN
@@ -184,8 +186,8 @@ const Overview = () => {
       ? (sellTotals.total / summary.total_p2p_orders) * 100
       : 0;
 
-  // Check if there's no data
-  const hasNoData = transactionTotal === 0 || chartTotal === 0;
+  // Check if there's no data (chartTotal includes pending, deposits, withdrawals, p2p)
+  const hasNoData = chartTotal === 0;
 
   return (
     <div className="w-full">
@@ -233,6 +235,18 @@ const Overview = () => {
                 strokeWidth="18"
                 fill="none"
               />
+              {/* Pending - Yellow */}
+              <circle
+                cx="110"
+                cy="110"
+                r="90"
+                stroke="#FFD600"
+                strokeWidth="18"
+                fill="none"
+                strokeDasharray={`${pendingDash} ${circumference - pendingDash}`}
+                strokeDashoffset="0"
+                strokeLinecap="butt"
+              />
               {/* Deposits - Green */}
               <circle
                 cx="110"
@@ -241,9 +255,8 @@ const Overview = () => {
                 stroke="#1D8751"
                 strokeWidth="18"
                 fill="none"
-                strokeDasharray={`${depositsDash} ${circumference - depositsDash
-                  }`}
-                strokeDashoffset="0"
+                strokeDasharray={`${depositsDash} ${circumference - depositsDash}`}
+                strokeDashoffset={`-${pendingDash}`}
                 strokeLinecap="butt"
               />
               {/* Withdrawals - Red */}
@@ -254,22 +267,8 @@ const Overview = () => {
                 stroke="#E23D3A"
                 strokeWidth="18"
                 fill="none"
-                strokeDasharray={`${withdrawalsDash} ${circumference - withdrawalsDash
-                  }`}
-                strokeDashoffset={`-${depositsDash}`}
-                strokeLinecap="butt"
-              />
-              {/* In Progress - Yellow */}
-              <circle
-                cx="110"
-                cy="110"
-                r="90"
-                stroke="#FFD600"
-                strokeWidth="18"
-                fill="none"
-                strokeDasharray={`${inProgressDash} ${circumference - inProgressDash
-                  }`}
-                strokeDashoffset={`-${depositsDash + withdrawalsDash}`}
+                strokeDasharray={`${withdrawalsDash} ${circumference - withdrawalsDash}`}
+                strokeDashoffset={`-${pendingDash + depositsDash}`}
                 strokeLinecap="butt"
               />
               {/* P2P - Blue */}
@@ -281,25 +280,31 @@ const Overview = () => {
                 strokeWidth="18"
                 fill="none"
                 strokeDasharray={`${p2pDash} ${circumference - p2pDash}`}
-                strokeDashoffset={`-${depositsDash + withdrawalsDash + inProgressDash
-                  }`}
+                strokeDashoffset={`-${pendingDash + depositsDash + withdrawalsDash}`}
                 strokeLinecap="butt"
               />
             </svg>
           )}
           <div className="absolute inset-0 flex flex-col items-center justify-center">
 
-            <span className="text-xs sm:text-sm md:text-[15px] font-bold dark:text-white text-[#0D0D0D]">
-              {transactionTotal.toLocaleString()} USD
+            <span className="text-xs sm:text-sm md:text-[15px] font-bold text-gray-900 dark:text-white">
+              {formatCurrency(summary?.total_volume ?? 0, "USD")}
             </span>
-            <span className="dark:text-[#A0A0A0] text-[#788099] text-[10px] sm:text-xs md:text-base">
-              Transactions
+            <span className="text-[10px] sm:text-xs md:text-base text-gray-500 dark:text-gray-400">
+              Total Volume
             </span>
           </div>
         </div>
         <div className="mt-3 sm:mt-4 md:mt-6 w-full flex flex-col gap-1.5 sm:gap-2">
           <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3">
-            <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3  rounded-sm bg-[#1D8751] inline-block flex-shrink-0" />
+            <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 rounded-sm bg-[#FFD600] inline-block flex-shrink-0" />
+            <span className="text-neutral-500 text-xs sm:text-sm md:text-base">Pending</span>
+            <span className="text-right text-[#0D0D0D] dark:text-white/80 text-xs sm:text-sm">
+              {inProgress.toLocaleString()} USD
+            </span>
+          </div>
+          <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3">
+            <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 rounded-sm bg-[#1D8751] inline-block flex-shrink-0" />
             <span className="text-neutral-500 text-xs sm:text-sm md:text-base">Deposits</span>
             <span className="text-right text-[#0D0D0D] dark:text-white/80 text-xs sm:text-sm">
               {deposits.toLocaleString()} USD
@@ -308,21 +313,14 @@ const Overview = () => {
           <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3">
             <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 rounded-sm bg-[#E23D3A] inline-block flex-shrink-0" />
             <span className="text-neutral-500 text-xs sm:text-sm md:text-base truncate max-w-20 sm:max-w-[120px]">Withdrawals</span>
-            <span className=" text-[#0D0D0D] dark:text-white/80 text-xs sm:text-sm ">
+            <span className="text-[#0D0D0D] dark:text-white/80 text-xs sm:text-sm">
               {withdrawals.toLocaleString()} USD
-            </span>
-          </div>
-          <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3">
-            <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3  rounded-sm bg-[#FFD600] inline-block flex-shrink-0" />
-            <span className="text-neutral-500 text-xs sm:text-sm md:text-base ">In Progress</span>
-            <span className=" text-[#0D0D0D] dark:text-white/80 text-xs sm:text-sm">
-              {inProgress.toLocaleString()} USD
             </span>
           </div>
           <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3">
             <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 rounded-sm bg-[#386AB5] inline-block flex-shrink-0" />
             <span className="text-neutral-500 text-xs sm:text-sm md:text-base">P2P</span>
-            <span className=" text-[#0D0D0D] dark:text-white/80 text-xs sm:text-sm">
+            <span className="text-[#0D0D0D] dark:text-white/80 text-xs sm:text-sm">
               {p2p.toLocaleString()} USD
             </span>
           </div>

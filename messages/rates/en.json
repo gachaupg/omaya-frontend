@@ -18,6 +18,7 @@
   "rates.noMethods": "No payment methods available",
   "rates.noProviders": "No providers available for this method",
   "rates.selectMethod": "Select Method",
+  "rates.registeredAccount": "Registered Account",
   "rates.selectProvider": "Select Provider",
   "rates.selectPaymentMethod": "Select payment method",
   "rates.selectProviderPlaceholder": "Select provider",

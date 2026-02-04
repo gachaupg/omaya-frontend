@@ -1,4 +1,10 @@
 {
+  "express.deposit.sendToAccount": "Please send money from your own account only to {{provider}} account {{account}} for Asset {{asset}}.",
+  "express.deposit.sendToAccountPrefix": "Please send money from your own account only to ",
+  "express.deposit.sendToAccountMiddle": " account ",
+  "express.deposit.sendToAccountSuffix": " for Asset ",
+  "express.viewMoreTerms": "View more",
+  "express.withdrawal.receiveToAccount": "We will send money to your {{provider}} account {{account}} for withdrawal of {{asset}}. Please ensure this is your own account.",
   "express.amount": "Amount",
   "express.youWillReceive": "You Will Receive",
   "express.fromPaymentMethod": "From Payment Method",
