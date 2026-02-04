@@ -104,119 +104,71 @@ const Charts: React.FC<ChartProps> = ({
     }
 
     const now = new Date();
-    // Helper to zero-pad
     const pad = (n: number) => n.toString().padStart(2, "0");
 
     let newData: { name: string; buyValue: number; sellValue: number }[] = [];
 
+    // Swap for graph: API "buy" -> show on Sells line, API "sell" -> show on Buys line
+    const addToSlot = (idx: number, amt: number, rawType: string) => {
+      if (newData[idx]) {
+        if (rawType === "sell") newData[idx].buyValue += amt;
+        else newData[idx].sellValue += amt;
+      }
+    };
+
     if (selectedTimeFilter === "Today") {
-      // 0-23 hours of the current day? Or last 24h?
-      // Based on usual UX, "Today" often means since 00:00.
-      // But let's check if there's any data from yesterday.
-      // If we use fixed 00:00-23:00 buckets:
       for (let i = 0; i < 24; i++) {
-        const key = `${pad(i)}:00`;
-        newData.push({ name: key, buyValue: 0, sellValue: 0 });
+        newData.push({ name: `${pad(i)}:00`, buyValue: 0, sellValue: 0 });
       }
-
-      const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
       src.forEach((item: any) => {
-        const ts = new Date(item.lastUpdate || item.timestamp);
-        if (ts.getTime() >= startOfDay) {
-          const h = ts.getHours();
-          if (h >= 0 && h < 24) {
-            const amt = parseFloat(item.amount) || 0;
-            if ((item.type || item.order_type) === "sell") newData[h].sellValue += amt;
-            else newData[h].buyValue += amt;
-          }
-        }
+        const ts = new Date(item.lastUpdate || item.timestamp || item.date);
+        if (isNaN(ts.getTime())) return;
+        if (ts.getTime() < todayStart) return;
+        const hour = ts.getHours();
+        const amt = parseFloat(item.amount) || 0;
+        const rawType = item.type || item.order_type || "";
+        addToSlot(hour, amt, rawType);
       });
-      // Just slice to current hour + 1 to avoid empty future?
-      // Typically "Today" shows full day or up to now. Let's show full day x-axis.
-
     } else if (selectedTimeFilter === "Last Week") {
-      // Last 7 Days (including today)
-      for (let i = 6; i >= 0; i--) {
-        const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
-        // name: "Mon" or "Mon 12"? Let's use "Day DD"
-        // Or just Day name if distinct? "Mon", "Tue"...
-        const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-        const dayName = days[d.getDay()];
-        newData.push({ name: dayName, buyValue: 0, sellValue: 0 });
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(now);
+        d.setDate(d.getDate() - (6 - i));
+        newData.push({ name: months[d.getMonth()].slice(0, 3) + " " + d.getDate(), buyValue: 0, sellValue: 0 });
       }
-
       src.forEach((item: any) => {
-        const ts = new Date(item.lastUpdate || item.timestamp);
+        const ts = new Date(item.lastUpdate || item.timestamp || item.date);
+        if (isNaN(ts.getTime())) return;
         const diffDays = Math.floor((now.getTime() - ts.getTime()) / (1000 * 60 * 60 * 24));
         if (diffDays >= 0 && diffDays < 7) {
           const idx = 6 - diffDays;
-          if (newData[idx]) {
-            const amt = parseFloat(item.amount) || 0;
-            if ((item.type || item.order_type) === "sell") newData[idx].sellValue += amt;
-            else newData[idx].buyValue += amt;
-          }
+          const amt = parseFloat(item.amount) || 0;
+          const rawType = item.type || item.order_type || "";
+          addToSlot(idx, amt, rawType);
         }
       });
-
-    } else if (selectedTimeFilter === "Last Month") {
-      // Last 30 Days
-      // Show every day? Or maybe simplify?
-      // Let's bucket by day, 30 buckets.
-      for (let i = 29; i >= 0; i--) {
-        const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
-        const key = `${d.getDate()} ${months[d.getMonth()]}`;
-        newData.push({ name: key, buyValue: 0, sellValue: 0 });
-      }
-
-      src.forEach((item: any) => {
-        const ts = new Date(item.lastUpdate || item.timestamp);
-        const diffDays = Math.floor((now.getTime() - ts.getTime()) / (1000 * 60 * 60 * 24));
-        if (diffDays >= 0 && diffDays < 30) {
-          const idx = 29 - diffDays;
-          if (newData[idx]) {
-            const amt = parseFloat(item.amount) || 0;
-            if ((item.type || item.order_type) === "sell") newData[idx].sellValue += amt;
-            else newData[idx].buyValue += amt;
-          }
-        }
-      });
-
-    } else if (selectedTimeFilter === "Last 6 Months") {
-      // Last 6 months
-      for (let i = 5; i >= 0; i--) {
-        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        newData.push({ name: months[d.getMonth()], buyValue: 0, sellValue: 0 });
+    } else if (selectedTimeFilter === "Last Month" || selectedTimeFilter === "Last 6 Months" || selectedTimeFilter === "All Time") {
+      const slots = selectedTimeFilter === "Last Month" ? 4 : selectedTimeFilter === "Last 6 Months" ? 6 : 12;
+      for (let i = 0; i < slots; i++) {
+        const monthDate = new Date(now.getFullYear(), now.getMonth() - (slots - 1 - i), 1);
+        const lastDay = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
+        const monthName = months[monthDate.getMonth()];
+        const day = lastDay.getDate();
+        const isDifferentYear = monthDate.getFullYear() !== now.getFullYear();
+        const label = isDifferentYear
+          ? `${monthName} ${day}, '${String(monthDate.getFullYear()).slice(-2)}`
+          : `${monthName} ${day}`;
+        newData.push({ name: label, buyValue: 0, sellValue: 0 });
       }
       src.forEach((item: any) => {
-        const ts = new Date(item.lastUpdate || item.timestamp);
+        const ts = new Date(item.lastUpdate || item.timestamp || item.date);
+        if (isNaN(ts.getTime())) return;
         const diffMonths = (now.getFullYear() - ts.getFullYear()) * 12 + (now.getMonth() - ts.getMonth());
-        if (diffMonths >= 0 && diffMonths < 6) {
-          const idx = 5 - diffMonths;
-          if (newData[idx]) {
-            const amt = parseFloat(item.amount) || 0;
-            if ((item.type || item.order_type) === "sell") newData[idx].sellValue += amt;
-            else newData[idx].buyValue += amt;
-          }
-        }
-      });
-
-    } else {
-      // All Time - Default to 12 Months trailing
-      for (let i = 11; i >= 0; i--) {
-        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        newData.push({ name: months[d.getMonth()], buyValue: 0, sellValue: 0 });
-      }
-      src.forEach((item: any) => {
-        const ts = new Date(item.lastUpdate || item.timestamp);
-        const diffMonths = (now.getFullYear() - ts.getFullYear()) * 12 + (now.getMonth() - ts.getMonth());
-        if (diffMonths >= 0 && diffMonths < 12) {
-          const idx = 11 - diffMonths;
-          if (newData[idx]) {
-            const amt = parseFloat(item.amount) || 0;
-            if ((item.type || item.order_type) === "sell") newData[idx].sellValue += amt;
-            else newData[idx].buyValue += amt;
-          }
+        if (diffMonths >= 0 && diffMonths < slots) {
+          const idx = slots - 1 - diffMonths;
+          const amt = parseFloat(item.amount) || 0;
+          const rawType = item.type || item.order_type || "";
+          addToSlot(idx, amt, rawType);
         }
       });
     }

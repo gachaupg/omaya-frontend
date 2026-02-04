@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { FaBitcoin, FaUniversity } from "react-icons/fa";
 import { FiChevronDown, FiInfo } from "react-icons/fi";
@@ -17,12 +17,19 @@ import {
   fetchSwapEstimate,
 } from "../../swap/slices/swapSlice";
 import { fetchUserPaymentDetails, fetchPublicPaymentMethods } from "../../p2p/slices/paymentMethodsSlice";
+import { fetchAdminWalletList, fetchAdminPaymentDetails } from "../../exchange/slices/paymentSlice";
+import PaymentMethodsModal from "../../p2p/components/ui/p2pdashboard/sections/PaymentMethodsModal";
 import { createExpressWithdrawal } from "../../express/api";
 import { Asset, DepositResponse } from "../../exchange/types";
 import { SupportedAsset } from "../../swap/types";
 import { ExpressWithdrawalPayload } from "../../express/types";
-import { useAssetsDisplay } from "../../express/hooks/useDataDisplay";
+import { useAssetsDisplay, usePaymentMethodsDisplay } from "../../express/hooks/useDataDisplay";
 import { AlertCircle } from "lucide-react";
+import CustomSelect from "@/components/ui/CustomSelect";
+import {
+  PAYMENT_LOGO_BASE_CLASS,
+  PAYMENT_LOGO_SIZE,
+} from "../../express/utils/imageHelpers";
 import { calculateCommission } from "@/features/exchange/components/utils/calculations/commissionCalculator";
 import {
   calculateNetworkFee,
@@ -42,10 +49,14 @@ import { logger } from '@/lib/utils/logger';
 
 interface UserPaymentDetail {
   id: number;
+  user_payment_detail_id?: string;
   payment_method_name: string;
   payment_provider_name: string;
   account_name: string;
   account_number: string;
+  provider_name?: string;
+  provider_logo?: string;
+  wallet_address?: string;
 }
 
 // Helper function to get network value from asset (handles both Asset and SupportedAsset types)
@@ -127,6 +138,12 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
     useState<string>("");
   const [isMethodDropdownOpen, setIsMethodDropdownOpen] = useState(false);
   const [selectedPaymentDetail, setSelectedPaymentDetail] = useState<any>(null);
+  // For withdrawal: provider selection + registered account (like express)
+  const [payBank, setPayBank] = useState<string>("");
+  const [selectedProviderData, setSelectedProviderData] = useState<any>(null);
+  const [selectedPaymentDetails, setSelectedPaymentDetails] = useState<UserPaymentDetail[]>([]);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [paymentMethodError, setPaymentMethodError] = useState<string | null>(null);
   const [isFieldsSwapped, setIsFieldsSwapped] = useState(false); // Track if payment method and asset positions are swapped
   const [amount, setAmount] = useState("100");
   const [receiveAmount, setReceiveAmount] = useState("98");
@@ -172,7 +189,14 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
   const [receiveAmountError, setReceiveAmountError] = useState<string | null>(
     null
   );
-  console.log('estimate', estimate);
+
+  // Debounce and cache for faster, fewer API calls
+  const estimateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [estimateCache, setEstimateCache] = useState<
+    Map<string, { data: any; timestamp: number }>
+  >(new Map());
+  const ESTIMATE_CACHE_MS = 2 * 60 * 1000; // 2 min cache
+  const ESTIMATE_DEBOUNCE_MS = 350; // Wait 350ms after last keystroke
 
 
   const dispatch = useDispatch<AppDispatch>();
@@ -211,6 +235,60 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
     publicMethodsLoading,
     publicMethodsError
   } = useSelector((state: RootState) => state.paymentMethods);
+
+  const { adminPaymentDetails, adminWalletList, loading: paymentLoading, error: paymentError } = useSelector(
+    (state: RootState) => (state as any).payment || {}
+  );
+  const { userPaymentDetails: userPaymentDetailsFromPayment } = useSelector(
+    (state: RootState) => (state as any).payment || {}
+  );
+  const effectiveUserPaymentDetailsFromRedux =
+    (userPaymentDetails?.length > 0 ? userPaymentDetails : userPaymentDetailsFromPayment) || [];
+  const rawUserDetails = userPaymentDetails ?? userPaymentDetailsFromPayment;
+  const effectiveUserPaymentDetails = (() => {
+    if (Array.isArray(rawUserDetails) && rawUserDetails.length > 0) return rawUserDetails;
+    if (Array.isArray((rawUserDetails as any)?.data)) return (rawUserDetails as any).data;
+    if (Array.isArray((rawUserDetails as any)?.results)) return (rawUserDetails as any).results;
+    return Array.isArray(rawUserDetails) ? rawUserDetails : [];
+  })();
+
+  const paymentMethodsRef = useRef<any[]>([]);
+  const userPaymentMethodsRef = useRef<any[]>([]);
+  const walletListRef = useRef<any[]>([]);
+
+  const adminWalletListDisplayData = useMemo(() => {
+    if (!adminWalletList || adminWalletList.length === 0) return [];
+    return adminWalletList.filter((wallet: any) => {
+      const paymentDetail = wallet?.admin_payment_detail;
+      if (!paymentDetail) return false;
+      if (paymentDetail.is_active === undefined || paymentDetail.is_active === null) return true;
+      return paymentDetail.is_active === true || paymentDetail.is_active === "true" || paymentDetail.is_active === 1 || paymentDetail.is_active === "1";
+    });
+  }, [adminWalletList]);
+
+  useEffect(() => {
+    if (adminWalletListDisplayData.length > 0) walletListRef.current = adminWalletListDisplayData;
+  }, [adminWalletListDisplayData]);
+
+  useEffect(() => {
+    if (effectiveUserPaymentDetails.length > 0) userPaymentMethodsRef.current = effectiveUserPaymentDetails;
+  }, [effectiveUserPaymentDetails, userDetailsLoading]);
+
+  const adminWalletListDisplay = {
+    displayData: adminWalletListDisplayData,
+    isLoading: paymentLoading && (!adminWalletList || adminWalletList.length === 0),
+    hasData: adminWalletListDisplayData.length > 0,
+  };
+
+  const userPaymentMethodsDisplay = usePaymentMethodsDisplay(
+    effectiveUserPaymentDetails,
+    userDetailsLoading,
+    null
+  );
+
+  const effectiveUserPaymentMethods = userPaymentMethodsRef.current;
+  const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
+
   const assetDropdownRef = useRef<HTMLDivElement>(null);
   const assetDropdownContentRef = useRef<HTMLDivElement | null>(null);  // dropdown panel
 
@@ -268,7 +346,13 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
 
     // Fetch public payment methods (for non-authenticated users)
     dispatch(fetchPublicPaymentMethods());
-  }, [dispatch]);
+
+    // Fetch admin wallet list for fallback (like express withdrawal)
+    if (isAuthenticated) {
+      dispatch(fetchAdminWalletList());
+      dispatch(fetchAdminPaymentDetails());
+    }
+  }, [dispatch, isAuthenticated]);
 
   useEffect(() => {
     // Don't auto-select if we're trying to restore a saved asset
@@ -404,18 +488,12 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
   }, [isAssetDropdownOpen, isMethodDropdownOpen]);
 
 
-  // Fetch estimate for non-direct assets - triggers immediately on asset or amount change
+  // Fetch estimate for non-direct assets - debounced + cached for faster response
   useEffect(() => {
-    logger.debug('general', "Estimate useEffect triggered:", {
-      selectedAsset: selectedAsset?.ticker,
-      isSimple: selectedAsset ? isSimpleCalculationAsset(selectedAsset) : null,
-      amount: parseFloat(amount),
-      shouldFetch:
-        selectedAsset &&
-        !isSimpleCalculationAsset(selectedAsset) &&
-        parseFloat(amount) > 0 &&
-        isCalculatingFromPay,
-    });
+    if (estimateTimeoutRef.current) {
+      clearTimeout(estimateTimeoutRef.current);
+      estimateTimeoutRef.current = null;
+    }
 
     if (
       selectedAsset &&
@@ -423,93 +501,89 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
       parseFloat(amount) > 0 &&
       isCalculatingFromPay
     ) {
+      const isWithdrawal = !isDepositMode;
+      const cacheKey = `fwd_${selectedAsset.ticker}_${getAssetNetwork(selectedAsset)}_${amount}_${isWithdrawal}`;
+      const cached = estimateCache.get(cacheKey);
+      if (cached && Date.now() - cached.timestamp < ESTIMATE_CACHE_MS) {
+        setEstimate(cached.data);
+        setEstimateLoading(false);
+        setIsCalculating(false);
+        setIsCalculatingReceive(false);
+        return;
+      }
+
       setEstimateLoading(true);
       setEstimateError(null);
 
-      // Add timeout to prevent hanging API calls
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error("Request timeout")), 30000); // 30 second timeout
-      });
-
-      Promise.race([
-        dispatch(
-          fetchSwapEstimate({
-            fromCurrency: "USDT",
-            fromNetwork: "BSC",
-            toCurrency: selectedAsset.ticker,
-            toNetwork: getAssetNetwork(selectedAsset),
-            amount: parseFloat(amount),
-          })
-        ),
-        timeoutPromise,
-      ])
-        .then((result: any) => {
-          if (result.payload) {
-            setEstimate(result.payload);
-          }
-
-          // Clear loading states after successful calculation
-          setIsCalculating(false);
-          setIsCalculatingReceive(false);
-        })
-        .catch((error) => {
-          console.error("Failed to fetch swap estimate:", error);
-
-          // Handle different types of errors gracefully
-          if (error.message?.includes("Request timeout")) {
-            setEstimateError("Request timeout: Using fallback calculation");
-            logger.debug('general', "Using fallback calculation due to request timeout");
-          } else if (
-            error.message?.includes("Network Error") ||
-            error.code === "ECONNREFUSED" ||
-            error.code === "ENOTFOUND"
-          ) {
-            setEstimateError("Network error: Using fallback calculation");
-            logger.debug('general', "Using fallback calculation due to network error");
-          } else if (error.message?.includes("Server Error")) {
-            setEstimateError("Server error: Using fallback calculation");
-            logger.debug('general', "Using fallback calculation due to server error");
-          } else if (error.message?.includes("Invalid swap parameters")) {
-            setEstimateError("Invalid parameters: Using fallback calculation");
-          } else {
-            setEstimateError("API error: Using fallback calculation");
-          }
-
-          // Common fallback calculation for all error types
-          const commissionRate = selectedAsset?.range_commissions?.[0]
-            ?.commission
-            ? parseFloat(selectedAsset.range_commissions[0].commission)
-            : 2;
-          const commissionAmount = (parseFloat(amount) * commissionRate) / 100;
-          const calculatedReceiveAmount = parseFloat(amount) - commissionAmount;
-          setReceiveAmount(calculatedReceiveAmount.toFixed(2));
-
-          // Clear loading states after fallback calculation
-          setIsCalculating(false);
-          setIsCalculatingReceive(false);
-        })
-        .finally(() => {
-          setEstimateLoading(false);
+      estimateTimeoutRef.current = setTimeout(() => {
+        estimateTimeoutRef.current = null;
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error("Request timeout")), 15000);
         });
+
+        const params = isWithdrawal
+          ? {
+              fromCurrency: selectedAsset.ticker,
+              fromNetwork: getAssetNetwork(selectedAsset),
+              toCurrency: "USDT",
+              toNetwork: "BSC",
+              amount: parseFloat(amount),
+            }
+          : {
+              fromCurrency: "USDT",
+              fromNetwork: "BSC",
+              toCurrency: selectedAsset.ticker,
+              toNetwork: getAssetNetwork(selectedAsset),
+              amount: parseFloat(amount),
+            };
+
+        Promise.race([dispatch(fetchSwapEstimate(params)), timeoutPromise])
+          .then((result: any) => {
+            if (result.payload) {
+              setEstimate(result.payload);
+              setEstimateCache((prev) =>
+                new Map(prev).set(cacheKey, {
+                  data: result.payload,
+                  timestamp: Date.now(),
+                })
+              );
+            }
+            setIsCalculating(false);
+            setIsCalculatingReceive(false);
+          })
+          .catch((error) => {
+            console.error("Failed to fetch swap estimate:", error);
+            setEstimateError("Using fallback calculation");
+            const commissionRate = selectedAsset?.range_commissions?.[0]?.commission
+              ? parseFloat(selectedAsset.range_commissions[0].commission)
+              : 2;
+            const commissionAmount = (parseFloat(amount) * commissionRate) / 100;
+            setReceiveAmount((parseFloat(amount) - commissionAmount).toFixed(2));
+            setIsCalculating(false);
+            setIsCalculatingReceive(false);
+          })
+          .finally(() => {
+            setEstimateLoading(false);
+          });
+      }, ESTIMATE_DEBOUNCE_MS);
     } else {
-      // Clear estimate for USDT or when conditions not met
       setEstimate(null);
       setEstimateError(null);
     }
-  }, [selectedAsset, amount, isCalculatingFromPay]);
 
-  // Fetch reverse estimate for non-direct assets when calculating from receive amount
+    return () => {
+      if (estimateTimeoutRef.current) {
+        clearTimeout(estimateTimeoutRef.current);
+      }
+    };
+  }, [selectedAsset, amount, isCalculatingFromPay, isDepositMode]);
+
+  // Fetch reverse estimate - debounced + cached
   useEffect(() => {
-    logger.debug('general', "Reverse estimate useEffect triggered:", {
-      selectedAsset: selectedAsset?.ticker,
-      isSimple: selectedAsset ? isSimpleCalculationAsset(selectedAsset) : null,
-      receiveAmount: parseFloat(receiveAmount),
-      shouldFetch:
-        selectedAsset &&
-        !isSimpleCalculationAsset(selectedAsset) &&
-        parseFloat(receiveAmount) > 0 &&
-        !isCalculatingFromPay,
-    });
+    if (estimateTimeoutRef.current) {
+      clearTimeout(estimateTimeoutRef.current);
+      estimateTimeoutRef.current = null;
+    }
 
     if (
       selectedAsset &&
@@ -517,112 +591,97 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
       parseFloat(receiveAmount) > 0 &&
       !isCalculatingFromPay
     ) {
+      const isWithdrawal = !isDepositMode;
+      const cacheKey = `rev_${selectedAsset.ticker}_${getAssetNetwork(selectedAsset)}_${receiveAmount}_${isWithdrawal}`;
+      const cached = estimateCache.get(cacheKey);
+      if (cached && Date.now() - cached.timestamp < ESTIMATE_CACHE_MS) {
+        const amt = (cached.data as any)?.estimated_amount;
+        if (amt && amt > 0) setAmount(amt.toString());
+        setEstimate(cached.data);
+        setEstimateLoading(false);
+        setIsCalculating(false);
+        setIsCalculatingReceive(false);
+        return;
+      }
+
       setEstimateLoading(true);
       setEstimateError(null);
 
-      logger.debug('general', "Fetching reverse estimate for rates:", {
-        fromCurrency: selectedAsset.ticker, // We're converting FROM the selected asset
-        fromNetwork: getAssetNetwork(selectedAsset),
-        toCurrency: "USDT", // TO USDT (since we want to know how much USDT we need)
-        toNetwork: "BSC",
-        amount: parseFloat(receiveAmount), // Use the receive amount directly
-      });
-
-      // Add timeout to prevent hanging API calls
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error("Request timeout")), 30000); // 30 second timeout
-      });
-
-      Promise.race([
-        dispatch(
-          fetchSwapEstimate({
-            fromCurrency: selectedAsset.ticker, // FROM selected asset
+      estimateTimeoutRef.current = setTimeout(() => {
+        estimateTimeoutRef.current = null;
+        const reverseParams = isWithdrawal
+        ? {
+            fromCurrency: "USDT",
+            fromNetwork: "BSC",
+            toCurrency: selectedAsset.ticker,
+            toNetwork: getAssetNetwork(selectedAsset),
+            amount: parseFloat(receiveAmount),
+          }
+        : {
+            fromCurrency: selectedAsset.ticker,
             fromNetwork: getAssetNetwork(selectedAsset),
-            toCurrency: "USDT", // TO USDT
+            toCurrency: "USDT",
             toNetwork: "BSC",
-            amount: parseFloat(receiveAmount), // Use receive amount directly
-          })
-        ),
-        timeoutPromise,
-      ])
-        .then((result: any) => {
-          logger.debug('general', "Reverse estimate result:", result);
-          if (result.payload && (result.payload as any)?.estimated_amount) {
-            // The API now returns how much USDT we need to get the desired amount
-            const requiredUsdtAmount = (result.payload as any)
-              ?.estimated_amount;
+            amount: parseFloat(receiveAmount),
+          };
 
-            if (requiredUsdtAmount && requiredUsdtAmount > 0) {
-              // Set the amount to the required USDT amount
-              setAmount(requiredUsdtAmount.toString());
-              setEstimate(result.payload);
-              logger.debug('general', "Reverse calculation successful:", {
-                desiredReceive: parseFloat(receiveAmount),
-                requiredAmount: requiredUsdtAmount,
-              });
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error("Request timeout")), 15000);
+        });
+
+        Promise.race([
+          dispatch(fetchSwapEstimate(reverseParams)),
+          timeoutPromise,
+        ])
+          .then((result: any) => {
+            if (result.payload && (result.payload as any)?.estimated_amount) {
+              const requiredAmount = (result.payload as any).estimated_amount;
+              if (requiredAmount > 0) {
+                setAmount(requiredAmount.toString());
+                setEstimate(result.payload);
+                setEstimateCache((prev) =>
+                  new Map(prev).set(cacheKey, {
+                    data: result.payload,
+                    timestamp: Date.now(),
+                  })
+                );
+              }
             }
-
-            // Clear loading states after successful calculation
             setIsCalculating(false);
             setIsCalculatingReceive(false);
-          }
-        })
-        .catch((error) => {
-          console.error("Failed to fetch reverse estimate:", error);
-
-          // Handle different types of errors gracefully
-          if (error.message?.includes("Request timeout")) {
-            setEstimateError("Request timeout: Using fallback calculation");
-            logger.debug('general', "Using fallback calculation due to request timeout");
-          } else if (
-            error.message?.includes("Network Error") ||
-            error.code === "ECONNREFUSED" ||
-            error.code === "ENOTFOUND"
-          ) {
-            setEstimateError("Network error: Using fallback calculation");
-            logger.debug('general', "Using fallback calculation due to network error");
-          } else if (error.message?.includes("Server Error")) {
-            setEstimateError("Server error: Using fallback calculation");
-            logger.debug('general', "Using fallback calculation due to server error");
-          } else if (error.message?.includes("Invalid swap parameters")) {
-            setEstimateError("Invalid parameters: Using fallback calculation");
-            logger.debug('general',
-              "Using fallback calculation due to invalid API parameters"
-            );
-          } else {
-            setEstimateError("API error: Using fallback calculation");
-            logger.debug('general', "Using fallback calculation due to API error");
-          }
-
-          // Common fallback calculation for all error types
-          let commissionRate = 2; // Default fallback
-          if (
-            selectedAsset?.range_commissions &&
-            selectedAsset.range_commissions.length > 0
-          ) {
-            const firstCommission = selectedAsset.range_commissions[0];
-            if (firstCommission?.commission) {
-              commissionRate = parseFloat(firstCommission.commission);
+          })
+          .catch((error) => {
+            console.error("Failed to fetch reverse estimate:", error);
+            setEstimateError("Using fallback calculation");
+            let commissionRate = 2;
+            if (selectedAsset?.range_commissions?.length) {
+              commissionRate = parseFloat(
+                selectedAsset.range_commissions[0]?.commission || "2"
+              );
+            } else if (selectedAsset?.commission) {
+              commissionRate = parseFloat(selectedAsset.commission);
+            } else if (selectedAsset?.fee_rate) {
+              commissionRate = parseFloat(selectedAsset.fee_rate);
             }
-          } else if (selectedAsset?.commission) {
-            commissionRate = parseFloat(selectedAsset.commission);
-          } else if (selectedAsset?.fee_rate) {
-            commissionRate = parseFloat(selectedAsset.fee_rate);
-          }
-
-          const fallbackAmount =
-            parseFloat(receiveAmount) * (1 + commissionRate / 100);
-          setAmount(fallbackAmount.toString());
-
-          // Clear loading states after fallback calculation
-          setIsCalculating(false);
-          setIsCalculatingReceive(false);
-        })
-        .finally(() => {
-          setEstimateLoading(false);
-        });
+            const fallbackAmount = isDepositMode
+              ? parseFloat(receiveAmount) * (1 + commissionRate / 100)
+              : parseFloat(receiveAmount) / (1 - commissionRate / 100);
+            setAmount(fallbackAmount.toString());
+            setIsCalculating(false);
+            setIsCalculatingReceive(false);
+          })
+          .finally(() => {
+            setEstimateLoading(false);
+          });
+      }, ESTIMATE_DEBOUNCE_MS);
     }
-  }, [selectedAsset, receiveAmount, isCalculatingFromPay]);
+
+    return () => {
+      if (estimateTimeoutRef.current) {
+        clearTimeout(estimateTimeoutRef.current);
+      }
+    };
+  }, [selectedAsset, receiveAmount, isCalculatingFromPay, isDepositMode]);
 
   // Update amounts when estimate is received or for direct assets
   useEffect(() => {
@@ -643,11 +702,9 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
           (estimate as any)?.estimated_amount
         );
 
-        if (
-          (estimate as any)?.estimated_amount &&
-          (estimate as any)?.estimated_amount > 0
-        ) {
-          setReceiveAmount((estimate as any).estimated_amount.toString());
+        const estAmt = (estimate as any)?.toAmount ?? (estimate as any)?.estimated_amount;
+        if (estAmt && estAmt > 0) {
+          setReceiveAmount(estAmt.toString());
           setReceiveAmountError(null);
           setIsCalculating(false);
           setIsCalculatingReceive(false);
@@ -685,27 +742,73 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
   const handleAssetSelect = (asset: Asset) => {
     setSelectedAsset(asset);
     setIsAssetDropdownOpen(false);
+
+    // Clear stale estimate when asset changes
+    setEstimate(null);
+    setEstimateError(null);
+
+    // Trigger calculation for direct assets (USDT/USDC on BSC)
+    if (asset && isSimpleCalculationAsset(asset)) {
+      if (isCalculatingFromPay) {
+        const amountNum = parseFloat(amount) || 0;
+        const calculatedReceive =
+          amountNum < 2 ? amountNum : Math.max(0, amountNum - 2);
+        setReceiveAmount(calculatedReceive.toFixed(2));
+        setReceiveAmountError(null);
+      } else {
+        const receiveNum = parseFloat(receiveAmount) || 0;
+        const calculatedAmount = receiveNum + 2;
+        setAmount(calculatedAmount.toFixed(2));
+        setReceiveAmountError(null);
+      }
+      setIsCalculating(false);
+      setIsCalculatingReceive(false);
+    } else if (asset && !isSimpleCalculationAsset(asset)) {
+      // Non-direct asset: useEffects will fetch estimate; ensure loading state
+      const amountNum = parseFloat(amount) || 0;
+      const receiveNum = parseFloat(receiveAmount) || 0;
+      if (isCalculatingFromPay && amountNum > 0) {
+        setIsCalculating(true);
+        setIsCalculatingReceive(true);
+      } else if (!isCalculatingFromPay && receiveNum > 0) {
+        setIsCalculating(true);
+        setIsCalculatingReceive(true);
+      }
+    }
   };
 
   const handlePaymentMethodSelect = (method: string | any) => {
-    // Handle both string (old format) and provider object (new format)
     if (typeof method === 'string') {
       setSelectedPaymentMethod(method);
-      setSelectedPaymentDetail(null); // Clear provider object for string method
-    } else if (method?.provider_name) {
-      // For provider objects, use provider_name as display name
-      const displayName = method.provider_name;
+      setPayBank(method);
+      setSelectedPaymentDetail(null);
+      setSelectedProviderData(null);
+      setSelectedPaymentDetails([]);
+    } else if (method?.provider_name || method?.payment_provider_name) {
+      const displayName = method.provider_name || method.payment_provider_name;
       setSelectedPaymentMethod(displayName);
-      // Store the selected provider object for later use (contains logo, payment_details, etc.)
-      setSelectedPaymentDetail(method);
+      setPayBank(displayName);
+      setSelectedProviderData(method);
+      setSelectedPaymentDetail(isDepositMode ? method : null);
+      setSelectedPaymentDetails([]);
     }
+    setPaymentMethodError(null);
     setIsMethodDropdownOpen(false);
   };
 
   const handleModeSwitch = () => {
-    // Simply swap the positions of payment method and asset fields
-    // Payment method goes down, asset comes up (and vice versa)
+    const willBeWithdrawal = !isFieldsSwapped;
     setIsFieldsSwapped(!isFieldsSwapped);
+    setIsDepositMode(!willBeWithdrawal);
+
+    if (willBeWithdrawal) {
+      setSelectedPaymentDetail(null);
+      setPayBank(selectedPaymentMethod || payBank || "");
+      setSelectedProviderData(selectedPaymentDetail && typeof selectedPaymentDetail === 'object' ? selectedPaymentDetail : selectedProviderData);
+      setSelectedPaymentDetails([]);
+    } else {
+      setSelectedPaymentDetails([]);
+    }
 
     // Reset transaction state when switching
     setIsFirstCardSubmitted(false);
@@ -905,9 +1008,16 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
     return null;
   };
 
-  const availablePaymentMethods = userPaymentArray.length > 0
-    ? userPaymentArray
-    : publicPaymentArray;
+  const availablePaymentMethods = userPaymentArray.length > 0 ? userPaymentArray : publicPaymentArray;
+
+  // Process payment methods - exact as express withdrawal
+  const processedPaymentMethods = useMemo(() => {
+    if (Array.isArray(publicMethodsData?.data?.providers)) return publicMethodsData.data.providers;
+    if (Array.isArray(publicMethodsData?.data?.payment_methods)) return publicMethodsData.data.payment_methods;
+    if (Array.isArray(publicPaymentMethods)) return publicPaymentMethods;
+    const adminArray = Array.isArray(adminPaymentDetails) ? adminPaymentDetails : Array.isArray((adminPaymentDetails as any)?.data) ? (adminPaymentDetails as any).data : [];
+    return adminArray;
+  }, [publicMethodsData, publicPaymentMethods, adminPaymentDetails]);
 
   // Debug logging
   console.log("RatesCalculator Debug:", {
@@ -924,39 +1034,85 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
   });
 
   const uniquePaymentMethods = Array.from(
-    new Set(availablePaymentMethods.map(getPaymentMethodName).filter(Boolean))
+    new Set((processedPaymentMethods || []).map(getPaymentMethodName).filter(Boolean))
   ).filter(method => method && typeof method === 'string' && method.trim().length > 0) as string[];
 
-  // Filter user payment details based on selected payment method (for withdrawal mode)
+  // Normalize payment method names (like express withdrawal)
+  const normalizePaymentMethodName = (methodName: string | null | undefined): string | null => {
+    if (!methodName || typeof methodName !== 'string') return null;
+    const methodMap: Record<string, string> = {
+      'Money_Transfer': 'Money_Transfer',
+      'money_transfer': 'Money_Transfer',
+      'Money Transfer': 'Money_Transfer',
+      'money transfer': 'Money_Transfer',
+    };
+    return methodMap[methodName] || methodName;
+  };
+
+  // Available payment method names from API (for matching user payment details)
+  const availablePaymentMethodNames = React.useMemo(() => {
+    const methods = new Set<string>();
+    if (Array.isArray(publicMethodsData?.data?.providers)) {
+      publicMethodsData.data.providers.forEach((provider: any) => {
+        const name = getPaymentMethodName(provider);
+        if (name) methods.add(name);
+      });
+    }
+    uniquePaymentMethods.forEach(m => m && methods.add(m));
+    return Array.from(methods);
+  }, [publicMethodsData, uniquePaymentMethods]);
+
+  // Enhanced filtering - exact as express withdrawal
+  const enhancedFilteredUserPaymentDetails = useMemo(() => {
+    if (!payBank) return [];
+
+    let rawUserDetails = effectiveUserPaymentDetailsFromRedux.length > 0 ? effectiveUserPaymentDetailsFromRedux : effectiveUserPaymentDetails;
+    if (rawUserDetails && typeof rawUserDetails === "object" && !Array.isArray(rawUserDetails)) {
+      rawUserDetails = (rawUserDetails as any)?.data || (rawUserDetails as any)?.payment_details || rawUserDetails;
+    }
+
+    const sourceData = userPaymentMethodsDisplay.displayData || effectiveUserPaymentMethods || (Array.isArray(rawUserDetails) ? rawUserDetails : []) || [];
+
+    const filtered = (Array.isArray(sourceData) ? sourceData : []).filter((detail: any) => {
+      const normalizeProviderName = (name: string | null | undefined): string => {
+        if (!name) return "";
+        return name.includes(" - ") ? name.split(" - ")[0].trim() : name.trim();
+      };
+
+      const selectedProviderField = selectedProviderData?.provider || normalizeProviderName(payBank);
+      const normalizedPayBank = normalizeProviderName(payBank);
+      const normalizedDetailProvider = normalizeProviderName(detail.payment_provider_name);
+      const normalizedDetailName = normalizeProviderName(detail.provider_name);
+      const normalizedDetailPaymentProvider = normalizeProviderName(detail.payment_provider);
+      const normalizedSelectedProvider = normalizeProviderName(selectedProviderField);
+
+      const providerMatch1 = detail.payment_provider_name === selectedProviderField || normalizedDetailProvider === normalizedSelectedProvider || normalizedDetailProvider === normalizedPayBank || detail.payment_provider_name === payBank;
+      const providerMatch2 = normalizedDetailName === normalizedSelectedProvider || normalizedDetailName === normalizedPayBank || detail.provider_name === payBank;
+      const providerMatch3 = normalizedDetailPaymentProvider === normalizedSelectedProvider || normalizedDetailPaymentProvider === normalizedPayBank || detail.payment_provider === payBank;
+      const matchesProvider = providerMatch1 || providerMatch2 || providerMatch3;
+
+      const userPaymentMethodName = normalizePaymentMethodName(detail.payment_method_name);
+      const hasValidPaymentMethod = userPaymentMethodName ? availablePaymentMethodNames.includes(userPaymentMethodName) : false;
+
+      return matchesProvider && hasValidPaymentMethod;
+    });
+
+    return filtered;
+  }, [payBank, userPaymentMethodsDisplay.displayData, effectiveUserPaymentMethods, effectiveUserPaymentDetails, effectiveUserPaymentDetailsFromRedux, availablePaymentMethodNames, selectedProviderData]);
+
+  // Legacy: filteredUserPaymentDetails for backward compat
   const filteredUserPaymentDetails = selectedPaymentMethod
     ? availablePaymentMethods.filter(
       (detail: any) => getPaymentMethodName(detail) === selectedPaymentMethod
     )
     : [];
 
-  // Enhanced filtering with fallback options
-  const enhancedFilteredUserPaymentDetails = selectedPaymentMethod
-    ? availablePaymentMethods.filter((detail: any) => {
-      // Try multiple possible field names for payment method
-      const paymentMethodName = getPaymentMethodName(detail);
-
-      return paymentMethodName === selectedPaymentMethod;
-    })
-    : [];
-
-  // Auto-select first account when accounts are available for selected payment method (withdrawal mode)
+  // Auto-select first account when accounts are available (withdrawal) - exact as express
   useEffect(() => {
-    if (
-      isDepositMode === false && // Only for withdrawal mode
-      selectedPaymentMethod &&
-      enhancedFilteredUserPaymentDetails.length > 0 &&
-      !selectedPaymentDetail
-    ) {
-      logger.debug('general', "DEBUG: Auto-selecting first account for payment method:", selectedPaymentMethod);
-      const firstAccount = enhancedFilteredUserPaymentDetails[0];
-      setSelectedPaymentDetail(firstAccount);
+    if (payBank && enhancedFilteredUserPaymentDetails.length > 0 && selectedPaymentDetails.length === 0) {
+      setSelectedPaymentDetails([enhancedFilteredUserPaymentDetails[0]]);
     }
-  }, [isDepositMode, selectedPaymentMethod, enhancedFilteredUserPaymentDetails, selectedPaymentDetail]);
+  }, [payBank, enhancedFilteredUserPaymentDetails, selectedPaymentDetails]);
 
   // Add "Bank" as a default option if not already present
   // Ensure all payment methods are valid strings
@@ -975,8 +1131,8 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
     allPaymentMethods
   });
 
-  // Fallback payment methods if data is corrupted
-  const fallbackPaymentMethods = ["Bank Transfer", "Mobile Money", "Credit Card"];
+  // Fallback payment methods - exact as express
+  const fallbackPaymentMethods = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
   const finalPaymentMethods = allPaymentMethods.length > 0 && allPaymentMethods.every(method =>
     typeof method === 'string' && method.trim().length > 0
   ) ? allPaymentMethods : fallbackPaymentMethods;
@@ -986,13 +1142,19 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
     // Auto-select first provider if available (prioritize publicPaymentProviders)
     if (isDepositMode && publicPaymentProviders.length > 0 && !selectedPaymentDetail) {
       const firstProvider = publicPaymentProviders[0];
+      const name = firstProvider?.provider_name || firstProvider?.payment_provider_name || finalPaymentMethods[0] || "";
       setSelectedPaymentDetail(firstProvider);
-      setSelectedPaymentMethod(
-        firstProvider?.provider_name ||
-        firstProvider?.payment_provider_name ||
-        finalPaymentMethods[0] ||
-        ""
-      );
+      setSelectedPaymentMethod(name);
+      setPayBank(name);
+    } else if (!payBank && publicPaymentProviders.length > 0) {
+      const firstProvider = publicPaymentProviders[0];
+      const name = firstProvider?.provider_name || firstProvider?.payment_provider_name;
+      if (name) {
+        setPayBank(name);
+        setSelectedProviderData(firstProvider);
+        setSelectedPaymentMethod(name);
+        setSelectedPaymentDetail(isDepositMode ? firstProvider : null);
+      }
     } else if (!selectedPaymentMethod && finalPaymentMethods.length > 0) {
       const firstMethod = finalPaymentMethods[0];
       setSelectedPaymentMethod(firstMethod);
@@ -1448,8 +1610,17 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
       return;
     }
 
-    if (!selectedAsset || !selectedPaymentMethod || !selectedPaymentDetail) {
+    if (!selectedAsset || !selectedPaymentMethod) {
       showToast.error("Please select all required fields");
+      return;
+    }
+    if (!isDepositMode && selectedPaymentDetails.length === 0) {
+      setPaymentMethodError("Please select your registered account");
+      showToast.error("Please select your registered account");
+      return;
+    }
+    if (isDepositMode && !selectedPaymentDetail) {
+      showToast.error("Please select a payment method");
       return;
     }
 
@@ -1555,13 +1726,13 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
         setIsFirstCardSubmitted(true);
         setForceUpdate((prev) => prev + 1);
       } else {
-        // Withdrawal API structure - same as withdrawal.tsx
+        // Withdrawal API structure - exact as express withdrawal.tsx
+        const withdrawalDetail = selectedPaymentDetails[0];
         const withdrawalPayload: ExpressWithdrawalPayload = {
-          asset: (selectedAsset.ticker?.toUpperCase() ||
-            selectedAsset.symbol?.toUpperCase()) as string,
+          asset: (selectedAsset.ticker?.toUpperCase() || selectedAsset.symbol?.toUpperCase()) as string,
           amount: amount,
           network: getAssetNetwork(selectedAsset),
-          user_payment_detail_id: selectedPaymentDetail.id,
+          user_payment_detail_id: withdrawalDetail?.user_payment_detail_id || String(withdrawalDetail?.id),
         };
 
         logger.debug('general', "Submitting withdrawal request:", withdrawalPayload);
@@ -1789,106 +1960,188 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
 
               {/* Conditionally render Payment Method or Asset based on isFieldsSwapped */}
               {!isFieldsSwapped ? (
-                /* Bank/Payment Method Section */
+                /* Bank/Payment Method Section - exact as express withdrawal */
                 <div className="flex-1 min-w-0">
-                  <label
-                    className={`block text-[15px] mb-2 font-semibold ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"
-                      }`}
-                  >
+                  <label className={`block text-[15px] mb-2 font-semibold ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"}`}>
                     {t("rates.bankPaymentMethod", "Bank/Payment Method")}
                   </label>
-                  <div className="relative" ref={methodDropdownRef}>
-                    <div
-                      className={`w-full rounded-2xl px-4 py-2 text-base sm:text-lg focus:outline-none border flex items-center justify-between gap-3 cursor-pointer bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
-                        }`}
-                      onClick={() =>
-                        setIsMethodDropdownOpen(!isMethodDropdownOpen)
-                      }
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        {selectedPaymentDetail && typeof selectedPaymentDetail === 'object' && selectedPaymentDetail.logo ? (
-                          <img
-                            src={selectedPaymentDetail.logo}
-                            alt={selectedPaymentDetail.provider_name || 'Selected provider'}
-                            className="w-8 h-8 object-contain rounded flex-shrink-0"
-                          />
-                        ) : (
-                          <FaUniversity className="w-8 h-8 flex-shrink-0" />
-                        )}
-                        <span
-                          className={`block truncate max-w-[140px] sm:max-w-xs ${isDark ? "text-white" : "text-[#1F2937]"}`}
-                          title={selectedPaymentDetail?.payment_provider_name ||
-                            selectedPaymentDetail?.provider_name ||
-                            selectedPaymentMethod ||
-                            t("rates.selectMethod", "Select Method")}
-                        >
-                          {selectedPaymentDetail?.payment_provider_name ||
-                            selectedPaymentDetail?.provider_name ||
-                            selectedPaymentMethod ||
-                            t("rates.selectMethod", "Select Method")}
-                        </span>
-                      </div>
-                      <FiChevronDown
-                        className={`transition-transform duration-200 ${isMethodDropdownOpen ? "rotate-180" : ""
-                          }`}
-                      />
-                    </div>
+                  <div className="relative z-0">
+                    {(() => {
+                      let paymentMethodOptions: Array<{ value: string; label: string; subtitle?: string; logo?: string }> = [];
 
-                    {/* Payment Method Dropdown */}
-                    {isMethodDropdownOpen && (
-                      <div className={`absolute top-full left-0 right-0 mt-1 ${isDark ? "bg-[#1D1D23]" : "bg-white"} rounded-2xl border ${isDark ? "border-[#35353E]" : "border-gray-200"} z-10 max-h-60 overflow-y-auto shadow-lg`}>
-                        {(userDetailsLoading || publicMethodsLoading) ? (
-                          <div className={`p-3 text-center ${isDark ? "text-[#788099]" : "text-gray-600"}`}>
-                            {t("rates.loadingMethods", "Loading payment methods...")}
-                          </div>
-                        ) : publicPaymentProviders.length > 0 ? (
-                          publicPaymentProviders.map((provider: any) => (
-                            <div
-                              key={provider.provider_id || provider.provider_name}
-                              className={`p-3 flex items-center hover:${isDark ? "bg-[#35353E]" : "bg-gray-100"} cursor-pointer transition-colors`}
-                              onClick={() => handlePaymentMethodSelect(provider)}
-                            >
-                              {provider.logo ? (
-                                <img
-                                  src={provider.logo}
-                                  alt={provider.provider_name || 'Provider logo'}
-                                  className="w-10 h-10 object-contain rounded mr-3 flex-shrink-0"
-                                />
-                              ) : (
-                                <FaUniversity className="w-10 h-10 mr-3 flex-shrink-0" />
-                              )}
-                              <span
-                                className={`truncate text-sm sm:text-base ${isDark ? "text-white" : "text-gray-900"}`}
-                                title={provider.provider_name || 'Unknown Provider'}
-                              >
-                                {provider.provider_name || 'Unknown Provider'}
-                              </span>
-                            </div>
-                          ))
-                        ) : finalPaymentMethods.length > 0 ? (
-                          finalPaymentMethods.map((method: string) => (
-                            <div
-                              key={method}
-                              className={`p-3 flex items-center hover:${isDark ? "bg-[#35353E]" : "bg-gray-100"} cursor-pointer transition-colors`}
-                              onClick={() => handlePaymentMethodSelect(method)}
-                            >
-                              <FaUniversity className="w-10 h-10 mr-3 flex-shrink-0" />
-                              <span
-                                className={`truncate text-sm sm:text-base ${isDark ? "text-white" : "text-gray-900"}`}
-                                title={method}
-                              >
-                                {method}
-                              </span>
-                            </div>
-                          ))
-                        ) : (
-                          <div className={`p-3 text-center ${isDark ? "text-[#788099]" : "text-gray-600"}`}>
-                            {t("rates.noMethods", "No payment methods available")}
-                          </div>
-                        )}
-                      </div>
-                    )}
+                      if (Array.isArray(publicMethodsData?.data?.providers) && publicMethodsData.data.providers.length > 0) {
+                        paymentMethodOptions = publicMethodsData.data.providers.map((provider: any) => {
+                          const providerName = provider.provider_name || provider.payment_provider_name || "Unknown";
+                          const methodName = provider.method?.method_name || provider.method?.method_display || provider.method_name || null;
+                          const subtitle = methodName ? `${providerName} - ${methodName}` : null;
+                          return {
+                            value: providerName,
+                            label: providerName,
+                            subtitle: subtitle || undefined,
+                            logo: provider.logo || provider.provider_logo || undefined,
+                          };
+                        }).filter((opt: any) => opt.value && opt.value.trim());
+                      } else {
+                        const providerNames = Array.from(new Set((adminWalletListDisplay.displayData || []).map((w: any) => w?.admin_payment_detail?.provider_name))).filter((t): t is string => typeof t === 'string' && t.trim().length > 0);
+                        paymentMethodOptions = providerNames.map((paymentType: string) => {
+                          const adminDetail = (adminWalletListDisplay.displayData || []).find((w: any) => w.admin_payment_detail?.provider_name === paymentType)?.admin_payment_detail;
+                          const providerName = adminDetail?.provider_name || paymentType;
+                          const methodName = adminDetail?.payment_method_type || adminDetail?.payment_method_name || null;
+                          const subtitle = methodName ? `${providerName} - ${methodName}` : null;
+                          return {
+                            value: paymentType,
+                            label: providerName,
+                            subtitle: subtitle || undefined,
+                            logo: adminDetail?.provider_logo || undefined,
+                          };
+                        });
+                      }
+
+                      if (paymentMethodOptions.length === 0) {
+                        paymentMethodOptions = fallbackProviderNames.map((name: string) => ({ value: name, label: name }));
+                      }
+
+                      const isLoading = publicMethodsLoading || adminWalletListDisplay.isLoading;
+
+                      return (
+                        <CustomSelect
+                          options={paymentMethodOptions}
+                          value={payBank}
+                          logoSize={PAYMENT_LOGO_SIZE}
+                          logoClassName={PAYMENT_LOGO_BASE_CLASS}
+                          sizeMode="card"
+                          onChange={(value) => {
+                            let selectedWallet = null;
+                            let selectedProvider = null;
+                            if (Array.isArray(publicMethodsData?.data?.providers)) {
+                              selectedProvider = publicMethodsData.data.providers.find((p: any) => (p.provider_name || p.payment_provider_name) === value);
+                            }
+                            if (!selectedProvider) {
+                              selectedWallet = (adminWalletListDisplay.displayData || []).find((w: any) => w.admin_payment_detail?.provider_name === value);
+                            }
+                            setPayBank(value);
+                            setSelectedProviderData(selectedProvider);
+                            setSelectedPaymentDetail(selectedWallet?.admin_payment_detail || selectedProvider || null);
+                            setSelectedPaymentDetails([]);
+                            setPaymentMethodError(null);
+                          }}
+                          placeholder={isLoading ? "Loading payment methods..." : finalPaymentMethods?.length ? "Select Payment Method" : "No payment methods available"}
+                          disabled={isLoading}
+                          loading={isLoading}
+                          loadingText="Loading payment methods..."
+                          emptyText="No payment methods available"
+                          searchable={true}
+                          className="w-full"
+                        />
+                      );
+                    })()}
                   </div>
+                  {paymentMethodError && <p className="text-red-500 text-sm mt-1">{paymentMethodError}</p>}
+
+                  {/* Registered Account - withdrawal only, exact as express */}
+                  {!isDepositMode && payBank && (
+                    <div className="mt-3 w-full relative z-10">
+                      <label className={`block text-[17px] font-semibold mb-2 ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"}`}>
+                        {t("rates.registeredAccount", "Registered Account")}
+                      </label>
+                      {(() => {
+                        const allUserAccounts = userPaymentMethodsDisplay.displayData || effectiveUserPaymentMethods || [];
+                        const hasAnyAccounts = allUserAccounts.length > 0;
+                        const hasFilteredAccounts = enhancedFilteredUserPaymentDetails.length > 0;
+
+                        if (hasFilteredAccounts) {
+                          return (
+                            <div className="relative w-full z-10">
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}>
+                                  {enhancedFilteredUserPaymentDetails.length} account(s) found
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    try {
+                                      await dispatch(fetchUserPaymentDetails()).unwrap();
+                                    } catch {
+                                      showToast.error("Failed to refresh payment details");
+                                    }
+                                  }}
+                                  className="text-xs text-[#1D8751] hover:text-[#166b3e] underline"
+                                >
+                                  Refresh
+                                </button>
+                              </div>
+                              <CustomSelect
+                                options={(enhancedFilteredUserPaymentDetails || []).map((detail: UserPaymentDetail) => {
+                                  let providerName = detail.payment_provider_name || detail.provider_name || "Unknown Provider";
+                                  let providerLogo = detail.provider_logo;
+                                  if (Array.isArray(publicMethodsData?.data?.providers)) {
+                                    const pub = publicMethodsData.data.providers.find(
+                                      (p: any) =>
+                                        (p.provider_name || p.payment_provider_name) === detail.payment_provider_name ||
+                                        (p.provider_name || p.payment_provider_name) === detail.provider_name
+                                    );
+                                    if (pub) {
+                                      providerName = pub.provider_name || pub.payment_provider_name || providerName;
+                                      providerLogo = pub.logo || pub.provider_logo || providerLogo;
+                                    }
+                                  }
+                                  const adminDetail = (adminWalletListDisplay.displayData || []).find((w: any) => w.admin_payment_detail?.provider_name === detail.payment_provider_name)?.admin_payment_detail;
+                                  if (!providerLogo && adminDetail) {
+                                    providerName = adminDetail.provider_name || providerName;
+                                    providerLogo = adminDetail.provider_logo || providerLogo;
+                                  }
+                                  const accountName = detail.account_name || "No Name";
+                                  const accountNumber = detail.account_number || detail.wallet_address || "No Account";
+                                  const displayLabel = `${accountNumber} - ${accountName}`;
+                                  return {
+                                    value: detail.id.toString(),
+                                    label: displayLabel,
+                                    logo: providerLogo || undefined,
+                                    title: `Account Number: ${accountNumber} | Account Name: ${accountName}${providerName ? ` | Provider: ${providerName}` : ""}`,
+                                  };
+                                })}
+                                value={selectedPaymentDetails.length > 0 ? selectedPaymentDetails[0].id.toString() : ""}
+                                onChange={(value) => {
+                                  const selectedDetail = enhancedFilteredUserPaymentDetails.find((d: UserPaymentDetail) => d.id === Number(value));
+                                  if (selectedDetail) {
+                                    setSelectedPaymentDetails([selectedDetail]);
+                                    setPaymentMethodError(null);
+                                  }
+                                }}
+                                placeholder={userPaymentMethodsDisplay.isLoading ? "Loading accounts..." : "Select Registered Account"}
+                                disabled={userPaymentMethodsDisplay.isLoading}
+                                loading={userPaymentMethodsDisplay.isLoading}
+                                loadingText="Loading accounts..."
+                                emptyText="No registered accounts available"
+                                searchable={true}
+                                logoSize={PAYMENT_LOGO_SIZE}
+                                logoClassName={PAYMENT_LOGO_BASE_CLASS}
+                                sizeMode="card"
+                                className="w-full min-w-0"
+                              />
+                            </div>
+                          );
+                        } else if (hasAnyAccounts) {
+                          return (
+                            <p className="text-[#F79330] text-sm">
+                              No account found for this payment method.{" "}
+                              <button type="button" onClick={() => setIsPaymentModalOpen(true)} className="hover:underline cursor-pointer font-medium text-[#1D8751] hover:text-[#166b3e]">
+                                Add Account
+                              </button>
+                            </p>
+                          );
+                        } else {
+                          return (
+                            <p className="text-[#F79330] text-sm">
+                              <button type="button" onClick={() => setIsPaymentModalOpen(true)} className="hover:underline cursor-pointer">
+                                Don&apos;t have an account? Register Now
+                              </button>
+                            </p>
+                          );
+                        }
+                      })()}
+                    </div>
+                  )}
                 </div>
               ) : (
                 /* Asset Section (when swapped) */
@@ -2191,106 +2444,105 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                   </div>
                 </div>
               ) : (
-                /* Payment Method Section (when swapped) */
+                /* Payment Method Section (when swapped) - same CustomSelect as above */
                 <div className="flex-1 min-w-0">
-                  <label
-                    className={`block text-[15px] mb-2 font-semibold ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"
-                      }`}
-                  >
+                  <label className={`block text-[15px] mb-2 font-semibold ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"}`}>
                     {t("rates.bankPaymentMethod", "Bank/Payment Method")}
                   </label>
-                  <div className="relative" ref={methodDropdownRef}>
-                    <div
-                      className={`w-full rounded-2xl px-4 py-2 text-base sm:text-lg focus:outline-none border flex items-center justify-between gap-3 cursor-pointer bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
-                        }`}
-                      onClick={() =>
-                        setIsMethodDropdownOpen(!isMethodDropdownOpen)
+                  <div className="relative z-0">
+                    {(() => {
+                      let paymentMethodOptions: Array<{ value: string; label: string; subtitle?: string; logo?: string }> = [];
+                      if (Array.isArray(publicMethodsData?.data?.providers) && publicMethodsData.data.providers.length > 0) {
+                        paymentMethodOptions = publicMethodsData.data.providers.map((provider: any) => ({
+                          value: provider.provider_name || provider.payment_provider_name || "Unknown",
+                          label: provider.provider_name || provider.payment_provider_name || "Unknown",
+                          subtitle: provider.method?.method_name ? `${provider.provider_name || provider.payment_provider_name} - ${provider.method.method_name}` : undefined,
+                          logo: provider.logo || provider.provider_logo || undefined,
+                        })).filter((opt: any) => opt.value && opt.value.trim());
+                      } else {
+                        const providerNames = Array.from(new Set((adminWalletListDisplay.displayData || []).map((w: any) => w?.admin_payment_detail?.provider_name))).filter((t): t is string => typeof t === 'string' && t.trim().length > 0);
+                        paymentMethodOptions = providerNames.map((paymentType: string) => {
+                          const adminDetail = (adminWalletListDisplay.displayData || []).find((w: any) => w.admin_payment_detail?.provider_name === paymentType)?.admin_payment_detail;
+                          return {
+                            value: paymentType,
+                            label: adminDetail?.provider_name || paymentType,
+                            subtitle: adminDetail?.payment_method_type ? `${adminDetail.provider_name} - ${adminDetail.payment_method_type}` : undefined,
+                            logo: adminDetail?.provider_logo || undefined,
+                          };
+                        });
                       }
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        {selectedPaymentDetail && typeof selectedPaymentDetail === 'object' && selectedPaymentDetail.logo ? (
-                          <img
-                            src={selectedPaymentDetail.logo}
-                            alt={selectedPaymentDetail.provider_name || 'Selected provider'}
-                            className="w-8 h-8 object-contain rounded flex-shrink-0"
-                          />
-                        ) : (
-                          <FaUniversity className="w-8 h-8 flex-shrink-0" />
-                        )}
-                        <span
-                          className={`block truncate max-w-[140px] sm:max-w-xs ${isDark ? "text-white" : "text-[#1F2937]"}`}
-                          title={selectedPaymentDetail?.payment_provider_name ||
-                            selectedPaymentDetail?.provider_name ||
-                            selectedPaymentMethod ||
-                            t("rates.selectMethod", "Select Method")}
-                        >
-                          {selectedPaymentDetail?.payment_provider_name ||
-                            selectedPaymentDetail?.provider_name ||
-                            selectedPaymentMethod ||
-                            t("rates.selectMethod", "Select Method")}
-                        </span>
-                      </div>
-                      <FiChevronDown
-                        className={`transition-transform duration-200 ${isMethodDropdownOpen ? "rotate-180" : ""
-                          }`}
-                      />
-                    </div>
-
-                    {/* Payment Method Dropdown */}
-                    {isMethodDropdownOpen && (
-                      <div ref={methodDropdownContentRef} className={`absolute top-full left-0 right-0 mt-1 ${isDark ? "bg-[#1D1D23]" : "bg-white"} rounded-2xl border ${isDark ? "border-[#35353E]" : "border-gray-200"} z-10 max-h-60 overflow-y-auto shadow-lg`}>
-                        {(userDetailsLoading || publicMethodsLoading) ? (
-                          <div className={`p-3 text-center ${isDark ? "text-[#788099]" : "text-gray-600"}`}>
-                            {t("rates.loadingMethods", "Loading payment methods...")}
-                          </div>
-                        ) : publicPaymentProviders.length > 0 ? (
-                          publicPaymentProviders.map((provider: any) => (
-                            <div
-                              key={provider.provider_id || provider.provider_name}
-                              className={`p-3 flex items-center hover:${isDark ? "bg-[#35353E]" : "bg-gray-100"} cursor-pointer transition-colors`}
-                              onClick={() => handlePaymentMethodSelect(provider)}
-                            >
-                              {provider.logo ? (
-                                <img
-                                  src={provider.logo}
-                                  alt={provider.provider_name || 'Provider logo'}
-                                  className="w-10 h-10 object-contain rounded mr-3 flex-shrink-0"
-                                />
-                              ) : (
-                                <FaUniversity className="w-10 h-10 mr-3 flex-shrink-0" />
-                              )}
-                              <span
-                                className={`truncate text-sm sm:text-base ${isDark ? "text-white" : "text-gray-900"}`}
-                                title={provider.provider_name || 'Unknown Provider'}
-                              >
-                                {provider.provider_name || 'Unknown Provider'}
-                              </span>
-                            </div>
-                          ))
-                        ) : finalPaymentMethods.length > 0 ? (
-                          finalPaymentMethods.map((method: string) => (
-                            <div
-                              key={method}
-                              className={`p-3 flex items-center hover:${isDark ? "bg-[#35353E]" : "bg-gray-100"} cursor-pointer transition-colors`}
-                              onClick={() => handlePaymentMethodSelect(method)}
-                            >
-                              <FaUniversity className="w-10 h-10 mr-3 flex-shrink-0" />
-                              <span
-                                className={`truncate text-sm sm:text-base ${isDark ? "text-white" : "text-gray-900"}`}
-                                title={method}
-                              >
-                                {method}
-                              </span>
-                            </div>
-                          ))
-                        ) : (
-                          <div className={`p-3 text-center ${isDark ? "text-[#788099]" : "text-gray-600"}`}>
-                            {t("rates.noMethods", "No payment methods available")}
-                          </div>
-                        )}
-                      </div>
-                    )}
+                      if (paymentMethodOptions.length === 0) {
+                        paymentMethodOptions = fallbackProviderNames.map((name: string) => ({ value: name, label: name }));
+                      }
+                      const isLoading = publicMethodsLoading || adminWalletListDisplay.isLoading;
+                      return (
+                        <CustomSelect
+                          options={paymentMethodOptions}
+                          value={payBank}
+                          logoSize={PAYMENT_LOGO_SIZE}
+                          logoClassName={PAYMENT_LOGO_BASE_CLASS}
+                          sizeMode="card"
+                          onChange={(value) => {
+                            let selectedProvider = publicMethodsData?.data?.providers?.find((p: any) => (p.provider_name || p.payment_provider_name) === value);
+                            let selectedWallet = !selectedProvider ? (adminWalletListDisplay.displayData || []).find((w: any) => w.admin_payment_detail?.provider_name === value) : null;
+                            setPayBank(value);
+                            setSelectedProviderData(selectedProvider);
+                            setSelectedPaymentDetail(selectedWallet?.admin_payment_detail || selectedProvider || null);
+                            setSelectedPaymentDetails([]);
+                            setPaymentMethodError(null);
+                          }}
+                          placeholder={isLoading ? "Loading payment methods..." : "Select Payment Method"}
+                          disabled={isLoading}
+                          loading={isLoading}
+                          searchable={true}
+                          className="w-full"
+                        />
+                      );
+                    })()}
                   </div>
+                  {!isDepositMode && payBank && (
+                    <div className="mt-3 w-full">
+                      <label className={`block text-sm mb-2 font-semibold ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"}`}>
+                        {t("rates.registeredAccount", "Registered Account")}
+                      </label>
+                      {enhancedFilteredUserPaymentDetails.length > 0 ? (
+                        <CustomSelect
+                          options={enhancedFilteredUserPaymentDetails.map((detail: UserPaymentDetail) => {
+                            let providerLogo = detail.provider_logo;
+                            const pub = publicMethodsData?.data?.providers?.find((p: any) => (p.provider_name || p.payment_provider_name) === detail.payment_provider_name);
+                            if (pub) providerLogo = pub.logo || pub.provider_logo || providerLogo;
+                            const accountName = detail.account_name || "No Name";
+                            const accountNumber = detail.account_number || detail.wallet_address || "No Account";
+                            return {
+                              value: detail.id.toString(),
+                              label: `${accountNumber} - ${accountName}`,
+                              logo: providerLogo || undefined,
+                            };
+                          })}
+                          value={selectedPaymentDetails.length > 0 ? selectedPaymentDetails[0].id.toString() : ""}
+                          onChange={(value) => {
+                            const d = enhancedFilteredUserPaymentDetails.find((x: UserPaymentDetail) => x.id === Number(value));
+                            if (d) setSelectedPaymentDetails([d]);
+                          }}
+                          placeholder={userPaymentMethodsDisplay.isLoading ? "Loading accounts..." : "Select Registered Account"}
+                          disabled={userPaymentMethodsDisplay.isLoading}
+                          loading={userPaymentMethodsDisplay.isLoading}
+                          searchable={true}
+                          logoSize={PAYMENT_LOGO_SIZE}
+                          logoClassName={PAYMENT_LOGO_BASE_CLASS}
+                          sizeMode="card"
+                          className="w-full"
+                        />
+                      ) : (
+                        <p className="text-[#F79330] text-sm">
+                          No account found for this payment method.{" "}
+                          <button type="button" onClick={() => setIsPaymentModalOpen(true)} className="hover:underline cursor-pointer font-medium text-[#1D8751]">
+                            Add Account
+                          </button>
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -2677,8 +2929,24 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
           </div>
         </>
       )}
-    </div>
 
+      {/* PaymentMethodsModal - exact as express withdrawal */}
+      <PaymentMethodsModal
+        open={isPaymentModalOpen}
+        onClose={() => setIsPaymentModalOpen(false)}
+        onAdd={async () => {
+          try {
+            await Promise.all([
+              dispatch(fetchUserPaymentDetails()).unwrap(),
+              dispatch(fetchAdminWalletList()).unwrap(),
+            ]);
+            showToast.success("Payment method added successfully!");
+          } catch {
+            showToast.error("Payment method added, but failed to refresh. Please reload the page.");
+          }
+        }}
+      />
+    </div>
   );
 };
 

@@ -258,10 +258,20 @@ const PrivacySecurity = () => {
   };
 
   const handleVerify2FA = async () => {
+    const trimmed = verifyCode.trim();
+    if (!trimmed) {
+      setVerifyError("Please enter the 2FA code from your authenticator app");
+      return;
+    }
+    if (!/^\d{6}$/.test(trimmed)) {
+      setVerifyError("Code must be exactly 6 digits");
+      return;
+    }
+
     setVerifyLoading(true);
     setVerifyError(null);
     try {
-      const result = await dispatch(verify2FASetup({ code: verifyCode })).unwrap();
+      const result = await dispatch(verify2FASetup({ code: trimmed })).unwrap();
       setShow2FAModal(false);
       setVerifyCode("");
       update2FA(true, JSON.stringify(result)); // Store the success response
@@ -274,15 +284,20 @@ const PrivacySecurity = () => {
   };
 
   const handleDisable2FA = async () => {
-    if (!disableCode.trim()) {
-      setDisableError("Please enter the 2FA code");
+    const trimmed = disableCode.trim();
+    if (!trimmed) {
+      setDisableError("Please enter the 2FA code from your authenticator app");
+      return;
+    }
+    if (!/^\d{6}$/.test(trimmed)) {
+      setDisableError("Code must be exactly 6 digits");
       return;
     }
 
     setDisableLoading(true);
     setDisableError(null);
     try {
-      const result = await dispatch(toggleTwoFactor({ enabled: false, code: disableCode.trim() })).unwrap();
+      const result = await dispatch(toggleTwoFactor({ enabled: false, code: trimmed })).unwrap();
       setShowDisable2FAModal(false);
       setDisableCode("");
       update2FA(false, JSON.stringify(result)); // Store the disable response
@@ -613,20 +628,38 @@ const PrivacySecurity = () => {
             )}
             <input
               type="text"
-              className="w-full p-2 sm:p-2.5 rounded dark:border-[#35353E] border-gray-300 border mb-2 dark:bg-[var(--card-color)] bg-gray-100 dark:text-white text-gray-900 text-sm sm:text-base"
-              placeholder="Enter code from app"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              className={`w-full p-2 sm:p-2.5 rounded border mb-2 dark:bg-[var(--card-color)] bg-gray-100 dark:text-white text-gray-900 text-sm sm:text-base ${
+                verifyCode.length > 0 && !/^\d{6}$/.test(verifyCode)
+                  ? "border-red-500 dark:border-red-500"
+                  : "dark:border-[#35353E] border-gray-300"
+              }`}
+              placeholder="Enter 6-digit code from app"
               value={verifyCode}
-              onChange={(e) => setVerifyCode(e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value.replace(/\D/g, "");
+                setVerifyCode(value);
+                if (verifyError) setVerifyError(null);
+              }}
               disabled={verifyLoading}
+              maxLength={6}
+              aria-invalid={verifyCode.length > 0 && !/^\d{6}$/.test(verifyCode)}
+              aria-describedby={verifyCode.length > 0 && !/^\d{6}$/.test(verifyCode) ? "verify-code-hint" : undefined}
             />
+            {verifyCode.length > 0 && verifyCode.length !== 6 && !verifyError && (
+              <div id="verify-code-hint" className="text-amber-600 dark:text-amber-400 text-xs mb-2">
+                Code must be exactly 6 digits
+              </div>
+            )}
             {verifyError && (
               <div className="text-red-500 text-xs sm:text-sm mb-2 break-words">{verifyError}</div>
             )}
             <div className="flex flex-col sm:flex-row gap-2">
               <button
-                className="flex-1 bg-[#1D8751] text-white rounded px-4 py-2 sm:py-2.5 font-semibold"
+                className="flex-1 bg-[#1D8751] text-white rounded px-4 py-2 sm:py-2.5 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={handleVerify2FA}
-                disabled={verifyLoading}
+                disabled={verifyLoading || !/^\d{6}$/.test(verifyCode.trim())}
               >
                 {verifyLoading ? "Verifying..." : "Verify"}
               </button>
@@ -658,25 +691,38 @@ const PrivacySecurity = () => {
             </div>
             <input
               type="text"
-              className="w-full p-2 sm:p-2.5 rounded dark:border-[#35353E] border-gray-300 border mb-2 dark:bg-[var(--card-color)] bg-gray-100 dark:text-white text-gray-900 text-sm sm:text-base"
-              placeholder="Enter code from authenticator app"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              className={`w-full p-2 sm:p-2.5 rounded border mb-2 dark:bg-[var(--card-color)] bg-gray-100 dark:text-white text-gray-900 text-sm sm:text-base ${
+                disableCode.length > 0 && !/^\d{6}$/.test(disableCode)
+                  ? "border-red-500 dark:border-red-500"
+                  : "dark:border-[#35353E] border-gray-300"
+              }`}
+              placeholder="Enter 6-digit code from authenticator app"
               value={disableCode}
               onChange={(e) => {
-                const value = e.target.value.replace(/\D/g, ""); // Only allow digits
+                const value = e.target.value.replace(/\D/g, "");
                 setDisableCode(value);
                 if (disableError) setDisableError(null);
               }}
               disabled={disableLoading}
               maxLength={6}
+              aria-invalid={disableCode.length > 0 && !/^\d{6}$/.test(disableCode)}
+              aria-describedby={disableCode.length > 0 && !/^\d{6}$/.test(disableCode) ? "disable-code-hint" : undefined}
             />
+            {disableCode.length > 0 && disableCode.length !== 6 && !disableError && (
+              <div id="disable-code-hint" className="text-amber-600 dark:text-amber-400 text-xs mb-2">
+                Code must be exactly 6 digits
+              </div>
+            )}
             {disableError && (
               <div className="text-red-500 text-xs sm:text-sm mb-2 break-words">{disableError}</div>
             )}
             <div className="flex flex-col sm:flex-row gap-2">
               <button
-                className="flex-1 bg-[#E23D3A] text-white rounded px-4 py-2 sm:py-2.5 font-semibold"
+                className="flex-1 bg-[#E23D3A] text-white rounded px-4 py-2 sm:py-2.5 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={handleDisable2FA}
-                disabled={disableLoading}
+                disabled={disableLoading || !/^\d{6}$/.test(disableCode.trim())}
               >
                 {disableLoading ? "Disabling..." : "Disable 2FA"}
               </button>

@@ -870,7 +870,7 @@ const LineCharts = React.memo(
                 onClick={() => setFilter("Withdrawals")}
                 className="whitespace-nowrap text-xs sm:text-sm flex-shrink-0"
               >
-                Withdrawalsfff
+                Withdrawals
               </Button>
               <div className="ml-1 sm:ml-4 flex-shrink-0">
                 <Dropdown

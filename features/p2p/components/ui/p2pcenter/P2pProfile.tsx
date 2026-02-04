@@ -260,7 +260,11 @@ const P2pProfile = ({
         <span className="text-gray-500 dark:text-[#7B8191] text-sm sm:text-base font-medium">
           In escrow:{" "}
           <span className="text-gray-900 dark:text-white font-medium">
-            {formatCurrency(summary?.total_volume || 0, "USD")}
+            {formatCurrency(
+              (summary?.total_pending_p2p_withdrawals || 0) +
+                (summary?.total_sell_orders_by_status?.pending || 0),
+              "USDT"
+            )}
           </span>
         </span>
       </div>

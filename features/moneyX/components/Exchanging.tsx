@@ -807,26 +807,16 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
       >
         <div className="flex-1 flex flex-col justify-between py-1 sm:py-2 pr-0 sm:pr-2 w-full">
           <div className="w-full">
-            <div
-              className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                } text-[10px] sm:text-xs font-semibold mb-0.5`}
-            >
-              Amount:
-            </div>
-            <div
-              className={`${isDark ? "text-white" : "text-gray-900"
-                } text-sm sm:text-base font-semibold mb-1 flex items-center gap-2`}
-            >
-              <span className="break-words">
-                {liveAmount !== null
-                  ? liveAmount
-                  : effectiveTransactionData?.amount || 0}{" "}
-                USD
-              </span>
-            </div>
-
-            {/* How to send - USSD code next to amount */}
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-2">
+            {/* Amount, How to send, Copy - all in one row */}
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+              <div className="flex items-center gap-1.5">
+                <span className={`text-[10px] sm:text-xs font-semibold ${isDark ? "text-[#7B7B7B]" : "text-gray-600"}`}>
+                  Amount:
+                </span>
+                <span className={`text-sm sm:text-base font-semibold ${isDark ? "text-white" : "text-gray-900"}`}>
+                  {liveAmount !== null ? liveAmount : effectiveTransactionData?.amount || 0} USD
+                </span>
+              </div>
               <span className={`text-[10px] sm:text-xs font-semibold ${isDark ? "text-[#7B7B7B]" : "text-gray-600"}`}>
                 How to send:
               </span>

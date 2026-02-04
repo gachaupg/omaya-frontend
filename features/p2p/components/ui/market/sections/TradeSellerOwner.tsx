@@ -15,14 +15,14 @@ import {
   completeP2PTradeThunk,
   confirmP2PTradeThunk,
 } from "@/features/p2p/slices/orderSlice";
-import { FileIcon, SendIcon, Copy } from "lucide-react";
+import { FileIcon, SendIcon, Copy, CheckCircle2, RefreshCw } from "lucide-react";
 import { FaChevronRight } from "react-icons/fa";
 import AppealModal from "./appeal";
+import { UserStatusBadge } from "./UserStatusBadge";
 import ChatBox from "./ChatBox";
 import { showToast } from "@/lib/utils/toast";
 import { handleCopyToClipboard } from "@/features/p2p/components/Common/utils";
 import { Dialog } from "@headlessui/react";
-import { RefreshCw } from "lucide-react";
 import { useTradeStatusWebSocket } from "@/features/p2p/hooks/useTradeStatusWebSocket";
 
 import { logger } from '@/lib/utils/logger';
@@ -45,6 +45,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   } = useSelector((state: RootState) => state.p2pMarket);
   const [showAppealModal, setShowAppealModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showMoneySentModal, setShowMoneySentModal] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [tradeDataJson, setTradeDataJson] = useState<any>({});
   const [copiedButton, setCopiedButton] = useState<string | null>(null);
@@ -267,6 +268,10 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   const formatAmount = (amt: number) =>
     amt.toLocaleString(undefined, { maximumFractionDigits: 6 });
 
+  // Format commission rate for display (e.g. 1.00 shows as "1.00", not "1")
+  const formatCommissionRate = (rate: number) =>
+    Number(rate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
   const handleCancelTransaction = () => {
     if (isAuthenticated && confirmOrder?.id) {
       dispatch(cancelP2POrderThunk(confirmOrder.id));
@@ -278,10 +283,20 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   };
 
   // Add handler for confirming trade
-
   const handleConfirmTrade = () => {
     if (isAuthenticated && confirmOrder?.id) {
-      dispatch(confirmP2PTradeThunk(confirmOrder.id));
+      dispatch(confirmP2PTradeThunk(confirmOrder.id))
+        .unwrap()
+        .then(() => {
+          setShowMoneySentModal(true);
+          dispatch(fetchConfirmOrder(confirmOrder.id));
+        })
+        .catch((error) => {
+          showToast.error(
+            "Failed to confirm trade",
+            error?.message || "Please try again"
+          );
+        });
     }
   };
 
@@ -312,15 +327,6 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
               >
                 Advertiser Information
               </p>
-              {statusWsConnected && (
-                <span className="flex items-center gap-1.5 text-[9px] sm:text-[10px] text-[#1D8751] font-medium whitespace-nowrap">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#1D8751] opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-[#1D8751]"></span>
-                  </span>
-                  Live Status
-                </span>
-              )}
             </div>
             <button
               onClick={handleRefresh}
@@ -363,22 +369,27 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                 )}
               </div>
               <div className="min-w-0 flex-1">
-                <div className="text-gray-900 dark:text-white text-xs sm:text-[13px] font-medium">
+                <div className="text-gray-900 dark:text-white text-xs sm:text-[13px] font-medium flex items-center gap-2 flex-wrap">
                   {singleOrder ? (
-                    <>
-                      <span className="truncate block sm:inline">
-                        {singleOrder.advertiser_first_name && singleOrder.advertiser_last_name
-                          ? `${singleOrder.advertiser_first_name} ${singleOrder.advertiser_last_name}`
-                          : singleOrder.advertiser_name || "Advertiser User Name"}
-                      </span>
-                      <span className="text-[#E23D3A]"> ✔️</span>
-                    </>
+                    <span className="truncate block sm:inline">
+                      {singleOrder.advertiser_first_name && singleOrder.advertiser_last_name
+                        ? `${singleOrder.advertiser_first_name} ${singleOrder.advertiser_last_name}`
+                        : singleOrder.advertiser_name || "Advertiser User Name"}
+                    </span>
                   ) : (
-                    <>
-                      <span className="truncate block sm:inline">Advertiser User Name</span>
-                      <span className="text-[#E23D3A]"> ✔️</span>
-                    </>
+                    <span className="truncate block sm:inline">Advertiser User Name</span>
                   )}
+                  <UserStatusBadge isLive={statusWsConnected} className="flex-shrink-0 ml-1" />
+                  <span className="text-[10px] sm:text-xs text-[#1D8751] flex items-center gap-1 whitespace-nowrap ml-1">
+                    Transaction time:{" "}
+                    {isClient ? (
+                      <TimeDisplay
+                        seconds={confirmOrder?.status === "matched" ? countdown : displaySeconds}
+                      />
+                    ) : (
+                      <span>--:--</span>
+                    )}
+                  </span>
                 </div>
                 <div className="text-[10px] sm:text-xs text-gray-500 dark:text-[#788099] mt-0.5 sm:mt-0">
                   <span className="whitespace-nowrap">{singleOrder?.user_total_buy_orders || 120} Orders</span>{" "}
@@ -392,7 +403,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                 </div>
               </div>
             </div>
-            <div className="ml-0 sm:ml-auto flex flex-wrap sm:flex-nowrap gap-4 sm:gap-6 lg:gap-8 text-xs justify-start sm:justify-end">
+            <div className="ml-2 sm:ml-auto flex flex-wrap sm:flex-nowrap gap-4 sm:gap-6 lg:gap-8 text-xs justify-start sm:justify-end">
               <div className="flex-shrink-0">
                 <span className="text-xs sm:text-[13px] text-gray-900 dark:text-white font-medium block">
                   {tradeDataJson?.limit || "10 Minutes"}
@@ -490,19 +501,15 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
 
           {/* Send Money To */}
           <section className="send-money rounded-[18px] p-2 md:p-4 ">
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-4 gap-2">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-2">
               <div className="text-xs sm:text-[13px] flex-1 text-gray-900 dark:text-white font-medium">
                 Send Money To
               </div>
-              <div className="text-[10px] sm:text-xs flex items-center gap-1 flex-shrink-0">
+              <div className="text-[10px] sm:text-xs flex items-center gap-1">
                 <span className="text-[#1D8751] whitespace-nowrap">Transaction time:</span>
                 {isClient ? (
                   <TimeDisplay
-                    seconds={
-                      confirmOrder?.status === "matched"
-                        ? countdown
-                        : displaySeconds
-                    }
+                    seconds={confirmOrder?.status === "matched" ? countdown : displaySeconds}
                   />
                 ) : (
                   <span>--:--</span>
@@ -622,17 +629,19 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                     </div>
                   </div>
                   <div className="flex-1">
-                    <div className="mt-4 mb-2 text-lg">
-                      <span className="text-gray-900 dark:text-white">
-                        I have an issue with transaction.{" "}
-                      </span>
-                      <span
-                        className="text-[#E23D3A]  cursor-pointer"
-                        onClick={() => setShowAppealModal(true)}
-                      >
-                        Appeal/Complain
-                      </span>
-                    </div>
+                    {confirmOrder?.status === "matched" && countdown === 0 && (
+                      <div className="mt-4 mb-2 text-lg">
+                        <span className="text-gray-900 dark:text-white">
+                          I have an issue with transaction.{" "}
+                        </span>
+                        <span
+                          className="text-[#E23D3A]  cursor-pointer"
+                          onClick={() => setShowAppealModal(true)}
+                        >
+                          Appeal/Complain
+                        </span>
+                      </div>
+                    )}
                     <div className="flex flex-col md:flex-row gap-4 mt-4">
                       <button
                         className={`w-full md:w-auto flex-1 py-2 rounded-2xl border-2 border-gray-200 dark:border-[#3C3C47] text-lg  ${confirmOrder?.status === "half-matched"
@@ -728,6 +737,38 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
           tradeId={confirmOrder?.id || ""}
         />
 
+        {/* Money Sent - Notify Seller Success Modal */}
+        <Dialog
+          open={showMoneySentModal}
+          onClose={() => setShowMoneySentModal(false)}
+          className="relative z-50"
+        >
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" aria-hidden="true" />
+          <div className="fixed inset-0 flex items-center justify-center p-4">
+            <Dialog.Panel className="mx-auto w-full max-w-md rounded-2xl bg-white dark:bg-[var(--card-color)] text-gray-900 dark:text-white border border-gray-200 dark:border-[#35353E] shadow-xl">
+              <div className="p-8">
+                <div className="flex flex-col items-center text-center">
+                  <div className="w-16 h-16 bg-[#1D8751]/10 rounded-full flex items-center justify-center mb-6">
+                    <CheckCircle2 className="w-10 h-10 text-[#1D8751]" strokeWidth={2} />
+                  </div>
+                  <Dialog.Title className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                    Payment Notification Sent
+                  </Dialog.Title>
+                  <p className="text-gray-600 dark:text-[#788099] text-sm mb-6 leading-relaxed">
+                    The seller has been notified that you&apos;ve sent the payment. Please wait for them to confirm receipt. You can track the status in this chat.
+                  </p>
+                  <button
+                    onClick={() => setShowMoneySentModal(false)}
+                    className="w-full bg-[#1D8751] text-white rounded-xl px-6 py-3 font-semibold hover:bg-[#167a45] transition-colors"
+                  >
+                    Got it
+                  </button>
+                </div>
+              </div>
+            </Dialog.Panel>
+          </div>
+        </Dialog>
+
         {/* Success Modal - Using Headless UI Dialog */}
         <Dialog
           open={showSuccessModal}
@@ -777,7 +818,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                         Commission:
                       </span>
                       <span className="text-[#1D8751] font-semibold">
-                        {commissionRate}%
+                        {formatCommissionRate(commissionRate)}%
                       </span>
                     </div>
                     <div className="flex justify-between items-center">

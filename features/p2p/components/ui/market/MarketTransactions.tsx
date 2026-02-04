@@ -29,10 +29,6 @@ const formatCurrencyLabel = (currency?: string | null) => {
   return currency.toUpperCase();
 };
 
-// USD to KSH conversion rate (1 USD = 1 USDT, so 1 USDT = ~135 KSH)
-// This is a reasonable approximation - can be updated with live rates
-const USD_TO_KSH_RATE = 135;
-
 const formatLimitDuration = (duration: string): string => {
   if (!duration) return "10 Minutes";
 
@@ -432,23 +428,11 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
           provider_logo: pd.provider_logo || null, // Explicitly preserve, even if null
         })) : [];
 
-        // Convert amounts to KSH if KSH is selected (1 USDT = 1 USD = USD_TO_KSH_RATE KSH)
-        const shouldConvertToKSH = selectedCurrency === "KSH";
+        // Use raw amounts - currency is a filter, not a conversion
         const availableAmount = parseFloat(order.available_amount || 0);
         const minAmount = parseFloat(order.min_order_amount || 0);
         const maxAmount = parseFloat(order.max_order_amount || 0);
-        
-        const convertedAvailable = shouldConvertToKSH 
-          ? availableAmount * USD_TO_KSH_RATE 
-          : availableAmount;
-        const convertedMin = shouldConvertToKSH 
-          ? minAmount * USD_TO_KSH_RATE 
-          : minAmount;
-        const convertedMax = shouldConvertToKSH 
-          ? maxAmount * USD_TO_KSH_RATE 
-          : maxAmount;
-        
-        const displayCurrency = shouldConvertToKSH ? "KSH" : order.currency;
+        const orderCurrency = order.currency || "USDT";
 
         return {
           id: order.id,
@@ -465,9 +449,9 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
           // Check online status from API - status "offline" means offline, otherwise online
           online: order.status !== 'offline',
           commission: `${order.commission_rate || 0}`,
-          available: `${convertedAvailable.toFixed(2)} ${displayCurrency}`,
-          availableAmount: convertedAvailable,
-          limit: `${convertedMin.toFixed(2)} - ${convertedMax.toFixed(2)} ${displayCurrency}`,
+          available: `${availableAmount.toFixed(2)} ${orderCurrency}`,
+          availableAmount,
+          limit: `${minAmount.toFixed(2)} - ${maxAmount.toFixed(2)} ${orderCurrency}`,
           payment:
             order.payment_details?.map((detail: any) => detail.provider) || [],
           paymentType:
@@ -476,10 +460,9 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
             ) || [],
           isMerchant: Boolean(order.is_merchant),
           isMerchantBusiness: Boolean(order.is_merchant_business),
-          minAmount: convertedMin,
-          maxAmount: convertedMax,
-          currency: displayCurrency,
-          originalCurrency: order.currency, // Store original currency for filtering
+          minAmount,
+          maxAmount,
+          currency: orderCurrency,
           timeLimit: formatLimitDuration(order.limit_duration),
           avgRealiseTime: formatLimitDuration(
             order.completion_time || "00:02:00"
@@ -490,14 +473,11 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
         };
       })
       .filter((row: MarketRow) => {
-        // When KSH is selected, show USDT/USD orders (we'll convert them to KSH for display)
-        if (selectedCurrency === "KSH") {
-          // Show orders that are in USDT or USD (original currency before conversion)
-          if (row.originalCurrency && row.originalCurrency !== "USDT" && row.originalCurrency !== "USD") {
-            return false;
-          }
-        } else if (selectedCurrency && row.originalCurrency !== selectedCurrency) {
-          return false;
+        // Currency is a filter - only show orders that match the selected currency
+        if (selectedCurrency) {
+          const rowCurrency = (row.currency || "").toUpperCase();
+          const selCurrency = selectedCurrency.toUpperCase();
+          if (rowCurrency !== selCurrency) return false;
         }
 
         if (showMerchantOnly && !row.isMerchant) {

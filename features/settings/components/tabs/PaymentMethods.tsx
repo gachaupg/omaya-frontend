@@ -26,9 +26,17 @@ const PaymentMethods = () => {
   const [deletingMethodId, setDeletingMethodId] = useState<string | null>(null);
   const [activeButton, setActiveButton] = useState("Approved");
 
+  const isCryptoWallet = (p: UserPaymentDetail) =>
+    p?.payment_method_name?.toLowerCase() === "crypto" ||
+    !!p?.wallet_address;
+
   const filteredPayments = userPaymentDetails.filter(
-    (payment: UserPaymentDetail) =>
-      payment.status?.toLowerCase() === activeButton.toLowerCase()
+    (payment: UserPaymentDetail) => {
+      if (activeButton === "OMAYA Wallets") {
+        return isCryptoWallet(payment);
+      }
+      return payment.status?.toLowerCase() === activeButton.toLowerCase();
+    }
   );
 
   useEffect(() => {
@@ -60,8 +68,11 @@ const PaymentMethods = () => {
             <button className={`px-3 py-1.5 rounded-full border border-[#1D8751] text-[#1D8751] text-xs sm:text-sm font-semibold focus:outline-none ${activeButton === "Approved" ? "bg-[#1D8751] text-white" : "bg-transparent"}`} onClick={() => setActiveButton("Approved")} >
               Approved
             </button>
-            <button className={`px-3 py-1.5 rounded-full border border-[#1D8751] text-[#1D8751] text-xs sm:text-sm font-semibold focus:outline-none ${activeButton === "Pending"? "bg-[#1D8751] text-white" : "bg-transparent"}` } onClick={() => setActiveButton("Pending")}>
+            <button className={`px-3 py-1.5 rounded-full border border-[#1D8751] text-[#1D8751] text-xs sm:text-sm font-semibold focus:outline-none ${activeButton === "Pending" ? "bg-[#1D8751] text-white" : "bg-transparent"}`} onClick={() => setActiveButton("Pending")}>
               Pending
+            </button>
+            <button className={`px-3 py-1.5 rounded-full border border-[#1D8751] text-[#1D8751] text-xs sm:text-sm font-semibold focus:outline-none ${activeButton === "OMAYA Wallets" ? "bg-[#1D8751] text-white" : "bg-transparent"}`} onClick={() => setActiveButton("OMAYA Wallets")}>
+              OMAYA Wallets
             </button>
           </div>
         </div>
@@ -80,7 +91,9 @@ const PaymentMethods = () => {
         <div className="rounded-[32px] border border-[#20202A] dark:border-[#1E1E27] bg-white dark:bg-[var(--card-color)] p-2 sm:p-3 md:p-4 space-y-3">
           {filteredPayments.length === 0 && (
             <div className="rounded-2xl border border-dashed border-[#E3E6F0] dark:border-[#2A2A35] py-10 text-center text-sm text-gray-500 dark:text-[#7B819C]">
-              No payment methods in {activeButton.toLowerCase()} state yet.
+              {activeButton === "OMAYA Wallets"
+                ? "No OMAYA wallet addresses yet."
+                : `No payment methods in ${activeButton.toLowerCase()} state yet.`}
             </div>
           )}
           {filteredPayments.map((payment: UserPaymentDetail) => {
@@ -94,6 +107,9 @@ const PaymentMethods = () => {
             const placeholderText = isBankMethod
               ? "Type in here your bank account number"
               : "Type in here your wallet address";
+            // For crypto: use wallet_address; for bank: use account_number
+            const displayAddress =
+              payment?.wallet_address || payment?.account_number || "";
             return (
               <div
                 key={payment.id}
@@ -102,12 +118,12 @@ const PaymentMethods = () => {
                 <div className="flex items-start gap-4">
                   <div className="relative">
                     <img
-                      src={payment?.provider_logo || "/default-provider-logo.svg"}
+                      src={payment?.provider_logo || (isCryptoWallet(payment) ? "/images/tether.svg" : "/default-provider-logo.svg")}
                       alt={payment?.payment_provider_name || payment?.payment_method_name}
                       className="w-12 h-12 object-contain flex-shrink-0"
                       style={{ display: 'block' }}
                       onError={(e) => {
-                        e.currentTarget.src = "/default-provider-logo.svg";
+                        e.currentTarget.src = isCryptoWallet(payment) ? "/images/tether.svg" : "/default-provider-logo.svg";
                       }}
                     />
                     {isPending && (
@@ -173,7 +189,7 @@ const PaymentMethods = () => {
                     <input
                       type="text"
                       readOnly
-                      value={payment?.account_number || ""}
+                      value={displayAddress}
                       placeholder={placeholderText}
                       className="w-full bg-transparent focus:outline-none placeholder:text-gray-400 dark:placeholder:text-[#5C6175] text-gray-900 dark:text-white"
                     />

@@ -208,7 +208,7 @@ const OTPModal: React.FC<OTPModalProps> = ({
           <button
             onClick={onClose}
             disabled={isLoading}
-            className="w-full bg-transparent border dark:border-[#39394a] border-gray-300 dark:text-[#788099] text-gray-600 py-3 rounded-2xl text-lg font-medium dark:hover:bg-[#39394a]/20 hover:bg-gray-100 disabled:cursor-not-allowed transition-colors"
+            className="w-full bg-red-500 hover:bg-red-600 text-white py-3 rounded-2xl text-lg font-medium disabled:bg-red-400 disabled:opacity-70 disabled:cursor-not-allowed transition-colors"
           >
             Cancel
           </button>
