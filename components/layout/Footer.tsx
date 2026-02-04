@@ -124,12 +124,12 @@ export default function Footer() {
   return (
     <footer
       ref={footerRef}
-      className={`relative z-40 pt-6 sm:pt-8 md:pt-10 pb-4 text-gray-700 dark:text-[#788099] transition-colors duration-300 ${isVisible
+      className={`relative z-40 pt-6 sm:pt-8 md:pt-10 pb-4 text-gray-700 dark:text-[#788099] transition-colors duration-300 w-full max-w-full overflow-x-hidden ${isVisible
         ? "bg-white dark:bg-[#1D1D23]"
         : "bg-[var(--bg-color)]"
         }`}
     >
-      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-20 pt-8 sm:pt-12 pb-6">
+      <div className="w-full max-w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-20 pt-8 sm:pt-12 pb-6 overflow-x-hidden">
         <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-x-4 gap-y-6 sm:gap-8 pb-8 border-b border-border dark:border-accent">
 
           {/* Logo and Social Media Column */}

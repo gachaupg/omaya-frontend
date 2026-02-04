@@ -78,7 +78,7 @@ const ExchangeLayout = () => {
             <div className="w-full">
               <Suspense
                 fallback={
-                  <div className="text-center text-white">
+                  <div className="text-center text-gray-900 dark:text-white">
                     <CardSkeleton />
                   </div>
                 }
@@ -153,7 +153,7 @@ const ExchangeLayout = () => {
               </Suspense>
               <Suspense
                 fallback={
-                  <div className="text-center text-white">
+                  <div className="text-center text-gray-900 dark:text-white">
                     <CardSkeleton />
                   </div>
                 }

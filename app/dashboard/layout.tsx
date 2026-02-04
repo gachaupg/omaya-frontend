@@ -33,7 +33,7 @@ export default function DashboardLayout({
       </motion.div>
 
       {/* Desktop Sidebar */}
-      <div className="hidden md:block md:w-48 lg:w-56 xl:w-[222.28px]" aria-hidden>
+      <div className="hidden md:block md:w-48 lg:w-56 xl:w-[222.28px] flex-shrink-0" aria-hidden>
         <motion.div
           initial={{ x: -20, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
@@ -45,7 +45,7 @@ export default function DashboardLayout({
       </div>
 
       {/* Main Content */}
-      <div className=" w-full h-full max-w-full overflow-x-hidden box-border bg-gray-50 dark:bg-[var(--bg-color)]">
+      <div className="flex-1 w-full h-full max-w-full overflow-x-hidden box-border bg-gray-50 dark:bg-[var(--bg-color)]">
         <AnimatePresence mode="wait">
           <motion.div
             key={pathname} // Use pathname for proper React reconciliation (fixes performance issue)
