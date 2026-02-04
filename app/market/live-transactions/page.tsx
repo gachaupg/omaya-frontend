@@ -45,6 +45,23 @@ const getBankLogo = (bankName: string): string => {
   return "https://res.cloudinary.com/pitz/image/upload/v1764667057/salam_vizvxy.svg";
 };
 
+// Helper function to get currency/asset logo
+const getCurrencyLogo = (currency: string): string => {
+  const currencyLower = (currency || "").toLowerCase();
+  
+  // Map common currencies to their icons
+  const currencyLogos: { [key: string]: string } = {
+    usdt: "/icons/usdt.svg",
+    usd: "/icons/usdt.svg",
+    btc: "/icons/btc.svg",
+    bitcoin: "/icons/btc.svg",
+    eth: "/icons/eth.svg",
+    ethereum: "/icons/eth.svg",
+  };
+  
+  return currencyLogos[currencyLower] || "/icons/usdt.svg";
+};
+
 const LiveTransactionsPage = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isConnected, setIsConnected] = useState(false);
@@ -75,17 +92,17 @@ const LiveTransactionsPage = () => {
               fromName = data.payment_provider || data.user_name || "MoneyX";
               fromLogo = getBankLogo(data.payment_provider || "");
               toName = data.currency || "USD";
-              toLogo = data.asset_image || "/icons/usdt.svg";
+              toLogo = getCurrencyLogo(data.currency);
             } else if (type === "p2p_deposit") {
               // P2P deposit: From = user, To = asset
               fromName = data.user_name || "P2P Deposit";
               fromLogo = getBankLogo(data.payment_provider || fromName);
               toName = data.currency || "USDT";
-              toLogo = data.asset_image || "/icons/usdt.svg";
+              toLogo = getCurrencyLogo(data.currency);
             } else if (type === "p2p_withdraw") {
               // P2P withdraw: From = asset, To = user
               fromName = data.currency || "USDT";
-              fromLogo = data.asset_image || "/icons/usdt.svg";
+              fromLogo = getCurrencyLogo(data.currency);
               toName = data.user_name || "P2P Withdraw";
               toLogo = getBankLogo(data.payment_provider || toName);
             } else if (type === "p2p_trade") {
@@ -97,7 +114,7 @@ const LiveTransactionsPage = () => {
             } else {
               // Fallback: From = currency, To = payment provider or user
               fromName = data.currency || data.user_name || "Transaction";
-              fromLogo = data.asset_image || "/icons/usdt.svg";
+              fromLogo = getCurrencyLogo(data.currency);
               toName = data.payment_provider || data.user_name || "Destination";
               toLogo = getBankLogo(data.payment_provider || "");
             }
@@ -225,7 +242,24 @@ const LiveTransactionsPage = () => {
       </div>
 
       {/* Transactions Table */}
-      <div className="bg-white dark:bg-[#1D1D23] rounded-2xl border border-[#E8EFF5] dark:border-[#35353E] overflow-hidden">
+      <div className="bg-white dark:bg-[#1D1D23] rounded-2xl border border-[#E8EFF5] dark:border-[#35353E] overflow-hidden relative">
+        {/* Scroll indicators - show on mobile when table is scrollable */}
+        <div className="sm:hidden absolute left-0 top-1/2 -translate-y-1/2 z-10 pointer-events-none">
+          <div className="w-8 h-32 bg-gradient-to-r from-white dark:from-[#1D1D23] to-transparent" />
+        </div>
+        <div className="sm:hidden absolute right-0 top-1/2 -translate-y-1/2 z-10 pointer-events-none">
+          <div className="w-8 h-32 bg-gradient-to-l from-white dark:from-[#1D1D23] to-transparent" />
+        </div>
+        {/* Mobile scroll hint */}
+        <div className="sm:hidden flex items-center justify-center gap-2 py-2 text-xs text-gray-500 dark:text-[#788099] bg-gray-50 dark:bg-[#23232B] border-b border-[#E8EFF5] dark:border-[#35353E]">
+          <svg className="w-4 h-4 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
+          </svg>
+          <span>Swipe to see more</span>
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>

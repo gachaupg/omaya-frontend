@@ -4799,7 +4799,7 @@ export default function WithdrawalForm({
                   </div>
                 )}
                 <button
-                  className={`w-full text-[#35353e] dark:text-[#788099] text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${isSubmitting || isInfoModalOpen || getAmount > 15000 || !isTermsAccepted
+                  className={`w-full text-white text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${isSubmitting || isInfoModalOpen || getAmount > 15000 || !isTermsAccepted
                     ? "bg-gray-500 cursor-not-allowed"
                     : "bg-[#1D8751] hover:bg-[#166b3e]"
                     }`}

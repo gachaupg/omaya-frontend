@@ -690,13 +690,18 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
 
   const isTransferDisabled =
     isSubmitting ||
-    !fromPaymentMethod ||
-    !toPaymentMethod ||
-    !payAmount ||
-    payAmount <= 0 ||
-    fromPaymentMethod === toPaymentMethod ||
-    !selectedFromPaymentDetail ||
-    !selectedToPaymentDetail;
+    // For home page (unauthenticated users), allow button click to trigger login redirect
+    // Only require basic validation: from and to must be different if both are selected
+    (!isHomePage && (
+      !fromPaymentMethod ||
+      !toPaymentMethod ||
+      !payAmount ||
+      payAmount <= 0 ||
+      !selectedFromPaymentDetail ||
+      !selectedToPaymentDetail
+    )) ||
+    // Always prevent same-method transfers when both are selected
+    (fromPaymentMethod && toPaymentMethod && fromPaymentMethod === toPaymentMethod);
 
   return (
     <div className="w-full flex flex-col dark:bg-[#18181D]">
@@ -972,7 +977,7 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
                   : "bg-[#1D8751] hover:bg-[#1D8751]/80"
               }`}
               onClick={handleFirstCardSubmit}
-              disabled={isTransferDisabled}
+              disabled={!!isTransferDisabled}
             >
               {isSubmitting ? (
                 <div className="flex items-center gap-2">

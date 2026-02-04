@@ -380,10 +380,10 @@ const ThemeSelector = ({
         <>
           {/* Backdrop for all screen sizes */}
           <div
-            className="fixed inset-0 z-40"
+            className="fixed inset-0 z-[100] bg-black/20"
             onClick={() => setDropdownOpen(false)}
           />
-          <div className={`absolute z-50 dark:bg-[var(--card-color)] bg-white dark:border-[#35353E] border-gray-200 rounded-lg shadow-lg w-[180px] sm:w-[200px] lg:w-[250px] max-w-[calc(100vw-1.5rem)] sm:max-w-none ${isMobile
+          <div className={`absolute z-[101] dark:bg-[var(--card-color)] bg-white dark:border-[#35353E] border border-gray-200 rounded-lg shadow-lg w-[180px] sm:w-[200px] lg:w-[250px] max-w-[calc(100vw-1.5rem)] sm:max-w-none ${isMobile
             ? "bottom-full mb-2 left-1/2 -translate-x-1/2 origin-bottom"
             : "right-0 bottom-full mb-2 sm:mb-0 sm:bottom-auto sm:top-full sm:mt-2 origin-bottom sm:origin-top"
             }`}>
