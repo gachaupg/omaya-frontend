@@ -27,7 +27,7 @@ const MarketTable: React.FC<MarketTableProps> = ({
   data = [],
   currentPage = 1,
   totalPages = 1,
-  onPageChange = () => {},
+  onPageChange = () => { },
   loading = false,
   activeTab = "buy",
 }) => {
@@ -53,7 +53,7 @@ const MarketTable: React.FC<MarketTableProps> = ({
   const handleTradeClick = (i: number) => {
     setSelectedRowIndex((current) => (current === i ? null : i));
   };
-  
+
   const handleMessagesClick = (row: any) => {
     // Open messages in new tab using the order ID
     const orderId = row.id;
@@ -63,7 +63,7 @@ const MarketTable: React.FC<MarketTableProps> = ({
       console.error('No order ID found for trade:', row);
     }
   };
-  
+
   const handleImageClick = (imageUrl: string, advertiserName: string) => {
     setImageModal({
       isOpen: true,
@@ -139,9 +139,9 @@ const MarketTable: React.FC<MarketTableProps> = ({
             </div>
             <div
               className="min-w-[200px] flex items-center cursor-pointer hover:text-gray-700 dark:hover:text-gray-300"
-              // onClick={() => handleSort("payment")}
+            // onClick={() => handleSort("payment")}
             >
-              Payment 
+              Payment
             </div>
             <div className="min-w-[120px] text-center">Trade</div>
           </div>
@@ -170,18 +170,18 @@ const MarketTable: React.FC<MarketTableProps> = ({
                   {/* Advertiser */}
                   <div className="flex flex-col gap-1 min-w-[200px]">
                     <div className="flex items-center gap-2">
-                    {row.advertiser_photo ? (
-                      <img 
-                        src={row.advertiser_photo} 
-                        alt={row.advertiser} 
-                        className="w-10 h-10 rounded-full object-cover cursor-pointer hover:opacity-80 transition-opacity" 
-                        onClick={() => handleImageClick(row.advertiser_photo, row.advertiser)}
-                      />
-                    ) : (
-                      <span className="bg-[#1D8751] text-white h-10 w-10 rounded-[10px] text-xs font-bold flex items-center justify-center">
-                        {row.advertiserInitials}
-                      </span>
-                    )}
+                      {row.advertiser_photo ? (
+                        <img
+                          src={row.advertiser_photo}
+                          alt={row.advertiser}
+                          className="w-10 h-10 rounded-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                          onClick={() => handleImageClick(row.advertiser_photo, row.advertiser)}
+                        />
+                      ) : (
+                        <span className="bg-[#1D8751] text-white h-10 w-10 rounded-[10px] text-xs font-bold flex items-center justify-center">
+                          {row.advertiserInitials}
+                        </span>
+                      )}
                       <span className="font-medium flex items-center text-sm text-gray-900 dark:text-[#E4E4E6]">
                         {row.advertiser}
                         <FaCheckCircle className="text-[#FFD600] ml-1" />
@@ -216,13 +216,14 @@ const MarketTable: React.FC<MarketTableProps> = ({
                     </span>
                   </div>
                   {/* Payment */}
-                  <div className="flex flex-wrap gap-2 min-w-[200px]">
-                    {row.payment_details?.map((method, i) => {
+                  <div className="flex flex-wrap gap-2 min-w-[200px] items-center">
+                    {/* Show all when expanded, otherwise show 2 */}
+                    {row.payment_details?.slice(0, selectedRowIndex === idx ? undefined : 2).map((method, i) => {
                       // Safely check if method exists before accessing properties
                       if (!method || typeof method !== 'object') {
                         return null;
                       }
-                      
+
                       const imageUrl =
                         (typeof method.provider_logo === "string" &&
                           method.provider_logo.trim()) ||
@@ -236,9 +237,9 @@ const MarketTable: React.FC<MarketTableProps> = ({
                           <img
                             src={imageUrl}
                             alt={method.provider || ''}
-                            className="w-6 h-6 rounded object-contain flex-shrink-0"
-                            style={{ 
-                              width: '24px', 
+                            className="w-6 h-6 rounded object-contain shrink-0"
+                            style={{
+                              width: '24px',
                               height: '24px',
                               display: 'block'
                             }}
@@ -253,6 +254,12 @@ const MarketTable: React.FC<MarketTableProps> = ({
                         </span>
                       );
                     })}
+                    {/* Show +X only when row is NOT expanded */}
+                    {selectedRowIndex !== idx && row.payment_details && row.payment_details.length > 2 && (
+                      <span className="text-xs font-semibold text-muted-foreground bg-gray-100 dark:bg-accent px-2 py-1 rounded">
+                        +{row.payment_details.length - 2}
+                      </span>
+                    )}
                   </div>
 
                   {/* Trade */}
@@ -268,19 +275,19 @@ const MarketTable: React.FC<MarketTableProps> = ({
                     >
                       {activeTab === "sell" ? "SELL USDT" : "BUY USDT"}
                     </Button>
-                   
+
                   </div>
                 </div>
 
                 {/* Mobile Card View */}
-                <div className="md:hidden flex flex-col gap-2 sm:gap-3 p-2 sm:p-3 md:p-4 border-b last:border-b-0 bg-white hover:bg-gray-50 border-gray-200 dark:bg-[var(--card-color)] dark:hover:bg-[#2d2d36] dark:border-[#35353E]">
+                <div className="md:hidden flex flex-col gap-2 sm:gap-3 p-2 sm:p-3 md:p-4 border-b last:border-b-0 bg-white hover:bg-gray-50 border-gray-200 dark:bg-(--card-color) dark:hover:bg-[#2d2d36] dark:border-accent">
                   {/* Advertiser Section */}
-                  <div className="flex items-center gap-2 pb-2 border-b border-gray-200 dark:border-[#35353E]">
+                  <div className="flex items-center gap-2 pb-2 border-b border-gray-200 dark:border-accent">
                     {row.advertiser_photo ? (
-                      <img 
-                        src={row.advertiser_photo} 
-                        alt={row.advertiser} 
-                        className="w-10 h-10 rounded-full object-cover cursor-pointer hover:opacity-80 transition-opacity" 
+                      <img
+                        src={row.advertiser_photo}
+                        alt={row.advertiser}
+                        className="w-10 h-10 rounded-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
                         onClick={() => handleImageClick(row.advertiser_photo, row.advertiser)}
                       />
                     ) : (
@@ -336,15 +343,16 @@ const MarketTable: React.FC<MarketTableProps> = ({
                   </div>
 
                   {/* Payment Methods */}
-                  <div className="flex flex-col gap-2 pt-2 border-t border-gray-200 dark:border-[#35353E]">
+                  <div className="flex flex-col gap-2 pt-2 border-t border-gray-200 dark:border-accent">
                     <span className="text-xs text-gray-500 dark:text-[#8C8CA1]">Payment Methods</span>
                     <div className="flex flex-wrap gap-2">
-                      {row.payment_details?.slice(0, 2).map((method, i) => {
+                      {/* Show all when expanded, otherwise show 2 */}
+                      {row.payment_details?.slice(0, selectedRowIndex === idx ? undefined : 2).map((method, i) => {
                         // Safely check if method exists before accessing properties
                         if (!method || typeof method !== 'object') {
                           return null;
                         }
-                        
+
                         const imageUrl =
                           (typeof method.provider_logo === "string" &&
                             method.provider_logo.trim()) ||
@@ -358,9 +366,9 @@ const MarketTable: React.FC<MarketTableProps> = ({
                             <img
                               src={imageUrl}
                               alt={method.provider || ''}
-                              className="w-5 h-5 rounded object-contain flex-shrink-0"
-                              style={{ 
-                                width: '20px', 
+                              className="w-5 h-5 rounded object-contain shrink-0"
+                              style={{
+                                width: '20px',
                                 height: '20px',
                                 display: 'block'
                               }}
@@ -375,7 +383,8 @@ const MarketTable: React.FC<MarketTableProps> = ({
                           </span>
                         );
                       })}
-                      {row.payment_details && row.payment_details.length > 2 && (
+                      {/* Show +X only when row is NOT expanded */}
+                      {selectedRowIndex !== idx && row.payment_details && row.payment_details.length > 2 && (
                         <span className="text-xs text-gray-500 dark:text-[#8C8CA1]">
                           +{row.payment_details.length - 2} more
                         </span>
@@ -415,15 +424,14 @@ const MarketTable: React.FC<MarketTableProps> = ({
 
           {/* ---------------- pagination --------------- */}
           {filteredData.length > 0 && (
-            <div className="flex justify-center items-center gap-2 py-4 bg-gray-50 dark:bg-[var(--bg-color)]">
+            <div className="flex justify-center items-center gap-2 py-4 bg-gray-50 dark:bg-(--bg-color)">
               <button
                 onClick={() => onPageChange(currentPage - 1)}
                 disabled={currentPage === 1}
-                className={`px-3 py-1 rounded-md text-sm font-medium border bg-white border-gray-200 text-gray-500 ${
-                  currentPage === 1
-                    ? "opacity-50 cursor-not-allowed"
-                    : "hover:bg-gray-100"
-                } dark:bg-[var(--card-color)] dark:border-[#35353E] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]`}
+                className={`px-3 py-1 rounded-md text-sm font-medium border bg-white border-gray-200 text-gray-500 ${currentPage === 1
+                  ? "opacity-50 cursor-not-allowed"
+                  : "hover:bg-gray-100"
+                  } dark:bg-(--card-color) dark:border-accent dark:text-[#8C8CA1] dark:hover:bg-accent`}
               >
                 &lt;
               </button>
@@ -431,11 +439,10 @@ const MarketTable: React.FC<MarketTableProps> = ({
                 <button
                   key={i}
                   onClick={() => onPageChange(i + 1)}
-                  className={`px-3 py-1 rounded-md text-sm font-medium border ${
-                    currentPage === i + 1
-                      ? "bg-[#1D8751] text-white border-[#1D8751]"
-                      : "bg-white text-gray-500 border-gray-200 hover:bg-gray-100 dark:bg-[var(--card-color)] dark:text-[#8C8CA1] dark:border-[#35353E] dark:hover:bg-[#35353E]"
-                  }`}
+                  className={`px-3 py-1 rounded-md text-sm font-medium border ${currentPage === i + 1
+                    ? "bg-[#1D8751] text-white border-[#1D8751]"
+                    : "bg-white text-gray-500 border-gray-200 hover:bg-gray-100 dark:bg-[var(--card-color)] dark:text-[#8C8CA1] dark:border-[#35353E] dark:hover:bg-[#35353E]"
+                    }`}
                 >
                   {i + 1}
                 </button>
@@ -443,11 +450,10 @@ const MarketTable: React.FC<MarketTableProps> = ({
               <button
                 onClick={() => onPageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
-                className={`px-3 py-1 rounded-md text-sm font-medium border bg-white border-gray-200 text-gray-500 ${
-                  currentPage === totalPages
-                    ? "opacity-50 cursor-not-allowed"
-                    : "hover:bg-gray-100"
-                } dark:bg-[var(--card-color)] dark:border-[#35353E] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]`}
+                className={`px-3 py-1 rounded-md text-sm font-medium border bg-white border-gray-200 text-gray-500 ${currentPage === totalPages
+                  ? "opacity-50 cursor-not-allowed"
+                  : "hover:bg-gray-100"
+                  } dark:bg-[var(--card-color)] dark:border-[#35353E] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]`}
               >
                 &gt;
               </button>
@@ -458,11 +464,11 @@ const MarketTable: React.FC<MarketTableProps> = ({
 
       {/* Image Modal */}
       {imageModal.isOpen && (
-        <div 
+        <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4"
           onClick={closeImageModal}
         >
-          <div 
+          <div
             className="relative bg-white dark:bg-[var(--card-color)] rounded-2xl max-w-2xl max-h-[90vh] w-full"
             onClick={(e) => e.stopPropagation()}
           >
@@ -478,7 +484,7 @@ const MarketTable: React.FC<MarketTableProps> = ({
                 <FaTimes className="w-5 h-5 text-gray-500 dark:text-[#8C8CA1]" />
               </button>
             </div>
-            
+
             {/* Image */}
             <div className="p-4">
               <div className="relative w-full h-96 bg-gray-100 dark:bg-[#35353E] rounded-xl overflow-hidden">
@@ -492,7 +498,7 @@ const MarketTable: React.FC<MarketTableProps> = ({
                 />
               </div>
             </div>
-            
+
             {/* Footer */}
             <div className="flex justify-end p-4 border-t border-gray-200 dark:border-[#35353E]">
               <Button

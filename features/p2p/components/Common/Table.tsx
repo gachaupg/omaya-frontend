@@ -889,7 +889,7 @@ export const Table: React.FC<TableProps> = ({
                           {formatP2PDate(row.date)}
                         </div>
                         <div className={`text-sm font-semibold ${getAmountColor(String(row.type))}`}>
-                          {formatNumber(Number(row.amount)).toString()} USD
+                          {formatNumber(Number(row.amount)).toString()} USDT
                         </div>
                         <div
                           className={`text-sm ${getStatusColor(String(row.status))}`}
@@ -944,7 +944,7 @@ export const Table: React.FC<TableProps> = ({
                           <span
                             className={`text-sm font-semibold ${getAmountColor(String(row.type))}`}
                           >
-                            {formatNumber(Number(row.amount)).toString()} USD
+                            {formatNumber(Number(row.amount)).toString()} USDT
                           </span>
                         </div>
 
@@ -1293,7 +1293,7 @@ export const Table: React.FC<TableProps> = ({
                   Total Amount
                 </div>
                 <div className="text-[#1D8751] text-xl sm:text-2xl font-bold">
-                  {formatNumber(Number(selectedTransaction?.amount ?? 0))} USD
+                  {formatNumber(Number(selectedTransaction?.amount ?? 0))} USDT
                 </div>
               </div>
               <div className="text-left sm:text-right text-xs text-gray-400 dark:text-[#8C8CA1]">

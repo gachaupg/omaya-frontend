@@ -551,6 +551,7 @@ export default function DepositForm({
   // Add transaction code state
   const [transactionCode, setTransactionCode] = useState<string>("");
   const paymentDetailsRef = useRef<HTMLDivElement>(null);
+  const assetListRef = useRef<HTMLDivElement>(null);
 
   // Asset selection state for search functionality
   const [isAssetDropdownOpen, setIsAssetDropdownOpen] = useState(false);
@@ -1585,7 +1586,7 @@ export default function DepositForm({
       (
         <div
           ref={assetDropdownContentRef}
-          className="bg-white dark:bg-[#1D1D23] border border-gray-300 dark:border-[#35353E] rounded-2xl shadow-xl z-[9999] max-h-[70vh] sm:max-h-[60vh] overflow-hidden flex flex-col"
+          className="bg-white dark:bg-[#1D1D23] border border-gray-300 dark:border-accent rounded-2xl shadow-xl z-9999 max-h-[70vh] sm:max-h-[60vh] overflow-hidden flex flex-col"
           style={dropdownStyle}
         >
           {/* Dropdown Title */}
@@ -1623,37 +1624,49 @@ export default function DepositForm({
           {isHomePage && (
             <div className="flex items-center gap-2 px-2 py-2 border-b border-gray-200 dark:border-gray-600 overflow-x-auto shrink-0">
               <button
-                onClick={() => setAssetFilterTab("all")}
+                onClick={() => {
+                  setAssetFilterTab("all");
+                  if (assetListRef.current) assetListRef.current.scrollTop = 0;
+                }}
                 className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-2xl whitespace-nowrap transition-colors ${assetFilterTab === "all"
                   ? "bg-[#1D8751] text-white"
-                  : "bg-[#E8EFF5] text-gray-700 hover:bg-[#D8E2EC] dark:bg-[#35353E] dark:text-gray-300 dark:hover:bg-[#40404A]"
+                  : "bg-[#E8EFF5] text-gray-700 hover:bg-[#D8E2EC] dark:bg-accent dark:text-gray-300 dark:hover:bg-[#40404A]"
                   }`}
               >
                 All
               </button>
               <button
-                onClick={() => setAssetFilterTab("new")}
+                onClick={() => {
+                  setAssetFilterTab("new");
+                  if (assetListRef.current) assetListRef.current.scrollTop = 0;
+                }}
                 className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-2xl whitespace-nowrap transition-colors ${assetFilterTab === "new"
                   ? "bg-[#1D8751] text-white"
-                  : "bg-[#E8EFF5] text-gray-700 hover:bg-[#D8E2EC] dark:bg-[#35353E] dark:text-gray-300 dark:hover:bg-[#40404A]"
+                  : "bg-[#E8EFF5] text-gray-700 hover:bg-[#D8E2EC] dark:bg-accent dark:text-gray-300 dark:hover:bg-[#40404A]"
                   }`}
               >
                 New
               </button>
               <button
-                onClick={() => setAssetFilterTab("gainers")}
+                onClick={() => {
+                  setAssetFilterTab("gainers");
+                  if (assetListRef.current) assetListRef.current.scrollTop = 0;
+                }}
                 className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-2xl whitespace-nowrap transition-colors ${assetFilterTab === "gainers"
                   ? "bg-[#1D8751] text-white"
-                  : "bg-[#E8EFF5] text-gray-700 hover:bg-[#D8E2EC] dark:bg-[#35353E] dark:text-gray-300 dark:hover:bg-[#40404A]"
+                  : "bg-[#E8EFF5] text-gray-700 hover:bg-[#D8E2EC] dark:bg-accent dark:text-gray-300 dark:hover:bg-[#40404A]"
                   }`}
               >
                 Gainers
               </button>
               <button
-                onClick={() => setAssetFilterTab("losers")}
+                onClick={() => {
+                  setAssetFilterTab("losers");
+                  if (assetListRef.current) assetListRef.current.scrollTop = 0;
+                }}
                 className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-2xl whitespace-nowrap transition-colors ${assetFilterTab === "losers"
                   ? "bg-[#1D8751] text-white"
-                  : "bg-[#E8EFF5] text-gray-700 hover:bg-[#D8E2EC] dark:bg-[#35353E] dark:text-gray-300 dark:hover:bg-[#40404A]"
+                  : "bg-[#E8EFF5] text-gray-700 hover:bg-[#D8E2EC] dark:bg-accent dark:text-gray-300 dark:hover:bg-[#40404A]"
                   }`}
               >
                 Losers
@@ -1662,7 +1675,7 @@ export default function DepositForm({
           )}
 
           {/* Asset List */}
-          <div className="overflow-y-auto p-1 flex-1 min-h-0">
+          <div ref={assetListRef} className="overflow-y-auto p-1 flex-1 min-h-0">
             {sortedSwapAssets.length > 0 ? (
               <>
                 {/* Popular Section - First 3 assets only if no search */}

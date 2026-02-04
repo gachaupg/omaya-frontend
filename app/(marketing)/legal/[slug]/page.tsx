@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
-import {ArrowLeft} from "lucide-react";
+import BackButton from "@/components/BackButton";
 
 type PolicyConfig = {
   title: string;
@@ -213,10 +212,8 @@ export default async function LegalPolicyPage({ params }: PolicyPageProps) {
   return (
     <div className="min-h-screen bg-(--bg-color) pt-32 pb-16 px-4">
       <div className="max-w-4xl mx-auto bg-(--card-color) rounded-3xl shadow-xl border border-gray-200 dark:border-accent p-8 md:p-12">
-        {/* Native htome */}
-        <Link className="inline-block mb-2" href="/" >
-          <ArrowLeft className="text-muted-foreground cursor-pointer" size={20} />
-        </Link>
+        {/* Back Button */}
+        <BackButton />
 
         <header className="mb-8">
           <p className="text-sm text-[#1D8751] font-semibold uppercase tracking-wide">
