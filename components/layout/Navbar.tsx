@@ -1400,21 +1400,8 @@ export default function Navbar() {
                     <div
                       className="fixed inset-0 bg-black/50 z-[60] md:hidden"
                       onClick={toggleMobileDepositDropdown}
-                      className="flex items-center justify-center w-full bg-[#1D8751] hover:bg-[#13B562] text-white px-6 py-2 rounded-full transition-colors duration-200 text-base min-h-[44px]"
-                    >
-                      Deposit
-                      <ChevronDown className={`ml-2 w-5 h-5 transition-transform duration-200 ${mobileDepositDropdownOpen ? "rotate-180" : ""}`} />
-                    </button>
-
-                    {/* Mobile Deposit Dropdown */}
-                    {mobileDepositDropdownOpen && (
-                      <>
-                        {/* Backdrop */}
-                        <div
-                          className="fixed inset-0 bg-black/50 z-[60] md:hidden"
-                          onClick={toggleMobileDepositDropdown}
-                        />
-                        {/* Dropdown Menu */}
+                    />
+                    {/* Dropdown Menu */}
                         <div className="fixed inset-x-2 sm:inset-x-4 top-[4.5rem] sm:top-20 z-[70] md:hidden dark:bg-[var(--card-color)] bg-white dark:border-[#35353E] border-gray-200 border rounded-xl shadow-xl overflow-hidden max-h-[calc(100vh-6rem)] overflow-y-auto">
                           <div className="p-3 sm:p-4">
                             {depositItems.map((item, index) => {
@@ -1458,8 +1445,8 @@ export default function Navbar() {
                             })}
                           </div>
                         </div>
-                      </>
-                    )}
+                  </>
+                )}
                   </div>
                   <div className="relative mt-4 flex justify-center">
                     {/* <button
@@ -1754,23 +1741,26 @@ export default function Navbar() {
                               <span className="text-base">Settings</span>
                             </Link>
 
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setProfileModalOpen(false);
-                      handleLogout();
-                      setTimeout(() => {
-                        setMobileMenuOpen(false);
-                      }, 300);
-                    }}
-                    className="flex items-center w-full py-2 text-gray-600 dark:text-gray-300 hover:text-[#1D8751] dark:hover:text-white transition-colors"
-                  >
-                    <LogOut size={18} className="mr-3" />
-                    <span className="text-sm font-medium">Logout</span>
-                  </button>
-                </div>
-              )}
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setProfileModalOpen(false);
+                                handleLogout();
+                                setTimeout(() => {
+                                  setMobileMenuOpen(false);
+                                }, 300);
+                              }}
+                              className="flex items-center w-full px-4 py-3 text-gray-300 hover:text-white hover:bg-[#35353E] rounded-lg transition-colors duration-200"
+                            >
+                              <LogOut size={20} className="mr-3" />
+                              <span className="text-base">Logout</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
             </>
           ) : (
             <>
@@ -1828,6 +1818,6 @@ export default function Navbar() {
           </div>
         )
       }
-    </div >
+    </div>
   );
 }
