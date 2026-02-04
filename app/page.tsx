@@ -420,14 +420,14 @@ export default function MarketingPage() {
 
   return (
     <div>
-     <section
+      <section
         className="relative min-h-screen pt-18 pb-16 mx-auto overflow-visible bg-gradient-to-br from-gray-50 to-white dark:bg-[var(--bg-color)]"
       >
         {/* Mask overlay to hide content behind navbar - positioned just below navbar (z-50) */}
         <div className="fixed top-0 left-0 right-0 h-[80px] z-[45] pointer-events-none">
           <div className="w-full h-full bg-white dark:bg-[var(--bg-color)]"></div>
         </div>
-        
+
         {/* Background styling - different for light and dark modes */}
         <div className="absolute inset-0 overflow-hidden z-0">
           {/* Light mode: Subtle gray/white gradient background */}
@@ -634,7 +634,7 @@ export default function MarketingPage() {
           </div>
 
           {/* First Row - Achievement Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 md:gap-6 mb-6 sm:mb-8 md:mb-10 max-w-7xl mx-auto">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 md:gap-6 mb-6 sm:mb-8 md:mb-10 max-w-7xl mx-auto">
             {achievements.map((achievement, index) => {
               const icons = [
                 <DollarSign key="dollar" className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-white" />,
@@ -1586,11 +1586,11 @@ export default function MarketingPage() {
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           {/* Top wave */}
           <svg className="absolute top-0 left-0 w-full h-32 sm:h-40 opacity-30" viewBox="0 0 1440 200" preserveAspectRatio="none">
-            <path d="M0,100 C300,180 600,20 900,100 C1200,180 1440,60 1440,100 L1440,0 L0,0 Z" fill="none" stroke="#1D8751" strokeWidth="2"/>
+            <path d="M0,100 C300,180 600,20 900,100 C1200,180 1440,60 1440,100 L1440,0 L0,0 Z" fill="none" stroke="#1D8751" strokeWidth="2" />
           </svg>
           {/* Bottom wave */}
           <svg className="absolute bottom-0 left-0 w-full h-32 sm:h-40 opacity-30" viewBox="0 0 1440 200" preserveAspectRatio="none">
-            <path d="M0,100 C240,20 480,180 720,100 C960,20 1200,180 1440,100 L1440,200 L0,200 Z" fill="none" stroke="#1D8751" strokeWidth="2"/>
+            <path d="M0,100 C240,20 480,180 720,100 C960,20 1200,180 1440,100 L1440,200 L0,200 Z" fill="none" stroke="#1D8751" strokeWidth="2" />
           </svg>
           {/* Middle decorative elements */}
           <div className="absolute top-1/4 right-10 w-3 h-3 bg-[#1D8751] rounded-full opacity-60"></div>
@@ -1937,7 +1937,7 @@ export default function MarketingPage() {
                       </h3>
 
                       {/* Description - decoded HTML rendered properly (text only for preview) */}
-                      <div 
+                      <div
                         className="text-gray-700 dark:text-white/70 text-sm mb-5 flex-grow line-clamp-3"
                       >
                         {article.excerpt}
@@ -2195,11 +2195,10 @@ export default function MarketingPage() {
                         className="relative"
                       >
                         <div
-                          className={`bg-gray-50 dark:bg-[#18181D] border rounded-xl overflow-hidden ${
-                            isOpen
+                          className={`bg-gray-50 dark:bg-[#18181D] border rounded-xl overflow-hidden ${isOpen
                               ? "dark:border-accent border-border"
                               : "border-gray-200 dark:border-[#2A2A2A]"
-                          }`}
+                            }`}
                         >
                           <button
                             onClick={() => toggleFAQ(globalIndex)}
@@ -2214,11 +2213,10 @@ export default function MarketingPage() {
                               </span>
                             </div>
                             <div
-                              className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ml-4 transition-colors ${
-                                isOpen
+                              className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ml-4 transition-colors ${isOpen
                                   ? "bg-[#1D8751]"
                                   : "bg-gray-200 dark:bg-[#2A2A2A]"
-                              }`}
+                                }`}
                             >
                               {isOpen ? (
                                 <ChevronUp className="w-4 h-4 text-white" />
@@ -2264,11 +2262,10 @@ export default function MarketingPage() {
                         <button
                           key={i}
                           onClick={() => setFaqPage(i + 1)}
-                          className={`min-w-[36px] h-9 px-2 rounded-lg text-sm font-medium transition-colors ${
-                            faqPage === i + 1
+                          className={`min-w-[36px] h-9 px-2 rounded-lg text-sm font-medium transition-colors ${faqPage === i + 1
                               ? "bg-[#1D8751] text-white"
                               : "border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#23232B] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#2A2A2A]"
-                          }`}
+                            }`}
                         >
                           {i + 1}
                         </button>
