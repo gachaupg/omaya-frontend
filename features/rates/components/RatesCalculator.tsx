@@ -1982,7 +1982,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                           };
                         }).filter((opt: any) => opt.value && opt.value.trim());
                       } else {
-                        const providerNames = Array.from(new Set((adminWalletListDisplay.displayData || []).map((w: any) => w?.admin_payment_detail?.provider_name))).filter((t) => Boolean(t && t.trim())) as string[];
+                        const providerNames = Array.from(new Set((adminWalletListDisplay.displayData || []).map((w: any) => w?.admin_payment_detail?.provider_name))).filter((t): t is string => typeof t === 'string' && t.trim().length > 0);
                         paymentMethodOptions = providerNames.map((paymentType: string) => {
                           const adminDetail = (adminWalletListDisplay.displayData || []).find((w: any) => w.admin_payment_detail?.provider_name === paymentType)?.admin_payment_detail;
                           const providerName = adminDetail?.provider_name || paymentType;
@@ -2460,7 +2460,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                           logo: provider.logo || provider.provider_logo || undefined,
                         })).filter((opt: any) => opt.value && opt.value.trim());
                       } else {
-                        const providerNames = Array.from(new Set((adminWalletListDisplay.displayData || []).map((w: any) => w?.admin_payment_detail?.provider_name))).filter((t) => Boolean(t && t.trim())) as string[];
+                        const providerNames = Array.from(new Set((adminWalletListDisplay.displayData || []).map((w: any) => w?.admin_payment_detail?.provider_name))).filter((t): t is string => typeof t === 'string' && t.trim().length > 0);
                         paymentMethodOptions = providerNames.map((paymentType: string) => {
                           const adminDetail = (adminWalletListDisplay.displayData || []).find((w: any) => w.admin_payment_detail?.provider_name === paymentType)?.admin_payment_detail;
                           return {
