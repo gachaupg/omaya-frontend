@@ -258,35 +258,16 @@ export const fetchConfirmOrder = createAsyncThunk(
 export const fetchSingleOrder = createAsyncThunk(
   "p2p/fetchSingleOrder",
   async (id: string, { rejectWithValue }) => {
-    // Since the error suggests we're getting a P2PTrade object,
-    // and the ID format looks like a UUID that could be either trade or order,
-    // let's try the trade endpoint first as it's more likely to be correct
+    // Try ORDER endpoint first - we pass order ID from confirmOrder.buy_order/sell_order.
+    // Order has limit_duration (e.g. "00:00:05" = 5 min). Trade endpoint returns trade with limit ("00:30:00" default).
     try {
-      return await SingleOrder1(id);
+      return await SingleOrder(id);
     } catch (err: any) {
-      // If we get a 500 error from trade endpoint, it might be an order ID
-      if (err.response?.status === 500) {
-        try {
-          return await SingleOrder(id);
-        } catch (orderErr: any) {
-          // If both fail with 500 errors, this might be a backend issue
-          if (orderErr.response?.status === 500) {
-            return rejectWithValue(
-              "Backend server error. Please try again later or contact support."
-            );
-          }
-
-          const msg = handleP2PErrorSafe(orderErr);
-          return rejectWithValue(msg || orderErr.message || "Failed to fetch single order");
-        }
-      } else {
-        // For non-500 errors from trade endpoint, try order endpoint as fallback
-        try {
-          return await SingleOrder(id);
-        } catch (orderErr: any) {
-          const msg = handleP2PErrorSafe(orderErr);
-          return rejectWithValue(msg || orderErr.message || "Failed to fetch single order");
-        }
+      try {
+        return await SingleOrder1(id);
+      } catch (tradeErr: any) {
+        const msg = handleP2PErrorSafe(tradeErr);
+        return rejectWithValue(msg || tradeErr.message || "Failed to fetch single order");
       }
     }
   }

@@ -39,6 +39,9 @@ import {
 } from "@/lib/utils/authRedirect";
 import { useValidateAddress } from "@/hooks/useValidateAddress";
 import { openKYCModal, checkKYCStatus } from "@/features/auth/slices/authSlice";
+import { useBookmarkedAddresses } from "@/features/express/hooks/useBookmarkedAddresses";
+import { BookmarkDropdown } from "@/features/express/components/forms/BookmarkDropdown";
+import { fetchCommission, getCommissionApiAsset } from "@/features/express/api";
 
 interface DepositFormProps {
   onExchange?: (transactionData: {
@@ -541,6 +544,10 @@ export default function DepositForm({
   const [isCalculatingFromPay, setIsCalculatingFromPay] = useState(true);
   const [walletAddress, setWalletAddress] = useState("");
   const [walletError, setWalletError] = useState<string | null>(null);
+  const [bookmarkOpen, setBookmarkOpen] = useState(false);
+  const bookmarkAnchorRef = useRef<HTMLSpanElement>(null);
+  const [apiCommission, setApiCommission] = useState<number | null>(null);
+  const commissionFetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [isAddressConfirmed, setIsAddressConfirmed] = useState(false);
   const [forceUpdate, setForceUpdate] = useState(0);
   const [selectedPaymentDetail, setSelectedPaymentDetail] = useState<any>(null);
@@ -630,6 +637,9 @@ export default function DepositForm({
   // Add InfoModal state
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
 
+  // Terms & Conditions expansion
+  const [expandedTerms, setExpandedTerms] = useState(false);
+
 
   // Add validation state for minimum receive amount
   const [receiveAmountError, setReceiveAmountError] = useState<string | null>(null);
@@ -714,6 +724,14 @@ export default function DepositForm({
   }, [selectedNetwork, selectedAsset]);
 
   const currentNetwork = getCurrentNetwork();
+
+  const {
+    bookmarks,
+    loading: bookmarksLoading,
+    saving: bookmarkSaving,
+    fetchBookmarks,
+    saveBookmark,
+  } = useBookmarkedAddresses(currentCurrency, currentNetwork || undefined);
 
   // Address validation hook
   const {
@@ -1017,6 +1035,32 @@ export default function DepositForm({
 
   // FXP uses manual calculation with fixed 1.06 rate
   const FXP_EXCHANGE_RATE = 1.06;
+
+  const isCommissionApiAsset = (asset: any) => !!getCommissionApiAsset(asset?.ticker || asset?.symbol || "");
+
+  useEffect(() => {
+    const apiAsset = selectedAsset ? getCommissionApiAsset(selectedAsset.ticker || selectedAsset.symbol || "") : null;
+    if (!apiAsset || !selectedAsset) {
+      setApiCommission(null);
+      return;
+    }
+    const amount = isCalculatingFromPay
+      ? (parseFloat(payAmountInput) || payAmount)
+      : (parseFloat(getAmountInput) || getAmount);
+    if (amount <= 0) {
+      setApiCommission(null);
+      return;
+    }
+    if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
+    commissionFetchTimeoutRef.current = setTimeout(() => {
+      fetchCommission(apiAsset, amount, "deposit")
+        .then((c) => setApiCommission(c))
+        .catch(() => setApiCommission(null));
+    }, 300);
+    return () => {
+      if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
+    };
+  }, [selectedAsset, payAmountInput, getAmountInput, payAmount, getAmount, isCalculatingFromPay]);
 
   // Fetch estimate for non-direct assets - debounced to avoid rapid API calls
   useEffect(() => {
@@ -1853,11 +1897,15 @@ export default function DepositForm({
 
   // Calculate fees and amounts - Network fee is always 0
   const networkFee = 0;
-  // Use default commission rate for swap assets (can be updated based on asset type)
-  const commissionRate = selectedAsset?.range_commissions?.[0]?.commission
-    ? parseFloat(selectedAsset.range_commissions[0].commission)
-    : 2; // Default 2% commission for swap assets
-  const commissionAmount = (getAmount * commissionRate) / 100;
+  let commissionAmount: number;
+  if (selectedAsset && isCommissionApiAsset(selectedAsset)) {
+    commissionAmount = apiCommission ?? 0;
+  } else {
+    const commissionRate = selectedAsset?.range_commissions?.[0]?.commission
+      ? parseFloat(selectedAsset.range_commissions[0].commission)
+      : 2;
+    commissionAmount = (getAmount * commissionRate) / 100;
+  }
   const totalFees = networkFee + commissionAmount;
 
   // Stable calculation function with debouncing
@@ -1889,41 +1937,14 @@ export default function DepositForm({
 
     // For direct assets (USDT on BSC, USDC on BSC), calculate immediately
     if (isSimpleCalculationAsset(selectedAsset)) {
-      let commissionRate = 2; // Default fallback
-
-      // Safely access commission rate with multiple fallback options
-      if (selectedAsset?.range_commissions && selectedAsset.range_commissions.length > 0) {
-        const firstCommission = selectedAsset.range_commissions[0];
-        if (firstCommission?.commission) {
-          commissionRate = parseFloat(firstCommission.commission);
-        }
-      } else if (selectedAsset?.commission) {
-        // Try alternative commission property
-        commissionRate = parseFloat(selectedAsset.commission);
-      } else if (selectedAsset?.fee_rate) {
-        // Try fee_rate property
-        commissionRate = parseFloat(selectedAsset.fee_rate);
-      }
-
-      // Ensure commission rate is a valid number
-      if (isNaN(commissionRate) || commissionRate <= 0) {
-        commissionRate = 2; // Default to 2% if invalid
-      }
+      const commission = isCommissionApiAsset(selectedAsset) ? (apiCommission ?? 0) : 2;
 
       if (fromPay) {
-        // Forward calculation: from pay amount to receive amount
-        const commissionAmount = (fromAmount * commissionRate) / 100;
-        const networkFee = 0;
-        const totalFees = networkFee + commissionAmount;
-        const calculatedGetAmount = fromAmount - totalFees;
+        const calculatedGetAmount = fromAmount < commission ? fromAmount : Math.max(0, fromAmount - commission);
         setGetAmount(calculatedGetAmount);
         setGetAmountInput(calculatedGetAmount.toString());
       } else {
-        // Reverse calculation: from receive amount to pay amount
-        const commissionAmount = (fromAmount * commissionRate) / 100;
-        const networkFee = 0;
-        const totalFees = networkFee + commissionAmount;
-        const calculatedPayAmount = fromAmount + totalFees;
+        const calculatedPayAmount = fromAmount + commission;
         setPayAmount(calculatedPayAmount);
         setPayAmountInput(calculatedPayAmount.toString());
       }
@@ -1979,13 +2000,8 @@ export default function DepositForm({
         if (fromPay) {
           // Forward calculation: from pay amount to receive amount
           if (isSimpleCalculationAsset(selectedAsset)) {
-            // Simple calculation for direct assets (USDT on BSC, USDC on BSC) - simply subtract 2
-            let calculatedGetAmount;
-            if (fromAmount < 2) {
-              calculatedGetAmount = fromAmount;
-            } else {
-              calculatedGetAmount = Math.max(0, fromAmount - 2); // Simply subtract 2 for direct assets
-            }
+            const commission = isCommissionApiAsset(selectedAsset) ? (apiCommission ?? 0) : 2;
+            const calculatedGetAmount = fromAmount < commission ? fromAmount : Math.max(0, fromAmount - commission);
             setGetAmount(calculatedGetAmount);
             setGetAmountInput(calculatedGetAmount.toString());
             setReceiveAmountError(null);
@@ -2012,13 +2028,8 @@ export default function DepositForm({
         } else {
           // Reverse calculation: from receive amount to pay amount
           if (isSimpleCalculationAsset(selectedAsset)) {
-            // Simple reverse calculation for direct assets (USDT on BSC, USDC on BSC) - simply add 2
-            let calculatedPayAmount;
-            if (fromAmount < 2) {
-              calculatedPayAmount = fromAmount;
-            } else {
-              calculatedPayAmount = fromAmount + 2; // Simply add 2 for direct assets
-            }
+            const commission = isCommissionApiAsset(selectedAsset) ? (apiCommission ?? 0) : 2;
+            const calculatedPayAmount = fromAmount + commission;
             setPayAmount(calculatedPayAmount);
             setPayAmountInput(calculatedPayAmount.toString());
             setReceiveAmountError(null);
@@ -2471,6 +2482,7 @@ export default function DepositForm({
       const transactionData = {
         type: "deposit" as const,
         amount: payAmount,
+        receiveAmount: parseFloat(getAmountInput) || getAmount, // From "You Receive" input
         asset: {
           ...selectedAsset,
           icon: selectedAsset.image_url || selectedAsset.asset_image || selectedAsset.icon_url || selectedAsset.image
@@ -2737,6 +2749,7 @@ export default function DepositForm({
         const transactionData = {
           type: "deposit" as const,
           amount: payAmount,
+          receiveAmount: parseFloat(getAmountInput) || getAmount, // From "You Receive" input
           asset: {
             ...selectedAsset,
             icon: selectedAsset.image_url || selectedAsset.asset_image || selectedAsset.icon_url || selectedAsset.image
@@ -2902,7 +2915,8 @@ export default function DepositForm({
 
                         // For direct assets, calculate immediately
                         if (selectedAsset && newAmount > 0 && isSimpleCalculationAsset(selectedAsset)) {
-                          const calculatedGetAmount = newAmount < 2 ? newAmount : Math.max(0, newAmount - 2);
+                          const commission = isCommissionApiAsset(selectedAsset) ? (apiCommission ?? 0) : 2;
+                          const calculatedGetAmount = newAmount < commission ? newAmount : Math.max(0, newAmount - commission);
                           setGetAmount(calculatedGetAmount);
                           setGetAmountInput(calculatedGetAmount.toString());
 
@@ -3934,7 +3948,7 @@ export default function DepositForm({
               Wallet/Account Address
             </label>
             {/* Input group */}
-            <div className="flex flex-wrap items-center bg-transparent dark:bg-transparent border border-[#39394a] dark:border-[#39394A] rounded-2xl px-2 sm:px-4 py-2 mb-4 gap-2">
+            <div className="relative flex flex-wrap items-center bg-transparent dark:bg-transparent border border-[#39394a] dark:border-[#39394A] rounded-2xl px-2 sm:px-4 py-2 mb-4 gap-2">
               {/* Left icon */}
               <span className="mr-2 text-[#1D8751]">
                 <svg width="22" height="22" fill="none" viewBox="0 0 24 24">
@@ -3978,7 +3992,7 @@ export default function DepositForm({
                     validateAddress(value, currentCurrency, currentNetwork);
                   }
                 }}
-                placeholder="Paste your crypto address"
+                placeholder={`Paste your ${(selectedAsset?.ticker || selectedAsset?.symbol || "crypto").toUpperCase()} address`}
                 className={`flex-1 bg-transparent border-none outline-none text-[#35353e] dark:text-[#788099] placeholder-[#788099] text-sm sm:text-base ${walletError
                   ? "border-red-500"
                   : walletAddress.trim() && !walletError
@@ -3986,18 +4000,53 @@ export default function DepositForm({
                     : ""
                   }`}
               />
-              {/* Bookmark icon */}
-              <span className="mx-1 sm:mx-2 text-[#788099] cursor-pointer flex-shrink-0">
-                <svg width="18" height="18" className="sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24">
-                  <path
-                    d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"
-                    stroke="#788099"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
+              {/* Bookmark icon - clickable to load from bookmarks */}
+              <span
+                ref={bookmarkAnchorRef}
+                className="mx-1 sm:mx-2 text-[#1D8751] cursor-pointer flex-shrink-0 hover:opacity-80 transition-opacity"
+                onClick={async () => {
+                  if (bookmarkOpen) {
+                    setBookmarkOpen(false);
+                    return;
+                  }
+                  setBookmarkOpen(true);
+                  await fetchBookmarks();
+                }}
+                title="Load from bookmarks"
+              >
+                <svg width="18" height="18" className="sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
                 </svg>
               </span>
+              <BookmarkDropdown
+                isOpen={bookmarkOpen}
+                onClose={() => setBookmarkOpen(false)}
+                bookmarks={bookmarks}
+                loading={bookmarksLoading}
+                saving={bookmarkSaving}
+                currentAddress={walletAddress}
+                asset={currentCurrency}
+                network={currentNetwork || undefined}
+                onSelect={(addr) => {
+                  setWalletAddress(addr);
+                  if (addr.trim()) validateAddress(addr, currentCurrency, currentNetwork);
+                  else resetAddressValidation();
+                }}
+                onSaveCurrent={async () => {
+                  if (!walletAddress.trim() || !currentCurrency || !currentNetwork) {
+                    showToast.error("Enter address and select asset/network first");
+                    return;
+                  }
+                  await saveBookmark({
+                    address: walletAddress.trim(),
+                    label: `My ${currentCurrency} wallet`,
+                    network: currentNetwork,
+                    asset: currentCurrency,
+                  });
+                }}
+                anchorRef={bookmarkAnchorRef}
+                isDark={isDark}
+              />
               {/* Paste button */}
               <button
                 onClick={async () => {
@@ -4079,58 +4128,58 @@ export default function DepositForm({
               </p>
             )} */}
 
-            {/* Terms and Conditions Summary */}
-            <div className="flex items-center mb-2">
-              <span className="mr-2 text-[#1D8751]">
-                <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
-                  <circle
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="#1D8751"
-                    strokeWidth="2"
-                  />
-                  <line
-                    x1="12"
-                    y1="8"
-                    x2="12"
-                    y2="12"
-                    stroke="#1D8751"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
-                  <circle cx="12" cy="16" r="1" fill="#1D8751" />
-                </svg>
-              </span>
-              <span className={`text-base font-semibold ${isDark ? "text-[#788099]" : "text-[#475569]"}`}>
-                Terms and Conditions Summary
-              </span>
+            {/* Terms & Conditions */}
+            <div className="flex items-center gap-2 mb-2">
+              <svg className="w-5 h-5 text-[#1D8751]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <h3 className={`font-medium text-sm sm:text-base ${isDark ? "text-white" : "text-gray-900"}`}>
+                Terms & Conditions
+              </h3>
             </div>
-            <div
-              className={`border border-[#1D8751] rounded-xl p-4 ${isDark ? "bg-[#1D1D23]" : "bg-[#F8FAFF]"
-                }`}
-            >
-              <ul className="list-none space-y-2">
-                <li className="flex items-start">
-                  <span className="w-2 h-2 mt-1.5 rounded-full bg-[#1D8751] shrink-0 mr-3"></span>
-                  <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm`}>
-                    Please send money from your own account only to <span className="font-semibold text-[#1D8751]">{selectedPaymentDetail?.provider_name || payBank || "the selected provider"}</span> account <span className="font-semibold text-[#1D8751]">{selectedPaymentDetail?.account_number || selectedPaymentDetail?.payment_details?.[0]?.account_number || selectedPaymentDetail?.payment_details?.[0]?.mobile_number || "—"}</span> for Asset <span className="font-semibold text-[#1D8751]">{selectedAsset?.ticker || selectedAsset?.symbol || "crypto"}</span>.
-                  </span>
-                </li>
-                <li className="flex items-start">
-                  <span className="w-2 h-2 mt-1.5 rounded-full bg-[#1D8751] shrink-0 mr-3"></span>
-                  <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm`}>
-                    Put transaction ID in the description field of the bank
-                  </span>
-                </li>
-                <li className="flex items-start">
-                  <span className="w-2 h-2 mt-1.5 rounded-full bg-[#1D8751] shrink-0 mr-3"></span>
-                  <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm`}>
-                    Please note, If you do not follow above conditions, we will
-                    reject your transaction and send you back your money.
-                  </span>
-                </li>
-              </ul>
+            <div className={`border border-[#1D8751] rounded-xl overflow-hidden transition-all duration-300 ${isDark ? "bg-[#1D1D23]" : "bg-[#F8FAFF]"}`}>
+              <div className="p-4">
+                <div className={`space-y-2 sm:space-y-3 ${expandedTerms ? "" : "line-clamp-3"}`}>
+                  <div className="flex items-start gap-2 sm:gap-3">
+                    <span className="text-[#1D8751] font-bold text-sm sm:text-base flex-shrink-0">1.</span>
+                    <p className={`text-xs sm:text-sm ${isDark ? "text-[#788099]" : "text-[#475569]"}`}>
+                      <span className="font-semibold">Send from your own account only:</span> Please send money from your own account only to <span className="font-semibold text-[#1D8751]">{selectedPaymentDetail?.provider_name || payBank || "the selected provider"}</span> account <span className="font-semibold text-[#1D8751]">{selectedPaymentDetail?.account_number || selectedPaymentDetail?.payment_details?.[0]?.account_number || selectedPaymentDetail?.payment_details?.[0]?.mobile_number || "—"}</span> for Asset <span className="font-semibold text-[#1D8751]">{selectedAsset?.ticker || selectedAsset?.symbol || "crypto"}</span>.
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-2 sm:gap-3">
+                    <span className="text-[#1D8751] font-bold text-sm sm:text-base flex-shrink-0">2.</span>
+                    <p className={`text-xs sm:text-sm ${isDark ? "text-[#788099]" : "text-[#475569]"}`}>
+                      <span className="font-semibold">Put transaction ID in the description field:</span> You must put the transaction ID in the description/memo field of the bank transfer.
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-2 sm:gap-3">
+                    <span className="text-[#1D8751] font-bold text-sm sm:text-base flex-shrink-0">3.</span>
+                    <p className={`text-xs sm:text-sm ${isDark ? "text-[#788099]" : "text-[#475569]"}`}>
+                      <span className="font-semibold">Non-compliance:</span> Please note, if you do not follow the above conditions, we will reject your transaction and send you back your money.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setExpandedTerms(!expandedTerms)}
+                  className="mt-3 sm:mt-4 text-[#1D8751] hover:text-[#166b3e] font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition-colors"
+                >
+                  {expandedTerms ? (
+                    <>
+                      <span>Show Less</span>
+                      <svg className="w-4 h-4 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                      </svg>
+                    </>
+                  ) : (
+                    <>
+                      <span>Show More</span>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                      </svg>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
 
 

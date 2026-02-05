@@ -77,6 +77,7 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
   const { isDark } = useTheme();
   const [showSuccess, setShowSuccess] = useState(false);
   const [currentStatus, setCurrentStatus] = useState<string>("pending");
+  const [expandedTerms, setExpandedTerms] = useState(false);
   
   // Initialize persistedTransactionData synchronously from localStorage to prevent redirect on refresh
   const [persistedTransactionData, setPersistedTransactionData] = useState<any>(() => {
@@ -1557,24 +1558,59 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
         </div>
       </div>
 
-      {/* Terms and Conditions */}
-      <div className={`w-full rounded-2xl flex`}>
-        <div className={`w-full bg-[#FF9500]/50 border-2 border-solid border-[#FF9500]/50 rounded-[18px] flex flex-col ${isHomePage ? 'gap-1 sm:gap-2 p-2 sm:p-3' : 'gap-2 p-3'}`}>
-          <h2 className={`text-white ${isHomePage ? 'text-sm sm:text-base' : 'text-base'} font-semibold`}>
-            Terms and Conditions Summary
-          </h2>
-          <ul className={`list-disc list-inside ${isHomePage ? 'space-y-0.5 sm:space-y-1' : 'space-y-1'}`}>
-            <li className={`text-white ${isHomePage ? 'text-xs sm:text-sm' : 'text-sm'}`}>
-              Please send the money from your own account Only
-            </li>
-            <li className="text-white text-sm">
-              Put transaction ID in the description field of the bank
-            </li>
-            <li className="text-white text-sm">
-              Please note, If you do not follow above conditions, we will reject
-              your transaction and send you back your money.
-            </li>
-          </ul>
+      {/* Terms & Conditions */}
+      <div className="w-full rounded-2xl flex">
+        <div className={`w-full border border-[#1D8751] rounded-xl overflow-hidden transition-all duration-300 ${isDark ? "bg-[#1D1D23]" : "bg-[#F8FAFF]"}`}>
+          <div className={`flex flex-col ${isHomePage ? "gap-1 sm:gap-2 p-2 sm:p-3" : "gap-2 p-3"}`}>
+            <div className="flex items-center gap-2">
+              <svg className="w-5 h-5 text-[#1D8751]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <h3 className={`font-medium ${isHomePage ? "text-sm sm:text-base" : "text-base"} ${isDark ? "text-white" : "text-gray-900"}`}>
+                Terms & Conditions
+              </h3>
+            </div>
+            <div className={`space-y-2 ${expandedTerms ? "" : "line-clamp-3"}`}>
+              <div className="flex items-start gap-2">
+                <span className="text-[#1D8751] font-bold text-sm flex-shrink-0">1.</span>
+                <p className={`text-xs sm:text-sm ${isDark ? "text-[#788099]" : "text-[#475569]"}`}>
+                  <span className="font-semibold">Send from your own account only:</span> Please send the money from your own account only.
+                </p>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-[#1D8751] font-bold text-sm flex-shrink-0">2.</span>
+                <p className={`text-xs sm:text-sm ${isDark ? "text-[#788099]" : "text-[#475569]"}`}>
+                  <span className="font-semibold">Put transaction ID in the description field:</span> You must put the transaction ID in the description field of the bank.
+                </p>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-[#1D8751] font-bold text-sm flex-shrink-0">3.</span>
+                <p className={`text-xs sm:text-sm ${isDark ? "text-[#788099]" : "text-[#475569]"}`}>
+                  <span className="font-semibold">Non-compliance:</span> Please note, if you do not follow the above conditions, we will reject your transaction and send you back your money.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setExpandedTerms(!expandedTerms)}
+              className="mt-2 text-[#1D8751] hover:text-[#166b3e] font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition-colors"
+            >
+              {expandedTerms ? (
+                <>
+                  <span>Show Less</span>
+                  <svg className="w-4 h-4 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                  </svg>
+                </>
+              ) : (
+                <>
+                  <span>Show More</span>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                  </svg>
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
     </div>

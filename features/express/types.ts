@@ -29,6 +29,7 @@ export interface ExpressWithdrawalPayload {
   amount: string;
   network: string;
   user_payment_detail_id: string;
+  counter_assigned_id?: number;
 }
 
 export interface ChangeNowSwapResponse {
