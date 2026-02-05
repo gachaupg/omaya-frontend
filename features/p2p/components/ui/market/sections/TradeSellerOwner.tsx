@@ -317,9 +317,9 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
           { label: "View order" },
         ]}
       />
-      <div className="final-buy-container grid grid-cols-1 md:grid-cols-3 gap-2 sm:gap-4 md:gap-6 p-1 sm:p-2 md:p-6 min-h-screen bg-[#EEF1F4] dark:bg-(--bg-color)">
+      <div className="final-buy-container grid grid-cols-1 lg:grid-cols-3 gap-2 sm:gap-4 md:gap-6 p-1 sm:p-2 md:p-6 min-h-screen bg-[#EEF1F4] dark:bg-(--bg-color)">
         {/* Left Column: Main Info */}
-        <div className="md:col-span-2 flex flex-col gap-6">
+        <div className="lg:col-span-2 flex flex-col gap-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
               <p
@@ -328,17 +328,17 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                 Advertiser Information
               </p>
             </div>
-            <button
+            {/* <button
               onClick={handleRefresh}
               className="flex items-center gap-1 bg-gray-100 dark:bg-[var(--card-color)] text-[#1D8751] rounded-lg px-2 py-1.5 sm:py-1 border border-gray-200 dark:border-[#35353E] hover:bg-gray-200 dark:hover:bg-[#35353E] transition-colors self-start sm:self-auto"
               title="Refresh"
             >
               <RefreshCw size={12} className="sm:w-[14px] sm:h-[14px]" />
-            </button>
+            </button> */}
           </div>
           {/* Advertiser Info */}
-          <section className="advertiser-info rounded-[18px] p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 border-2 border-gray-200 dark:border-[#35353E] bg-gray-50 dark:bg-[var(--card-color)]">
-            <div className="flex items-center gap-3 sm:gap-4 flex-shrink-0">
+          <section className="advertiser-info rounded-[18px] p-3 sm:p-4 flex flex-col md:flex-row flex-wrap md:items-center gap-3 md:gap-4 border-2 border-gray-200 dark:border-[#35353E] bg-gray-50 dark:bg-[var(--card-color)]">
+            <div className="flex items-center gap-3 sm:gap-4 shrink-0">
               <div className="icon rounded-full w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center text-lg sm:text-xl font-bold bg-[#1D8751] text-white flex-shrink-0 overflow-hidden">
                 {(tradeDataJson?.buy_photo ||
                   confirmOrder?.buyer_photo ||
@@ -403,7 +403,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                 </div>
               </div>
             </div>
-            <div className="ml-2 sm:ml-auto flex flex-wrap sm:flex-nowrap gap-4 sm:gap-6 lg:gap-8 text-xs justify-start sm:justify-end">
+            <div className="ml-2 md:ml-auto flex flex-wrap md:flex-nowrap gap-4 md:gap-6 lg:gap-8 text-xs justify-start md:justify-end">
               <div className="flex-shrink-0">
                 <span className="text-xs sm:text-[13px] text-gray-900 dark:text-white font-medium block">
                   {tradeDataJson?.limit || "10 Minutes"}
@@ -536,7 +536,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                           }}
                         />
                       ) : null}
-                      <span 
+                      <span
                         className="text-[#1D8751] font-bold text-xs"
                         style={{ display: (paymentDetails?.logo || paymentDetails?.logo_url || paymentDetails?.provider_logo) ? 'none' : 'flex' }}
                       >
