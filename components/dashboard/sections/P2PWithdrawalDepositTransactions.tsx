@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "@/store";
 import { fetchMyTransactions, setCurrentPage } from "@/features/p2p/slices/p2pWithdrawalDepositSlice";
@@ -68,6 +68,7 @@ const P2PWithdrawalDepositTransactions = () => {
     (state: RootState) => state.p2pWithdrawalDeposit
   );
   const itemsPerPage = 10;
+  const tableRef = useRef<HTMLDivElement>(null);
 
   /* -------------------------- fetch data ----------------------------- */
   useEffect(() => {
@@ -126,6 +127,18 @@ const P2PWithdrawalDepositTransactions = () => {
     e?.preventDefault();
     e?.stopPropagation();
     dispatch(setCurrentPage(pageNumber));
+
+    if (tableRef.current) {
+      // Scroll to the table top with a small offset for better visibility
+      const topOffset = 180;
+      const elementPosition = tableRef.current.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - topOffset;
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: "smooth"
+      });
+    }
   };
 
   const renderPagination = () => {
@@ -199,7 +212,7 @@ const P2PWithdrawalDepositTransactions = () => {
 
   /* ------------------------------ table ------------------------------ */
   return (
-    <div className="w-full">
+    <div className="w-full" ref={tableRef}>
       {/* Mobile Card Layout */}
       <div className="block sm:hidden space-y-3">
         {paginatedResults.map((tx: any, index: number) => {

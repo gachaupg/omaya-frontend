@@ -35,6 +35,7 @@ const ITEMS_PER_PAGE = 5;
 const PaymentMethods = () => {
   /** Local state */
   const [currentPage, setCurrentPage] = useState(1);
+  const listRef = useRef<HTMLDivElement>(null);
   const [deletingMethodId, setDeletingMethodId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deleteSuccess, setDeleteSuccess] = useState(false);
@@ -435,6 +436,20 @@ const PaymentMethods = () => {
     </div>
   );
 
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    if (listRef.current) {
+      const topOffset = 100;
+      const elementPosition = listRef.current.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - topOffset;
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: "smooth"
+      });
+    }
+  };
+
   const renderPagination = (totalItems: number) => {
     const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
     if (totalPages <= 1) return null;
@@ -442,9 +457,9 @@ const PaymentMethods = () => {
     return (
       <div className="flex flex-wrap items-center justify-center gap-2 mt-6">
         <button
-          onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+          onClick={() => handlePageChange(Math.max(currentPage - 1, 1))}
           disabled={currentPage === 1}
-          className="px-3 py-1 rounded-lg bg-gray-100 dark:bg-[var(--card-color)] text-gray-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-3 py-1 rounded-lg bg-white border border-gray-200 dark:border-[#35353E] dark:bg-[var(--card-color)] text-gray-700 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-[#2A2A2A] transition-colors"
         >
           Previous
         </button>
@@ -452,10 +467,10 @@ const PaymentMethods = () => {
           {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
             <button
               key={page}
-              onClick={() => setCurrentPage(page)}
-              className={`w-8 h-8 rounded-lg ${currentPage === page
+              onClick={() => handlePageChange(page)}
+              className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${currentPage === page
                 ? "bg-[#1D8751] text-white"
-                : "bg-gray-100 dark:bg-card text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                : "bg-(--card-color) border border-gray-200 dark:border-accent  text-gray-700 dark:text-gray-400 hover:bg-[#1D8751]/10 hover:text-gray-900 dark:hover:text-white"
                 }`}
             >
               {page}
@@ -464,10 +479,10 @@ const PaymentMethods = () => {
         </div>
         <button
           onClick={() =>
-            setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+            handlePageChange(Math.min(currentPage + 1, totalPages))
           }
           disabled={currentPage === totalPages}
-          className="px-3 py-1 rounded-lg bg-gray-100 dark:bg-[var(--card-color)] text-gray-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-3 py-1 rounded-lg bg-white border border-gray-200 dark:border-[#35353E] dark:bg-[var(--card-color)] text-gray-700 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-[#2A2A2A] transition-colors"
         >
           Next
         </button>
@@ -683,7 +698,7 @@ const PaymentMethods = () => {
       ) : (
         <>
           {/* Bank Section */}
-          <div className="mb-6">
+          <div className="mb-6" ref={listRef}>
             <div>
               {bankMethods.length === 0 ? (
                 <p className="text-sm text-gray-500 dark:text-gray-400">No bank payment methods added.</p>
