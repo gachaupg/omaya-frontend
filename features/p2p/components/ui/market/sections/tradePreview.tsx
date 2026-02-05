@@ -255,7 +255,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
     // Validate against available amount (show error but don't cap input)
     if (numericAmount > availableAmount) {
       setIsAmountValid(false);
-      setErrorMessage(`Amount cannot exceed available balance (${availableAmount.toFixed(2)} USDT)`);
+      setErrorMessage(`Amount cannot exceed ${availableAmount.toFixed(2)} USDT`);
       setSendAmount("");
       return;
     }

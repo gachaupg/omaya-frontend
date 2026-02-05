@@ -134,13 +134,13 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
 
   const handleEditSave = async (formData: any) => {
     try {
-      // TODO: implement update thunk
-      toast.success("Trade updated successfully");
+      // The EditAdModal handles the API call and success/error is handled there
+      // Don't show duplicate toast here
       setIsEditModalOpen(false);
       // Refetch the data after successful edit
       dispatch(fetchMyOrders(1) as any);
     } catch (error) {
-      toast.error("Failed to update trade");
+      // Error is already handled in EditAdModal
     }
   };
 

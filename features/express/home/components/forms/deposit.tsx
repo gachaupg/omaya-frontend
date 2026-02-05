@@ -2266,8 +2266,7 @@ export default function DepositForm({
         setApiResponse(depositResponse);
         setTransactionCode(depositResponse.deposit_code || "");
 
-        // Show success message
-        showToast.success("Deposit request submitted successfully!");
+        // Don't show success toast here - wait until the full process is complete
 
         setIsFirstCardSubmitted(true);
         // Scroll to the next section

@@ -211,7 +211,7 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
                       </div>
                       <div>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                          Account Number
+                          {selectedMethod?.toLowerCase().includes('mobile') || selectedMethod?.toLowerCase().includes('money') ? 'Phone Number' : 'Account Number'}
                         </p>
                         <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                           {detail.account_number}
@@ -229,13 +229,17 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
               </div>
             ))
           ) : (
-            <div className="text-center py-8 px-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-              <p className="text-gray-600 dark:text-gray-400">
-                {hasAdminMethod
-                  ? `No payment account found for ${selectedProvider}. Please add a payment account first.`
-                  : "No payment details found for this combination. Please add a payment method first."}
-              </p>
-            </div>
+            // Only show 'no payment account' message if there are no accounts for this provider
+            // and no accounts already selected for this provider
+            !selectedDetails.some(d => d.payment_provider_name === selectedProvider) && (
+              <div className="text-center py-8 px-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                <p className="text-gray-600 dark:text-gray-400">
+                  {hasAdminMethod
+                    ? `No payment account found for ${selectedProvider}. Please add a payment account first.`
+                    : "No payment details found for this combination. Please add a payment method first."}
+                </p>
+              </div>
+            )
           )}
         </div>
       )}
