@@ -53,6 +53,29 @@ const handleApiError = (error: unknown): string => {
   return "An unexpected error occurred";
 };
 
+// Commission API response
+export interface MoneyXCommissionResponse {
+  commission: string;
+}
+
+export const fetchMoneyXCommission = createAsyncThunk<
+  string,
+  number
+>(
+  "moneyX/fetchCommission",
+  async (amount, { rejectWithValue }) => {
+    try {
+      const response = await get<MoneyXCommissionResponse>(
+        API_CONFIG.MONEYX.COMMISSION(amount)
+      );
+      return response.data?.commission ?? "0";
+    } catch (error) {
+      logger.error('moneyX', "Failed to fetch commission:", error);
+      return rejectWithValue(handleApiError(error));
+    }
+  }
+);
+
 // Async thunks
 export const fetchMoneyXTransactions = createAsyncThunk<
   MoneyXTransaction[],

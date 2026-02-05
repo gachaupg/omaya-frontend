@@ -249,41 +249,65 @@ const TradePreview: React.FC<TradePreviewProps> = ({
       return;
     }
     
-    // Get available amount from the order
     const availableAmount = advertiserData.availableAmount || 0;
 
-    // Validate against available amount (show error but don't cap input)
-    if (numericAmount > availableAmount) {
-      setIsAmountValid(false);
-      setErrorMessage(`Amount cannot exceed available balance (${availableAmount.toFixed(2)} USDT)`);
-      setSendAmount("");
-      return;
-    }
+    if (tradeType === "sell") {
+      // For sell: receiveAmount is USD, sendAmount is USDT. Validate the calculated USDT amount.
+      const calculatedSendUsdt = numericAmount / commissionRate;
+      const validation = validateBalance({
+        walletBalance,
+        transactionSummary,
+        amount: calculatedSendUsdt,
+        minAmount,
+        maxAmount,
+        tradeType: "sell",
+      });
 
-    // Check minimum amount
-    if (numericAmount < minAmount) {
-      setIsAmountValid(false);
-      setErrorMessage(`Minimum amount is ${minAmount} USDT`);
-      setSendAmount("");
-      return;
-    }
+      setIsAmountValid(validation.isValid);
+      setErrorMessage(validation.errorMessage || "");
 
-    // Check maximum amount (this should not exceed availableAmount, but check for consistency)
-    if (numericAmount > maxAmount) {
-      setIsAmountValid(false);
-      setErrorMessage(`Maximum amount is ${maxAmount} USDT`);
-      setSendAmount("");
-      return;
-    }
+      if (!validation.isValid) {
+        setSendAmount("");
+        return;
+      }
 
-    // If validation passes, calculate send amount and clear errors
-    setIsAmountValid(true);
-    setErrorMessage("");
-    const calculatedSend = 
-      tradeType === "sell"
-        ? (numericAmount / commissionRate).toFixed(2)
-        : (numericAmount * commissionRate).toFixed(2);
-    setSendAmount(calculatedSend);
+      if (calculatedSendUsdt > availableAmount) {
+        setIsAmountValid(false);
+        setErrorMessage(`Maximum available is ${availableAmount.toFixed(2)} USDT (${(availableAmount * commissionRate).toFixed(2)} USD)`);
+        setSendAmount("");
+        return;
+      }
+
+      setIsAmountValid(true);
+      setErrorMessage("");
+      setSendAmount(calculatedSendUsdt.toFixed(2));
+    } else {
+      // For buy: receiveAmount is USDT, sendAmount is USD
+      if (numericAmount > availableAmount) {
+        setIsAmountValid(false);
+        setErrorMessage(`Amount cannot exceed available balance (${availableAmount.toFixed(2)} USDT)`);
+        setSendAmount("");
+        return;
+      }
+
+      if (numericAmount < minAmount) {
+        setIsAmountValid(false);
+        setErrorMessage(`Minimum amount is ${minAmount} USDT`);
+        setSendAmount("");
+        return;
+      }
+
+      if (numericAmount > maxAmount) {
+        setIsAmountValid(false);
+        setErrorMessage(`Maximum amount is ${maxAmount} USDT`);
+        setSendAmount("");
+        return;
+      }
+
+      setIsAmountValid(true);
+      setErrorMessage("");
+      setSendAmount((numericAmount * commissionRate).toFixed(2));
+    }
   };
 
   const isFormValid = () => {
@@ -307,9 +331,10 @@ const TradePreview: React.FC<TradePreviewProps> = ({
 
     try {
       setIsSubmitting(true);
-      // Create order data with commission
+      // Create order data: API expects USDT amount (asset being traded)
+      // For buy: receiveAmount is USDT. For sell: sendAmount is USDT.
       const orderData: OrderMatchRequest = {
-        amount: receiveAmount,
+        amount: tradeType === "sell" ? sendAmount : receiveAmount,
       };
 
 
@@ -457,76 +482,158 @@ const TradePreview: React.FC<TradePreviewProps> = ({
               Rate:{" "}
               <span className="text-[#1D8751]">{advertiserData.commission}</span>
             </div>
-            {/* I Want to Send */}
-            <div className="flex flex-col gap-2 sm:gap-2 rounded-xl p-3 sm:p-3 border border-gray-300 dark:border-[#35353E] bg-gray-100 dark:bg-transparent">
-              <div className="text-sm sm:text-base text-gray-500 dark:text-[#788099] font-semibold">
-                I Want to Send
-              </div>
-              <div className="flex flex-col gap-2 sm:gap-2">
-                <div className="text-sm text-gray-500 dark:text-[#788099] pl-0 sm:pl-2 font-medium">
-                  Range: {minAmount}-{maxAmount} USDT
-                </div>
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                  <span className="text-2xl sm:text-3xl text-[#1D8751] font-semibold flex-shrink-0">$</span>
-                  <input
-                    type="number"
-                    value={sendAmount}
-                    onChange={(e) => handleSendAmountChange(e.target.value)}
-                    placeholder="220"
-                    max={
-                      tradeType === "buy"
-                        ? (advertiserData.availableAmount || 0) * commissionRate
-                        : undefined
-                    }
-                    className={`flex-1 bg-transparent text-lg sm:text-xl font-semibold focus:outline-none rounded-xl px-3 sm:px-4 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-[#788099] ${
-                      !isAmountValid && sendAmount ? "border border-red-500" : ""
-                    }`}
-                  />
-                  <div className="relative w-full sm:w-auto">
-                    <select
-                      className="rounded px-3 py-2 text-sm sm:text-base font-semibold min-w-[90px] sm:min-w-[100px] w-full bg-white dark:bg-transparent text-gray-900 dark:text-white"
-                      value={tradeType === "buy" ? "USD" : "USDT"}
-                      disabled
-                    >
-                      <option>{tradeType === "buy" ? "USD" : "USDT"}</option>
-                    </select>
+            {/* For Sell: I Want to Receive (USD) first, I Want to Sell (USDT) second. For Buy: I Want to Send (USD) first, I Want to Receive (USDT) second. */}
+            {tradeType === "sell" ? (
+              <>
+                {/* I Want to Receive - USD (buyer sends this to seller) */}
+                <div className="rounded-xl p-3 sm:p-3 flex flex-col gap-2 sm:gap-2 border border-gray-300 dark:border-[#35353E] bg-gray-100 dark:bg-transparent">
+                  <div className="text-sm sm:text-base text-gray-500 dark:text-[#788099] font-semibold">
+                    I Want to Receive
+                  </div>
+                  <div className="flex flex-col gap-2 sm:gap-2">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                      <span className="text-2xl sm:text-3xl text-[#1D8751] font-semibold flex-shrink-0">$</span>
+                      <input
+                        type="number"
+                        value={receiveAmount}
+                        onChange={(e) => handleReceiveAmountChange(e.target.value)}
+                        placeholder="220 USD"
+                        max={advertiserData.availableAmount || 0}
+                        className={`flex-1 bg-transparent text-lg sm:text-xl font-semibold focus:outline-none rounded-xl px-3 sm:px-4 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-[#788099] ${
+                          !isAmountValid && receiveAmount ? "border border-red-500" : ""
+                        }`}
+                      />
+                      <div className="relative w-full sm:w-auto">
+                        <select
+                          className="rounded px-3 py-2 text-sm sm:text-base font-semibold min-w-[90px] sm:min-w-[100px] w-full bg-white dark:bg-transparent text-gray-900 dark:text-white"
+                          value="USD"
+                          disabled
+                        >
+                          <option>USD</option>
+                        </select>
+                      </div>
+                    </div>
+                    {!isAmountValid && receiveAmount && (
+                      <div className="text-sm text-red-500 pl-0 sm:pl-2 font-semibold">
+                        {errorMessage}
+                      </div>
+                    )}
                   </div>
                 </div>
-                {!isAmountValid && sendAmount && (
-                  <div className="text-sm text-red-500 pl-0 sm:pl-2 font-semibold">
-                    {errorMessage}
+                {/* I Want to Sell - USDT (seller sells this) */}
+                <div className="flex flex-col gap-2 sm:gap-2 rounded-xl p-3 sm:p-3 border border-gray-300 dark:border-[#35353E] bg-gray-100 dark:bg-transparent">
+                  <div className="text-sm sm:text-base text-gray-500 dark:text-[#788099] font-semibold">
+                    I Want to Sell
                   </div>
-                )}
-              </div>
-            </div>
-            {/* I Want to Receive */}
-            <div className="rounded-xl p-3 sm:p-3 flex flex-col gap-2 sm:gap-2 border border-gray-300 dark:border-[#35353E] bg-gray-100 dark:bg-transparent">
-              <div className="text-sm sm:text-base text-gray-500 dark:text-[#788099] font-semibold">
-                I Want to Receive
-              </div>
-              <div className="flex flex-col gap-2 sm:gap-2">
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                  <span className="text-2xl sm:text-3xl text-[#1D8751] font-semibold flex-shrink-0">
-                    <img src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png" alt="" />
-                  </span>
-                  <input
-                    type="number"
-                    value={receiveAmount}
-                    onChange={(e) => handleReceiveAmountChange(e.target.value)}
-                    placeholder={`220 ${tradeType === "buy" ? "USDT" : "USD"}`}
-                    max={advertiserData.availableAmount || 0}
-                    className={`flex-1 bg-transparent text-lg sm:text-xl font-semibold focus:outline-none rounded-xl px-3 sm:px-4 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-[#788099] ${
-                      !isAmountValid && receiveAmount ? "border border-red-500" : ""
-                    }`}
-                  />
+                  <div className="flex flex-col gap-2 sm:gap-2">
+                    <div className="text-sm text-gray-500 dark:text-[#788099] pl-0 sm:pl-2 font-medium">
+                      Range: {minAmount}-{maxAmount} USDT
+                    </div>
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                      <span className="text-2xl sm:text-3xl text-[#1D8751] font-semibold flex-shrink-0">
+                        <img src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png" alt="USDT" className="w-6 h-6 sm:w-8 sm:h-8" />
+                      </span>
+                      <input
+                        type="number"
+                        value={sendAmount}
+                        onChange={(e) => handleSendAmountChange(e.target.value)}
+                        placeholder="220"
+                        className={`flex-1 bg-transparent text-lg sm:text-xl font-semibold focus:outline-none rounded-xl px-3 sm:px-4 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-[#788099] ${
+                          !isAmountValid && sendAmount ? "border border-red-500" : ""
+                        }`}
+                      />
+                      <div className="relative w-full sm:w-auto">
+                        <select
+                          className="rounded px-3 py-2 text-sm sm:text-base font-semibold min-w-[90px] sm:min-w-[100px] w-full bg-white dark:bg-transparent text-gray-900 dark:text-white"
+                          value="USDT"
+                          disabled
+                        >
+                          <option>USDT</option>
+                        </select>
+                      </div>
+                    </div>
+                    {!isAmountValid && sendAmount && (
+                      <div className="text-sm text-red-500 pl-0 sm:pl-2 font-semibold">
+                        {errorMessage}
+                      </div>
+                    )}
+                  </div>
                 </div>
-                {!isAmountValid && receiveAmount && (
-                  <div className="text-sm text-red-500 pl-0 sm:pl-2 font-semibold">
-                    {errorMessage}
+              </>
+            ) : (
+              <>
+                {/* I Want to Send - USD (buy flow) */}
+                <div className="flex flex-col gap-2 sm:gap-2 rounded-xl p-3 sm:p-3 border border-gray-300 dark:border-[#35353E] bg-gray-100 dark:bg-transparent">
+                  <div className="text-sm sm:text-base text-gray-500 dark:text-[#788099] font-semibold">
+                    I Want to Send
                   </div>
-                )}
-              </div>
-            </div>
+                  <div className="flex flex-col gap-2 sm:gap-2">
+                    <div className="text-sm text-gray-500 dark:text-[#788099] pl-0 sm:pl-2 font-medium">
+                      Range: {minAmount}-{maxAmount} USDT
+                    </div>
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                      <span className="text-2xl sm:text-3xl text-[#1D8751] font-semibold flex-shrink-0">$</span>
+                      <input
+                        type="number"
+                        value={sendAmount}
+                        onChange={(e) => handleSendAmountChange(e.target.value)}
+                        placeholder="220"
+                        max={
+                          tradeType === "buy"
+                            ? (advertiserData.availableAmount || 0) * commissionRate
+                            : undefined
+                        }
+                        className={`flex-1 bg-transparent text-lg sm:text-xl font-semibold focus:outline-none rounded-xl px-3 sm:px-4 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-[#788099] ${
+                          !isAmountValid && sendAmount ? "border border-red-500" : ""
+                        }`}
+                      />
+                      <div className="relative w-full sm:w-auto">
+                        <select
+                          className="rounded px-3 py-2 text-sm sm:text-base font-semibold min-w-[90px] sm:min-w-[100px] w-full bg-white dark:bg-transparent text-gray-900 dark:text-white"
+                          value="USD"
+                          disabled
+                        >
+                          <option>USD</option>
+                        </select>
+                      </div>
+                    </div>
+                    {!isAmountValid && sendAmount && (
+                      <div className="text-sm text-red-500 pl-0 sm:pl-2 font-semibold">
+                        {errorMessage}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {/* I Want to Receive - USDT (buy flow) */}
+                <div className="rounded-xl p-3 sm:p-3 flex flex-col gap-2 sm:gap-2 border border-gray-300 dark:border-[#35353E] bg-gray-100 dark:bg-transparent">
+                  <div className="text-sm sm:text-base text-gray-500 dark:text-[#788099] font-semibold">
+                    I Want to Receive
+                  </div>
+                  <div className="flex flex-col gap-2 sm:gap-2">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                      <span className="text-2xl sm:text-3xl text-[#1D8751] font-semibold flex-shrink-0">
+                        <img src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png" alt="USDT" className="w-6 h-6 sm:w-8 sm:h-8" />
+                      </span>
+                      <input
+                        type="number"
+                        value={receiveAmount}
+                        onChange={(e) => handleReceiveAmountChange(e.target.value)}
+                        placeholder="220 USDT"
+                        max={advertiserData.availableAmount || 0}
+                        className={`flex-1 bg-transparent text-lg sm:text-xl font-semibold focus:outline-none rounded-xl px-3 sm:px-4 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-[#788099] ${
+                          !isAmountValid && receiveAmount ? "border border-red-500" : ""
+                        }`}
+                      />
+                    </div>
+                    {!isAmountValid && receiveAmount && (
+                      <div className="text-sm text-red-500 pl-0 sm:pl-2 font-semibold">
+                        {errorMessage}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
             {/* Payment Method Select */}
             <div className="flex flex-col gap-2" ref={paymentDropdownRef}>
             

@@ -10,10 +10,13 @@ import {
 import {
   createMoneyXTransaction,
   updateMoneyXTransaction,
+  fetchMoneyXCommission,
 } from "../slices/moneyXSlice";
 import { useTheme } from "@/context/theme";
 import CustomSelect from "@/components/ui/CustomSelect";
 import { showToast } from "../../../lib/utils/toast";
+import { useBookmarkedAddresses } from "@/features/express/hooks/useBookmarkedAddresses";
+import { BookmarkDropdown } from "@/features/express/components/forms/BookmarkDropdown";
 import { usePaymentMethodsDisplay } from "../../express/hooks/useDataDisplay";
 import { useExpressI18n } from "@/lib/useExpressI18n";
 
@@ -160,6 +163,8 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
   const [toPaymentMethod, setToPaymentMethod] = useState<string>("");
   const [selectedFromPaymentDetail, setSelectedFromPaymentDetail] = useState<any>(null);
   const [selectedToPaymentDetail, setSelectedToPaymentDetail] = useState<any>(null);
+  const [bookmarkOpen, setBookmarkOpen] = useState(false);
+  const bookmarkAnchorRef = useRef<HTMLSpanElement>(null);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUpdatingTransaction, setIsUpdatingTransaction] = useState(false);
@@ -168,7 +173,40 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
   const [bankAccountAddress, setBankAccountAddress] = useState<string>("");
   const [bankAddressError, setBankAddressError] = useState<string | null>(null);
   const [isAddressConfirmed, setIsAddressConfirmed] = useState(false);
+  const [expandedTerms, setExpandedTerms] = useState(false);
+  const [commission, setCommission] = useState(2);
   const paymentDetailsRef = useRef<HTMLDivElement>(null);
+
+  // Fetch commission from API when amount changes (short debounce so request fires as user types)
+  useEffect(() => {
+    if (!payAmount || payAmount <= 0) {
+      setCommission(2);
+      return;
+    }
+    const timer = setTimeout(() => {
+      dispatch(fetchMoneyXCommission(payAmount))
+        .unwrap()
+        .then((commissionStr) => {
+          const val = parseFloat(commissionStr) || 0;
+          setCommission(val);
+        })
+        .catch(() => setCommission(2));
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [payAmount, dispatch]);
+
+  // Recalculate the other field when commission updates (so display stays in sync)
+  useEffect(() => {
+    if (isCalculatingFromPay && payAmount > 0) {
+      const calculatedGetAmount = payAmount <= commission ? payAmount : Math.max(0, payAmount - commission);
+      setGetAmount(calculatedGetAmount);
+      setGetAmountInput(calculatedGetAmount.toString());
+    } else if (!isCalculatingFromPay && getAmount > 0) {
+      const calculatedPayAmount = getAmount + commission;
+      setPayAmount(calculatedPayAmount);
+      setPayAmountInput(calculatedPayAmount.toString());
+    }
+  }, [commission]);
 
   // Helper function to get provider name from payment method
   // Removes method suffixes like "- Bank", "- Mobile", "- Crypto", etc.
@@ -191,6 +229,15 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
 
     return providerName;
   }, []);
+
+  const currentBankAsset = selectedToPaymentDetail ? getProviderName(selectedToPaymentDetail) : "";
+  const {
+    bookmarks,
+    loading: bookmarksLoading,
+    saving: bookmarkSaving,
+    fetchBookmarks,
+    saveBookmark,
+  } = useBookmarkedAddresses(currentBankAsset || "BANK", "BANK");
 
   // Helper function to check if a payment method is a bank
   const isBankMethod = useCallback((method: any) => {
@@ -770,7 +817,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
     };
   });
 
-  // Simple calculation: subtract 2 from send amount (matching deposit form logic)
+  // Calculate receive/send using commission from API
   const handleAmountChange = (value: string, isFromPay: boolean) => {
     // Only allow numbers and decimals
     if (value === "" || /^\d*\.?\d*$/.test(value)) {
@@ -789,8 +836,8 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
         setPayAmount(newAmount);
         setIsCalculatingFromPay(true);
 
-        // Calculate receive amount (simple: subtract 2)
-        const calculatedGetAmount = newAmount < 2 ? newAmount : Math.max(0, newAmount - 2);
+        // Receive = send - commission (commission fetched from API, fallback 2)
+        const calculatedGetAmount = newAmount <= commission ? newAmount : Math.max(0, newAmount - commission);
         setGetAmount(calculatedGetAmount);
         setGetAmountInput(calculatedGetAmount.toString());
       } else {
@@ -798,8 +845,8 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
         setGetAmount(newAmount);
         setIsCalculatingFromPay(false);
 
-        // Calculate send amount (reverse: add 2)
-        const calculatedPayAmount = newAmount < 2 ? newAmount : newAmount + 2;
+        // Send = receive + commission
+        const calculatedPayAmount = newAmount + commission;
         setPayAmount(calculatedPayAmount);
         setPayAmountInput(calculatedPayAmount.toString());
       }
@@ -1290,17 +1337,48 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
                     : ""
                   }`}
               />
-              {/* Bookmark icon - hidden on small screens */}
-              <span className="hidden sm:block mx-1 sm:mx-2 text-[#788099] cursor-pointer hrink-0">
-                <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
-                  <path
-                    d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"
-                    stroke="#788099"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
+              {/* Bookmark icon - clickable to load from bookmarks */}
+              <span
+                ref={bookmarkAnchorRef}
+                className="relative mx-1 sm:mx-2 text-[#1D8751] cursor-pointer flex-shrink-0 hover:opacity-80 transition-opacity"
+                onClick={async () => {
+                  if (bookmarkOpen) {
+                    setBookmarkOpen(false);
+                    return;
+                  }
+                  setBookmarkOpen(true);
+                  await fetchBookmarks();
+                }}
+                title="Load from bookmarks"
+              >
+                <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
                 </svg>
+                <BookmarkDropdown
+                  isOpen={bookmarkOpen}
+                  onClose={() => setBookmarkOpen(false)}
+                  bookmarks={bookmarks}
+                  loading={bookmarksLoading}
+                  saving={bookmarkSaving}
+                  currentAddress={bankAccountAddress}
+                  asset={currentBankAsset || "BANK"}
+                  network="BANK"
+                  onSelect={(addr) => {
+                    setBankAccountAddress(addr);
+                    setBankAddressError(null);
+                  }}
+                  onSaveCurrent={async () => {
+                    if (!bankAccountAddress.trim() || !currentBankAsset) return;
+                    await saveBookmark({
+                      address: bankAccountAddress.trim(),
+                      label: `My ${currentBankAsset} account`,
+                      network: "BANK",
+                      asset: currentBankAsset,
+                    });
+                  }}
+                  anchorRef={bookmarkAnchorRef}
+                  isDark={isDark}
+                />
               </span>
               {/* Paste button */}
               <button
@@ -1336,66 +1414,89 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
               </p>
             )}
 
-            {/* Terms and Conditions Summary */}
-            <div className="flex items-center mb-2 mt-4">
-              <span className="mr-2 text-[#F79330]">
-                <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
-                  <circle
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="#F79330"
-                    strokeWidth="2"
-                  />
-                  <line
-                    x1="12"
-                    y1="8"
-                    x2="12"
-                    y2="12"
-                    stroke="#F79330"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
-                  <circle cx="12" cy="16" r="1" fill="#F79330" />
-                </svg>
-              </span>
-              <span className="text-base font-semibold text-[#F79330]">
-                Terms and Conditions Summary
-              </span>
+            {/* Terms & Conditions */}
+            <div className="flex items-center gap-2 mb-2 mt-4">
+              <svg className="w-5 h-5 text-[#1D8751]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <h3 className={`font-medium text-sm sm:text-base ${isDark ? "text-white" : "text-gray-900"}`}>
+                Terms & Conditions
+              </h3>
             </div>
-            <div className="bg-[#FFF8F0] dark:bg-[#2D2518] border border-[#F79330] rounded-xl p-4">
-              <ul className="list-none space-y-3">
-                <li className="flex items-start">
-                  <span className="w-2 h-2 mt-1.5 rounded-full bg-[#1D8751] inline-block mr-3 shrink-0"></span>
-                  <span className="text-gray-700 dark:text-gray-300 text-sm">
-                    <strong className="text-gray-900 dark:text-white">Ownership:</strong> Use only wallets, bank accounts, or mobile money numbers you personally own and control. Third-party accounts are not allowed.
-                  </span>
-                </li>
-                <li className="flex items-start">
-                  <span className="w-2 h-2 mt-1.5 rounded-full bg-[#1D8751] inline-block mr-3 shrink-0"></span>
-                  <span className="text-gray-700 dark:text-gray-300 text-sm">
-                    <strong className="text-gray-900 dark:text-white">Correct Details:</strong> Enter correct receiving wallet, bank account, or mobile money number. Send funds only to our officially provided accounts shown in the app.
-                  </span>
-                </li>
-                <li className="flex items-start">
-                  <span className="w-2 h-2 mt-1.5 rounded-full bg-[#1D8751] inline-block mr-3 shrink-0"></span>
-                  <span className="text-gray-700 dark:text-gray-300 text-sm">
-                    <strong className="text-gray-900 dark:text-white">Official Accounts Only:</strong> Send funds only to OMAYA accounts, mobile numbers, or merchants displayed in the app. Sending to other accounts is at your own risk.
-                  </span>
-                </li>
-                <li className="flex items-start">
-                  <span className="w-2 h-2 mt-1.5 rounded-full bg-[#1D8751] inline-block mr-3 shrink-0"></span>
-                  <span className="text-gray-700 dark:text-gray-300 text-sm">
-                    <strong className="text-gray-900 dark:text-white">Irreversible:</strong> Transactions are irreversible. Incorrect details or wrong accounts may result in permanent fund loss—we cannot recover them.
-                  </span>
-                </li>
-                <li className="flex items-start">
-                  <span className="w-2 h-2 mt-1.5 rounded-full bg-[#1D8751] inline-block mr-3 shrink-0"></span>
-                  <span className="text-gray-700 dark:text-gray-300 text-sm">
-                    <strong className="text-gray-900 dark:text-white">Time Limit:</strong> Send funds only while the transaction timer is active. Transactions sent after timer expiry may be rejected or lost.
-                  </span>
-                </li>
-              </ul>
+            <div className={`border border-[#1D8751] rounded-xl overflow-hidden transition-all duration-300 ${isDark ? "bg-[#1D1D23]" : "bg-[#F8FAFF]"}`}>
+              <div className="p-4">
+                <div className={`space-y-2 sm:space-y-3 ${expandedTerms ? "" : "line-clamp-3"}`}>
+                  <div className="flex items-start gap-2 sm:gap-3">
+                    <span className="text-[#1D8751] font-bold text-sm sm:text-base flex-shrink-0">1.</span>
+                    <div>
+                      <span className={`${isDark ? "text-white" : "text-gray-900"} text-xs sm:text-sm font-semibold block`}>Ownership of sending and receiving accounts</span>
+                      <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-xs sm:text-sm`}>
+                        Use only wallets, bank accounts, or mobile money numbers you personally own and control. Third-party accounts are not allowed.
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2 sm:gap-3">
+                    <span className="text-[#1D8751] font-bold text-sm sm:text-base flex-shrink-0">2.</span>
+                    <div>
+                      <span className={`${isDark ? "text-white" : "text-gray-900"} text-xs sm:text-sm font-semibold block`}>Provide correct sending and receiving details</span>
+                      <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-xs sm:text-sm`}>
+                        Enter correct receiving wallet, bank account, or mobile money number. Send funds only to our officially provided accounts shown in the app.
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2 sm:gap-3">
+                    <span className="text-[#1D8751] font-bold text-sm sm:text-base flex-shrink-0">3.</span>
+                    <div>
+                      <span className={`${isDark ? "text-white" : "text-gray-900"} text-xs sm:text-sm font-semibold block`}>Send funds only to our official accounts</span>
+                      <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-xs sm:text-sm`}>
+                        Send funds only to OMAYA accounts, mobile numbers, or merchants displayed in the app. Sending to other accounts is at your own risk.
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setExpandedTerms(!expandedTerms)}
+                  className="mt-3 sm:mt-4 text-[#1D8751] hover:text-[#166b3e] font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition-colors"
+                >
+                  {expandedTerms ? (
+                    <>
+                      <span>Show Less</span>
+                      <svg className="w-4 h-4 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                      </svg>
+                    </>
+                  ) : (
+                    <>
+                      <span>Show More</span>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                      </svg>
+                    </>
+                  )}
+                </button>
+                {expandedTerms && (
+                  <div className={`space-y-2 sm:space-y-3 mt-4 pt-4 border-t ${isDark ? "border-[#35353E]" : "border-gray-200"}`}>
+                    <div className="flex items-start gap-2 sm:gap-3">
+                      <span className="text-[#1D8751] font-bold text-sm sm:text-base flex-shrink-0">4.</span>
+                      <div>
+                        <span className={`${isDark ? "text-white" : "text-gray-900"} text-xs sm:text-sm font-semibold block`}>Irreversible transactions & user responsibility</span>
+                        <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-xs sm:text-sm`}>
+                          Transactions are irreversible. Incorrect details or wrong accounts may result in permanent fund loss—we cannot recover them.
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2 sm:gap-3">
+                      <span className="text-[#1D8751] font-bold text-sm sm:text-base flex-shrink-0">5.</span>
+                      <div>
+                        <span className={`${isDark ? "text-white" : "text-gray-900"} text-xs sm:text-sm font-semibold block`}>Transaction time limit</span>
+                        <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-xs sm:text-sm`}>
+                          Send funds only while the transaction timer is active. Transactions sent after timer expiry may be rejected or lost.
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Acceptance checkbox */}

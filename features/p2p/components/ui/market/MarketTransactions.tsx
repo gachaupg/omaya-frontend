@@ -579,35 +579,37 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
     sell_orders,
   ]); // Add direct Redux state dependencies to ensure re-calculation
 
-  const handlePageChange = useCallback((newPage: number) => {
-    // Get current page from Redux state directly (most up-to-date)
-    const currentPageInState = store.getState()?.p2pMarket?.currentPage || 1;
-    
-    // Prevent unnecessary page changes
-    if (newPage === currentPageInState) {
-      console.log('⏭️ [MarketTransactions] Skipping page change - already on page', newPage);
-      return;
+  // Calculate total pages from the latest Redux state (p2pMarket uses p2pBuyOrders/p2pSellOrders)
+  const getTotalPagesFromState = useCallback(() => {
+    const market = store.getState()?.p2pMarket;
+    const buyOrders = market?.p2pBuyOrders || { results: [], total_orders_count: 0 };
+    const sellOrders = market?.p2pSellOrders || { results: [], total_orders_count: 0 };
+    const buyCount = buyOrders.total_orders_count || 0;
+    const sellCount = sellOrders.total_orders_count || 0;
+    const activeResults =
+      activeTab === "buy"
+        ? sellOrders.results || []
+        : activeTab === "sell"
+          ? buyOrders.results || []
+          : [...(buyOrders.results || []), ...(sellOrders.results || [])];
+
+    const activeCount =
+      activeTab === "buy"
+        ? sellCount
+        : activeTab === "sell"
+          ? buyCount
+          : Math.max(buyCount, sellCount);
+
+    let pages = Math.ceil(activeCount / 10);
+    pages = pages > 0 ? pages : 1;
+
+    // If current results have 10 or fewer items, only 1 page exists
+    if (activeResults.length > 0 && activeResults.length <= 10) {
+      pages = 1;
     }
-    
-    console.log('🔄 [MarketTransactions] ========== PAGE CHANGE START ==========');
-    console.log('🔄 [MarketTransactions] Requesting page:', newPage, 'from:', currentPageInState);
-    
-    // CRITICAL: Set page FIRST, then fetch
-    dispatch(setCurrentPage(newPage));
-    console.log('✅ [MarketTransactions] Set currentPage to:', newPage);
-    
-    // Small delay to ensure state update, then fetch
-    setTimeout(() => {
-      const verifyPage = store.getState()?.p2pMarket?.currentPage;
-      console.log('📡 [MarketTransactions] Verifying page before fetch:', verifyPage, 'requested:', newPage);
-      if (verifyPage === newPage) {
-        console.log('📡 [MarketTransactions] Fetching page:', newPage);
-        dispatch(fetchAllP2PBuyandSell(newPage) as any);
-      } else {
-        console.error('❌ [MarketTransactions] Page mismatch! State:', verifyPage, 'Requested:', newPage);
-      }
-    }, 10);
-  }, [dispatch]);
+
+    return pages;
+  }, [activeTab]);
 
   const handleRefresh = () => {
     // Always fetch fresh data on manual refresh, even if WebSocket is connected
@@ -640,21 +642,94 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
   };
 
   const totalPages = useMemo(() => {
-    let totalCount = 0;
-    if (activeTab === "buy") {
-      // User wants to buy, showing sell orders
-      totalCount = orders?.sell_orders?.total_orders_count || 0;
-    } else if (activeTab === "sell") {
-      // User wants to sell, showing buy orders
-      totalCount = orders?.buy_orders?.total_orders_count || 0;
-    } else {
-      // Default: sum both
-      totalCount =
-        (orders?.buy_orders?.total_orders_count || 0) +
-        (orders?.sell_orders?.total_orders_count || 0);
+    const buyCount = orders?.buy_orders?.total_orders_count || 0;
+    const sellCount = orders?.sell_orders?.total_orders_count || 0;
+    const activeCount =
+      activeTab === "buy"
+        ? sellCount
+        : activeTab === "sell"
+          ? buyCount
+          : Math.max(buyCount, sellCount);
+
+    let pages = Math.ceil(activeCount / 10);
+    pages = pages > 0 ? pages : 1;
+
+    // If current page has 10 or fewer items, there is only 1 page (no page 2)
+    if (getActiveOrders.length > 0 && getActiveOrders.length <= 10) {
+      pages = 1;
     }
-    return Math.ceil(totalCount / 10);
-  }, [orders, activeTab]);
+    // If current page has no data, cap to previous page
+    if (currentPage > 1 && getActiveOrders.length === 0) {
+      pages = Math.min(pages, currentPage - 1);
+      if (pages < 1) pages = 1;
+    }
+
+    return pages;
+  }, [orders, activeTab, currentPage, getActiveOrders.length]);
+
+  // Hide empty pages: if current page has no data, cap total pages to previous page
+  const effectiveTotalPages = useMemo(() => {
+    if (currentPage > 1 && getActiveOrders.length === 0) {
+      const capped = Math.max(1, Math.min(totalPages, currentPage - 1));
+      return capped;
+    }
+    return totalPages;
+  }, [currentPage, getActiveOrders.length, totalPages]);
+
+  const handlePageChange = useCallback((newPage: number) => {
+    // Get current page from Redux state directly (most up-to-date)
+    const currentPageInState = store.getState()?.p2pMarket?.currentPage || 1;
+    const maxPages = Math.max(1, Math.min(getTotalPagesFromState(), effectiveTotalPages));
+
+    // Block moving forward if API has no data for next page
+    if (newPage > maxPages) {
+      console.log("⛔ [MarketTransactions] Blocked page change beyond data. Requested:", newPage, "max:", maxPages);
+      return;
+    }
+
+    if (newPage < 1) {
+      return;
+    }
+    
+    // Prevent unnecessary page changes
+    if (newPage === currentPageInState) {
+      console.log('⏭️ [MarketTransactions] Skipping page change - already on page', newPage);
+      return;
+    }
+    
+    console.log('🔄 [MarketTransactions] ========== PAGE CHANGE START ==========');
+    console.log('🔄 [MarketTransactions] Requesting page:', newPage, 'from:', currentPageInState);
+    
+    // CRITICAL: Set page FIRST, then fetch
+    dispatch(setCurrentPage(newPage));
+    console.log('✅ [MarketTransactions] Set currentPage to:', newPage);
+    
+    // Small delay to ensure state update, then fetch
+    setTimeout(() => {
+      const verifyPage = store.getState()?.p2pMarket?.currentPage;
+      console.log('📡 [MarketTransactions] Verifying page before fetch:', verifyPage, 'requested:', newPage);
+      if (verifyPage === newPage) {
+        console.log('📡 [MarketTransactions] Fetching page:', newPage);
+        dispatch(fetchAllP2PBuyandSell(newPage) as any);
+      } else {
+        console.error('❌ [MarketTransactions] Page mismatch! State:', verifyPage, 'Requested:', newPage);
+      }
+    }, 10);
+  }, [dispatch, getTotalPagesFromState, effectiveTotalPages]);
+
+  // If user navigated past available data (empty page), auto-reset back
+  useEffect(() => {
+    if (
+      currentPage > 1 &&
+      getActiveOrders.length === 0 &&
+      effectiveTotalPages === Math.max(1, currentPage - 1)
+    ) {
+      const targetPage = Math.max(1, currentPage - 1);
+      console.log("↩️ [MarketTransactions] Empty page detected, resetting to page", targetPage);
+      dispatch(setCurrentPage(targetPage));
+      dispatch(fetchAllP2PBuyandSell(targetPage) as any);
+    }
+  }, [currentPage, getActiveOrders.length, effectiveTotalPages, dispatch]);
 
   if (!mounted) {
     return null;
@@ -668,10 +743,9 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
   return (
     <div className="flex flex-col gap-1 w-full pr-3 sm:pr-0 max-w-full">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-1 overflow-visible">
-        <div className="flex flex-col gap-1 sm:gap-2 w-full md:w-auto overflow-visible sm:flex-row sm:flex-wrap sm:items-center min-w-0">
-          {/* Row 1 on small: Amount+Currency, Payment */}
-          <div className="flex flex-col sm:flex-row gap-1 sm:gap-2 w-full sm:w-auto">
-            <div className="flex items-center w-full sm:w-auto bg-gray-100 dark:bg-[#18181D] border border-gray-200 dark:border-[#35353E] rounded-lg sm:rounded-[22px] px-2.5 py-1.5 sm:px-4 sm:py-2.5 gap-1.5 sm:gap-3 min-h-[36px] sm:min-h-[48px]">
+        <div className="flex flex-col lg:flex-row gap-1 sm:gap-2 w-full md:w-auto overflow-visible lg:items-center lg:flex-nowrap min-w-0">
+          {/* Amount+Currency - stacked on small, row on lg */}
+          <div className="flex items-center w-full lg:w-auto bg-gray-100 dark:bg-[#18181D] border border-gray-200 dark:border-[#35353E] rounded-lg sm:rounded-[22px] px-2.5 py-1.5 sm:px-4 sm:py-2.5 gap-1.5 sm:gap-3 min-h-[36px] sm:min-h-[48px]">
               <div className="flex items-center gap-1.5 sm:gap-3 w-full min-w-0">
                 <Input
                   bgColor="transparent"
@@ -721,10 +795,11 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
               </div>
             </div>
           </div>
-            <div
-              className="flex items-center gap-1.5 sm:gap-3 bg-gray-100 dark:bg-[#18181D] border border-gray-200 dark:border-[#35353E] rounded-lg sm:rounded-[22px] px-2.5 py-1.5 sm:px-4 sm:py-2.5 w-full sm:w-[260px] min-h-[36px] sm:min-h-[48px]"
-              ref={paymentDropdownRef}
-            >
+          {/* Payment Method - stacked on small, row on lg */}
+          <div
+            className="flex items-center gap-1.5 sm:gap-3 bg-gray-100 dark:bg-[#18181D] border border-gray-200 dark:border-[#35353E] rounded-lg sm:rounded-[22px] px-2.5 py-1.5 sm:px-4 sm:py-2.5 w-full lg:w-[260px] min-h-[36px] sm:min-h-[48px]"
+            ref={paymentDropdownRef}
+          >
               <div className="flex h-5 w-5 sm:h-8 sm:w-8 items-center justify-center rounded-full border bg-[#F5F7FB]/80 border-gray-200 dark:bg-[#1B1E2B]/80 dark:border-white/10 flex-shrink-0">
                 <Image
                   src="https://res.cloudinary.com/pitz/image/upload/v1746710370/coins-rotate_d278mb.png"
@@ -796,14 +871,11 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
               )}
             </div>
           </div>
-          </div>
-
-          {/* Row 2 on small: Provider + Filter in one row */}
-          <div className="flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto">
-            <div
-              className="flex items-center gap-1.5 sm:gap-3 bg-gray-100 dark:bg-[#18181D] border border-gray-200 dark:border-[#35353E] rounded-lg sm:rounded-[22px] px-2.5 py-1.5 sm:px-4 sm:py-2.5 flex-1 sm:flex-initial sm:w-[260px] min-h-[36px] sm:min-h-[48px] min-w-0"
-              ref={providerDropdownRef}
-            >
+          {/* Bank Provider - stacked on small, row on lg */}
+          <div
+            className="flex items-center gap-1.5 sm:gap-3 bg-gray-100 dark:bg-[#18181D] border border-gray-200 dark:border-[#35353E] rounded-lg sm:rounded-[22px] px-2.5 py-1.5 sm:px-4 sm:py-2.5 w-full lg:w-[260px] min-h-[36px] sm:min-h-[48px] min-w-0"
+            ref={providerDropdownRef}
+          >
               <div className="flex h-5 w-5 sm:h-8 sm:w-8 items-center justify-center rounded-full border bg-[#F5F7FB]/80 border-gray-200 dark:bg-[#1B1E2B]/80 dark:border-white/10 flex-shrink-0">
                 <Image
                   src="https://res.cloudinary.com/pitz/image/upload/v1763535952/tdesign_undertake-transaction_s00yks.png"
@@ -875,7 +947,8 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
               )}
             </div>
           </div>
-            <div className="relative flex-shrink-0 overflow-visible" ref={filterDropdownRef}>
+          {/* Filter button */}
+          <div className="relative flex-shrink-0 overflow-visible" ref={filterDropdownRef}>
               <button
                 type="button"
                 onClick={() => setIsFilterDropdownOpen((prev) => !prev)}
@@ -1005,7 +1078,6 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
                 </div>
               </div>
             )}
-            </div>
           </div>
         </div>
 
@@ -1041,7 +1113,7 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
         <MarketTable
           data={transformedData}
           currentPage={currentPage}
-          totalPages={totalPages}
+          totalPages={effectiveTotalPages}
           onPageChange={handlePageChange}
           loading={loading}
           activeTab={activeTab}

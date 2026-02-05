@@ -22,6 +22,8 @@ const nextConfig: NextConfig = {
   output: 'standalone',
   trailingSlash: true,
   reactStrictMode: true,
+  // Fix vendor-chunks/@sanity.js module resolution - keep Sanity packages external
+  serverExternalPackages: ['@sanity/client', '@sanity/image-url', 'next-sanity', 'sanity'],
   
   // Explicitly expose environment variables to the browser
   env: {

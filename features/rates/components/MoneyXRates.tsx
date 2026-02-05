@@ -18,6 +18,7 @@ import {
 import {
   createMoneyXTransaction,
   updateMoneyXTransaction,
+  fetchMoneyXCommission,
 } from "@/features/express/home/components/moneyX/slices/moneyXSlice";
 import { useTheme } from "@/context/theme";
 import { showToast } from "@/lib/utils/toast";
@@ -179,7 +180,26 @@ const MoneyXRates = () => {
     useState<any>(null);
   const [showExchanging, setShowExchanging] = useState(false);
   const [transactionData, setTransactionData] = useState<any>(null);
+  const [commission, setCommission] = useState(0);
   const paymentDetailsRef = useRef<HTMLDivElement>(null);
+
+  // Fetch MoneyX commission from API
+  useEffect(() => {
+    if (!payAmount || payAmount <= 0) {
+      setCommission(0);
+      return;
+    }
+    const timer = setTimeout(() => {
+      dispatch(fetchMoneyXCommission(payAmount))
+        .unwrap()
+        .then((commissionStr) => {
+          const val = parseFloat(commissionStr) || 0;
+          setCommission(val);
+        })
+        .catch(() => setCommission(0));
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [payAmount, dispatch]);
 
   // Helper function to get provider name
   const getProviderName = useCallback((payment: any) => {
@@ -343,25 +363,24 @@ const MoneyXRates = () => {
         setPayAmountInput(value);
         setPayAmount(newAmount);
         const calculatedGetAmount =
-          newAmount < 2 ? newAmount : Math.max(0, newAmount - 2);
+          newAmount <= commission ? newAmount : Math.max(0, newAmount - commission);
         setGetAmount(calculatedGetAmount);
         setGetAmountInput(calculatedGetAmount.toFixed(2));
       } else {
         setGetAmountInput(value);
         setGetAmount(newAmount);
-        const calculatedPayAmount = newAmount < 2 ? newAmount : newAmount + 2;
+        const calculatedPayAmount = newAmount + commission;
         setPayAmount(calculatedPayAmount);
         setPayAmountInput(calculatedPayAmount.toFixed(2));
       }
     }
   };
 
-  // Calculate fees
+  // Calculate fees - commission from MoneyX API
   const amountNum = parseFloat(payAmountInput) || 0;
-  const commissionRate = 1; // 1% commission
-  const networkFee = 1; // $1 network fee
-  const commissionAmount = (amountNum * commissionRate) / 100;
-  const totalFees = networkFee + commissionAmount;
+  const commissionAmount = commission;
+  const networkFee = 0;
+  const totalFees = commissionAmount;
   const amountIncludingFees = amountNum + totalFees;
 
   // Filter payment methods based on search
@@ -1009,7 +1028,7 @@ const MoneyXRates = () => {
             >
               <div className="flex justify-between gap-20 text-sm mb-1">
                 <span className={isDark ? "text-[#E8EFF5]" : "text-[#051015]"}>
-                  {t("rates.commission", "Commission:")} {commissionRate}%
+                  {t("rates.commission", "Commission:")}
                 </span>
                 <span className="text-[#1D8751]">
                   ${commissionAmount.toFixed(2)}

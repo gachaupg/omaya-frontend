@@ -10,6 +10,8 @@ interface SuccessPageProps {
   transactionData?: {
     type: "deposit" | "withdrawal";
     amount: number;
+    /** Net amount from form "You Receive" - highest priority, no API override */
+    receiveAmount?: number;
     asset: any;
     paymentDetail?: any;
     paymentDetails?: any[];
@@ -147,14 +149,21 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
          transactionData.details?.payout_address ||
          network);
     
-    // Get amounts with websocket data priority
+    // Get amounts - receiveAmount from props is highest priority (no API/websocket override)
     let amount = transactionData.amount || 0;
-    let estimatedAmount = transactionData.details?.estimated_amount || 
-                         transactionData.totalAmountDue || 
-                         amount;
-    
-          // Use websocket data for amounts if available
-      if (websocketData?.data) {
+    const receiveAmountFromProps = transactionData.receiveAmount != null
+      ? parseFloat(String(transactionData.receiveAmount))
+      : null;
+    const hasReceiveAmountFromProps = receiveAmountFromProps != null && !isNaN(receiveAmountFromProps);
+
+    let estimatedAmount = hasReceiveAmountFromProps
+      ? receiveAmountFromProps
+      : transactionData.details?.estimated_amount ||
+        transactionData.totalAmountDue ||
+        amount;
+
+    // Use websocket data for amounts only when we don't have receiveAmount from props
+    if (websocketData?.data && !hasReceiveAmountFromProps) {
         const wsData = websocketData.data;
         
         // Use amountFrom for paid amount (what user sent)
@@ -352,11 +361,21 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
                 Net Amount Processed
               </div>
               <div className="font-mono flex items-center gap-2" style={{ color: GREEN }}>
-                {transactionData?.asset?.icon && (
+                {(transactionData?.asset?.icon ||
+                  transactionData?.asset?.icon_url ||
+                  transactionData?.asset?.image_url ||
+                  transactionData?.asset?.asset_image ||
+                  transactionData?.asset?.image) && (
                   <img
-                    src={transactionData.asset.icon}
+                    src={
+                      transactionData.asset.icon ||
+                      transactionData.asset.icon_url ||
+                      transactionData.asset.image_url ||
+                      transactionData.asset.asset_image ||
+                      transactionData.asset.image
+                    }
                     alt={realData.receivedCurrency}
-                    className="w-4 h-4"
+                    className="w-4 h-4 rounded-full object-contain"
                     onError={(e) => {
                       e.currentTarget.style.display = 'none';
                     }}
@@ -370,16 +389,23 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
         </div>
       </div>
 
-      {/* Action Buttons */}
+      {/* Transaction Completed Banner */}
       <div className="w-full mt-2 space-y-3">
-       <img 
-         className="w-full" 
-         src={isDark 
-           ? "https://res.cloudinary.com/pitz/image/upload/v1756484240/Frame_34947_qeutak.png" 
-           : "https://res.cloudinary.com/pitz/image/upload/v1756925740/Frame_34947_khxqxo.png"
-         } 
-         alt="" 
-       />
+        <div className="w-full rounded-xl bg-[#1D8751] p-4 sm:p-5 flex items-start gap-3 sm:gap-4">
+          <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/20 flex items-center justify-center">
+            <svg className="w-6 h-6 sm:w-7 sm:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-white font-bold text-base sm:text-lg mb-1">
+              Transaction Completed
+            </h3>
+            <p className="text-white/95 text-sm sm:text-base leading-relaxed">
+              Your {realData.receivedCurrency} has been sent to your wallet. It may take a few minutes to reflect in your balance.
+            </p>
+          </div>
+        </div>
         
         <div className={`text-center text-xs ${
           isDark ? "text-gray-400" : "text-gray-600"
