@@ -3054,9 +3054,9 @@ export default function DepositForm({
         {/* Top Section - Amount and Bank/Payment Method in one card */}
         <div className="relative mb-2 sm:mb-3 md:mb-4">
           {/* Top Card Container */}
-          <div className="relative flex flex-col sm:flex-row border border-border dark:border-accent rounded-xl sm:rounded-2xl p-2 sm:p-3 md:p-4 overflow-visible gap-2 sm:gap-3 md:gap-0 bg-white dark:bg-[#18181D]">
+          <div className="relative flex flex-col sm:flex-row items-stretch sm:items-start border border-border dark:border-accent rounded-xl sm:rounded-2xl p-2 sm:p-3 md:p-4 overflow-visible gap-2 sm:gap-3 md:gap-0 bg-white dark:bg-[#18181D]">
             {/* Amount Section */}
-            <div className="flex-1">
+            <div className="flex-1 w-full sm:min-w-0">
               <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
                 {t("express.youSend", "You Send")}
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
@@ -3257,12 +3257,11 @@ export default function DepositForm({
             {/* Bank/Payment Method Section */}
             <div
               data-select-card="true"
-              className="flex-1 sm:pl-4 border-t sm:border-t-0 sm:border-l border-[#35353E] dark:border-[#35353E] pt-2 sm:pt-0 sm:border-none"
+              className="flex-1 w-full sm:min-w-0 sm:pl-4 border-t sm:border-t-0 sm:border-l border-[#35353E] dark:border-[#35353E] pt-2 sm:pt-0 sm:border-none"
             >
-              <div className="hidden sm:block text-sm sm:text-[17px] mb-2 font-semibold">
-                <span className="opacity-0">Placeholder</span>
-              </div>
-              <div className="text-xs text-[#788099] dark:text-[#788099] mb-1">{t("express.bankPaymentMethod", "Bank/Payment Method")}</div>
+              <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
+                {t("express.bankPaymentMethod", "Bank/Payment Method")}
+              </label>
               {/* <div>
                 hello
                 {
@@ -3498,9 +3497,9 @@ export default function DepositForm({
 
         {/* Bottom Section - You Receive and Asset in one card */}
         <div className="relative mb-2 sm:mb-3">
-          <div className="relative flex flex-col sm:flex-row border border-border dark:border-accent rounded-xl sm:rounded-2xl p-2 sm:p-3 md:p-4 overflow-visible gap-2 sm:gap-3 md:gap-0 bg-white dark:bg-[#18181D]">
+          <div className="relative flex flex-col sm:flex-row items-stretch sm:items-start border border-border dark:border-accent rounded-xl sm:rounded-2xl p-2 sm:p-3 md:p-4 overflow-visible gap-2 sm:gap-3 md:gap-0 bg-white dark:bg-[#18181D]">
             {/* You Receive Section */}
-            <div className="flex-1">
+            <div className="flex-1 w-full sm:min-w-0">
               <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
                 {t("express.youReceive", "You Receive")}
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
@@ -3714,11 +3713,10 @@ export default function DepositForm({
             </div>
 
             {/* Asset Section */}
-            <div className="flex-1 sm:pl-4 border-t sm:border-t-0 sm:border-l border-[#35353E] dark:border-[#35353E] pt-3 sm:pt-0 sm:border-none">
-              <div className="hidden sm:block text-sm sm:text-[17px] mb-2 font-semibold">
-                <span className="opacity-0">Placeholder</span>
-              </div>
-              <div className="text-xs text-[#788099] dark:text-[#788099] mb-1">{t("express.youGet", "You Get")}</div>
+            <div className="flex-1 w-full sm:min-w-0 sm:pl-4 border-t sm:border-t-0 sm:border-l border-[#35353E] dark:border-[#35353E] pt-3 sm:pt-0 sm:border-none">
+              <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
+                {t("express.youGet", "You Get")}
+              </label>
               <div className="relative" ref={assetDropdownRef}>
                 <div
                   className={`h-[48px] w-full text-[#35353e] bg-transparent dark:bg-transparent dark:text-[#ffffff] rounded-2xl px-3 sm:px-4 text-base sm:text-lg border border-[#A2A4A9FF] dark:border-[#35353E] hover:border-blue-400 dark:hover:border-blue-400 flex items-center justify-between cursor-pointer transition-colors duration-200`}

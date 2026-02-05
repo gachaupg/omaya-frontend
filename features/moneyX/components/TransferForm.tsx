@@ -255,6 +255,27 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
     );
   }, [getProviderName]);
 
+  // Helper function to check if a payment method is mobile money
+  const isMobileMethod = useCallback((method: any) => {
+    if (!method) return false;
+    const providerName = getProviderName(method).toLowerCase();
+    const paymentMethod = (method?.payment_method || "").toLowerCase();
+    const paymentMethodType = (method?.payment_method_type || "").toLowerCase();
+    const provider = (method?.provider || "").toLowerCase();
+    const methodType = (method?.method || "").toLowerCase();
+
+    // Common mobile money keywords
+    const mobileKeywords = ['mobile', 'mpesa', 'm-pesa', 'mtn', 'airtel', 'safaricom', 'vodafone', 'telesom', 'hormuud', 'golis', 'evc', 'zaad', 'sahal'];
+    
+    return mobileKeywords.some(keyword => 
+      providerName.includes(keyword) ||
+      paymentMethod.includes(keyword) ||
+      paymentMethodType.includes(keyword) ||
+      provider.includes(keyword) ||
+      methodType.includes(keyword)
+    );
+  }, [getProviderName]);
+
   // Restore state from localStorage after login (when navigating from home page)
   const hasRestoredState = useRef(false);
   const paymentMethodRestoreAttempted = useRef(false);
@@ -1252,9 +1273,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
 
 {/* Bank Account Address Section - Dynamic Title */}
  <h2 className="text-xl font-semibold mb-2 text-gray-900 dark:text-[#788099] inline-flex items-center gap-2">
-  {selectedToPaymentDetail?.payment_method?.toLowerCase().includes('mobile') ||
-   selectedToPaymentDetail?.payment_method_type?.toLowerCase().includes('mobile') ||
-   selectedToPaymentDetail?.method?.toLowerCase().includes('mobile')
+  2- {isMobileMethod(selectedToPaymentDetail)
     ? `${getProviderName(selectedToPaymentDetail)} Details`
     : `${getProviderName(selectedToPaymentDetail)} Account Details`}
 </h2>
@@ -1266,9 +1285,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
           >
             {/* Dynamic Address Label */}
             <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
-              {selectedToPaymentDetail?.payment_method?.toLowerCase().includes('mobile') ||
-               selectedToPaymentDetail?.payment_method_type?.toLowerCase().includes('mobile') ||
-               selectedToPaymentDetail?.method?.toLowerCase().includes('mobile')
+              {isMobileMethod(selectedToPaymentDetail)
                 ? `${getProviderName(selectedToPaymentDetail)} Number`
                 : `${getProviderName(selectedToPaymentDetail)} Account Number`}
             </label>

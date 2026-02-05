@@ -432,7 +432,7 @@ export default function MarketingPage() {
                 </div>
               </div>
             </div>
-            <div className="flex justify-center md:justify-end lg:justify-end w-full">
+            <div className="flex justify-center w-full">
               <div className="w-full max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl 2xl:max-w-4xl">
                 <ExchangeForm isHomePage={true} />
               </div>

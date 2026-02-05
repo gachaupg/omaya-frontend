@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import { AllSystemTransactionsWebSocket } from "@/features/markets/services/allSystemTransactionsWebSocket";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface Transaction {
   id: string;
@@ -45,9 +46,27 @@ const getBankLogo = (bankName: string): string => {
   return "https://res.cloudinary.com/pitz/image/upload/v1764667057/salam_vizvxy.svg";
 };
 
+// Helper function to get currency/asset logo
+const getCurrencyLogo = (currency: string): string => {
+  const currencyLower = (currency || "").toLowerCase();
+  
+  // Map common currencies to their icons
+  const currencyLogos: { [key: string]: string } = {
+    usdt: "/icons/usdt.svg",
+    usd: "/icons/usdt.svg",
+    btc: "/icons/btc.svg",
+    bitcoin: "/icons/btc.svg",
+    eth: "/icons/eth.svg",
+    ethereum: "/icons/eth.svg",
+  };
+  
+  return currencyLogos[currencyLower] || "/icons/usdt.svg";
+};
+
 const LiveTransactionsPage = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isConnected, setIsConnected] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
   const wsRef = useRef<AllSystemTransactionsWebSocket | null>(null);
 
   useEffect(() => {
@@ -75,17 +94,17 @@ const LiveTransactionsPage = () => {
               fromName = data.payment_provider || data.user_name || "MoneyX";
               fromLogo = getBankLogo(data.payment_provider || "");
               toName = data.currency || "USD";
-              toLogo = data.asset_image || "/icons/usdt.svg";
+              toLogo = getCurrencyLogo(data.currency);
             } else if (type === "p2p_deposit") {
               // P2P deposit: From = user, To = asset
               fromName = data.user_name || "P2P Deposit";
               fromLogo = getBankLogo(data.payment_provider || fromName);
               toName = data.currency || "USDT";
-              toLogo = data.asset_image || "/icons/usdt.svg";
+              toLogo = getCurrencyLogo(data.currency);
             } else if (type === "p2p_withdraw") {
               // P2P withdraw: From = asset, To = user
               fromName = data.currency || "USDT";
-              fromLogo = data.asset_image || "/icons/usdt.svg";
+              fromLogo = getCurrencyLogo(data.currency);
               toName = data.user_name || "P2P Withdraw";
               toLogo = getBankLogo(data.payment_provider || toName);
             } else if (type === "p2p_trade") {
@@ -97,7 +116,7 @@ const LiveTransactionsPage = () => {
             } else {
               // Fallback: From = currency, To = payment provider or user
               fromName = data.currency || data.user_name || "Transaction";
-              fromLogo = data.asset_image || "/icons/usdt.svg";
+              fromLogo = getCurrencyLogo(data.currency);
               toName = data.payment_provider || data.user_name || "Destination";
               toLogo = getBankLogo(data.payment_provider || "");
             }
@@ -137,7 +156,7 @@ const LiveTransactionsPage = () => {
         // Handle incremental single-transaction updates
         if (message.type === "transaction" || message.type === "new_transaction") {
           const data = message.data;
-          
+
           // Transform the message data to Transaction format
           const transaction: Transaction = {
             id: data.id || data.transaction_id || `tx-${Date.now()}-${Math.random()}`,
@@ -189,6 +208,12 @@ const LiveTransactionsPage = () => {
     };
   }, []);
 
+  // Handle page change with scroll to top
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+    window.scrollTo({ top: 120, behavior: 'smooth' });
+  };
+
   // Get amount color (alternating for visual effect)
   const getAmountColor = (index: number): string => {
     return index % 2 === 0 ? "text-[#13B562]" : "text-red-500";
@@ -197,7 +222,7 @@ const LiveTransactionsPage = () => {
   return (
     <div className="w-full">
       {/* Back Button */}
-      <a 
+      <a
         href="/rates"
         className="inline-flex items-center gap-2 text-gray-600 dark:text-[#788099] hover:text-[#1D8751] dark:hover:text-[#1D8751] transition-colors mb-4 sm:mb-6"
       >
@@ -225,7 +250,24 @@ const LiveTransactionsPage = () => {
       </div>
 
       {/* Transactions Table */}
-      <div className="bg-white dark:bg-[#1D1D23] rounded-2xl border border-[#E8EFF5] dark:border-[#35353E] overflow-hidden">
+      <div className="bg-white dark:bg-[#1D1D23] rounded-2xl border border-[#E8EFF5] dark:border-[#35353E] overflow-hidden relative">
+        {/* Scroll indicators - show on mobile when table is scrollable */}
+        <div className="sm:hidden absolute left-0 top-1/2 -translate-y-1/2 z-10 pointer-events-none">
+          <div className="w-8 h-32 bg-gradient-to-r from-white dark:from-[#1D1D23] to-transparent" />
+        </div>
+        <div className="sm:hidden absolute right-0 top-1/2 -translate-y-1/2 z-10 pointer-events-none">
+          <div className="w-8 h-32 bg-gradient-to-l from-white dark:from-[#1D1D23] to-transparent" />
+        </div>
+        {/* Mobile scroll hint */}
+        <div className="sm:hidden flex items-center justify-center gap-2 py-2 text-xs text-gray-500 dark:text-[#788099] bg-gray-50 dark:bg-[#23232B] border-b border-[#E8EFF5] dark:border-[#35353E]">
+          <svg className="w-4 h-4 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
+          </svg>
+          <span>Swipe to see more</span>
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
@@ -257,58 +299,123 @@ const LiveTransactionsPage = () => {
                   </td>
                 </tr>
               ) : (
-                transactions.map((tx, index) => (
-                  <tr
-                    key={tx.id}
-                    className="border-b border-[#E8EFF5] dark:border-[#35353E] hover:bg-gray-50 dark:hover:bg-[#23232B] transition-colors"
-                  >
-                    <td className="px-4 sm:px-6 py-3 sm:py-4">
-                      <div className="flex items-center gap-2 sm:gap-3">
-                        <img
-                          src={tx.from.logo}
-                          alt={tx.from.name}
-                          className="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-cover flex-shrink-0"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src =
-                              "https://res.cloudinary.com/pitz/image/upload/v1764667057/salam_vizvxy.svg";
-                          }}
-                        />
-                        <span className="text-sm sm:text-base font-medium text-gray-900 dark:text-white">
-                          {tx.from.name}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-4 sm:px-6 py-3 sm:py-4">
-                      <div className="flex items-center gap-2 sm:gap-3">
-                        <img
-                          src={tx.to.logo}
-                          alt={tx.to.name}
-                          className="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-cover flex-shrink-0"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src =
-                              "https://res.cloudinary.com/pitz/image/upload/v1764667057/salam_vizvxy.svg";
-                          }}
-                        />
-                        <span className="text-sm sm:text-base font-medium text-gray-900 dark:text-white">
-                          {tx.to.name}
-                        </span>
-                      </div>
-                    </td>
-                    <td className={`px-4 sm:px-6 py-3 sm:py-4 font-semibold text-sm sm:text-base ${getAmountColor(index)}`}>
-                      ${parseFloat(tx.amount).toLocaleString('en-US', {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                    </td>
-                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm sm:text-base text-gray-600 dark:text-[#788099]">
-                      {tx.when}
-                    </td>
-                  </tr>
-                ))
+                transactions
+                  .slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
+                  .map((tx, index) => (
+                    <tr
+                      key={tx.id}
+                      className="border-b border-[#E8EFF5] dark:border-[#35353E] hover:bg-gray-50 dark:hover:bg-[#23232B] transition-colors"
+                    >
+                      <td className="px-4 sm:px-6 py-3 sm:py-4">
+                        <div className="flex items-center gap-2 sm:gap-3">
+                          <img
+                            src={tx.from.logo}
+                            alt={tx.from.name}
+                            className="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-cover flex-shrink-0"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src =
+                                "https://res.cloudinary.com/pitz/image/upload/v1764667057/salam_vizvxy.svg";
+                            }}
+                          />
+                          <span className="text-sm sm:text-base font-medium text-gray-900 dark:text-white">
+                            {tx.from.name}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-4 sm:px-6 py-3 sm:py-4">
+                        <div className="flex items-center gap-2 sm:gap-3">
+                          <img
+                            src={tx.to.logo}
+                            alt={tx.to.name}
+                            className="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-cover flex-shrink-0"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src =
+                                "https://res.cloudinary.com/pitz/image/upload/v1764667057/salam_vizvxy.svg";
+                            }}
+                          />
+                          <span className="text-sm sm:text-base font-medium text-gray-900 dark:text-white">
+                            {tx.to.name}
+                          </span>
+                        </div>
+                      </td>
+                      <td className={`px-4 sm:px-6 py-3 sm:py-4 font-semibold text-sm sm:text-base ${getAmountColor(index)}`}>
+                        ${parseFloat(tx.amount).toLocaleString('en-US', {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                      </td>
+                      <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm sm:text-base text-gray-600 dark:text-[#788099]">
+                        {tx.when}
+                      </td>
+                    </tr>
+                  ))
               )}
             </tbody>
           </table>
         </div>
+
+        {/* Pagination UI */}
+        {transactions.length > ITEMS_PER_PAGE && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 sm:px-6 py-4 border-t border-[#E8EFF5] dark:border-[#35353E] bg-white dark:bg-[#1D1D23]">
+            <div className="text-xs sm:text-sm text-gray-600 dark:text-[#788099]">
+              Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1}-{Math.min(currentPage * ITEMS_PER_PAGE, transactions.length)} of {transactions.length} transactions
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium border transition-colors ${currentPage === 1
+                    ? "opacity-50 cursor-not-allowed border-gray-300 dark:border-[#35353E] bg-gray-100 dark:bg-[#1D1D23] text-gray-400 dark:text-gray-500"
+                    : "border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#1D1D23] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#23232B]"
+                  }`}
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.ceil(transactions.length / ITEMS_PER_PAGE) }, (_, i) => i + 1)
+                  .filter((page) => {
+                    const totalPages = Math.ceil(transactions.length / ITEMS_PER_PAGE);
+                    if (page === 1 || page === totalPages) return true;
+                    if (Math.abs(page - currentPage) <= 1) return true;
+                    return false;
+                  })
+                  .map((page, index, array) => {
+                    const prevPage = array[index - 1];
+                    const showEllipsisBefore = prevPage && page - prevPage > 1;
+
+                    return (
+                      <React.Fragment key={page}>
+                        {showEllipsisBefore && (
+                          <span className="px-2 text-gray-500 dark:text-[#788099]">...</span>
+                        )}
+                        <button
+                          onClick={() => handlePageChange(page)}
+                          className={`px-3 py-1.5 rounded-md text-sm font-medium border transition-colors ${currentPage === page
+                              ? "bg-[#1D8751] text-white border-[#1D8751]"
+                              : "border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#1D1D23] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#23232B]"
+                            }`}
+                        >
+                          {page}
+                        </button>
+                      </React.Fragment>
+                    );
+                  })}
+              </div>
+
+              <button
+                onClick={() => handlePageChange(Math.min(Math.ceil(transactions.length / ITEMS_PER_PAGE), currentPage + 1))}
+                disabled={currentPage === Math.ceil(transactions.length / ITEMS_PER_PAGE)}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium border transition-colors ${currentPage === Math.ceil(transactions.length / ITEMS_PER_PAGE)
+                    ? "opacity-50 cursor-not-allowed border-gray-300 dark:border-[#35353E] bg-gray-100 dark:bg-[#1D1D23] text-gray-400 dark:text-gray-500"
+                    : "border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#1D1D23] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#23232B]"
+                  }`}
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

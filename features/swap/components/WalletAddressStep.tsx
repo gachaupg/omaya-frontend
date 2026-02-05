@@ -445,7 +445,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
 
                 {/* Expanded Content */}
                 {expandedTerms && (
-                  <div className="border-t border-gray-200 dark:border-[#35353E] px-4 sm:px-5 py-4 sm:py-5 space-y-4 sm:space-y-5">
+                  <div className="px-4 sm:px-5 py-2 sm:py-3 space-y-4 sm:space-y-5">
                     {/* Term 4 */}
                     <div className="flex items-start gap-2 sm:gap-3">
                       <span className="text-[#1D8751] font-bold text-sm sm:text-base flex-shrink-0">4.</span>
