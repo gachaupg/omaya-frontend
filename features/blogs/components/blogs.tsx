@@ -86,10 +86,10 @@ const BlogPage = () => {
     setCurrentPage(1);
   }, [searchTerm]);
 
-  // Scroll to top when page changes
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [currentPage]);
+  const handlePageChange = (newPage: number | ((prev: number) => number)) => {
+    setCurrentPage(newPage);
+    window.scrollTo({ top: 90, behavior: "smooth" });
+  };
 
   // Calculate pagination
   const totalPages = Math.ceil(filteredPosts.length / ITEMS_PER_PAGE);
@@ -308,11 +308,11 @@ const BlogPage = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    onClick={() => handlePageChange(prev => Math.max(1, prev - 1))}
                     disabled={currentPage === 1}
                     className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${currentPage === 1
-                        ? "opacity-50 cursor-not-allowed border-gray-300 dark:border-[#35353E] bg-gray-100 dark:bg-[#161B22] text-gray-400 dark:text-gray-500"
-                        : "border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#161B22] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#1F2937]"
+                      ? "opacity-50 cursor-not-allowed border-gray-300 dark:border-accent bg-gray-100 dark:bg-[#161B22] text-gray-400 dark:text-gray-500"
+                      : "border-gray-300 dark:border-accent bg-white dark:bg-[#161B22] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#1F2937]"
                       }`}
                   >
                     <FaChevronLeft className="w-4 h-4" />
@@ -337,10 +337,10 @@ const BlogPage = () => {
                               <span className="px-2 text-gray-500 dark:text-gray-400">...</span>
                             )}
                             <button
-                              onClick={() => setCurrentPage(page)}
+                              onClick={() => handlePageChange(page)}
                               className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${currentPage === page
-                                  ? "bg-[#1D8751] text-white border-[#1D8751]"
-                                  : "border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#161B22] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#1F2937]"
+                                ? "bg-[#1D8751] text-white border-[#1D8751]"
+                                : "border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#161B22] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#1F2937]"
                                 }`}
                             >
                               {page}
@@ -351,11 +351,11 @@ const BlogPage = () => {
                   </div>
 
                   <button
-                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    onClick={() => handlePageChange(prev => Math.min(totalPages, prev + 1))}
                     disabled={currentPage === totalPages}
                     className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${currentPage === totalPages
-                        ? "opacity-50 cursor-not-allowed border-gray-300 dark:border-[#35353E] bg-gray-100 dark:bg-[#161B22] text-gray-400 dark:text-gray-500"
-                        : "border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#161B22] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#1F2937]"
+                      ? "opacity-50 cursor-not-allowed border-gray-300 dark:border-[#35353E] bg-gray-100 dark:bg-[#161B22] text-gray-400 dark:text-gray-500"
+                      : "border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#161B22] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#1F2937]"
                       }`}
                   >
                     <FaChevronRight className="w-4 h-4" />
