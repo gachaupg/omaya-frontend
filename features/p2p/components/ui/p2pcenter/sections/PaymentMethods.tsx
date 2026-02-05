@@ -493,19 +493,31 @@ const PaymentMethods = () => {
   /** Pagination logic */
 
   // Group methods into two sections: Bank and Mobile Money
-  // For now place the first available method under Mobile Money and the rest under Bank
+  // Check payment_method or payment_method_type to determine category
   // Safely filter out any undefined/null methods
   const safeUserPaymentDetails = Array.isArray(userPaymentDetails)
     ? userPaymentDetails.filter((m: any) => m && typeof m === 'object')
     : [];
 
-  const mobileMoneyMethods: PaymentMethod[] = safeUserPaymentDetails.length > 22 && safeUserPaymentDetails[22]
-    ? [safeUserPaymentDetails[22]]
-    : [];
+  // Helper function to check if a method is mobile money
+  const isMobileMoneyMethod = (method: any) => {
+    if (!method) return false;
+    const providerName = (method.provider_name || method.provider || '').toLowerCase();
+    const paymentMethod = (method.payment_method || '').toLowerCase();
+    const paymentMethodType = (method.payment_method_type || '').toLowerCase();
+    
+    const mobileKeywords = ['mobile', 'mpesa', 'm-pesa', 'mtn', 'airtel', 'safaricom', 'vodafone', 'telesom', 'hormuud', 'golis', 'evc', 'zaad', 'sahal', 'telebirr', 'waafi'];
+    
+    return mobileKeywords.some(keyword => 
+      providerName.includes(keyword) || 
+      paymentMethod.includes(keyword) || 
+      paymentMethodType.includes(keyword)
+    );
+  };
 
-  const bankMethods: PaymentMethod[] = safeUserPaymentDetails.length > 1
-    ? safeUserPaymentDetails.slice(1).filter((m: any) => m && typeof m === 'object')
-    : [];
+  const mobileMoneyMethods: PaymentMethod[] = safeUserPaymentDetails.filter(isMobileMoneyMethod);
+
+  const bankMethods: PaymentMethod[] = safeUserPaymentDetails.filter((m: any) => !isMobileMoneyMethod(m));
 
   // Paginate bank methods only
   const bankMethodsPaginated = bankMethods.slice(

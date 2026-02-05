@@ -208,6 +208,27 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
     );
   }, [getProviderName]);
 
+  // Helper function to check if a payment method is mobile money
+  const isMobileMethod = useCallback((method: any) => {
+    if (!method) return false;
+    const providerName = getProviderName(method).toLowerCase();
+    const paymentMethod = (method?.payment_method || "").toLowerCase();
+    const paymentMethodType = (method?.payment_method_type || "").toLowerCase();
+    const provider = (method?.provider || "").toLowerCase();
+    const methodType = (method?.method || "").toLowerCase();
+
+    // Common mobile money keywords
+    const mobileKeywords = ['mobile', 'mpesa', 'm-pesa', 'mtn', 'airtel', 'safaricom', 'vodafone', 'telesom', 'hormuud', 'golis', 'evc', 'zaad', 'sahal'];
+    
+    return mobileKeywords.some(keyword => 
+      providerName.includes(keyword) ||
+      paymentMethod.includes(keyword) ||
+      paymentMethodType.includes(keyword) ||
+      provider.includes(keyword) ||
+      methodType.includes(keyword)
+    );
+  }, [getProviderName]);
+
   // Restore state from localStorage after login (when navigating from home page)
   const hasRestoredState = useRef(false);
   const paymentMethodRestoreAttempted = useRef(false);
@@ -1205,9 +1226,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
 
 {/* Bank Account Address Section - Dynamic Title */}
  <h2 className="text-xl font-semibold mb-2 text-gray-900 dark:text-[#788099] inline-flex items-center gap-2">
-  {selectedToPaymentDetail?.payment_method?.toLowerCase().includes('mobile') ||
-   selectedToPaymentDetail?.payment_method_type?.toLowerCase().includes('mobile') ||
-   selectedToPaymentDetail?.method?.toLowerCase().includes('mobile')
+  2- {isMobileMethod(selectedToPaymentDetail)
     ? `${getProviderName(selectedToPaymentDetail)} Details`
     : `${getProviderName(selectedToPaymentDetail)} Account Details`}
 </h2>
@@ -1219,9 +1238,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
           >
             {/* Dynamic Address Label */}
             <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
-              {selectedToPaymentDetail?.payment_method?.toLowerCase().includes('mobile') ||
-               selectedToPaymentDetail?.payment_method_type?.toLowerCase().includes('mobile') ||
-               selectedToPaymentDetail?.method?.toLowerCase().includes('mobile')
+              {isMobileMethod(selectedToPaymentDetail)
                 ? `${getProviderName(selectedToPaymentDetail)} Number`
                 : `${getProviderName(selectedToPaymentDetail)} Account Number`}
             </label>
@@ -1321,13 +1338,13 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
 
             {/* Terms and Conditions Summary */}
             <div className="flex items-center mb-2 mt-4">
-              <span className="mr-2 text-[#1D8751]">
+              <span className="mr-2 text-[#F79330]">
                 <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
                   <circle
                     cx="12"
                     cy="12"
                     r="10"
-                    stroke="#1D8751"
+                    stroke="#F79330"
                     strokeWidth="2"
                   />
                   <line
@@ -1335,47 +1352,47 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
                     y1="8"
                     x2="12"
                     y2="12"
-                    stroke="#1D8751"
+                    stroke="#F79330"
                     strokeWidth="2"
                     strokeLinecap="round"
                   />
-                  <circle cx="12" cy="16" r="1" fill="#1D8751" />
+                  <circle cx="12" cy="16" r="1" fill="#F79330" />
                 </svg>
               </span>
-              <span className="text-base font-semibold text-[#7e7e8f] dark:text-[#788099]">
+              <span className="text-base font-semibold text-[#F79330]">
                 Terms and Conditions Summary
               </span>
             </div>
-            <div className="dark:bg-[var(--card-color)] border border-[#1D8751] rounded-xl p-4">
+            <div className="bg-[#FFF8F0] dark:bg-[#2D2518] border border-[#F79330] rounded-xl p-4">
               <ul className="list-none space-y-3">
                 <li className="flex items-start">
                   <span className="w-2 h-2 mt-1.5 rounded-full bg-[#1D8751] inline-block mr-3 shrink-0"></span>
-                  <span className="text-[#35353e] dark:text-[#788099] text-sm">
-                    <strong>Ownership:</strong> Use only wallets, bank accounts, or mobile money numbers you personally own and control. Third-party accounts are not allowed.
+                  <span className="text-gray-700 dark:text-gray-300 text-sm">
+                    <strong className="text-gray-900 dark:text-white">Ownership:</strong> Use only wallets, bank accounts, or mobile money numbers you personally own and control. Third-party accounts are not allowed.
                   </span>
                 </li>
                 <li className="flex items-start">
                   <span className="w-2 h-2 mt-1.5 rounded-full bg-[#1D8751] inline-block mr-3 shrink-0"></span>
-                  <span className="text-[#35353e] dark:text-[#788099] text-sm">
-                    <strong>Correct Details:</strong> Enter correct receiving wallet, bank account, or mobile money number. Send funds only to our officially provided accounts shown in the app.
+                  <span className="text-gray-700 dark:text-gray-300 text-sm">
+                    <strong className="text-gray-900 dark:text-white">Correct Details:</strong> Enter correct receiving wallet, bank account, or mobile money number. Send funds only to our officially provided accounts shown in the app.
                   </span>
                 </li>
                 <li className="flex items-start">
                   <span className="w-2 h-2 mt-1.5 rounded-full bg-[#1D8751] inline-block mr-3 shrink-0"></span>
-                  <span className="text-[#35353e] dark:text-[#788099] text-sm">
-                    <strong>Official Accounts Only:</strong> Send funds only to OMAYA accounts, mobile numbers, or merchants displayed in the app. Sending to other accounts is at your own risk.
+                  <span className="text-gray-700 dark:text-gray-300 text-sm">
+                    <strong className="text-gray-900 dark:text-white">Official Accounts Only:</strong> Send funds only to OMAYA accounts, mobile numbers, or merchants displayed in the app. Sending to other accounts is at your own risk.
                   </span>
                 </li>
                 <li className="flex items-start">
                   <span className="w-2 h-2 mt-1.5 rounded-full bg-[#1D8751] inline-block mr-3 shrink-0"></span>
-                  <span className="text-[#35353e] dark:text-[#788099] text-sm">
-                    <strong>Irreversible:</strong> Transactions are irreversible. Incorrect details or wrong accounts may result in permanent fund loss—we cannot recover them.
+                  <span className="text-gray-700 dark:text-gray-300 text-sm">
+                    <strong className="text-gray-900 dark:text-white">Irreversible:</strong> Transactions are irreversible. Incorrect details or wrong accounts may result in permanent fund loss—we cannot recover them.
                   </span>
                 </li>
                 <li className="flex items-start">
                   <span className="w-2 h-2 mt-1.5 rounded-full bg-[#1D8751] inline-block mr-3 shrink-0"></span>
-                  <span className="text-[#35353e] dark:text-[#788099] text-sm">
-                    <strong>Time Limit:</strong> Send funds only while the transaction timer is active. Transactions sent after timer expiry may be rejected or lost.
+                  <span className="text-gray-700 dark:text-gray-300 text-sm">
+                    <strong className="text-gray-900 dark:text-white">Time Limit:</strong> Send funds only while the transaction timer is active. Transactions sent after timer expiry may be rejected or lost.
                   </span>
                 </li>
               </ul>

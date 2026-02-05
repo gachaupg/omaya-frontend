@@ -174,14 +174,18 @@ const MarketTable: React.FC<MarketTableProps> = ({
                         <img
                           src={row.advertiser_photo}
                           alt={row.advertiser}
-                          className="w-10 h-10 rounded-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                          className="w-10 h-10 rounded-full object-cover cursor-pointer hover:opacity-80 transition-opacity bg-[#1D8751]"
                           onClick={() => handleImageClick(row.advertiser_photo, row.advertiser)}
+                          onError={(e) => {
+                            // Hide image and show fallback
+                            (e.target as HTMLImageElement).style.display = 'none';
+                            (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                          }}
                         />
-                      ) : (
-                        <span className="bg-[#1D8751] text-white h-10 w-10 rounded-[10px] text-xs font-bold flex items-center justify-center">
-                          {row.advertiserInitials}
-                        </span>
-                      )}
+                      ) : null}
+                      <span className={`bg-[#1D8751] text-white h-10 w-10 rounded-[10px] text-xs font-bold flex items-center justify-center ${row.advertiser_photo ? 'hidden' : ''}`}>
+                        {row.advertiserInitials}
+                      </span>
                       <span className="font-medium flex items-center text-sm text-gray-900 dark:text-[#E4E4E6]">
                         {row.advertiser}
                         <FaCheckCircle className="text-[#FFD600] ml-1" />
@@ -287,14 +291,18 @@ const MarketTable: React.FC<MarketTableProps> = ({
                       <img
                         src={row.advertiser_photo}
                         alt={row.advertiser}
-                        className="w-10 h-10 rounded-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                        className="w-10 h-10 rounded-full object-cover cursor-pointer hover:opacity-80 transition-opacity bg-[#1D8751]"
                         onClick={() => handleImageClick(row.advertiser_photo, row.advertiser)}
+                        onError={(e) => {
+                          // Hide image and show fallback
+                          (e.target as HTMLImageElement).style.display = 'none';
+                          (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                        }}
                       />
-                    ) : (
-                      <span className="bg-[#1D8751] text-white h-10 w-10 rounded-[10px] text-xs font-bold flex items-center justify-center">
-                        {row.advertiserInitials}
-                      </span>
-                    )}
+                    ) : null}
+                    <span className={`bg-[#1D8751] text-white h-10 w-10 rounded-[10px] text-xs font-bold flex items-center justify-center ${row.advertiser_photo ? 'hidden' : ''}`}>
+                      {row.advertiserInitials}
+                    </span>}
                     <div className="flex-1">
                       <div className="flex items-center gap-1">
                         <span className="font-medium text-sm text-gray-900 dark:text-[#E4E4E6]">
