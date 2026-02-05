@@ -4,6 +4,8 @@ import React, { useEffect, useState, useRef } from "react";
 import { AllSystemTransactionsWebSocket } from "@/features/markets/services/allSystemTransactionsWebSocket";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
+const ITEMS_PER_PAGE = 10;
+
 interface Transaction {
   id: string;
   from: {
@@ -108,10 +110,10 @@ const LiveTransactionsPage = () => {
               toName = data.user_name || "P2P Withdraw";
               toLogo = getBankLogo(data.payment_provider || toName);
             } else if (type === "p2p_trade") {
-              // P2P trade: From = buyer, To = seller (or generic labels)
-              fromName = data.buyer_name || "Buyer";
+              // P2P trade: From = payment provider, To = payment provider
+              fromName = data.payment_provider || data.currency || "Buyer";
               fromLogo = getBankLogo(fromName);
-              toName = data.seller_name || "Seller";
+              toName = data.payment_provider || data.currency || "Seller";
               toLogo = getBankLogo(toName);
             } else {
               // Fallback: From = currency, To = payment provider or user
