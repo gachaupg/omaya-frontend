@@ -196,7 +196,7 @@ function Cash({ sharedFeesError }: CashProps) {
             <div className="bg-[var(--bg-color)] border border-[#35353F] rounded-xl p-4 mb-4 space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-[#A3A3A3] text-sm">Withdrawal ID:</span>
-                <span className="text-white text-sm font-mono">{withdrawalData.withdrawal_id?.substring(0, 8)}...</span>
+                <span className="text-gray-800 dark:text-white text-sm font-mono">{withdrawalData.withdrawal_id?.substring(0, 8)}...</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-[#A3A3A3] text-sm">Requested Amount:</span>
@@ -204,11 +204,11 @@ function Cash({ sharedFeesError }: CashProps) {
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-[#A3A3A3] text-sm">Commission Fee:</span>
-                <span className="text-white text-sm">${withdrawalData.commission_fee}</span>
+                <span className="text-gray-800 dark:text-white text-sm">${withdrawalData.commission_fee}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-[#A3A3A3] text-sm">Network Fee:</span>
-                <span className="text-white text-sm">${withdrawalData.network_fee}</span>
+                <span className="text-gray-800 dark:text-white text-sm">${withdrawalData.network_fee}</span>
               </div>
               <div className="border-t border-[#35353F] pt-3">
                 <div className="flex justify-between items-center">

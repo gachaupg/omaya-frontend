@@ -60,7 +60,7 @@ const Express = ({ isHomePage = false }: ExpressProps) => {
             title={`Switch to ${currentMode === "deposit" ? "withdrawal" : "deposit"} mode`}
           >
             <span
-              className="flex items-center justify-center "
+              className="flex items-center justify-center"
               suppressHydrationWarning
             >
               <span className="text-[#76777B] dark:text-white text-base uppercase font-bold">
