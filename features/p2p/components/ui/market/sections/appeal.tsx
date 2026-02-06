@@ -33,6 +33,7 @@ const AppealModal: React.FC<AppealModalProps> = ({
   const [selectedReason, setSelectedReason] = useState("");
   const [customReason, setCustomReason] = useState("");
   const [screenshot, setScreenshot] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Debug logging for state changes
@@ -61,11 +62,15 @@ const AppealModal: React.FC<AppealModalProps> = ({
       setSelectedReason("");
       setCustomReason("");
       setScreenshot(null);
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+        setPreviewUrl(null);
+      }
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
     }
-  }, [open]);
+  }, [open, previewUrl]);
 
   if (!open) return null;
 
@@ -74,6 +79,19 @@ const AppealModal: React.FC<AppealModalProps> = ({
       const file = e.target.files[0];
       logger.debug('p2p', "File selected:", file.name);
       setScreenshot(file);
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setScreenshot(null);
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+      setPreviewUrl(null);
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
   };
 
@@ -203,21 +221,21 @@ const AppealModal: React.FC<AppealModalProps> = ({
                 onClick={() =>
                   fileInputRef.current && fileInputRef.current.click()
                 }
-                className="py-2 px-10 rounded-full dark:bg-[#35353E] bg-gray-200 flex items-center justify-center"
+                className="py-2 px-10 rounded-full dark:bg-[#35353E] bg-gray-200 flex items-center justify-center hover:bg-gray-300 dark:hover:bg-[#404040] transition-colors"
               >
-              <svg xmlns="http://www.w3.org/2000/svg" 
-               width="24" 
-               height="24" 
-               viewBox="0 0 24 24" 
-               fill="none" 
-               stroke="currentColor" 
-               strokeWidth="2" 
-               strokeLinecap="round" 
-               strokeLinejoin="round"
-               className="text-[#1D8751]"
-               >
-              <path d="M12 3v12"/><path d="m17 8-5-5-5 5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              </svg>
+                <svg xmlns="http://www.w3.org/2000/svg" 
+                  width="24" 
+                  height="24" 
+                  viewBox="0 0 24 24" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  strokeWidth="2" 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round"
+                  className="text-[#1D8751]"
+                >
+                  <path d="M12 3v12"/><path d="m17 8-5-5-5 5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                </svg>
               </button>
               <input
                 type="file"
@@ -230,6 +248,25 @@ const AppealModal: React.FC<AppealModalProps> = ({
                 {screenshot ? screenshot.name : "No file selected"}
               </span>
             </div>
+            {previewUrl && (
+              <div className="mt-4 p-3 rounded-xl border border-gray-200 dark:border-[#35353E] bg-gray-50 dark:bg-[#23232B]">
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <span className="text-[12px] text-gray-600 dark:text-[#A3A3C2]">Preview</span>
+                  <button
+                    type="button"
+                    onClick={handleRemoveImage}
+                    className="text-[12px] text-[#E23D3A] hover:text-[#c93429] font-medium"
+                  >
+                    Remove & choose another
+                  </button>
+                </div>
+                <img
+                  src={previewUrl}
+                  alt="Preview"
+                  className="max-h-48 w-full object-contain rounded-lg"
+                />
+              </div>
+            )}
           </div>
 
           {/* Buttons */}

@@ -22,12 +22,13 @@ import {
   RefreshCw,
   CopyIcon,
   AlertCircle,
+  MessageCircle,
 } from "lucide-react";
 import AppealModal from "./appeal";
 import { UserStatusBadge } from "./UserStatusBadge";
 import ChatBox from "./ChatBox";
 import { showToast } from "@/lib/utils/toast";
-import { handleCopy } from "../../../Common/utils";
+import { handleCopy, parseDurationToSeconds } from "../../../Common/utils";
 import Image from "next/image";
 import { useTradeStatusWebSocket } from "@/features/p2p/hooks/useTradeStatusWebSocket";
 
@@ -54,6 +55,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   );
   const [showAppealModal, setShowAppealModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showChat, setShowChat] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [feedbackRating, setFeedbackRating] = useState<boolean | null>(null);
   const [feedbackComment, setFeedbackComment] = useState("");
@@ -141,11 +143,8 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     onStatusUpdate: handleStatusUpdate,
   });
 
-  const completionTime = Number(singleOrder?.completion_time);
-  const displaySeconds =
-    !isNaN(completionTime) && completionTime > 0
-      ? completionTime * 60
-      : 10 * 60;
+  // Use limit_duration from order only (e.g. "00:00:05" = 5 min) - never use trade's limit (30 min default)
+  const displaySeconds = parseDurationToSeconds(singleOrder?.limit_duration);
 
   // Local countdown state for auto-cancel logic
   const [countdown, setCountdown] = useState(displaySeconds);
@@ -281,8 +280,11 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     };
   }, [dispatch]);
 
-  // Get payment details from order data
-  const paymentDetails = saveOrder?.payment_details?.[0] || null;
+  // Get all payment details from order data - use multiple sources for robustness
+  const fromSingle = Array.isArray(singleOrder?.payment_details) ? singleOrder.payment_details : [];
+  const fromConfirm = Array.isArray(confirmOrder?.payment_details) ? confirmOrder.payment_details : [];
+  const fromSaveOrder = Array.isArray(saveOrder?.payment_details) ? saveOrder.payment_details : [];
+  const paymentDetailsList = fromSingle.length > 0 ? fromSingle : fromConfirm.length > 0 ? fromConfirm : fromSaveOrder;
 
   // --- Calculation logic ---
   const sendAmount = Number(confirmOrder?.amount) || 0;
@@ -415,6 +417,21 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
       <div className="grid grid-cols-1 mt-6 sm:mt-10 min-[900px]:grid-cols-3 gap-4 sm:gap-6 p-3 sm:p-4 min-[900px]:p-6 min-h-screen bg-[#EEF1F4] dark:bg-[var(--bg-color)]">
         {/* Left: Timeline/Steps */}
         <div className="min-[900px]:col-span-2 flex flex-col gap-4">
+          {/* Title row with Chat button (small screens) */}
+          <div className="flex items-center justify-between mb-2 min-[900px]:hidden">
+            <p className="text-gray-900 dark:text-white text-[13px] font-medium">
+              Trade Details
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowChat((prev) => !prev)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1D8751] text-white text-xs font-medium hover:bg-[#166b3e] transition-colors"
+              aria-label={showChat ? "Close chat" : "Open chat"}
+            >
+              <MessageCircle className="w-4 h-4" />
+              {showChat ? "Close Chat" : "Chat"}
+            </button>
+          </div>
           {/* Step 1: Order Created */}
           <div className="relative pl-6 sm:pl-8 pb-4 border-l-2 border-gray-200 dark:border-[#35353E]">
             <div className="absolute -left-3 sm:-left-4 top-0 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gray-100 dark:bg-[var(--card-color)] border-2 border-[#1D8751] flex items-center justify-center text-[#1D8751] font-bold text-sm sm:text-lg">
@@ -550,60 +567,87 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
               </span>
             </span>
             <div className="bg-white dark:bg-[var(--card-color)] rounded-2xl p-4 sm:p-6 mt-4 flex flex-col gap-4 sm:gap-6 border border-gray-200 dark:border-[#35353E]">
-              {/* Bank Info */}
-              <div className="flex items-center bg-white dark:bg-[var(--card-color)] gap-3 sm:gap-4 border border-gray-200 dark:border-[#35353E] rounded-xl px-3 sm:px-4 py-2 sm:py-3 w-fit mb-2">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#1D8751] flex items-center justify-center overflow-hidden text-sm sm:text-base font-bold text-white shadow-sm">
-                  {/* Use logo mapped from provider */}
-                  {paymentDetails?.provider?.[0]?.toUpperCase() || "B"}
-                </div>
-                <span className="text-gray-900 dark:text-white font-medium text-sm sm:text-lg">
-                  {paymentDetails?.provider}
-                </span>
-              </div>
-              {/* Account Name */}
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                <div className="text-gray-600 dark:text-[#A3A3C2] text-sm sm:text-base sm:mb-1 sm:w-1/4 sm:min-w-[100px]">
-                  Account Name
-                </div>
-                <div className="flex items-center bg-gray-100 dark:bg-[#35353E] border border-[#1D8751] rounded-full px-4 sm:px-6 py-2 flex-1 min-w-0">
-                  <span className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-[#1D8751] mr-2 sm:mr-3 inline-block flex-shrink-0"></span>
-                  <span className="text-[#1D8751] font-semibold text-sm sm:text-lg truncate">
-                    {paymentDetails?.account_name || "Omar Ali"}
-                  </span>
-                  <div className="flex-1" />
-                  <button
-                    className="ml-2 sm:ml-3 text-[#1D8751] hover:text-[#F79330] focus:outline-none flex-shrink-0"
-                    onClick={() =>
-                      handleCopy(paymentDetails?.account_name || "Omar Ali")
-                    }
-                    title="Copy Account Name"
-                  >
-                    <FileIcon size={16} className="sm:w-[18px] sm:h-[18px]" />
-                  </button>
-                </div>
-              </div>
-              {/* Account Number */}
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                <div className="text-gray-600 dark:text-[#A3A3C2] text-sm sm:text-base sm:mb-1 sm:w-1/4 sm:min-w-[100px]">
-                  Account Number
-                </div>
-                <div className="flex items-center bg-gray-100 dark:bg-[#35353E] border border-[#1D8751] rounded-full px-4 sm:px-6 py-2 flex-1 min-w-0">
-                  <span className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-[#1D8751] mr-2 sm:mr-3 inline-block flex-shrink-0"></span>
-                  <span className="text-[#1D8751] font-semibold text-sm sm:text-lg truncate">
-                    {paymentDetails?.account_number || "123456789"}
-                  </span>
-                  <div className="flex-1" />
-                  <button
-                    className="ml-2 sm:ml-3 text-[#1D8751] hover:text-[#F79330] focus:outline-none flex-shrink-0"
-                    onClick={() =>
-                      handleCopy(paymentDetails?.account_number || "123456789")
-                    }
-                    title="Copy Account Number"
-                  >
-                    <FileIcon size={16} className="sm:w-[18px] sm:h-[18px]" />
-                  </button>
-                </div>
-              </div>
+              {/* Payment methods from API - display all from payment_details */}
+              {paymentDetailsList.length > 0 ? (
+                paymentDetailsList.map((paymentDetails: { id?: number; provider?: string; payment_method?: string; account_name?: string; account_number?: string; provider_logo?: string }) => (
+                  <div key={paymentDetails?.id ?? paymentDetails?.provider ?? Math.random()} className="flex flex-col gap-4 p-3 sm:p-4 border border-gray-200 dark:border-[#35353E] rounded-xl">
+                    <div className="flex items-center gap-3 sm:gap-4">
+                      {paymentDetails?.provider_logo ? (
+                        <img
+                          src={paymentDetails.provider_logo}
+                          alt={paymentDetails?.provider || "Provider"}
+                          className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg object-contain flex-shrink-0"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = "none";
+                            const parent = target.parentElement;
+                            if (parent && !parent.querySelector(".fallback-initial")) {
+                              const fallback = document.createElement("div");
+                              fallback.className = "fallback-initial w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#1D8751] flex items-center justify-center flex-shrink-0";
+                              fallback.innerHTML = `<span class="text-white font-bold text-sm">${(paymentDetails?.provider?.[0] || "B").toUpperCase()}</span>`;
+                              parent.insertBefore(fallback, parent.firstChild);
+                            }
+                          }}
+                        />
+                      ) : (
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#1D8751] flex items-center justify-center overflow-hidden text-sm sm:text-base font-bold text-white shadow-sm">
+                          {(paymentDetails?.provider?.[0] || "B").toUpperCase()}
+                        </div>
+                      )}
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-gray-900 dark:text-white font-medium text-sm sm:text-lg">
+                          {paymentDetails?.provider}
+                        </span>
+                        {paymentDetails?.payment_method && (
+                          <span className="text-[#788099] text-xs">
+                            {paymentDetails.payment_method.replace(/_/g, " ")}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                      <div className="text-gray-600 dark:text-[#A3A3C2] text-sm sm:text-base sm:mb-1 sm:w-1/4 sm:min-w-[100px]">
+                        Account Name
+                      </div>
+                      <div className="flex items-center bg-gray-100 dark:bg-[#35353E] border border-[#1D8751] rounded-full px-4 sm:px-6 py-2 flex-1 min-w-0">
+                        <span className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-[#1D8751] mr-2 sm:mr-3 inline-block flex-shrink-0"></span>
+                        <span className="text-[#1D8751] font-semibold text-sm sm:text-lg truncate">
+                          {paymentDetails?.account_name || "—"}
+                        </span>
+                        <div className="flex-1" />
+                        <button
+                          className="ml-2 sm:ml-3 text-[#1D8751] hover:text-[#F79330] focus:outline-none flex-shrink-0"
+                          onClick={() => handleCopy(paymentDetails?.account_name || "")}
+                          title="Copy Account Name"
+                        >
+                          <FileIcon size={16} className="sm:w-[18px] sm:h-[18px]" />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                      <div className="text-gray-600 dark:text-[#A3A3C2] text-sm sm:text-base sm:mb-1 sm:w-1/4 sm:min-w-[100px]">
+                        Account Number
+                      </div>
+                      <div className="flex items-center bg-gray-100 dark:bg-[#35353E] border border-[#1D8751] rounded-full px-4 sm:px-6 py-2 flex-1 min-w-0">
+                        <span className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-[#1D8751] mr-2 sm:mr-3 inline-block flex-shrink-0"></span>
+                        <span className="text-[#1D8751] font-semibold text-sm sm:text-lg truncate">
+                          {paymentDetails?.account_number || "—"}
+                        </span>
+                        <div className="flex-1" />
+                        <button
+                          className="ml-2 sm:ml-3 text-[#1D8751] hover:text-[#F79330] focus:outline-none flex-shrink-0"
+                          onClick={() => handleCopy(paymentDetails?.account_number || "")}
+                          title="Copy Account Number"
+                        >
+                          <FileIcon size={16} className="sm:w-[18px] sm:h-[18px]" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-[#788099] text-sm py-4">No payment methods available</div>
+              )}
               {/* Buyer's Name */}
               <div className="border border-[#F79330] rounded-2xl px-3 sm:px-4 min-[900px]:px-8 py-4 sm:py-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mt-2 bg-white dark:bg-[var(--card-color)]">
                 <p className="text-[#F79330] font-semibold text-sm sm:text-lg sm:mr-6">
@@ -641,7 +685,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                   Appeal after {formatCountdown(countdown)}
                 </span>
               )}
-              {confirmOrder?.status === "matched" && countdown === 0 && (
+              {(confirmOrder?.status !== "matched" || countdown === 0) && (
                 <button
                   onClick={() => setShowAppealModal(true)}
                   className="bg-gray-100 dark:bg-[var(--card-color)] text-gray-600 dark:text-[#A3A3C2] rounded-lg px-4 sm:px-6 py-2 text-sm sm:text-base border border-gray-200 dark:border-[#35353E] w-full sm:w-auto hover:bg-gray-200 dark:hover:bg-[#404040] transition-colors"
@@ -681,9 +725,10 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
           </div>
         </div>
 
-        {/* Right: Chat */}
-        <div className="min-[900px]:col-span-1 pt-6 sm:pt-10 flex flex-col gap-4 sm:gap-6 mt-6 min-[900px]:mt-0">
+        {/* Right: Chat - on mobile hidden unless Chat button clicked, opens on top */}
+        <div className={`min-[900px]:col-span-1 pt-6 sm:pt-10 flex flex-col gap-4 sm:gap-6 mt-6 min-[900px]:mt-0 ${!showChat ? "hidden min-[900px]:flex" : "order-first min-[900px]:order-none flex"}`}>
           <ChatBox
+            onClose={() => setShowChat(false)}
             tradeId={confirmOrder?.id || ""}
             userId={user?.id.toString() || ""}
             userName={

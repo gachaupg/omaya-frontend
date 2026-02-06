@@ -15,13 +15,13 @@ import {
   completeP2PTradeThunk,
   confirmP2PTradeThunk,
 } from "@/features/p2p/slices/orderSlice";
-import { FileIcon, SendIcon, Copy, CheckCircle2, RefreshCw } from "lucide-react";
+import { FileIcon, SendIcon, Copy, CheckCircle2, RefreshCw, MessageCircle } from "lucide-react";
 import { FaChevronRight } from "react-icons/fa";
 import AppealModal from "./appeal";
 import { UserStatusBadge } from "./UserStatusBadge";
 import ChatBox from "./ChatBox";
 import { showToast } from "@/lib/utils/toast";
-import { handleCopyToClipboard } from "@/features/p2p/components/Common/utils";
+import { handleCopyToClipboard, parseDurationToSeconds, formatDurationForDisplay } from "@/features/p2p/components/Common/utils";
 import { Dialog } from "@headlessui/react";
 import { useTradeStatusWebSocket } from "@/features/p2p/hooks/useTradeStatusWebSocket";
 
@@ -49,6 +49,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   const [isClient, setIsClient] = useState(false);
   const [tradeDataJson, setTradeDataJson] = useState<any>({});
   const [copiedButton, setCopiedButton] = useState<string | null>(null);
+  const [showChat, setShowChat] = useState(false);
   const prevStatusRef = useRef<string | undefined>(undefined);
   const prevTradeIdRef = useRef<string | null>(null);
   const { user, isAuthenticated } = useSelector(
@@ -112,11 +113,8 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     onStatusUpdate: handleStatusUpdate,
   });
 
-  const completionTime = Number(singleOrder?.completion_time);
-  const displaySeconds =
-    !isNaN(completionTime) && completionTime > 0
-      ? completionTime * 60
-      : 10 * 60;
+  // Use limit_duration for countdown (e.g. "00:00:05" = 5 min) - prefer order's limit over trade default
+  const displaySeconds = parseDurationToSeconds(singleOrder?.limit_duration);
 
   // Local countdown state for auto-cancel logic
   const [countdown, setCountdown] = useState(displaySeconds);
@@ -247,8 +245,11 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     };
   }, [dispatch]);
 
-  // Get payment details from order data
-  const paymentDetails = singleOrder?.payment_details?.[0] || null;
+  // Get all payment details from order data - use multiple sources for robustness
+  const fromSingle = Array.isArray(singleOrder?.payment_details) ? singleOrder.payment_details : [];
+  const fromConfirm = Array.isArray(confirmOrder?.payment_details) ? confirmOrder.payment_details : [];
+  const fromTradeData = Array.isArray(tradeDataJson?.payment_details) ? tradeDataJson.payment_details : [];
+  const paymentDetailsList = fromSingle.length > 0 ? fromSingle : fromConfirm.length > 0 ? fromConfirm : fromTradeData;
 
   // --- Calculation logic ---
   const sendAmount = Number(confirmOrder?.amount) || 0;
@@ -317,9 +318,9 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
           { label: "View order" },
         ]}
       />
-      <div className="final-buy-container grid grid-cols-1 lg:grid-cols-3 gap-2 sm:gap-4 md:gap-6 p-1 sm:p-2 md:p-6 min-h-screen bg-[#EEF1F4] dark:bg-(--bg-color)">
+      <div className="final-buy-container grid grid-cols-1 md:grid-cols-3 gap-2 sm:gap-4 md:gap-6 p-1 sm:p-2 md:p-6 min-h-screen bg-[#EEF1F4] dark:bg-(--bg-color)">
         {/* Left Column: Main Info */}
-        <div className="lg:col-span-2 flex flex-col gap-6">
+        <div className="md:col-span-2 flex flex-col gap-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
               <p
@@ -328,17 +329,28 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                 Advertiser Information
               </p>
             </div>
-            {/* <button
-              onClick={handleRefresh}
-              className="flex items-center gap-1 bg-gray-100 dark:bg-[var(--card-color)] text-[#1D8751] rounded-lg px-2 py-1.5 sm:py-1 border border-gray-200 dark:border-[#35353E] hover:bg-gray-200 dark:hover:bg-[#35353E] transition-colors self-start sm:self-auto"
-              title="Refresh"
-            >
-              <RefreshCw size={12} className="sm:w-[14px] sm:h-[14px]" />
-            </button> */}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setShowChat((prev) => !prev)}
+                className="md:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1D8751] text-white text-xs font-medium hover:bg-[#166b3e] transition-colors"
+                aria-label={showChat ? "Close chat" : "Open chat"}
+              >
+                <MessageCircle className="w-4 h-4" />
+                {showChat ? "Close Chat" : "Chat"}
+              </button>
+              <button
+                onClick={handleRefresh}
+                className="flex items-center gap-1 bg-gray-100 dark:bg-[var(--card-color)] text-[#1D8751] rounded-lg px-2 py-1.5 sm:py-1 border border-gray-200 dark:border-[#35353E] hover:bg-gray-200 dark:hover:bg-[#35353E] transition-colors self-start sm:self-auto"
+                title="Refresh"
+              >
+                <RefreshCw size={12} className="sm:w-[14px] sm:h-[14px]" />
+              </button>
+            </div>
           </div>
           {/* Advertiser Info */}
-          <section className="advertiser-info rounded-[18px] p-3 sm:p-4 flex flex-col md:flex-row flex-wrap md:items-center gap-3 md:gap-4 border-2 border-gray-200 dark:border-[#35353E] bg-gray-50 dark:bg-[var(--card-color)]">
-            <div className="flex items-center gap-3 sm:gap-4 shrink-0">
+          <section className="advertiser-info rounded-[18px] p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 border-2 border-gray-200 dark:border-[#35353E] bg-gray-50 dark:bg-[var(--card-color)]">
+            <div className="flex items-center gap-3 sm:gap-4 flex-shrink-0">
               <div className="icon rounded-full w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center text-lg sm:text-xl font-bold bg-[#1D8751] text-white flex-shrink-0 overflow-hidden">
                 {(tradeDataJson?.buy_photo ||
                   confirmOrder?.buyer_photo ||
@@ -403,10 +415,10 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                 </div>
               </div>
             </div>
-            <div className="ml-2 md:ml-auto flex flex-wrap md:flex-nowrap gap-4 md:gap-6 lg:gap-8 text-xs justify-start md:justify-end">
+            <div className="sm:ml-auto flex flex-wrap sm:flex-nowrap gap-4 sm:gap-6 lg:gap-8 text-xs justify-start sm:justify-end pt-3 sm:pt-0 border-t sm:border-t-0 border-gray-200 dark:border-[#35353E]">
               <div className="flex-shrink-0">
                 <span className="text-xs sm:text-[13px] text-gray-900 dark:text-white font-medium block">
-                  {tradeDataJson?.limit || "10 Minutes"}
+                  {formatDurationForDisplay(singleOrder?.limit_duration) || "10 Minutes"}
                 </span>
                 <span className="text-[10px] sm:text-xs text-gray-500 dark:text-[#788099]">
                   Time limit
@@ -414,7 +426,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
               </div>
               <div className="flex-shrink-0">
                 <span className="text-xs sm:text-[13px] text-gray-900 dark:text-white font-medium block">
-                  {tradeDataJson?.completion_time || "2 Minutes"}
+                  {formatDurationForDisplay(singleOrder?.completion_time) || formatDurationForDisplay(confirmOrder?.completion_time) || "2 Minutes"}
                 </span>
                 <span className="text-[10px] sm:text-xs text-gray-500 dark:text-[#788099]">
                   Avg. real-time
@@ -519,97 +531,109 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
             <div className="rounded-[18px] flex flex-col  p-2 md:p-4 gap-4 bg-gray-50 dark:bg-[var(--card-color)]">
               {/* Left: Bank Info */}
               <div className="flex flex-col gap-4">
-                <div className="flex flex-col md:flex-row gap-3 md:gap-4">
-                  <div className="flex p-2 md:p-3 gap-2 w-full md:w-1/4 min-h-[100px] md:min-h-[180px] border border-gray-200 dark:border-[#3C3C47] rounded-2xl bg-white dark:bg-[var(--bg-color)] mb-4 md:mb-0">
-                    {/* Bank Logo */}
-                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white flex items-center justify-center mb-2 overflow-hidden border border-gray-200 dark:border-[#3C3C47]">
-                      {(paymentDetails?.logo || paymentDetails?.logo_url || paymentDetails?.provider_logo) ? (
-                        <img
-                          src={paymentDetails?.logo || paymentDetails?.logo_url || paymentDetails?.provider_logo}
-                          alt={paymentDetails?.provider || 'Bank'}
-                          className="w-full h-full object-contain p-1"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.style.display = 'none';
-                            const fallback = target.nextElementSibling as HTMLElement;
-                            if (fallback) fallback.style.display = 'flex';
-                          }}
-                        />
-                      ) : null}
-                      <span
-                        className="text-[#1D8751] font-bold text-xs"
-                        style={{ display: (paymentDetails?.logo || paymentDetails?.logo_url || paymentDetails?.provider_logo) ? 'none' : 'flex' }}
-                      >
-                        {paymentDetails?.provider?.[0] || '?'}
+                {paymentDetailsList.length > 0 ? (
+                  paymentDetailsList.map((paymentDetails: { id?: number; provider?: string; payment_method?: string; account_name?: string; account_number?: string; provider_logo?: string; logo?: string; logo_url?: string }) => (
+                    <div key={paymentDetails?.id ?? paymentDetails?.provider ?? Math.random()} className="flex flex-col gap-3 p-3 md:p-4 border border-gray-200 dark:border-[#3C3C47] rounded-2xl bg-white dark:bg-[var(--bg-color)]">
+                      <div className="flex flex-col md:flex-row gap-3 md:gap-4">
+                        <div className="flex flex-row gap-2 md:gap-3 items-center p-2 md:p-3 w-full md:w-auto md:min-w-[140px]">
+                          {paymentDetails?.logo || paymentDetails?.logo_url || paymentDetails?.provider_logo ? (
+                            <img
+                              src={paymentDetails?.logo || paymentDetails?.logo_url || paymentDetails?.provider_logo}
+                              alt={paymentDetails?.provider || "Provider"}
+                              className="w-10 h-10 md:w-12 md:h-12 rounded-lg object-contain flex-shrink-0"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = "none";
+                                const parent = target.parentElement;
+                                if (parent && !parent.querySelector(".fallback-initial")) {
+                                  const fallback = document.createElement("div");
+                                  fallback.className = "fallback-initial w-10 h-10 md:w-12 md:h-12 rounded-lg bg-[#1D8751] flex items-center justify-center flex-shrink-0";
+                                  fallback.innerHTML = `<span class="text-white font-bold text-sm">${(paymentDetails?.provider?.[0] || "B").toUpperCase()}</span>`;
+                                  parent.insertBefore(fallback, parent.firstChild);
+                                }
+                              }}
+                            />
+                          ) : (
+                            <div className="w-10 h-10 md:w-12 md:h-12 rounded-lg bg-[#1D8751] flex items-center justify-center flex-shrink-0">
+                              <span className="text-white font-bold text-sm">
+                                {(paymentDetails?.provider?.[0] || "B").toUpperCase()}
+                              </span>
+                            </div>
+                          )}
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-gray-900 dark:text-white text-sm md:text-base font-semibold">
+                              {paymentDetails?.provider}
+                            </span>
+                            {paymentDetails?.payment_method && (
+                              <span className="text-[#788099] text-xs">
+                                {paymentDetails.payment_method.replace(/_/g, " ")}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-3 md:gap-4 w-full md:flex-1 min-w-0">
+                          <div className="flex flex-col gap-3 md:gap-4">
+                            <div className="flex w-full flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+                              <div className="w-full flex flex-col min-w-0">
+                                <span className="text-[#788099] text-xs md:text-sm mb-2">Account Name</span>
+                                <span className="flex-1 min-w-0 px-3 md:px-4 py-2 rounded-full border border-[#1D8751] text-[#1D8751] bg-transparent font-semibold text-sm md:text-base flex items-center truncate">
+                                  <span className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-[#1D8751] inline-block mr-2 flex-shrink-0"></span>
+                                  <span className="truncate">{paymentDetails?.account_name}</span>
+                                </span>
+                              </div>
+                              <button
+                                className="w-full sm:w-auto px-3 md:px-4 py-2 rounded-full border border-gray-200 dark:border-[#35353E] text-[#1D8751] bg-gray-100 dark:bg-[var(--card-color)] font-semibold text-sm flex items-center justify-center gap-1.5 flex-shrink-0"
+                                onClick={() =>
+                                  handleCopyToClipboard(paymentDetails?.account_name || "", `account-name-${paymentDetails?.id}`, setCopiedButton)
+                                }
+                              >
+                                {copiedButton === `account-name-${paymentDetails?.id}` ? "Copied!" : "Copy"}
+                                <Copy className="w-2 h-2 md:w-3 md:h-3" />
+                              </button>
+                            </div>
+                            <div className="flex w-full flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+                              <div className="w-full flex flex-col min-w-0">
+                                <span className="text-[#788099] text-xs md:text-sm mb-2">Account Number</span>
+                                <span className="flex-1 min-w-0 px-3 md:px-4 py-2 rounded-full border border-[#1D8751] text-[#1D8751] bg-transparent font-semibold text-sm md:text-base flex items-center truncate">
+                                  <span className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-[#1D8751] inline-block mr-2 flex-shrink-0"></span>
+                                  <span className="truncate">{paymentDetails?.account_number}</span>
+                                </span>
+                              </div>
+                              <button
+                                className="w-full sm:w-auto px-3 md:px-4 py-2 rounded-full border border-gray-200 dark:border-[#35353E] text-[#1D8751] bg-gray-100 dark:bg-[var(--card-color)] font-semibold text-sm flex items-center justify-center gap-1.5 flex-shrink-0"
+                                onClick={() =>
+                                  handleCopyToClipboard(paymentDetails?.account_number || "", `account-number-${paymentDetails?.id}`, setCopiedButton)
+                                }
+                              >
+                                {copiedButton === `account-number-${paymentDetails?.id}` ? "Copied!" : "Copy"}
+                                <Copy className="w-2 h-2 md:w-3 md:h-3" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-[#788099] text-sm py-4">No payment methods available</div>
+                )}
+                {paymentDetailsList.length > 0 && (
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+                    <div className="w-full flex flex-col min-w-0">
+                      <span className="text-[#788099] text-xs md:text-sm mb-2">Transaction ID</span>
+                      <span className="flex-1 min-w-0 font-[11px] md:font-[13px] px-3 md:px-4 py-2 rounded-full border border-[#1D8751] text-[#1D8751] bg-transparent flex items-center truncate">
+                        <span className="truncate">{singleOrder?.id}</span>
                       </span>
                     </div>
-                    <span className="text-gray-900 dark:text-white text-xs md:text-[13px] font-medium">
-                      {paymentDetails?.provider}
-                    </span>
+                    <button
+                      className="w-full sm:w-auto px-3 md:px-4 py-2 font-[11px] md:font-[13px] rounded-full border border-gray-200 dark:border-[#35353E] text-[#1D8751] bg-gray-100 dark:bg-[var(--card-color)] flex items-center justify-center gap-1.5 flex-shrink-0"
+                      onClick={() => handleCopyToClipboard(singleOrder?.id || "", "transaction-id", setCopiedButton)}
+                    >
+                      {copiedButton === "transaction-id" ? "Copied!" : "Copy"}
+                      <Copy className="w-2 h-2 md:w-3 md:h-3" />
+                    </button>
                   </div>
-                  <div className="flex flex-col gap-3 md:gap-4 w-full md:flex-1 min-w-0">
-                    <div className="flex flex-col gap-3 md:gap-4">
-                      {/* Account Name */}
-                      <div className="flex w-full flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
-                        <div className="w-full flex flex-col min-w-0">
-                          <span className="text-[#788099] text-xs md:text-sm mb-2">
-                            Account Name
-                          </span>
-                          <span className="flex-1 min-w-0 px-3 md:px-4 py-2 rounded-full border border-[#1D8751] text-[#1D8751] bg-transparent font-semibold text-sm md:text-base flex items-center truncate">
-                            <span className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-[#1D8751] inline-block mr-2 flex-shrink-0"></span>
-                            <span className="truncate">{paymentDetails?.account_name}</span>
-                          </span>
-                        </div>
-                        <button
-                          className="w-full sm:w-auto px-3 md:px-4 py-2 rounded-full border border-gray-200 dark:border-[#35353E] text-[#1D8751] bg-gray-100 dark:bg-[var(--card-color)] font-semibold text-sm flex items-center justify-center gap-1.5 flex-shrink-0"
-                          onClick={() => handleCopyToClipboard(paymentDetails?.account_name, "account-name", setCopiedButton)}
-                        >
-                          {copiedButton === "account-name" ? "Copied!" : "Copy"}
-                          <Copy className="w-2 h-2 md:w-3 md:h-3" />
-                        </button>
-                      </div>
-                      {/* Account Number */}
-                      <div className="flex w-full flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
-                        <div className="w-full flex flex-col min-w-0">
-                          <span className="text-[#788099] text-xs md:text-sm mb-2">
-                            Account Number
-                          </span>
-                          <span className="flex-1 min-w-0 px-3 md:px-4 py-2 rounded-full border border-[#1D8751] text-[#1D8751] bg-transparent font-semibold text-sm md:text-base flex items-center truncate">
-                            <span className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-[#1D8751] inline-block mr-2 flex-shrink-0"></span>
-                            <span className="truncate">{paymentDetails?.account_number}</span>
-                          </span>
-                        </div>
-                        <button
-                          className="w-full sm:w-auto px-3 md:px-4 py-2 rounded-full border border-gray-200 dark:border-[#35353E] text-[#1D8751] bg-gray-100 dark:bg-[var(--card-color)] font-semibold text-sm flex items-center justify-center gap-1.5 flex-shrink-0"
-                          onClick={() =>
-                            handleCopyToClipboard(paymentDetails?.account_number, "account-number", setCopiedButton)
-                          }
-                        >
-                          {copiedButton === "account-number" ? "Copied!" : "Copy"}
-                          <Copy className="w-2 h-2 md:w-3 md:h-3" />
-                        </button>
-                      </div>
-                      {/* Transaction ID */}
-                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
-                        <div className="w-full flex flex-col min-w-0">
-                          <span className="text-[#788099] text-xs md:text-sm mb-2">
-                            Transaction ID
-                          </span>
-                          <span className="flex-1 min-w-0 font-[11px] md:font-[13px] px-3 md:px-4 py-2 rounded-full border border-[#1D8751] text-[#1D8751] bg-transparent flex items-center truncate">
-                            <span className="truncate">{singleOrder?.id}</span>
-                          </span>
-                        </div>
-                        <button
-                          className="w-full sm:w-auto px-3 md:px-4 py-2 font-[11px] md:font-[13px] rounded-full border border-gray-200 dark:border-[#35353E] text-[#1D8751] bg-gray-100 dark:bg-[var(--card-color)] flex items-center justify-center gap-1.5 flex-shrink-0"
-                          onClick={() => handleCopyToClipboard(singleOrder?.id, "transaction-id", setCopiedButton)}
-                        >
-                          {copiedButton === "transaction-id" ? "Copied!" : "Copy"}
-                          <Copy className="w-2 h-2 md:w-3 md:h-3" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                )}
               </div>
               <div className="flex flex-col  gap-4">
                 <div className="flex-1">
@@ -629,13 +653,13 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                     </div>
                   </div>
                   <div className="flex-1">
-                    {confirmOrder?.status === "matched" && countdown === 0 && (
+                    {(confirmOrder?.status !== "matched" || countdown === 0) && (
                       <div className="mt-4 mb-2 text-lg">
                         <span className="text-gray-900 dark:text-white">
                           I have an issue with transaction.{" "}
                         </span>
                         <span
-                          className="text-[#E23D3A]  cursor-pointer"
+                          className="text-[#E23D3A] cursor-pointer"
                           onClick={() => setShowAppealModal(true)}
                         >
                           Appeal/Complain
@@ -683,10 +707,10 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
           </section>
         </div>
 
-        {/* Right Column: Chat and Terms */}
-        <div className="md:col-span-1 pt-10 flex flex-col gap-6 mt-6 md:mt-0">
-          {/* Chat with Advertiser */}
+        {/* Right Column: Chat and Terms - on mobile hidden unless Chat button clicked, opens on top */}
+        <div className={`md:col-span-1 pt-10 flex flex-col gap-6 mt-6 md:mt-0 ${!showChat ? "hidden md:flex" : "order-first md:order-none flex"}`}>
           <ChatBox
+            onClose={() => setShowChat(false)}
             tradeId={confirmOrder?.id || ""}
             userId={user?.id.toString() || ""}
             userName={

@@ -1,7 +1,6 @@
 "use client";
 import React, { useEffect, useState, useRef } from "react";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
-import { tokens } from "@/styles/tokens";
 import { P2POrder } from "@/features/p2p/types";
 import { useParams, useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useSelector, useDispatch } from "react-redux";
@@ -18,7 +17,7 @@ import AppealModal from "./appeal";
 import { UserStatusBadge } from "./UserStatusBadge";
 import ChatBox from "./ChatBox";
 import { showToast } from "@/lib/utils/toast";
-import { AlertCircle, ChevronRight, RefreshCw, CheckCircle2 } from "lucide-react";
+import { AlertCircle, ChevronRight, RefreshCw, CheckCircle2, MessageCircle } from "lucide-react";
 import CopyButton from "@/components/ui/CopyButton";
 import { FaChevronRight } from "react-icons/fa";
 import { Dialog } from "@headlessui/react";
@@ -31,7 +30,7 @@ interface FinalBuyProps {
   orderData?: P2POrder;
 }
 
-const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
+function FinalBuy({ orderData }: FinalBuyProps) {
   const params = useParams();
   const searchParams = useSearchParams();
   const pathname = usePathname();
@@ -56,6 +55,7 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
   );
   const [showCancelMsg, setShowCancelMsg] = useState(false);
   const [copiedButton, setCopiedButton] = useState<string | null>(null);
+  const [showChat, setShowChat] = useState(false);
   const router = useRouter();
 
   // WebSocket status update callback - use useCallback to prevent reconnections
@@ -117,7 +117,7 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
   const parsedOrderData = orderDataFromUrl ? JSON.parse(orderDataFromUrl) : null;
   const commissionFromUrl = parsedOrderData?.commission;
 
-  // Use limit_duration for transaction time countdown (e.g. "00:05:00" = 5 min)
+  // Use limit_duration from order only (e.g. "00:00:05" = 5 min) - never use trade's limit (30 min default)
   const displaySeconds = parseDurationToSeconds(singleOrder?.limit_duration);
   // Remove this line - we'll get tradeId from localStorage inside useEffect
   // Local countdown state for auto-cancel logic
@@ -197,10 +197,6 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
     }
   }, [confirmOrder, isAuthenticated, singleOrder?.id, dispatch]);
 
-
-  logger.debug('p2p', "singleOrder", singleOrder);
-  logger.debug('p2p', "confirmOrder", confirmOrder);
-
   useEffect(() => {
     setIsClient(true);
   }, []);
@@ -273,9 +269,11 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
     };
   }, [dispatch]);
 
-  // Get payment details from order data
-  const paymentDetails = singleOrder?.payment_details?.[0];
-  logger.debug('p2p', "singleOrder", singleOrder);
+  // Use payment_details from singleOrder (order API), confirmOrder (trade API), or URL - prefer source with most methods
+  const fromSingle = Array.isArray(singleOrder?.payment_details) ? singleOrder.payment_details : [];
+  const fromConfirm = Array.isArray(confirmOrder?.payment_details) ? confirmOrder.payment_details : [];
+  const fromUrl = Array.isArray(parsedOrderData?.payment_details) ? parsedOrderData.payment_details : [];
+  const paymentDetailsList = fromSingle.length > 0 ? fromSingle : fromConfirm.length > 0 ? fromConfirm : fromUrl;
   // --- Calculation logic ---
   const sendAmount = Number(confirmOrder?.amount) || 0;
   const commissionRate = Number(singleOrder?.commission_rate) || Number(commissionFromUrl) || 0;
@@ -297,16 +295,6 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
   // Format commission rate for display (e.g. 1.00 shows as "1.00", not "1")
   const formatCommissionRate = (rate: number) =>
     Number(rate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-  // Debug logging
-  logger.debug('p2p', "💰 Calculation Debug:", {
-    sendAmount,
-    commissionRate,
-    commissionFromUrl,
-    orderType,
-    receiveAmount,
-    singleOrderCommissionRate: singleOrder?.commission_rate
-  });
 
   const handleCancelTransaction = () => {
     if (isAuthenticated && confirmOrder?.id) {
@@ -363,7 +351,7 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
     setTimeout(() => setCopiedButton(null), 2000);
   };
 
-  return (
+  const content = (
     <div className="md:mt-20">
       <Breadcrumb
         items={[
@@ -393,15 +381,26 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
             >
               Advertiser Info
             </p>
-            <button
-              onClick={handleRefresh}
-              className="flex items-center gap-1 bg-white dark:bg-[var(--bg-color)] text-[#1D8751] rounded-lg px-2 py-1 border border-[#E8EFF5] dark:border-[#35353E] hover:bg-gray-200 dark:hover:bg-[#35353E] transition-colors"
-              title="Refresh"
-            >
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setShowChat((prev) => !prev)}
+                className="md:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1D8751] text-white text-xs font-medium hover:bg-[#166b3e] transition-colors"
+                aria-label={showChat ? "Close chat" : "Open chat"}
+              >
+                <MessageCircle className="w-4 h-4" />
+                {showChat ? "Close Chat" : "Chat"}
+              </button>
+              <button
+                onClick={handleRefresh}
+                className="flex items-center gap-1 bg-white dark:bg-[var(--bg-color)] text-[#1D8751] rounded-lg px-2 py-1 border border-[#E8EFF5] dark:border-[#35353E] hover:bg-gray-200 dark:hover:bg-[#35353E] transition-colors"
+                title="Refresh"
+              >
+              </button>
+            </div>
           </div>
           {/* Advertiser Info - Image, Name, Live, Time in one row */}
-          <section className="rounded-[18px] p-4 flex items-center gap-4 border-2 border-[#E8EFF5] dark:border-[#35353E] bg-gray-50 dark:bg-[var(--bg-color)] mb-2">
+          <section className="rounded-[18px] p-4 flex flex-col md:flex-row md:items-center gap-4 border-2 border-[#E8EFF5] dark:border-[#35353E] bg-gray-50 dark:bg-[var(--bg-color)] mb-2">
             <div className="flex flex-col justify-start gap-2 flex-1 min-w-0">
               <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
                 <div className="icon rounded-full w-8 h-8 flex-shrink-0 flex items-center justify-center overflow-hidden bg-[#1D8751] text-white">
@@ -456,10 +455,10 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
 
             </div>
 
-            <div className="ml-2 md:ml-auto flex gap-6 md:gap-8 text-md flex-shrink-0">
+            <div className="md:ml-auto flex flex-wrap gap-4 sm:gap-6 md:gap-8 text-md flex-shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-[#E8EFF5] dark:border-[#35353E]">
               <div>
                 <span className="text-sm text-gray-900 dark:text-white mb-2">
-                  {formatDurationForDisplay(singleOrder?.limit_duration)}
+                  {formatDurationForDisplay(singleOrder?.limit_duration) || "10 Minutes"}
                 </span>
                 <br />
                 <span className="text-gray-500 dark:text-[#788099]">
@@ -468,7 +467,7 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
               </div>
               <div>
                 <span className="text-sm text-gray-900 dark:text-white mb-2">
-                  {formatDurationForDisplay(singleOrder?.completion_time)}
+                  {formatDurationForDisplay(singleOrder?.completion_time) || formatDurationForDisplay(confirmOrder?.completion_time) || "2 Minutes"}
                 </span>
                 <br />
                 <span className="text-gray-500 dark:text-[#788099]">
@@ -572,7 +571,7 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
           <section className="rounded-[18px] p-2 md:p-4 w-full">
             <div className="flex flex-col md:flex-row justify-between w-full items-center mb-4 gap-2 md:gap-0">
               <div className="text-lg flex-1 text-gray-900 dark:text-white">
-                Send Money To
+                Send Money Togdgdgdg
               </div>
               <div className="text-xs flex items-center gap-1">
                 <span className="text-[#1D8751]">Transaction time:</span>
@@ -586,101 +585,70 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
               </div>
             </div>
             <div className="rounded-[18px] flex flex-col p-2 md:p-4 gap-4 bg-gray-50 dark:bg-[var(--bg-color)] border-1 border-[#E8EFF5] dark:border-[#35353E]">
-              {/* Left: Bank Info */}
+              {/* Payment methods - display all from payment_details */}
               <div className="flex flex-col gap-4">
-                <div className="flex flex-col md:flex-row gap-3 md:gap-4">
-                  <div className="flex flex-row gap-1 p-2 md:p-3 w-full md:w-1/4 min-h-[100px] md:min-h-[180px] border border-[#E8EFF5] dark:border-[#3C3C47] rounded-2xl bg-white dark:bg-[var(--bg-color)] mb-4 md:mb-0">
-                    {/* Bank Logo */}
-                    {paymentDetails?.logo || paymentDetails?.logo_url || paymentDetails?.provider_logo ? (
-                      <img 
-                        src={paymentDetails?.logo || paymentDetails?.logo_url || paymentDetails?.provider_logo}
-                        alt={paymentDetails?.provider}
-                        className="w-8 h-8 rounded-full object-contain flex-shrink-0"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.style.display = 'none';
-                          const parent = target.parentElement;
-                          if (parent && !parent.querySelector('.fallback-initial')) {
-                            const fallback = document.createElement('div');
-                            fallback.className = 'fallback-initial w-8 h-8 rounded-full bg-[#1D8751] flex items-center justify-center';
-                            fallback.innerHTML = `<span class="text-white font-bold text-xs">${paymentDetails?.provider?.[0]?.toUpperCase() || 'B'}</span>`;
-                            parent.insertBefore(fallback, parent.firstChild);
-                          }
-                        }}
-                      />
-                    ) : (
-                      <div className="w-8 h-8 rounded-full bg-[#1D8751] flex items-center justify-center mb-2 flex-shrink-0">
-                        <span className="text-white font-bold text-xs">
-                          {paymentDetails?.provider?.[0]?.toUpperCase() || 'B'}
-                        </span>
-                      </div>
-                    )}
-                    <span className="text-gray-900 dark:text-white text-xs md:text-[13px] font-medium">
-                      {paymentDetails?.provider}
-                    </span>
-                  </div>
-                  <div className="flex flex-col gap-3 md:gap-4 w-full md:flex-1 min-w-0">
-                    <div className="flex flex-col gap-3 md:gap-4">
-                      {/* Account Name */}
-                      <div>
-                        <p className="text-[#788099] text-xs md:text-sm mb-2">
-                          Account Name
-                        </p>
-                        <div className="w-full flex flex-col sm:flex-row gap-2 sm:gap-3">
-                          <p className="flex-1 min-w-0 px-3 md:px-4 py-2 rounded-full border border-[#1D8751] text-[#1D8751] bg-[#E8EFF5] dark:bg-[#35353E] font-semibold text-sm md:text-base flex items-center truncate">
-                            <span className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-[#1D8751] inline-block mr-2 flex-shrink-0"></span>
-                            <span className="truncate">{paymentDetails?.account_name}</span>
-                          </p>
-                          <button
-                            className="w-full sm:w-auto px-3 md:px-4 py-2 rounded-full border border-[#E8EFF5] dark:border-[#35353E] text-[#1D8751] bg-[#E8EFF5] dark:bg-[#35353E] font-semibold text-sm flex items-center justify-center gap-1.5 flex-shrink-0"
-                            onClick={() =>
-                              handleCopyToClipboard(paymentDetails?.account_name || "", "account-name")
-                            }
-                          >
-                            {copiedButton === "account-name" ? "Copied!" : "Copy"}
-                          </button>
+                {paymentDetailsList.length > 0 ? (
+                  paymentDetailsList.map((paymentDetails: { id?: number; provider?: string; payment_method?: string; account_name?: string; account_number?: string; provider_logo?: string }) => (
+                    <div key={paymentDetails?.id ?? paymentDetails?.provider ?? Math.random()} className="flex flex-col md:flex-row gap-3 md:gap-4 p-3 md:p-4 border border-[#E8EFF5] dark:border-[#3C3C47] rounded-2xl bg-white dark:bg-[var(--bg-color)]">
+                      <div className="flex flex-row gap-2 md:gap-3 items-center w-full md:w-auto md:min-w-[140px]">
+                        {paymentDetails?.provider_logo ? (
+                          <img src={paymentDetails.provider_logo} alt={paymentDetails?.provider} className="w-10 h-10 md:w-12 md:h-12 rounded-lg object-contain flex-shrink-0" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                        ) : (
+                          <div className="w-10 h-10 md:w-12 md:h-12 rounded-lg bg-[#1D8751] flex items-center justify-center flex-shrink-0">
+                            <span className="text-white font-bold text-sm">{paymentDetails?.provider?.[0]?.toUpperCase() || "B"}</span>
+                          </div>
+                        )}
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-gray-900 dark:text-white text-sm md:text-base font-semibold">{paymentDetails?.provider}</span>
+                          {paymentDetails?.payment_method && (
+                            <span className="text-[#788099] text-xs">{paymentDetails.payment_method.replace(/_/g, " ")}</span>
+                          )}
                         </div>
                       </div>
-                      {/* Account Number */}
-                      <div>
-                        <p className="text-[#788099] text-xs md:text-sm mb-2">
-                          Account Number
-                        </p>
-                        <div className="w-full flex flex-col sm:flex-row gap-2 sm:gap-3">
-                          <p className="flex-1 min-w-0 px-3 md:px-4 py-2 rounded-full border border-[#1D8751] text-[#1D8751] bg-[#E8EFF5] dark:bg-[#35353E] font-semibold text-sm md:text-base flex items-center truncate">
-                            <span className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-[#1D8751] inline-block mr-2 flex-shrink-0"></span>
-                            <span className="truncate">{paymentDetails?.account_number}</span>
-                          </p>
-                          <button
-                            className="w-full sm:w-auto px-3 md:px-4 py-2 rounded-full border border-[#E8EFF5] dark:border-[#35353E] text-[#1D8751] bg-[#E8EFF5] dark:bg-[#35353E] font-semibold text-sm flex items-center justify-center gap-1.5 flex-shrink-0"
-                            onClick={() =>
-                              handleCopyToClipboard(paymentDetails?.account_number || "", "account-number")
-                            }
-                          >
-                            {copiedButton === "account-number" ? "Copied!" : "Copy"}
-                          </button>
+                      <div className="flex flex-col gap-3 md:gap-4 w-full md:flex-1 min-w-0">
+                        <div>
+                          <p className="text-[#788099] text-xs md:text-sm mb-2">Account Name</p>
+                          <div className="w-full flex flex-col sm:flex-row gap-2 sm:gap-3">
+                            <p className="flex-1 min-w-0 px-3 md:px-4 py-2 rounded-full border border-[#1D8751] text-[#1D8751] bg-[#E8EFF5] dark:bg-[#35353E] font-semibold text-sm md:text-base flex items-center truncate">
+                              <span className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-[#1D8751] inline-block mr-2 flex-shrink-0"></span>
+                              <span className="truncate">{paymentDetails?.account_name}</span>
+                            </p>
+                            <button className="w-full sm:w-auto px-3 md:px-4 py-2 rounded-full border border-[#E8EFF5] dark:border-[#35353E] text-[#1D8751] bg-[#E8EFF5] dark:bg-[#35353E] font-semibold text-sm flex items-center justify-center gap-1.5 flex-shrink-0" onClick={() => handleCopyToClipboard(paymentDetails?.account_name || "", `account-name-${paymentDetails?.id}`)}>
+                              {copiedButton === `account-name-${paymentDetails?.id}` ? "Copied!" : "Copy"}
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                      {/* Transaction ID */}
-                      <div>
-                        <p className="text-[#788099] text-xs md:text-sm mb-2">
-                          Transaction ID
-                        </p>
-                        <div className="w-full flex flex-col sm:flex-row gap-2 sm:gap-3">
-                          <p className="flex-1 min-w-0 font-[11px] md:font-[13px] px-3 md:px-4 py-2 rounded-full border border-[#1D8751] text-[#1D8751] bg-[#E8EFF5] dark:bg-[#35353E] flex items-center truncate">
-                            <span className="truncate">{singleOrder?.id}</span>
-                          </p>
-                          <button
-                            className="w-full sm:w-auto px-3 md:px-4 py-2 font-[11px] md:font-[13px] rounded-full border border-[#E8EFF5] dark:border-[#35353E] text-[#1D8751] bg-[#E8EFF5] dark:bg-[#35353E] flex items-center justify-center gap-1.5 flex-shrink-0"
-                            onClick={() => handleCopyToClipboard(singleOrder?.id || "", "transaction-id")}
-                          >
-                            {copiedButton === "transaction-id" ? "Copied!" : "Copy"}
-                          </button>
+                        <div>
+                          <p className="text-[#788099] text-xs md:text-sm mb-2">Account Number</p>
+                          <div className="w-full flex flex-col sm:flex-row gap-2 sm:gap-3">
+                            <p className="flex-1 min-w-0 px-3 md:px-4 py-2 rounded-full border border-[#1D8751] text-[#1D8751] bg-[#E8EFF5] dark:bg-[#35353E] font-semibold text-sm md:text-base flex items-center truncate">
+                              <span className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-[#1D8751] inline-block mr-2 flex-shrink-0"></span>
+                              <span className="truncate">{paymentDetails?.account_number}</span>
+                            </p>
+                            <button className="w-full sm:w-auto px-3 md:px-4 py-2 rounded-full border border-[#E8EFF5] dark:border-[#35353E] text-[#1D8751] bg-[#E8EFF5] dark:bg-[#35353E] font-semibold text-sm flex items-center justify-center gap-1.5 flex-shrink-0" onClick={() => handleCopyToClipboard(paymentDetails?.account_number || "", `account-number-${paymentDetails?.id}`)}>
+                              {copiedButton === `account-number-${paymentDetails?.id}` ? "Copied!" : "Copy"}
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
+                  ))
+                ) : (
+                  <div className="text-[#788099] text-sm py-4">No payment methods available</div>
+                )}
+                {paymentDetailsList.length > 0 && (
+                  <div>
+                    <p className="text-[#788099] text-xs md:text-sm mb-2">Transaction ID</p>
+                    <div className="w-full flex flex-col sm:flex-row gap-2 sm:gap-3">
+                      <p className="flex-1 min-w-0 font-[11px] md:font-[13px] px-3 md:px-4 py-2 rounded-full border border-[#1D8751] text-[#1D8751] bg-[#E8EFF5] dark:bg-[#35353E] flex items-center truncate">
+                        <span className="truncate">{singleOrder?.id}</span>
+                      </p>
+                      <button className="w-full sm:w-auto px-3 md:px-4 py-2 font-[11px] md:font-[13px] rounded-full border border-[#E8EFF5] dark:border-[#35353E] text-[#1D8751] bg-[#E8EFF5] dark:bg-[#35353E] flex items-center justify-center gap-1.5 flex-shrink-0" onClick={() => handleCopyToClipboard(singleOrder?.id || "", "transaction-id")}>
+                        {copiedButton === "transaction-id" ? "Copied!" : "Copy"}
+                      </button>
+                    </div>
                   </div>
-                </div>
+                )}
                 <div className="flex flex-col  gap-4">
                   <div className="flex-1">
                     <div className="rounded-2xl border border-[#1D8751] bg-white dark:bg-[var(--bg-color)] p-6 mt-2 text-base flex flex-col gap-2">
@@ -700,13 +668,13 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
                     </div>
                   </div>
                   <div className="flex-1">
-                    {confirmOrder?.status === "matched" && countdown === 0 && (
+                    {(confirmOrder?.status !== "matched" || countdown === 0) && (
                       <div className="mt-4 mb-2 text-lg">
                         <span className="text-gray-900 dark:text-white">
                           I have an issue with transaction.{" "}
                         </span>
                         <span
-                          className="text-[#E23D3A]  cursor-pointer"
+                          className="text-[#E23D3A] cursor-pointer"
                           onClick={() => setShowAppealModal(true)}
                         >
                           Appeal/Complain
@@ -766,15 +734,14 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
                   </div>
                 </div>
               </div>
-              {/* Right: Account Details and Actions */}
             </div>
           </section>
         </div>
 
-        {/* Right Column: Chat and Terms */}
-        <div className="md:col-span-1 pt-10 flex flex-col gap-6 mt-6 md:mt-0">
-          {/* Chat with Advertiser */}
+        {/* Right Column: Chat and Terms - on mobile hidden unless Chat button clicked, opens on top */}
+        <div className={`md:col-span-1 pt-10 flex flex-col gap-6 mt-6 md:mt-0 ${!showChat ? "hidden md:flex" : "order-first md:order-none flex"}`}>
           <ChatBox
+            onClose={() => setShowChat(false)}
             tradeId={confirmOrder?.id || ""}
             userId={user?.id.toString() || ""}
             userName={singleOrder?.advertiser_name || singleOrder?.advertiser_first_name || ""}
@@ -944,6 +911,7 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
       </div>
     </div>
   );
-};
+  return content;
+}
 
 export default FinalBuy;

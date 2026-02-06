@@ -27,6 +27,7 @@ interface ExchangingProps {
     walletAddress: string;
     network: any;
     transactionId?: string;
+    receiveAmount?: number; // Net amount user will receive (form's "You Receive")
     // Deposit-specific fields (from API response)
     depositCode?: string;
     totalAmountDue?: string;
@@ -64,6 +65,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
   const { isDark } = useTheme();
   const [showSuccess, setShowSuccess] = useState(false);
   const [currentStatus, setCurrentStatus] = useState<string>("pending");
+  const [expandedTerms, setExpandedTerms] = useState(false);
   const [persistedTransactionData, setPersistedTransactionData] =
     useState<any>(null);
   const [wsError, setWsError] = useState<string | null>(null);
@@ -79,6 +81,8 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
   const [snapshotWebsocketData, setSnapshotWebsocketData] = useState<any>(null);
   const [liveAmount, setLiveAmount] = useState<number | null>(null);
   const [liveCurrency, setLiveCurrency] = useState<string | null>(null);
+  const [liveNetAmount, setLiveNetAmount] = useState<number | null>(null);
+  const [liveNetCurrency, setLiveNetCurrency] = useState<string | null>(null);
   const [liveTransactionId, setLiveTransactionId] = useState<string | null>(
     null
   );
@@ -255,6 +259,24 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
     }
   }, [transactionData]);
 
+  // Net amount from props (form's "You Receive") - no API, just props
+  useEffect(() => {
+    const recv = (effectiveTransactionData as any)?.receiveAmount;
+    if (recv != null) {
+      const parsed = parseFloat(String(recv));
+      if (!isNaN(parsed)) {
+        setLiveNetAmount(parsed);
+        setLiveNetCurrency(
+          effectiveTransactionData?.type === "deposit"
+            ? (effectiveTransactionData?.asset?.ticker ||
+                effectiveTransactionData?.asset?.symbol ||
+                "USDT")
+            : "USD"
+        );
+      }
+    }
+  }, [effectiveTransactionData]);
+
   // Clear localStorage when transaction is completed
   useEffect(() => {
     if (showSuccess) {
@@ -360,18 +382,35 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               }
             }
 
-            // Handle amount_to (what user receives) - for display purposes
-            if (wsData.amount_to !== null && wsData.amount_to !== undefined) {
-              // Store the received amount for success page
-              setLiveAmount(parseFloat(wsData.amount_to));
-              setLiveCurrency(
-                wsData.to_currency?.toUpperCase() ||
-                (effectiveTransactionData?.type === "deposit"
-                  ? "USD"
-                  : effectiveTransactionData?.type === "withdrawal"
-                    ? "USD"
-                    : "USDT")
-              );
+            // Don't overwrite net amount when we have receiveAmount from props (form)
+            const hasReceiveAmountFromProps = (effectiveTransactionData as any)?.receiveAmount != null;
+            if (!hasReceiveAmountFromProps) {
+              // Handle amount_to (what user receives) - net amount for display
+              if (wsData.amount_to !== null && wsData.amount_to !== undefined) {
+                const amountTo = parseFloat(wsData.amount_to);
+                if (!isNaN(amountTo)) {
+                  setLiveNetAmount(amountTo);
+                  setLiveNetCurrency(
+                    wsData.to_currency?.toUpperCase() ||
+                    (effectiveTransactionData?.type === "deposit"
+                      ? effectiveTransactionData?.asset?.ticker || "USDT"
+                      : "USD")
+                  );
+                }
+              }
+              // Also handle net_amount from websocket
+              if (wsData.net_amount !== null && wsData.net_amount !== undefined) {
+                const netAmt = parseFloat(wsData.net_amount);
+                if (!isNaN(netAmt)) {
+                  setLiveNetAmount(netAmt);
+                  setLiveNetCurrency(
+                    wsData.to_currency?.toUpperCase() ||
+                    (effectiveTransactionData?.type === "deposit"
+                      ? effectiveTransactionData?.asset?.ticker || "USDT"
+                      : "USD")
+                  );
+                }
+              }
             }
 
             // Handle expected amounts if actual amounts are not available
@@ -411,21 +450,20 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               }
             }
 
-            // Handle estimated_amount for direct flows
+            // Handle estimated_amount - only when we don't have receiveAmount from props
             if (
+              !hasReceiveAmountFromProps &&
               wsData.estimated_amount !== null &&
               wsData.estimated_amount !== undefined
             ) {
               const estimatedAmount = parseFloat(wsData.estimated_amount);
               if (!isNaN(estimatedAmount)) {
-                setLiveAmount(estimatedAmount);
-                setLiveCurrency(
+                setLiveNetAmount(estimatedAmount);
+                setLiveNetCurrency(
                   wsData.to_currency?.toUpperCase() ||
                   (effectiveTransactionData?.type === "deposit"
-                    ? "USD"
-                    : effectiveTransactionData?.type === "withdrawal"
-                      ? "USD"
-                      : "USDT")
+                    ? effectiveTransactionData?.asset?.ticker || "USDT"
+                    : "USD")
                 );
               }
             }
@@ -798,39 +836,70 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
           } border-2 rounded-2xl p-3 sm:p-4 shadow-lg w-full max-w-4xl mb-2 sm:mb-4 min-h-[180px]`}
       >
         <div className="flex-1 flex flex-col justify-between py-2 pr-2">
-          <div>
-            <div
-              className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                } text-xs font-semibold mb-0.5`}
-            >
-              Amount:
-            </div>
-            <div
-              className={`${isDark ? "text-white" : "text-gray-900"
-                } text-base font-semibold mb-1 flex items-center gap-2`}
-            >
-              <span>
-                {liveAmount !== null
-                  ? liveAmount
-                  : effectiveTransactionData?.amount || 0}{" "}
-                {effectiveTransactionData?.type === "deposit" ? (
-                  "USD"
-                ) : (
-                  <span className="uppercase">
-                    {liveCurrency ||
-                      effectiveTransactionData?.asset?.ticker ||
-                      effectiveTransactionData?.asset?.symbol ||
-                      effectiveTransactionData?.asset?.name ||
-                      transactionData?.details?.to_currency ||
-                      (effectiveTransactionData?.type === "deposit"
-                        ? "USD"
-                        : effectiveTransactionData?.type === "withdrawal"
+          <div className="flex flex-row flex-wrap gap-x-6 gap-y-2 items-baseline">
+            <div>
+              <div
+                className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                  } text-xs font-semibold mb-0.5`}
+              >
+                Amount you&apos;re sending:
+              </div>
+              <div
+                className={`${isDark ? "text-white" : "text-gray-900"
+                  } text-base font-semibold flex items-center gap-2`}
+              >
+                <span>
+                  {liveAmount !== null
+                    ? liveAmount
+                    : effectiveTransactionData?.amount || 0}{" "}
+                  {effectiveTransactionData?.type === "deposit" ? (
+                    "USD"
+                  ) : (
+                    <span className="uppercase">
+                      {liveCurrency ||
+                        effectiveTransactionData?.asset?.ticker ||
+                        effectiveTransactionData?.asset?.symbol ||
+                        effectiveTransactionData?.asset?.name ||
+                        transactionData?.details?.to_currency ||
+                        (effectiveTransactionData?.type === "deposit"
                           ? "USD"
-                          : "USD")}
-                  </span>
-                )}
-              </span>
+                          : effectiveTransactionData?.type === "withdrawal"
+                            ? "USD"
+                            : "USD")}
+                    </span>
+                  )}
+                </span>
+              </div>
             </div>
+            {(effectiveTransactionData as any)?.receiveAmount != null && (
+              <div>
+                <div
+                  className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                    } text-xs font-semibold mb-0.5`}
+                >
+                  Net amount you&apos;ll receive:
+                </div>
+                <div
+                  className={`${isDark ? "text-[#1D8751]" : "text-[#15803D]"
+                    } text-base font-semibold flex items-center gap-2`}
+                >
+                  <span>
+                    {(liveNetAmount ?? (effectiveTransactionData as any).receiveAmount)
+                      .toFixed(8)
+                      .replace(/\.?0+$/, "")}{" "}
+                    <span className="uppercase">
+                      {liveNetCurrency ||
+                        (effectiveTransactionData?.type === "deposit"
+                          ? effectiveTransactionData?.asset?.ticker ||
+                            effectiveTransactionData?.asset?.symbol ||
+                            "USDT"
+                          : "USD")}
+                    </span>
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
             {/* {liveAmount !== null &&
               liveAmount !== effectiveTransactionData?.amount && (
                 <div className={`${
@@ -1043,7 +1112,6 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               </>
             )}
           </div>
-        </div>
         <div className="flex-shrink-0 ml-0 md:ml-6 flex items-center justify-center py-2">
           {/* QR code */}
           {(() => {
@@ -1780,29 +1848,62 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
         </div>
       </div>
 
-      <div className="w-full max-w-4xl rounded-2xl flex ">
-        <div className="w-full bg-[#FF9500]/50 border-2 border-solid border-[#FF9500]/50 rounded-[18px] flex flex-col gap-2 p-3">
-          <h2 className="text-white text-base font-semibold">
-            Terms and Conditions Summary
-          </h2>
-          <ul className="list-disc list-outside ml-4 space-y-1">
-            <li className="text-white text-sm">
-              Only send
-              {` ${transactionData?.asset?.ticker || transactionData?.asset?.symbol || transactionData?.asset?.name || (transactionData?.type === "deposit" ? "USD" : transactionData?.type === "withdrawal" ? "USD" : "USDT")} (${transactionData?.asset?.network})`}{" "}
-              to this address{" "}
-            </li>
-            <li className="text-white text-sm">
-              Send exactly the amount specified below
-            </li>
-            <li className="text-white text-sm">
-              Do not send from exchange accounts
-            </li>
-            <li className="text-white text-sm">
-              Minimum confirmations required: 1
-            </li>
-          </ul>
+      <div className="w-full max-w-4xl rounded-2xl flex">
+        <div className={`w-full border border-[#1D8751] rounded-xl overflow-hidden transition-all duration-300 ${isDark ? "bg-[#1D1D23]" : "bg-[#F8FAFF]"}`}>
+          <div className="flex flex-col gap-2 p-3">
+            <div className="flex items-center gap-2">
+              <svg className="w-5 h-5 text-[#1D8751]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <h3 className={`font-medium text-sm sm:text-base ${isDark ? "text-white" : "text-gray-900"}`}>
+                Terms & Conditions
+              </h3>
+            </div>
+            <div className={`space-y-2 ${expandedTerms ? "" : "line-clamp-3"}`}>
+              <div className="flex items-start gap-2">
+                <span className="text-[#1D8751] font-bold text-sm flex-shrink-0">1.</span>
+                <p className={`text-xs sm:text-sm ${isDark ? "text-[#788099]" : "text-[#475569]"}`}>
+                  <span className="font-semibold">Send the correct asset and network:</span> Only send{" "}
+                  {transactionData?.asset?.ticker || transactionData?.asset?.symbol || transactionData?.asset?.name || (transactionData?.type === "deposit" ? "USD" : transactionData?.type === "withdrawal" ? "USD" : "USDT")} ({transactionData?.asset?.network}) to this address.
+                </p>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-[#1D8751] font-bold text-sm flex-shrink-0">2.</span>
+                <p className={`text-xs sm:text-sm ${isDark ? "text-[#788099]" : "text-[#475569]"}`}>
+                  <span className="font-semibold">Send exactly the amount specified:</span> Send exactly the amount specified below.
+                </p>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-[#1D8751] font-bold text-sm flex-shrink-0">3.</span>
+                <p className={`text-xs sm:text-sm ${isDark ? "text-[#788099]" : "text-[#475569]"}`}>
+                  <span className="font-semibold">Send from your own wallet only:</span> Do not send from exchange accounts. Minimum confirmations required: 1.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setExpandedTerms(!expandedTerms)}
+              className="mt-2 text-[#1D8751] hover:text-[#166b3e] font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition-colors"
+            >
+              {expandedTerms ? (
+                <>
+                  <span>Show Less</span>
+                  <svg className="w-4 h-4 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                  </svg>
+                </>
+              ) : (
+                <>
+                  <span>Show More</span>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                  </svg>
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
+     
     </div>
   );
 }

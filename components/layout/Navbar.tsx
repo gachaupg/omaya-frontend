@@ -15,6 +15,7 @@ import {
   openKYCModal,
   checkKYCStatus,
 } from "@/features/auth/slices/authSlice";
+import { getP2PProfileThunk } from "@/features/p2p/slices/orderSlice";
 import { useLanguageOptional } from "@/context/language";
 import { useTheme } from "@/context/theme";
 
@@ -533,7 +534,12 @@ export default function Navbar() {
 
   const [profileImageError, setProfileImageError] = useState(false);
   const [cachedProfilePhoto, setCachedProfilePhoto] = useState<string | null>(
-    null
+    () => {
+      if (typeof window !== "undefined") {
+        return localStorage.getItem("p2p_profile_image") || localStorage.getItem("profile_photo");
+      }
+      return null;
+    }
   );
 
   const {
@@ -542,6 +548,7 @@ export default function Navbar() {
     user,
   } = useSelector((state: RootState) => state.auth);
   const kycState = useSelector((state: RootState) => state.kyc);
+  const p2pProfile = useSelector((state: RootState) => state.p2pMarket?.getP2PProfile);
   const dispatch = useDispatch<AppDispatch>();
   const depositDropdownRef = useRef<HTMLDivElement>(null);
   const profileModalRef = useRef<HTMLDivElement>(null);
@@ -566,32 +573,29 @@ export default function Navbar() {
     }
   }, [dispatch, isAuthenticated]);
 
-  // Load cached profile photo from localStorage on mount
+  // Load cached profile photo from localStorage on mount (same keys as UserCard)
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const cached = localStorage.getItem("profile_photo");
+      const cached = localStorage.getItem("profile_photo") || localStorage.getItem("p2p_profile_image");
       if (cached) {
         setCachedProfilePhoto(cached);
       }
     }
   }, []);
 
-  // Listen for profile photo updates from other components
+  // Listen for profile photo updates from other components (same as UserCard - no cache-busting to avoid reload flicker)
   useEffect(() => {
     if (typeof window === "undefined") return;
 
     const handleProfilePhotoUpdate = (event: CustomEvent) => {
       const newPhotoUrl = event.detail?.photoUrl;
       if (newPhotoUrl) {
-        // Add cache-busting parameter to force browser to reload the image
-        const photoWithTimestamp = newPhotoUrl.includes('?')
-          ? `${newPhotoUrl}&t=${Date.now()}`
-          : `${newPhotoUrl}?t=${Date.now()}`;
-        setCachedProfilePhoto(photoWithTimestamp);
-        // Also update localStorage with the original URL (without timestamp)
-        localStorage.setItem("profile_photo", newPhotoUrl);
+        setCachedProfilePhoto(newPhotoUrl);
+        if (typeof window !== "undefined") {
+          localStorage.setItem("profile_photo", newPhotoUrl);
+          localStorage.setItem("p2p_profile_image", newPhotoUrl);
+        }
         setProfileImageError(false);
-        // Force refetch profile to update Redux state
         dispatch(getUserProfile());
       }
     };
@@ -610,15 +614,47 @@ export default function Navbar() {
     }
   }, [isAuthenticated, dispatch, userProfile, cachedProfilePhoto]);
 
-  // Cache profile photo in localStorage when it's available
+  // Fetch P2P profile (same as UserCard) - provides profile photo that may not be in auth profile yet
+  useEffect(() => {
+    if (isAuthenticated) {
+      dispatch(getP2PProfileThunk())
+        .unwrap()
+        .then((response) => {
+          if (response?.profile?.photo && typeof window !== "undefined") {
+            const photo = response.profile.photo;
+            localStorage.setItem("p2p_profile_image", photo);
+            localStorage.setItem("profile_photo", photo);
+            setCachedProfilePhoto(photo);
+            setProfileImageError(false);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [dispatch, isAuthenticated]);
+
+  // Sync P2P profile photo from Redux (when UserCard or Navbar fetches it) to localStorage and cached state
+  useEffect(() => {
+    const photo = p2pProfile?.profile?.photo;
+    if (photo && typeof window !== "undefined") {
+      const photoUrl = String(photo).trim();
+      if (photoUrl && (photoUrl.startsWith('http://') || photoUrl.startsWith('https://') || photoUrl.startsWith('/') || photoUrl.startsWith('data:'))) {
+        localStorage.setItem("profile_photo", photoUrl);
+        localStorage.setItem("p2p_profile_image", photoUrl);
+        setCachedProfilePhoto(photoUrl);
+        setProfileImageError(false);
+      }
+    }
+  }, [p2pProfile?.profile?.photo]);
+
+  // Cache auth profile photo in localStorage when it's available (sync both keys like UserCard)
   useEffect(() => {
     if (userProfile?.photo && typeof window !== "undefined") {
-      // Validate photo URL before caching
       const photoUrl = userProfile.photo.trim();
-      if (photoUrl && (photoUrl.startsWith('http://') || photoUrl.startsWith('https://') || photoUrl.startsWith('/'))) {
+      if (photoUrl && (photoUrl.startsWith('http://') || photoUrl.startsWith('https://') || photoUrl.startsWith('/') || photoUrl.startsWith('data:'))) {
         localStorage.setItem("profile_photo", photoUrl);
+        localStorage.setItem("p2p_profile_image", photoUrl);
         setCachedProfilePhoto(photoUrl);
-        setProfileImageError(false); // Reset error when we have a valid photo
+        setProfileImageError(false);
       }
     }
   }, [userProfile?.photo]);
@@ -632,10 +668,10 @@ export default function Navbar() {
     }
   }, [userProfile?.photo, cachedProfilePhoto]);
 
-  // Reload cached photo on route change (dashboard)
+  // Reload cached photo on route change (dashboard) - check both keys like UserCard
   useEffect(() => {
     if (isAuthenticated && pathname?.startsWith('/dashboard') && typeof window !== 'undefined') {
-      const cached = localStorage.getItem("profile_photo");
+      const cached = localStorage.getItem("profile_photo") || localStorage.getItem("p2p_profile_image");
       if (cached && !cachedProfilePhoto) {
         setCachedProfilePhoto(cached);
         setProfileImageError(false);
@@ -1044,32 +1080,17 @@ export default function Navbar() {
                   onClick={toggleProfileModal}
                   className="text-white focus:outline-none relative"
                 >
-                  {(userProfile?.photo || cachedProfilePhoto) &&
+                  {(p2pProfile?.profile?.photo || cachedProfilePhoto || userProfile?.photo) &&
                     !profileImageError ? (
                     <img
-                      key={`profile-nav-${userProfile?.photo || cachedProfilePhoto}`}
-                      src={userProfile?.photo || cachedProfilePhoto || ""}
+                      src={p2pProfile?.profile?.photo || cachedProfilePhoto || userProfile?.photo || ""}
                       alt="Profile"
                       className="w-8 h-8 md:w-9 md:h-9 lg:w-10 lg:h-10 rounded-full object-cover border-2 border-white dark:border-gray-600 shadow-lg"
                       onError={(e) => {
-                        console.error("Profile image failed to load:", userProfile?.photo || cachedProfilePhoto);
-                        // Only set error if we actually have a photo URL
-                        if (userProfile?.photo || cachedProfilePhoto) {
-                          setProfileImageError(true);
-                          // Clear invalid cached photo
-                          if (cachedProfilePhoto && cachedProfilePhoto === (userProfile?.photo || cachedProfilePhoto)) {
-                            localStorage.removeItem("profile_photo");
-                            setCachedProfilePhoto(null);
-                          }
-                        }
+                        const target = e.currentTarget;
+                        target.onerror = null;
+                        target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='20' fill='%231D8751'/%3E%3Cg fill='white'%3E%3Ccircle cx='20' cy='15' r='5'/%3E%3Cpath d='M20 22c-5 0-9 3-9 6v2c0 1 1 2 2 2h14c1 0 2-1 2-2v-2c0-3-4-6-9-6z'/%3E%3C/g%3E%3C/svg%3E";
                       }}
-                      onLoad={() => {
-                        // Reset error on successful load
-                        if (profileImageError) {
-                          setProfileImageError(false);
-                        }
-                      }}
-                      loading="eager"
                     />
                   ) : (
                     <div className="w-8 h-8 md:w-9 md:h-9 lg:w-10 lg:h-10 rounded-full flex items-center justify-center bg-[#1D8751] border-2 border-white dark:border-gray-600 shadow-lg">
@@ -1137,35 +1158,23 @@ export default function Navbar() {
                             onClick={toggleImageModal}
                             type="button"
                           >
-                            {(userProfile?.photo || cachedProfilePhoto) &&
+                            {(p2pProfile?.profile?.photo || cachedProfilePhoto || userProfile?.photo) &&
                               !profileImageError ? (
                               <>
                                 <img
-                                  key={`profile-modal-${userProfile?.photo || cachedProfilePhoto}`}
                                   src={
-                                    userProfile?.photo ||
+                                    p2pProfile?.profile?.photo ||
                                     cachedProfilePhoto ||
+                                    userProfile?.photo ||
                                     ""
                                   }
                                   alt="Profile"
                                   className="w-12 h-12 rounded-full object-cover border-2 border-gray-200 dark:border-gray-600 shadow-lg"
                                   onError={(e) => {
-                                    console.error("Dropdown profile image failed to load:", userProfile?.photo || cachedProfilePhoto);
-                                    if (userProfile?.photo || cachedProfilePhoto) {
-                                      setProfileImageError(true);
-                                      // Clear invalid cached photo
-                                      if (cachedProfilePhoto && cachedProfilePhoto === (userProfile?.photo || cachedProfilePhoto)) {
-                                        localStorage.removeItem("profile_photo");
-                                        setCachedProfilePhoto(null);
-                                      }
-                                    }
+                                    const target = e.currentTarget;
+                                    target.onerror = null;
+                                    target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48'%3E%3Ccircle cx='24' cy='24' r='24' fill='%231D8751'/%3E%3Cg fill='white'%3E%3Ccircle cx='24' cy='18' r='6'/%3E%3Cpath d='M24 26c-6 0-10 4-10 7v3c0 1 1 2 2 2h16c1 0 2-1 2-2v-3c0-3-4-7-10-7z'/%3E%3C/g%3E%3C/svg%3E";
                                   }}
-                                  onLoad={() => {
-                                    if (profileImageError) {
-                                      setProfileImageError(false);
-                                    }
-                                  }}
-                                  loading="eager"
                                 />
                                 {/* Verification Badge - only show for verified users */}
                                 {isVerified && (
@@ -1482,30 +1491,22 @@ export default function Navbar() {
                   className="flex items-center space-x-3 justify-between w-full text-left focus:outline-none"
                 >
                   <div className="relative">
-                    {(userProfile?.photo || cachedProfilePhoto) &&
+                    {(p2pProfile?.profile?.photo || cachedProfilePhoto || userProfile?.photo) &&
                       !profileImageError ? (
                       <>
                         <img
                           src={
-                            userProfile?.photo || cachedProfilePhoto || ""
+                            p2pProfile?.profile?.photo ||
+                            cachedProfilePhoto ||
+                            userProfile?.photo ||
+                            ""
                           }
                           alt="Profile"
                           className="w-10 h-10 rounded-full object-cover border-2 border-white dark:border-gray-600 shadow-lg"
-                          onError={() => {
-                            // Only mark error when we actually have a URL
-                            if (userProfile?.photo || cachedProfilePhoto) {
-                              setProfileImageError(true);
-                            }
-                            // Clear invalid cached photo
-                            if (typeof window !== "undefined") {
-                              localStorage.removeItem("profile_photo");
-                              setCachedProfilePhoto(null);
-                            }
-                          }}
-                          onLoad={() => {
-                            if (profileImageError) {
-                              setProfileImageError(false);
-                            }
+                          onError={(e) => {
+                            const target = e.currentTarget;
+                            target.onerror = null;
+                            target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='20' fill='%231D8751'/%3E%3Cg fill='white'%3E%3Ccircle cx='20' cy='15' r='5'/%3E%3Cpath d='M20 22c-5 0-9 3-9 6v2c0 1 1 2 2 2h14c1 0 2-1 2-2v-2c0-3-4-6-9-6z'/%3E%3C/g%3E%3C/svg%3E";
                           }}
                         />
                         {/* Verification Badge - only show for verified users */}
@@ -1614,35 +1615,22 @@ export default function Navbar() {
                                 onClick={toggleImageModal}
                                 type="button"
                               >
-                                {(userProfile?.photo || cachedProfilePhoto) &&
+                                {(p2pProfile?.profile?.photo || cachedProfilePhoto || userProfile?.photo) &&
                                   !profileImageError ? (
                                   <>
                                     <img
-                                      key={`profile-mobile-${userProfile?.photo || cachedProfilePhoto}`}
                                       src={
-                                        userProfile?.photo ||
+                                        p2pProfile?.profile?.photo ||
                                         cachedProfilePhoto ||
+                                        userProfile?.photo ||
                                         ""
                                       }
                                       alt="Profile"
                                       className="w-16 h-16 rounded-full object-cover border-2 border-white dark:border-gray-600 shadow-lg"
-                                      onError={() => {
-                                        console.error("Mobile profile image failed to load:", userProfile?.photo || cachedProfilePhoto);
-                                        if (userProfile?.photo || cachedProfilePhoto) {
-                                          setProfileImageError(true);
-                                          // Clear invalid cached photo
-                                          if (typeof window !== "undefined") {
-                                            localStorage.removeItem(
-                                              "profile_photo"
-                                            );
-                                            setCachedProfilePhoto(null);
-                                          }
-                                        }
-                                      }}
-                                      onLoad={() => {
-                                        if (profileImageError) {
-                                          setProfileImageError(false);
-                                        }
+                                      onError={(e) => {
+                                        const target = e.currentTarget;
+                                        target.onerror = null;
+                                        target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='32' fill='%231D8751'/%3E%3Cg fill='white'%3E%3Ccircle cx='32' cy='24' r='8'/%3E%3Cpath d='M32 36c-8 0-14 5-14 10v4c0 1 1 2 2 2h24c1 0 2-1 2-2v-4c0-5-6-10-14-10z'/%3E%3C/g%3E%3C/svg%3E";
                                       }}
                                     />
                                     {/* Verification Badge - only show for verified users */}

@@ -28,7 +28,7 @@ import { showToast } from "../../../../../lib/utils/toast";
 import { DepositResponse } from "../../../../exchange/types";
 import { SupportedAsset } from "../../../../swap/types";
 import { FaSearch } from "react-icons/fa";
-import { createExpressWithdrawal } from "../../../api";
+import { createExpressWithdrawal, fetchCommission, getCommissionApiAsset } from "../../../api";
 import {
   ExpressWithdrawalPayload,
   ExpressWithdrawalResponse,
@@ -581,6 +581,7 @@ export default function WithdrawalForm({
   const [websocketUrl, setWebsocketUrl] = useState<string>("");
   const [transactionId, setTransactionId] = useState<string>("");
   const [isTermsAccepted, setIsTermsAccepted] = useState(false);
+  const [expandedTerms, setExpandedTerms] = useState(false);
 
   // Forex-specific state for withdrawal
   const [userNotesForex, setUserNotesForex] = useState<string>("");
@@ -692,6 +693,8 @@ export default function WithdrawalForm({
 
   // Add state for API validation errors
   const [apiValidationError, setApiValidationError] = useState<string | null>(null);
+  const [apiCommission, setApiCommission] = useState<number | null>(null);
+  const commissionFetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Add calculation error state for display below "You Send" input
   const [calculationError, setCalculationError] = useState<string | null>(null);
@@ -1360,6 +1363,32 @@ export default function WithdrawalForm({
     return (ticker === "usdt" && network === "bsc") ||
       (ticker === "usdc" && network === "bsc");
   };
+
+  const isCommissionApiAsset = (asset: any) => !!getCommissionApiAsset(asset?.ticker || asset?.symbol || "");
+
+  useEffect(() => {
+    const apiAsset = selectedAsset ? getCommissionApiAsset(selectedAsset.ticker || selectedAsset.symbol || "") : null;
+    if (!apiAsset || !selectedAsset) {
+      setApiCommission(null);
+      return;
+    }
+    const amount = isCalculatingFromPay
+      ? (parseFloat(payAmountInput) || payAmount)
+      : (parseFloat(getAmountInput) || getAmount);
+    if (amount <= 0) {
+      setApiCommission(null);
+      return;
+    }
+    if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
+    commissionFetchTimeoutRef.current = setTimeout(() => {
+      fetchCommission(apiAsset, amount, "withdrawal")
+        .then((c) => setApiCommission(c))
+        .catch(() => setApiCommission(null));
+    }, 300);
+    return () => {
+      if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
+    };
+  }, [selectedAsset, payAmountInput, getAmountInput, payAmount, getAmount, isCalculatingFromPay]);
 
   // FXP withdrawal rate: 1 FXP = 1.1 USD (user sends FXP, receives USD)
   const FXP_TO_USD_RATE = 1.1;
@@ -2073,22 +2102,21 @@ export default function WithdrawalForm({
           }
 
           // Common fallback calculation for all error types
-          let commissionRate = 2; // Default fallback
-          if (
-            selectedAsset?.range_commissions &&
-            selectedAsset.range_commissions.length > 0
-          ) {
-            const firstCommission = selectedAsset.range_commissions[0];
-            if (firstCommission?.commission) {
-              commissionRate = parseFloat(firstCommission.commission);
-            }
-          } else if (selectedAsset?.commission) {
-            commissionRate = parseFloat(selectedAsset.commission);
-          } else if (selectedAsset?.fee_rate) {
-            commissionRate = parseFloat(selectedAsset.fee_rate);
-          }
-
-          const fallbackPayAmount = getAmount * (1 + commissionRate / 100);
+          const commission = selectedAsset && isCommissionApiAsset(selectedAsset)
+            ? (apiCommission ?? 0)
+            : (() => {
+                let commissionRate = 2;
+                if (selectedAsset?.range_commissions?.length > 0) {
+                  const firstCommission = selectedAsset.range_commissions[0];
+                  if (firstCommission?.commission) commissionRate = parseFloat(firstCommission.commission);
+                } else if (selectedAsset?.commission) {
+                  commissionRate = parseFloat(selectedAsset.commission);
+                } else if (selectedAsset?.fee_rate) {
+                  commissionRate = parseFloat(selectedAsset.fee_rate);
+                }
+                return getAmount * (commissionRate / 100);
+              })();
+          const fallbackPayAmount = getAmount + commission;
           setPayAmount(fallbackPayAmount);
           setPayAmountInput(fallbackPayAmount.toString());
 
@@ -2689,11 +2717,11 @@ export default function WithdrawalForm({
   // Calculate fees and amounts - Network fee is always 0 for BEP20
   const networkFee = 0;
 
-  // Use flat $2 fee for direct assets (USDT on BSC, USDC on BSC), percentage for other assets
+  // Use commission API for USDT/USDC/FX Primus, flat $2 for other direct assets, percentage for others
   let commissionAmount = 0;
   if (selectedAsset && isSimpleCalculationAsset(selectedAsset)) {
-    // For direct assets, only apply $2 fee if amount is $2 or more
-    commissionAmount = payAmount >= 2 ? 2 : 0; // Flat $2 fee for direct assets (only if amount >= $2)
+    const commission = isCommissionApiAsset(selectedAsset) ? (apiCommission ?? 0) : 2;
+    commissionAmount = payAmount >= commission ? commission : 0;
   } else {
     // Use default commission rate for other assets
     const commissionRate = selectedAsset?.range_commissions?.[0]?.commission
@@ -2713,13 +2741,8 @@ export default function WithdrawalForm({
 
     // For simple calculations, do them immediately without any delays
     if (fromPay && selectedAsset && isSimpleCalculationAsset(selectedAsset)) {
-      // Immediate calculation for direct assets (USDT on BSC, USDC on BSC) - simply subtract 2
-      let calculatedGetAmount;
-      if (fromAmount < 2) {
-        calculatedGetAmount = fromAmount;
-      } else {
-        calculatedGetAmount = Math.max(0, fromAmount - 2); // Simply subtract 2 for direct assets
-      }
+      const commission = isCommissionApiAsset(selectedAsset) ? (apiCommission ?? 0) : 2;
+      const calculatedGetAmount = fromAmount < commission ? fromAmount : Math.max(0, fromAmount - commission);
 
       // Show result immediately
       setGetAmount(calculatedGetAmount);
@@ -2814,13 +2837,8 @@ export default function WithdrawalForm({
         if (fromPay) {
           // Calculate from pay amount to receive amount
           if (isSimpleCalculationAsset(selectedAsset)) {
-            // This should not happen as we handle it above, but keep as fallback
-            let calculatedGetAmount;
-            if (fromAmount < 2) {
-              calculatedGetAmount = fromAmount;
-            } else {
-              calculatedGetAmount = Math.max(0, fromAmount - 2); // Simply subtract 2 for direct assets
-            }
+            const commission = isCommissionApiAsset(selectedAsset) ? (apiCommission ?? 0) : 2;
+            const calculatedGetAmount = fromAmount < commission ? fromAmount : Math.max(0, fromAmount - commission);
 
             // Only show calculated amount if it's meaningful (> 0.01), otherwise show empty
             if (calculatedGetAmount >= 0.01) {
@@ -2888,12 +2906,8 @@ export default function WithdrawalForm({
         } else {
           // Calculate from receive amount to pay amount
           if (isSimpleCalculationAsset(selectedAsset)) {
-            let newPayAmount;
-            if (fromAmount < 2) {
-              newPayAmount = fromAmount;
-            } else {
-              newPayAmount = fromAmount + 2; // Simply add 2 for direct assets
-            }
+            const commission = isCommissionApiAsset(selectedAsset) ? (apiCommission ?? 0) : 2;
+            const newPayAmount = fromAmount + commission;
             setPayAmount(newPayAmount);
             setPayAmountInput(newPayAmount.toString());
 
@@ -3304,6 +3318,7 @@ export default function WithdrawalForm({
               const transactionData = {
                 type: "withdrawal" as const,
                 amount: payAmount,
+                receiveAmount: parseFloat(getAmountInput) || getAmount, // From "You Receive" input
                 asset: {
                   ...selectedAsset,
                   icon:
@@ -3337,6 +3352,7 @@ export default function WithdrawalForm({
               const transactionData = {
                 type: "withdrawal" as const,
                 amount: payAmount,
+                receiveAmount: parseFloat(getAmountInput) || getAmount, // From "You Receive" input
                 asset: {
                   ...selectedAsset,
                   icon:
@@ -3446,6 +3462,7 @@ export default function WithdrawalForm({
           const transactionData = {
             type: "deposit" as const,
             amount: payAmount,
+            receiveAmount: parseFloat(getAmountInput) || getAmount, // From "You Receive" input
             asset: {
               ...selectedAsset,
               icon:
@@ -3940,17 +3957,8 @@ export default function WithdrawalForm({
                             if (selectedAsset && newAmount >= 0) {
                               // Check asset type first and handle accordingly
                               if (isSimpleCalculationAsset(selectedAsset)) {
-                                // For direct assets (USDT on BSC, USDC on BSC), calculate immediately
-                                const commissionRate = selectedAsset
-                                  ?.range_commissions?.[0]?.commission
-                                  ? parseFloat(
-                                    selectedAsset.range_commissions[0].commission
-                                  )
-                                  : 2;
-                                const commissionAmount =
-                                  (newAmount * commissionRate) / 100;
-                                const calculatedPayAmount =
-                                  newAmount + commissionAmount;
+                                const commission = isCommissionApiAsset(selectedAsset) ? (apiCommission ?? 0) : 2;
+                                const calculatedPayAmount = newAmount + commission;
                                 setPayAmount(calculatedPayAmount);
                                 setPayAmountInput(calculatedPayAmount.toString());
 
@@ -4464,7 +4472,7 @@ export default function WithdrawalForm({
 
               <span className="flex items-center bg-[#1D8751] text-white rounded-full px-5 py-1 text-sm font-medium w-fit">
                 <span className="w-2 h-2 bg-white rounded-full mr-2 inline-block"></span>
-                Commission: {selectedAsset && isSimpleCalculationAsset(selectedAsset) ? `$2 flat fee (direct assets)` : `${selectedAsset?.range_commissions?.[0]?.commission || 2}% of $${payAmount}`} = $
+                Commission: {selectedAsset && isSimpleCalculationAsset(selectedAsset) ? (isCommissionApiAsset(selectedAsset) ? `$${apiCommission ?? 0} (API)` : `$2 flat fee`) : `${selectedAsset?.range_commissions?.[0]?.commission || 2}% of $${payAmount}`} = $
                 {commissionAmount}
               </span>
             </div>
@@ -4744,56 +4752,59 @@ export default function WithdrawalForm({
                   </p>
                 </div>
 
-                {/* Terms and Conditions Summary */}
+                {/* Terms & Conditions */}
                 <div className="flex flex-col gap-2 mt-2">
-                  <div className="flex items-center mb-2">
-                    <span className="mr-2 text-[#1D8751]">
-                      <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
-                        <circle
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="#1D8751"
-                          strokeWidth="2"
-                        />
-                        <line
-                          x1="12"
-                          y1="8"
-                          x2="12"
-                          y2="12"
-                          stroke="#1D8751"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                        />
-                        <circle cx="12" cy="16" r="1" fill="#1D8751" />
-                      </svg>
-                    </span>
-                    <span className="text-base font-semibold text-[#7e7e8f] dark:text-[#788099]">
-                      Terms and Conditions Summary
-                    </span>
+                  <div className="flex items-center gap-2 mb-2">
+                    <svg className="w-5 h-5 text-[#1D8751]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <h3 className="font-medium text-sm sm:text-base text-[#35353e] dark:text-white">
+                      Terms & Conditions
+                    </h3>
                   </div>
-                  <div className=" dark:bg-[#1D1D23] border border-[#1D8751] rounded-xl p-4">
-                    <ul className="list-none space-y-2">
-                      <li className="flex items-start">
-                        <span className="w-2 h-2 mt-1.5 rounded-full bg-[#1D8751] dark:bg-[#1D8751] shrink-0 mr-3"></span>
-                        <span className="text-[#35353e] dark:text-[#788099] text-sm">
-                          We will send money to your <span className="font-semibold text-[#1D8751]">{selectedPaymentDetail?.provider_name || selectedProviderData?.provider_name || payBank || "the selected provider"}</span> account <span className="font-semibold text-[#1D8751]">{selectedPaymentDetail?.account_number || selectedPaymentDetail?.payment_details?.[0]?.account_number || selectedPaymentDetail?.payment_details?.[0]?.mobile_number || "—"}</span> for withdrawal of <span className="font-semibold text-[#1D8751]">{selectedAsset?.ticker || selectedAsset?.symbol || "crypto"}</span>. Please ensure this is your own account.
-                        </span>
-                      </li>
-                      <li className="flex items-start">
-                        <span className="w-2 h-2 mt-1.5 rounded-full bg-[#1D8751] dark:bg-[#1D8751] shrink-0 mr-3"></span>
-                        <span className="text-[#35353e] dark:text-[#788099] text-sm">
-                          Put transaction ID in the description field of the bank
-                        </span>
-                      </li>
-                      <li className="flex items-start">
-                        <span className="w-2 h-2 mt-1.5 rounded-full bg-[#1D8751] dark:bg-[#1D8751] shrink-0 mr-3"></span>
-                        <span className="text-[#35353e] dark:text-[#788099] text-sm">
-                          Please note, If you do not follow above conditions, we
-                          will reject your transaction and send you back your money.
-                        </span>
-                      </li>
-                    </ul>
+                  <div className="dark:bg-[#1D1D23] border border-[#1D8751] rounded-xl overflow-hidden transition-all duration-300">
+                    <div className="p-4">
+                      <div className={`space-y-2 sm:space-y-3 ${expandedTerms ? "" : "line-clamp-3"}`}>
+                        <div className="flex items-start gap-2 sm:gap-3">
+                          <span className="text-[#1D8751] font-bold text-sm sm:text-base flex-shrink-0">1.</span>
+                          <p className="text-xs sm:text-sm text-[#35353e] dark:text-[#788099]">
+                            <span className="font-semibold">Your receiving account:</span> We will send money to your <span className="font-semibold text-[#1D8751]">{selectedPaymentDetail?.provider_name || selectedProviderData?.provider_name || payBank || "the selected provider"}</span> account <span className="font-semibold text-[#1D8751]">{selectedPaymentDetail?.account_number || selectedPaymentDetail?.payment_details?.[0]?.account_number || selectedPaymentDetail?.payment_details?.[0]?.mobile_number || "—"}</span> for withdrawal of <span className="font-semibold text-[#1D8751]">{selectedAsset?.ticker || selectedAsset?.symbol || "crypto"}</span>. Please ensure this is your own account.
+                          </p>
+                        </div>
+                        <div className="flex items-start gap-2 sm:gap-3">
+                          <span className="text-[#1D8751] font-bold text-sm sm:text-base flex-shrink-0">2.</span>
+                          <p className="text-xs sm:text-sm text-[#35353e] dark:text-[#788099]">
+                            <span className="font-semibold">Put transaction ID in the description field:</span> You must put the transaction ID in the description/memo field of the bank.
+                          </p>
+                        </div>
+                        <div className="flex items-start gap-2 sm:gap-3">
+                          <span className="text-[#1D8751] font-bold text-sm sm:text-base flex-shrink-0">3.</span>
+                          <p className="text-xs sm:text-sm text-[#35353e] dark:text-[#788099]">
+                            <span className="font-semibold">Non-compliance:</span> Please note, if you do not follow the above conditions, we will reject your transaction and send you back your money.
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setExpandedTerms(!expandedTerms)}
+                        className="mt-3 sm:mt-4 text-[#1D8751] hover:text-[#166b3e] font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition-colors"
+                      >
+                        {expandedTerms ? (
+                          <>
+                            <span>Show Less</span>
+                            <svg className="w-4 h-4 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                            </svg>
+                          </>
+                        ) : (
+                          <>
+                            <span>Show More</span>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                            </svg>
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -4874,6 +4885,7 @@ export default function WithdrawalForm({
                       const transactionData = {
                         type: "withdrawal" as const,
                         amount: payAmount,
+                        receiveAmount: parseFloat(getAmountInput) || getAmount, // From "You Receive" input
                         asset: {
                           ...selectedAsset,
                           icon:

@@ -4,8 +4,13 @@ import { connectSwapStatusWebSocket } from "./websocket";
 import { API_CONFIG } from "@/lib/appConfig";
 import SuccessPage from "./success";
 import { Copy } from "lucide-react";
+import { useTheme } from "@/context/theme";
 
 import { logger } from '@/lib/utils/logger';
+
+// Normalize API response - backend may return snake_case
+const getPayinAddress = (r: CreateSwapResponse | null): string =>
+  r ? (r as any).payin_address || r.payinAddress || "" : "";
 
 interface CopyAddressStepProps {
   swapResponse: CreateSwapResponse | null;
@@ -99,8 +104,10 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
   onNext,
   isHomePage = false,
 }) => {
+  const { isDark } = useTheme();
   const [status, setStatus] = useState<string>("pending");
   const [statusObj, setStatusObj] = useState<any>(null);
+  const payinAddress = getPayinAddress(swapResponse);
   const [wsConnected, setWsConnected] = useState<boolean>(false);
   const [reconnectAttempts, setReconnectAttempts] = useState(0);
   const maxReconnectAttempts = 5;
@@ -205,7 +212,32 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
     };
   }, [swapResponse && swapResponse.id, reconnectAttempts]);
 
-  if (!swapResponse?.payinAddress) return null;
+  // Show loading when swapResponse exists but payinAddress not yet available
+  if (!swapResponse) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center py-8 px-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1D8751] mb-4"></div>
+        <p className="text-gray-600 dark:text-[#788099] text-sm">Loading swap details...</p>
+      </div>
+    );
+  }
+  if (!payinAddress) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center py-8 px-4">
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-xl p-6 max-w-md text-center">
+          <p className="text-red-700 dark:text-red-300 text-sm font-medium">
+            Unable to load deposit address. Please try again or contact support.
+          </p>
+          <button
+            onClick={onBack}
+            className="mt-4 px-4 py-2 bg-[#1D8751] hover:bg-[#16663d] text-white rounded-lg text-sm font-medium"
+          >
+            Go Back
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // Always map the status before using it in the stepper
   const mappedStatus = mapBackendStatusToStepperStatus(status);
@@ -262,7 +294,7 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
               </div>
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 min-w-0">
                 <span className="text-[#1D8751] dark:text-[#1D8751] font-mono text-xs sm:text-base break-all sm:break-words max-w-full min-w-0 flex-1">
-                  {swapResponse.payinAddress}
+                  {payinAddress}
                 </span>
                 <button
                   className="bg-[#1D8751] hover:bg-[#16663d] dark:bg-[#1D8751] dark:hover:bg-[#16663d] p-2 rounded-lg text-white transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center flex-shrink-0 self-start sm:self-auto"
@@ -292,7 +324,7 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
           {/* QR code */}
           <div className={`${isHomePage ? 'w-20 h-20 sm:w-24 sm:h-24' : 'w-28 h-28 sm:w-36 sm:h-36'} bg-white rounded-lg flex items-center justify-center flex-shrink-0`}>
             <img
-              src={`https://api.qrserver.com/v1/create-qr-code/?size=${isHomePage ? '96' : '180'}x${isHomePage ? '96' : '180'}&data=${swapResponse.payinAddress}`}
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=${isHomePage ? '96' : '180'}x${isHomePage ? '96' : '180'}&data=${encodeURIComponent(payinAddress)}`}
               alt="QR Code"
               className={isHomePage ? "w-16 h-16 sm:w-20 sm:h-20" : "w-24 h-24 sm:w-32 sm:h-32"}
             />
@@ -448,13 +480,40 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
         </div>
       )}
 
-      {/* Terms and Conditions Summary - always at the very bottom */}
-      <div className={`flex items-center justify-center ${isHomePage ? 'mb-1 sm:mb-2 mt-1 sm:mt-2' : 'mb-2 mt-2'} w-full ${isHomePage ? '' : 'max-w-4xl'} px-2 sm:px-0`}>
-        <img
-          src="https://res.cloudinary.com/pitz/image/upload/v1752248844/Frame_34947_hxlr7o.png"
-          alt="Terms and Conditions"
-          className="w-full h-auto max-w-full object-contain"
-        />
+      {/* Terms & Conditions - visible in both light and dark mode */}
+      <div className={`w-full ${isHomePage ? '' : 'max-w-4xl'} ${isHomePage ? 'mb-1 sm:mb-2 mt-1 sm:mt-2' : 'mb-2 mt-2'} px-2 sm:px-0`}>
+        <div className={`border border-[#1D8751] rounded-xl overflow-hidden transition-all duration-300 ${isDark ? "bg-[#1D1D23]" : "bg-[#F8FAFF]"}`}>
+          <div className="p-3 sm:p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <svg className="w-5 h-5 text-[#1D8751]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <h3 className={`font-medium text-sm sm:text-base ${isDark ? "text-white" : "text-gray-900"}`}>
+                Terms & Conditions
+              </h3>
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-start gap-2">
+                <span className="text-[#1D8751] font-bold text-sm flex-shrink-0">1.</span>
+                <p className={`text-xs sm:text-sm ${isDark ? "text-[#788099]" : "text-[#475569]"}`}>
+                  <span className="font-semibold">Send from your own wallet only:</span> You must send the crypto asset from a wallet that you personally own and control.
+                </p>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-[#1D8751] font-bold text-sm flex-shrink-0">2.</span>
+                <p className={`text-xs sm:text-sm ${isDark ? "text-[#788099]" : "text-[#475569]"}`}>
+                  <span className="font-semibold">Send the correct asset and network:</span> Sending any other asset or using a different network will result in PERMANENT LOSS of funds.
+                </p>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-[#1D8751] font-bold text-sm flex-shrink-0">3.</span>
+                <p className={`text-xs sm:text-sm ${isDark ? "text-[#788099]" : "text-[#475569]"}`}>
+                  <span className="font-semibold">Provide the correct receiving address:</span> Enter the correct wallet address. Wrong address = permanent loss of funds.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
       
     </div>

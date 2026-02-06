@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { X } from "lucide-react";
 import Button from "@/features/p2p/components/Common/Button";
 import Input from "@/features/p2p/components/Common/Input";
 import {
-  patchUserPaymentDetail,
+  sendPaymentDetailEditOtp,
+  updatePaymentDetailWithOtp,
   clearPatchStatus,
   fetchUserPaymentDetails,
 } from "@/features/p2p/slices/paymentMethodsSlice";
@@ -45,6 +46,18 @@ const EditPaymentMethodModal: React.FC<EditPaymentMethodModalProps> = ({
     wallet_address: "",
     allow_auto_send: false,
   });
+  const [showOtpStep, setShowOtpStep] = useState(false);
+  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const [otpSending, setOtpSending] = useState(false);
+  const [cooldownSeconds, setCooldownSeconds] = useState(0);
+  const pendingUpdateDataRef = useRef<{
+    account_name?: string;
+    account_number?: string;
+    wallet_address?: string | null;
+    allow_auto_send?: boolean;
+    provider_name?: string;
+  } | null>(null);
+  const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Initialize form data when payment method changes
   useEffect(() => {
@@ -64,6 +77,9 @@ const EditPaymentMethodModal: React.FC<EditPaymentMethodModalProps> = ({
         wallet_address: isCrypto || isForex ? walletValue : (paymentMethod.wallet_address || ""),
         allow_auto_send: paymentMethod.allow_auto_send ?? false,
       });
+      setShowOtpStep(false);
+      setOtp(["", "", "", "", "", ""]);
+      pendingUpdateDataRef.current = null;
       dispatch(clearPatchStatus());
     }
   }, [paymentMethod, dispatch]);
@@ -170,21 +186,63 @@ const EditPaymentMethodModal: React.FC<EditPaymentMethodModalProps> = ({
     }
 
     try {
-      logger.debug(
-        "p2p",
-        "Updating payment method:",
-        paymentMethod.id,
-        updateData
-      );
+      setOtpSending(true);
+      const result = await dispatch(
+        sendPaymentDetailEditOtp(String(paymentMethod.id))
+      ).unwrap();
+      pendingUpdateDataRef.current = updateData;
+      setShowOtpStep(true);
+      setOtp(["", "", "", "", "", ""]);
+      if (result.cooldown_seconds) {
+        setCooldownSeconds(result.cooldown_seconds);
+      }
+      showToast.success(result.message || "OTP sent to your email address");
+      setTimeout(() => otpInputRefs.current[0]?.focus(), 100);
+    } catch (error: any) {
+      logger.error("p2p", "Failed to send OTP:", error);
+      const msg = typeof error === "string" ? error : error?.message || "Failed to send OTP";
+      showToast.error(msg);
+    } finally {
+      setOtpSending(false);
+    }
+  };
+
+  const handleOtpVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const otpString = otp.join("");
+    if (otpString.length !== 6 || !pendingUpdateDataRef.current || !paymentMethod) {
+      showToast.error("Please enter the 6-digit OTP");
+      return;
+    }
+    try {
       await dispatch(
-        patchUserPaymentDetail({
+        updatePaymentDetailWithOtp({
           id: paymentMethod.id,
-          data: updateData,
+          data: { otp: otpString, ...pendingUpdateDataRef.current },
         })
       ).unwrap();
     } catch (error: any) {
       logger.error("p2p", "Failed to update payment method:", error);
     }
+  };
+
+  const handleOtpInputChange = (index: number, value: string) => {
+    if (value.length > 1) return;
+    if (!/^\d*$/.test(value)) return;
+    const newOtp = [...otp];
+    newOtp[index] = value;
+    setOtp(newOtp);
+    if (value && index < 5) otpInputRefs.current[index + 1]?.focus();
+  };
+
+  const handleOtpPaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData("text").slice(0, 6);
+    if (!/^\d+$/.test(pasted)) return;
+    const arr = pasted.split("").concat(["", "", "", "", "", ""]).slice(0, 6);
+    setOtp(arr);
+    const next = arr.findIndex((d) => !d);
+    otpInputRefs.current[next === -1 ? 5 : next]?.focus();
   };
 
   if (!isOpen || !paymentMethod) return null;
@@ -212,7 +270,49 @@ const EditPaymentMethodModal: React.FC<EditPaymentMethodModalProps> = ({
           </button>
         </div>
 
-        {/* Form */}
+        {/* Form or OTP step */}
+        {showOtpStep ? (
+          <form onSubmit={handleOtpVerify} className="p-4 sm:p-6 space-y-4">
+            <p className="text-sm text-gray-600 dark:text-[#788099] mb-4">
+              Enter the 6-digit verification code sent to your email address
+            </p>
+            <div className="flex justify-center gap-2 mb-4">
+              {otp.map((digit, i) => (
+                <input
+                  key={i}
+                  ref={(el) => { otpInputRefs.current[i] = el; }}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={1}
+                  value={digit}
+                  onChange={(e) => handleOtpInputChange(i, e.target.value)}
+                  onPaste={handleOtpPaste}
+                  className="w-10 h-10 sm:w-12 sm:h-12 text-center text-lg font-semibold bg-gray-100 dark:bg-[#2A2A2A] border-2 border-gray-200 dark:border-[#35353E] rounded-xl focus:border-[#1D8751] focus:outline-none dark:text-white text-gray-900"
+                  disabled={patchLoading}
+                />
+              ))}
+            </div>
+            <div className="flex gap-3 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => { setShowOtpStep(false); pendingUpdateDataRef.current = null; }}
+                disabled={patchLoading}
+                className="flex-1 py-3 text-base"
+              >
+                Back
+              </Button>
+              <Button
+                type="submit"
+                variant="secondary"
+                disabled={patchLoading || otp.join("").length !== 6}
+                className="flex-1 py-3 text-base"
+              >
+                {patchLoading ? "Verifying..." : "Verify OTP"}
+              </Button>
+            </div>
+          </form>
+        ) : (
         <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4">
           {/* Payment Provider Name (Read-only) */}
           <div>
@@ -321,7 +421,7 @@ const EditPaymentMethodModal: React.FC<EditPaymentMethodModalProps> = ({
               type="button"
               variant="outline"
               onClick={onClose}
-              disabled={patchLoading}
+              disabled={patchLoading || otpSending}
               className="flex-1 py-3 text-base"
             >
               Cancel
@@ -329,13 +429,14 @@ const EditPaymentMethodModal: React.FC<EditPaymentMethodModalProps> = ({
             <Button
               type="submit"
               variant="secondary"
-              disabled={patchLoading}
+              disabled={patchLoading || otpSending}
               className="flex-1 py-3 text-base"
             >
-              {patchLoading ? "Updating..." : "Update"}
+              {otpSending ? "Sending OTP..." : "Update"}
             </Button>
           </div>
         </form>
+        )}
       </div>
     </div>
   );

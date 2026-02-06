@@ -589,7 +589,8 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
 
   const handleCopyAddress = async () => {
     try {
-      await navigator.clipboard.writeText(swapResponse?.payinAddress || "");
+      const addr = swapResponse ? (swapResponse as any).payin_address || swapResponse.payinAddress : "";
+      await navigator.clipboard.writeText(addr || "");
       // Show success feedback
       setCopyMessage("Copied!");
       showToast.success("Address copied to clipboard");

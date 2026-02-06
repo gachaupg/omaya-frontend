@@ -76,9 +76,10 @@ const UserCard = () => {
         .then((response) => {
           if (response?.profile?.photo) {
             setProfileImage(response.profile.photo);
-            // Cache profile image to localStorage
+            // Cache profile image to localStorage (sync both keys for Navbar)
             if (typeof window !== "undefined") {
               localStorage.setItem("p2p_profile_image", response.profile.photo);
+              localStorage.setItem("profile_photo", response.profile.photo);
             }
           }
         })
@@ -168,9 +169,12 @@ const UserCard = () => {
           const response = await dispatch(getP2PProfileThunk()).unwrap();
           if (response?.profile?.photo) {
             setProfileImage(response.profile.photo);
-            // Cache the updated profile image
+            // Cache the updated profile image (sync both keys for Navbar)
             if (typeof window !== "undefined") {
               localStorage.setItem("p2p_profile_image", response.profile.photo);
+              localStorage.setItem("profile_photo", response.profile.photo);
+              // Notify Navbar and other listeners to update immediately
+              window.dispatchEvent(new CustomEvent("profilePhotoUpdated", { detail: { photoUrl: response.profile.photo } }));
             }
           }
           // Also refresh main auth profile so navbar/other pages update without reload
@@ -207,7 +211,7 @@ const UserCard = () => {
           <HelpSupportForm />
         </div>
       ) : (
-        <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between w-full gap-4 xl:gap-6">
+        <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between w-full gap-3 xl:gap-4">
           {/* Left Section: Avatar and Greeting */}
           <div className="flex items-center gap-3 w-full md:w-auto">
             {/* User Avatar with Edit Button */}
@@ -292,7 +296,7 @@ const UserCard = () => {
             {/* User Info */}
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-lg font-bold dark:text-[#FFFFFF] text-[#1D1D23]">
+                <h2 className="text-base xl:text-sm font-bold dark:text-[#FFFFFF] text-[#1D1D23]">
                   Hello, {user?.first_name}{user?.last_name ? ` ${user.last_name}` : ''} !
                 </h2>
               </div>
@@ -313,7 +317,7 @@ const UserCard = () => {
                 )}
               </div>
               {isVerified ? (
-                <span className="text-[#1D8751] flex items-center gap-1.5 text-xs sm:text-sm font-medium">
+                <span className="text-[#1D8751] flex items-center gap-1.5 text-xs font-medium">
                   Verified Profile
                   <span className="inline-flex items-center justify-center w-5 h-5 flex-shrink-0" style={{ position: 'relative' }}>
                     <svg width="20" height="20" viewBox="0 0 20 20" style={{ position: 'absolute' }}>
@@ -347,7 +351,7 @@ const UserCard = () => {
                   </span>
                 </span>
               ) : (
-                <span className="text-gray-500 dark:text-gray-400 flex items-center gap-1.5 text-xs sm:text-sm font-medium">
+                <span className="text-gray-500 dark:text-gray-400 flex items-center gap-1.5 text-xs font-medium">
                   Unverified Profile
                 </span>
               )}
@@ -361,9 +365,9 @@ const UserCard = () => {
           <div className="flex flex-row items-start gap-4 sm:gap-6 w-full xl:flex-1 xl:justify-center">
             {/* User ID */}
             <div className="text-left flex-1 w-full sm:w-auto">
-              <p className="text-xs dark:text-[#788099] text-[#788099] mb-1">User ID</p>
-              <div className="flex items-center gap-2 justify-start h-6">
-                <p className="text-base font-bold dark:text-[#FFFFFF] text-[#1D1D23]">{user?.user_id}</p>
+              <p className="text-[10px] xl:text-xs dark:text-[#788099] text-[#788099] mb-0.5">User ID</p>
+              <div className="flex items-center gap-1.5 justify-start h-5 xl:h-5">
+                <p className="text-sm xl:text-xs font-bold dark:text-[#FFFFFF] text-[#1D1D23] truncate min-w-0">{user?.user_id}</p>
                 <button className="cursor-pointer">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -390,9 +394,9 @@ const UserCard = () => {
 
             {/* User Type */}
             <div className="text-left flex-1 w-full sm:w-auto">
-              <p className="text-xs dark:text-[#788099] text-[#788099] mb-1">User Type</p>
-              <div className="flex items-center h-6">
-                <p className="text-base font-bold dark:text-[#FFFFFF] text-[#1D1D23]">
+              <p className="text-[10px] xl:text-xs dark:text-[#788099] text-[#788099] mb-0.5">User Type</p>
+              <div className="flex items-center h-5">
+                <p className="text-sm xl:text-xs font-bold dark:text-[#FFFFFF] text-[#1D1D23]">
                   {user?.user_type ? user.user_type.charAt(0).toUpperCase() + user.user_type.slice(1) : ''}
                 </p>
               </div>
@@ -403,8 +407,8 @@ const UserCard = () => {
           <div className="flex flex-wrap items-center gap-2 sm:gap-3 justify-center sm:justify-start md:justify-center xl:justify-end w-full xl:w-auto mt-4 xl:mt-0">
             <Button
               borderRadius={24}
-              className="flex-1 sm:flex-none sm:w-[130px] min-w-[100px]"
-              height={36}
+              className="flex-1 sm:flex-none sm:w-[120px] xl:w-[110px] min-w-[90px] text-xs xl:text-[11px]"
+              height={32}
               variant="primary"
               size="sm"
               onClick={() => router.push("/adds?type=buy")}
@@ -413,8 +417,8 @@ const UserCard = () => {
             </Button>
             <Button
               borderRadius={24}
-              className="flex-1 sm:flex-none sm:w-[130px] min-w-[100px]"
-              height={36}
+              className="flex-1 sm:flex-none sm:w-[120px] xl:w-[110px] min-w-[90px] text-xs xl:text-[11px]"
+              height={32}
               variant="secondary"
               size="sm"
               onClick={() => router.push("/adds?type=sell")}
@@ -482,7 +486,7 @@ const UserCard = () => {
                 className="flex items-center justify-center p-0"
                 onClick={() => router.push("/contactUs")}
                 icon={
-                  <div className="w-10 h-10 rounded-[50%] border border-[#1D8751] flex items-center justify-center p-0">
+                  <div className="w-9 h-9 xl:w-8 xl:h-8 rounded-[50%] border border-[#1D8751] flex items-center justify-center p-0">
                     <svg
                       width="16"
                       height="16"
