@@ -4388,7 +4388,6 @@ export default function WithdrawalForm({
                 </div>
               </div>
             </div>
-
             {/* Fee & Rate - Dynamic based on selected asset */}
             {/* <div className="flex items-center rounded-2xl border border-[#39394a] bg-[#23232b] px-2 py-2 mb-3">
             <div className="flex flex-col gap-2 flex-1">
