@@ -4275,6 +4275,7 @@ export default function WithdrawalForm({
                               </div>
                               <div className="w-full min-w-0 relative z-[100] isolate">
                                 <CustomSelect
+                                  sizeMode="card"
                                   options={(enhancedFilteredUserPaymentDetails || []).map(
                                     (detail: UserPaymentDetail) => {
                                       // Try to get provider info from public payment methods first
