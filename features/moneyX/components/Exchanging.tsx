@@ -105,6 +105,8 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
   const [snapshotWebsocketData, setSnapshotWebsocketData] = useState<any>(null);
   const [liveAmount, setLiveAmount] = useState<number | null>(null);
   const [liveCurrency, setLiveCurrency] = useState<string | null>(null);
+  const [liveNetAmount, setLiveNetAmount] = useState<number | null>(null);
+  const [liveNetCurrency, setLiveNetCurrency] = useState<string | null>(null);
   const [liveTransactionId, setLiveTransactionId] = useState<string | null>(
     null
   );
@@ -113,6 +115,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
   >([]);
   const [previousAmount, setPreviousAmount] = useState<number | null>(null);
   const [fallbackPolling, setFallbackPolling] = useState<boolean>(false);
+  const [expandedTerms, setExpandedTerms] = useState(false);
   const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(
     null
   );
@@ -286,6 +289,22 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
 
   // Use persisted data if no transactionData is provided (page reload scenario)
   const effectiveTransactionData = transactionData || persistedTransactionData;
+
+  // Initialize net amount from receiveAmount (form's "You Receive") - never use send amount
+  useEffect(() => {
+    if (effectiveTransactionData?.receiveAmount != null) {
+      const parsed = parseFloat(String(effectiveTransactionData.receiveAmount));
+      if (!isNaN(parsed)) {
+        setLiveNetAmount(parsed);
+        // MoneyX: send USD, receive USDT (from toPaymentMethod)
+        const netCur =
+          effectiveTransactionData.toPaymentMethod?.currency ||
+          effectiveTransactionData.toPaymentMethod?.ticker ||
+          "USDT";
+        setLiveNetCurrency(netCur);
+      }
+    }
+  }, [effectiveTransactionData?.receiveAmount, effectiveTransactionData?.toPaymentMethod]);
 
   // Store transaction data in localStorage when it's provided
   useEffect(() => {
@@ -807,16 +826,37 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
       >
         <div className="flex-1 flex flex-col justify-between py-1 sm:py-2 pr-0 sm:pr-2 w-full">
           <div className="w-full">
-            {/* Amount, How to send, Copy - all in one row */}
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-              <div className="flex items-center gap-1.5">
-                <span className={`text-[10px] sm:text-xs font-semibold ${isDark ? "text-[#7B7B7B]" : "text-gray-600"}`}>
-                  Amount:
-                </span>
-                <span className={`text-sm sm:text-base font-semibold ${isDark ? "text-white" : "text-gray-900"}`}>
-                  {liveAmount !== null ? liveAmount : effectiveTransactionData?.amount || 0} USD
-                </span>
-              </div>
+            {/* Amount you're sending */}
+            <div className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"} text-[10px] sm:text-xs font-semibold mb-0.5`}>
+              Amount you&apos;re sending:
+            </div>
+            <div className={`${isDark ? "text-white" : "text-gray-900"} text-sm sm:text-base font-semibold mb-1 flex items-center gap-2`}>
+              <span>
+                {liveAmount !== null ? liveAmount : effectiveTransactionData?.amount || 0}{" "}
+                {liveCurrency || effectiveTransactionData?.fromPaymentMethod?.currency || "USD"}
+              </span>
+            </div>
+            {/* Net amount you'll receive - from form "You Receive", must differ from send amount */}
+            {effectiveTransactionData?.receiveAmount != null && (
+              <>
+                <div className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"} text-[10px] sm:text-xs font-semibold mb-0.5 mt-2`}>
+                  Net amount you&apos;ll receive:
+                </div>
+                <div className={`${isDark ? "text-[#1D8751]" : "text-[#15803D]"} text-sm sm:text-base font-semibold mb-1 flex items-center gap-2`}>
+                  <span>
+                    {(liveNetAmount ?? effectiveTransactionData.receiveAmount).toFixed(8).replace(/\.?0+$/, "")}{" "}
+                    <span className="uppercase">
+                      {liveNetCurrency ||
+                        effectiveTransactionData.toPaymentMethod?.currency ||
+                        effectiveTransactionData.toPaymentMethod?.ticker ||
+                        "USDT"}
+                    </span>
+                  </span>
+                </div>
+              </>
+            )}
+            {/* How to send, Copy - in one row */}
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-2">
               <span className={`text-[10px] sm:text-xs font-semibold ${isDark ? "text-[#7B7B7B]" : "text-gray-600"}`}>
                 How to send:
               </span>
@@ -1506,26 +1546,62 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
         </div>
       </div>
 
-      {/* Terms and Conditions */}
+      {/* Terms & Conditions */}
       <div className="w-full rounded-xl sm:rounded-2xl flex">
-        <div className="w-full bg-[#FF9500]/50 border-2 border-solid border-[#FF9500]/50 rounded-xl sm:rounded-[18px] flex flex-col gap-1.5 sm:gap-2 p-2.5 sm:p-3 md:p-4">
-          <h2 className="text-white text-sm sm:text-base md:text-lg font-semibold">
-            Terms and Conditions Summary
-          </h2>
-          <ul className="list-disc list-outside ml-4 space-y-0.5 sm:space-y-1">
-            <li className="text-white text-xs sm:text-sm break-normal">
-              Please send the money from your own account Only
-            </li>
-            <li className="text-white text-xs sm:text-sm break-normal">
-              Put transaction ID in the description field of the bank
-            </li>
-            <li className="text-white text-xs sm:text-sm break-normal">
-              Please note, If you do not follow above conditions, we will reject
-              your transaction and send you back your money.
-            </li>
-          </ul>
+        <div className={`w-full border border-[#1D8751] rounded-xl overflow-hidden transition-all duration-300 ${isDark ? "bg-[#1D1D23]" : "bg-[#F8FAFF]"}`}>
+          <div className="flex flex-col gap-1.5 sm:gap-2 p-2.5 sm:p-3 md:p-4">
+            <div className="flex items-center gap-2">
+              <svg className="w-5 h-5 text-[#1D8751]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <h3 className={`font-medium text-sm sm:text-base md:text-lg ${isDark ? "text-white" : "text-gray-900"}`}>
+                Terms & Conditions
+              </h3>
+            </div>
+            <div className={`space-y-2 ${expandedTerms ? "" : "line-clamp-3"}`}>
+              <div className="flex items-start gap-2">
+                <span className="text-[#1D8751] font-bold text-sm flex-shrink-0">1.</span>
+                <p className={`text-xs sm:text-sm break-normal ${isDark ? "text-[#788099]" : "text-[#475569]"}`}>
+                  <span className="font-semibold">Send from your own account only:</span> Please send the money from your own account only.
+                </p>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-[#1D8751] font-bold text-sm flex-shrink-0">2.</span>
+                <p className={`text-xs sm:text-sm break-normal ${isDark ? "text-[#788099]" : "text-[#475569]"}`}>
+                  <span className="font-semibold">Put transaction ID in the description field:</span> You must put the transaction ID in the description field of the bank.
+                </p>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-[#1D8751] font-bold text-sm flex-shrink-0">3.</span>
+                <p className={`text-xs sm:text-sm break-normal ${isDark ? "text-[#788099]" : "text-[#475569]"}`}>
+                  <span className="font-semibold">Non-compliance:</span> Please note, if you do not follow the above conditions, we will reject your transaction and send you back your money.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setExpandedTerms(!expandedTerms)}
+              className="mt-2 text-[#1D8751] hover:text-[#166b3e] font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition-colors"
+            >
+              {expandedTerms ? (
+                <>
+                  <span>Show Less</span>
+                  <svg className="w-4 h-4 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                  </svg>
+                </>
+              ) : (
+                <>
+                  <span>Show More</span>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                  </svg>
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
+      
     </div>
   );
 }

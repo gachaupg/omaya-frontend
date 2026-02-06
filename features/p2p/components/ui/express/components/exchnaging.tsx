@@ -14,6 +14,7 @@ import { logger } from '@/lib/utils/logger';
 import {
   cancelP2PDepositTransaction,
 } from "@/features/express/slices/transactionSlice";
+import SuccessPage from "./success";
 
 interface ExchangingProps {
   transactionData?: {

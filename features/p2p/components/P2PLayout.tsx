@@ -83,21 +83,15 @@ const handleTabChange = (tab: string) => {
         return <Orders />;
       case "center":
         return <P2PCenter />;
-          case "chats":
-            return <Chats />;
       case "chats":
-        return (
-          <div className="w-full rounded-2xl border border-dashed border-[#D1D2D4FF] dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] p-6 text-center text-sm text-[#788099] dark:text-[#A2A4A9]">
-            Chats coming soon.
-          </div>
-        );
+        return <Chats />;
       default:
         return <NotFound />;
     }
   };
   return (
     <P2PDataProvider>
-      <div className="dark:bg-[var(--bg-color)] bg-[#EEF1F4] w-full min-h-screen">
+      <div className={`dark:bg-[var(--bg-color)] bg-[#EEF1F4] w-full ${activeTab === "chats" ? "min-h-[calc(100dvh-3rem)] h-[calc(100dvh-3rem)] overflow-hidden flex flex-col" : "min-h-screen"}`}>
          <Tabs 
           tabs={p2pTabs} 
           activeTab={activeTab} 
@@ -107,7 +101,7 @@ const handleTabChange = (tab: string) => {
           showUnreadMessages={showUnreadMessages}
           shouldShowMessagesButton={shouldShowMessagesButton}
         />
-        <div className="w-full pt-0 mb-4 flex flex-col gap-4 rounded-none sm:rounded-lg px-0 sm:px-6 md:px-8 pr-2 sm:pr-0 overflow-x-hidden">
+        <div className={`w-full pt-0 flex flex-col gap-4 rounded-none sm:rounded-lg px-0 sm:px-6 md:px-8 pr-2 sm:pr-0 overflow-x-hidden ${activeTab === "chats" ? "flex-1 min-h-0 overflow-hidden" : "mb-4"}`}>
           {renderTabContent()}
         </div>
       </div>

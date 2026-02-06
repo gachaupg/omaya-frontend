@@ -10,7 +10,9 @@ const GREEN = "#309A64";
 interface SuccessPageProps {
   transactionData?: {
     type: "deposit" | "withdrawal";
+    isMoneyX?: boolean;
     amount: number;
+    receiveAmount?: number;
     asset: any;
     paymentDetail?: any;
     paymentDetails?: any[];
@@ -196,14 +198,21 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
          transactionData.details?.payout_address ||
          network);
     
-    // Get amounts with websocket data priority
+    // Get amounts - receiveAmount from props is highest priority (no API/websocket override)
     let amount = transactionData.amount || 0;
-    let estimatedAmount = transactionData.details?.estimated_amount || 
-                         transactionData.totalAmountDue || 
-                         amount;
-    
-    // Use websocket data for amounts if available
-    if (websocketData?.data) {
+    const receiveAmountFromProps = transactionData.receiveAmount != null
+      ? parseFloat(String(transactionData.receiveAmount))
+      : null;
+    const hasReceiveAmountFromProps = receiveAmountFromProps != null && !isNaN(receiveAmountFromProps);
+
+    let estimatedAmount = hasReceiveAmountFromProps
+      ? receiveAmountFromProps
+      : transactionData.details?.estimated_amount ||
+        transactionData.totalAmountDue ||
+        amount;
+
+    // Use websocket data for amounts only when we don't have receiveAmount from props
+    if (websocketData?.data && !hasReceiveAmountFromProps) {
       const wsData = websocketData.data;
       
       // Check if this is a direct use flow (same currency) or conversion flow (different currencies)
@@ -310,20 +319,19 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
       return isNaN(num) ? "0" : num.toFixed(8).replace(/\.?0+$/, '');
     };
     
-    // Get net amount from websocket data if available, otherwise use estimatedAmount
-    let calculatedNetAmount = estimatedAmount;
-    if (websocketData?.data) {
+    // Net amount: use receiveAmount from props when present, else websocket/estimatedAmount
+    let calculatedNetAmount = hasReceiveAmountFromProps
+      ? receiveAmountFromProps
+      : estimatedAmount;
+    if (!hasReceiveAmountFromProps && websocketData?.data) {
       const wsData = websocketData.data;
-      
-      // For conversion flows, use amount_to as net amount
-      if (wsData.from_currency && wsData.to_currency && 
+      if (wsData.from_currency && wsData.to_currency &&
           wsData.from_currency !== wsData.to_currency &&
-          wsData.amount_to !== null && wsData.amount_to !== undefined) {
+          wsData.amount_to != null) {
         calculatedNetAmount = wsData.amount_to;
-      }
-      // For direct flows, use net_amount if available
-      else if (wsData.net_amount !== null && wsData.net_amount !== undefined) {
-        calculatedNetAmount = parseFloat(wsData.net_amount);
+      } else if (wsData.net_amount != null) {
+        const parsed = parseFloat(wsData.net_amount);
+        if (!isNaN(parsed)) calculatedNetAmount = parsed;
       }
     }
     
@@ -380,14 +388,16 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
     <div className="flex flex-col mt-1 w-full max-w-2xl mx-auto px-3 sm:px-4 py-2">
       {/* Success Image */}
       <div className="flex flex-col w-full items-center mb-4">
-        <img 
-          className="w-80 h-40 object-contain" 
-          src={isDark 
-            ? "https://res.cloudinary.com/pitz/image/upload/v1756484286/Screenshot_2025-08-29_191548_two36s.png" 
-            : "https://res.cloudinary.com/pitz/image/upload/v1756925670/success_wdhc19.png"
-          } 
-          alt="Success" 
-        />
+        <div className="flex items-center justify-center">
+          <img 
+            className="w-80 h-40 object-contain" 
+            src={isDark 
+              ? "https://res.cloudinary.com/pitz/image/upload/v1756484286/Screenshot_2025-08-29_191548_two36s.png" 
+              : "/images/suc.png"
+            } 
+            alt="Success" 
+          />
+        </div>
       </div>
 
       {/* Main Content Container */}
@@ -402,13 +412,20 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
             isDark ? "text-white" : "text-gray-900"
           }`}>Transaction Details</h2>
           <div className="flex flex-col sm:flex-row sm:justify-between text-sm gap-2">
-            <div>
+            <div className="flex-1 min-w-0">
               <div className={`${
                 isDark ? "text-gray-400" : "text-gray-600"
               }`}>Transaction ID</div>
-              <div className={`font-mono break-all ${
+              <div className={`flex items-center gap-2 font-mono break-all ${
                 isDark ? "text-white" : "text-gray-900"
-              }`}>{realData.transactionId}</div>
+              }`}>
+                <span className="flex-1 min-w-0 break-all">{realData.transactionId}</span>
+                <CopyButton
+                  value={realData.transactionId}
+                  className="flex-shrink-0 p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-[#35353E] transition-colors"
+                  showText={false}
+                />
+              </div>
             </div>
             <div className="text-left sm:text-right">
               <div className={`${
@@ -468,9 +485,16 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
               <div className={`text-sm mb-1 ${
                 isDark ? "text-gray-400" : "text-gray-600"
               }`}>Transaction Hash</div>
-              <div className={` text-[12px] font-mono break-all ${
+              <div className={`flex items-center gap-2 text-[12px] font-mono break-all ${
                 isDark ? "text-white" : "text-gray-900"
-              }`}>{realData.transactionHash} </div>
+              }`}>
+                <span className="flex-1 min-w-0 break-all">{realData.transactionHash}</span>
+                <CopyButton
+                  value={realData.transactionHash}
+                  className="flex-shrink-0 p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-[#35353E] transition-colors"
+                  showText={false}
+                />
+              </div>
             </div>
             <div className={`my-4 rounded-[18px] shadow-xl border-1 ${
               isDark 
@@ -484,11 +508,21 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
                 Net Amount Processed
               </div>
               <div className="font-mono flex items-center gap-2" style={{ color: GREEN }}>
-                {transactionData?.asset?.icon && (
+                {(transactionData?.asset?.icon ||
+                  transactionData?.asset?.icon_url ||
+                  transactionData?.asset?.image_url ||
+                  transactionData?.asset?.asset_image ||
+                  transactionData?.asset?.image) && (
                   <img
-                    src={transactionData.asset.icon}
+                    src={
+                      transactionData.asset.icon ||
+                      transactionData.asset.icon_url ||
+                      transactionData.asset.image_url ||
+                      transactionData.asset.asset_image ||
+                      transactionData.asset.image
+                    }
                     alt={realData.receivedCurrency}
-                    className="w-4 h-4"
+                    className="w-4 h-4 rounded-full object-contain"
                     onError={(e) => {
                       e.currentTarget.style.display = 'none';
                     }}
@@ -504,16 +538,23 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
    
       </div>
 
-      {/* Action Buttons */}
+      {/* Transaction Completed Banner */}
       <div className="w-full mt-2 space-y-3">
-       <img 
-         className="w-full" 
-         src={isDark 
-           ? "https://res.cloudinary.com/pitz/image/upload/v1756484240/Frame_34947_qeutak.png" 
-           : "https://res.cloudinary.com/pitz/image/upload/v1756925740/Frame_34947_khxqxo.png"
-         } 
-         alt="" 
-       />
+        <div className="w-full rounded-xl bg-[#1D8751] p-4 sm:p-5 flex items-start gap-3 sm:gap-4">
+          <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/20 flex items-center justify-center">
+            <svg className="w-6 h-6 sm:w-7 sm:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-white font-bold text-base sm:text-lg mb-1">
+              Transaction Completed
+            </h3>
+            <p className="text-white/95 text-sm sm:text-base leading-relaxed">
+              Your {transactionData?.isMoneyX ? "USD" : realData.receivedCurrency} has been sent to your wallet. It may take a few minutes to reflect in your balance.
+            </p>
+          </div>
+        </div>
         
         <div className={`text-center text-xs ${
           isDark ? "text-gray-400" : "text-gray-600"

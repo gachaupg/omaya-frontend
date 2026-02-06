@@ -1398,7 +1398,7 @@ export const Table: React.FC<TableProps> = ({
                   {[...Array(5)].map((_, i) => (
                     <svg
                       key={i}
-                      className="text-[#FFB800] w-4 h-4 sm:w-5 sm:h-5"
+                      className="text-gray-400 dark:text-[#8C8CA1] w-4 h-4 sm:w-5 sm:h-5"
                       fill="currentColor"
                       viewBox="0 0 20 20"
                     >

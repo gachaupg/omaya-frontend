@@ -23,10 +23,13 @@ import { DepositResponse } from "@/features/exchange/types";
 import { SupportedAsset } from "@/features/swap/types";
 import { FaSearch } from "react-icons/fa";
 import InfoModal from "./info";
+import { TermsAndConditionsSummary } from "./TermsAndConditionsSummary";
 import { useTheme } from "@/context/theme";
 import QRCode from "qrcode";
+import { useBookmarkedAddresses } from "@/features/express/hooks/useBookmarkedAddresses";
+import { BookmarkDropdown } from "@/features/express/components/forms/BookmarkDropdown";
 import { showToast } from "@/lib/utils/toast";
-import { createExpressDeposit } from "../../api";
+import { createExpressDeposit, fetchCommission, getCommissionApiAsset } from "../../api";
 import { ExpressDepositResponse } from "../../types";
 
 import { logger } from '@/lib/utils/logger';
@@ -129,6 +132,8 @@ export default function DepositForm({
   const [walletAddress, setWalletAddress] = useState("");
   const [walletError, setWalletError] = useState<string | null>(null);
   const [isNetworkDropdownOpen, setIsNetworkDropdownOpen] = useState(false);
+  const [bookmarkOpen, setBookmarkOpen] = useState(false);
+  const bookmarkAnchorRef = useRef<HTMLSpanElement>(null);
 
   // Network options - only Binance Smart Chain BEP20
   const availableNetworks = [
@@ -141,6 +146,17 @@ export default function DepositForm({
       isDefault: true
     }
   ];
+
+  const currentCurrency = selectedAsset?.ticker || selectedAsset?.symbol || "USDT";
+  const currentNetwork = selectedNetwork?.network || selectedNetwork?.network_id || selectedNetwork?.network_type || "BSC";
+
+  const {
+    bookmarks,
+    loading: bookmarksLoading,
+    saving: bookmarkSaving,
+    fetchBookmarks,
+    saveBookmark,
+  } = useBookmarkedAddresses(currentCurrency, currentNetwork);
 
   const [forceUpdate, setForceUpdate] = useState(0);
   const [selectedPaymentDetail, setSelectedPaymentDetail] = useState<any>(null);
@@ -163,6 +179,10 @@ export default function DepositForm({
   const [isCodeCopied, setIsCodeCopied] = useState(false);
   const [isDepositAddressCopied, setIsDepositAddressCopied] = useState(false);
   const paymentDetailsRef = useRef<HTMLDivElement>(null);
+
+  // Commission from API for USDT, USDC, FX Primus (null = not yet fetched, 0 = API returned 0)
+  const [apiCommission, setApiCommission] = useState<number | null>(null);
+  const commissionFetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Generate QR code for deposit address
   const generateQRCode = async (address: string) => {
@@ -586,6 +606,7 @@ export default function DepositForm({
       const transactionData = {
         type: "deposit" as const,
         amount: skipAmountValidation ? 0 : payAmount,
+        receiveAmount: parseFloat(getAmountInput) || getAmount, // From "You Receive" input
         asset: {
           name: selectedAsset.name,
           ticker: selectedAsset.ticker || selectedAsset.symbol,
@@ -843,6 +864,34 @@ export default function DepositForm({
     const ticker = (asset.ticker || asset.symbol || "").toLowerCase();
     return ticker === "usdt";
   };
+
+  // Check if asset uses commission API (USDT, USDC, FX Primus)
+  const isCommissionApiAsset = (asset: any) => !!getCommissionApiAsset(asset?.ticker || asset?.symbol || "");
+
+  // Fetch commission from API for USDT, USDC, FX Primus - use input values so it triggers as user types
+  useEffect(() => {
+    const apiAsset = selectedAsset ? getCommissionApiAsset(selectedAsset.ticker || selectedAsset.symbol || "") : null;
+    if (!apiAsset || !selectedAsset) {
+      setApiCommission(null);
+      return;
+    }
+    const amount = isCalculatingFromPay
+      ? (parseFloat(payAmountInput) || payAmount)
+      : (parseFloat(getAmountInput) || getAmount);
+    if (amount <= 0) {
+      setApiCommission(null);
+      return;
+    }
+    if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
+    commissionFetchTimeoutRef.current = setTimeout(() => {
+      fetchCommission(apiAsset, amount, "deposit")
+        .then((commission) => setApiCommission(commission))
+        .catch(() => setApiCommission(null));
+    }, 300);
+    return () => {
+      if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
+    };
+  }, [selectedAsset, payAmountInput, getAmountInput, payAmount, getAmount, isCalculatingFromPay]);
 
   // Fetch estimate for non-USDT assets - triggers immediately on asset or amount change
   useEffect(() => {
@@ -1125,11 +1174,16 @@ export default function DepositForm({
 
   // Calculate fees and amounts - Network fee is always 0
   const networkFee = 0;
-  // Use default commission rate for swap assets (can be updated based on asset type)
-  const commissionRate = selectedAsset?.range_commissions?.[0]?.commission
-    ? parseFloat(selectedAsset.range_commissions[0].commission)
-    : 2; // Default 2% commission for swap assets
-  const commissionAmount = (getAmount * commissionRate) / 100;
+  // Use commission from API for USDT/USDC/FX Primus, else default rate for swap assets
+  let commissionAmount: number;
+  if (selectedAsset && isCommissionApiAsset(selectedAsset)) {
+    commissionAmount = apiCommission ?? 0;
+  } else {
+    const commissionRate = selectedAsset?.range_commissions?.[0]?.commission
+      ? parseFloat(selectedAsset.range_commissions[0].commission)
+      : 2;
+    commissionAmount = (getAmount * commissionRate) / 100;
+  }
   const totalFees = networkFee + commissionAmount;
 
   // Stable calculation function with debouncing
@@ -1170,43 +1224,36 @@ export default function DepositForm({
 
     // For simple calculation assets (USDT), calculate immediately
     if (isSimpleCalculationAsset(selectedAsset)) {
-      let commissionRate = 2; // Default fallback
-
-      // Safely access commission rate with multiple fallback options
-      if (selectedAsset?.range_commissions && selectedAsset.range_commissions.length > 0) {
-        const firstCommission = selectedAsset.range_commissions[0];
-        if (firstCommission?.commission) {
-          commissionRate = parseFloat(firstCommission.commission);
+      let commissionAmount: number;
+      if (isCommissionApiAsset(selectedAsset)) {
+        commissionAmount = apiCommission ?? 0;
+      } else {
+        let commissionRate = 2; // Default fallback
+        if (selectedAsset?.range_commissions && selectedAsset.range_commissions.length > 0) {
+          const firstCommission = selectedAsset.range_commissions[0];
+          if (firstCommission?.commission) {
+            commissionRate = parseFloat(firstCommission.commission);
+          }
+        } else if (selectedAsset?.commission) {
+          commissionRate = parseFloat(selectedAsset.commission);
+        } else if (selectedAsset?.fee_rate) {
+          commissionRate = parseFloat(selectedAsset.fee_rate);
         }
-      } else if (selectedAsset?.commission) {
-        // Try alternative commission property
-        commissionRate = parseFloat(selectedAsset.commission);
-      } else if (selectedAsset?.fee_rate) {
-        // Try fee_rate property
-        commissionRate = parseFloat(selectedAsset.fee_rate);
+        if (isNaN(commissionRate) || commissionRate <= 0) commissionRate = 2;
+        commissionAmount = (fromAmount * commissionRate) / 100;
       }
 
-      // Ensure commission rate is a valid number
-      if (isNaN(commissionRate) || commissionRate <= 0) {
-        commissionRate = 2; // Default to 2% if invalid
-      }
+      const networkFee = 0;
+      const totalFees = networkFee + commissionAmount;
 
       if (fromPay) {
-        // Forward calculation: from pay amount to receive amount
-        const commissionAmount = (fromAmount * commissionRate) / 100;
-        const networkFee = 0;
-        const totalFees = networkFee + commissionAmount;
         const calculatedGetAmount = fromAmount - totalFees;
         logger.debug('p2p', "Forward calculation result:", { fromAmount, calculatedGetAmount, totalFees });
         setGetAmount(calculatedGetAmount);
         setGetAmountInput(calculatedGetAmount.toString());
       } else {
-        // Reverse calculation: from receive amount to pay amount
-        const commissionAmount = (fromAmount * commissionRate) / 100;
-        const networkFee = 0;
-        const totalFees = networkFee + commissionAmount;
         const calculatedPayAmount = fromAmount + totalFees;
-        logger.debug('p2p', "Reverse calculation result:", { fromAmount, calculatedPayAmount, totalFees, commissionRate });
+        logger.debug('p2p', "Reverse calculation result:", { fromAmount, calculatedPayAmount, totalFees });
         setPayAmount(calculatedPayAmount);
         setPayAmountInput(calculatedPayAmount.toString());
       }
@@ -1268,7 +1315,7 @@ export default function DepositForm({
             const networkFee = 0;
             const totalFees = networkFee + commissionAmount;
             const calculatedGetAmount = fromAmount - totalFees;
-            logger.debug('p2p', "Complex forward calculation result:", { fromAmount, calculatedGetAmount, totalFees, commissionRate });
+            logger.debug('p2p', "Complex forward calculation result:", { fromAmount, calculatedGetAmount, totalFees });
             setGetAmount(calculatedGetAmount);
             setGetAmountInput(calculatedGetAmount.toString());
             setReceiveAmountError(null);
@@ -1320,7 +1367,7 @@ export default function DepositForm({
             const networkFee = 0;
             const totalFees = networkFee + commissionAmount;
             const calculatedPayAmount = fromAmount + totalFees;
-            logger.debug('p2p', "Complex reverse calculation result:", { fromAmount, calculatedPayAmount, totalFees, commissionRate });
+            logger.debug('p2p', "Complex reverse calculation result:", { fromAmount, calculatedPayAmount, totalFees });
             setPayAmount(calculatedPayAmount);
             setPayAmountInput(calculatedPayAmount.toString());
             setReceiveAmountError(null);
@@ -1621,6 +1668,7 @@ export default function DepositForm({
       const transactionData = {
         type: "deposit" as const,
         amount: skipAmountValidation ? 0 : payAmount,
+        receiveAmount: parseFloat(getAmountInput) || getAmount, // From "You Receive" input
         asset: {
           ...selectedAsset,
           icon: selectedAsset.image_url || selectedAsset.asset_image || selectedAsset.icon_url || selectedAsset.image
@@ -1894,6 +1942,7 @@ export default function DepositForm({
         const transactionData = {
           type: "deposit" as const,
           amount: skipAmountValidation ? 0 : payAmount,
+          receiveAmount: parseFloat(getAmountInput) || getAmount, // From "You Receive" input
           asset: {
             ...selectedAsset,
             icon: selectedAsset.image_url || selectedAsset.asset_image || selectedAsset.icon_url || selectedAsset.image
@@ -2012,7 +2061,7 @@ export default function DepositForm({
         {/* Transaction Info Card with Asset and Network selects only */}
         <div className="relative mb-3 sm:mb-4">
           {/* Transaction Info Card Container */}
-          <div className="border border-[#D1D2D4FF] dark:border-[#35353E] rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-6">
+          <div className="bg-white dark:bg-[var(--card-color)] border border-[#D1D2D4FF] dark:border-[#35353E] rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-6">
 
             {/* Two Select Fields Row - Asset and Network only */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
@@ -2024,7 +2073,7 @@ export default function DepositForm({
                 </label>
                 <div className="relative" ref={assetDropdownRef}>
                   <div
-                    className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-xl sm:rounded-2xl px-3 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] flex items-center justify-between cursor-pointer min-h-[44px] sm:min-h-0"
+                    className="w-full text-[#35353e] dark:bg-[var(--card-color)] dark:text-[#ffffff] rounded-xl sm:rounded-2xl px-3 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] flex items-center justify-between cursor-pointer min-h-[44px] sm:min-h-0"
                     onClick={() => setIsAssetDropdownOpen(!isAssetDropdownOpen)}
                   >
                     <div className="flex items-center gap-3">
@@ -2056,7 +2105,7 @@ export default function DepositForm({
 
                   {/* Asset Dropdown */}
                   {isAssetDropdownOpen && (
-                    <div className="absolute top-full left-0 right-0 mt-1 bg-[#ffffff] dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-xl sm:rounded-2xl z-50 max-h-[60vh] sm:max-h-80 overflow-hidden">
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-[#ffffff] dark:bg-[var(--card-color)] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-xl sm:rounded-2xl z-50 max-h-[60vh] sm:max-h-80 overflow-hidden">
                       {/* Search Input */}
                       <div className="p-2 sm:p-3 border-b border-[#A2A4A9FF] dark:border-accent">
                         <div className="relative">
@@ -2139,7 +2188,7 @@ export default function DepositForm({
                 </label>
                 <div className="relative" ref={networkDropdownRef}>
                   <div
-                    className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-xl sm:rounded-2xl px-3 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] flex items-center justify-between cursor-pointer hover:border-[#1D8751] dark:hover:border-[#1D8751] transition-colors min-h-[44px] sm:min-h-0"
+                    className="w-full text-[#35353e] dark:bg-[var(--card-color)] dark:text-[#ffffff] rounded-xl sm:rounded-2xl px-3 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] flex items-center justify-between cursor-pointer hover:border-[#1D8751] dark:hover:border-[#1D8751] transition-colors min-h-[44px] sm:min-h-0"
                     onClick={() => setIsNetworkDropdownOpen(!isNetworkDropdownOpen)}
                   >
                     <div className="flex items-center gap-3">
@@ -2164,7 +2213,7 @@ export default function DepositForm({
 
                   {/* Network Dropdown */}
                   {isNetworkDropdownOpen && (
-                    <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-xl sm:rounded-2xl shadow-lg z-50 max-h-[60vh] sm:max-h-60 overflow-y-auto">
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[var(--card-color)] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-xl sm:rounded-2xl shadow-lg z-50 max-h-[60vh] sm:max-h-60 overflow-y-auto">
                       <div className="p-2">
                         {availableNetworks.map((network, index) => (
                           <div
@@ -2213,11 +2262,11 @@ export default function DepositForm({
 
               {/* Transaction Code Card - below Payment Details, before Wallet Address */}
               {user?.is_verified && apiResponse && apiResponse.deposit_code && (
-                <div className="mb-4 sm:mb-6 flex flex-col gap-3 max-w-4xl mx-auto w-full px-2">
+                <div className="mb-4 sm:mb-6 flex flex-col gap-3 w-full px-2">
                   <h2 className="text-lg sm:text-xl font-bold mb-2 text-[#788099]">
                     <span className="text-[#7e7e8f] dark:text-[#788099]">2-</span> Transaction Code
                   </h2>
-                  <div className="dark:bg-[#1D1D23] border-2 border-[#35353E] rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-lg w-full text-[#35353e] dark:text-[#788099]">
+                  <div className="dark:bg-[var(--card-color)] border-2 border-[#35353E] rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-lg w-full text-[#35353e] dark:text-[#788099]">
                     {/* Transaction Code Row */}
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-3">
                       {/* Display deposit code from API response - each character in its own box */}
@@ -2297,7 +2346,7 @@ export default function DepositForm({
                           Note
                         </span>
                       </div>
-                      <div className=" dark:bg-[#1D1D23] border border-[#1D8751] rounded-xl p-3">
+                      <div className=" dark:bg-[var(--card-color)] border border-[#1D8751] rounded-xl p-3">
                         <ul className="list-none space-y-1">
                           <li className="flex items-start">
                             <span className="w-2 h-2 mt-1 rounded-full bg-[#1D8751] inline-block mr-2 shrink-0"></span>
@@ -2328,7 +2377,7 @@ export default function DepositForm({
               {/* Dynamic Crypto Warning Banner */}
              
               
-              <div className="flex flex-col dark:bg-[#1D1D23] border-2 border-[#35353E] rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-5 shadow-lg w-full mx-auto text-[#35353e] dark:text-[#788099] mb-4 sm:mb-6">
+              <div className="flex flex-col dark:bg-[var(--card-color)] border-2 border-[#35353E] rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-5 shadow-lg w-full mx-auto text-[#35353e] dark:text-[#788099] mb-4 sm:mb-6">
                 {/* Wallet/Account Address Label */}
                 <label className="block text-sm sm:text-[17px] text-[#7e7e8f] mb-2 font-semibold">
                   Wallet/Account Address
@@ -2347,7 +2396,7 @@ export default function DepositForm({
                 )}
 
                 {/* Input group */}
-                <div className="flex items-center dark:bg-[#1D1D23] border border-[#39394a] dark:border-[#35353E] rounded-xl sm:rounded-2xl px-3 sm:px-4 py-2.5 sm:py-2 mb-3 sm:mb-4 min-h-[44px] sm:min-h-0">
+                <div className="relative flex items-center dark:bg-[var(--card-color)] border border-[#39394a] dark:border-[#35353E] rounded-xl sm:rounded-2xl px-3 sm:px-4 py-2.5 sm:py-2 mb-3 sm:mb-4 min-h-[44px] sm:min-h-0">
                   {/* Left icon */}
                   <span className="mr-2 text-[#1D8751] flex-shrink-0">
                     <svg width="20" height="20" className="sm:w-[22px] sm:h-[22px]" fill="none" viewBox="0 0 24 24">
@@ -2405,18 +2454,53 @@ export default function DepositForm({
                         : ""
                       }`}
                   />
-                  {/* Bookmark icon */}
-                  <span className="mx-1 sm:mx-2 text-[#788099] cursor-pointer flex-shrink-0">
-                    <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
-                      <path
-                        d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"
-                        stroke="#788099"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
+                  {/* Bookmark icon - clickable to load from bookmarks */}
+                  <span
+                    ref={bookmarkAnchorRef}
+                    className="mx-1 sm:mx-2 text-[#1D8751] cursor-pointer flex-shrink-0 hover:opacity-80 transition-opacity"
+                    onClick={async () => {
+                      if (bookmarkOpen) {
+                        setBookmarkOpen(false);
+                        return;
+                      }
+                      setBookmarkOpen(true);
+                      await fetchBookmarks();
+                    }}
+                    title="Load from bookmarks"
+                  >
+                    <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
                     </svg>
                   </span>
+                  <BookmarkDropdown
+                    isOpen={bookmarkOpen}
+                    onClose={() => setBookmarkOpen(false)}
+                    bookmarks={bookmarks}
+                    loading={bookmarksLoading}
+                    saving={bookmarkSaving}
+                    currentAddress={walletAddress}
+                    asset={currentCurrency}
+                    network={currentNetwork}
+                    onSelect={(addr) => {
+                      setWalletAddress(addr);
+                      if (addr.trim().length < 10) setWalletError("Address seems too short");
+                      else setWalletError(null);
+                    }}
+                    onSaveCurrent={async () => {
+                      if (!walletAddress.trim() || !currentCurrency || !currentNetwork) {
+                        showToast.error("Enter address and select asset/network first");
+                        return;
+                      }
+                      await saveBookmark({
+                        address: walletAddress.trim(),
+                        label: `My ${currentCurrency} wallet`,
+                        network: currentNetwork,
+                        asset: currentCurrency,
+                      });
+                    }}
+                    anchorRef={bookmarkAnchorRef}
+                    isDark={isDark}
+                  />
                   {/* Copy button */}
                   <button
                     onClick={() => {
@@ -2424,7 +2508,7 @@ export default function DepositForm({
                       setIsAddressCopied(true);
                       setTimeout(() => setIsAddressCopied(false), 1500);
                     }}
-                    className="flex items-center gap-1 dark:bg-[#1D1D23] border border-[#1D8751] text-[#1D8751] rounded-full px-3 sm:px-4 py-2 sm:py-1 ml-1 sm:ml-2 font-semibold text-sm sm:text-base hover:bg-[#1D8751] hover:text-white transition-colors min-h-[44px] sm:min-h-0 touch-manipulation shrink-0 disabled:cursor-not-allowed disabled:opacity-70                    "
+                    className="flex items-center gap-1 dark:bg-[var(--card-color)] border border-[#1D8751] text-[#1D8751] rounded-full px-3 sm:px-4 py-2 sm:py-1 ml-1 sm:ml-2 font-semibold text-sm sm:text-base hover:bg-[#1D8751] hover:text-white transition-colors min-h-[44px] sm:min-h-0 touch-manipulation shrink-0 disabled:cursor-not-allowed disabled:opacity-70                    "
                   disabled={isAddressCopied}
                   >
                     <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
@@ -2502,64 +2586,18 @@ export default function DepositForm({
               </p>
             )} */}
 
-                {/* Terms and Conditions Summary */}
-                <div className="flex items-center mb-2">
-                  <span className="mr-2 text-[#1D8751]">
-                    <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
-                      <circle
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="#1D8751"
-                        strokeWidth="2"
-                      />
-                      <line
-                        x1="12"
-                        y1="8"
-                        x2="12"
-                        y2="12"
-                        stroke="#1D8751"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                      />
-                      <circle cx="12" cy="16" r="1" fill="#1D8751" />
-                    </svg>
-                  </span>
-                  <span className="text-base font-semibold text-[#7e7e8f] dark:text-[#788099]">
-                    Terms and Conditions Summary
-                  </span>
-                </div>
-                <div className=" dark:bg-[#1D1D23] border border-[#1D8751] rounded-xl p-4">
-                  <ul className="list-none space-y-2">
-                    <li className="flex items-start">
-                      <span className="w-2 h-2 mt-1 rounded-full bg-[#1D8751] inline-block mr-3 shrink-0"></span>
-                      <span className="text-[#35353e] dark:text-[#788099] text-sm">
-                      Please send only <span className="font-bold">{selectedAsset?.ticker || selectedAsset?.symbol || 'crypto'}</span> on <span className="font-bold">{selectedAsset?.network || 'the selected network'}</span>. Any other Crypto or Network will be lost Permanently.
-                      </span>
-                    </li>
-                    <li className="flex items-start">
-                      <span className="w-2 h-2 mt-1 rounded-full bg-[#1D8751] inline-block mr-3 shrink-0"></span>
-                      <span className="text-[#35353e] dark:text-[#788099] text-sm">
-                        Put transaction ID in the description field of the bank
-                      </span>
-                    </li>
-                    <li className="flex items-start">
-                      <span className="w-2 h-2 mt-1 rounded-full bg-[#1D8751] inline-block mr-3 shrink-0  "></span>
-                      <span className="text-[#35353e] dark:text-[#788099] text-sm">
-                        Please note, If you do not follow above conditions, we will
-                        reject your transaction and send you back your money.
-                      </span>
-                    </li>
-                  </ul>
-                </div>
+                {/* Terms and Conditions Summary - same layout as swap */}
+                <TermsAndConditionsSummary
+                  asset={selectedAsset?.ticker || selectedAsset?.symbol || "USDT"}
+                />
 
 
               </div>
 
               {/* Validation Errors Display */}
               {validationErrors.length > 0 && (
-                <div className="max-w-4xl mx-auto w-full px-2 mb-3 sm:mb-4">
-                  <div className="dark:bg-[#1D1D23] border border-[#1D8751] rounded-xl sm:rounded-2xl p-3 sm:p-4">
+                <div className="w-full px-2 mb-3 sm:mb-4">
+                  <div className="dark:bg-[var(--card-color)] border border-[#1D8751] rounded-xl sm:rounded-2xl p-3 sm:p-4">
                     <h3 className="text-[#1D8751] font-semibold mb-2 text-sm sm:text-base">
                       Please fix the following errors:
                     </h3>
@@ -2577,7 +2615,7 @@ export default function DepositForm({
 
             {/* Deposit Address Display Section */}
             {isTransactionSubmitted && depositResponse && (
-              <div className="max-w-4xl mx-auto w-full px-2 mt-4 sm:mt-6">
+              <div className="w-full px-2 mt-4 sm:mt-6">
                 <div className="bg-[#1D1D23] rounded-xl sm:rounded-2xl border border-[#39394a] p-3 sm:p-4 lg:p-6">
                   <h3 className="text-white font-semibold mb-3 sm:mb-4 text-base sm:text-lg">Deposit Instructions</h3>
                   <div className="space-y-4">

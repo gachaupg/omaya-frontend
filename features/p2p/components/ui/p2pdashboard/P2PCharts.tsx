@@ -21,9 +21,24 @@ type TimeFilter =
 
 const PAGE_SIZE = 10;
 
-const transformUserTradeToTransaction = (trade: UserTrade): TransactionType => ({
+const transformUserTradeToTransaction = (
+  trade: UserTrade,
+  currentUserEmail?: string
+): TransactionType => {
+  // If logged-in user is owner: display order_type as-is. If NOT owner: swap (buy → sell, sell → buy).
+  const rawOrderType = trade.order_type?.toLowerCase() || "sell";
+  const ownerEmail = (trade.owner || "").trim().toLowerCase();
+  const userEmail = (currentUserEmail || "").trim().toLowerCase();
+  const isOwner = userEmail && ownerEmail && userEmail === ownerEmail;
+  const displayType = isOwner
+    ? rawOrderType
+    : rawOrderType === "buy"
+      ? "sell"
+      : "buy";
+
+  return {
   id: trade.id,
-  type: trade.order_type?.toLowerCase() || "sell",
+  type: displayType,
   date: trade.timestamp,
   amount: String(parseFloat(trade.amount || "0").toFixed(2)),
   status: trade.status?.toLowerCase() || "",
@@ -39,14 +54,15 @@ const transformUserTradeToTransaction = (trade: UserTrade): TransactionType => (
   commission: String(trade.commission_amount ?? 0),
   lastUpdate: trade.timestamp,
   rawData: trade,
-});
+};
+};
 
 const P2PCharts = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { trades, loading, error, currentPage } = useSelector(
     (state: RootState) => state.userTrades
   );
-  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
   const [searchQuery, setSearchQuery] = useState("");
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("Last Month");
   const [dataKey, setDataKey] = useState(0);
@@ -117,9 +133,9 @@ const P2PCharts = () => {
     });
   };
 
-  // Transform user trades to table format
+  // Transform user trades to table format (swap order_type for non-owner)
   const transformedData: TransactionType[] = (trades?.results || []).map(
-    transformUserTradeToTransaction
+    (trade) => transformUserTradeToTransaction(trade, user?.email)
   );
 
   // Apply time filter to transformed data
@@ -199,7 +215,7 @@ const P2PCharts = () => {
         const response = await getUserTrades(`?page=${page}&currency=USDT`);
         const results = response?.results || [];
         if (results.length === 0) break;
-        allPagesData.push(...results.map(transformUserTradeToTransaction));
+        allPagesData.push(...results.map((t) => transformUserTradeToTransaction(t, user?.email)));
         hasMore = !!response?.next;
         page++;
       }

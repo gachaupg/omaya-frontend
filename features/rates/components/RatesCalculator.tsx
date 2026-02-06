@@ -19,7 +19,7 @@ import {
 import { fetchUserPaymentDetails, fetchPublicPaymentMethods } from "../../p2p/slices/paymentMethodsSlice";
 import { fetchAdminWalletList, fetchAdminPaymentDetails } from "../../exchange/slices/paymentSlice";
 import PaymentMethodsModal from "../../p2p/components/ui/p2pdashboard/sections/PaymentMethodsModal";
-import { createExpressWithdrawal } from "../../express/api";
+import { createExpressWithdrawal, fetchCommission, getCommissionApiAsset } from "../../express/api";
 import { Asset, DepositResponse } from "../../exchange/types";
 import { SupportedAsset } from "../../swap/types";
 import { ExpressWithdrawalPayload } from "../../express/types";
@@ -86,6 +86,8 @@ const isSimpleCalculationAsset = (asset: any) => {
     (ticker === "usdc" && network === "bsc")
   );
 };
+
+const isCommissionApiAsset = (asset: any) => !!getCommissionApiAsset(asset?.ticker || asset?.symbol || "");
 
 interface RatesCalculatorProps {
   activeTab?: 'crypto' | 'moneyx';
@@ -192,6 +194,8 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
 
   // Debounce and cache for faster, fewer API calls
   const estimateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [apiCommission, setApiCommission] = useState<number | null>(null);
+  const commissionFetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [estimateCache, setEstimateCache] = useState<
     Map<string, { data: any; timestamp: number }>
   >(new Map());
@@ -487,6 +491,28 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
     };
   }, [isAssetDropdownOpen, isMethodDropdownOpen]);
 
+  // Fetch commission for USDT, USDC, FX Primus
+  useEffect(() => {
+    const apiAsset = selectedAsset ? getCommissionApiAsset(selectedAsset.ticker || selectedAsset.symbol || "") : null;
+    if (!apiAsset || !selectedAsset) {
+      setApiCommission(null);
+      return;
+    }
+    const amt = isCalculatingFromPay ? (parseFloat(amount) || 0) : (parseFloat(receiveAmount) || 0);
+    if (amt <= 0) {
+      setApiCommission(null);
+      return;
+    }
+    if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
+    commissionFetchTimeoutRef.current = setTimeout(() => {
+      fetchCommission(apiAsset, amt, isDepositMode ? "deposit" : "withdrawal")
+        .then((c) => setApiCommission(c))
+        .catch(() => setApiCommission(null));
+    }, 300);
+    return () => {
+      if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
+    };
+  }, [selectedAsset, amount, receiveAmount, isCalculatingFromPay, isDepositMode]);
 
   // Fetch estimate for non-direct assets - debounced + cached for faster response
   useEffect(() => {
@@ -554,11 +580,15 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
           .catch((error) => {
             console.error("Failed to fetch swap estimate:", error);
             setEstimateError("Using fallback calculation");
-            const commissionRate = selectedAsset?.range_commissions?.[0]?.commission
-              ? parseFloat(selectedAsset.range_commissions[0].commission)
-              : 2;
-            const commissionAmount = (parseFloat(amount) * commissionRate) / 100;
-            setReceiveAmount((parseFloat(amount) - commissionAmount).toFixed(2));
+            const commission = selectedAsset && isCommissionApiAsset(selectedAsset)
+              ? (apiCommission ?? 0)
+              : (() => {
+                  const rate = selectedAsset?.range_commissions?.[0]?.commission
+                    ? parseFloat(selectedAsset.range_commissions[0].commission)
+                    : 2;
+                  return (parseFloat(amount) * rate) / 100;
+                })();
+            setReceiveAmount((parseFloat(amount) - commission).toFixed(2));
             setIsCalculating(false);
             setIsCalculatingReceive(false);
           })
@@ -653,19 +683,22 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
           .catch((error) => {
             console.error("Failed to fetch reverse estimate:", error);
             setEstimateError("Using fallback calculation");
-            let commissionRate = 2;
-            if (selectedAsset?.range_commissions?.length) {
-              commissionRate = parseFloat(
-                selectedAsset.range_commissions[0]?.commission || "2"
-              );
-            } else if (selectedAsset?.commission) {
-              commissionRate = parseFloat(selectedAsset.commission);
-            } else if (selectedAsset?.fee_rate) {
-              commissionRate = parseFloat(selectedAsset.fee_rate);
-            }
-            const fallbackAmount = isDepositMode
-              ? parseFloat(receiveAmount) * (1 + commissionRate / 100)
-              : parseFloat(receiveAmount) / (1 - commissionRate / 100);
+            const recv = parseFloat(receiveAmount);
+            const fallbackAmount = selectedAsset && isCommissionApiAsset(selectedAsset)
+              ? recv + (apiCommission ?? 0)
+              : (() => {
+                  let commissionRate = 2;
+                  if (selectedAsset?.range_commissions?.length) {
+                    commissionRate = parseFloat(selectedAsset.range_commissions[0]?.commission || "2");
+                  } else if (selectedAsset?.commission) {
+                    commissionRate = parseFloat(selectedAsset.commission);
+                  } else if (selectedAsset?.fee_rate) {
+                    commissionRate = parseFloat(selectedAsset.fee_rate);
+                  }
+                  return isDepositMode
+                    ? recv * (1 + commissionRate / 100)
+                    : recv / (1 - commissionRate / 100);
+                })();
             setAmount(fallbackAmount.toString());
             setIsCalculating(false);
             setIsCalculatingReceive(false);
@@ -749,15 +782,16 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
 
     // Trigger calculation for direct assets (USDT/USDC on BSC)
     if (asset && isSimpleCalculationAsset(asset)) {
+      const commission = isCommissionApiAsset(asset) ? (apiCommission ?? 0) : 2;
       if (isCalculatingFromPay) {
         const amountNum = parseFloat(amount) || 0;
         const calculatedReceive =
-          amountNum < 2 ? amountNum : Math.max(0, amountNum - 2);
+          amountNum < commission ? amountNum : Math.max(0, amountNum - commission);
         setReceiveAmount(calculatedReceive.toFixed(2));
         setReceiveAmountError(null);
       } else {
         const receiveNum = parseFloat(receiveAmount) || 0;
-        const calculatedAmount = receiveNum + 2;
+        const calculatedAmount = receiveNum + commission;
         setAmount(calculatedAmount.toFixed(2));
         setReceiveAmountError(null);
       }
@@ -1830,8 +1864,8 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
   let commissionRate = 0;
 
   if (selectedAsset && isSimpleCalculationAsset(selectedAsset)) {
-    // For direct assets, only apply $2 fee if amount is $2 or more
-    commissionAmount = amountNum >= 2 ? 2 : 0; // Flat $2 fee for direct assets (only if amount >= $2)
+    const commission = isCommissionApiAsset(selectedAsset) ? (apiCommission ?? 0) : 2;
+    commissionAmount = amountNum >= commission ? commission : 0;
     commissionRate = amountNum > 0 ? (commissionAmount / amountNum) * 100 : 0;
   } else {
     // Use default commission rate for other assets
@@ -1921,10 +1955,11 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                           newAmount > 0 &&
                           isSimpleCalculationAsset(selectedAsset)
                         ) {
+                          const commission = isCommissionApiAsset(selectedAsset) ? (apiCommission ?? 0) : 2;
                           const calculatedReceiveAmount =
-                            newAmount < 2
+                            newAmount < commission
                               ? newAmount
-                              : Math.max(0, newAmount - 2);
+                              : Math.max(0, newAmount - commission);
                           setReceiveAmount(
                             calculatedReceiveAmount.toFixed(2)
                           );
@@ -2299,8 +2334,9 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                           newAmount > 0 &&
                           isSimpleCalculationAsset(selectedAsset)
                         ) {
+                          const commission = isCommissionApiAsset(selectedAsset) ? (apiCommission ?? 0) : 2;
                           const calculatedSendAmount =
-                            newAmount < 2 ? newAmount : newAmount + 2;
+                            newAmount + commission;
                           setAmount(calculatedSendAmount.toFixed(2));
                         } else if (selectedAsset && newAmount > 0) {
                           setIsCalculating(true);

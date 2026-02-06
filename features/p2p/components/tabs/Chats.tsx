@@ -136,19 +136,18 @@ export const Chats: React.FC = () => {
   const [termsAccepted, setTermsAccepted] = useState(false);
   
   // Check terms acceptance - this persists across logouts
+  // Support both p2p_terms_accepted and p2p_act for backward compatibility
   useEffect(() => {
     if (typeof window === "undefined") {
       return;
     }
     
-    // Check localStorage for terms acceptance (works even after logout)
     const accepted = localStorage.getItem("p2p_terms_accepted");
+    const actAccepted = localStorage.getItem("p2p_act");
     
-    if (accepted === "true") {
-      console.log("[P2P Terms] Terms accepted - banner hidden");
+    if (accepted === "true" || actAccepted === "true") {
       setTermsAccepted(true);
     } else {
-      console.log("[P2P Terms] Terms NOT accepted - showing banner");
       setTermsAccepted(false);
     }
   }, [isAuthenticated]); // Re-check when auth state changes
@@ -464,17 +463,12 @@ export const Chats: React.FC = () => {
   const removeSelectedImage = (index: number) => {
     setUploadedImages((prev) => prev.filter((_, i) => i !== index));
   };
-const [termsact,setTermsact] = useState(false);
-const termsactlocal = localStorage.getItem("p2p_act");
-const handleTermsact = () => {
-  setTermsact(true);
-  localStorage.setItem("p2p_act", "true");
-}
-useEffect(() => {
-  if (termsactlocal === "true") {
-    setTermsact(true);
-  }
-}, [termsactlocal]);
+
+  const handleTermsAccept = () => {
+    setTermsAccepted(true);
+    localStorage.setItem("p2p_terms_accepted", "true");
+    localStorage.setItem("p2p_act", "true"); // backward compatibility
+  };
   const handleSendMessage = async () => {
     if (
       (!messageInput.trim() && uploadedImages.length === 0) ||
@@ -591,7 +585,7 @@ useEffect(() => {
   const renderMessages = () => {
     if (!selectedUser) {
       return (
-        <div className="flex items-center justify-center h-full text-sm text-gray-600 dark:text-[#A2A4A9]">
+        <div className="flex-1 min-h-0 flex items-center justify-center text-sm text-gray-600 dark:text-[#A2A4A9]">
           Select a conversation on the left to start chatting.
         </div>
       );
@@ -607,7 +601,7 @@ useEffect(() => {
 
     if (allMessages.length === 0) {
       return (
-        <div className="flex items-center justify-center h-full text-sm text-gray-600 dark:text-[#A2A4A9]">
+        <div className="flex-1 min-h-0 flex items-center justify-center text-sm text-gray-600 dark:text-[#A2A4A9]">
           Select a conversation on the left to start chatting.
         </div>
       );
@@ -616,7 +610,7 @@ useEffect(() => {
     return (
       <div
         ref={messagesContainerRef}
-        className="flex flex-col gap-1 px-4 py-4 overflow-y-auto flex-1 min-h-0"
+        className="flex flex-col gap-1 px-4 py-4 overflow-y-scroll flex-1 min-h-0 scrollbar-thin"
       >
         {allMessages
           .slice()
@@ -752,9 +746,9 @@ useEffect(() => {
   }
 
   return (
-    <div className="w-full min-h-[100dvh] flex flex-col">
+    <div className="w-full h-full min-h-0 flex-1 flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="px-1 sm:px-2 md:px-4 pt-0 pb-2">
+      <div className="flex-shrink-0 px-1 sm:px-2 md:px-4 pt-0 pb-2">
         <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
           P2P Trading Chat
         </h1>
@@ -763,10 +757,10 @@ useEffect(() => {
         </p>
       </div>
 
-      <div className="flex-1 flex flex-col lg:flex-row gap-3 sm:gap-4 min-h-0">
+      <div className="flex-1 flex flex-col lg:flex-row gap-3 sm:gap-4 min-h-0 overflow-hidden">
         {/* Conversations list - Left Card - Hidden on mobile/tablet when chat is open */}
         <div className={`w-full lg:w-72 xl:w-80 rounded-2xl border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#15161D] overflow-hidden flex flex-col min-h-0 ${showChatView ? 'hidden lg:flex' : 'flex'}`}>
-          <div className="px-3 py-2">
+          <div className="flex-shrink-0 px-3 py-2">
             <div className="relative">
               <input
                 type="text"
@@ -778,7 +772,7 @@ useEffect(() => {
             </div>
           </div>
 
-          <div className="px-2 pb-2 space-y-1 flex-1 overflow-y-auto max-h-[30dvh] lg:max-h-[calc(100vh-200px)]">
+          <div className="px-2 pb-1 space-y-1 flex-1 min-h-0 overflow-y-auto overflow-x-hidden scrollbar-thin">
             {filteredConversations.length === 0 && (
               <div className="px-3 py-4 text-xs text-gray-600 dark:text-[#9CA3AF]">
                 {searchTerm.trim()
@@ -792,7 +786,14 @@ useEffect(() => {
               const isActive = Boolean(
                 selectedUser && selectedUser.entity_id === group.entity_id
               );
-              const unreadCount = group.messages?.length || 0;
+              // Count only incoming messages (from others), not messages the user sent
+              const unreadCount = (group.messages || []).filter((msg: any) => {
+                const isFromMe =
+                  (user?.id && msg.sender_id && msg.sender_id === user.id) ||
+                  (user?.email && msg.sender_email &&
+                    msg.sender_email.trim().toLowerCase() === (user.email || "").trim().toLowerCase());
+                return !isFromMe;
+              }).length;
               const photoUrl = getPhotoUrl(group, latestMessage);
 
               return (
@@ -818,7 +819,7 @@ useEffect(() => {
         {/* Chat panel - Right Card - Hidden on mobile/tablet when list is shown */}
         <div className={`flex-1 flex flex-col rounded-2xl border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#111217] overflow-hidden min-h-0 ${showChatView ? 'flex' : 'hidden lg:flex'}`}>
           {/* Chat header */}
-          <div className="px-4 py-3 border-b border-gray-200 dark:border-[#1F2937] flex items-center justify-between">
+          <div className="flex-shrink-0 px-4 py-3 border-b border-gray-200 dark:border-[#1F2937] flex items-center justify-between">
             <div className="flex items-center gap-3">
               {/* Back button for mobile/tablet */}
               <button
@@ -899,8 +900,8 @@ useEffect(() => {
           </div>
 
           {/* Terms banner (only visible if not accepted) */}
-          {!termsact && (
-            <div className="px-4 pt-4">
+          {!termsAccepted && (
+            <div className="flex-shrink-0 px-4 pt-4">
               <div className="rounded-2xl border border-[#1D8751] bg-green-100 dark:bg-[#042417] text-gray-900 dark:text-white px-4 py-3 sm:px-6 sm:py-4 flex flex-col gap-3 relative overflow-hidden">
                 <div className="absolute inset-y-0 right-0 w-1/2 dark:w-1/2 bg-gradient-to-l from-gray-400/70 to-transparent pointer-events-none"></div>
                 <div className="flex items-center gap-2 relative z-10">
@@ -926,7 +927,7 @@ useEffect(() => {
                     Read Terms &amp; Conditions
                   </button>
                   <button
-                    onClick={handleTermsact}
+                    onClick={handleTermsAccept}
                     className="px-3 py-1.5 rounded-full bg-[#1D8751] text-[11px] sm:text-xs text-white font-medium hover:bg-[#15803D] transition-colors flex items-center gap-1"
                   >
                     <svg
@@ -950,11 +951,11 @@ useEffect(() => {
             </div>
           )}
 
-          {/* Messages area */}
-          <div className="flex-1 min-h-0">{renderMessages()}</div>
+          {/* Messages area - scrolls independently */}
+          <div className="flex-1 min-h-0 overflow-hidden flex flex-col">{renderMessages()}</div>
 
           {/* Input bar */}
-          <div className="px-4 py-3 border-t border-gray-200 dark:border-[#1F2937] bg-gray-50 dark:bg-[var(--bg-color)]">
+          <div className="flex-shrink-0 px-4 py-3 border-t border-gray-200 dark:border-[#1F2937] bg-gray-50 dark:bg-[var(--bg-color)]">
             {/* Selected image previews */}
             {uploadedImages.length > 0 && (
               <div className="mb-2 flex flex-wrap gap-2">
@@ -1148,7 +1149,7 @@ useEffect(() => {
             const userSpecificKey = `p2p_terms_accepted_${user.user_id}`;
             localStorage.setItem(userSpecificKey, "true");
             localStorage.setItem("p2p_terms_accepted", "true");
-            console.log(`[P2P Terms] Terms accepted by user ${user.user_id}`);
+            localStorage.setItem("p2p_act", "true"); // backward compatibility
             setTermsAccepted(true);
             setShowTermsModal(false);
           }

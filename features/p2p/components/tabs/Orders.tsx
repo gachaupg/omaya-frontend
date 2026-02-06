@@ -99,13 +99,21 @@ const Orders = memo(() => {
 
   // Apply client-side filtering to the data
   const filteredData = useMemo(() => {
+    const currentUserEmail = (user?.email || "").trim().toLowerCase();
+
     return trades.results.filter((trade) => {
-      // Type filter
-      if (
-        filters.type !== "all" &&
-        trade.order_type.toLowerCase() !== filters.type
-      ) {
-        return false;
+      // Type filter: use display type (swap for non-owner)
+      if (filters.type !== "all") {
+        const ownerEmail = (trade.owner || "").trim().toLowerCase();
+        const isOwner = currentUserEmail && ownerEmail && currentUserEmail === ownerEmail;
+        const displayType = isOwner
+          ? trade.order_type.toLowerCase()
+          : trade.order_type.toLowerCase() === "buy"
+            ? "sell"
+            : "buy";
+        if (displayType !== filters.type) {
+          return false;
+        }
       }
 
       // Status filter - map UI "processing" to API "pending"/"matched"/"half-matched"
@@ -165,27 +173,24 @@ const Orders = memo(() => {
 
       return true;
     });
-  }, [trades.results, filters]);
+  }, [trades.results, filters, user?.email]);
 
 
 
   const transformedData: TransactionType[] = filteredData.map((trade) => {
-    // Determine the user's action based on their role in the trade
-    // If the current user is the buyer, they performed a "buy" action
-    // If the current user is the seller, they performed a "sell" action
-    const currentUserName = user?.first_name || '';
-    const isBuyer = trade.buyer?.toLowerCase().includes(currentUserName.toLowerCase());
-    const isSeller = trade.seller?.toLowerCase().includes(currentUserName.toLowerCase());
-    
-    // Determine user's action: if user is buyer, action is "buy"; if seller, action is "sell"
-    // Fallback to order_type if we can't determine
-    let userAction = trade.order_type.toLowerCase();
-    if (isBuyer && !isSeller) {
-      userAction = "buy";
-    } else if (isSeller && !isBuyer) {
-      userAction = "sell";
-    }
-    
+    // If logged-in user is the owner: display order_type as-is.
+    // If NOT owner (user is counterparty): swap order_type (buy → sell, sell → buy).
+    const currentUserEmail = (user?.email || "").trim().toLowerCase();
+    const ownerEmail = (trade.owner || "").trim().toLowerCase();
+    const isOwner = currentUserEmail && ownerEmail && currentUserEmail === ownerEmail;
+
+    const rawOrderType = trade.order_type.toLowerCase();
+    const userAction = isOwner
+      ? rawOrderType
+      : rawOrderType === "buy"
+        ? "sell"
+        : "buy";
+
     return {
       id: trade.id,
       type: userAction,

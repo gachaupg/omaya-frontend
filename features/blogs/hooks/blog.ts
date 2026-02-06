@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { BlogPost } from "../types";
 import { imageBuilder } from "@/sanity/lib/client";
 import { useLiveBlog } from "./useLiveBlog";
@@ -6,7 +6,8 @@ import { logger } from '@/lib/utils/logger';
 
 /**
  * Main blog hook that uses live subscriptions for real-time updates
- * Falls back to API-based fetching if live subscriptions are unavailable
+ * Falls back to API-based fetching if live subscriptions are unavailable.
+ * Starts API fetch in parallel so the page can show data as soon as either source returns.
  */
 export const useBlog = () => {
   const [blogs, setBlogs] = useState<BlogPost[]>([]);
@@ -15,11 +16,48 @@ export const useBlog = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [useLiveUpdates, setUseLiveUpdates] = useState(true);
+  const [initialApiLoading, setInitialApiLoading] = useState(true);
+  const initialApiFetchedRef = useRef(false);
 
-  // Try to use live updates first
+  // Try to use live updates first (runs in parallel with initial API fetch below)
   const { blogs: liveBlogs, loading: liveLoading, error: liveError } = useLiveBlog();
 
-  // Fallback API fetch function
+  // Parallel initial API fetch: run once on mount so data appears as soon as API returns (often faster than Sanity client from browser)
+  useEffect(() => {
+    if (initialApiFetchedRef.current) return;
+    initialApiFetchedRef.current = true;
+
+    const url = `/api/blogs/read?_t=${Date.now()}`;
+    fetch(url, { cache: 'default' })
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
+      .then((data: BlogPost[]) => {
+        const transformed = (data || []).map((blog: BlogPost, index: number) => ({
+          ...blog,
+          id: index + 1,
+          created_at: blog.createdAt || blog.created_at || new Date().toISOString(),
+          updated_at: blog.createdAt || blog.created_at || new Date().toISOString(),
+          image: blog.image,
+          author_name: blog.author_name || "Anonymous",
+        }));
+        const blogPosts = transformed.filter((b: BlogPost) => b.category === "blog");
+        const newsPosts = transformed.filter((b: BlogPost) => b.category === "news");
+        setAllPostsFromAPI(transformed);
+        setBlogs((prev) => (prev.length === 0 ? blogPosts : prev));
+        setNews((prev) => (prev.length === 0 ? newsPosts : prev));
+        logger.debug('general', "Initial API blogs loaded:", transformed.length);
+      })
+      .catch((err) => {
+        logger.debug('general', "Initial API blogs fetch failed (will use live or fallback):", err);
+      })
+      .finally(() => {
+        setInitialApiLoading(false);
+      });
+  }, []);
+
+  // Fallback API fetch function (used when live fails or for manual refresh)
   const fetchBlogs = async (forceRefresh: boolean = false) => {
     try {
       setLoading(true);
@@ -110,18 +148,19 @@ export const useBlog = () => {
     }
   };
 
-  // Use live updates if available, otherwise fall back to API
+  // Use live updates if available; loading is false as soon as either API or live has data
   useEffect(() => {
     if (useLiveUpdates) {
       // Process all live blogs - filter by category for backward compatibility
       const blogPosts = liveBlogs.filter((blog: BlogPost) => blog.category === "blog");
       const newsPosts = liveBlogs.filter((blog: BlogPost) => blog.category === "news");
-      
+
       setBlogs(blogPosts);
       setNews(newsPosts);
-      setLoading(liveLoading);
       setError(liveError);
-      
+      // Show content as soon as either source is ready (API or live)
+      setLoading(liveLoading && initialApiLoading);
+
       // If live updates fail after initial load, fall back to API
       if (liveError && liveBlogs.length === 0 && !liveLoading) {
         logger.warn('general', "Live updates failed, falling back to API:", liveError);
@@ -132,17 +171,19 @@ export const useBlog = () => {
       // Use API-based fetching
       fetchBlogs();
     }
-  }, [liveBlogs, liveLoading, liveError, useLiveUpdates]);
+  }, [liveBlogs, liveLoading, liveError, useLiveUpdates, initialApiLoading]);
 
-  // Get all posts regardless of category (for homepage display)
-  // This includes all categories: trading, security, defi, market_analysis, blog, news, etc.
+  // Get all posts regardless of category (for homepage and blogs page)
+  // When live has resolved use liveBlogs; while live is still loading use API data if available for faster first paint
   const allPosts = useMemo(() => {
-    if (useLiveUpdates) {
-      return liveBlogs; // All posts from live subscription (includes all categories)
+    if (useLiveUpdates && !liveLoading) {
+      return liveBlogs;
     }
-    // When using API fallback, use allPostsFromAPI which contains all categories
-    return allPostsFromAPI.length > 0 ? allPostsFromAPI : [...blogs, ...news];
-  }, [liveBlogs, allPostsFromAPI, blogs, news, useLiveUpdates]);
+    if (allPostsFromAPI.length > 0) {
+      return allPostsFromAPI;
+    }
+    return [...blogs, ...news];
+  }, [liveBlogs, liveLoading, allPostsFromAPI, blogs, news, useLiveUpdates]);
 
   // Expose refresh function to allow manual cache invalidation
   const refresh = () => {
