@@ -914,7 +914,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
         {/* Top Section - Amount and From Payment Method in one card */}
         <div className="relative mb-4">
           {/* Top Card Container */}
-          <div className="relative flex flex-col sm:flex-row border border-[#35353E] dark:border-[#35353E] rounded-xl sm:rounded-2xl p-2 sm:p-3 md:p-4 overflow-visible gap-2 sm:gap-3 md:gap-0 bg-white dark:bg-[#18181D]">
+          <div className="relative flex flex-col sm:flex-row border border-border dark:border-[#35353E] rounded-xl sm:rounded-2xl p-2 sm:p-3 md:p-4 overflow-visible gap-2 sm:gap-3 md:gap-0 bg-white dark:bg-[#18181D]">
             {/* Amount Section */}
             <div className="flex-1 sm:pr-4">
               <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
@@ -938,7 +938,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
             {/* From Payment Method Section */}
             <div
               data-select-card="true"
-              className="flex-1 sm:pl-4 border-t sm:border-t-0 sm:border-l border-[#35353E] dark:border-[#35353E] pt-3 sm:pt-0 sm:border-none"
+              className="flex-1 sm:pl-4 border-t sm:border-t-0 sm:border-l border-border dark:border-[#35353E] pt-3 sm:pt-0 sm:border-none"
             >
               <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
                 {t("express.fromPaymentMethod", "From Payment Method")}
@@ -1018,7 +1018,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
 
         {/* Bottom Section - You Receive and To Payment Method in one card */}
         <div className="relative mb-3">
-          <div className="relative flex flex-col sm:flex-row border border-[#35353E] dark:border-[#35353E] rounded-xl sm:rounded-2xl p-2 sm:p-3 md:p-4 overflow-visible gap-2 sm:gap-3 md:gap-0 bg-white dark:bg-[#18181D]">
+          <div className="relative flex flex-col sm:flex-row border border-border dark:border-[#35353E] rounded-xl sm:rounded-2xl p-2 sm:p-3 md:p-4 overflow-visible gap-2 sm:gap-3 md:gap-0 bg-white dark:bg-[#18181D]">
             {/* You Receive Section */}
             <div className="flex-1 sm:pr-4">
               <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
@@ -1045,7 +1045,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
             </div>
 
             {/* To Payment Method Section */}
-            <div className="flex-1 sm:pl-4 border-t sm:border-t-0 sm:border-l border-[#35353E] dark:border-[#35353E] pt-3 sm:pt-0 sm:border-none">
+            <div className="flex-1 sm:pl-4 border-t sm:border-t-0 sm:border-l border-border dark:border-[#35353E] pt-3 sm:pt-0 sm:border-none">
               <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
                 {t("express.toPaymentMethod", "To Payment Method")}
                 <div className="w-2 h-2 opacity-0"></div>
@@ -1215,7 +1215,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
 
           <div
             ref={paymentDetailsRef}
-            className="flex flex-col bg-white dark:bg-[#18181D] border-2 border-[#35353E] rounded-2xl p-3 sm:p-4 md:p-5 shadow-lg w-full text-[#35353e] dark:text-[#788099] mb-4 sm:mb-6"
+            className="flex flex-col bg-white dark:bg-[#18181D] border-2 border-border dark:border-[#35353E] rounded-2xl p-3 sm:p-4 md:p-5 shadow-lg w-full text-[#35353e] dark:text-[#788099] mb-4 sm:mb-6"
           >
             {/* Dynamic Address Label */}
             <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
@@ -1226,7 +1226,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
                 : `${getProviderName(selectedToPaymentDetail)} Account Number`}
             </label>
             {/* Input group */}
-            <div className="flex items-center bg-white dark:bg-[#18181D] border border-[#39394a] dark:border-[#35353E] rounded-2xl px-2 sm:px-4 py-2 mb-0 overflow-hidden gap-1 sm:gap-2">
+            <div className="flex items-center bg-white dark:bg-[#18181D] border border-border dark:border-[#35353E] rounded-2xl px-2 sm:px-4 py-2 mb-0 overflow-hidden gap-1 sm:gap-2">
               {/* Left icon */}
               <span className="text-[#1D8751] flex-shrink-0">
                 <svg width="22" height="22" fill="none" viewBox="0 0 24 24" className="w-5 h-5 sm:w-[22px] sm:h-[22px]">
