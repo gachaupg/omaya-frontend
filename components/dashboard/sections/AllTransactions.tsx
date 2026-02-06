@@ -8,6 +8,7 @@ import { NoDataFound } from "../ui/Transactions";
 import { useDashboardI18n } from "@/lib/useDashboardI18n";
 import { SortArrowsIcon } from "@/components/ui/SortArrowsIcon";
 import type { AllTransactionItem } from "@/features/transactions/api";
+import { getHighResAssetIcon } from "@/features/express/utils/imageHelpers";
 
 const formatAmount = (amount: string | number | undefined | null): string => {
   if (amount === undefined || amount === null || amount === "") return "0.00";
@@ -128,18 +129,16 @@ const AllTransactions = () => {
         key={tx.id || `tx-${index}`}
         className="hover:bg-gray-100 dark:hover:bg-[#23232A] transition-colors"
       >
-        <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E]">
+        <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-accent">
           <div className="flex items-center gap-2 sm:gap-3">
-            {tx.asset_image && (
-              <img
-                src={tx.asset_image}
-                alt={tx.currency || "Asset"}
-                className="w-7 h-7 sm:w-8 sm:h-8 rounded-full shadow-sm flex-shrink-0"
-                onError={(e) => {
-                  e.currentTarget.style.display = "none";
-                }}
-              />
-            )}
+            <img
+              src={getHighResAssetIcon({ ...tx, ticker: tx.currency })}
+              alt={tx.currency || "Asset"}
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-full shadow-sm shrink-0"
+              onError={(e) => {
+                e.currentTarget.style.display = "none";
+              }}
+            />
             <div className="flex flex-col min-w-0">
               <span className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white truncate">
                 {tx.currency || "USDT"}
@@ -152,46 +151,44 @@ const AllTransactions = () => {
             </div>
           </div>
         </td>
-        <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E]">
+        <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-accent">
           <span className="text-[10px] sm:text-xs px-2 py-0.5 rounded-full bg-[#1D8751]/10 text-[#1D8751] font-medium">
             {getTypeLabel(tx.type, tx.sub_type)}
           </span>
         </td>
-        <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E]">
+        <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-accent">
           <span className="font-medium text-sm text-gray-900 dark:text-white truncate block">
             {fromDisplay}
           </span>
         </td>
-        <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E]">
+        <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-accent">
           <span className="font-medium text-sm text-gray-900 dark:text-white truncate block">
             {toDisplay}
           </span>
         </td>
         <td
-          className={`px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E] text-sm sm:text-base font-semibold ${
-            isExchange && isDeposit ? "text-[#1D8751]" : "text-red-500 dark:text-red-400"
-          }`}
+          className={`px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-accent text-sm sm:text-base font-semibold ${isExchange && isDeposit ? "text-[#1D8751]" : "text-red-500 dark:text-red-400"
+            }`}
         >
           {formatAmount(tx.amount)}
         </td>
-        <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E]">
+        <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-accent">
           <span
-            className={`px-2 py-1 rounded-full text-xs font-medium ${
-              tx.status === "completed"
+            className={`px-2 py-1 rounded-full text-xs font-medium ${tx.status === "completed"
                 ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
                 : tx.status === "pending" ||
-                    tx.status === "pending_address" ||
-                    tx.status === "pending_approval"
+                  tx.status === "pending_address" ||
+                  tx.status === "pending_approval"
                   ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
                   : tx.status === "rejected" || tx.status === "error"
                     ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
                     : "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400"
-            }`}
+              }`}
           >
             {tx.status?.replace(/_/g, " ").toUpperCase() || "N/A"}
           </span>
         </td>
-        <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E] text-sm sm:text-base text-gray-500 dark:text-[#A0A3BC]">
+        <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-accent text-sm sm:text-base text-gray-500 dark:text-[#A0A3BC]">
           {formatDistanceToNow(new Date(tx.created_at), {
             addSuffix: true,
           })}
@@ -223,16 +220,14 @@ const AllTransactions = () => {
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {tx.asset_image && (
-              <img
-                src={tx.asset_image}
-                alt={tx.currency || "Asset"}
-                className="w-10 h-10 rounded-full shadow-sm flex-shrink-0"
-                onError={(e) => {
-                  e.currentTarget.style.display = "none";
-                }}
-              />
-            )}
+            <img
+              src={getHighResAssetIcon({ ...tx, ticker: tx.currency })}
+              alt={tx.currency || "Asset"}
+              className="w-10 h-10 rounded-full shadow-sm flex-shrink-0"
+              onError={(e) => {
+                e.currentTarget.style.display = "none";
+              }}
+            />
             <div>
               <div className="font-semibold text-sm uppercase tracking-wide text-gray-900 dark:text-white">
                 {tx.currency || "USDT"}
@@ -243,13 +238,12 @@ const AllTransactions = () => {
             </div>
           </div>
           <span
-            className={`px-2 py-1 rounded-full text-xs font-medium ${
-              tx.status === "completed"
+            className={`px-2 py-1 rounded-full text-xs font-medium ${tx.status === "completed"
                 ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
                 : tx.status === "pending"
                   ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
                   : "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400"
-            }`}
+              }`}
           >
             {tx.status?.replace(/_/g, " ").toUpperCase() || "N/A"}
           </span>
@@ -270,9 +264,8 @@ const AllTransactions = () => {
           <div>
             <div className="text-xs text-gray-500 dark:text-[#A0A3BC] mb-1">Amount</div>
             <div
-              className={`font-semibold text-sm ${
-                isExchange && isDeposit ? "text-[#1D8751]" : "text-red-500 dark:text-red-400"
-              }`}
+              className={`font-semibold text-sm ${isExchange && isDeposit ? "text-[#1D8751]" : "text-red-500 dark:text-red-400"
+                }`}
             >
               {formatAmount(tx.amount)}
             </div>
@@ -343,10 +336,9 @@ const AllTransactions = () => {
               onClick={(e) => handlePageChange(currentPage - 1, e)}
               disabled={currentPage === 1}
               className={`px-2 sm:px-3 py-1.5 sm:py-1 rounded-md border transition-colors duration-150 text-xs sm:text-sm min-h-[44px] sm:min-h-0
-                ${
-                  currentPage > 1
-                    ? "bg-transparent text-gray-600 dark:text-gray-400 border-[#d1d5db] dark:border-[#35353E] hover:bg-[#1D8751] hover:text-white"
-                    : "bg-gray-200 dark:bg-gray-600 text-gray-400 cursor-not-allowed border-transparent"
+                ${currentPage > 1
+                  ? "bg-transparent text-gray-600 dark:text-gray-400 border-[#d1d5db] dark:border-[#35353E] hover:bg-[#1D8751] hover:text-white"
+                  : "bg-gray-200 dark:bg-gray-600 text-gray-400 cursor-not-allowed border-transparent"
                 }`}
             >
               {t("common.previous", "Previous")}
@@ -368,10 +360,9 @@ const AllTransactions = () => {
                       key={pageNum}
                       onClick={(e) => handlePageChange(pageNum, e)}
                       className={`mx-0.5 sm:mx-1 px-2 sm:px-3 py-1.5 sm:py-1 rounded-md border transition-colors duration-150 text-xs sm:text-sm min-h-[44px] sm:min-h-0
-                        ${
-                          pageNum === currentPage
-                            ? "bg-[#1D8751] text-white border-[#1D8751]"
-                            : "bg-transparent text-gray-600 dark:text-gray-400 border-[#d1d5db] dark:border-[#35353E] hover:bg-[#1D8751] hover:text-white"
+                        ${pageNum === currentPage
+                          ? "bg-[#1D8751] text-white border-[#1D8751]"
+                          : "bg-transparent text-gray-600 dark:text-gray-400 border-[#d1d5db] dark:border-[#35353E] hover:bg-[#1D8751] hover:text-white"
                         }`}
                     >
                       {pageNum}
@@ -385,10 +376,9 @@ const AllTransactions = () => {
               onClick={(e) => handlePageChange(currentPage + 1, e)}
               disabled={currentPage === totalPages}
               className={`px-2 sm:px-3 py-1.5 sm:py-1 rounded-md border transition-colors duration-150 text-xs sm:text-sm min-h-[44px] sm:min-h-0
-                ${
-                  currentPage < totalPages
-                    ? "bg-transparent text-gray-600 dark:text-gray-400 border-[#d1d5db] dark:border-[#35353E] hover:bg-[#1D8751] hover:text-white"
-                    : "bg-gray-200 dark:bg-gray-600 text-gray-400 cursor-not-allowed border-transparent"
+                ${currentPage < totalPages
+                  ? "bg-transparent text-gray-600 dark:text-gray-400 border-[#d1d5db] dark:border-[#35353E] hover:bg-[#1D8751] hover:text-white"
+                  : "bg-gray-200 dark:bg-gray-600 text-gray-400 cursor-not-allowed border-transparent"
                 }`}
             >
               {t("common.next", "Next")}

@@ -4,6 +4,8 @@ import React, { useEffect, useState, useRef } from "react";
 import { AllSystemTransactionsWebSocket } from "@/features/markets/services/allSystemTransactionsWebSocket";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
+const ITEMS_PER_PAGE = 12
+
 interface Transaction {
   id: string;
   from: {
