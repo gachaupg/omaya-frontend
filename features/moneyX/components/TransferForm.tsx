@@ -888,7 +888,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
     !selectedToPaymentDetail;
 
   return (
-    <div className="flex flex-col dark:bg-(--bg-color) pl-0 sm:pl-4 pr-2 sm:pr-0 w-full mx-auto">
+    <div className="flex flex-col dark:bg-[var(--bg-color)] pl-0 pr-2 sm:pr-0 mr-0 sm:mr-40 w-full mx-auto">
       {/* Money X Page Title */}
       <h1 className=" flex items-center text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-[#76777B] dark:text-white">
         Money <span>
@@ -1022,7 +1022,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
             {/* You Receive Section */}
             <div className="flex-1 sm:pr-4">
               <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
-                {t("express.youReceive", "You Receive")}
+                {t("express.youReceive", "You Receive")}yy
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
                 {!isCalculatingFromPay && (
                   <span className="text-xs text-[#1D8751] font-medium hidden sm:inline">
