@@ -113,6 +113,36 @@ const MarketTable: React.FC<MarketTableProps> = ({
     return amount > 0 && row.online === true;
   });
 
+  // Build pagination pages with ellipsis when there are many pages
+  const getPaginationPages = () => {
+    if (totalPages <= 5) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+
+    const pages: (number | string)[] = [];
+    pages.push(1, 2); // always first two
+
+    if (currentPage > 4) {
+      pages.push("...");
+    }
+
+    const start = Math.max(3, currentPage - 1);
+    const end = Math.min(totalPages - 2, currentPage + 1);
+    for (let p = start; p <= end; p++) {
+      if (!pages.includes(p)) pages.push(p);
+    }
+
+    if (currentPage < totalPages - 3) {
+      pages.push("...");
+    }
+
+    if (!pages.includes(totalPages)) {
+      pages.push(totalPages);
+    }
+
+    return pages;
+  };
+
   return (
     <div className="w-full mt-4">
       <div className="overflow-x-auto rounded-2xl">
@@ -174,14 +204,18 @@ const MarketTable: React.FC<MarketTableProps> = ({
                         <img
                           src={row.advertiser_photo}
                           alt={row.advertiser}
-                          className="w-10 h-10 rounded-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                          className="w-10 h-10 rounded-full object-cover cursor-pointer hover:opacity-80 transition-opacity bg-[#1D8751]"
                           onClick={() => handleImageClick(row.advertiser_photo, row.advertiser)}
+                          onError={(e) => {
+                            // Hide image and show fallback
+                            (e.target as HTMLImageElement).style.display = 'none';
+                            (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                          }}
                         />
-                      ) : (
-                        <span className="bg-[#1D8751] text-white h-10 w-10 rounded-[10px] text-xs font-bold flex items-center justify-center">
-                          {row.advertiserInitials}
-                        </span>
-                      )}
+                      ) : null}
+                      <span className={`bg-[#1D8751] text-white h-10 w-10 rounded-[10px] text-xs font-bold flex items-center justify-center ${row.advertiser_photo ? 'hidden' : ''}`}>
+                        {row.advertiserInitials}
+                      </span>
                       <span className="font-medium flex items-center text-sm text-gray-900 dark:text-[#E4E4E6]">
                         {row.advertiser}
                         <FaCheckCircle className="text-[#FFD600] ml-1" />
@@ -287,14 +321,18 @@ const MarketTable: React.FC<MarketTableProps> = ({
                       <img
                         src={row.advertiser_photo}
                         alt={row.advertiser}
-                        className="w-10 h-10 rounded-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                        className="w-10 h-10 rounded-full object-cover cursor-pointer hover:opacity-80 transition-opacity bg-[#1D8751]"
                         onClick={() => handleImageClick(row.advertiser_photo, row.advertiser)}
+                        onError={(e) => {
+                          // Hide image and show fallback
+                          (e.target as HTMLImageElement).style.display = 'none';
+                          (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                        }}
                       />
-                    ) : (
-                      <span className="bg-[#1D8751] text-white h-10 w-10 rounded-[10px] text-xs font-bold flex items-center justify-center">
-                        {row.advertiserInitials}
-                      </span>
-                    )}
+                    ) : null}
+                    <span className={`bg-[#1D8751] text-white h-10 w-10 rounded-[10px] text-xs font-bold flex items-center justify-center ${row.advertiser_photo ? 'hidden' : ''}`}>
+                      {row.advertiserInitials}
+                    </span>}
                     <div className="flex-1">
                       <div className="flex items-center gap-1">
                         <span className="font-medium text-sm text-gray-900 dark:text-[#E4E4E6]">
@@ -423,42 +461,66 @@ const MarketTable: React.FC<MarketTableProps> = ({
           )}
 
           {/* ---------------- pagination --------------- */}
-          {filteredData.length > 0 && (
-            <div className="flex justify-center items-center gap-2 py-4 bg-gray-50 dark:bg-(--bg-color)">
-              <button
-                onClick={() => onPageChange(currentPage - 1)}
-                disabled={currentPage === 1}
-                className={`px-3 py-1 rounded-md text-sm font-medium border bg-white border-gray-200 text-gray-500 ${currentPage === 1
-                  ? "opacity-50 cursor-not-allowed"
-                  : "hover:bg-gray-100"
-                  } dark:bg-(--card-color) dark:border-accent dark:text-[#8C8CA1] dark:hover:bg-accent`}
-              >
-                &lt;
-              </button>
-              {Array.from({ length: totalPages }, (_, i) => (
+          {filteredData.length > 0 && (() => {
+            const pagesToRender = getPaginationPages();
+            return (
+              <div className="flex justify-center items-center gap-2 py-4 bg-gray-50 dark:bg-(--bg-color)">
                 <button
-                  key={i}
-                  onClick={() => onPageChange(i + 1)}
-                  className={`px-3 py-1 rounded-md text-sm font-medium border ${currentPage === i + 1
-                    ? "bg-[#1D8751] text-white border-[#1D8751]"
-                    : "bg-white text-gray-500 border-gray-200 hover:bg-gray-100 dark:bg-[var(--card-color)] dark:text-[#8C8CA1] dark:border-[#35353E] dark:hover:bg-[#35353E]"
-                    }`}
+                  onClick={() => onPageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className={`px-3 py-1 rounded-md text-sm font-medium border bg-white border-gray-200 text-gray-500 ${currentPage === 1
+                    ? "opacity-50 cursor-not-allowed"
+                    : "hover:bg-gray-100"
+                    } dark:bg-(--card-color) dark:border-accent dark:text-[#8C8CA1] dark:hover:bg-accent`}
                 >
-                  {i + 1}
+                  &lt;
                 </button>
-              ))}
-              <button
-                onClick={() => onPageChange(currentPage + 1)}
-                disabled={currentPage === totalPages}
-                className={`px-3 py-1 rounded-md text-sm font-medium border bg-white border-gray-200 text-gray-500 ${currentPage === totalPages
-                  ? "opacity-50 cursor-not-allowed"
-                  : "hover:bg-gray-100"
-                  } dark:bg-[var(--card-color)] dark:border-[#35353E] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]`}
-              >
-                &gt;
-              </button>
-            </div>
-          )}
+
+                {pagesToRender.map((page, idx) => {
+                  if (page === "...") {
+                    return (
+                      <span
+                        key={`ellipsis-${idx}`}
+                        className="px-2 py-1 text-sm text-gray-400 dark:text-[#8C8CA1]"
+                      >
+                        ...
+                      </span>
+                    );
+                  }
+
+                  const pageNumber = page as number;
+                  const isCurrentPage = currentPage === pageNumber;
+                  const isDisabled = isCurrentPage && filteredData.length === 0;
+
+                  return (
+                    <button
+                      key={pageNumber}
+                      onClick={() => onPageChange(pageNumber)}
+                      disabled={isDisabled}
+                      className={`px-3 py-1 rounded-md text-sm font-medium border ${
+                        isCurrentPage && !isDisabled
+                          ? "bg-[#1D8751] text-white border-[#1D8751]"
+                          : "bg-white text-gray-500 border-gray-200 hover:bg-gray-100 dark:bg-[var(--card-color)] dark:text-[#8C8CA1] dark:border-[#35353E] dark:hover:bg-[#35353E]"
+                      } ${isDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                    >
+                      {pageNumber}
+                    </button>
+                  );
+                })}
+
+                <button
+                  onClick={() => onPageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className={`px-3 py-1 rounded-md text-sm font-medium border bg-white border-gray-200 text-gray-500 ${currentPage === totalPages
+                    ? "opacity-50 cursor-not-allowed"
+                    : "hover:bg-gray-100"
+                    } dark:bg-[var(--card-color)] dark:border-[#35353E] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]`}
+                >
+                  &gt;
+                </button>
+              </div>
+            );
+          })()}
         </div>
       </div>
 

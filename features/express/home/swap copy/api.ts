@@ -158,12 +158,27 @@ export const createSwap = async (
     logger.debug('swap', "API endpoint:", API_CONFIG.SWAP.CREATE_SWAP);
 
     try {
-      const response = await post<CreateSwapResponse>(
+      const response = await post<any>(
         API_CONFIG.SWAP.CREATE_SWAP,
         swapData
       );
-      logger.debug('swap', "Swap response:", response.data);
-      return response.data;
+      const data = response.data;
+      logger.debug('swap', "Swap response:", data);
+      // Normalize snake_case from backend to camelCase
+      return {
+        fromAmount: data.fromAmount ?? data.from_amount,
+        toAmount: data.toAmount ?? data.to_amount,
+        flow: data.flow ?? "",
+        type: data.type ?? "",
+        payinAddress: data.payinAddress ?? data.payin_address ?? "",
+        payoutAddress: data.payoutAddress ?? data.payout_address ?? "",
+        fromCurrency: data.fromCurrency ?? data.from_currency ?? "",
+        toCurrency: data.toCurrency ?? data.to_currency ?? "",
+        id: data.id ?? "",
+        directedAmount: data.directedAmount ?? data.directed_amount ?? 0,
+        fromNetwork: data.fromNetwork ?? data.from_network ?? "",
+        toNetwork: data.toNetwork ?? data.to_network ?? "",
+      } as CreateSwapResponse;
     } catch (error: any) {
       console.error("Swap creation error:", error);
       console.error("Error response:", error.response?.data);

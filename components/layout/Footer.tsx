@@ -146,13 +146,7 @@ export default function Footer() {
             </Link>
             <div className="space-y-3 sm:space-y-4 md:space-y-5 mt-2 sm:mt-4">
               <p className="text-sm text-gray-900 dark:text-white">Follow us on:</p>
-              <div className="grid
-                    grid-cols-4
-                    sm:grid-cols-4
-                    md:grid-cols-4
-                    gap-3
-                    sm:gap-7
-                    max-w-max">
+              <div className="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-4 gap-3 sm:gap-7 w-full sm:max-w-max">
                 <a
                   href="https://t.me/omayaexchange"
                   target="_blank"

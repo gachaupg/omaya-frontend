@@ -510,15 +510,15 @@ export default function LoginPage() {
 
           {/* Captcha Modal - Perfectly centered on screen */}
           {showCaptchaModal && (
-            <div className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none p-4">
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none p-2 sm:p-4">
               {/* Backdrop - covers the entire screen */}
               <div
-                className="absolute inset-0 bg-[#18181D]/80 pointer-events-auto"
+                className="absolute inset-0 bg-[#18181D]/90 backdrop-blur-sm pointer-events-auto"
                 onClick={handleCloseCaptchaModal}
               ></div>
               {/* Modal */}
               <div
-                className="relative bg-white dark:bg-[var(--card-color)] rounded-lg sm:rounded-xl md:rounded-2xl shadow-2xl w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg pointer-events-auto border border-gray-200 dark:border-[#35353E] z-10 p-4 sm:p-6 max-h-[90vh] overflow-y-auto"
+                className="relative bg-white dark:bg-[var(--card-color)] rounded-lg sm:rounded-xl md:rounded-2xl shadow-2xl w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg pointer-events-auto border border-gray-200 dark:border-[#35353E] z-10 p-3 sm:p-4 md:p-6 max-h-[95vh] sm:max-h-[90vh] overflow-y-auto mx-2"
                 onClick={(e) => e.stopPropagation()}
               >
                 {/* Header */}

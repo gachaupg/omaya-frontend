@@ -22,8 +22,8 @@ const VolumeChart: React.FC<VolumeChartProps> = ({ transactionSummary }) => {
     {
       title: "Total Value",
       value: !isNaN(Number(transactionSummary?.total_volume))
-        ? formatValue(Number(transactionSummary?.total_volume) || 0)
-        : transactionSummary?.total_volume || "0.00",
+        ? `${formatValue(Number(transactionSummary?.total_volume) || 0)} USDT`
+        : `${transactionSummary?.total_volume || "0.00"} USDT`,
     },
     {
       title: "Exchange",

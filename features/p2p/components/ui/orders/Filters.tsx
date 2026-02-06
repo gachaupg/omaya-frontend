@@ -220,7 +220,7 @@ const Filters: React.FC<FiltersProps> = ({
       </div>
 
       {/* ───────────────────────── Filter bar */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2 sm:gap-3 mt-3">
+      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-4 gap-2 sm:gap-3 mt-3">
         {/* Coin selector */}
         <div className="relative group">
           <div

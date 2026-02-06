@@ -6,6 +6,8 @@ import {
   deletePaymentMethod,
   getPublicPaymentMethods,
   updateUserPaymentDetail,
+  sendPaymentDetailEditOtp as apiSendPaymentDetailEditOtp,
+  updatePaymentDetailWithOtp as apiUpdatePaymentDetailWithOtp,
 } from "../api";
 import { AdminPaymentMethod } from "../types/paymentMethods";
 import { P2PResponse } from "../types";
@@ -161,6 +163,52 @@ export const patchUserPaymentDetail = createAsyncThunk<
   }
 );
 
+/** Send OTP for editing payment detail (required before updatePaymentDetailWithOtp). */
+export const sendPaymentDetailEditOtp = createAsyncThunk<
+  { message: string; cooldown_seconds?: number },
+  string,
+  { rejectValue: string }
+>(
+  "paymentMethods/sendPaymentDetailEditOtp",
+  async (paymentDetailId, { rejectWithValue }) => {
+    try {
+      return await apiSendPaymentDetailEditOtp(paymentDetailId);
+    } catch (err: any) {
+      return rejectWithValue(
+        err?.response?.data?.message || err?.message || "Failed to send OTP"
+      );
+    }
+  }
+);
+
+/** Update payment detail with OTP (after sendPaymentDetailEditOtp). */
+export const updatePaymentDetailWithOtp = createAsyncThunk<
+  P2PResponse,
+  {
+    id: string | number;
+    data: {
+      otp: string;
+      account_name?: string;
+      account_number?: string;
+      wallet_address?: string | null;
+      allow_auto_send?: boolean;
+      provider_name?: string;
+    };
+  },
+  { rejectValue: string }
+>(
+  "paymentMethods/updatePaymentDetailWithOtp",
+  async ({ id, data }, { rejectWithValue }) => {
+    try {
+      return await apiUpdatePaymentDetailWithOtp(id, data);
+    } catch (err: any) {
+      return rejectWithValue(
+        err?.response?.data?.message || err?.message || "Failed to update payment detail"
+      );
+    }
+  }
+);
+
 interface PaymentMethodsState {
   adminMethods: AdminPaymentMethod[];
   publicPaymentMethods: any[];
@@ -290,6 +338,22 @@ const paymentMethodsSlice = createSlice({
         state.patchSuccess = true;
       })
       .addCase(patchUserPaymentDetail.rejected, (state, action) => {
+        state.patchLoading = false;
+        state.patchError = action.payload ?? null;
+        state.patchSuccess = false;
+      })
+      .addCase(sendPaymentDetailEditOtp.fulfilled, () => {})
+      .addCase(sendPaymentDetailEditOtp.rejected, () => {})
+      .addCase(updatePaymentDetailWithOtp.pending, (state) => {
+        state.patchLoading = true;
+        state.patchError = null;
+        state.patchSuccess = false;
+      })
+      .addCase(updatePaymentDetailWithOtp.fulfilled, (state) => {
+        state.patchLoading = false;
+        state.patchSuccess = true;
+      })
+      .addCase(updatePaymentDetailWithOtp.rejected, (state, action) => {
         state.patchLoading = false;
         state.patchError = action.payload ?? null;
         state.patchSuccess = false;

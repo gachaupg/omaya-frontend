@@ -25,6 +25,7 @@ function Cash({ sharedFeesError }: CashProps) {
   const [selectedPaymentDetails, setSelectedPaymentDetails] = useState<UserPaymentDetail[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [isTermsAccepted, setIsTermsAccepted] = useState(false)
   const [errors, setErrors] = useState<{
     amount?: string;
     paymentMethod?: string;
@@ -463,12 +464,29 @@ function Cash({ sharedFeesError }: CashProps) {
                 </ul>
               </div>
 
+              {/* Terms Checkbox */}
+              <div className="flex items-start gap-3 mt-4 mb-4">
+                <input
+                  type="checkbox"
+                  id="withdrawal-terms"
+                  checked={isTermsAccepted}
+                  onChange={(e) => setIsTermsAccepted(e.target.checked)}
+                  className="mt-1 w-4 h-4 accent-[#1D8751] cursor-pointer"
+                />
+                <label
+                  htmlFor="withdrawal-terms"
+                  className="text-sm text-[#788099] dark:text-[#A3A3A3] cursor-pointer"
+                >
+                  I confirm that I have read and agree to the withdrawal conditions above and understand that failing to comply may result in transaction rejection.
+                </label>
+              </div>
+
               <Button
                 variant="primary"
                 size="lg"
                 className="w-full bg-error hover:bg-[#d32f2f] text-white font-semibold text-[14px] rounded-[18px] py-3 mt-4 flex items-center justify-center transition-all duration-200 transform hover:scale-[1.02] disabled:bg-[#4B5563] disabled:hover:bg-[#4B5563] disabled:text-white/70 disabled:cursor-not-allowed disabled:transform-none"
                 type="submit"
-                disabled={loading || Boolean(effectiveFeesError)}
+                disabled={loading || Boolean(effectiveFeesError) || !isTermsAccepted}
               >
                 {loading && (
                   <svg

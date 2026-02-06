@@ -1,8 +1,11 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 
 import { logger } from "@/lib/utils/logger";
 import { useValidateAddress } from "@/hooks/useValidateAddress";
+import { useBookmarkedAddresses } from "@/features/express/hooks/useBookmarkedAddresses";
+import { BookmarkDropdown } from "@/features/express/components/forms/BookmarkDropdown";
+import { useTheme } from "@/context/theme";
 
 interface WalletAddressStepProps {
   walletAddress: string;
@@ -26,19 +29,20 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
   toAsset,
   isLoading = false,
 }) => {
+  const { isDark } = useTheme();
   const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
   const [walletError, setWalletError] = useState<string | null>(null);
   const [expandedTerms, setExpandedTerms] = useState(false);
+  const [bookmarkOpen, setBookmarkOpen] = useState(false);
+  const bookmarkAnchorRef = useRef<HTMLSpanElement>(null);
 
-  // Get currency from toAsset (the asset we're receiving)
+  // Helpers to derive currency/network from the target asset (needed before hooks below)
   const getCurrencyFromAsset = useCallback((asset: any): string | undefined => {
     if (!asset) return undefined;
 
-    // Try different properties in order of preference
     if (asset.ticker) {
       return asset.ticker.toUpperCase();
     } else if (asset.symbol) {
-      // Handle special case for USDT Tether
       return asset.symbol === "USDT Tether" ? "USDT" : asset.symbol.toUpperCase();
     } else if (asset.name) {
       return asset.name.toUpperCase();
@@ -47,15 +51,21 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
     return undefined;
   }, []);
 
-  const currentCurrency = getCurrencyFromAsset(toAsset);
-
-  // Get network from toAsset (the asset we're receiving)
   const getNetworkFromAsset = useCallback((asset: any): string | undefined => {
     if (!asset) return undefined;
     return asset.network || undefined;
   }, []);
 
+  const currentCurrency = getCurrencyFromAsset(toAsset);
   const currentNetwork = getNetworkFromAsset(toAsset);
+
+  const {
+    bookmarks,
+    loading: bookmarksLoading,
+    saving: bookmarkSaving,
+    fetchBookmarks,
+    saveBookmark,
+  } = useBookmarkedAddresses(currentCurrency, currentNetwork || undefined);
 
   // Address validation hook - only API validation, no manual checks
   const {
@@ -223,20 +233,66 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                       disabled={isLoading}
                     />
 
-                    {/* Bookmark Icon */}
-                    <svg
-                      className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 dark:text-[#7e7e8f] ml-auto shrink-0"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+                    {/* Bookmark icon - clickable to load from bookmarks */}
+                    <span
+                      ref={bookmarkAnchorRef}
+                      className="relative ml-auto shrink-0 text-[#1D8751] cursor-pointer hover:opacity-80 transition-opacity"
+                      onClick={async () => {
+                        if (bookmarkOpen) {
+                          setBookmarkOpen(false);
+                          return;
+                        }
+                        setBookmarkOpen(true);
+                        await fetchBookmarks();
+                      }}
+                      title="Load from bookmarks"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+                      <svg
+                        className="w-3 h-3 sm:w-4 sm:h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+                        />
+                      </svg>
+                      <BookmarkDropdown
+                        isOpen={bookmarkOpen}
+                        onClose={() => setBookmarkOpen(false)}
+                        bookmarks={bookmarks}
+                        loading={bookmarksLoading}
+                        saving={bookmarkSaving}
+                        currentAddress={walletAddress}
+                        asset={currentCurrency}
+                        network={currentNetwork}
+                        onSelect={(addr) => {
+                          const syntheticEvent = {
+                            target: { value: addr },
+                          } as React.ChangeEvent<HTMLInputElement>;
+                          onWalletAddressChange(syntheticEvent);
+                          if (addr.trim() && currentCurrency) {
+                            validateAddress(addr, currentCurrency, currentNetwork);
+                          } else {
+                            resetAddressValidation();
+                          }
+                        }}
+                        onSaveCurrent={async () => {
+                          if (!walletAddress.trim() || !currentCurrency) return;
+                          await saveBookmark({
+                            address: walletAddress.trim(),
+                            label: `My ${currentCurrency} wallet`,
+                            network: currentNetwork || "",
+                            asset: currentCurrency,
+                          });
+                        }}
+                        anchorRef={bookmarkAnchorRef}
+                        isDark={isDark}
                       />
-                    </svg>
+                    </span>
                   </div>
 
                   {/* Error Message with Word Break Fix */}
@@ -389,7 +445,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
 
                 {/* Expanded Content */}
                 {expandedTerms && (
-                  <div className="border-t border-gray-200 dark:border-[#35353E] px-4 sm:px-5 py-4 sm:py-5 space-y-4 sm:space-y-5">
+                  <div className="px-4 sm:px-5 py-2 sm:py-3 space-y-4 sm:space-y-5">
                     {/* Term 4 */}
                     <div className="flex items-start gap-2 sm:gap-3">
                       <span className="text-[#1D8751] font-bold text-sm sm:text-base flex-shrink-0">4.</span>
