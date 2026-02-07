@@ -153,6 +153,7 @@ const RatesTransactionHistory = () => {
     (state: RootState) => state.transaction
   );
   const [isConnected, setIsConnected] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
   const wsRef = useRef<AllSystemTransactionsWebSocket | null>(null);
 
   const getAmountColor = useMemo(

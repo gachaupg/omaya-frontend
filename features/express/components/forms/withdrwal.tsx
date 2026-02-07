@@ -4394,7 +4394,6 @@ export default function WithdrawalForm({
                                   emptyText="No registered accounts available"
                                   searchable={true}
                                   className="w-full min-w-0"
-                                  sizeMode="card"
                                 />
                               </div>
                             </div>
