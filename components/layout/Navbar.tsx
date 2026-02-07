@@ -515,7 +515,15 @@ export default function Navbar() {
     {
       href: "/dashboard/exchange",
       icon: "https://res.cloudinary.com/pitz/image/upload/v1764568507/uil_exchange_1_okxkvb.png",
-      title: "Exchange",
+      title: (
+        <span className="flex items-center text-[#76777B] dark:text-white font-bold">
+          Money{" "}
+          <span className="inline-flex">
+            <img src="/images/x.png" alt="X" className="dark:hidden inline-block" />
+            <img src="/images/xwhite.png" alt="X" className="hidden dark:inline-block" />
+          </span>
+        </span>
+      ),
       description: "Transfer money between different payment methods quickly and securely",
     },
     {

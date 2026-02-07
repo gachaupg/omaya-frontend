@@ -2117,7 +2117,7 @@ export default function MarketingPage() {
 
             {/* Main Title */}
             <h2 className="text-3xl sm:text-4xl md:text-5xl 2xl:text-6xl font-bold mb-4">
-              Frequehntly Asked <span className="text-[#1D8751]">Questions</span>
+              Frequently Asked <span className="text-[#1D8751]">Questions</span>
             </h2>
 
             {/* Subtitle */}
