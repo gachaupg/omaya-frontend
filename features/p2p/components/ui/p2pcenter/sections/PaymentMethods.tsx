@@ -666,7 +666,7 @@ const PaymentMethods = () => {
                 disabled
               />
               <Input
-                placeholder="Account Number"
+                placeholder={selectedMethod?.toLowerCase().includes('mobile') || selectedMethod?.toLowerCase().includes('money') ? 'Phone Number' : 'Account Number'}
                 value={accountNumber}
                 onChange={(e) => setAccountNumber(e.target.value)}
                 className="w-full text-sm text-gray-900 dark:text-white"

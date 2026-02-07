@@ -3037,7 +3037,7 @@ export default function DepositForm({
   }, [selectedPaymentDetail]);
 
   return (
-    <div className="flex flex-col dark:bg-[var(--bg-color)] pl-0 pr-2 sm:pr-0 mr-0 sm:mr-40 w-full sm:max-w-5xl">
+    <div className="flex flex-col dark:bg-[var(--bg-color)] pl-0 pr-2 sm:pr-0 mr-0 sm:mr-40 w-full mx-auto">
       <h2 className="text-xl font-bold mb-2 text-[#788099] dark:text-[#788099] inline-flex items-center gap-2">
 
         {t("express.transactionInfo", "Transaction Info")}

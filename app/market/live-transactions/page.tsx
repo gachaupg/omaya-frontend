@@ -65,6 +65,9 @@ const getCurrencyLogo = (currency: string): string => {
   return currencyLogos[currencyLower] || "/icons/usdt.svg";
 };
 
+// Pagination constant
+const ITEMS_PER_PAGE = 10;
+
 const LiveTransactionsPage = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isConnected, setIsConnected] = useState(false);
@@ -341,10 +344,7 @@ const LiveTransactionsPage = () => {
                         </div>
                       </td>
                       <td className={`px-4 sm:px-6 py-3 sm:py-4 font-semibold text-sm sm:text-base ${getAmountColor(index)}`}>
-                        ${parseFloat(tx.amount).toLocaleString('en-US', {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}
+                        ${Math.floor(parseFloat(tx.amount)).toLocaleString('en-US')}
                       </td>
                       <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm sm:text-base text-gray-600 dark:text-[#788099]">
                         {tx.when}

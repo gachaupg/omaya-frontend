@@ -51,7 +51,7 @@ const Express = ({ isHomePage = false }: ExpressProps) => {
   };
 
   return (
-    <div className="w-full max-w-full box-border px-4 sm:px-6 pt-0 mb-0 overflow-x-hidden">
+    <div className="w-full max-w-full box-border px-3 sm:px-4 md:px-6 lg:px-8 pt-0 mb-0 overflow-x-hidden">
       {!isHomePage && (
         <div className="mb-1">
           <button
@@ -63,35 +63,21 @@ const Express = ({ isHomePage = false }: ExpressProps) => {
               className="flex items-center justify-center"
               suppressHydrationWarning
             >
-              {mounted && isDark ? (
+              <span className="text-[#76777B] dark:text-white text-base uppercase font-bold">
+                E
+              </span>
+              {mounted && (
                 <>
-                  <span className="flex items-center justify-center">
-                    <span className="text-[#727272] text-base uppercase font-bold">
-                      E
-                    </span>
-
-                    <img
-                      className="mt-2"
-                      src="https://res.cloudinary.com/pitz/image/upload/v1752561097/Group_9_gen9av.png"
-                      alt=""
-                    />
-                  </span>
-                </>
-              ) : (
-                <>
-                  <span className="flex items-center justify-center">
-                    <span className="text-[#727272] text-base uppercase font-bold">
-                      E
-                    </span>
-
-                    <img
-                      className="mt-2"
-                      src="https://res.cloudinary.com/pitz/image/upload/v1752561097/Group_9_gen9av.png"
-                      alt=""
-                    />
-                  </span>
+                  {isDark ? (
+                    <img src="/images/xwhite.png" alt="Express" className="mt-2" />
+                  ) : (
+                    <img src="/images/x.png" alt="Express" className="mt-2" />
+                  )}
                 </>
               )}
+              <span className="text-[#76777B] dark:text-white text-base uppercase font-bold ml-[-3px]">
+                CHANGE
+              </span>
             </span>
           </button>
           {/* <div className="mt-2 text-sm text-gray-600">

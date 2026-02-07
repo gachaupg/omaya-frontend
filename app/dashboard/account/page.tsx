@@ -23,7 +23,7 @@ const Page = () => {
 
   return (
     <SettingsDataProvider>
-      <div className="container mx-auto overflow-x-hidden">
+      <div className="w-full overflow-x-hidden">
         <Settings />
       </div>
     </SettingsDataProvider>

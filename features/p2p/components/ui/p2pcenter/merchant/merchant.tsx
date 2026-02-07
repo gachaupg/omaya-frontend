@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
+import { useRouter } from 'next/navigation'
 import { RootState } from '@/store'
 import { submitMerchantApplicationThunk, clearMerchantError, clearMerchantSuccess, fetchMerchantApplicationStatusThunk } from '@/features/p2p/slices/merchantSlice'
 import { showToast } from '@/lib/utils/toast'
@@ -11,6 +12,7 @@ import { logger } from '@/lib/utils/logger';
 
 const Merchant = () => {
   const dispatch = useDispatch()
+  const router = useRouter()
   const { loading, error, success, status, statusLoading } = useSelector((state: RootState) => state.merchant)
   const { user, isAuthenticated } = useSelector((state: RootState) => state.auth)
   const summary = useSelector(selectTransactionSummary)
@@ -178,6 +180,8 @@ const Merchant = () => {
     setCurrentUploadType(null)
     dispatch(clearMerchantError())
     dispatch(clearMerchantSuccess())
+    // Navigate back to P2P Center
+    router.back()
   }
 
   // Show loading state while fetching status
