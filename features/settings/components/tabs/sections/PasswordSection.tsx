@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { Eye, EyeOff, Lock, CheckCircle2, Mail } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   sendPasswordResetOTP,
@@ -8,6 +7,7 @@ import {
 } from "@/features/settings/slices/settingsSlice";
 import { RootState, AppDispatch } from "@/store/rootReducer";
 import { showToast } from "@/lib/utils/toast";
+import { Lock, Eye, EyeOff, Mail, CheckCircle2 } from "lucide-react";
 
 interface PasswordChangeRequest {
   new_password: string;
@@ -292,11 +292,11 @@ const PasswordSection: React.FC = () => {
 
             <div className="flex items-center dark:bg-card bg-card rounded-[18px] px-3 sm:px-4 py-1 sm:py-2.5 border dark:border-accent border-border">
 
-              <Lock className="w-4 h-4 text-[#1D8751]" />
+              <Lock size={16} stroke="#1D8751" strokeWidth={2} />
 
               <input
                 type={showPasswords.new ? "text" : "password"}
-                className="bg-transparent flex-1 min-w-0 ml-2 py-1 outline-none text-sm sm:text-base text-[#788099] dark:text-white"
+                className="bg-transparent flex-1 min-w-0 ml-2 outline-none text-sm sm:text-base text-[#788099] dark:text-white"
                 placeholder="Enter new password"
                 value={formData.new_password}
                 onChange={(e) => handleInputChange("new_password", e.target.value)}
@@ -306,14 +306,9 @@ const PasswordSection: React.FC = () => {
               <button
                 type="button"
                 onClick={() => togglePasswordVisibility("new")}
-                style={{ minHeight: "0px" }}
-                className="dark:text-[#788099] text-gray-500 dark:hover:text-white hover:text-gray-700 transition-colors p-0 leading-none flex items-center justify-center h-fit min-h-0 w-fit"
+                className="dark:text-[#788099] text-gray-500 dark:hover:text-white hover:text-gray-700 transition-colors shrink-0 p-0 min-h-0 min-w-0 leading-none"
               >
-                {showPasswords.new ? (
-                  <EyeOff size={16} />
-                ) : (
-                  <Eye size={16} />
-                )}
+                {showPasswords.new ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
 
@@ -330,11 +325,11 @@ const PasswordSection: React.FC = () => {
 
             <div className="flex items-center dark:bg-card bg-card rounded-[18px] px-3 sm:px-4 py-1 sm:py-2.5 border dark:border-accent border-border">
 
-              <Lock className="w-4 h-4 text-[#1D8751]" />
+              <Lock size={16} stroke="#1D8751" strokeWidth={2} />
 
               <input
                 type={showPasswords.confirm ? "text" : "password"}
-                className="bg-transparent flex-1 min-w-0 ml-2 py-1 outline-none text-sm sm:text-base text-[#788099] dark:text-white"
+                className="bg-transparent flex-1 min-w-0 ml-2 outline-none text-sm sm:text-base text-[#788099] dark:text-white"
                 placeholder="Confirm new password"
                 value={formData.confirm_password}
                 onChange={(e) => handleInputChange("confirm_password", e.target.value)}
@@ -344,14 +339,9 @@ const PasswordSection: React.FC = () => {
               <button
                 type="button"
                 onClick={() => togglePasswordVisibility("confirm")}
-                style={{ minHeight: "0px" }}
-                className="dark:text-[#788099] text-gray-500 dark:hover:text-white hover:text-gray-700 transition-colors p-0 leading-none flex items-center justify-center h-fit min-h-0 w-fit"
+                className="dark:text-[#788099] text-gray-500 dark:hover:text-white hover:text-gray-700 transition-colors shrink-0 p-0 min-h-0 min-w-0 leading-none"
               >
-                {showPasswords.confirm ? (
-                  <EyeOff size={16} />
-                ) : (
-                  <Eye size={16} />
-                )}
+                {showPasswords.confirm ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
 
@@ -362,37 +352,35 @@ const PasswordSection: React.FC = () => {
         </div>
 
         {/* OTP Section */}
-        {
-          otpSent && (
-            <div className="mb-3">
-              <label className="block text-xs dark:text-white text-[#051015] mb-1">
-                Enter OTP {maskedEmail && <span className="text-gray-500">(sent to {maskedEmail})</span>}
-              </label>
-              <div className="flex items-center dark:bg-[var(--card-color)] bg-gray-100 rounded-2xl px-3 sm:px-4 py-2 sm:py-2.5 border dark:border-[#35353E] border-gray-300">
-                <Mail className="w-4 h-4 text-[#1D8751]" />
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={6}
-                  className="bg-transparent flex-1 min-w-0 ml-2 outline-none text-sm sm:text-base text-[#788099] dark:text-white tracking-widest text-center"
-                  placeholder="000000"
-                  value={otp}
-                  onChange={(e) => handleOtpChange(e.target.value)}
-                  disabled={otpVerified || verifyingOtp}
-                />
-              </div>
-              {errors.otp && (
-                <div className="text-red-500 text-xs mt-1">{errors.otp}</div>
-              )}
-              {otpVerified && (
-                <div className="mt-2 text-xs text-green-600 dark:text-green-400 flex items-center">
-                  <CheckCircle2 className="w-4 h-4 mr-1" />
-                  OTP Verified & Password Changed
-                </div>
-              )}
+        {otpSent && (
+          <div className="mb-3">
+            <label className="block text-xs dark:text-white text-[#051015] mb-1">
+              Enter OTP {maskedEmail && <span className="text-gray-500">(sent to {maskedEmail})</span>}
+            </label>
+            <div className="flex items-center dark:bg-[var(--card-color)] bg-gray-100 rounded-2xl px-3 sm:px-4 py-2 sm:py-2.5 border dark:border-[#35353E] border-gray-300">
+              <Mail size={16} stroke="#1D8751" strokeWidth={2} />
+              <input
+                type="text"
+                inputMode="numeric"
+                maxLength={6}
+                className="bg-transparent flex-1 min-w-0 ml-2 outline-none text-sm sm:text-base text-[#788099] dark:text-white tracking-widest text-center"
+                placeholder="000000"
+                value={otp}
+                onChange={(e) => handleOtpChange(e.target.value)}
+                disabled={otpVerified || verifyingOtp}
+              />
             </div>
-          )
-        }
+            {errors.otp && (
+              <div className="text-red-500 text-xs mt-1">{errors.otp}</div>
+            )}
+            {otpVerified && (
+              <div className="mt-2 text-xs text-green-600 dark:text-green-400 flex items-center">
+                <CheckCircle2 size={16} className="mr-1" strokeWidth={2} />
+                OTP Verified & Password Changed
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Action Buttons */}
         <div className="flex flex-col gap-2">
