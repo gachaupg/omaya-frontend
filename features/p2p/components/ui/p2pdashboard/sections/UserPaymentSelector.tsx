@@ -213,7 +213,7 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
                       </div>
                       <div>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                          Account Number
+                          {selectedMethod?.toLowerCase().includes('mobile') || selectedMethod?.toLowerCase().includes('money') ? 'Phone Number' : 'Account Number'}
                         </p>
                         <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                           {detail.account_number}

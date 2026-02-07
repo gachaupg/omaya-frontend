@@ -445,19 +445,28 @@ const MarketTable: React.FC<MarketTableProps> = ({
                     </Button>
                   </div>
                 </div>
-
-                {selectedRowIndex === idx && (
-                  <div className="mt-4 p-2 sm:p-3 lg:p-4 w-full -mx-2 sm:mx-0">
-                    <TradePreview
-                      advertiserData={row}
-                      onClose={() => setSelectedRowIndex(null)}
-                      tradeType={activeTab as "buy" | "sell"}
-                      paymentDetails={row.payment_details}
-                    />
-                  </div>
-                )}
               </React.Fragment>
             ))
+          )}
+
+          {/* Trade Preview Modal - Centered on screen */}
+          {selectedRowIndex !== null && filteredData[selectedRowIndex] && (
+            <div 
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+              onClick={() => setSelectedRowIndex(null)}
+            >
+              <div 
+                className="w-full max-w-5xl max-h-[90vh] overflow-y-auto"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <TradePreview
+                  advertiserData={filteredData[selectedRowIndex]}
+                  onClose={() => setSelectedRowIndex(null)}
+                  tradeType={activeTab as "buy" | "sell"}
+                  paymentDetails={filteredData[selectedRowIndex].payment_details}
+                />
+              </div>
+            </div>
           )}
 
           {/* ---------------- pagination --------------- */}

@@ -4,10 +4,25 @@ import Link from "next/link";
 import RatesCalculator from "./RatesCalculator";
 import RatesTransactionHistory from "./RatesTransactionHistory";
 import { useRatesI18n } from "@/lib/useRatesI18n";
+import { useSelector, useDispatch } from "react-redux";
+import { RootState } from "@/store/rootReducer";
+import { openKYCModal } from "@/features/auth/slices/authSlice";
 
 const Rates = () => {
   const [activeTab, setActiveTab] = React.useState<'crypto' | 'moneyx'>('crypto');
   const { t } = useRatesI18n();
+  const dispatch = useDispatch();
+  const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
+  const isVerified = user?.is_verified === true;
+
+  // Handle Money X tab click - check verification
+  const handleMoneyXClick = () => {
+    if (!isAuthenticated || !isVerified) {
+      dispatch(openKYCModal());
+      return;
+    }
+    setActiveTab('moneyx');
+  };
 
   // Debug
   React.useEffect(() => {
@@ -52,7 +67,7 @@ const Rates = () => {
 
         {/* MoneyX with image */}
         <button
-          onClick={() => setActiveTab('moneyx')}
+          onClick={handleMoneyXClick}
           className={`px-4 sm:px-6 py-1 md:py-2 rounded-lg transition-all flex items-center gap-1 
       ${activeTab === 'moneyx'
               ? 'bg-[#155836] text-white'
