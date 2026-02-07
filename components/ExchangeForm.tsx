@@ -1263,7 +1263,7 @@ export default function ExchangeForm({
             <span className={`${textColorClass} text-[10px] sm:text-xs md:text-sm lg:text-base font-bold uppercase`} style={{ lineHeight: 1 }}>E</span>
             <img
               src={isActive && isDark ? exchangeIconSrc2 : exchangeIconSrc1}
-              className="h-[10px] sm:h-[11px] md:h-[13px] lg:h-[15px] w-auto"
+              className="h-[10px] mt-2 sm:h-[11px] md:h-[13px] lg:h-[15px] w-auto"
               alt="X"
               style={{ display: 'inline-block' }}
             />
@@ -1276,7 +1276,7 @@ export default function ExchangeForm({
             <span className={`${textColorClass} text-[10px] sm:text-xs md:text-sm lg:text-base font-bold`} style={{ lineHeight: 1 }}>Money</span>
             <img
               src={isActive && isDark ? moneyXIconSrc2 : moneyXIconSrc1}
-              className="h-[10px] sm:h-[11px] md:h-[13px] lg:h-[15px] w-auto"
+              className="h-[10px] mt-2 sm:h-[11px] md:h-[13px] lg:h-[15px] w-auto"
               alt="X"
               style={{ display: 'inline-block' }}
             />

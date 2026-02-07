@@ -29,6 +29,18 @@ const transactionSlice = createSlice({
     clearError: (state) => {
       state.error = null;
     },
+    prependTransaction: (state, action: PayloadAction<Transaction>) => {
+      const exists = state.transactions.some(
+        (t) => t.transaction_id === action.payload.transaction_id
+      );
+      if (!exists) {
+        state.transactions.unshift(action.payload);
+        state.transactions.splice(100, state.transactions.length); // Keep last 100
+      }
+    },
+    setTransactionsFromWebSocket: (state, action: PayloadAction<Transaction[]>) => {
+      state.transactions = action.payload;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -50,5 +62,6 @@ const transactionSlice = createSlice({
   },
 });
 
-export const { clearError } = transactionSlice.actions;
+export const { clearError, prependTransaction, setTransactionsFromWebSocket } =
+  transactionSlice.actions;
 export default transactionSlice.reducer;

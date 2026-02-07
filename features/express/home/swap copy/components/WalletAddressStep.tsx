@@ -1,7 +1,8 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useTheme } from "@/context/theme";
 import { logger } from "@/lib/utils/logger";
+import { useValidateAddress } from "@/hooks/useValidateAddress";
 import { SupportedAsset } from "../types";
 import { useBookmarkedAddresses } from "@/features/express/hooks/useBookmarkedAddresses";
 import { BookmarkDropdown } from "@/features/express/components/forms/BookmarkDropdown";
@@ -30,28 +31,28 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
 }) => {
   const { isDark } = useTheme();
   const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
+  const [walletError, setWalletError] = useState<string | null>(null);
   const [expandedTerms, setExpandedTerms] = useState(false);
   const [bookmarkOpen, setBookmarkOpen] = useState(false);
   const bookmarkAnchorRef = useRef<HTMLSpanElement>(null);
 
-  // Get currency from fromAsset (the asset user is sending/depositing)
-  const getCurrencyFromAsset = (asset: SupportedAsset | null): string | undefined => {
+  const getCurrencyFromAsset = useCallback((asset: SupportedAsset | null): string | undefined => {
     if (!asset) return undefined;
     if (asset.ticker) return asset.ticker.toUpperCase();
     if (asset.symbol) return asset.symbol === "USDT Tether" ? "USDT" : asset.symbol.toUpperCase();
     if (asset.name) return asset.name.toUpperCase();
     return undefined;
-  };
+  }, []);
+
+  const getNetworkFromAsset = useCallback((asset: SupportedAsset | null): string | undefined => {
+    if (!asset) return undefined;
+    return asset.network || undefined;
+  }, []);
 
   const receiveAssetName = toAsset?.name || toAsset?.symbol || toAsset?.ticker || "the selected asset";
   const currentCurrency = getCurrencyFromAsset(toAsset);
   const sendAssetName = fromAsset?.name || fromAsset?.symbol || fromAsset?.ticker || "the selected asset";
   const sendNetwork = fromAsset?.network || "the selected network";
-
-  const getNetworkFromAsset = (asset: SupportedAsset | null): string | undefined => {
-    if (!asset) return undefined;
-    return asset.network || undefined;
-  };
   const currentNetwork = getNetworkFromAsset(toAsset);
 
   const {
@@ -62,6 +63,61 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
     saveBookmark,
   } = useBookmarkedAddresses(currentCurrency, currentNetwork || undefined);
 
+  const {
+    result: addressValidationResult,
+    isValidating: isAddressValidating,
+    error: addressValidationError,
+    validate: validateAddress,
+    reset: resetAddressValidation,
+  } = useValidateAddress({
+    currency: currentCurrency,
+    network: currentNetwork,
+    debounceMs: 500,
+    minLength: 0,
+    validateEmpty: false,
+  });
+
+  useEffect(() => {
+    if (walletAddress.trim() === "") {
+      setWalletError(null);
+      return;
+    }
+    if (isAddressValidating) return;
+    if (addressValidationResult) {
+      if (!addressValidationResult.isValid) {
+        setWalletError(
+          addressValidationResult.message ||
+          addressValidationResult.error ||
+          "Invalid address"
+        );
+      } else {
+        setWalletError(null);
+      }
+    } else if (addressValidationError) {
+      setWalletError(addressValidationError);
+    }
+  }, [
+    addressValidationResult,
+    addressValidationError,
+    isAddressValidating,
+    walletAddress,
+  ]);
+
+  useEffect(() => {
+    if (walletAddress.trim() && currentCurrency) {
+      resetAddressValidation();
+      validateAddress(walletAddress, currentCurrency, currentNetwork);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentCurrency, currentNetwork]);
+
+  useEffect(() => {
+    if (walletAddress.trim() && currentCurrency) {
+      validateAddress(walletAddress, currentCurrency, currentNetwork);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handlePaste = async () => {
     try {
       const text = await navigator.clipboard.readText();
@@ -69,6 +125,11 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
         target: { value: text },
       } as React.ChangeEvent<HTMLInputElement>;
       onWalletAddressChange(syntheticEvent);
+      if (text.trim() && currentCurrency) {
+        validateAddress(text, currentCurrency, currentNetwork);
+      } else {
+        resetAddressValidation();
+      }
     } catch (err) {
       logger.error("swap", "Failed to read clipboard:", err);
     }
@@ -81,8 +142,19 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
 
   const trimmedWalletAddress = walletAddress.trim();
   const hasWalletInput = trimmedWalletAddress.length > 0;
+  const shouldBlockForInvalidAddress =
+    hasWalletInput &&
+    !!addressValidationResult &&
+    !addressValidationResult.isValid;
+  const shouldBlockWhileValidating =
+    hasWalletInput && isAddressValidating;
   const isSubmitDisabled =
-    !hasAcceptedTerms || !hasWalletInput || isLoading;
+    !hasAcceptedTerms ||
+    !hasWalletInput ||
+    isLoading ||
+    !!walletError ||
+    shouldBlockForInvalidAddress ||
+    shouldBlockWhileValidating;
 
   return (
     <div className="w-full flex flex-col px-1 sm:px-0">
@@ -135,9 +207,18 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                   <input
                     type="text"
                     value={walletAddress}
-                    onChange={onWalletAddressChange}
+                    onChange={(e) => {
+                      onWalletAddressChange(e);
+                      setWalletError(null);
+                      if (e.target.value.trim() === "") {
+                        resetAddressValidation();
+                        setWalletError(null);
+                      } else {
+                        validateAddress(e.target.value, currentCurrency, currentNetwork);
+                      }
+                    }}
                     placeholder={`Paste ${currentCurrency || receiveAssetName} address`}
-                    className={`flex-1 min-w-0 bg-transparent border-none outline-none text-[#35353e] dark:text-[#788099] placeholder-[#788099] text-xs sm:text-base`}
+                    className={`flex-1 min-w-0 bg-transparent border-none outline-none text-[#35353e] dark:text-[#788099] placeholder-[#788099] text-xs sm:text-base ${walletError ? "text-red-500" : ""}`}
                     disabled={isLoading}
                   />
                   {/* Bookmark icon - clickable to load from bookmarks */}
@@ -169,6 +250,11 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                       onSelect={(addr) => {
                         const syntheticEvent = { target: { value: addr } } as React.ChangeEvent<HTMLInputElement>;
                         onWalletAddressChange(syntheticEvent);
+                        if (addr.trim() && currentCurrency) {
+                          validateAddress(addr, currentCurrency, currentNetwork);
+                        } else {
+                          resetAddressValidation();
+                        }
                       }}
                       onSaveCurrent={async () => {
                         if (!walletAddress.trim() || !currentCurrency) return;
@@ -203,6 +289,33 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                   Paste
                 </button>
               </div>
+              {walletError && (
+                <p className="mt-2 text-red-500 text-xs sm:text-sm font-medium flex items-center gap-2 break-all">
+                  <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>{walletError}</span>
+                </p>
+              )}
+              {walletAddress.trim() && (
+                <div className="mt-2">
+                  {isAddressValidating && (
+                    <p className="text-[#1D8751] text-sm font-medium flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-[#1D8751] border-t-transparent rounded-full animate-spin" />
+                      Validating address...
+                    </p>
+                  )}
+                  {!isAddressValidating && !walletError && addressValidationResult?.isValid && (
+                    <p className="text-[#1D8751] text-sm font-medium flex items-center gap-2">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+                      </svg>
+                      Valid address ✓
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Important Crypto Warning Banner */}

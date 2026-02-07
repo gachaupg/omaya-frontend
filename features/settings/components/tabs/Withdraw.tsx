@@ -23,7 +23,10 @@ const Withdraw = () => {
   const [amount, setAmount] = useState("");
   const [confirmAddress, setConfirmAddress] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
-  const [otp, setOtp] = useState("");
+  const [otpDigits, setOtpDigits] = useState<string[]>(
+    Array.from({ length: 6 }, () => "")
+  );
+  const otp = otpDigits.join("");
   const [resendTimer, setResendTimer] = useState(0); // Timer in seconds (5 minutes = 300 seconds)
   const [isResending, setIsResending] = useState(false);
   const [errors, setErrors] = useState<{
@@ -40,6 +43,7 @@ const Withdraw = () => {
   // Cache for fees by amount to avoid redundant API calls
   const feesCacheRef = useRef<Map<string, ReferralFeeCalculation>>(new Map());
   const lastCalculatedAmountRef = useRef<string>("");
+  const otpInputRefs = useRef<Array<HTMLInputElement | null>>([]);
 
   // Debounce amount to avoid too many API calls
   const debouncedAmount = useDebounce(amount, 500);
@@ -102,10 +106,68 @@ const Withdraw = () => {
 
   const handleOtpSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (withdrawalId && otp) {
+    const isCompleteOtp = otpDigits.every((d) => d.length === 1);
+    if (withdrawalId && isCompleteOtp) {
       dispatch(verifyReferralOtp({ withdrawal_id: withdrawalId, otp }));
     }
   };
+
+  const handleOtpDigitChange = useCallback((index: number, value: string) => {
+    const raw = (value || "").replace(/\D/g, "");
+
+    // Handle paste of multiple digits
+    if (raw.length > 1) {
+      setOtpDigits((prev) => {
+        const next = [...prev];
+        for (let i = 0; i < raw.length && index + i < 6; i++) {
+          next[index + i] = raw[i];
+        }
+        return next;
+      });
+
+      const nextFocusIndex = Math.min(index + raw.length, 5);
+      otpInputRefs.current[nextFocusIndex]?.focus();
+      return;
+    }
+
+    const digit = raw.slice(-1); // keep last digit only
+    setOtpDigits((prev) => {
+      const next = [...prev];
+      next[index] = digit;
+      return next;
+    });
+
+    if (digit && index < 5) {
+      otpInputRefs.current[index + 1]?.focus();
+    }
+  }, []);
+
+  const handleOtpDigitKeyDown = useCallback(
+    (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key !== "Backspace") return;
+
+      // If current box has a value, clear it
+      if (otpDigits[index]) {
+        setOtpDigits((prev) => {
+          const next = [...prev];
+          next[index] = "";
+          return next;
+        });
+        return;
+      }
+
+      // Otherwise move focus to previous and clear it
+      if (index > 0) {
+        otpInputRefs.current[index - 1]?.focus();
+        setOtpDigits((prev) => {
+          const next = [...prev];
+          next[index - 1] = "";
+          return next;
+        });
+      }
+    },
+    [otpDigits]
+  );
 
   // Handle success
   useEffect(() => {
@@ -120,6 +182,17 @@ const Withdraw = () => {
     }
   }, [success]);
 
+  // Extract error message from API response (string or { error: string })
+  const getOtpErrorMessage = (err: unknown): string => {
+    if (!err) return "";
+    if (typeof err === "string") return err;
+    if (typeof err === "object" && err !== null) {
+      const obj = err as Record<string, unknown>;
+      return (obj.error as string) || (obj.message as string) || "";
+    }
+    return "";
+  };
+
   // Start countdown timer when OTP modal opens
   useEffect(() => {
     if (showOtpModal) {
@@ -128,6 +201,18 @@ const Withdraw = () => {
       setResendTimer(0);
     }
   }, [showOtpModal]);
+
+  // When "account locked for 30 minutes" error, set resend timer to 30 min
+  useEffect(() => {
+    const msg = getOtpErrorMessage(otpError);
+    if (
+      msg &&
+      (msg.toLowerCase().includes("locked for 30 minutes") ||
+        msg.toLowerCase().includes("too many failed attempts"))
+    ) {
+      setResendTimer(30 * 60); // 30 minutes
+    }
+  }, [otpError]);
 
   // Countdown timer
   useEffect(() => {
@@ -170,7 +255,7 @@ const Withdraw = () => {
       
       // Reset timer to 5 minutes
       setResendTimer(300);
-      setOtp(""); // Clear current OTP input
+      setOtpDigits(Array.from({ length: 6 }, () => "")); // Clear current OTP input
     } catch (error) {
       // Error is handled by Redux state
     } finally {
@@ -642,7 +727,7 @@ const Withdraw = () => {
           {/* OTP Modal */}
           {showOtpModal && (
             <div className="fixed inset-0 flex items-center justify-center z-[9999] pointer-events-none">
-              <div className="bg-white dark:bg-[#1A1A1F] border-2 border-[#1D8751] rounded-2xl p-6 sm:p-8 max-w-md mx-4 shadow-2xl pointer-events-auto">
+              <div className="bg-white dark:bg-[#1A1A1F] border-2 border-[#1D8751] rounded-2xl p-6 sm:p-8 w-full max-w-lg mx-4 shadow-2xl pointer-events-auto">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-xl font-bold text-[#0D0D0D] dark:text-white">Enter OTP</h3>
                   <button
@@ -660,17 +745,30 @@ const Withdraw = () => {
                   Please enter the OTP sent to verify your withdrawal.
                 </p>
                 <form onSubmit={handleOtpSubmit}>
-                  <input
-                    type="text"
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-                    placeholder="Enter 6-digit OTP"
-                    maxLength={6}
-                    className="w-full bg-white dark:bg-[var(--bg-color)] border-2 border-[#E8EFF5] dark:border-[#35353F] rounded-xl px-4 py-3 text-[#0D0D0D] dark:text-white text-lg text-center tracking-widest focus:outline-none focus:border-[#1D8751] mb-4"
-                  />
+                  <div className="flex items-center justify-center gap-2 sm:gap-3 mb-4">
+                    {Array.from({ length: 6 }).map((_, index) => (
+                      <input
+                        key={index}
+                        ref={(el) => {
+                          otpInputRefs.current[index] = el;
+                        }}
+                        type="text"
+                        inputMode="numeric"
+                        autoComplete="one-time-code"
+                        maxLength={6} // allow paste into any box
+                        value={otpDigits[index] || ""}
+                        onChange={(e) =>
+                          handleOtpDigitChange(index, e.target.value)
+                        }
+                        onKeyDown={(e) => handleOtpDigitKeyDown(index, e)}
+                        className="w-11 h-12 sm:w-12 sm:h-14 bg-white dark:bg-[var(--bg-color)] border-2 border-[#E8EFF5] dark:border-[#35353F] rounded-xl text-[#0D0D0D] dark:text-white text-lg text-center focus:outline-none focus:border-[#1D8751]"
+                        aria-label={`OTP digit ${index + 1}`}
+                      />
+                    ))}
+                  </div>
                   {otpError && (
                     <div className="text-red-500 text-sm mb-4 text-center">
-                      {typeof otpError === "string" ? otpError : JSON.stringify(otpError)}
+                      {getOtpErrorMessage(otpError)}
                     </div>
                   )}
                   
@@ -730,7 +828,7 @@ const Withdraw = () => {
                     </button>
                     <button
                       type="submit"
-                      disabled={otpVerifying || !otp || otp.length !== 6}
+                      disabled={otpVerifying || !otpDigits.every((d) => d.length === 1)}
                       className="flex-1 bg-[#1D8751] text-white py-3 rounded-xl text-base font-medium hover:bg-[#166b3e] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                     >
                       {otpVerifying && (

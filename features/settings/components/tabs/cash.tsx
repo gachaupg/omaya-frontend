@@ -3,9 +3,10 @@ import { useDispatch, useSelector } from 'react-redux'
 import { useRouter } from 'next/navigation'
 import Button from "@/components/ui/Button"
 import { createCashWithdrawal, clearSuccess, clearError, calculateCashWithdrawalFees, clearFees } from '../../slices/cashWithdrawalSlice'
-import { fetchUserPaymentDetails } from '@/features/p2p/slices/paymentMethodsSlice'
+import { fetchUserPaymentDetails, fetchAdminPaymentMethods } from '@/features/p2p/slices/paymentMethodsSlice'
 import { AppDispatch } from '@/store/rootReducer'
 import UserPaymentSelector, { UserPaymentDetail } from '@/features/p2p/components/ui/p2pdashboard/sections/UserPaymentSelector'
+import PaymentMethodsModal from '@/features/p2p/components/ui/p2pdashboard/sections/PaymentMethodsModal'
 import { showToast } from '@/lib/utils/toast'
 import { useDebounce } from '@/hooks/useDebounce'
 
@@ -19,13 +20,14 @@ function Cash({ sharedFeesError }: CashProps) {
   const dispatch = useDispatch<AppDispatch>()
   const router = useRouter()
   const { loading, error, success, message, withdrawalData, fees, feesLoading, feesError } = useSelector((state: any) => state.cashWithdrawal)
-  const { userPaymentDetails, userDetailsLoading } = useSelector((state: any) => state.paymentMethods)
+  const { userPaymentDetails, userDetailsLoading, adminMethods } = useSelector((state: any) => state.paymentMethods)
   
   const [amount, setAmount] = useState("")
   const [selectedPaymentDetails, setSelectedPaymentDetails] = useState<UserPaymentDetail[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [isTermsAccepted, setIsTermsAccepted] = useState(false)
+  const [showAddPaymentModal, setShowAddPaymentModal] = useState(false)
   const [errors, setErrors] = useState<{
     amount?: string;
     paymentMethod?: string;
@@ -40,9 +42,10 @@ function Cash({ sharedFeesError }: CashProps) {
   const netAmount = amount ? Number(amount) : 0
   const totalWithFees = netAmount + totalFees
 
-  // Load user payment details on component mount
+  // Load user payment details and admin methods on component mount
   useEffect(() => {
     dispatch(fetchUserPaymentDetails() as any)
+    dispatch(fetchAdminPaymentMethods() as any)
   }, [dispatch])
 
   const normalizedFeesError =
@@ -413,9 +416,11 @@ function Cash({ sharedFeesError }: CashProps) {
                 userPaymentDetails={(userPaymentDetails || []).filter(
                   (detail: UserPaymentDetail) => detail.payment_method_name?.toLowerCase() !== 'crypto'
                 )}
+                adminMethods={adminMethods || []}
                 onSelect={handleSelectPaymentDetail}
                 onRemove={handleRemovePaymentDetail}
                 selectedDetails={selectedPaymentDetails}
+                onAddPaymentMethod={() => setShowAddPaymentModal(true)}
               />
               
               {errors.paymentMethod && (
@@ -557,6 +562,15 @@ function Cash({ sharedFeesError }: CashProps) {
             </div>
           </div>
         </form>
+
+      <PaymentMethodsModal
+        open={showAddPaymentModal}
+        onClose={() => setShowAddPaymentModal(false)}
+        onAdd={() => {
+          dispatch(fetchUserPaymentDetails() as any)
+          setShowAddPaymentModal(false)
+        }}
+      />
     </>
   )
 }

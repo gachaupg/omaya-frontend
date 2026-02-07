@@ -7,8 +7,15 @@ import {
   fetchUserPaymentDetails,
   deleteUserPaymentDetail,
 } from "@/features/p2p/slices/paymentMethodsSlice";
+import {
+  fetchP2PDepositAddresses,
+  createP2PDepositAddress,
+  clearCreateStatus,
+} from "@/features/p2p/slices/p2pDepositAddressesSlice";
 import { UserPaymentDetail } from "@/features/p2p/components/ui/p2pdashboard/sections/UserPaymentSelector";
 import PaymentMethodsModal from "@/features/p2p/components/ui/p2pdashboard/sections/PaymentMethodsModal";
+import { showToast } from "@/lib/utils/toast";
+import CopyButton from "@/components/ui/CopyButton";
 
 const PaymentMethods = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -22,6 +29,13 @@ const PaymentMethods = () => {
   const { postOrderLoading, postOrderError, postOrderSuccess } = useSelector(
     (state: RootState) => state.p2pAds
   );
+  const {
+    addresses: p2pDepositAddresses,
+    loading: p2pAddressesLoading,
+    createLoading: p2pCreateLoading,
+    createError: p2pCreateError,
+    createSuccess: p2pCreateSuccess,
+  } = useSelector((state: RootState) => state.p2pDepositAddresses);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [deletingMethodId, setDeletingMethodId] = useState<string | null>(null);
   const [activeButton, setActiveButton] = useState("Approved");
@@ -45,6 +59,30 @@ const PaymentMethods = () => {
       dispatch(fetchAdminPaymentMethods() as any);
     }
   }, [dispatch, isAuthenticated]);
+
+  useEffect(() => {
+    if (isAuthenticated && activeButton === "OMAYA Wallets") {
+      dispatch(fetchP2PDepositAddresses() as any);
+    }
+  }, [dispatch, isAuthenticated, activeButton]);
+
+  const handleGenerateAddress = () => {
+    dispatch(createP2PDepositAddress({ asset: "USDT", network: "BSC" }) as any);
+  };
+
+  React.useEffect(() => {
+    if (p2pCreateError) {
+      showToast.error(p2pCreateError);
+      dispatch(clearCreateStatus());
+    }
+  }, [p2pCreateError, dispatch]);
+
+  React.useEffect(() => {
+    if (p2pCreateSuccess) {
+      showToast.success("New OMAYA wallet address generated successfully!");
+      dispatch(clearCreateStatus());
+    }
+  }, [p2pCreateSuccess, dispatch]);
 
   const handleDeleteMethod = async (methodId: string) => {
     try {
@@ -89,14 +127,69 @@ const PaymentMethods = () => {
           Payment Methods
         </p>
         <div className="rounded-[32px] border border-[#20202A] dark:border-[#1E1E27] bg-white dark:bg-[var(--card-color)] p-2 sm:p-3 md:p-4 space-y-3">
-          {filteredPayments.length === 0 && (
-            <div className="rounded-2xl border border-dashed border-[#E3E6F0] dark:border-[#2A2A35] py-10 text-center text-sm text-gray-500 dark:text-[#7B819C]">
-              {activeButton === "OMAYA Wallets"
-                ? "No OMAYA wallet addresses yet."
-                : `No payment methods in ${activeButton.toLowerCase()} state yet.`}
-            </div>
-          )}
-          {filteredPayments.map((payment: UserPaymentDetail) => {
+          {activeButton === "OMAYA Wallets" ? (
+            <>
+              {p2pAddressesLoading ? (
+                <div className="rounded-2xl border border-dashed border-[#E3E6F0] dark:border-[#2A2A35] py-10 text-center text-sm text-gray-500 dark:text-[#7B819C]">
+                  Loading OMAYA wallet addresses...
+                </div>
+              ) : p2pDepositAddresses.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-[#E3E6F0] dark:border-[#2A2A35] py-10 text-center text-sm text-gray-500 dark:text-[#7B819C]">
+                  No OMAYA wallet addresses yet. Click &quot;Generate New Address&quot; to create one.
+                </div>
+              ) : (
+                p2pDepositAddresses.map((addr) => (
+                  <div
+                    key={addr.id}
+                    className="flex flex-col gap-3 rounded-[28px] border border-[#E3E6F0] dark:border-[#2A2A35] bg-gray-50 dark:bg-[var(--card-color)] px-4 py-4"
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className="relative">
+                        <img
+                          src="/images/tether.svg"
+                          alt="USDT"
+                          className="w-12 h-12 object-contain flex-shrink-0"
+                          style={{ display: "block" }}
+                          onError={(e) => {
+                            e.currentTarget.src = "/default-provider-logo.svg";
+                          }}
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
+                          OMAYA Wallet
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-[#8B90A5] mt-0.5">
+                          {addr.network_name || addr.chain} • {addr.is_default ? "Default" : ""}
+                        </p>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-gray-500 dark:text-[#8B90A5] mb-2 block">
+                        Wallet Address
+                      </label>
+                      <div className="rounded-full border border-[#E3E6F0] dark:border-[#2A2A35] bg-white dark:bg-[var(--card-color)] px-4 py-2 flex items-center gap-2 text-sm">
+                        <input
+                          type="text"
+                          readOnly
+                          value={addr.address}
+                          className="flex-1 bg-transparent focus:outline-none text-gray-900 dark:text-white"
+                        />
+                        <CopyButton value={addr.address} />
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </>
+          ) : (
+            <>
+              {filteredPayments.length === 0 && (
+                <div className="rounded-2xl border border-dashed border-[#E3E6F0] dark:border-[#2A2A35] py-10 text-center text-sm text-gray-500 dark:text-[#7B819C]">
+                  No payment methods in {activeButton.toLowerCase()} state yet.
+                </div>
+              )}
+              {filteredPayments.map((payment: UserPaymentDetail) => {
             const isPending = payment.status?.toLowerCase() === "pending";
             const isBankMethod =
               payment?.payment_method_name
@@ -198,6 +291,8 @@ const PaymentMethods = () => {
               </div>
             );
           })}
+            </>
+          )}
         </div>
       </div>
       <PaymentMethodsModal

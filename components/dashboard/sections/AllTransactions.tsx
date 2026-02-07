@@ -7,6 +7,7 @@ import { formatDistanceToNow } from "date-fns";
 import { NoDataFound } from "../ui/Transactions";
 import { useDashboardI18n } from "@/lib/useDashboardI18n";
 import { SortArrowsIcon } from "@/components/ui/SortArrowsIcon";
+import { FaUniversity } from "react-icons/fa";
 import type { AllTransactionItem } from "@/features/transactions/api";
 
 const formatAmount = (amount: string | number | undefined | null): string => {
@@ -138,23 +139,73 @@ const AllTransactions = () => {
     );
   }
 
+  const getFromToDisplay = (tx: AllTransactionItem) => {
+    if (tx.type === "swap") {
+      return {
+        from: `${tx.from_currency || tx.currency} (${tx.from_network || tx.network || "-"})`,
+        to: `${tx.to_currency || "-"} (${tx.to_network || "-"})`,
+      };
+    }
+    if (tx.type === "exchange") {
+      const isDeposit = tx.sub_type === "deposit";
+      return {
+        from: isDeposit ? "Bank / Payment" : `${tx.currency || "USDT"} (${tx.network || "-"})`,
+        to: isDeposit ? `${tx.currency || "USDT"} (${tx.network || "-"})` : "Bank / Wallet",
+      };
+    }
+    if (tx.type === "moneyx") {
+      return {
+        from: tx.sender_provider || "-",
+        to: tx.receiver_provider || tx.recipient_name || "-",
+      };
+    }
+    if (tx.type === "p2p" && (tx.from_currency || tx.to_currency)) {
+      return {
+        from: `${tx.from_currency || tx.currency} (${tx.from_network || tx.network || "-"})`,
+        to: `${tx.to_currency || "-"} (${tx.to_network || "-"})`,
+      };
+    }
+    return {
+      from: tx.sender_provider || "-",
+      to: tx.receiver_provider || tx.recipient_name || "-",
+    };
+  };
+
+  const renderAssetIcon = (tx: AllTransactionItem) => {
+    if (tx.type === "moneyx" && !tx.asset_image) {
+      return (
+        <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#1D8751] flex items-center justify-center flex-shrink-0">
+          <FaUniversity className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
+        </div>
+      );
+    }
+    if (tx.asset_image) {
+      return (
+        <img
+          src={tx.asset_image}
+          alt={tx.currency || "Asset"}
+          className="w-7 h-7 sm:w-8 sm:h-8 rounded-full shadow-sm flex-shrink-0"
+          onError={(e) => {
+            e.currentTarget.style.display = "none";
+          }}
+        />
+      );
+    }
+    return (
+      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gray-200 dark:bg-[#35353E] flex items-center justify-center flex-shrink-0">
+        <span className="text-xs font-semibold text-gray-600 dark:text-[#A0A3BC]">
+          {(tx.currency || tx.asset || "?").slice(0, 1)}
+        </span>
+      </div>
+    );
+  };
+
   const renderRow = (tx: AllTransactionItem, index: number) => {
     const isExchange = tx.type === "exchange";
     const isDeposit = tx.sub_type === "deposit";
+    const { from: fromDisplay, to: toDisplay } = getFromToDisplay(tx);
 
-    const fromDisplay = isExchange
-      ? isDeposit
-        ? "Bank / Payment"
-        : `${tx.currency || "USDT"} (${tx.network || "-"})`
-      : tx.sender_provider || "-";
-
-    const toDisplay = isExchange
-      ? isDeposit
-        ? `${tx.currency || "USDT"} (${tx.network || "-"})`
-        : "Bank / Wallet"
-      : tx.receiver_provider || tx.recipient_name || "-";
-
-    const assetName = getAssetName(tx.currency || "USDT");
+    const assetName = getAssetName(tx.currency || tx.asset || "USDT");
     return (
       <tr
         key={tx.id || `tx-${index}`}
@@ -162,19 +213,10 @@ const AllTransactions = () => {
       >
         <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E]">
           <div className="flex items-center gap-2 sm:gap-3">
-            {tx.asset_image && (
-              <img
-                src={tx.asset_image}
-                alt={tx.currency || "Asset"}
-                className="w-7 h-7 sm:w-8 sm:h-8 rounded-full shadow-sm flex-shrink-0"
-                onError={(e) => {
-                  e.currentTarget.style.display = "none";
-                }}
-              />
-            )}
+            {renderAssetIcon(tx)}
             <div className="flex flex-col min-w-0">
               <span className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white truncate">
-                {tx.currency || "USDT"}
+                {tx.currency || tx.asset || "USDT"}
               </span>
               {assetName && (
                 <span className="text-xs text-gray-500 dark:text-[#A0A3BC] truncate">
@@ -236,18 +278,36 @@ const AllTransactions = () => {
   const renderMobileCard = (tx: AllTransactionItem, index: number) => {
     const isExchange = tx.type === "exchange";
     const isDeposit = tx.sub_type === "deposit";
+    const { from: fromDisplay, to: toDisplay } = getFromToDisplay(tx);
 
-    const fromDisplay = isExchange
-      ? isDeposit
-        ? "Bank / Payment"
-        : `${tx.currency || "USDT"}`
-      : tx.sender_provider || "-";
-
-    const toDisplay = isExchange
-      ? isDeposit
-        ? `${tx.currency || "USDT"}`
-        : "Bank / Wallet"
-      : tx.receiver_provider || tx.recipient_name || "-";
+    const renderMobileAssetIcon = () => {
+      if (tx.type === "moneyx" && !tx.asset_image) {
+        return (
+          <div className="w-10 h-10 rounded-full bg-[#1D8751] flex items-center justify-center flex-shrink-0">
+            <FaUniversity className="w-5 h-5 text-white" />
+          </div>
+        );
+      }
+      if (tx.asset_image) {
+        return (
+          <img
+            src={tx.asset_image}
+            alt={tx.currency || "Asset"}
+            className="w-10 h-10 rounded-full shadow-sm flex-shrink-0"
+            onError={(e) => {
+              e.currentTarget.style.display = "none";
+            }}
+          />
+        );
+      }
+      return (
+        <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-[#35353E] flex items-center justify-center flex-shrink-0">
+          <span className="text-sm font-semibold text-gray-600 dark:text-[#A0A3BC]">
+            {(tx.currency || tx.asset || "?").slice(0, 1)}
+          </span>
+        </div>
+      );
+    };
 
     return (
       <div
@@ -256,19 +316,10 @@ const AllTransactions = () => {
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {tx.asset_image && (
-              <img
-                src={tx.asset_image}
-                alt={tx.currency || "Asset"}
-                className="w-10 h-10 rounded-full shadow-sm flex-shrink-0"
-                onError={(e) => {
-                  e.currentTarget.style.display = "none";
-                }}
-              />
-            )}
+            {renderMobileAssetIcon()}
             <div>
               <div className="font-semibold text-sm uppercase tracking-wide text-gray-900 dark:text-white">
-                {tx.currency || "USDT"}
+                {tx.currency || tx.asset || "USDT"}
               </div>
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#1D8751]/10 text-[#1D8751]">
                 {getTypeLabel(tx.type, tx.sub_type)}

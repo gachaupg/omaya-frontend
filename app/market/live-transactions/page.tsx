@@ -46,6 +46,8 @@ const getBankLogo = (bankName: string): string => {
   return "https://res.cloudinary.com/pitz/image/upload/v1764667057/salam_vizvxy.svg";
 };
 
+const ITEMS_PER_PAGE = 20;
+
 // Helper function to get currency/asset logo
 const getCurrencyLogo = (currency: string): string => {
   const currencyLower = (currency || "").toLowerCase();
@@ -62,9 +64,6 @@ const getCurrencyLogo = (currency: string): string => {
   
   return currencyLogos[currencyLower] || "/icons/usdt.svg";
 };
-
-// Pagination constant
-const ITEMS_PER_PAGE = 10;
 
 const LiveTransactionsPage = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -245,10 +244,11 @@ const LiveTransactionsPage = () => {
         </p>
       </div>
 
-      {/* Status indicator only */}
+      {/* Connection status indicator */}
       <div className="flex items-center justify-end mb-2 sm:mb-3">
-        <div className={`flex items-center gap-1.5 ${isConnected ? 'text-[#13B562]' : 'text-red-500'}`}>
-          <div className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-[#13B562] animate-pulse' : 'bg-red-500'}`}></div>
+        <div className={`flex items-center gap-1.5 text-sm font-medium ${isConnected ? 'text-[#13B562]' : 'text-red-500'}`}>
+          <div className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-[#13B562] animate-pulse' : 'bg-red-500'}`} />
+          <span>{isConnected ? 'Connected' : 'Disconnected'}</span>
         </div>
       </div>
 
