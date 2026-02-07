@@ -502,11 +502,11 @@ const PaymentMethods = () => {
   // Helper function to check if a method is mobile money
   const isMobileMoneyMethod = (method: any) => {
     if (!method) return false;
-    const providerName = (method.provider_name || method.provider || '').toLowerCase();
-    const paymentMethod = (method.payment_method || '').toLowerCase();
+    const providerName = (method.payment_provider_name || method.provider_name || method.provider || '').toLowerCase();
+    const paymentMethod = (method.payment_method || method.payment_method_name || '').toLowerCase();
     const paymentMethodType = (method.payment_method_type || '').toLowerCase();
     
-    const mobileKeywords = ['mobile', 'mpesa', 'm-pesa', 'mtn', 'airtel', 'safaricom', 'vodafone', 'telesom', 'hormuud', 'golis', 'evc', 'zaad', 'sahal', 'telebirr', 'waafi'];
+    const mobileKeywords = ['mobile', 'mpesa', 'm-pesa', 'mtn', 'airtel', 'safaricom', 'vodafone', 'telesom', 'hormuud', 'golis', 'evc', 'zaad', 'sahal', 'telebirr', 'waafi', 'money'];
     
     return mobileKeywords.some(keyword => 
       providerName.includes(keyword) || 
@@ -666,7 +666,7 @@ const PaymentMethods = () => {
                 disabled
               />
               <Input
-                placeholder="Account Number"
+                placeholder={selectedMethod?.toLowerCase().includes('mobile') || selectedMethod?.toLowerCase().includes('money') ? 'Phone Number' : 'Account Number'}
                 value={accountNumber}
                 onChange={(e) => setAccountNumber(e.target.value)}
                 className="w-full text-sm text-gray-900 dark:text-white"
