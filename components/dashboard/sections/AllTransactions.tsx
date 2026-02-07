@@ -60,6 +60,8 @@ const formatStatus = (status: string | undefined | null): string => {
     'failed': 'Failed',
     'cancelled': 'Cancelled',
     'processing': 'Processing',
+    'waiting': 'Waiting',
+    'new': 'New',
   };
   
   const lowerStatus = status.toLowerCase();
@@ -81,7 +83,7 @@ const AllTransactions = () => {
     (state: RootState) => state.allTransactions
   );
   const [currentPage, setCurrentPageLocal] = useState(1);
-  const itemsPerPage = 20;
+  const itemsPerPage = 50;
   const containerRef = React.useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -123,7 +125,12 @@ const AllTransactions = () => {
     );
   }
 
-  const results = data?.results ?? [];
+  const rawResults = data?.results ?? [];
+  const results = [...rawResults].sort((a, b) => {
+    const dateA = new Date(a.created_at || 0).getTime();
+    const dateB = new Date(b.created_at || 0).getTime();
+    return dateB - dateA;
+  });
   const totalCount = data?.count ?? 0;
   const totalPages = data?.total_pages ?? 1;
 
@@ -165,6 +172,20 @@ const AllTransactions = () => {
         to: `${tx.to_currency || "-"} (${tx.to_network || "-"})`,
       };
     }
+    if (tx.type === "p2p" && tx.sub_type === "withdrawal") {
+      return {
+        from: `P2P ${tx.currency || tx.asset || "USDT"}`,
+        to: "Wallet",
+      };
+    }
+    if (tx.type === "p2p" && tx.sub_type === "deposit") {
+      return {
+        from: tx.deposit_address
+          ? `${tx.deposit_address.slice(0, 6)}...${tx.deposit_address.slice(-4)}`
+          : "Source",
+        to: `${tx.currency || tx.asset || "USDT"} (${tx.network || "-"})`,
+      };
+    }
     return {
       from: tx.sender_provider || "-",
       to: tx.receiver_provider || tx.recipient_name || "-",
@@ -192,8 +213,8 @@ const AllTransactions = () => {
       );
     }
     return (
-      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gray-200 dark:bg-[#35353E] flex items-center justify-center flex-shrink-0">
-        <span className="text-xs font-semibold text-gray-600 dark:text-[#A0A3BC]">
+      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#1D8751] flex items-center justify-center flex-shrink-0">
+        <span className="text-xs font-semibold text-white">
           {(tx.currency || tx.asset || "?").slice(0, 1)}
         </span>
       </div>
@@ -301,8 +322,8 @@ const AllTransactions = () => {
         );
       }
       return (
-        <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-[#35353E] flex items-center justify-center flex-shrink-0">
-          <span className="text-sm font-semibold text-gray-600 dark:text-[#A0A3BC]">
+        <div className="w-10 h-10 rounded-full bg-[#1D8751] flex items-center justify-center flex-shrink-0">
+          <span className="text-sm font-semibold text-white">
             {(tx.currency || tx.asset || "?").slice(0, 1)}
           </span>
         </div>

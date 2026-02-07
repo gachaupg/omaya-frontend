@@ -49,8 +49,8 @@ export const getAllUserTransactions = async (
   return withRetry(async () => {
     const searchParams = new URLSearchParams();
     searchParams.set("type", params?.type ?? "all");
-    if (params?.page) searchParams.set("page", String(params.page));
-    if (params?.page_size) searchParams.set("page_size", String(params.page_size));
+    searchParams.set("page", String(params?.page ?? 1));
+    searchParams.set("page_size", String(params?.page_size ?? 50));
 
     const url = `${API_CONFIG.P2P.USER_ALL_TRANSACTIONS}?${searchParams.toString()}`;
     const response = await get<AllTransactionsResponse>(url);
