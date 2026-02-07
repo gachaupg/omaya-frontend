@@ -16,14 +16,13 @@ import { RootState } from "../../../../store";
 import { fetchWallets } from "../../slices/walletSlice";
 import { fetchMatchedTrades } from "../../slices/matchedTradesSlice";
 import { fetchTransactionSummary } from "../../slices/transactionSummarySlice";
-import { toNumber } from "lodash";
+import { usePendingTotal } from "@/utils/pending";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "../../../../store";
 
 const P2PDashboard = () => {
   const [isOpenForm, setIsOpenForm] = useState("");
   const dispatch = useDispatch<AppDispatch>();
-  const { data: wallets } = useSelector((state: RootState) => state.wallets);
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
   useEffect(() => {
     if (isAuthenticated) {
@@ -40,38 +39,9 @@ const P2PDashboard = () => {
     }
   }, [dispatch, isAuthenticated]);
 
-  // Ensure wallets is always an object to prevent crashes
-  const safeWallets = wallets || {
-    total_balance: '0',
-    wallet: {
-      id: 0,
-      currency: 'USDT',
-      balance: '0',
-      deposit_address: '',
-      created_on: new Date().toISOString(),
-    },
-    deposit_addresses: {
-      tron: {
-        address: null,
-        status: 'inactive',
-      },
-      bsc: {
-        address: '',
-        status: 'inactive',
-      },
-    },
-  };
+  // Get available balance from usePendingTotal (matches Available.tsx - balance minus escrow/locked)
+  const { availableBalance } = usePendingTotal();
 
-  // Get balance from wallet response - try multiple sources
-  const totalBalance = safeWallets?.total_balance ? toNumber(safeWallets.total_balance) : 0;
-  const walletBalance = safeWallets?.wallet?.balance ? parseFloat(safeWallets.wallet.balance) : 0;
-  
-  // For USDT wallets, prioritize the individual wallet balance
-  // This handles cases where total_balance might not be accurate
-  const isUSDTWallet = safeWallets?.wallet?.currency === "USDT";
-  const balance = isUSDTWallet && walletBalance > 0 ? walletBalance : 
-                  (totalBalance && !isNaN(totalBalance) && totalBalance > 0) ? totalBalance : walletBalance;
-  
   return (
     <div className="flex flex-col gap-4">
       <UserCard />
@@ -82,14 +52,14 @@ const P2PDashboard = () => {
             {isOpenForm === "deposit" && (
               <Express
                 mode="deposit"
-                balance={balance}
+                balance={availableBalance}
                 skipAmountValidation={true}
                 onCancel={() => setIsOpenForm("")}
               />
             )}
             {isOpenForm === "withdraw" && (
               <Express
-                balance={balance}
+                balance={availableBalance}
                 mode="withdrawal"
                 onCancel={() => setIsOpenForm("")}
               />

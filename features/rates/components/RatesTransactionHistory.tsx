@@ -1,7 +1,12 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/store/rootReducer";
-import { fetchTransactions } from "../slices/transactionSlice";
+import {
+  fetchTransactions,
+  prependTransaction,
+  setTransactionsFromWebSocket,
+} from "../slices/transactionSlice";
+import { AllSystemTransactionsWebSocket } from "@/features/markets/services/allSystemTransactionsWebSocket";
 import { Transaction } from "../types";
 import {
   formatTransactionType,
@@ -14,6 +19,31 @@ const ASSET_ICON_URL =
   "https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png";
 const PAYMENT_ICON_URL =
   "https://res.cloudinary.com/pitz/image/upload/v1764667057/salam_vizvxy.svg";
+
+// Map WebSocket message data to Transaction format
+const mapWsDataToTransaction = (data: any): Transaction => {
+  const id = data.id || data.transaction_id || `tx-${Date.now()}-${Math.random()}`;
+  const amount = data.amount || data.total_amount || data.total_amount_due || "0";
+  const timestamp = data.timestamp || data.created_at || new Date().toISOString();
+  return {
+    transaction_type: data.transaction_type || data.type || "transaction",
+    transaction_id: id,
+    user: {
+      id: data.user_id || 0,
+      name: data.user_name || data.from || data.from_bank || "User",
+      email: "",
+      photo: null,
+    },
+    amount,
+    currency: data.currency || "USD",
+    asset_image: data.asset_image || null,
+    total_amount_due: amount,
+    payment_provider: data.payment_provider || data.from_provider || data.from_bank || "",
+    status: data.status || "completed",
+    stages: "",
+    timestamp,
+  };
+};
 
 // Helper function to get bank logo
 const getBankLogo = (bankName: string): string => {
@@ -118,6 +148,8 @@ const RatesTransactionHistory = () => {
   const { transactions, loading, error } = useSelector(
     (state: RootState) => state.transaction
   );
+  const [isConnected, setIsConnected] = useState(false);
+  const wsRef = useRef<AllSystemTransactionsWebSocket | null>(null);
 
   const getAmountColor = useMemo(
     () => (type: string) => (type === "withdrawal" ? "text-red-500" : "text-[#1D8751]"),
@@ -126,6 +158,40 @@ const RatesTransactionHistory = () => {
 
   useEffect(() => {
     dispatch(fetchTransactions());
+  }, [dispatch]);
+
+  useEffect(() => {
+    wsRef.current = new AllSystemTransactionsWebSocket();
+
+    const unsubMessage = wsRef.current.onMessage((message) => {
+      try {
+        if (message.type === "initial" && Array.isArray(message.data?.transactions)) {
+          const mapped = (message.data.transactions as any[]).map(mapWsDataToTransaction);
+          dispatch(setTransactionsFromWebSocket(mapped.slice(0, 100)));
+          return;
+        }
+        if (message.type === "transaction" || message.type === "new_transaction") {
+          const tx = mapWsDataToTransaction(message.data || message);
+          dispatch(prependTransaction(tx));
+        }
+      } catch (err) {
+        console.error("RatesTransactionHistory: WebSocket message error", err);
+      }
+    });
+
+    const unsubOpen = wsRef.current.onOpen(() => setIsConnected(true));
+    const unsubClose = wsRef.current.onClose(() => setIsConnected(false));
+    const unsubError = wsRef.current.onError(() => setIsConnected(false));
+
+    wsRef.current.connect();
+
+    return () => {
+      unsubMessage();
+      unsubOpen();
+      unsubClose();
+      unsubError();
+      wsRef.current?.disconnect();
+    };
   }, [dispatch]);
 
   if (loading) {
@@ -148,6 +214,22 @@ const RatesTransactionHistory = () => {
 
   return (
     <div className="bg-white dark:bg-[#1D1D23] p-3 sm:p-4 lg:p-6 rounded-lg">
+      {/* Connection status indicator */}
+      <div className="flex items-center justify-end mb-3 sm:mb-4">
+        <div
+          className={`flex items-center gap-1.5 text-sm font-medium ${
+            isConnected ? "text-[#13B562]" : "text-red-500"
+          }`}
+        >
+          <div
+            className={`w-1.5 h-1.5 rounded-full ${
+              isConnected ? "bg-[#13B562] animate-pulse" : "bg-red-500"
+            }`}
+          />
+          <span>{isConnected ? "Connected" : "Disconnected"}</span>
+        </div>
+      </div>
+
       {/* Mobile: Card-based layout */}
       <div className="block sm:hidden space-y-4">
         {transactions.map((tx: Transaction, index: number) => {

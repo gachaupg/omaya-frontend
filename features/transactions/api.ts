@@ -26,6 +26,11 @@ export interface AllTransactionItem {
   receiver_provider?: string;
   recipient_name?: string;
   recipient_account?: string | null;
+  from_currency?: string;
+  from_network?: string;
+  to_currency?: string;
+  to_network?: string;
+  to_amount?: string;
 }
 
 export interface AllTransactionsResponse {

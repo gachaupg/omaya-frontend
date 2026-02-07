@@ -35,6 +35,7 @@ import { logger } from '@/lib/utils/logger';
 import { useExpressI18n } from "@/lib/useExpressI18n";
 import { useTheme } from "@/context/theme";
 import { TermsAndConditionsSummary } from "./TermsAndConditionsSummary";
+import { usePendingTotal } from "@/utils/pending";
 
 // Success Modal Component
 const SuccessModal = ({
@@ -241,8 +242,14 @@ export default function WithdrawalForm({
   isHomePage = false,
   onCancel,
 }: DepositFormProps) {
+  // Use availableBalance from usePendingTotal to match Available.tsx (balance minus escrow/locked)
+  const { availableBalance } = usePendingTotal();
+  const effectiveBalance = (typeof availableBalance === "number" && !isNaN(availableBalance))
+    ? availableBalance
+    : (balance ?? 0);
+
   // Debug logging for balance
-  logger.debug('p2p', "WithdrawalForm - Received balance:", balance);
+  logger.debug('p2p', "WithdrawalForm - Received balance:", balance, "availableBalance:", availableBalance);
 
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
@@ -1925,7 +1932,7 @@ export default function WithdrawalForm({
     }
 
     // Check if amount exceeds available balance
-    if (balance !== undefined && payAmount > balance) {
+    if (effectiveBalance !== undefined && payAmount > effectiveBalance) {
       return false;
     }
 
@@ -2640,9 +2647,9 @@ export default function WithdrawalForm({
                       <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
                     )}
                 </label>
-                {balance !== undefined && balance >= 0 && (
+                {effectiveBalance !== undefined && (
                   <span className="text-xs sm:text-sm text-[#1D8751] dark:text-[#1D8751] font-medium">
-                    Available: {formatCurrency(balance, (selectedAsset?.ticker || selectedAsset?.symbol || "USDT").toUpperCase())}
+                    Available: {formatCurrency(effectiveBalance, (selectedAsset?.ticker || selectedAsset?.symbol || "USDT").toUpperCase())}
                   </span>
                 )}
               </div>
@@ -2725,11 +2732,11 @@ export default function WithdrawalForm({
                     }`}
                 />
                 <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
-                  {balance !== undefined && balance > 0 && (
+                  {effectiveBalance !== undefined && effectiveBalance > 0 && (
                     <button
                       type="button"
                       onClick={() => {
-                        const maxVal = balance;
+                        const maxVal = effectiveBalance;
                         setPayAmountInput(maxVal.toString());
                         setPayAmount(maxVal);
                         setIsCalculatingFromPay(true);

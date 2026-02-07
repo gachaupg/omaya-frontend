@@ -42,6 +42,10 @@ interface CustomSelectProps {
    * Whether to use larger dropdown items (bigger logos and text)
    */
   largeDropdownItems?: boolean;
+  /**
+   * When true, dropdown matches trigger width and aligns with it (full width)
+   */
+  dropdownMatchTriggerWidth?: boolean;
 }
 
 const CustomSelect: React.FC<CustomSelectProps> = ({
@@ -65,6 +69,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   dropdownOffsetY = 0,
   dropdownOffsetX = 0,
   largeDropdownItems = false,
+  dropdownMatchTriggerWidth = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -137,7 +142,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
     const verticalOffset = dropdownOffsetY;
     const horizontalOffset = dropdownOffsetX;
     
-    if (targetCard) {
+    if (targetCard && !dropdownMatchTriggerWidth) {
       const cardRect = targetCard.getBoundingClientRect();
       
       // Calculate reduced width so dropdowns don't cover amount inputs (40% of card width)
@@ -245,15 +250,19 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
         });
       }
     } else {
-      // Fallback: if no card found, position relative to trigger button
+      // Fallback: if no card found, or dropdownMatchTriggerWidth - position relative to trigger button
       const rect = triggerElement.getBoundingClientRect();
-      let desiredWidth = Math.min(maxWidth, Math.max(minWidth, viewportWidth * 0.4));
+      let desiredWidth = dropdownMatchTriggerWidth
+        ? Math.min(rect.width, viewportWidth - minMargin * 2)
+        : Math.min(maxWidth, Math.max(minWidth, viewportWidth * 0.4));
       
       // Position directly below trigger button (from top)
       let top = rect.bottom + 4 + verticalOffset;
       
-      // Align with trigger button's right edge
-      let left = rect.right - desiredWidth + horizontalOffset;
+      // Align: full width = align with trigger left; otherwise align right edge
+      let left = dropdownMatchTriggerWidth
+        ? rect.left + horizontalOffset
+        : rect.right - desiredWidth + horizontalOffset;
       
       // If dropdown would go off screen on the left, align with trigger's left edge instead
       if (left < minMargin) {

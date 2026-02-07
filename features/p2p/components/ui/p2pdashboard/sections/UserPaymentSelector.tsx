@@ -23,6 +23,7 @@ interface UserPaymentSelectorProps {
   onSelect: (detail: UserPaymentDetail) => void;
   onRemove?: (detail: UserPaymentDetail) => void;
   selectedDetails: UserPaymentDetail[];
+  onAddPaymentMethod?: () => void;
 }
 
 // Dropdown-selector + card list for a user's saved payment details.
@@ -32,7 +33,9 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
   userPaymentDetails,
   adminMethods = [],
   onSelect,
+  onRemove,
   selectedDetails,
+  onAddPaymentMethod,
 }) => {
   const [selectedMethod, setSelectedMethod] = useState("");
   const [selectedProvider, setSelectedProvider] = useState("");
@@ -113,8 +116,7 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
       userPaymentDetails.filter(
         (d) =>
           d.payment_method_name === selectedMethod &&
-          d.payment_provider_name === selectedProvider &&
-          !selectedDetails.some((selected) => selected.id === d.id)
+          d.payment_provider_name === selectedProvider
       ),
     [userPaymentDetails, selectedMethod, selectedProvider, selectedDetails]
   );
@@ -219,22 +221,42 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
                       </div>
                     </div>
                   </div>
-                  <button
-                    onClick={() => onSelect(detail)}
-                    className="px-4 py-2 text-sm font-medium text-[#1D8751] dark:text-[#1D8751] bg-[#1D8751]/10 dark:bg-[#1D8751]/20 border border-[#1D8751] rounded-md hover:bg-[#1D8751]/20 dark:hover:bg-[#1D8751]/30 transition-colors"
-                  >
-                    Select
-                  </button>
+                  {selectedDetails.some((d) => d.id === detail.id) ? (
+                    <button
+                      onClick={() => onRemove?.(detail)}
+                      className="px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 bg-red-500/10 border border-red-500/30 rounded-md hover:bg-red-500/20 transition-colors"
+                      type="button"
+                    >
+                      Remove
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => onSelect(detail)}
+                      className="px-4 py-2 text-sm font-medium text-[#1D8751] dark:text-[#1D8751] bg-[#1D8751]/10 dark:bg-[#1D8751]/20 border border-[#1D8751] rounded-md hover:bg-[#1D8751]/20 dark:hover:bg-[#1D8751]/30 transition-colors"
+                      type="button"
+                    >
+                      Select
+                    </button>
+                  )}
                 </div>
               </div>
             ))
           ) : (
             <div className="text-center py-8 px-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-              <p className="text-gray-600 dark:text-gray-400">
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
                 {hasAdminMethod
                   ? `No payment account found for ${selectedProvider}. Please add a payment account first.`
                   : "No payment details found for this combination. Please add a payment method first."}
               </p>
+              {onAddPaymentMethod && (
+                <button
+                  type="button"
+                  onClick={onAddPaymentMethod}
+                  className="px-4 py-2 text-sm font-medium text-white bg-[#1D8751] hover:bg-[#166b3e] border border-[#1D8751] rounded-md transition-colors"
+                >
+                  Add Payment Method
+                </button>
+              )}
             </div>
           )}
         </div>

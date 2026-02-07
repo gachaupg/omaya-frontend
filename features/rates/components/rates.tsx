@@ -76,7 +76,7 @@ const Rates = () => {
 
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mt-8 sm:mt-10 lg:mt-12 mb-3 sm:mb-4 lg:mb-4">
         <h2 className="text-xl sm:text-2xl lg:text-2xl font-bold">
-          {t("rates.transactions", "OMAYA Transactions")}
+          {t("rates.transactions", "OMAYA Transahhjhctions")}
         </h2>
         <Link
           href="/market/live-transactions"

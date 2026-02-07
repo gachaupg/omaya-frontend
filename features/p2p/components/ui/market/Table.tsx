@@ -332,7 +332,7 @@ const MarketTable: React.FC<MarketTableProps> = ({
                     ) : null}
                     <span className={`bg-[#1D8751] text-white h-10 w-10 rounded-[10px] text-xs font-bold flex items-center justify-center ${row.advertiser_photo ? 'hidden' : ''}`}>
                       {row.advertiserInitials}
-                    </span>}
+                    </span>
                     <div className="flex-1">
                       <div className="flex items-center gap-1">
                         <span className="font-medium text-sm text-gray-900 dark:text-[#E4E4E6]">

@@ -757,7 +757,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
   const ussdCode = `*789*75466*${ussdAmount}#`;
 
   return (
-    <div className={`w-full min-h-screen flex flex-col pt-0 sm:pt-1 md:pt-2 pl-0 sm:pl-4 pr-2 sm:pr-0 mr-0 sm:mr-40 max-w-full sm:max-w-5xl overflow-x-hidden box-border`}>
+    <div className={`w-full min-h-screen flex flex-col pt-0 sm:pt-1 md:pt-2 pl-0 sm:pl-4 pr-2 sm:pr-0 max-w-full overflow-x-hidden box-border`}>
       {/* Timer Banner */}
       {timerActive && timeRemaining > 0 && (
         <div

@@ -883,7 +883,6 @@ export default function WithdrawalForm({
       enhancedFilteredUserPaymentDetails.length > 0 &&
       selectedPaymentDetails.length === 0
     ) {
-
       const firstAccount = enhancedFilteredUserPaymentDetails[0];
       setSelectedPaymentDetails([firstAccount]);
     }
@@ -932,6 +931,14 @@ export default function WithdrawalForm({
   const handleRemovePaymentDetail = (detail: UserPaymentDetail) => {
     setSelectedPaymentDetails((prev) => prev.filter((d) => d.id !== detail.id));
   };
+
+  const isSelectedPaymentPending = !!(
+    payBank &&
+    selectedPaymentDetails.length > 0 &&
+    selectedPaymentDetails[0].status &&
+    selectedPaymentDetails[0].status !== "approved" &&
+    selectedPaymentDetails[0].status !== "verified"
+  );
 
   useEffect(() => {
     // Skip API calls on home page - buttons will redirect to login
@@ -3006,6 +3013,15 @@ export default function WithdrawalForm({
       return false;
     }
 
+    // Check if selected payment is pending (not approved/verified)
+    const selected = selectedPaymentDetails[0];
+    if (selected?.status && selected.status !== "approved" && selected.status !== "verified") {
+      setPaymentMethodError("Selected payment method is pending verification");
+      errors.push("Selected payment method is pending verification");
+      showToast.error("Selected payment method is pending verification");
+      return false;
+    }
+
     // Check if receive amount meets minimum requirements (only if user has entered a value)
     if (getAmount > 0) {
       const validationError = validateReceiveAmount(getAmount, selectedAsset);
@@ -4335,13 +4351,16 @@ export default function WithdrawalForm({
                                       const displayLabel = `${accountNumber} - ${accountName}`;
                                       // Create a full tooltip with all information (using separators since HTML title doesn't support newlines)
                                       const fullInfo = `Account Number: ${accountNumber} | Account Name: ${accountName}${providerName ? ` | Provider: ${providerName}` : ''}`;
+                                      const isPending = !!(detail.status && detail.status !== "approved" && detail.status !== "verified");
 
                                       return {
                                         value: detail.id.toString(),
-                                        label: displayLabel,
+                                        label: isPending ? `${displayLabel} (Pending)` : displayLabel,
                                         logo: providerLogo || undefined,
                                         // Add full information for tooltip on hover
                                         title: fullInfo,
+                                        disabled: isPending,
+                                        subtitle: isPending ? "Pending" : undefined,
                                       };
                                     }
                                   )}
@@ -4374,6 +4393,7 @@ export default function WithdrawalForm({
                                   emptyText="No registered accounts available"
                                   searchable={true}
                                   className="w-full min-w-0"
+                                  sizeMode="card"
                                 />
                               </div>
                             </div>
@@ -4460,14 +4480,15 @@ export default function WithdrawalForm({
                 <button
                   type="button"
                   className={`w-full text-[#35353e] dark:text-[#788099] text-base font-medium py-1.5 rounded-full flex items-center justify-center gap-2 transition-colors ${isHomePage
-                    ? payAmount >= 15000 || getAmount >= 15000
+                    ? payAmount >= 15000 || getAmount >= 15000 || isSelectedPaymentPending
                       ? "bg-gray-500 cursor-not-allowed"
                       : "bg-[#1D8751] hover:bg-[#1D8751]/80 cursor-pointer"
                     : isSubmitting ||
                       isTransactionSubmitted ||
                       isInfoModalOpen ||
                       payAmount >= 15000 ||
-                      getAmount >= 15000
+                      getAmount >= 15000 ||
+                      isSelectedPaymentPending
                       ? "bg-gray-500 cursor-not-allowed"
                       : "bg-[#1D8751] hover:bg-[#1D8751]/80"
                     }`}
@@ -4511,12 +4532,13 @@ export default function WithdrawalForm({
                   }}
                   disabled={
                     requiresLoginRedirect
-                      ? payAmount >= 15000 || getAmount >= 15000
+                      ? payAmount >= 15000 || getAmount >= 15000 || isSelectedPaymentPending
                       : isSubmitting ||
                       isTransactionSubmitted ||
                       isInfoModalOpen ||
                       payAmount >= 15000 ||
-                      getAmount >= 15000
+                      getAmount >= 15000 ||
+                      isSelectedPaymentPending
                   }
                 >
                   {isSubmitting ? (
@@ -4538,10 +4560,10 @@ export default function WithdrawalForm({
                       <span>Withdrawal Addresses Generated</span>
                     </div>
                   ) : (
-                    <span className="flex items-center justify-center gap-2">
-                      <span className="text-base font-medium text-white">Express</span>
+                    <span className="flex items-center justify-center ">
+                      <span className="text-base font-medium text-white">E</span>
                       <img
-                        className="h-5 w-auto mt-3"
+                        className="h-5 w-auto mt-2"
                         src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
                         alt="Express icon"
                       />
@@ -4828,7 +4850,7 @@ export default function WithdrawalForm({
                   </div>
                 )}
                 <button
-                  className={`w-full text-white text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${isSubmitting || isInfoModalOpen || getAmount > 15000 || !isTermsAccepted
+                  className={`w-full text-white text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${isSubmitting || isInfoModalOpen || getAmount > 15000 || !isTermsAccepted || isSelectedPaymentPending
                     ? "bg-gray-500 cursor-not-allowed"
                     : "bg-[#1D8751] hover:bg-[#166b3e]"
                     }`}
@@ -4859,7 +4881,7 @@ export default function WithdrawalForm({
                       onExchange(transactionData);
                     }
                   }}
-                  disabled={isSubmitting || isInfoModalOpen || getAmount > 15000 || !isTermsAccepted}
+                  disabled={isSubmitting || isInfoModalOpen || getAmount > 15000 || !isTermsAccepted || isSelectedPaymentPending}
                 >
                   {isSubmitting ? (
                     <div className="flex items-center gap-2">
