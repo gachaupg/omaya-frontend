@@ -21,7 +21,7 @@ const Page = () => {
   }
 
   return (
-    <div className="w-full px-0 overflow-x-hidden">
+    <div className="container mx-auto overflow-x-hidden flex justify-center">
       <Express />
     </div>
   );

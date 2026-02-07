@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/store/rootReducer";
 import { fetchTransactions } from "../slices/transactionSlice";
@@ -9,6 +9,10 @@ import {
   formatTimeAgo,
   getStatusColor,
 } from "../utils/transactionUtils";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+
+// Pagination constant
+const ITEMS_PER_PAGE = 10;
 
 const ASSET_ICON_URL =
   "https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png";
@@ -118,11 +122,25 @@ const RatesTransactionHistory = () => {
   const { transactions, loading, error } = useSelector(
     (state: RootState) => state.transaction
   );
+  const [currentPage, setCurrentPage] = useState(1);
 
   const getAmountColor = useMemo(
     () => (type: string) => (type === "withdrawal" ? "text-red-500" : "text-[#1D8751]"),
     []
   );
+
+  // Calculate pagination values
+  const totalPages = Math.ceil(transactions.length / ITEMS_PER_PAGE);
+  const paginatedTransactions = transactions.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  // Handle page change
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+    window.scrollTo({ top: 400, behavior: 'smooth' });
+  };
 
   useEffect(() => {
     dispatch(fetchTransactions());
@@ -150,7 +168,7 @@ const RatesTransactionHistory = () => {
     <div className="bg-white dark:bg-[#1D1D23] p-3 sm:p-4 lg:p-6 rounded-lg">
       {/* Mobile: Card-based layout */}
       <div className="block sm:hidden space-y-4">
-        {transactions.map((tx: Transaction, index: number) => {
+        {paginatedTransactions.map((tx: Transaction, index: number) => {
           const { from, to } = getFromTo(tx);
           const amountColor = index % 2 === 0 ? "text-[#13B562]" : "text-red-500";
           
@@ -218,7 +236,7 @@ const RatesTransactionHistory = () => {
           </tr>
         </thead>
         <tbody>
-          {transactions.map((tx: Transaction, index: number) => {
+          {paginatedTransactions.map((tx: Transaction, index: number) => {
             const { from, to } = getFromTo(tx);
             // Alternate colors for amount (green/red)
             const amountColor = index % 2 === 0 ? "text-[#13B562]" : "text-red-500";
@@ -272,6 +290,68 @@ const RatesTransactionHistory = () => {
         </tbody>
       </table>
         
+      </div>
+
+      {/* Pagination UI - Always show, but disable buttons when not applicable */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 sm:px-6 py-4 border-t border-[#E8EFF5] dark:border-[#35353E] mt-4">
+        <div className="text-xs sm:text-sm text-gray-600 dark:text-[#788099]">
+          Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1}-{Math.min(currentPage * ITEMS_PER_PAGE, transactions.length)} of {transactions.length} transactions
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+            disabled={currentPage === 1}
+            className={`px-3 py-1.5 rounded-md text-sm font-medium border transition-colors ${currentPage === 1
+                ? "opacity-50 cursor-not-allowed border-gray-300 dark:border-[#35353E] bg-gray-100 dark:bg-[#1D1D23] text-gray-400 dark:text-gray-500"
+                : "border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#1D1D23] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#23232B]"
+              }`}
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+
+          {transactions.length > ITEMS_PER_PAGE && (
+            <div className="flex items-center gap-1">
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter((page) => {
+                  if (page === 1 || page === totalPages) return true;
+                  if (Math.abs(page - currentPage) <= 1) return true;
+                  return false;
+                })
+                .map((page, index, array) => {
+                  const prevPage = array[index - 1];
+                  const showEllipsisBefore = prevPage && page - prevPage > 1;
+
+                  return (
+                    <React.Fragment key={page}>
+                      {showEllipsisBefore && (
+                        <span className="px-2 text-gray-500 dark:text-[#788099]">...</span>
+                      )}
+                      <button
+                        onClick={() => handlePageChange(page)}
+                        className={`px-3 py-1.5 rounded-md text-sm font-medium border transition-colors ${currentPage === page
+                            ? "bg-[#1D8751] text-white border-[#1D8751]"
+                            : "border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#1D1D23] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#23232B]"
+                          }`}
+                      >
+                        {page}
+                      </button>
+                    </React.Fragment>
+                  );
+                })}
+            </div>
+          )}
+
+          <button
+            onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
+            disabled={currentPage === totalPages || totalPages === 0}
+            className={`px-3 py-1.5 rounded-md text-sm font-medium border transition-colors ${currentPage === totalPages || totalPages === 0
+                ? "opacity-50 cursor-not-allowed border-gray-300 dark:border-[#35353E] bg-gray-100 dark:bg-[#1D1D23] text-gray-400 dark:text-gray-500"
+                : "border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#1D1D23] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#23232B]"
+              }`}
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
       </div>
     </div>
   );

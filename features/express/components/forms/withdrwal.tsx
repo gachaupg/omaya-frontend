@@ -3507,7 +3507,7 @@ export default function WithdrawalForm({
   }, [selectedPaymentDetail]);
 
   return (
-    <div className="flex flex-col dark:bg-[var(--bg-color)] pl-0 sm:pl-4 pr-2 sm:pr-0 mr-0 sm:mr-40 w-full sm:max-w-5xl">
+    <div className="flex flex-col dark:bg-[var(--bg-color)] pl-0 pr-2 sm:pr-0 mr-0 sm:mr-40 w-full mx-auto">
       {/* Crypto/Forex Toggle Buttons Removed */}
 
       {transactionMode === "forex" ? (
@@ -4300,6 +4300,7 @@ export default function WithdrawalForm({
                               </div>
                               <div className="w-full min-w-0 relative z-[100] isolate">
                                 <CustomSelect
+                                  sizeMode="card"
                                   options={(enhancedFilteredUserPaymentDetails || []).map(
                                     (detail: UserPaymentDetail) => {
                                       // Try to get provider info from public payment methods first
@@ -4412,7 +4413,6 @@ export default function WithdrawalForm({
                 </div>
               </div>
             </div>
-
             {/* Fee & Rate - Dynamic based on selected asset */}
             {/* <div className="flex items-center rounded-2xl border border-[#39394a] bg-[#23232b] px-2 py-2 mb-3">
             <div className="flex flex-col gap-2 flex-1">

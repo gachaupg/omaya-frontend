@@ -401,7 +401,10 @@ export const Table: React.FC<TableProps> = ({
 
   // Function to download modal as image
   const handleDownloadCard = async () => {
-    if (!modalContentRef.current) return;
+    if (!modalContentRef.current) {
+      console.error('Modal content ref is null');
+      return;
+    }
 
     try {
       const canvas = await html2canvas(modalContentRef.current, {
@@ -424,6 +427,12 @@ export const Table: React.FC<TableProps> = ({
       document.body.removeChild(link);
     } catch (error) {
       console.error('Failed to download card:', error);
+      // Fallback: try to print the content
+      try {
+        window.print();
+      } catch (printError) {
+        console.error('Print fallback also failed:', printError);
+      }
     }
   };
 

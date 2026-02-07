@@ -42,6 +42,38 @@ const getTypeLabel = (type: string, subType: string) => {
   return type;
 };
 
+// Format status for user-friendly display
+const formatStatus = (status: string | undefined | null): string => {
+  if (!status) return "N/A";
+  
+  // Map database status values to user-friendly labels
+  const statusMap: Record<string, string> = {
+    'otp_pending': 'Pending',
+    'OTP_PENDING': 'Pending',
+    'pending': 'Pending',
+    'pending_address': 'Pending',
+    'pending_approval': 'Pending Approval',
+    'completed': 'Completed',
+    'approved': 'Approved',
+    'rejected': 'Rejected',
+    'error': 'Error',
+    'failed': 'Failed',
+    'cancelled': 'Cancelled',
+    'processing': 'Processing',
+  };
+  
+  const lowerStatus = status.toLowerCase();
+  if (statusMap[lowerStatus]) {
+    return statusMap[lowerStatus];
+  }
+  
+  // Fallback: Replace underscores with spaces and capitalize first letter of each word
+  return status
+    .replace(/_/g, ' ')
+    .toLowerCase()
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+};
+
 const AllTransactions = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { t } = useDashboardI18n();
@@ -185,7 +217,7 @@ const AllTransactions = () => {
                     : "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400"
               }`}
           >
-            {tx.status?.replace(/_/g, " ").toUpperCase() || "N/A"}
+            {formatStatus(tx.status)}
           </span>
         </td>
         <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-accent text-sm sm:text-base text-gray-500 dark:text-[#A0A3BC]">
@@ -240,12 +272,13 @@ const AllTransactions = () => {
           <span
             className={`px-2 py-1 rounded-full text-xs font-medium ${tx.status === "completed"
                 ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                : tx.status === "pending"
+                : tx.status === "pending" ||
+                    tx.status?.toLowerCase() === "otp_pending"
                   ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
                   : "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400"
               }`}
           >
-            {tx.status?.replace(/_/g, " ").toUpperCase() || "N/A"}
+            {formatStatus(tx.status)}
           </span>
         </div>
         <div className="grid grid-cols-2 gap-3 text-sm">
