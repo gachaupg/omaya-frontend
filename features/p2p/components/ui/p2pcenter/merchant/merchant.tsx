@@ -388,7 +388,7 @@ const Merchant = () => {
                   const currentVolume = Number(summary?.total_approved_p2p_volume || summary?.total_volume || 0);
                   const requiredVolume = 10000;
                   const meetsRequirement = currentVolume >= requiredVolume;
-                  
+
                   return (
                     <>
                       {meetsRequirement ? (
@@ -446,10 +446,10 @@ const Merchant = () => {
                   key={doc.key}
                   onClick={() => setCurrentUploadType(doc.key)}
                   className={`p-4 rounded-lg border-2 text-center transition-all flex flex-col items-center gap-3 ${currentUploadType === doc.key
-                      ? 'border-[#1D8751] bg-[#1D8751]/10 dark:bg-[#1D8751]/20'
-                      : files[doc.key]
-                        ? 'border-[#1D8751]/50 bg-[#1D8751]/5 dark:bg-[#1D8751]/10'
-                        : 'border-border bg-card hover:border-[#1D8751] hover:bg-[#1D8751]/5'
+                    ? 'border-[#1D8751] bg-[#1D8751]/10 dark:bg-[#1D8751]/20'
+                    : files[doc.key]
+                      ? 'border-[#1D8751]/50 bg-[#1D8751]/5 dark:bg-[#1D8751]/10'
+                      : 'border-border bg-card hover:border-[#1D8751] hover:bg-[#1D8751]/5'
                     }`}
                 >
                   <div className="w-12 h-12 flex items-center justify-center">
@@ -645,12 +645,15 @@ const Merchant = () => {
 
         {/* Action Buttons */}
         <div className="flex justify-center gap-4 pl-6 pr-6">
-          <button
-            onClick={handleCancel}
-            className="px-8 py-3 border border-[#1D8751] text-[#1D8751] rounded-lg hover:bg-[#1D8751]/10 transition-all duration-200 font-medium"
-          >
-            Cancel
-          </button>
+          {Object.values(files).some(file => file !== null) &&
+            !(!!showStatusBanner && status?.status !== 'rejected') && (
+              <button
+                onClick={handleCancel}
+                className="px-8 py-3 border border-[#1D8751] text-[#1D8751] rounded-lg hover:bg-[#1D8751]/10 transition-all duration-200 font-medium"
+              >
+                Cancel
+              </button>
+            )}
           <button
             onClick={handleSubmit}
             disabled={loading || (!!showStatusBanner && status?.status !== 'rejected')}

@@ -12,7 +12,7 @@ import {
 import { getTradeMessages, postTradeMessage, GroupedMessage } from "@/features/p2p/api";
 import { MdAccountCircle } from "react-icons/md";
 import { useTradeMessagesWebSocket } from "@/features/p2p/hooks/useTradeMessagesWebSocket";
-import { Copy } from "lucide-react";
+import { Copy, RefreshCw } from "lucide-react";
 
 interface MessageImage {
   id: string;
@@ -43,7 +43,7 @@ const ChatBox: React.FC<{
   supportMessages?: GroupedMessage[];
   onClose?: () => void;
 }> = ({ tradeId, userId, userName, autoreply, seller_photo, buyer_photo, buyer, seller, currentUserEmail, owner, buyerName, sellerName, messageType = 'p2p', peerName, supportMessages, onClose }) => {
-  
+
   // Determine which photo and display name to show for the other person
   const otherPersonData = React.useMemo(() => {
     // For P2P messages, use peerName from API if available, otherwise use existing logic
@@ -68,7 +68,7 @@ const ChatBox: React.FC<{
         displayName: peerName || userName || sellerName || buyerName || seller || buyer || "Unknown"
       };
     }
-    
+
     // Support messages - use peerName if available
     if (messageType === 'support' && peerName) {
       return {
@@ -76,7 +76,7 @@ const ChatBox: React.FC<{
         displayName: peerName || "Support"
       };
     }
-    
+
     // Original logic for P2P messages without peerName
     if (currentUserEmail && owner) {
       // If current user is the owner, show buyer's info (the other person)
@@ -103,20 +103,20 @@ const ChatBox: React.FC<{
   const uploaded_images = useSelector(
     (state: RootState) => state.message.uploaded_images
   );
-  
+
   // Get messages from Redux (populated by WebSocket) and sort by timestamp
   const messagesFromRedux = useSelector(
     (state: RootState) => state.message.messages[tradeId] || []
   );
-  
+
   // Sort messages by timestamp and filter out duplicate optimistic messages
   const sortedMessages = React.useMemo(() => {
     const messages = [...messagesFromRedux];
-    
+
     // Separate temp messages from real messages
     const tempMessages = messages.filter(msg => msg.id.toString().startsWith('temp-'));
     const realMessages = messages.filter(msg => !msg.id.toString().startsWith('temp-'));
-    
+
     // Remove temp messages that have a matching real message (same content and similar timestamp)
     const filteredTempMessages = tempMessages.filter(tempMsg => {
       const hasDuplicate = realMessages.some(realMsg => {
@@ -130,13 +130,13 @@ const ChatBox: React.FC<{
       });
       return !hasDuplicate;
     });
-    
+
     // Combine and sort
     return [...realMessages, ...filteredTempMessages].sort((a, b) => {
       return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
     });
   }, [messagesFromRedux]);
-  
+
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [copiedChatId, setCopiedChatId] = useState(false);
 
@@ -176,9 +176,9 @@ const ChatBox: React.FC<{
       const scrollThreshold = 50; // pixels from bottom
       const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
       const isNearBottom = distanceFromBottom < scrollThreshold;
-      
+
       setIsAtBottom(isNearBottom);
-      
+
       // If user scrolls up significantly, mark as manually scrolled
       if (distanceFromBottom > scrollThreshold) {
         setUserHasScrolled(true);
@@ -202,7 +202,7 @@ const ChatBox: React.FC<{
   useEffect(() => {
     const messageCountChanged = prevMessageCountRef.current !== sortedMessages.length;
     prevMessageCountRef.current = sortedMessages.length;
-    
+
     // Only auto-scroll if:
     // 1. User hasn't manually scrolled up OR is already at bottom
     // 2. There are new messages (count changed)
@@ -249,7 +249,7 @@ const ChatBox: React.FC<{
         sender: msg.sender_id ?? 0,
         sender_name: msg.sender_name || '',
         message: msg.content,
-        images: Array.isArray(msg.images) ? msg.images.map((img: any) => 
+        images: Array.isArray(msg.images) ? msg.images.map((img: any) =>
           typeof img === 'string' ? img : img.image_url || img.image
         ) : [],
         timestamp: msg.timestamp,
@@ -277,7 +277,7 @@ const ChatBox: React.FC<{
     } else {
       fetchMessages();
     }
-    
+
     return () => {
       if (pollingIntervalRef.current) {
         clearInterval(pollingIntervalRef.current);
@@ -288,26 +288,26 @@ const ChatBox: React.FC<{
   // Auto-refresh when new messages with images arrive via WebSocket
   const lastMessageIdRef = React.useRef<string | null>(null);
   const refreshTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
-  
+
   useEffect(() => {
     // Check if the latest message has images and needs refresh
     if (sortedMessages.length > 0) {
       const latestMessage = sortedMessages[sortedMessages.length - 1];
-      
+
       // Only process if this is a new message (different ID from last processed)
       if (latestMessage.id !== lastMessageIdRef.current) {
         lastMessageIdRef.current = latestMessage.id;
-        
+
         // Only refresh for temporary messages or if images are completely missing
         const hasTemporaryId = latestMessage.id && latestMessage.id.toString().startsWith('temp-');
         const hasNoImages = !latestMessage.images || latestMessage.images.length === 0;
-        
+
         if (hasTemporaryId || hasNoImages) {
           // Clear any existing timeout
           if (refreshTimeoutRef.current) {
             clearTimeout(refreshTimeoutRef.current);
           }
-          
+
           // Schedule a single refresh after a short delay
           refreshTimeoutRef.current = setTimeout(() => {
             fetchMessages();
@@ -315,7 +315,7 @@ const ChatBox: React.FC<{
         }
       }
     }
-    
+
     // Cleanup timeout on unmount
     return () => {
       if (refreshTimeoutRef.current) {
@@ -343,10 +343,10 @@ const ChatBox: React.FC<{
   // Update handleSend to include images and sender email
   const handleSend = async () => {
     if (!message.trim() && uploaded_images.length === 0) return;
-    
+
     const messageContent = message;
     const images = uploaded_images;
-    
+
     // Create optimistic message to show immediately
     const optimisticMessage: TradeMessage = {
       id: `temp-${Date.now()}`,
@@ -359,25 +359,25 @@ const ChatBox: React.FC<{
       timestamp: new Date().toISOString(),
       seller_photo: '',
     };
-    
+
     // Add optimistic message to Redux immediately
     const { addMessageFromWS } = await import("@/features/p2p/slices/messageSlice");
     dispatch(addMessageFromWS({ tradeId, message: optimisticMessage }));
-    
+
     // Clear input and images immediately for better UX
     dispatch(clearMessage());
     dispatch(setUploadedImages([]));
-    
+
     try {
       // Send via HTTP
-      const response = await postTradeMessage(tradeId, { 
-        message: messageContent || '', 
+      const response = await postTradeMessage(tradeId, {
+        message: messageContent || '',
         uploaded_images: images,
         sender_name: currentUserEmail || ""
       });
-      
-      
-      
+
+
+
       // Refresh messages to get the real message with proper IDs and S3 URLs
       setTimeout(() => {
         fetchMessages();
@@ -386,7 +386,7 @@ const ChatBox: React.FC<{
       // On error, restore the message and images
       dispatch(setMessage(messageContent));
       dispatch(setUploadedImages(images));
-      
+
       // Remove the optimistic message
       fetchMessages();
     }
@@ -406,17 +406,16 @@ const ChatBox: React.FC<{
           <button
             onClick={handleRefresh}
             disabled={isRefreshing}
-            className="flex items-center gap-1 px-2 py-1.5 sm:py-1 dark:bg-[#1D8751] bg-[#1D8751] text-white rounded hover:bg-[#166b3e] transition-colors disabled:opacity-50 text-xs font-medium flex-shrink-0"
+            className="flex items-center justify-center px-1 py-1  dark:bg-[#1D8751] bg-[#1D8751] text-white rounded hover:bg-[#166b3e] transition-colors disabled:opacity-50 text-xs font-medium shrink-0"
             title="Refresh messages and load images"
           >
-            
+            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
             <span className="hidden sm:inline">{isRefreshing ? "Refreshing..." : "Refresh"}</span>
-            <span className="sm:hidden">{isRefreshing ? "..." : "↻"}</span>
           </button>
           {onClose && (
             <button
               onClick={onClose}
-              className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-[#35353E] transition-colors text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 flex-shrink-0"
+              className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-accent transition-colors text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 shrink-0"
               aria-label="Close chat"
               title="Close"
             >
@@ -442,7 +441,7 @@ const ChatBox: React.FC<{
         <div>
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 flex-1 min-w-0">
-              {otherPersonData.photo ? <img className="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-cover flex-shrink-0" src={otherPersonData.photo} alt={otherPersonData.displayName} /> : <MdAccountCircle className="w-5 h-5 sm:w-6 sm:h-6 text-[#1D8751] flex-shrink-0"/>}
+              {otherPersonData.photo ? <img className="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-cover flex-shrink-0" src={otherPersonData.photo} alt={otherPersonData.displayName} /> : <MdAccountCircle className="w-5 h-5 sm:w-6 sm:h-6 text-[#1D8751] flex-shrink-0" />}
               <div className="flex-1 min-w-0">
                 <div className="font-semibold text-sm sm:text-md truncate">{otherPersonData.displayName}</div>
                 {tradeId && (
@@ -466,7 +465,7 @@ const ChatBox: React.FC<{
           </div>
         </div>
         <hr className="border-[#E8EFF5] dark:border-[#35353E] mt-2" />
-        <div 
+        <div
           ref={messagesListRef}
           className="messages-list flex-1 flex flex-col gap-2 overflow-y-auto mb-2"
         >
@@ -478,15 +477,15 @@ const ChatBox: React.FC<{
           {sortedMessages.map((msg) => {
             // Use sender_name (email) to determine if this is the current user's message
             const isSender = msg.sender_name?.trim() === currentUserEmail?.trim();
-            
+
             // Determine photo and display name for this specific message
             let messagePhoto = otherPersonData.photo;
-            
+
             // For consistency, always extract username from email (part before @)
-            let displayName = msg.sender_name 
-              ? msg.sender_name.split('@')[0] 
+            let displayName = msg.sender_name
+              ? msg.sender_name.split('@')[0]
               : "Unknown User";
-            
+
             if (!isSender && msg.sender_name) {
               // This is the other person's message - determine which photo to show
               if (msg.sender_name === seller) {
@@ -495,7 +494,7 @@ const ChatBox: React.FC<{
                 messagePhoto = buyer_photo;
               }
             }
-            
+
             return (
               <div
                 key={msg.id}
@@ -505,17 +504,17 @@ const ChatBox: React.FC<{
                 {!isSender && (
                   <div className="flex-shrink-0">
                     {messagePhoto ? (
-                      <img 
-                        className="w-8 h-8 rounded-full object-cover" 
-                        src={messagePhoto} 
-                        alt={displayName} 
+                      <img
+                        className="w-8 h-8 rounded-full object-cover"
+                        src={messagePhoto}
+                        alt={displayName}
                       />
                     ) : (
                       <MdAccountCircle className="w-8 h-8 text-[#1D8751]" />
                     )}
                   </div>
                 )}
-                
+
                 <div
                   className={
                     isSender
@@ -528,7 +527,7 @@ const ChatBox: React.FC<{
                     {isSender ? "You" : displayName}
                   </div>
                   {msg.message && msg.message.trim() && <div className="text-xs sm:text-sm break-words mb-2">{msg.message}</div>}
-                  
+
                   {/* Image attachments */}
                   {msg.images && msg.images.length > 0 && (
                     <div className="text-xs text-gray-500 mb-1">Images: {msg.images.length}</div>
@@ -539,7 +538,7 @@ const ChatBox: React.FC<{
                         {msg.images.map((img: any, idx: number) => {
                           // Handle different image data structures
                           let imageUrl = '';
-                          
+
                           if (typeof img === 'string') {
                             // Direct string URL
                             imageUrl = img;
@@ -547,12 +546,12 @@ const ChatBox: React.FC<{
                             // Try multiple possible properties for image URL
                             imageUrl = img.image_url || img.image || img.url || img.src || img.file || img.attachment || '';
                           }
-                          
+
                           // Debug: Show image data
                           console.log(`Image ${idx}:`, { img, imageUrl, type: typeof img });
-                          
+
                           const imageKey = isMessageImage(img) ? img.id : `img-${idx}`;
-                          
+
                           // If no valid URL, show a simple placeholder
                           if (!imageUrl || imageUrl.trim() === '') {
                             return (
@@ -565,7 +564,7 @@ const ChatBox: React.FC<{
                               </div>
                             );
                           }
-                          
+
                           return (
                             <div key={imageKey} className="relative inline-block">
                               {/* Loading spinner overlay */}
@@ -593,9 +592,9 @@ const ChatBox: React.FC<{
                                 />
                               </div>
                               <div className="text-xs mt-1 text-center">
-                                <a 
-                                  href={imageUrl} 
-                                  target="_blank" 
+                                <a
+                                  href={imageUrl}
+                                  target="_blank"
                                   rel="noopener noreferrer"
                                   className="text-[#1D8751] dark:text-[#1D8751] hover:underline font-medium"
                                 >
@@ -618,7 +617,7 @@ const ChatBox: React.FC<{
           {/* Auto-scroll anchor */}
           <div ref={messagesEndRef} />
         </div>
-        
+
         {/* Scroll to bottom button - only show when user has scrolled up */}
         {userHasScrolled && !isAtBottom && (
           <button
@@ -643,7 +642,7 @@ const ChatBox: React.FC<{
             </svg>
           </button>
         )}
-        
+
         <hr className="border-[#E8EFF5] dark:border-[#35353E] mt-2" />
         <div className="flex gap-1.5 sm:gap-2 mt-2">
           <input
@@ -726,7 +725,7 @@ const ChatBox: React.FC<{
                   title="Remove image"
                 >
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <path d="M9 3L3 9M3 3l6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                    <path d="M9 3L3 9M3 3l6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                   </svg>
                 </button>
               </div>
