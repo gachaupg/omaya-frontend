@@ -7,6 +7,7 @@ import { formatDistanceToNow } from "date-fns";
 import { NoDataFound } from "../ui/Transactions";
 import { useDashboardI18n } from "@/lib/useDashboardI18n";
 import { SortArrowsIcon } from "@/components/ui/SortArrowsIcon";
+import { getHighResAssetIcon } from "@/features/express/utils/imageHelpers";
 
 interface RootState {
   p2pWithdrawalDeposit: {
@@ -225,16 +226,14 @@ const P2PWithdrawalDepositTransactions = () => {
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  {tx.asset_image && (
-                    <img
-                      src={tx.asset_image}
-                      alt={tx.currency || "Asset"}
-                      className="w-10 h-10 rounded-full shadow-sm flex-shrink-0"
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                      }}
-                    />
-                  )}
+                  <img
+                    src={getHighResAssetIcon({ ...tx, ticker: tx.currency || tx.asset_symbol })}
+                    alt={tx.currency || tx.asset_symbol || "Asset"}
+                    className="w-10 h-10 rounded-full shadow-sm flex-shrink-0"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
                   <div>
                     <div className="font-semibold text-sm uppercase tracking-wide text-gray-900 dark:text-white">
                       {tx.currency || tx.asset_symbol || "USDT"}
@@ -362,16 +361,14 @@ const P2PWithdrawalDepositTransactions = () => {
                   {/* Asset */}
                   <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 whitespace-nowrap">
                     <div className="flex items-center gap-2 sm:gap-3">
-                      {tx.asset_image && (
-                        <img
-                          src={tx.asset_image}
-                          alt={tx.currency || "Asset"}
-                          className="w-7 h-7 sm:w-8 sm:h-8 rounded-full shadow-sm flex-shrink-0"
-                          onError={(e) => {
-                            e.currentTarget.style.display = 'none';
-                          }}
-                        />
-                      )}
+                      <img
+                        src={getHighResAssetIcon({ ...tx, ticker: tx.currency || tx.asset_symbol })}
+                        alt={tx.currency || tx.asset_symbol || "Asset"}
+                        className="w-7 h-7 sm:w-8 sm:h-8 rounded-full shadow-sm flex-shrink-0"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
                       <div className="flex flex-col min-w-0">
                         <span className="font-semibold uppercase tracking-wide text-xs sm:text-sm text-gray-700 dark:text-gray-200 truncate">
                           {tx.currency || tx.asset_symbol || "USDT"}
