@@ -11,6 +11,14 @@ import { Settings, ShieldCheck, Key } from "lucide-react";
 import HelpSupportForm from "../HelpSupportForm";
 import { useSettingsI18n } from "@/lib/useSettingsI18n";
 
+const TAB_FALLBACKS: Record<string, string> = {
+  "settings.tabs.profile": "Profile Settings",
+  "settings.tabs.kyc": "KYC",
+  "settings.tabs.privacy": "Privacy & Security",
+  "settings.tabs.paymentMethods": "My Payment Methods",
+  "settings.tabs.referral": "Referral",
+};
+
 const tabs = [
   {
     id: "profile",
@@ -241,7 +249,7 @@ const Filters = () => {
                 : "bg-transparent"
               }`}>
               <span className="flex items-center justify-center shrink-0">{tab.icon}</span>
-              <span className="text-xs whitespace-nowrap">{t(tab.label, tab.label)}</span>
+              <span className="text-xs whitespace-nowrap">{t(tab.label, TAB_FALLBACKS[tab.label] ?? tab.label)}</span>
             </span>
           </button>
         ))}

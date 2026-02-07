@@ -12,6 +12,10 @@ import Loader from "../../../Common/Loader";
 import { showToast } from "@/lib/utils/toast";
 import { toNumber } from "@/lib/finanacial";
 import { fetchAdminPaymentDetails } from "@/features/exchange/slices/paymentSlice";
+import {
+  fetchUserPaymentDetails,
+} from "@/features/p2p/slices/paymentMethodsSlice";
+import PaymentMethodsModal from "@/features/p2p/components/ui/p2pdashboard/sections/PaymentMethodsModal";
 import { logger } from "@/lib/logger";
 
 interface TradePreviewProps {
@@ -20,6 +24,18 @@ interface TradePreviewProps {
   tradeType?: "buy" | "sell";
   paymentDetails?: any[];
 }
+
+/** Shorten long names to "first last" (e.g. "visual company limited Kariuki Beth" → "visual Beth") */
+const shortenLongName = (name: string | undefined | null, maxLength = 25): string => {
+  if (!name || typeof name !== "string") return "";
+  const trimmed = name.trim();
+  if (trimmed.length <= maxLength) return trimmed;
+  const parts = trimmed.split(/\s+/).filter(Boolean);
+  if (parts.length <= 2) return trimmed;
+  const first = parts[0];
+  const last = parts[parts.length - 1];
+  return first === last ? first : `${first} ${last}`;
+};
 
 
 
@@ -51,8 +67,14 @@ const TradePreview: React.FC<TradePreviewProps> = ({
   const [numericAmount, setNumericAmount] = useState(0);
   const [imageError, setImageError] = useState(false);
   const [paymentSearchTerm, setPaymentSearchTerm] = useState("");
+  const [selectedUserPaymentDetail, setSelectedUserPaymentDetail] = useState<any>(null);
+  const [showAddPaymentModal, setShowAddPaymentModal] = useState(false);
 
   const paymentDropdownRef = useRef<HTMLDivElement>(null);
+
+  const { userPaymentDetails, userDetailsLoading } = useSelector(
+    (state: RootState) => state.paymentMethods || { userPaymentDetails: [], userDetailsLoading: false }
+  );
 
   // Reset image error when advertiser data changes
   useEffect(() => {
@@ -70,6 +92,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
           setLoading(true);
           dispatch(fetchWallets());
           dispatch(fetchAdminPaymentDetails(false));
+          dispatch(fetchUserPaymentDetails() as any);
           const summary = await getTransactionSummary();
           setTransactionSummary(summary);
         } catch (error) {
@@ -81,6 +104,11 @@ const TradePreview: React.FC<TradePreviewProps> = ({
       fetchData();
     }
   }, [dispatch, isAuthenticated]);
+
+  // Reset selected user payment when advertiser payment method changes
+  useEffect(() => {
+    setSelectedUserPaymentDetail(null);
+  }, [paymentMethod]);
 
   // Create payment options from row payment details
   const paymentOptions = React.useMemo(() => {
@@ -106,6 +134,18 @@ const TradePreview: React.FC<TradePreviewProps> = ({
       opt.label.toLowerCase().includes(paymentSearchTerm.toLowerCase())
     );
   }, [paymentOptions, paymentSearchTerm]);
+
+  // User's payment methods that match the selected advertiser payment method (sell only, includes verified + pending)
+  const matchingUserPaymentMethods = React.useMemo(() => {
+    if (tradeType !== "sell" || !paymentMethod || !userPaymentDetails?.length) return [];
+    const selectedLower = paymentMethod.toLowerCase().trim();
+    return (userPaymentDetails as any[]).filter((d: any) => {
+      if (!d || typeof d !== "object") return false;
+      const userProvider = (d.payment_provider_name || d.provider_name || d.provider || "").toLowerCase().trim();
+      if (!userProvider) return false;
+      return selectedLower.includes(userProvider) || userProvider.includes(selectedLower);
+    });
+  }, [tradeType, paymentMethod, userPaymentDetails]);
 
   // Close payment dropdown on outside click
   useEffect(() => {
@@ -314,6 +354,10 @@ const TradePreview: React.FC<TradePreviewProps> = ({
     if (!sendAmount || !paymentMethod) {
       return false;
     }
+    if (tradeType === "sell" && paymentMethod && !userDetailsLoading) {
+      if (matchingUserPaymentMethods.length > 0 && !selectedUserPaymentDetail) return false;
+      if (matchingUserPaymentMethods.length === 0) return false; // Must add one first
+    }
     return isAmountValid;
   };
 
@@ -337,8 +381,9 @@ const TradePreview: React.FC<TradePreviewProps> = ({
         amount: tradeType === "sell" ? sendAmount : receiveAmount,
       };
 
-
-
+      if (tradeType === "sell" && selectedUserPaymentDetail?.id != null) {
+        orderData.payment_details_ids = [Number(selectedUserPaymentDetail.id)];
+      }
 
       const response = await matchP2POrder(advertiserData.id, orderData);
       
@@ -407,7 +452,9 @@ const TradePreview: React.FC<TradePreviewProps> = ({
             )}
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
-                <span className="truncate">{advertiserData.advertiser}</span>
+                <span className="truncate" title={advertiserData.advertiser}>
+                  {shortenLongName(advertiserData.advertiser)}
+                </span>
                 <div className="bg-[#E59906] text-base w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full flex-shrink-0"></div>
               </div>
               <div className="text-xs sm:text-sm font-medium flex items-center gap-1.5 sm:gap-2 text-[#1D8751] flex-wrap">
@@ -721,6 +768,95 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                 )}
               </div>
             </div>
+
+            {/* Sell: User's matching payment methods - select one or add new */}
+            {tradeType === "sell" && paymentMethod && (
+              <div className="flex flex-col gap-2 rounded-xl p-3 border border-gray-300 dark:border-[#35353E] bg-gray-50 dark:bg-[#1D1D23]">
+                <div className="text-sm font-semibold text-gray-700 dark:text-[#788099]">
+                  Your {paymentMethod} payment methods
+                </div>
+                <p className="text-xs text-gray-500 dark:text-[#788099]">
+                  Newly added methods may show as pending until verified.
+                </p>
+                {userDetailsLoading ? (
+                  <div className="flex items-center gap-2 py-2 text-sm text-gray-500 dark:text-[#788099]">
+                    <div className="w-4 h-4 border-2 border-[#1D8751] border-t-transparent rounded-full animate-spin" />
+                    Loading your payment methods...
+                  </div>
+                ) : matchingUserPaymentMethods.length > 0 ? (
+                  <div className="flex flex-col gap-2">
+                    {matchingUserPaymentMethods.map((detail: any) => {
+                      const isSelected = selectedUserPaymentDetail?.id === detail.id;
+                      const status = (detail.status || "").toLowerCase();
+                      const isPending = status && status !== "approved" && status !== "verified";
+                      return (
+                        <div
+                          key={detail.id}
+                          className={`flex items-center justify-between gap-2 p-2 rounded-lg border transition-colors ${
+                            isSelected
+                              ? "border-[#1D8751] bg-[#1D8751]/10 dark:bg-[#1D8751]/20"
+                              : "border-gray-200 dark:border-[#35353E] hover:bg-gray-100 dark:hover:bg-[#23232B]"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            {detail.provider_logo || detail.logo_url ? (
+                              <img
+                                src={detail.provider_logo || detail.logo_url}
+                                alt=""
+                                className="w-6 h-6 rounded-full object-cover flex-shrink-0"
+                                onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                              />
+                            ) : (
+                              <div className="w-6 h-6 rounded-full bg-[#1D8751]/20 flex items-center justify-center flex-shrink-0">
+                                <span className="text-[#1D8751] text-xs font-bold">
+                                  {(detail.payment_provider_name || "?")[0]}
+                                </span>
+                              </div>
+                            )}
+                            <div className="min-w-0">
+                              <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                                {detail.account_name || "Account"}
+                              </div>
+                              <div className="text-xs text-gray-500 dark:text-[#788099] truncate">
+                                {detail.account_number || detail.wallet_address || "—"}
+                              </div>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => !isPending && setSelectedUserPaymentDetail(isSelected ? null : detail)}
+                            disabled={isPending}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition flex-shrink-0 ${
+                              isPending
+                                ? "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 cursor-not-allowed"
+                                : isSelected
+                                  ? "bg-[#1D8751] text-white"
+                                  : "border border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751] hover:text-white"
+                            }`}
+                          >
+                            {isPending ? "Pending" : isSelected ? "Selected" : "Select"}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    <p className="text-sm text-gray-600 dark:text-[#788099]">
+                      No matching {paymentMethod} payment method found. Add one to continue.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setShowAddPaymentModal(true)}
+                      className="w-full sm:w-auto px-4 py-2 rounded-lg bg-[#1D8751] text-white text-sm font-semibold hover:bg-[#166b3e] transition"
+                    >
+                      Add new payment method
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
               <button
                 className="w-full sm:flex-1 py-2.5 sm:py-2 rounded-lg border font-semibold text-sm sm:text-base transition border-gray-400 dark:border-[#788099] text-gray-700 dark:text-[#788099] hover:bg-gray-200 dark:hover:bg-[var(--card-color)]"
@@ -761,6 +897,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
   };
 
   return (
+    <>
     <div className="rounded-2xl p-3 sm:p-4 lg:p-6 w-full max-w-5xl mx-auto flex flex-col gap-3 sm:gap-4 border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] text-gray-900 dark:text-white">
       {!isAuthenticated ? (
         <div className="text-center py-4 text-red-500">
@@ -778,6 +915,15 @@ const TradePreview: React.FC<TradePreviewProps> = ({
         renderContent()
       )}
     </div>
+
+    <PaymentMethodsModal
+      open={showAddPaymentModal}
+      onClose={() => setShowAddPaymentModal(false)}
+      onAdd={async () => {
+        await dispatch(fetchUserPaymentDetails() as any);
+      }}
+    />
+    </>
   );
 };
 

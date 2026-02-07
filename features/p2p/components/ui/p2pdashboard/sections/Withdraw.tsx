@@ -348,6 +348,7 @@ const Withdraw: React.FC = () => {
                   <span className="font-semibold text-[#1D8751]">{availableBalance.toFixed(3)} USDT</span>
                   <span className="text-[10px] text-gray-400">(Available)</span>
                 </span>
+                dgdgydydy
               </div>
               {hasAttemptedSubmit && getFieldError("amount", errors) && (
                 <span className="text-red-500 text-sm mt-1">

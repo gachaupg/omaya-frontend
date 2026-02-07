@@ -10,6 +10,15 @@ import Link from "next/link";
 import clsx from "clsx";
 import { navItems } from "@/utils/data";
 import { useTheme } from "@/context/theme";
+
+const NAV_LABEL_FALLBACKS: Record<string, string> = {
+  "navigation.dashboard": "DASHBOARD",
+  "navigation.express": "Express",
+  "navigation.exchange": "Money",
+  "navigation.p2pTrading": "P2P",
+  "navigation.swapCrypto": "Swap",
+  "navigation.account": "Account",
+};
 import { useDashboardI18n } from "@/lib/useDashboardI18n";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/store/rootReducer";
@@ -98,7 +107,7 @@ export default function Sidebar() {
                   : normalizedPathname === normalizedHref ||
                   (normalizedPathname &&
                     normalizedPathname.startsWith(normalizedHref + "/"));
-              const label = t(item.labelKey, item.labelKey);
+              const label = t(item.labelKey, NAV_LABEL_FALLBACKS[item.labelKey] ?? item.labelKey);
               // Only disable for unverified authenticated users (explicitly false, not undefined)
               const isUnverifiedUser = isAuthenticated && user && isVerified === false;
               const isDisabled = isUnverifiedUser && item.href !== "/dashboard/" && item.href !== "/dashboard";
@@ -235,7 +244,7 @@ export default function Sidebar() {
                   : normalizedPathname === normalizedHref ||
                   (normalizedPathname &&
                     normalizedPathname.startsWith(normalizedHref + "/"));
-              const label = t(item.labelKey, item.labelKey);
+              const label = t(item.labelKey, NAV_LABEL_FALLBACKS[item.labelKey] ?? item.labelKey);
               // Only disable for unverified authenticated users (explicitly false, not undefined)
               const isUnverifiedUser = isAuthenticated && user && isVerified === false;
               const isDisabled = isUnverifiedUser && item.href !== "/dashboard/" && item.href !== "/dashboard";

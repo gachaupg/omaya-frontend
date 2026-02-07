@@ -230,7 +230,7 @@ const IdentityVerificationModal: React.FC<IdentityVerificationModalProps> = ({
           <div className="flex justify-between items-start mb-4 sm:mb-6">
             <div className="flex-1">
               <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                Identity Verification Required
+                Identity Verifihhhcation Required
               </h2>
               <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
                 {phoneVerified 

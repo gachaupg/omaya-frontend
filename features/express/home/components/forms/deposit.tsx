@@ -2754,7 +2754,7 @@ export default function DepositForm({
             icon: selectedAsset.image_url || selectedAsset.asset_image || selectedAsset.icon_url || selectedAsset.image
           },
           paymentDetail: selectedPaymentDetail,
-          walletAddress: walletAddress,
+          walletAddress: depositResponse.deposit_address || walletAddress,
           network: selectedNetwork,
           transactionId: depositResponse.transaction_id,
           depositCode: depositResponse.deposit_code,

@@ -82,6 +82,43 @@ export const updateDeposit = async (
   });
 };
 
+export interface P2PDepositAddress {
+  id: number;
+  address: string;
+  chain: string;
+  network_name: string;
+  is_default: boolean;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface P2PDepositAddressesResponse {
+  status?: string;
+  // Backend may return either a list or a single address object
+  data?: P2PDepositAddress[] | P2PDepositAddress;
+  results?: P2PDepositAddress[];
+}
+
+export const getP2PDepositAddresses = async (): Promise<P2PDepositAddress[]> => {
+  return withRetry(async () => {
+    const response = await get<P2PDepositAddressesResponse | P2PDepositAddress[]>(API_CONFIG.P2P.DEPOSIT_ADDRESSES);
+    const data = response.data;
+    // Possible shapes:
+    // - [ {..} ]
+    // - { data: [ {..} ] }
+    // - { results: [ {..} ] }
+    // - { data: {..single address..} }
+    if (Array.isArray(data)) return data;
+
+    const inner = (data as P2PDepositAddressesResponse | undefined)?.data;
+    if (Array.isArray(inner)) return inner;
+    if (inner && typeof inner === "object" && "address" in inner) return [inner as P2PDepositAddress];
+
+    const results = (data as P2PDepositAddressesResponse | undefined)?.results;
+    return Array.isArray(results) ? results : [];
+  });
+};
+
 export const getDepositAddress = async (asset: string, network: string): Promise<DepositAddressResponse> => {
   return withRetry(async () => {
     const response = await post<DepositAddressResponse>(API_CONFIG.P2P.DEPOSIT_ADDRESSES, {
