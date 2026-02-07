@@ -409,14 +409,14 @@ export const Table: React.FC<TableProps> = ({
     try {
       const canvas = await html2canvas(modalContentRef.current, {
         useCORS: true,
-        onclone: (clonedDoc, clonedElement) => {
+        onclone: (clonedDoc: Document, clonedElement: HTMLElement) => {
           clonedElement.style.borderRadius = "0px";
           clonedElement.style.maxHeight = "none";
           clonedElement.style.overflow = "visible";
           // Add a tiny bit of padding to avoid clipping top text if font rendering shifts
           clonedElement.style.paddingTop = "10px";
         },
-      });
+      } as Parameters<typeof html2canvas>[1]);
 
       const image = canvas.toDataURL("image/png");
       const link = document.createElement('a');
