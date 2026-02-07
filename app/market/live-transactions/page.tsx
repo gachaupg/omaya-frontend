@@ -65,9 +65,6 @@ const getCurrencyLogo = (currency: string): string => {
   return currencyLogos[currencyLower] || "/icons/usdt.svg";
 };
 
-// Pagination constant
-const ITEMS_PER_PAGE = 10;
-
 const LiveTransactionsPage = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isConnected, setIsConnected] = useState(false);
