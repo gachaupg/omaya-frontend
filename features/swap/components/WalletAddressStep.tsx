@@ -28,7 +28,6 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
 }) => {
   const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
   const [walletError, setWalletError] = useState<string | null>(null);
-  const [expandedTerms, setExpandedTerms] = useState(false);
 
   // Get currency from toAsset (the asset we're receiving)
   const getCurrencyFromAsset = useCallback((asset: any): string | undefined => {
@@ -339,9 +338,9 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
 
               {/* Terms Box - Collapsible */}
               <div className={`bg-gray-50 dark:bg-[var(--card-color)] ${strongBorder} rounded-xl overflow-hidden transition-all duration-300`}>
-                {/* Summary Section - Always Visible */}
+                {/* Terms Section - All Visible */}
                 <div className="p-4 sm:p-5">
-                  <div className={`space-y-2 sm:space-y-3 ${expandedTerms ? '' : 'line-clamp-3'}`}>
+                  <div className="space-y-2 sm:space-y-3">
                     <div className="flex items-start gap-2 sm:gap-3">
                       <span className="text-[#1D8751] font-bold text-sm sm:text-base flex-shrink-0">1.</span>
                       <p className="text-xs sm:text-sm text-gray-900 dark:text-white">
@@ -364,31 +363,9 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                     </div>
                   </div>
 
-                  {/* Show More/Less Button */}
-                  <button
-                    onClick={() => setExpandedTerms(!expandedTerms)}
-                    className="mt-3 sm:mt-4 text-[#1D8751] hover:text-[#166b3e] font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition-colors"
-                  >
-                    {expandedTerms ? (
-                      <>
-                        <span>Show Less</span>
-                        <svg className="w-4 h-4 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                        </svg>
-                      </>
-                    ) : (
-                      <>
-                        <span>Show More</span>
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                        </svg>
-                      </>
-                    )}
-                  </button>
                 </div>
 
-                {/* Expanded Content */}
-                {expandedTerms && (
+                {/* Additional Terms */}
                   <div className="px-4 sm:px-5 py-2 sm:py-3 space-y-4 sm:space-y-5">
                     {/* Term 4 */}
                     <div className="flex items-start gap-2 sm:gap-3">
@@ -428,7 +405,6 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                       </div>
                     </div>
                   </div>
-                )}
               </div>
 
               {/* Terms Acceptance Checkbox */}

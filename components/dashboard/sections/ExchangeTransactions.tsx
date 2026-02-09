@@ -128,22 +128,6 @@ const ExchangeTransactions = ({itemsPerPage=10}) => {
       </div>
     );
   }
-  if (!transactions?.results?.length) {
-    return (
-      <div className="text-center p-8 text-gray-500 dark:text-gray-400">
-        {t("transactions.noTransactions", "No transactions found")}
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="text-red-500 text-center p-4">
-        {t("common.error", "Error")}: {error}
-      </div>
-    );
-  }
-
   if (
     !transactions ||
     !transactions.results ||
