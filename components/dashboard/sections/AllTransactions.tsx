@@ -45,7 +45,7 @@ const getTypeLabel = (type: string, subType: string) => {
 // Format status for user-friendly display
 const formatStatus = (status: string | undefined | null): string => {
   if (!status) return "N/A";
-  
+
   // Map database status values to user-friendly labels
   const statusMap: Record<string, string> = {
     'otp_pending': 'Pending',
@@ -63,12 +63,12 @@ const formatStatus = (status: string | undefined | null): string => {
     'waiting': 'Waiting',
     'new': 'New',
   };
-  
+
   const lowerStatus = status.toLowerCase();
   if (statusMap[lowerStatus]) {
     return statusMap[lowerStatus];
   }
-  
+
   // Fallback: Replace underscores with spaces and capitalize first letter of each word
   return status
     .replace(/_/g, ' ')
@@ -263,26 +263,24 @@ const AllTransactions = () => {
           </span>
         </td>
         <td
-          className={`px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E] text-sm sm:text-base font-semibold ${
-            isExchange && isDeposit ? "text-[#1D8751]" : "text-red-500 dark:text-red-400"
-          }`}
+          className={`px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E] text-sm sm:text-base font-semibold ${isExchange && isDeposit ? "text-[#1D8751]" : "text-red-500 dark:text-red-400"
+            }`}
         >
           {formatAmount(tx.amount)}
         </td>
         <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E]">
           <span
-            className={`px-2 py-1 rounded-full text-xs font-medium ${
-              tx.status === "completed"
+            className={`px-2 py-1 rounded-full text-xs font-medium ${tx.status === "completed"
                 ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
                 : tx.status === "pending" ||
-                    tx.status === "pending_address" ||
-                    tx.status === "pending_approval" ||
-                    tx.status?.toLowerCase() === "otp_pending"
+                  tx.status === "pending_address" ||
+                  tx.status === "pending_approval" ||
+                  tx.status?.toLowerCase() === "otp_pending"
                   ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
                   : tx.status === "rejected" || tx.status === "error"
                     ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
                     : "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400"
-            }`}
+              }`}
           >
             {formatStatus(tx.status)}
           </span>
@@ -348,14 +346,13 @@ const AllTransactions = () => {
             </div>
           </div>
           <span
-            className={`px-2 py-1 rounded-full text-xs font-medium ${
-              tx.status === "completed"
+            className={`px-2 py-1 rounded-full text-xs font-medium ${tx.status === "completed"
                 ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
                 : tx.status === "pending" ||
-                    tx.status?.toLowerCase() === "otp_pending"
+                  tx.status?.toLowerCase() === "otp_pending"
                   ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
                   : "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400"
-            }`}
+              }`}
           >
             {formatStatus(tx.status)}
           </span>
@@ -376,9 +373,8 @@ const AllTransactions = () => {
           <div>
             <div className="text-xs text-gray-500 dark:text-[#A0A3BC] mb-1">Amount</div>
             <div
-              className={`font-semibold text-sm ${
-                isExchange && isDeposit ? "text-[#1D8751]" : "text-red-500 dark:text-red-400"
-              }`}
+              className={`font-semibold text-sm ${isExchange && isDeposit ? "text-[#1D8751]" : "text-red-500 dark:text-red-400"
+                }`}
             >
               {formatAmount(tx.amount)}
             </div>
@@ -449,10 +445,9 @@ const AllTransactions = () => {
               onClick={(e) => handlePageChange(currentPage - 1, e)}
               disabled={currentPage === 1}
               className={`px-2 sm:px-3 py-1.5 sm:py-1 rounded-md border transition-colors duration-150 text-xs sm:text-sm min-h-[44px] sm:min-h-0
-                ${
-                  currentPage > 1
-                    ? "bg-transparent text-gray-600 dark:text-gray-400 border-[#d1d5db] dark:border-[#35353E] hover:bg-[#1D8751] hover:text-white"
-                    : "bg-gray-200 dark:bg-gray-600 text-gray-400 cursor-not-allowed border-transparent"
+                ${currentPage > 1
+                  ? "bg-transparent text-gray-600 dark:text-gray-400 border-[#d1d5db] dark:border-[#35353E] hover:bg-[#1D8751] hover:text-white"
+                  : "bg-gray-200 dark:bg-gray-600 text-gray-400 cursor-not-allowed border-transparent"
                 }`}
             >
               {t("common.previous", "Previous")}
@@ -474,10 +469,9 @@ const AllTransactions = () => {
                       key={pageNum}
                       onClick={(e) => handlePageChange(pageNum, e)}
                       className={`mx-0.5 sm:mx-1 px-2 sm:px-3 py-1.5 sm:py-1 rounded-md border transition-colors duration-150 text-xs sm:text-sm min-h-[44px] sm:min-h-0
-                        ${
-                          pageNum === currentPage
-                            ? "bg-[#1D8751] text-white border-[#1D8751]"
-                            : "bg-transparent text-gray-600 dark:text-gray-400 border-[#d1d5db] dark:border-[#35353E] hover:bg-[#1D8751] hover:text-white"
+                        ${pageNum === currentPage
+                          ? "bg-[#1D8751] text-white border-[#1D8751]"
+                          : "bg-transparent text-gray-600 dark:text-gray-400 border-[#d1d5db] dark:border-[#35353E] hover:bg-[#1D8751] hover:text-white"
                         }`}
                     >
                       {pageNum}
@@ -491,10 +485,9 @@ const AllTransactions = () => {
               onClick={(e) => handlePageChange(currentPage + 1, e)}
               disabled={currentPage === totalPages}
               className={`px-2 sm:px-3 py-1.5 sm:py-1 rounded-md border transition-colors duration-150 text-xs sm:text-sm min-h-[44px] sm:min-h-0
-                ${
-                  currentPage < totalPages
-                    ? "bg-transparent text-gray-600 dark:text-gray-400 border-[#d1d5db] dark:border-[#35353E] hover:bg-[#1D8751] hover:text-white"
-                    : "bg-gray-200 dark:bg-gray-600 text-gray-400 cursor-not-allowed border-transparent"
+                ${currentPage < totalPages
+                  ? "bg-transparent text-gray-600 dark:text-gray-400 border-[#d1d5db] dark:border-[#35353E] hover:bg-[#1D8751] hover:text-white"
+                  : "bg-gray-200 dark:bg-gray-600 text-gray-400 cursor-not-allowed border-transparent"
                 }`}
             >
               {t("common.next", "Next")}

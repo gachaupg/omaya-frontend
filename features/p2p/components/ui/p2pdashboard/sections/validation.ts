@@ -3,7 +3,6 @@ import {
   TransactionValidator,
   ValidationContext,
 } from "@/features/p2p/utils/transactionValidation";
-import { showToast } from "@/lib/utils/toast";
 
 export interface ValidationError {
   field: string;
@@ -35,19 +34,15 @@ export const validateDepositForm = (
 
   // Amount validation
   if (!data.amount || data.amount.trim() === "") {
-    const error = {
+    errors.push({
       field: "amount",
       message: "Amount is required",
-    };
-    errors.push(error);
-    showToast.error(error.message);
+    });
   } else if (isNaN(Number(data.amount)) || Number(data.amount) <= 0) {
-    const error = {
+    errors.push({
       field: "amount",
       message: "Please enter a valid amount greater than 0",
-    };
-    errors.push(error);
-    showToast.error(error.message);
+    });
   } else if (currency && networkType && transactionValidation) {
     // Transaction validation
     const validationResult = transactionValidation(
@@ -60,34 +55,28 @@ export const validateDepositForm = (
     if (!validationResult.isValid) {
       // Add all validation errors from the transaction validation
       validationResult.errors.forEach((error) => {
-        const validationError = {
+        errors.push({
           field: error.field,
           message: error.message,
-        };
-        errors.push(validationError);
-        showToast.error(error.message);
+        });
       });
     }
   }
 
   // File validation
   if (!data.file) {
-    const error = {
+    errors.push({
       field: "file",
       message: "Payment proof is required",
-    };
-    errors.push(error);
-    showToast.error(error.message);
+    });
   }
 
   // Payment confirmation validation
   if (!data.confirmPayment) {
-    const error = {
+    errors.push({
       field: "confirmPayment",
       message: "Please confirm that you have sent the payment",
-    };
-    errors.push(error);
-    showToast.error(error.message);
+    });
   }
 
   return errors;
@@ -108,19 +97,15 @@ export const validateWithdrawalForm = (
 
   // Amount validation
   if (!data.amount || data.amount.trim() === "") {
-    const error = {
+    errors.push({
       field: "amount",
       message: "Amount is required",
-    };
-    errors.push(error);
-    showToast.error(error.message);
+    });
   } else if (isNaN(Number(data.amount)) || Number(data.amount) <= 0) {
-    const error = {
+    errors.push({
       field: "amount",
       message: "Please enter a valid amount greater than 0",
-    };
-    errors.push(error);
-    showToast.error(error.message);
+    });
   } else if (currency && networkType && transactionValidation) {
     // Transaction validation
     const validationResult = transactionValidation(
@@ -133,24 +118,20 @@ export const validateWithdrawalForm = (
     if (!validationResult.isValid) {
       // Add all validation errors from the transaction validation
       validationResult.errors.forEach((error) => {
-        const validationError = {
+        errors.push({
           field: error.field,
           message: error.message,
-        };
-        errors.push(validationError);
-        showToast.error(error.message);
+        });
       });
     }
   }
 
   // Wallet address validation
   if (!data.walletAddress || data.walletAddress.trim() === "") {
-    const error = {
+    errors.push({
       field: "walletAddress",
       message: "Wallet address is required",
-    };
-    errors.push(error);
-    showToast.error(error.message);
+    });
   } else {
     // Validate based on network type
     let validation;
@@ -159,32 +140,26 @@ export const validateWithdrawalForm = (
       case "BEP20":
         validation = validateWalletAddress(data.walletAddress, networkType);
         if (!validation.isValid) {
-          const error = {
+          errors.push({
             field: "walletAddress",
             message: validation.message!,
-          };
-          errors.push(error);
-          showToast.error(validation.message!);
+          });
         }
         break;
       default:
-        const error = {
+        errors.push({
           field: "walletAddress",
           message: "Please select a valid network first",
-        };
-        errors.push(error);
-        showToast.error(error.message);
+        });
     }
   }
 
   // Payment confirmation validation
   if (!data.confirmPayment) {
-    const error = {
+    errors.push({
       field: "confirmPayment",
       message: "Please confirm that you want to withdraw this amount",
-    };
-    errors.push(error);
-    showToast.error(error.message);
+    });
   }
 
   return errors;
