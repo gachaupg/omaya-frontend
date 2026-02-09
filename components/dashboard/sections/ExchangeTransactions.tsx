@@ -8,6 +8,7 @@ import { P2PTransaction } from "@/features/p2p/types";
 import { NoDataFound } from "../ui/Transactions";
 import { useDashboardI18n } from "@/lib/useDashboardI18n";
 import { SortArrowsIcon } from "@/components/ui/SortArrowsIcon";
+import { getHighResAssetIcon } from "@/features/express/utils/imageHelpers";
 
 interface RootState {
   p2pTransactions: {
@@ -97,7 +98,7 @@ const extractPaymentInfo = (tx: any) => {
   };
 };
 
-const ExchangeTransactions = ({itemsPerPage=10}) => {
+const ExchangeTransactions = ({ itemsPerPage = 10 }) => {
   const dispatch = useDispatch<AppDispatch>();
   const { t } = useDashboardI18n();
   const { transactions, loading, error } = useSelector(
@@ -260,16 +261,14 @@ const ExchangeTransactions = ({itemsPerPage=10}) => {
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  {tx.asset_image && (
-                    <img
-                      src={tx.asset_image}
-                      alt={tx.currency || "Asset"}
-                      className="w-10 h-10 rounded-full shadow-sm flex-shrink-0"
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                      }}
-                    />
-                  )}
+                  <img
+                    src={getHighResAssetIcon({ ...tx, ticker: tx.currency })}
+                    alt={tx.currency || "Asset"}
+                    className="w-10 h-10 rounded-full shadow-sm flex-shrink-0"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
                   <div>
                     <div className="font-semibold text-sm uppercase tracking-wide text-gray-900 dark:text-white">
                       {tx.currency || "USDT"}
@@ -315,14 +314,12 @@ const ExchangeTransactions = ({itemsPerPage=10}) => {
                       </>
                     ) : (
                       <>
-                        {tx.asset_image && (
-                          <img
-                            src={tx.asset_image}
-                            alt={tx.currency || "Asset"}
-                            className="w-6 h-6 rounded-full"
-                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                          />
-                        )}
+                        <img
+                          src={getHighResAssetIcon({ ...tx, ticker: tx.currency })}
+                          alt={tx.currency || "Asset"}
+                          className="w-6 h-6 rounded-full"
+                          onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                        />
                         <span className="font-medium text-sm text-gray-900 dark:text-white">
                           {tx.currency || "USDT"}
                         </span>
@@ -335,14 +332,12 @@ const ExchangeTransactions = ({itemsPerPage=10}) => {
                   <div className="flex items-center gap-2">
                     {tx.transaction_type === "deposit" ? (
                       <>
-                        {tx.asset_image && (
-                          <img
-                            src={tx.asset_image}
-                            alt={tx.currency || "Asset"}
-                            className="w-6 h-6 rounded-full"
-                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                          />
-                        )}
+                        <img
+                          src={getHighResAssetIcon({ ...tx, ticker: tx.currency })}
+                          alt={tx.currency || "Asset"}
+                          className="w-6 h-6 rounded-full"
+                          onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                        />
                         <span className="font-medium text-sm text-gray-900 dark:text-white">
                           {tx.currency || "USDT"}
                         </span>
@@ -455,16 +450,14 @@ const ExchangeTransactions = ({itemsPerPage=10}) => {
                   {/* Asset */}
                   <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E]">
                     <div className="flex items-center gap-2 sm:gap-3">
-                      {tx.asset_image && (
-                        <img
-                          src={tx.asset_image}
-                          alt={tx.currency || "Asset"}
-                          className="w-7 h-7 sm:w-8 sm:h-8 rounded-full shadow-sm flex-shrink-0"
-                          onError={(e) => {
-                            e.currentTarget.style.display = 'none';
-                          }}
-                        />
-                      )}
+                      <img
+                        src={getHighResAssetIcon({ ...tx, ticker: tx.currency })}
+                        alt={tx.currency || "Asset"}
+                        className="w-7 h-7 sm:w-8 sm:h-8 rounded-full shadow-sm flex-shrink-0"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
                       <div className="flex flex-col min-w-0">
                         <span className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white truncate">
                           {tx.currency || "USDT"}
@@ -497,16 +490,14 @@ const ExchangeTransactions = ({itemsPerPage=10}) => {
                         </>
                       ) : (
                         <>
-                          {tx.asset_image && (
-                            <img
-                              src={tx.asset_image}
-                              alt={tx.currency || "Asset"}
-                              className="w-7 h-7 rounded-full shadow-sm flex-shrink-0"
-                              onError={(e) => {
-                                e.currentTarget.style.display = 'none';
-                              }}
-                            />
-                          )}
+                          <img
+                            src={getHighResAssetIcon({ ...tx, ticker: tx.currency })}
+                            alt={tx.currency || "Asset"}
+                            className="w-7 h-7 rounded-full shadow-sm flex-shrink-0"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
                           <div className="flex flex-col min-w-0">
                             <div className="flex items-center gap-1">
                               <span className="font-medium text-sm text-gray-900 dark:text-white">
@@ -527,16 +518,14 @@ const ExchangeTransactions = ({itemsPerPage=10}) => {
                     <div className="flex items-center gap-2 min-w-0">
                       {tx.transaction_type === "deposit" ? (
                         <>
-                          {tx.asset_image && (
-                            <img
-                              src={tx.asset_image}
-                              alt={tx.currency || "Asset"}
-                              className="w-7 h-7 rounded-full shadow-sm flex-shrink-0"
-                              onError={(e) => {
-                                e.currentTarget.style.display = 'none';
-                              }}
-                            />
-                          )}
+                          <img
+                            src={getHighResAssetIcon({ ...tx, ticker: tx.currency })}
+                            alt={tx.currency || "Asset"}
+                            className="w-7 h-7 rounded-full shadow-sm flex-shrink-0"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
                           <div className="flex flex-col min-w-0">
                             <div className="flex items-center gap-1">
                               <span className="font-medium text-sm text-gray-900 dark:text-white">

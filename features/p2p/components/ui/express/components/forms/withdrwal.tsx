@@ -17,10 +17,11 @@ import {
 import { validateWalletAddress } from "@/lib/addressValidaion";
 import { showToast } from "@/lib/utils/toast";
 import { formatNumber, formatBalance } from "@/utils/formatters";
+import { formatCurrency } from "@/lib/globalFormatter";
 import { DepositResponse } from "@/features/exchange/types";
 import { SupportedAsset } from "@/features/swap/types";
 import { FaSearch } from "react-icons/fa";
-import { createP2PWithdrawal } from "../../api";
+import { createP2PWithdrawal, fetchCommission, getCommissionApiAsset } from "../../api";
 import { P2PWithdrawalRequest, P2PWithdrawalResponse } from "../../types";
 import {
   verifyWithdrawal,
@@ -33,7 +34,8 @@ import OTPModal from "./OTPModal";
 import { logger } from '@/lib/utils/logger';
 import { useExpressI18n } from "@/lib/useExpressI18n";
 import { useTheme } from "@/context/theme";
-import { CollapsibleTermsSection } from "./CollapsibleTermsSection";
+import { TermsAndConditionsSummary } from "./TermsAndConditionsSummary";
+import { usePendingTotal } from "@/utils/pending";
 
 // Success Modal Component
 const SuccessModal = ({
@@ -240,8 +242,14 @@ export default function WithdrawalForm({
   isHomePage = false,
   onCancel,
 }: DepositFormProps) {
+  // Use availableBalance from usePendingTotal to match Available.tsx (balance minus escrow/locked)
+  const { availableBalance } = usePendingTotal();
+  const effectiveBalance = (typeof availableBalance === "number" && !isNaN(availableBalance))
+    ? availableBalance
+    : (balance ?? 0);
+
   // Debug logging for balance
-  logger.debug('p2p', "WithdrawalForm - Received balance:", balance);
+  logger.debug('p2p', "WithdrawalForm - Received balance:", balance, "availableBalance:", availableBalance);
 
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
@@ -398,6 +406,10 @@ export default function WithdrawalForm({
 
   // Add calculation error state for display below "You Send" input
   const [calculationError, setCalculationError] = useState<string | null>(null);
+
+  // Commission from API for USDT, USDC, FX Primus (null = not yet fetched, 0 = API returned 0)
+  const [apiCommission, setApiCommission] = useState<number | null>(null);
+  const commissionFetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // OTP Modal Functions
   const handleOTPVerify = async (otp: string) => {
@@ -742,6 +754,34 @@ export default function WithdrawalForm({
     const ticker = (asset.ticker || asset.symbol || "").toLowerCase();
     return ticker === "usdt";
   };
+
+  // Check if asset uses commission API (USDT, USDC, FX Primus)
+  const isCommissionApiAsset = (asset: any) => !!getCommissionApiAsset(asset?.ticker || asset?.symbol || "");
+
+  // Fetch commission from API for USDT, USDC, FX Primus - use input values so it triggers as user types
+  useEffect(() => {
+    const apiAsset = selectedAsset ? getCommissionApiAsset(selectedAsset.ticker || selectedAsset.symbol || "") : null;
+    if (!apiAsset || !selectedAsset) {
+      setApiCommission(null);
+      return;
+    }
+    const amount = isCalculatingFromPay
+      ? (parseFloat(payAmountInput) || payAmount)
+      : (parseFloat(getAmountInput) || getAmount);
+    if (amount <= 0) {
+      setApiCommission(null);
+      return;
+    }
+    if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
+    commissionFetchTimeoutRef.current = setTimeout(() => {
+      fetchCommission(apiAsset, amount, "withdrawal")
+        .then((commission) => setApiCommission(commission))
+        .catch(() => setApiCommission(null));
+    }, 300);
+    return () => {
+      if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
+    };
+  }, [selectedAsset, payAmountInput, getAmountInput, payAmount, getAmount, isCalculatingFromPay]);
 
   // Helper function to check if cache entry is still valid
   const isCacheValid = (timestamp: number) => {
@@ -1580,16 +1620,16 @@ export default function WithdrawalForm({
   // Calculate fees and amounts - Network fee is always 0 for BEP20
   const networkFee = 0;
 
-  // Use flat $2 fee for USDT, percentage for other assets
+  // Use commission from API for USDT/USDC/FX Primus, else flat $2 for USDT or percentage for others
   let commissionAmount = 0;
-  if (selectedAsset && isSimpleCalculationAsset(selectedAsset)) {
-    // For USDT, only apply $2 fee if amount is $2 or more
-    commissionAmount = payAmount >= 2 ? 2 : 0; // Flat $2 fee for USDT (only if amount >= $2)
+  if (selectedAsset && isCommissionApiAsset(selectedAsset)) {
+    commissionAmount = apiCommission ?? 0; // Always use API value - no $2 fallback
+  } else if (selectedAsset && isSimpleCalculationAsset(selectedAsset)) {
+    commissionAmount = payAmount >= 2 ? 2 : 0;
   } else {
-    // Use default commission rate for other assets
     const commissionRate = selectedAsset?.range_commissions?.[0]?.commission
       ? parseFloat(selectedAsset.range_commissions[0].commission)
-      : 2; // Default 2% commission for other assets
+      : 2;
     commissionAmount = (payAmount * commissionRate) / 100;
   }
 
@@ -1609,9 +1649,9 @@ export default function WithdrawalForm({
       if (fromAmount < 2) {
         calculatedGetAmount = fromAmount;
       } else {
-        const commissionAmount = 2;
+        const commission = isCommissionApiAsset(selectedAsset) ? (apiCommission ?? 0) : 2;
         const networkFee = 0;
-        const totalFees = networkFee + commissionAmount;
+        const totalFees = networkFee + commission;
         calculatedGetAmount = Math.max(0, fromAmount - totalFees);
       }
 
@@ -1672,9 +1712,9 @@ export default function WithdrawalForm({
             if (fromAmount < 2) {
               calculatedGetAmount = fromAmount;
             } else {
-              const commissionAmount = 2;
+              const commission = isCommissionApiAsset(selectedAsset) ? (apiCommission ?? 0) : 2;
               const networkFee = 0;
-              const totalFees = networkFee + commissionAmount;
+              const totalFees = networkFee + commission;
               calculatedGetAmount = Math.max(0, fromAmount - totalFees);
             }
 
@@ -1748,9 +1788,9 @@ export default function WithdrawalForm({
             if (fromAmount < 2) {
               newPayAmount = fromAmount;
             } else {
-              const commissionAmount = 2;
+              const commission = isCommissionApiAsset(selectedAsset) ? (apiCommission ?? 0) : 2;
               const networkFee = 0;
-              const totalFees = networkFee + commissionAmount;
+              const totalFees = networkFee + commission;
               newPayAmount = Math.max(0, fromAmount + totalFees);
             }
             setPayAmount(newPayAmount);
@@ -1892,7 +1932,7 @@ export default function WithdrawalForm({
     }
 
     // Check if amount exceeds available balance
-    if (balance !== undefined && payAmount > balance) {
+    if (effectiveBalance !== undefined && payAmount > effectiveBalance) {
       return false;
     }
 
@@ -2237,6 +2277,7 @@ export default function WithdrawalForm({
           const transactionData = {
             type: "deposit" as const,
             amount: payAmount,
+            receiveAmount: parseFloat(getAmountInput) || getAmount, // From "You Receive" input
             asset: {
               ...selectedAsset,
               icon:
@@ -2301,7 +2342,7 @@ export default function WithdrawalForm({
 
       <div className="w-full mx-auto text-white">
         {/* Single Outer Card Container */}
-        <div className="border border-[#D1D2D4FF] dark:border-[#35353E] rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-6 mb-3 sm:mb-4">
+        <div className="bg-white dark:bg-[var(--card-color)] border border-[#D1D2D4FF] dark:border-[#35353E] rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-6 mb-3 sm:mb-4">
           {/* Asset and Network Row */}
           <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 mb-4 sm:mb-6">
             {/* Asset Section */}
@@ -2598,13 +2639,20 @@ export default function WithdrawalForm({
           <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
             {/* Amount Section */}
             <div className="flex-1 sm:pr-4">
-              <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
-                Amount
-                {isCalculatingFromPay &&
-                  (isCalculating || isCalculatingReceive) && (
-                    <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
-                  )}
-              </label>
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <label className="text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] font-semibold flex items-center gap-2">
+                  Amount
+                  {isCalculatingFromPay &&
+                    (isCalculating || isCalculatingReceive) && (
+                      <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
+                    )}
+                </label>
+                {effectiveBalance !== undefined && (
+                  <span className="text-xs sm:text-sm text-[#1D8751] dark:text-[#1D8751] font-medium">
+                    Available: {formatCurrency(effectiveBalance, (selectedAsset?.ticker || selectedAsset?.symbol || "USDT").toUpperCase())}
+                  </span>
+                )}
+              </div>
               <div className="relative">
                 <input
                   type="text"
@@ -2676,14 +2724,31 @@ export default function WithdrawalForm({
                   }}
                   onFocus={() => setIsCalculatingFromPay(true)}
                   placeholder="Enter amount"
-                  className={`w-full text-[#35353e] dark:bg-[var(--card-color)] dark:text-[#ffffff] rounded-xl sm:rounded-2xl px-3 sm:px-4 py-2.5 sm:py-2 pr-12 sm:pr-16 text-sm sm:text-lg focus:outline-none border appearance-none min-h-[44px] sm:min-h-0 ${apiValidationError
+                  className={`w-full text-[#35353e] dark:bg-[var(--card-color)] dark:text-[#ffffff] rounded-xl sm:rounded-2xl px-3 sm:px-4 py-2.5 sm:py-2 pr-24 sm:pr-28 text-sm sm:text-lg focus:outline-none border appearance-none min-h-[44px] sm:min-h-0 ${apiValidationError
                     ? "border-red-500"
                     : isCalculating || isCalculatingReceive
                       ? "border-[#1D8751]"
                       : "border-[#A2A4A9FF] dark:border-[#35353E]"
                     }`}
                 />
-                <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
+                  {effectiveBalance !== undefined && effectiveBalance > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const maxVal = effectiveBalance;
+                        setPayAmountInput(maxVal.toString());
+                        setPayAmount(maxVal);
+                        setIsCalculatingFromPay(true);
+                        setIsUserModifiedAmount(true);
+                        const err = validateBalance(maxVal);
+                        setBalanceError(err);
+                      }}
+                      className="text-[#1D8751] hover:text-[#166b3e] font-semibold text-xs sm:text-sm px-2 py-0.5 rounded-md hover:bg-[#1D8751]/10 transition-colors"
+                    >
+                      Max
+                    </button>
+                  )}
                   <span className="text-[#35353e] dark:text-[#ffffff] text-sm font-medium">
                     {selectedAsset
                       ? (
@@ -2751,7 +2816,6 @@ export default function WithdrawalForm({
           </div>
 
           {/* ----------------------------------------------------------------- */}
-          {/*                         TRANSFER DETAILS SECTION                    */}
           {/* ----------------------------------------------------------------- */}
           <div className="mb-6 mt-4 sm:mt-6">
             <div className="flex items-center gap-2 mb-3">
@@ -2858,7 +2922,7 @@ export default function WithdrawalForm({
       {false && isTransactionSubmitted && (
         <div
           key={`wallet-section-${forceUpdate}`}
-          className="mb-6 flex flex-col gap-3 max-w-4xl mx-auto w-full px-2"
+          className="mb-6 flex flex-col gap-3 w-full px-2"
         >
           <h2 className="text-xl font-bold mb-2  text-[#7e7e8f] dark:text-[#788099]">
             <span className="text-[#7e7e8f] dark:text-[#788099]">2-</span>{" "}
@@ -2971,8 +3035,10 @@ export default function WithdrawalForm({
               </p>
             </div>
 
-            {/* Terms and Conditions Summary - Collapsible */}
-            <CollapsibleTermsSection />
+            {/* Terms and Conditions Summary - same layout as swap */}
+            <TermsAndConditionsSummary
+              asset={selectedAsset?.ticker || selectedAsset?.symbol || "USDT"}
+            />
 
             {/* Terms Checkbox */}
             <div className="mt-4">
@@ -3017,7 +3083,7 @@ export default function WithdrawalForm({
             </div>
           </div>
           {/* Disclaimer and Button outside the card */}
-          <div className="flex flex-col gap-3 max-w-4xl mx-auto w-full px-2">
+          <div className="flex flex-col gap-3 w-full px-2">
 
 
             {/* Warning message for amounts over $15,000 */}
@@ -3062,7 +3128,7 @@ export default function WithdrawalForm({
 
       {/* Validation Errors Display */}
       {validationErrors.length > 0 && (
-        <div className="max-w-4xl mx-auto w-full px-2 mb-4">
+        <div className="w-full px-2 mb-4">
           <div className="bg-[#23232b] dark:bg-[#35353E] border border-[#1D8751] rounded-2xl p-4">
             <h3 className="text-[#1D8751] font-semibold mb-2">
               Please fix the following errors:

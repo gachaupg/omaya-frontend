@@ -14,6 +14,7 @@ import { logger } from '@/lib/utils/logger';
 import {
   cancelP2PDepositTransaction,
 } from "@/features/express/slices/transactionSlice";
+import SuccessPage from "./success";
 
 interface ExchangingProps {
   transactionData?: {
@@ -1301,23 +1302,29 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
         >
           Transaction Details
         </div>
-        {/* Transaction ID Row */}
+        {/* Transaction ID Row - for deposit show wallet address from create response */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mb-1">
           <div
             className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
               } text-sm sm:text-base font-medium`}
           >
-            Transaction ID
+            {effectiveTransactionData?.type === "deposit" ? "Wallet Address" : "Transaction ID"}
           </div>
           <div className="flex items-center gap-2 min-w-0">
             <span
               className={`${isDark ? "text-white" : "text-gray-900"
                 } text-sm sm:text-base font-mono font-semibold break-all`}
             >
-              {liveTransactionId || effectiveTransactionData?.transactionId}
+              {effectiveTransactionData?.type === "deposit"
+                ? (effectiveTransactionData?.walletAddress || liveTransactionId || effectiveTransactionData?.transactionId)
+                : (liveTransactionId || effectiveTransactionData?.transactionId)}
             </span>
             <CopyButton
-              value={liveTransactionId || effectiveTransactionData?.transactionId || ""}
+              value={
+                effectiveTransactionData?.type === "deposit"
+                  ? (effectiveTransactionData?.walletAddress || liveTransactionId || effectiveTransactionData?.transactionId || "")
+                  : (liveTransactionId || effectiveTransactionData?.transactionId || "")
+              }
               className="text-[#FFA200] hover:text-[#FFB833] transition-colors flex-shrink-0"
               showIcon={true}
             />

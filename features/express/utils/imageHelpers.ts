@@ -12,6 +12,7 @@ const LOCAL_ASSET_ICON_MAP: Record<string, string> = {
   bitcoin: "/images/Bitcoin.svg",
   eth: "/images/eth.svg",
   ethereum: "/images/eth.svg",
+  usd: "/images/united_kingdom_zud79x.webp",
 };
 
 const sanitizeUrl = (value?: string | null) => {

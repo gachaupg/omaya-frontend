@@ -67,7 +67,6 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.12",
-    "@types/html2canvas": "^0.5.35",
     "@types/node": "^20.17.50",
     "@types/qrcode": "^1.5.5",
     "@types/react": "^19.1.12",

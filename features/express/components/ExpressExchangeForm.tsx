@@ -7,6 +7,7 @@ interface ExpressExchangeFormProps {
   onExchange: (transactionData: {
     type: "deposit" | "withdrawal";
     amount: number;
+    receiveAmount?: number; // Net amount from form "You Receive"
     asset: any;
     paymentDetail?: any;
     paymentDetails?: any[];

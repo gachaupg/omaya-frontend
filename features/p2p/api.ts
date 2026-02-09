@@ -82,6 +82,43 @@ export const updateDeposit = async (
   });
 };
 
+export interface P2PDepositAddress {
+  id: number;
+  address: string;
+  chain: string;
+  network_name: string;
+  is_default: boolean;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface P2PDepositAddressesResponse {
+  status?: string;
+  // Backend may return either a list or a single address object
+  data?: P2PDepositAddress[] | P2PDepositAddress;
+  results?: P2PDepositAddress[];
+}
+
+export const getP2PDepositAddresses = async (): Promise<P2PDepositAddress[]> => {
+  return withRetry(async () => {
+    const response = await get<P2PDepositAddressesResponse | P2PDepositAddress[]>(API_CONFIG.P2P.DEPOSIT_ADDRESSES);
+    const data = response.data;
+    // Possible shapes:
+    // - [ {..} ]
+    // - { data: [ {..} ] }
+    // - { results: [ {..} ] }
+    // - { data: {..single address..} }
+    if (Array.isArray(data)) return data;
+
+    const inner = (data as P2PDepositAddressesResponse | undefined)?.data;
+    if (Array.isArray(inner)) return inner;
+    if (inner && typeof inner === "object" && "address" in inner) return [inner as P2PDepositAddress];
+
+    const results = (data as P2PDepositAddressesResponse | undefined)?.results;
+    return Array.isArray(results) ? results : [];
+  });
+};
+
 export const getDepositAddress = async (asset: string, network: string): Promise<DepositAddressResponse> => {
   return withRetry(async () => {
     const response = await post<DepositAddressResponse>(API_CONFIG.P2P.DEPOSIT_ADDRESSES, {
@@ -728,6 +765,7 @@ export const updateUserPaymentDetail = async (
     wallet_address?: string | null;
     allow_auto_send?: boolean;
     provider_name?: string;
+    otp?: string;
   }
 ): Promise<P2PResponse> => {
   logger.debug('p2p', "API: updateUserPaymentDetail called with id:", id, "data:", data);
@@ -739,6 +777,36 @@ export const updateUserPaymentDetail = async (
     logger.debug('p2p', "API: Update response received:", response);
     return response.data;
   });
+};
+
+/** Send OTP for editing payment detail. Required before PUT/PATCH with OTP. */
+export const sendPaymentDetailEditOtp = async (
+  paymentDetailId: string
+): Promise<{ message: string; cooldown_seconds?: number }> => {
+  const response = await post<{ message: string; cooldown_seconds?: number }>(
+    API_CONFIG.PAYMENTS.SEND_EDIT_OTP,
+    { payment_detail_id: paymentDetailId }
+  );
+  return response.data;
+};
+
+/** Update payment detail with OTP (after send-edit-otp). */
+export const updatePaymentDetailWithOtp = async (
+  id: string | number,
+  data: {
+    otp: string;
+    account_name?: string;
+    account_number?: string;
+    wallet_address?: string | null;
+    allow_auto_send?: boolean;
+    provider_name?: string;
+  }
+): Promise<P2PResponse> => {
+  const response = await put<P2PResponse>(
+    API_CONFIG.PAYMENTS.USER_PAYMENT_DETAIL(String(id)),
+    data
+  );
+  return response.data;
 };
 
 export const updateProfile = async (data: FormData): Promise<P2PResponse> => {

@@ -16,6 +16,7 @@ import { showToast } from "@/lib/utils/toast";
 import { RootState } from "@/store/rootReducer";
 
 import { validateP2PAd } from "@/lib/utils/validators";
+import { formatLargeNumber } from "@/utils/formatters";
 import PaymentMethodsModal from "./PaymentMethodsModal";
 import UserPaymentSelector, { UserPaymentDetail } from "./UserPaymentSelector";
 import { usePendingTotal } from "@/utils/pending";
@@ -196,7 +197,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
     if (type === "sell" && amount) {
       const amountNum = Number(amount);
       if (!isNaN(amountNum) && amountNum > availableBalance) {
-        newErrors.amount = `Amount cannot exceed available balance (${availableBalance.toFixed(2)} USDT)`;
+        newErrors.amount = `Amount cannot exceed available balance (${formatLargeNumber(availableBalance)} USDT)`;
         isValid = false;
       }
     }
@@ -503,7 +504,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                   {type === "sell" && (
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-[#1D8751] dark:text-[#1D8751]">
-                        Available: {availableBalance.toFixed(2)} USDT
+                        Available: {formatLargeNumber(availableBalance)} USD
                       </span>
                       <button
                         type="button"
@@ -515,7 +516,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                           }
                         }}
                         className="text-xs px-2 py-0.5 rounded bg-[#1D8751] text-white hover:bg-[#166b3e] transition-colors font-medium"
-                        title={`Set maximum available balance: ${availableBalance.toFixed(2)} USDT`}
+                        title={`Set maximum available balance: ${formatLargeNumber(availableBalance)} USDT`}
                       >
                         Max
                       </button>
@@ -557,7 +558,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                         else if (type === "sell" && amountNum > availableBalance) {
                           setErrors((prev) => ({
                             ...prev,
-                            amount: `Amount cannot exceed available balance (${availableBalance.toFixed(2)} USDT)`
+                            amount: `Amount cannot exceed available balance (${formatLargeNumber(availableBalance)} USDT)`
                           }));
                         }
                         // Check if orderMin is greater than amount

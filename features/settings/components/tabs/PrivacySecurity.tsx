@@ -430,8 +430,8 @@ const PrivacySecurity = () => {
       // Refresh the sessions list after deletion
       dispatch(fetchDeviceSessions());
       
-      // Navigate back to previous page after deleting any session
-      router.back();
+      // Navigate to account privacy tab after deleting a session
+      router.push("/dashboard/account/?tab=privacy");
     } catch (error: any) {
       console.error("Failed to remove device session:", error);
       showToast.error(error?.message || "Failed to remove device session");

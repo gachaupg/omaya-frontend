@@ -46,6 +46,7 @@ import statisticsReducer from "@/features/marketing/slices/statisticsSlice";
 import unreadMessagesReducer from "@/features/p2p/slices/unreadMessagesSlice";
 import moneyXReducer from "@/features/moneyX/slices/moneyXSlice";
 import allTransactionsReducer from "@/features/transactions/slices/allTransactionsSlice";
+import p2pDepositAddressesReducer from "@/features/p2p/slices/p2pDepositAddressesSlice";
 
 const rootReducer = combineReducers({
   deposits: depositReducer,
@@ -88,7 +89,7 @@ const rootReducer = combineReducers({
   unreadMessages: unreadMessagesReducer,
   moneyX: moneyXReducer,
   allTransactions: allTransactionsReducer,
-  // Add other reducers here
+  p2pDepositAddresses: p2pDepositAddressesReducer,
 });
 
 export type RootState = ReturnType<typeof rootReducer>;

@@ -30,6 +30,11 @@ const LiveChatPage: React.FC = () => {
     onMessage: (message) => {
       logger.debug("live-chat", "Message received:", message);
     },
+    onChatHistory: (data) => {
+      if (data.status) {
+        setSession((prev) => (prev ? { ...prev, status: data.status as "waiting" | "active" | "closed" } : prev));
+      }
+    },
     onError: (error) => {
       logger.debug("live-chat", "WebSocket error:", error);
       // Don't show toast for connection errors - they're handled by auto-reconnect
@@ -161,15 +166,7 @@ const LiveChatPage: React.FC = () => {
                     isConnected ? "bg-green-500" : "bg-gray-400"
                   }`}
                 />
-                <span className="text-xs text-gray-500 dark:text-gray-400 truncate leading-tight">
-                  {isConnected
-                    ? session?.status === "waiting"
-                      ? `Waiting for agent... (Position: ${session.queue_position || 0})`
-                      : session?.agent_name
-                      ? `Connected to ${session.agent_name}`
-                      : "Connected"
-                    : "Connecting..."}
-                </span>
+               
               </div>
             </div>
           </div>

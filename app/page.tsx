@@ -579,7 +579,7 @@ export default function MarketingPage() {
                 </div>
               </div> */}
             </div>
-            <div className="flex justify-center w-full mt-7">
+            <div className="flex justify-center w-full mt-0">
               <div className="w-full max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl 2xl:max-w-4xl">
                 <ExchangeForm isHomePage={true} />
               </div>
@@ -2117,7 +2117,7 @@ export default function MarketingPage() {
 
             {/* Main Title */}
             <h2 className="text-3xl sm:text-4xl md:text-5xl 2xl:text-6xl font-bold mb-4">
-              Frequehntly Asked <span className="text-[#1D8751]">Questions</span>
+              Frequently Asked <span className="text-[#1D8751]">Questions</span>
             </h2>
 
             {/* Subtitle */}

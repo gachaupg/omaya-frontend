@@ -319,14 +319,22 @@ const DepositForm: React.FC<DepositFormProps> = ({
                             <div className="flex items-center w-full bg-[#18181D] rounded-full px-4 py-2 border border-[#35353E]">
                               <span className="w-3 h-3 mr-2 rounded-full bg-[#1D8751]"></span>
                               <span className="flex-1 text-white text-sm font-medium">
-                                {detail.how_to_send}
+                                {detail.how_to_send.startsWith("#")
+                                  ? detail.how_to_send
+                                  : /^\d+$/.test(detail.how_to_send.trim())
+                                    ? `#${detail.how_to_send}`
+                                    : detail.how_to_send}
                               </span>
                               <button
                                 className="flex items-center gap-2 bg-[#35353E] py-1 px-2 rounded-full text-[#1D8751] hover:bg-[#4a4a55] text-sm"
                                 onClick={() => {
-                                  navigator.clipboard.writeText(
-                                    detail.how_to_send || ""
-                                  );
+                                  const val = detail.how_to_send || "";
+                                  const toCopy = val.startsWith("#")
+                                    ? val
+                                    : /^\d+$/.test(val.trim())
+                                      ? `#${val}`
+                                      : val;
+                                  navigator.clipboard.writeText(toCopy);
                                 }}
                               >
                                 Copy

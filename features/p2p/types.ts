@@ -395,6 +395,7 @@ export interface TransactionSummaryState {
 export interface OrderMatchRequest {
   amount: string;
   commission?: string;
+  payment_details_ids?: number[];
 }
 
 export interface P2PBuySellResponse {

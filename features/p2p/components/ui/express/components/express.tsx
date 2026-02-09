@@ -23,7 +23,7 @@ const Express = ({
   const { isDark } = useTheme();
 
   return (
-    <div className="w-full max-w-3xl mx-auto">
+    <div className="w-full">
       
       {showExchanging ? (
         <Exchanging transactionData={transactionData} />

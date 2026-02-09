@@ -503,14 +503,14 @@ const PaymentMethods = () => {
   const isMobileMoneyMethod = (method: any) => {
     if (!method) return false;
     const providerName = (method.payment_provider_name || method.provider_name || method.provider || '').toLowerCase();
-    const paymentMethod = (method.payment_method || method.payment_method_name || '').toLowerCase();
+    const paymentMethod = (method.payment_method_name || method.payment_method || '').toLowerCase();
     const paymentMethodType = (method.payment_method_type || '').toLowerCase();
-    
-    const mobileKeywords = ['mobile', 'mpesa', 'm-pesa', 'mtn', 'airtel', 'safaricom', 'vodafone', 'telesom', 'hormuud', 'golis', 'evc', 'zaad', 'sahal', 'telebirr', 'waafi', 'money'];
-    
-    return mobileKeywords.some(keyword => 
-      providerName.includes(keyword) || 
-      paymentMethod.includes(keyword) || 
+
+    const mobileKeywords = ['mobile', 'mpesa', 'm-pesa', 'mtn', 'airtel', 'safaricom', 'vodafone', 'telesom', 'hormuud', 'golis', 'evc', 'zaad', 'sahal', 'telebirr', 'waafi'];
+
+    return mobileKeywords.some(keyword =>
+      providerName.includes(keyword) ||
+      paymentMethod.includes(keyword) ||
       paymentMethodType.includes(keyword)
     );
   };

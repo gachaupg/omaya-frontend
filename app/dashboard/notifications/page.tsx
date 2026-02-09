@@ -241,7 +241,13 @@ const Notifications = () => {
         </span>
       </div>
 
-      {matchedTrades.results.map((trade: any) => {
+      {[...(matchedTrades.results || [])]
+        .sort((a: any, b: any) => {
+          const timeA = new Date(a.timestamp || 0).getTime();
+          const timeB = new Date(b.timestamp || 0).getTime();
+          return timeB - timeA; // Newest first
+        })
+        .map((trade: any) => {
         const orderType = getOrderType(trade.order_type);
         const status = getStatus(trade, user?.email || "");
         const owner = trade.owner === user?.email ? trade.buyer : trade.seller

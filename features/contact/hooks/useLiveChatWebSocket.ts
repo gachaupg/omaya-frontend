@@ -5,8 +5,17 @@ import { storage } from "@/features/auth/utils/storage";
 import { logger } from "@/lib/utils/logger";
 import { ChatMessage } from "../services/liveChatApi";
 
+export interface ChatHistoryMessage {
+  message_id?: string;
+  sender_name?: string;
+  sender_role?: string;
+  message?: string;
+  timestamp?: string;
+  is_system_message?: boolean;
+}
+
 export interface LiveChatWebSocketMessage {
-  type: "chat_message" | "agent_joined" | "chat_transferred" | "chat_closed" | "typing_indicator";
+  type: "chat_message" | "chat_history" | "agent_joined" | "chat_transferred" | "chat_closed" | "typing_indicator";
   data?: {
     sender_name?: string;
     sender_role?: "user" | "agent";
@@ -15,6 +24,8 @@ export interface LiveChatWebSocketMessage {
   };
   agent_name?: string;
   session_id?: string;
+  status?: string;
+  messages?: ChatHistoryMessage[];
   message?: string;
   user_name?: string;
   is_typing?: boolean;
@@ -25,6 +36,7 @@ interface UseLiveChatWebSocketOptions {
   sessionId: string;
   enabled?: boolean;
   onMessage?: (message: LiveChatWebSocketMessage) => void;
+  onChatHistory?: (data: { status?: string; messages: ChatHistoryMessage[] }) => void;
   onError?: (error: Event) => void;
   onClose?: () => void;
   autoReconnect?: boolean;
@@ -34,6 +46,7 @@ export const useLiveChatWebSocket = ({
   sessionId,
   enabled = true,
   onMessage,
+  onChatHistory,
   onError,
   onClose,
   autoReconnect = true,
@@ -46,21 +59,23 @@ export const useLiveChatWebSocket = ({
   const reconnectAttemptsRef = useRef(0);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const maxReconnectAttempts = 5;
-  const pendingMessagesRef = useRef<Map<string, number>>(new Map()); // Track recently sent messages to avoid duplicates
   const reconnectDelay = 3000;
   const historyLoadedRef = useRef(false);
+  const pendingSentRef = useRef<Map<string, number>>(new Map());
   
   // Use refs for callbacks to prevent re-creation of connect function
   const onMessageRef = useRef(onMessage);
   const onErrorRef = useRef(onError);
   const onCloseRef = useRef(onClose);
-  
+  const onChatHistoryRef = useRef(onChatHistory);
+
   // Update refs when callbacks change
   useEffect(() => {
     onMessageRef.current = onMessage;
     onErrorRef.current = onError;
     onCloseRef.current = onClose;
-  }, [onMessage, onError, onClose]);
+    onChatHistoryRef.current = onChatHistory;
+  }, [onMessage, onError, onClose, onChatHistory]);
 
   const getAccessToken = useCallback((): string | null => {
     // Try to get token from cookie first
@@ -133,31 +148,43 @@ export const useLiveChatWebSocket = ({
       ws.onmessage = (event) => {
         try {
           const data: LiveChatWebSocketMessage = JSON.parse(event.data);
+          console.log("[LiveChat] Response:", data);
           logger.debug("live-chat", "WebSocket message received:", data);
           
           setLastMessage(data);
           
           // Handle different message types
-          if (data.type === "chat_message" && data.data) {
+          if (data.type === "chat_history" && Array.isArray(data.messages)) {
+            const chatMessages: ChatMessage[] = data.messages.map((m) => ({
+              sender_name: m.is_system_message ? "System" : (m.sender_name || "Unknown"),
+              sender_role: (m.sender_role === "admin" ? "agent" : m.sender_role || "agent") as "user" | "agent",
+              message: m.message || "",
+              timestamp: m.timestamp || new Date().toISOString(),
+            }));
+            setMessages(chatMessages);
+            historyLoadedRef.current = true;
+            onChatHistoryRef.current?.({ status: data.status, messages: data.messages });
+            logger.debug("live-chat", "Chat history loaded from WebSocket:", chatMessages.length, "messages");
+          } else if (data.type === "chat_message") {
+            // Support both { data: { message, sender_role, ... } } and { message } at top level
+            const msgContent = (data.data?.message ?? data.message ?? "").trim();
+            const senderRole = (data.data?.sender_role || "user") as string;
             const chatMessage: ChatMessage = {
-              sender_name: data.data.sender_name || "Unknown",
-              sender_role: data.data.sender_role || "user",
-              message: data.data.message || "",
-              timestamp: data.data.timestamp || new Date().toISOString(),
+              sender_name: data.data?.sender_name || "Unknown",
+              sender_role: (senderRole === "admin" ? "agent" : senderRole) as "user" | "agent",
+              message: msgContent,
+              timestamp: data.data?.timestamp || new Date().toISOString(),
             };
             
-            // Check if this is a duplicate of a message we just sent
-            const messageKey = `${chatMessage.message.trim()}_${chatMessage.sender_role}`;
-            const pendingTime = pendingMessagesRef.current.get(messageKey);
+            // Skip server echo of our own message (server echoes with sender_role "user" or "admin")
+            const sentAt = pendingSentRef.current.get(msgContent);
             const now = Date.now();
-            
-            // If it's a user message and we sent it recently (within last 2 seconds), skip it
-            if (chatMessage.sender_role === "user" && pendingTime && (now - pendingTime) < 2000) {
-              // Remove from pending and skip adding (we already added it optimistically)
-              pendingMessagesRef.current.delete(messageKey);
-              logger.debug("live-chat", "Skipping duplicate user message:", chatMessage.message);
+            if (sentAt && now - sentAt < 5000) {
+              pendingSentRef.current.delete(msgContent);
+              logger.debug("live-chat", "Skipping server echo:", chatMessage.message);
+            } else if (senderRole === "user") {
+              logger.debug("live-chat", "Skipping user message from server:", chatMessage.message);
             } else {
-              // Add the message (it's either from agent or not a duplicate)
               setMessages((prev) => [...prev, chatMessage]);
             }
           } else if (data.type === "typing_indicator") {
@@ -297,21 +324,17 @@ export const useLiveChatWebSocket = ({
         type: "chat_message",
         message: message,
       };
+      const apiUrl = wsRef.current.url;
+      console.log("[LiveChat] API (WebSocket):", apiUrl);
+      console.log("[LiveChat] Payload:", messageData);
       wsRef.current.send(JSON.stringify(messageData));
       
-      // Track this message to avoid duplicates when server echoes it back
-      const messageKey = `${message.trim()}_user`;
-      pendingMessagesRef.current.set(messageKey, Date.now());
-      
-      // Clean up old pending messages (older than 5 seconds)
-      const now = Date.now();
-      for (const [key, time] of pendingMessagesRef.current.entries()) {
-        if (now - time > 5000) {
-          pendingMessagesRef.current.delete(key);
-        }
+      const trimmed = message.trim();
+      pendingSentRef.current.set(trimmed, Date.now());
+      for (const [key, time] of pendingSentRef.current.entries()) {
+        if (Date.now() - time > 3000) pendingSentRef.current.delete(key);
       }
       
-      // Add user message to local state immediately (optimistic update)
       const userMessage: ChatMessage = {
         sender_name: "You",
         sender_role: "user",

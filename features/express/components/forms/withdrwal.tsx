@@ -28,7 +28,7 @@ import { showToast } from "@/lib/utils/toast";
 import { DepositResponse } from "../../../exchange/types";
 import { SupportedAsset } from "../../../swap/types";
 import { FaSearch } from "react-icons/fa";
-import { createExpressWithdrawal } from "@/features/express/api";
+import { createExpressWithdrawal, fetchCommission, getCommissionApiAsset } from "@/features/express/api";
 import {
   ExpressWithdrawalPayload,
   ExpressWithdrawalResponse,
@@ -610,6 +610,7 @@ export default function WithdrawalForm({
   const [websocketUrl, setWebsocketUrl] = useState<string>("");
   const [transactionId, setTransactionId] = useState<string>("");
   const [isTermsAccepted, setIsTermsAccepted] = useState(false);
+  const [expandedTerms, setExpandedTerms] = useState(false);
 
   // Forex-specific state for withdrawal
   const [userNotesForex, setUserNotesForex] = useState<string>("");
@@ -626,6 +627,10 @@ export default function WithdrawalForm({
     cardWidth: 0,
   });
   const [isComponentMounted, setIsComponentMounted] = useState(false);
+
+  // Commission from API for USDT, USDC, FX Primus (null = not yet fetched, 0 = API returned 0)
+  const [apiCommission, setApiCommission] = useState<number | null>(null);
+  const commissionFetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const updateAssetDropdownPosition = useCallback(() => {
     if (!assetDropdownRef.current) {
@@ -878,7 +883,6 @@ export default function WithdrawalForm({
       enhancedFilteredUserPaymentDetails.length > 0 &&
       selectedPaymentDetails.length === 0
     ) {
-
       const firstAccount = enhancedFilteredUserPaymentDetails[0];
       setSelectedPaymentDetails([firstAccount]);
     }
@@ -927,6 +931,14 @@ export default function WithdrawalForm({
   const handleRemovePaymentDetail = (detail: UserPaymentDetail) => {
     setSelectedPaymentDetails((prev) => prev.filter((d) => d.id !== detail.id));
   };
+
+  const isSelectedPaymentPending = !!(
+    payBank &&
+    selectedPaymentDetails.length > 0 &&
+    selectedPaymentDetails[0].status &&
+    selectedPaymentDetails[0].status !== "approved" &&
+    selectedPaymentDetails[0].status !== "verified"
+  );
 
   useEffect(() => {
     // Skip API calls on home page - buttons will redirect to login
@@ -1420,6 +1432,34 @@ export default function WithdrawalForm({
 
   // FXP withdrawal rate: 1 FXP = 1.1 USD (user sends FXP, receives USD)
   const FXP_TO_USD_RATE = 1.1;
+
+  // Check if asset uses commission API (USDT, USDC, FX Primus)
+  const isCommissionApiAsset = (asset: any) => !!getCommissionApiAsset(asset?.ticker || asset?.symbol || "");
+
+  // Fetch commission from API for USDT, USDC, FX Primus - use input values so it triggers as user types
+  useEffect(() => {
+    const apiAsset = selectedAsset ? getCommissionApiAsset(selectedAsset.ticker || selectedAsset.symbol || "") : null;
+    if (!apiAsset || !selectedAsset) {
+      setApiCommission(null);
+      return;
+    }
+    const amount = isCalculatingFromPay
+      ? (parseFloat(payAmountInput) || payAmount)
+      : (parseFloat(getAmountInput) || getAmount);
+    if (amount <= 0) {
+      setApiCommission(null);
+      return;
+    }
+    if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
+    commissionFetchTimeoutRef.current = setTimeout(() => {
+      fetchCommission(apiAsset, amount, "withdrawal")
+        .then((commission) => setApiCommission(commission))
+        .catch(() => setApiCommission(null));
+    }, 300);
+    return () => {
+      if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
+    };
+  }, [selectedAsset, payAmountInput, getAmountInput, payAmount, getAmount, isCalculatingFromPay]);
 
   // Helper function to check if cache entry is still valid
   const isCacheValid = (timestamp: number) => {
@@ -2643,11 +2683,12 @@ export default function WithdrawalForm({
   // Calculate fees and amounts - Network fee is always 0 for BEP20
   const networkFee = 0;
 
-  // Use flat $2 fee for direct assets (USDT on BSC, USDC on BSC), percentage for other assets
+  // Use commission from API for USDT/USDC/FX Primus, else flat $2 for direct assets or percentage for others
   let commissionAmount = 0;
-  if (selectedAsset && isSimpleCalculationAsset(selectedAsset)) {
-    // For direct assets, only apply $2 fee if amount is $2 or more
-    commissionAmount = payAmount >= 2 ? 2 : 0; // Flat $2 fee for direct assets (only if amount >= $2)
+  if (selectedAsset && isCommissionApiAsset(selectedAsset)) {
+    commissionAmount = apiCommission ?? 0;
+  } else if (selectedAsset && isSimpleCalculationAsset(selectedAsset)) {
+    commissionAmount = payAmount >= 2 ? 2 : 0; // Flat $2 fee for direct assets fallback
   } else {
     // Use default commission rate for other assets
     const commissionRate = selectedAsset?.range_commissions?.[0]?.commission
@@ -2667,12 +2708,12 @@ export default function WithdrawalForm({
 
     // For simple calculations, do them immediately without any delays
     if (fromPay && selectedAsset && isSimpleCalculationAsset(selectedAsset)) {
-      // Immediate calculation for direct assets (USDT on BSC, USDC on BSC) - simply subtract 2
+      const commission = isCommissionApiAsset(selectedAsset) ? (apiCommission ?? 0) : 2;
       let calculatedGetAmount;
-      if (fromAmount < 2) {
+      if (fromAmount < commission) {
         calculatedGetAmount = fromAmount;
       } else {
-        calculatedGetAmount = Math.max(0, fromAmount - 2); // Simply subtract 2 for direct assets
+        calculatedGetAmount = Math.max(0, fromAmount - commission);
       }
 
       // Show result immediately
@@ -2768,12 +2809,12 @@ export default function WithdrawalForm({
         if (fromPay) {
           // Calculate from pay amount to receive amount
           if (isSimpleCalculationAsset(selectedAsset)) {
-            // This should not happen as we handle it above, but keep as fallback
+            const commission = isCommissionApiAsset(selectedAsset) ? (apiCommission ?? 0) : 2;
             let calculatedGetAmount;
-            if (fromAmount < 2) {
+            if (fromAmount < commission) {
               calculatedGetAmount = fromAmount;
             } else {
-              calculatedGetAmount = Math.max(0, fromAmount - 2); // Simply subtract 2 for direct assets
+              calculatedGetAmount = Math.max(0, fromAmount - commission);
             }
 
             // Only show calculated amount if it's meaningful (> 0.01), otherwise show empty
@@ -2842,11 +2883,12 @@ export default function WithdrawalForm({
         } else {
           // Calculate from receive amount to pay amount
           if (isSimpleCalculationAsset(selectedAsset)) {
+            const commission = isCommissionApiAsset(selectedAsset) ? (apiCommission ?? 0) : 2;
             let newPayAmount;
-            if (fromAmount < 2) {
+            if (fromAmount < commission) {
               newPayAmount = fromAmount;
             } else {
-              newPayAmount = fromAmount + 2; // Simply add 2 for direct assets
+              newPayAmount = fromAmount + commission;
             }
             setPayAmount(newPayAmount);
             setPayAmountInput(newPayAmount.toString());
@@ -2968,6 +3010,15 @@ export default function WithdrawalForm({
       setPaymentMethodError("Please select a payment method");
       errors.push("Please select a payment method");
       showToast.error("Please select a payment method");
+      return false;
+    }
+
+    // Check if selected payment is pending (not approved/verified)
+    const selected = selectedPaymentDetails[0];
+    if (selected?.status && selected.status !== "approved" && selected.status !== "verified") {
+      setPaymentMethodError("Selected payment method is pending verification");
+      errors.push("Selected payment method is pending verification");
+      showToast.error("Selected payment method is pending verification");
       return false;
     }
 
@@ -3258,6 +3309,7 @@ export default function WithdrawalForm({
               const transactionData = {
                 type: "withdrawal" as const,
                 amount: payAmount,
+                receiveAmount: parseFloat(getAmountInput) || getAmount, // From "You Receive" input
                 asset: {
                   ...selectedAsset,
                   icon:
@@ -3291,6 +3343,7 @@ export default function WithdrawalForm({
               const transactionData = {
                 type: "withdrawal" as const,
                 amount: payAmount,
+                receiveAmount: parseFloat(getAmountInput) || getAmount, // From "You Receive" input
                 asset: {
                   ...selectedAsset,
                   icon:
@@ -3400,6 +3453,7 @@ export default function WithdrawalForm({
           const transactionData = {
             type: "deposit" as const,
             amount: payAmount,
+            receiveAmount: parseFloat(getAmountInput) || getAmount, // From "You Receive" input
             asset: {
               ...selectedAsset,
               icon:
@@ -3469,7 +3523,7 @@ export default function WithdrawalForm({
   }, [selectedPaymentDetail]);
 
   return (
-    <div className="flex flex-col dark:bg-[var(--bg-color)] pl-0 sm:pl-4 pr-2 sm:pr-0 mr-0 sm:mr-40 w-full sm:max-w-5xl">
+    <div className="flex flex-col dark:bg-[var(--bg-color)] pl-0 pr-2 sm:pr-0 mr-0 sm:mr-40 w-full mx-auto">
       {/* Crypto/Forex Toggle Buttons Removed */}
 
       {transactionMode === "forex" ? (
@@ -4258,23 +4312,11 @@ export default function WithdrawalForm({
                                 <span className="text-sm text-gray-600 dark:text-gray-400">
                                   {enhancedFilteredUserPaymentDetails.length} account(s) found
                                 </span>
-                                <button
-                                  type="button"
-                                  onClick={async () => {
-                                    try {
-                                      await dispatch(fetchUserPaymentDetails(true)).unwrap();
-                                      // Toast removed - silent refresh
-                                    } catch (error) {
-                                      showToast.error("Failed to refresh payment details");
-                                    }
-                                  }}
-                                  className="text-xs text-[#1D8751] hover:text-[#166b3e] underline"
-                                >
-                                  Refresh
-                                </button>
+                               
                               </div>
                               <div className="w-full min-w-0 relative z-[100] isolate">
                                 <CustomSelect
+                                  sizeMode="card"
                                   options={(enhancedFilteredUserPaymentDetails || []).map(
                                     (detail: UserPaymentDetail) => {
                                       // Try to get provider info from public payment methods first
@@ -4310,13 +4352,16 @@ export default function WithdrawalForm({
                                       const displayLabel = `${accountNumber} - ${accountName}`;
                                       // Create a full tooltip with all information (using separators since HTML title doesn't support newlines)
                                       const fullInfo = `Account Number: ${accountNumber} | Account Name: ${accountName}${providerName ? ` | Provider: ${providerName}` : ''}`;
+                                      const isPending = !!(detail.status && detail.status !== "approved" && detail.status !== "verified");
 
                                       return {
                                         value: detail.id.toString(),
-                                        label: displayLabel,
+                                        label: isPending ? `${displayLabel} (Pending)` : displayLabel,
                                         logo: providerLogo || undefined,
                                         // Add full information for tooltip on hover
                                         title: fullInfo,
+                                        disabled: isPending,
+                                        subtitle: isPending ? "Pending" : undefined,
                                       };
                                     }
                                   )}
@@ -4387,7 +4432,6 @@ export default function WithdrawalForm({
                 </div>
               </div>
             </div>
-
             {/* Fee & Rate - Dynamic based on selected asset */}
             {/* <div className="flex items-center rounded-2xl border border-[#39394a] bg-[#23232b] px-2 py-2 mb-3">
             <div className="flex flex-col gap-2 flex-1">
@@ -4435,14 +4479,15 @@ export default function WithdrawalForm({
                 <button
                   type="button"
                   className={`w-full text-[#35353e] dark:text-[#788099] text-base font-medium py-1.5 rounded-full flex items-center justify-center gap-2 transition-colors ${isHomePage
-                    ? payAmount >= 15000 || getAmount >= 15000
+                    ? payAmount >= 15000 || getAmount >= 15000 || isSelectedPaymentPending
                       ? "bg-gray-500 cursor-not-allowed"
                       : "bg-[#1D8751] hover:bg-[#1D8751]/80 cursor-pointer"
                     : isSubmitting ||
                       isTransactionSubmitted ||
                       isInfoModalOpen ||
                       payAmount >= 15000 ||
-                      getAmount >= 15000
+                      getAmount >= 15000 ||
+                      isSelectedPaymentPending
                       ? "bg-gray-500 cursor-not-allowed"
                       : "bg-[#1D8751] hover:bg-[#1D8751]/80"
                     }`}
@@ -4486,12 +4531,13 @@ export default function WithdrawalForm({
                   }}
                   disabled={
                     requiresLoginRedirect
-                      ? payAmount >= 15000 || getAmount >= 15000
+                      ? payAmount >= 15000 || getAmount >= 15000 || isSelectedPaymentPending
                       : isSubmitting ||
                       isTransactionSubmitted ||
                       isInfoModalOpen ||
                       payAmount >= 15000 ||
-                      getAmount >= 15000
+                      getAmount >= 15000 ||
+                      isSelectedPaymentPending
                   }
                 >
                   {isSubmitting ? (
@@ -4513,10 +4559,10 @@ export default function WithdrawalForm({
                       <span>Withdrawal Addresses Generated</span>
                     </div>
                   ) : (
-                    <span className="flex items-center justify-center gap-2">
-                      <span className="text-base font-medium text-white">Express</span>
+                    <span className="flex items-center justify-center ">
+                      <span className="text-base font-medium text-white">E</span>
                       <img
-                        className="h-5 w-auto mt-3"
+                        className="h-5 w-auto mt-2"
                         src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
                         alt="Express icon"
                       />
@@ -4679,56 +4725,60 @@ export default function WithdrawalForm({
                   </p>
                 </div>
 
-                {/* Terms and Conditions Summary */}
-                <div className="flex flex-col gap-2 mt-2">
-                  <div className="flex items-center mb-2">
-                    <span className="mr-2 text-[#1D8751]">
-                      <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
-                        <circle
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="#1D8751"
-                          strokeWidth="2"
-                        />
-                        <line
-                          x1="12"
-                          y1="8"
-                          x2="12"
-                          y2="12"
-                          stroke="#1D8751"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                        />
-                        <circle cx="12" cy="16" r="1" fill="#1D8751" />
-                      </svg>
-                    </span>
-                    <span className="text-base font-semibold text-[#7e7e8f] dark:text-[#788099]">
-                      Terms and Conditions Summary
-                    </span>
-                  </div>
-                  <div className=" dark:bg-[#1D1D23] border border-[#1D8751] rounded-xl p-4">
-                    <ul className="list-none space-y-2">
-                      <li className="flex items-start">
-                        <span className="w-2 h-2 mt-1.5 rounded-full bg-[#1D8751] dark:bg-[#1D8751] shrink-0 mr-3"></span>
-                        <span className="text-[#35353e] dark:text-[#788099] text-sm">
-                          We will send money to your <span className="font-semibold text-[#1D8751]">{selectedPaymentDetail?.provider_name || selectedProviderData?.provider_name || payBank || "the selected provider"}</span> account <span className="font-semibold text-[#1D8751]">{selectedPaymentDetail?.account_number || selectedPaymentDetail?.payment_details?.[0]?.account_number || selectedPaymentDetail?.payment_details?.[0]?.mobile_number || "—"}</span> for withdrawal of <span className="font-semibold text-[#1D8751]">{selectedAsset?.ticker || selectedAsset?.symbol || "crypto"}</span>. Please ensure this is your own account.
-                        </span>
-                      </li>
-                      <li className="flex items-start">
-                        <span className="w-2 h-2 mt-1.5 rounded-full bg-[#1D8751] dark:bg-[#1D8751] shrink-0 mr-3"></span>
-                        <span className="text-[#35353e] dark:text-[#788099] text-sm">
-                          Put transaction ID in the description field of the bank
-                        </span>
-                      </li>
-                      <li className="flex items-start">
-                        <span className="w-2 h-2 mt-1.5 rounded-full bg-[#1D8751] dark:bg-[#1D8751] shrink-0 mr-3"></span>
-                        <span className="text-[#35353e] dark:text-[#788099] text-sm">
-                          Please note, If you do not follow above conditions, we
-                          will reject your transaction and send you back your money.
-                        </span>
-                      </li>
-                    </ul>
+                {/* Terms & Conditions */}
+                <div className="flex items-center gap-2 mb-2">
+                  <svg className="w-5 h-5 text-[#1D8751]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <h3 className={`font-medium text-sm sm:text-base ${isDark ? "text-white" : "text-gray-900"}`}>
+                    Terms & Conditions
+                  </h3>
+                </div>
+                <div className={`border border-[#1D8751] rounded-xl overflow-hidden transition-all duration-300 ${isDark ? "bg-[#1D1D23]" : "bg-[#F8FAFF]"}`}>
+                  <div className="p-4">
+                    <div className={`space-y-2 sm:space-y-3 ${expandedTerms ? "" : "line-clamp-3"}`}>
+                      <div className="flex items-start gap-2 sm:gap-3">
+                        <span className="text-[#1D8751] font-bold text-sm sm:text-base flex-shrink-0">1.</span>
+                        <p className={`text-xs sm:text-sm ${isDark ? "text-[#788099]" : "text-[#475569]"}`}>
+                          <span className="font-semibold">Your receiving account:</span> We will send money to your{" "}
+                          <span className="font-semibold text-[#1D8751]">{selectedPaymentDetail?.provider_name || selectedProviderData?.provider_name || payBank || "the selected provider"}</span>{" "}
+                          account <span className="font-semibold text-[#1D8751]">{selectedPaymentDetail?.account_number || selectedPaymentDetail?.payment_details?.[0]?.account_number || selectedPaymentDetail?.payment_details?.[0]?.mobile_number || "—"}</span>{" "}
+                          for withdrawal of <span className="font-semibold text-[#1D8751]">{selectedAsset?.ticker || selectedAsset?.symbol || "crypto"}</span>. Please ensure this is your own account.
+                        </p>
+                      </div>
+                      <div className="flex items-start gap-2 sm:gap-3">
+                        <span className="text-[#1D8751] font-bold text-sm sm:text-base flex-shrink-0">2.</span>
+                        <p className={`text-xs sm:text-sm ${isDark ? "text-[#788099]" : "text-[#475569]"}`}>
+                          <span className="font-semibold">Put transaction ID in the description field:</span> You must put the transaction ID in the description/memo field of the bank.
+                        </p>
+                      </div>
+                      <div className="flex items-start gap-2 sm:gap-3">
+                        <span className="text-[#1D8751] font-bold text-sm sm:text-base flex-shrink-0">3.</span>
+                        <p className={`text-xs sm:text-sm ${isDark ? "text-[#788099]" : "text-[#475569]"}`}>
+                          <span className="font-semibold">Non-compliance:</span> Please note, if you do not follow the above conditions, we may reject your transaction and return your funds, but delays may apply.
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setExpandedTerms(!expandedTerms)}
+                      className="mt-3 sm:mt-4 text-[#1D8751] hover:text-[#166b3e] font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition-colors"
+                    >
+                      {expandedTerms ? (
+                        <>
+                          <span>Show Less</span>
+                          <svg className="w-4 h-4 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                          </svg>
+                        </>
+                      ) : (
+                        <>
+                          <span>Show More</span>
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                          </svg>
+                        </>
+                      )}
+                    </button>
                   </div>
                 </div>
 
@@ -4799,7 +4849,7 @@ export default function WithdrawalForm({
                   </div>
                 )}
                 <button
-                  className={`w-full text-white text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${isSubmitting || isInfoModalOpen || getAmount > 15000 || !isTermsAccepted
+                  className={`w-full text-white text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${isSubmitting || isInfoModalOpen || getAmount > 15000 || !isTermsAccepted || isSelectedPaymentPending
                     ? "bg-gray-500 cursor-not-allowed"
                     : "bg-[#1D8751] hover:bg-[#166b3e]"
                     }`}
@@ -4809,6 +4859,7 @@ export default function WithdrawalForm({
                       const transactionData = {
                         type: "withdrawal" as const,
                         amount: payAmount,
+                        receiveAmount: parseFloat(getAmountInput) || getAmount, // From "You Receive" input
                         asset: {
                           ...selectedAsset,
                           icon:
@@ -4829,7 +4880,7 @@ export default function WithdrawalForm({
                       onExchange(transactionData);
                     }
                   }}
-                  disabled={isSubmitting || isInfoModalOpen || getAmount > 15000 || !isTermsAccepted}
+                  disabled={isSubmitting || isInfoModalOpen || getAmount > 15000 || !isTermsAccepted || isSelectedPaymentPending}
                 >
                   {isSubmitting ? (
                     <div className="flex items-center gap-2">

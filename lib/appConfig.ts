@@ -38,6 +38,10 @@ export const API_CONFIG = {
     BLOGS: "/administration/blogs/blog/",
     NEWS: "/administration/blogs/news/",
   },
+  TRADING_ENGINE: {
+    COMMISSION: (asset: string, amount: number, type: "deposit" | "withdrawal") =>
+      `/trading_engine/commission/?asset=${encodeURIComponent(asset)}&amount=${amount}&type=${type}`,
+  },
   P2P: {
     BASE: "/trading_engine/p2p/",
     WALLETS: "api/wallet/wallets/",
@@ -187,9 +191,18 @@ export const API_CONFIG = {
   REFERRAL: {
     CALCULATE_FEES: "/trading_engine/referral/calculate-fees/",
   },
+  WALLET: {
+    BOOKMARKED_ADDRESSES: "/api/wallet/bookmarked-addresses/",
+    BOOKMARKED_ADDRESS: (id: string) => `/api/wallet/bookmarked-addresses/${id}/`,
+  },
+  PAYMENTS: {
+    SEND_EDIT_OTP: "/api/payments/user-payment-details/send-edit-otp/",
+    USER_PAYMENT_DETAIL: (id: string) => `/api/payments/user-payment-details/${id}/`,
+  },
   MONEYX: {
     TRANSACTIONS: "/api/moneyx/transactions/",
     UPDATE_TRANSACTION: (transactionId: string) => `/api/moneyx/transactions/${transactionId}/`,
+    COMMISSION: (amount: number) => `/api/moneyx/commission/?amount=${amount}`,
     SOCKETS: {
       STATUS: (transactionId: string) =>
         `${getWebSocketBaseUrl()}/ws/moneyx/status/${transactionId}/`,

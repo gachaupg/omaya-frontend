@@ -407,14 +407,18 @@ export const Table: React.FC<TableProps> = ({
     }
 
     try {
-      // Use html2canvas with better options for capturing
       const canvas = await html2canvas(modalContentRef.current, {
         useCORS: true,
-        allowTaint: true,
-        logging: false,
-      });
+        onclone: (clonedDoc: Document, clonedElement: HTMLElement) => {
+          clonedElement.style.borderRadius = "0px";
+          clonedElement.style.maxHeight = "none";
+          clonedElement.style.overflow = "visible";
+          // Add a tiny bit of padding to avoid clipping top text if font rendering shifts
+          clonedElement.style.paddingTop = "10px";
+        },
+      } as Parameters<typeof html2canvas>[1]);
 
-      const image = canvas.toDataURL('image/png', 1.0);
+      const image = canvas.toDataURL("image/png");
       const link = document.createElement('a');
       link.href = image;
       link.download = `OMAYA_Receipt_${selectedTransaction?.id?.substring(0, 8) || 'transaction'}.png`;
@@ -1205,7 +1209,7 @@ export const Table: React.FC<TableProps> = ({
             {/* Close button at top-left */}
             <button
               onClick={() => setSelectedTransaction(null)}
-              className="absolute top-3 right-3 text-muted-foreground hover:text-gray-900 dark:hover:text-white transition-colors p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+              className="absolute top-3 right-3 text-[#6b7280] hover:text-[#111827] dark:hover:text-white transition-colors p-1 rounded-full hover:bg-[#f3f4f6] dark:hover:bg-[#1f2937]"
               aria-label="Close modal"
             >
               <X size={18} />
@@ -1218,7 +1222,7 @@ export const Table: React.FC<TableProps> = ({
                 alt="OMAYA"
                 className="h-6 sm:h-8 w-auto object-contain"
               />
-              <span className="text-gray-500 dark:text-gray-400 text-xl sm:text-2xl font-medium ml-0.5"></span>
+              <span className="text-[#6b7280] dark:text-[#9ca3af] text-xl sm:text-2xl font-medium ml-0.5"></span>
             </div>
             {/* Header: Coin, Type, Date, Share/Note */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
@@ -1233,7 +1237,7 @@ export const Table: React.FC<TableProps> = ({
                   className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex-shrink-0"
                 />
                 <div className="min-w-0">
-                  <div className="text-gray-900 dark:text-white font-semibold text-sm sm:text-base">
+                  <div className="text-[#111827] dark:text-white font-semibold text-sm sm:text-base">
                     <span className="truncate">{selectedTransaction.asset}</span>{" "}
                     <span
                       className={
@@ -1241,13 +1245,13 @@ export const Table: React.FC<TableProps> = ({
                           ? "text-[#1D8751]"
                           : selectedTransaction.type === "sell"
                             ? "text-[#FF4D4D]"
-                            : "text-gray-500 dark:text-[#788099]"
+                            : "text-[#6b7280] dark:text-[#788099]"
                       }
                     >
                       {selectedTransaction.type}
                     </span>
                   </div>
-                  <div className="text-xs text-gray-500 dark:text-[#788099]">
+                  <div className="text-xs text-[#6b7280] dark:text-[#788099]">
                     {formatDate(selectedTransaction.date)}
                   </div>
                 </div>
@@ -1312,33 +1316,33 @@ export const Table: React.FC<TableProps> = ({
               </div>
             </div>
             {/* Amount and Fees */}
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-0 border-b border-gray-200 dark:border-[#35353E] pb-3 sm:pb-4 mb-3 sm:mb-4">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-0 border-b border-[#e5e7eb] dark:border-[#35353E] pb-3 sm:pb-4 mb-3 sm:mb-4">
               <div>
-                <div className="text-gray-400 dark:text-[#8C8CA1] text-xs">
+                <div className="text-[#9ca3af] dark:text-[#8C8CA1] text-xs">
                   Total Amount
                 </div>
                 <div className="text-[#1D8751] text-xl sm:text-2xl font-bold">
                   {formatNumber(Number(selectedTransaction?.amount ?? 0))} USDT
                 </div>
               </div>
-              <div className="text-left sm:text-right text-xs text-gray-400 dark:text-[#8C8CA1]">
+              <div className="text-left sm:text-right text-xs text-[#9ca3af] dark:text-[#8C8CA1]">
                 <div>
                   Total Fee{" "}
-                  <span className="text-gray-900 dark:text-white">$3</span>
+                  <span className="text-[#111827] dark:text-white">$3</span>
                 </div>
                 <div>
                   Network Fee{" "}
-                  <span className="text-gray-900 dark:text-white">$2</span>
+                  <span className="text-[#111827] dark:text-white">$2</span>
                 </div>
               </div>
             </div>
             {/* Payment Info */}
-            <div className="border-b border-gray-200 dark:border-[#35353E] pb-3 sm:pb-4 mb-3 sm:mb-4">
+            <div className="border-b border-[#e5e7eb] dark:border-[#35353E] pb-3 sm:pb-4 mb-3 sm:mb-4">
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-0 mb-2">
-                <span className="text-xs sm:text-sm text-gray-400 dark:text-[#8C8CA1]">
+                <span className="text-xs sm:text-sm text-[#9ca3af] dark:text-[#8C8CA1]">
                   Payment:
                 </span>
-                <span className="text-gray-500 dark:text-[#788099] flex items-center gap-1 text-xs sm:text-sm">
+                <span className="text-[#6b7280] dark:text-[#788099] flex items-center gap-1 text-xs sm:text-sm">
                   <span className="truncate">Salaam Bank</span>{" "}
                   <img
                     src="https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
@@ -1348,34 +1352,34 @@ export const Table: React.FC<TableProps> = ({
                 </span>
               </div>
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-0 mb-2">
-                <span className="text-xs sm:text-sm text-gray-400 dark:text-[#8C8CA1]">
+                <span className="text-xs sm:text-sm text-[#9ca3af] dark:text-[#8C8CA1]">
                   Account Number:
                 </span>
-                <span className="text-gray-500 dark:text-[#788099] text-xs sm:text-sm break-all sm:break-normal">
+                <span className="text-[#6b7280] dark:text-[#788099] text-xs sm:text-sm break-all sm:break-normal">
                   485634612949050
                 </span>
               </div>
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-0">
-                <span className="text-xs sm:text-sm text-gray-400 dark:text-[#8C8CA1]">
+                <span className="text-xs sm:text-sm text-[#9ca3af] dark:text-[#8C8CA1]">
                   Account Name:
                 </span>
-                <span className="text-gray-500 dark:text-[#788099] text-xs sm:text-sm break-words">
+                <span className="text-[#6b7280] dark:text-[#788099] text-xs sm:text-sm break-words">
                   Omar Ali Omar
                 </span>
               </div>
             </div>
             {/* Deposit Sent To */}
-            <div className="border-b border-gray-200 dark:border-[#35353E] pb-3 sm:pb-4 mb-3 sm:mb-4">
+            <div className="border-b border-[#e5e7eb] dark:border-[#35353E] pb-3 sm:pb-4 mb-3 sm:mb-4">
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-0 mb-2">
-                <span className="text-xs sm:text-sm text-gray-400 dark:text-[#8C8CA1]">
+                <span className="text-xs sm:text-sm text-[#9ca3af] dark:text-[#8C8CA1]">
                   Deposit Sent to
                 </span>
-                <span className="text-gray-500 dark:text-[#788099] text-xs sm:text-sm break-all">
+                <span className="text-[#6b7280] dark:text-[#788099] text-xs sm:text-sm break-all">
                   3434343233
                 </span>
               </div>
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-0">
-                <span className="text-xs sm:text-sm text-gray-400 dark:text-[#8C8CA1]">
+                <span className="text-xs sm:text-sm text-[#9ca3af] dark:text-[#8C8CA1]">
                   Transaction Hash:
                 </span>
                 <span className="text-[#1D8751] underline cursor-pointer text-xs sm:text-sm break-all text-left sm:text-right">
@@ -1386,7 +1390,7 @@ export const Table: React.FC<TableProps> = ({
             {/* Status, Receipt, Rating */}
             <div>
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-0 mb-2">
-                <span className="text-xs sm:text-sm text-gray-400 dark:text-[#8C8CA1]">
+                <span className="text-xs sm:text-sm text-[#9ca3af] dark:text-[#8C8CA1]">
                   Status:
                 </span>
                 <span className="text-[#1D8751] font-semibold text-xs sm:text-sm">
@@ -1394,7 +1398,7 @@ export const Table: React.FC<TableProps> = ({
                 </span>
               </div>
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-0 mb-2">
-                <span className="text-xs sm:text-sm text-gray-400 dark:text-[#8C8CA1]">
+                <span className="text-xs sm:text-sm text-[#9ca3af] dark:text-[#8C8CA1]">
                   Receipt:
                 </span>
                 <span className="text-[#1D8751] text-xs sm:text-sm">
@@ -1402,14 +1406,14 @@ export const Table: React.FC<TableProps> = ({
                 </span>
               </div>
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-0">
-                <span className="text-xs sm:text-sm text-gray-400 dark:text-[#8C8CA1]">
+                <span className="text-xs sm:text-sm text-[#9ca3af] dark:text-[#8C8CA1]">
                   Service Rating:
                 </span>
                 <span className="flex flex-row">
                   {[...Array(5)].map((_, i) => (
                     <svg
                       key={i}
-                      className="text-[#FFB800] w-4 h-4 sm:w-5 sm:h-5"
+                      className="text-[#9ca3af] dark:text-[#8C8CA1] w-4 h-4 sm:w-5 sm:h-5"
                       fill="currentColor"
                       viewBox="0 0 20 20"
                     >
