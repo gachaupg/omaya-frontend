@@ -660,11 +660,11 @@ const ChatBox: React.FC<{
           {/* Paperclip icon for image upload */}
           <button
             type="button"
-            className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 dark:bg-[var(--card-color)] bg-gray-100 rounded-lg flex-shrink-0"
+            className="flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 dark:bg-[var(--card-color)] bg-gray-100 rounded-lg flex-shrink-0"
             onClick={() => fileInputRef.current && fileInputRef.current.click()}
             title="Attach image"
           >
-            <svg width="18" height="18" className="sm:w-6 sm:h-6" fill="#1D8751" viewBox="0 0 24 24">
+            <svg width="16" height="16" className="sm:w-5 sm:h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24">
               <path
                 d="M16.5 6.5l-7.8 7.8a3 3 0 104.2 4.2l7.1-7.1a5 5 0 00-7.1-7.1l-8.5 8.5"
                 stroke="#1D8751"
@@ -674,15 +674,15 @@ const ChatBox: React.FC<{
                 strokeLinejoin="round"
               />
             </svg>
-            <input
-              type="file"
-              ref={fileInputRef}
-              className="hidden"
-              accept="image/*"
-              multiple
-              onChange={handleImageChange}
-            />
           </button>
+          <input
+            type="file"
+            ref={fileInputRef}
+            className="hidden"
+            accept="image/*"
+            multiple
+            onChange={handleImageChange}
+          />
           <button
             onClick={handleSend}
             disabled={!message.trim() && uploaded_images.length === 0}

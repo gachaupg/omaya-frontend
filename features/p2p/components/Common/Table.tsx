@@ -1259,19 +1259,30 @@ export const Table: React.FC<TableProps> = ({
               <div className="flex gap-2 justify-end sm:justify-start">
                 {/* Share button */}
                 <button
-                  onClick={() => {
-                    const shareData = {
-                      title: `${selectedTransaction.asset} ${selectedTransaction.type} Transaction`,
-                      text: `Transaction ID: ${selectedTransaction.id}\nAmount: ${selectedTransaction.amount} ${selectedTransaction.assetSymbol}\nStatus: ${selectedTransaction.status}`,
-                      url: window.location.href
-                    };
+                  onClick={async () => {
+                    const shareText = `Transaction ID: ${selectedTransaction.id}\nAmount: ${selectedTransaction.amount} ${selectedTransaction.assetSymbol}\nStatus: ${selectedTransaction.status}`;
 
-                    if (navigator.share) {
-                      navigator.share(shareData).catch(err => logger.debug('p2p', 'Share failed:', err));
-                    } else {
-                      // Fallback - copy to clipboard
-                      navigator.clipboard.writeText(`Transaction ID: ${selectedTransaction.id}\nAmount: ${selectedTransaction.amount} ${selectedTransaction.assetSymbol}\nStatus: ${selectedTransaction.status}`);
-                      alert('Transaction details copied to clipboard!');
+                    try {
+                      if (navigator.share && window.isSecureContext) {
+                        await navigator.share({
+                          title: `${selectedTransaction.asset} ${selectedTransaction.type} Transaction`,
+                          text: shareText,
+                        });
+                      } else {
+                        await navigator.clipboard.writeText(shareText);
+                        // Show a brief tooltip feedback
+                        const btn = document.activeElement as HTMLButtonElement;
+                        const originalTitle = btn?.title;
+                        if (btn) { btn.title = 'Copied!'; setTimeout(() => { btn.title = originalTitle || 'Share Transaction'; }, 2000); }
+                      }
+                    } catch (err: any) {
+                      if (err?.name !== 'AbortError') {
+                        try {
+                          await navigator.clipboard.writeText(shareText);
+                        } catch {
+                          logger.debug('p2p', 'Share and clipboard both failed:', err);
+                        }
+                      }
                     }
                   }}
                   className="text-[#1D8751] hover:text-[#166b3e] transition-colors"

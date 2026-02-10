@@ -129,9 +129,8 @@ export default function Sidebar() {
                   >
                     {item.labelKey === "navigation.exchange" ? (
                       <>
-
                         <img
-                          className=" w-9 h-8 object-cover "
+                          className="ml-2 w-5 h-5 md:w-6 md:h-6 object-contain flex-shrink-0"
                           src="https://res.cloudinary.com/pitz/image/upload/v1764568507/uil_exchange_1_okxkvb.png"
                           alt=""
                         />

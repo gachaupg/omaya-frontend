@@ -220,7 +220,7 @@ const Filters: React.FC<FiltersProps> = ({
       </div>
 
       {/* ───────────────────────── Filter bar */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-4 gap-2 sm:gap-3 mt-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-4 gap-2 sm:gap-3 mt-3">
         {/* Coin selector */}
         <div className="relative group">
           <div
@@ -228,7 +228,7 @@ const Filters: React.FC<FiltersProps> = ({
               isCurrencyActive ? activeCardClasses : inactiveCardClasses
             } ${loading ? "opacity-60" : ""} pointer-events-none`}
           >
-            <div className="flex items-center gap-4 w-full">
+            <div className="flex items-center gap-2 sm:gap-4 w-full">
               <div className={iconWrapper}>
                 <Image
                   src={currencyInfo.logo}
@@ -239,12 +239,12 @@ const Filters: React.FC<FiltersProps> = ({
                 />
               </div>
               <div className="flex flex-col min-w-0 flex-1">
-                <div className="flex items-center justify-between gap-6 w-full">
-                  <span className="text-[15px] font-medium text-gray-500 dark:text-[#9AA3BC] tracking-[0.01em]">
+                <div className="flex items-center justify-between gap-1 sm:gap-3 w-full">
+                  <span className="text-xs sm:text-[15px] font-medium text-gray-500 dark:text-[#9AA3BC] tracking-[0.01em] truncate">
                     {currencyInfo.name}
                   </span>
-                  <div className="flex items-center gap-1">
-                    <span className="text-[17px] font-medium text-gray-900 dark:text-white tracking-[0.08em]">
+                  <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
+                    <span className="text-sm sm:text-[17px] font-medium text-gray-900 dark:text-white tracking-[0.08em]">
                       {currencyInfo.code}
                     </span>
                     <svg
