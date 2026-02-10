@@ -29,23 +29,32 @@ const mapWsDataToTransaction = (data: any): Transaction => {
   const id = data.id || data.transaction_id || `tx-${Date.now()}-${Math.random()}`;
   const amount = data.amount || data.total_amount || data.total_amount_due || "0";
   const timestamp = data.timestamp || data.created_at || new Date().toISOString();
+  
+  // Get the payment provider name from various possible fields
+  const providerName = data.payment_provider || data.from_provider || data.from_bank || data.bank_name || data.provider_name || "";
+  
+  // Get the provider logo from various possible fields
+  const providerLogo = data.payment_provider_logo || data.provider_logo || data.bank_logo || data.from_logo || null;
+  
   return {
     transaction_type: data.transaction_type || data.type || "transaction",
     transaction_id: id,
     user: {
       id: data.user_id || 0,
-      name: data.user_name || data.from || data.from_bank || "User",
+      name: data.user_name || data.from || data.from_bank || providerName || "User",
       email: "",
-      photo: null,
+      photo: providerLogo,
     },
     amount,
     currency: data.currency || "USD",
-    asset_image: data.asset_image || null,
+    asset_image: data.asset_image || data.currency_logo || data.to_logo || null,
     total_amount_due: amount,
-    payment_provider: data.payment_provider || data.from_provider || data.from_bank || "",
+    payment_provider: providerName,
     status: data.status || "completed",
     stages: "",
     timestamp,
+    // Store additional fields for logo usage
+    photo: providerLogo,
   };
 };
 
@@ -65,19 +74,33 @@ const getFromTo = (tx: Transaction): { from: { name: string; logo: string }; to:
     return cryptoAssets.some(crypto => name.toLowerCase().includes(crypto));
   };
   
+  // Get the actual provider name - try multiple sources
+  const getProviderName = (): string => {
+    if (tx.payment_provider && tx.payment_provider.trim()) return tx.payment_provider;
+    if (tx.user?.name && tx.user.name !== "User" && tx.user.name.trim()) return tx.user.name;
+    return tx.currency || "Unknown";
+  };
+  
+  // Get the provider logo - try multiple sources
+  const getProviderLogo = (): string => {
+    if (tx.photo && tx.photo.startsWith('http')) return tx.photo;
+    if (tx.user?.photo && tx.user.photo.startsWith('http')) return tx.user.photo;
+    return PAYMENT_ICON_URL;
+  };
+  
   // For deposits: From = payment provider (bank), To = crypto asset
   if (transactionType === "deposit" || transactionType === "moneyx") {
-    const providerName = tx.payment_provider || "Payment Provider";
+    const providerName = getProviderName();
     const assetName = tx.currency || "USD";
     
     return {
       from: {
         name: providerName,
-        logo: PAYMENT_ICON_URL, // Always use payment icon for banks/providers
+        logo: getProviderLogo(),
       },
       to: {
         name: assetName,
-        logo: tx.asset_image || ASSET_ICON_URL, // Use asset image for crypto
+        logo: tx.asset_image || ASSET_ICON_URL,
       },
     };
   }
@@ -85,39 +108,39 @@ const getFromTo = (tx: Transaction): { from: { name: string; logo: string }; to:
   // For withdrawals: From = crypto asset, To = payment provider (bank)
   if (transactionType === "withdrawal") {
     const assetName = tx.currency || "USD";
-    const providerName = tx.payment_provider || "Payment Provider";
+    const providerName = getProviderName();
     
     return {
       from: {
         name: assetName,
-        logo: tx.asset_image || ASSET_ICON_URL, // Use asset image for crypto
+        logo: tx.asset_image || ASSET_ICON_URL,
       },
       to: {
         name: providerName,
-        logo: PAYMENT_ICON_URL, // Always use payment icon for banks/providers
+        logo: getProviderLogo(),
       },
-  };
+    };
   }
   
   // For P2P: From = payment provider, To = crypto asset
   if (transactionType.includes("p2p")) {
-    const providerName = tx.payment_provider || "Payment Provider";
+    const providerName = getProviderName();
     const assetName = tx.currency || "USD";
     
     return {
       from: {
         name: providerName,
-        logo: PAYMENT_ICON_URL, // Use payment icon for provider
+        logo: getProviderLogo(),
       },
       to: {
         name: assetName,
-        logo: tx.asset_image || ASSET_ICON_URL, // Use asset image for crypto
+        logo: tx.asset_image || ASSET_ICON_URL,
       },
     };
   }
   
   // Default: Determine based on names
-  const firstName = tx.payment_provider || tx.currency || "Source";
+  const firstName = getProviderName();
   const secondName = tx.currency || "Destination";
   
   // If first name is crypto, swap them
@@ -129,7 +152,7 @@ const getFromTo = (tx: Transaction): { from: { name: string; logo: string }; to:
       },
       to: {
         name: secondName,
-        logo: PAYMENT_ICON_URL,
+        logo: getProviderLogo(),
       },
     };
   }
@@ -138,7 +161,7 @@ const getFromTo = (tx: Transaction): { from: { name: string; logo: string }; to:
   return {
     from: {
       name: firstName,
-      logo: PAYMENT_ICON_URL,
+      logo: getProviderLogo(),
     },
     to: {
       name: secondName,
