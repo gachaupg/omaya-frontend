@@ -560,6 +560,8 @@ export default function Navbar() {
   const dispatch = useDispatch<AppDispatch>();
   const depositDropdownRef = useRef<HTMLDivElement>(null);
   const profileModalRef = useRef<HTMLDivElement>(null);
+  const profileFetchRef = useRef<{ lastFetch: number; inProgress: boolean; hasFetched: boolean }>({ lastFetch: 0, inProgress: false, hasFetched: false });
+  const p2pProfileFetchRef = useRef<{ lastFetch: number; inProgress: boolean; hasFetched: boolean }>({ lastFetch: 0, inProgress: false, hasFetched: false });
 
   // Use KYC state for verification status, fallback to user.is_verified
   const isVerified = kycState.isVerified !== undefined
@@ -604,7 +606,15 @@ export default function Navbar() {
           localStorage.setItem("p2p_profile_image", newPhotoUrl);
         }
         setProfileImageError(false);
-        dispatch(getUserProfile());
+        // Only refetch if not already fetching and not fetched recently (within 5 seconds)
+        const now = Date.now();
+        if (!profileFetchRef.current.inProgress && (now - profileFetchRef.current.lastFetch > 5000)) {
+          profileFetchRef.current.inProgress = true;
+          profileFetchRef.current.lastFetch = now;
+          dispatch(getUserProfile()).finally(() => {
+            profileFetchRef.current.inProgress = false;
+          });
+        }
       }
     };
 
@@ -615,30 +625,70 @@ export default function Navbar() {
     };
   }, [dispatch]);
 
+  // Reset fetch flags when user logs out
+  useEffect(() => {
+    if (!isAuthenticated) {
+      profileFetchRef.current.hasFetched = false;
+      profileFetchRef.current.lastFetch = 0;
+      p2pProfileFetchRef.current.hasFetched = false;
+      p2pProfileFetchRef.current.lastFetch = 0;
+    }
+  }, [isAuthenticated]);
+
   useEffect(() => {
     // Fetch profile if we don't have it or if we have a cached photo but no profile
-    if (isAuthenticated && (!userProfile || (!userProfile.photo && cachedProfilePhoto))) {
-      dispatch(getUserProfile());
+    // Prevent refetching if already fetching or fetched recently (within 60 seconds)
+    // Only check once when authenticated, not on every userProfile/cachedProfilePhoto change
+    if (isAuthenticated && !profileFetchRef.current.hasFetched && (!userProfile || (!userProfile.photo && cachedProfilePhoto))) {
+      const now = Date.now();
+      if (!profileFetchRef.current.inProgress && (now - profileFetchRef.current.lastFetch > 60000)) {
+        profileFetchRef.current.inProgress = true;
+        profileFetchRef.current.lastFetch = now;
+        profileFetchRef.current.hasFetched = true;
+        dispatch(getUserProfile()).finally(() => {
+          profileFetchRef.current.inProgress = false;
+        });
+      }
     }
-  }, [isAuthenticated, dispatch, userProfile, cachedProfilePhoto]);
+    // Mark as fetched if userProfile becomes available (from another source)
+    if (userProfile && !profileFetchRef.current.hasFetched) {
+      profileFetchRef.current.hasFetched = true;
+    }
+  }, [isAuthenticated, dispatch]); // Removed userProfile and cachedProfilePhoto from deps to prevent loops
 
   // Fetch P2P profile (same as UserCard) - provides profile photo that may not be in auth profile yet
+  // Only fetch if not already fetched recently (within 60 seconds) and not already in progress
   useEffect(() => {
-    if (isAuthenticated) {
-      dispatch(getP2PProfileThunk())
-        .unwrap()
-        .then((response) => {
-          if (response?.profile?.photo && typeof window !== "undefined") {
-            const photo = response.profile.photo;
-            localStorage.setItem("p2p_profile_image", photo);
-            localStorage.setItem("profile_photo", photo);
-            setCachedProfilePhoto(photo);
-            setProfileImageError(false);
-          }
-        })
-        .catch(() => {});
+    if (isAuthenticated && !p2pProfileFetchRef.current.hasFetched) {
+      const now = Date.now();
+      // Only fetch if we don't have P2P profile data or if it's been more than 60 seconds since last fetch
+      const shouldFetch = !p2pProfile?.profile || (now - p2pProfileFetchRef.current.lastFetch > 60000);
+      if (shouldFetch && !p2pProfileFetchRef.current.inProgress) {
+        p2pProfileFetchRef.current.inProgress = true;
+        p2pProfileFetchRef.current.lastFetch = now;
+        p2pProfileFetchRef.current.hasFetched = true;
+        dispatch(getP2PProfileThunk())
+          .unwrap()
+          .then((response) => {
+            if (response?.profile?.photo && typeof window !== "undefined") {
+              const photo = response.profile.photo;
+              localStorage.setItem("p2p_profile_image", photo);
+              localStorage.setItem("profile_photo", photo);
+              setCachedProfilePhoto(photo);
+              setProfileImageError(false);
+            }
+          })
+          .catch(() => {})
+          .finally(() => {
+            p2pProfileFetchRef.current.inProgress = false;
+          });
+      }
     }
-  }, [dispatch, isAuthenticated]);
+    // Reset hasFetched flag if p2pProfile becomes available (from another source)
+    if (p2pProfile?.profile && !p2pProfileFetchRef.current.hasFetched) {
+      p2pProfileFetchRef.current.hasFetched = true;
+    }
+  }, [dispatch, isAuthenticated]); // Removed p2pProfile from deps to prevent loops
 
   // Sync P2P profile photo from Redux (when UserCard or Navbar fetches it) to localStorage and cached state
   useEffect(() => {

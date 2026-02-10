@@ -6,6 +6,7 @@
 import React, { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { p2pTabs } from "../data";
+import { useP2PI18n } from "@/lib/useP2PI18n";
 import { tokens } from "@/styles/tokens";
 import Tabs from "./Tabs";
 import P2PDashboard from "./tabs/P2PDashboard";
@@ -22,6 +23,7 @@ import { useSelector } from "react-redux";
 import UnreadMessages from "./ui/orders/UnreadMessages";
 
 const P2PLayout = () => {
+  const { t } = useP2PI18n();
   const searchParams = useSearchParams();
   const tabFromQuery = searchParams?.get("tab");
   const [activeTab, setActiveTab] = useState(tabFromQuery || "dashboard");
@@ -53,11 +55,11 @@ const handleTabChange = (tab: string) => {
   const handleBackFromMessages = () => {
     setShowUnreadMessages(false);
   };
-  // ✅ Determine the back text based on active tab
+  // Determine the back text based on active tab (translated)
   const getBackToText = () => {
-    if (activeTab === "market") return "Back to Market";
-    if (activeTab === "orders") return "Back to Orders";
-    return "Back";
+    if (activeTab === "market") return t("back.backToMarket", "Back to Market");
+    if (activeTab === "orders") return t("back.backToOrders", "Back to Orders");
+    return t("back.back", "Back");
   };
 
  

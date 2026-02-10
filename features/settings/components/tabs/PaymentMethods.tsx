@@ -12,10 +12,87 @@ import {
   createP2PDepositAddress,
   clearCreateStatus,
 } from "@/features/p2p/slices/p2pDepositAddressesSlice";
+import {
+  fetchUserWalletAddresses,
+  deleteUserWalletAddress,
+  clearCreateStatus as clearUserWalletCreateStatus,
+} from "@/features/settings/slices/userWalletAddressesSlice";
+import type { UserWalletAddress } from "@/features/settings/slices/userWalletAddressesSlice";
 import { UserPaymentDetail } from "@/features/p2p/components/ui/p2pdashboard/sections/UserPaymentSelector";
 import PaymentMethodsModal from "@/features/p2p/components/ui/p2pdashboard/sections/PaymentMethodsModal";
+import AddWalletAddressModal from "./AddWalletAddressModal";
 import { showToast } from "@/lib/utils/toast";
 import CopyButton from "@/components/ui/CopyButton";
+
+const WalletAddressCard = ({
+  addr,
+  onDelete,
+  isDeleting,
+}: {
+  addr: UserWalletAddress;
+  onDelete: () => void;
+  isDeleting: boolean;
+}) => (
+  <div className="flex flex-col gap-3 rounded-[28px] border border-[#E3E6F0] dark:border-[#2A2A35] bg-gray-50 dark:bg-[var(--card-color)] px-4 py-4">
+    <div className="flex items-start gap-4">
+      <div className="relative">
+        <img
+          src="/images/tether.svg"
+          alt={addr.asset}
+          className="w-12 h-12 object-contain flex-shrink-0"
+          style={{ display: "block" }}
+          onError={(e) => {
+            e.currentTarget.src = "/default-provider-logo.svg";
+          }}
+        />
+        {addr.status === "pending" && (
+          <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-[#FF4D55] border-2 border-white dark:border-[#13131A]" />
+        )}
+      </div>
+      <div className="flex-1 flex items-center justify-between">
+        <div>
+          <p className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
+            {addr.account_name || addr.label}
+          </p>
+          <p className="text-xs text-gray-500 dark:text-[#8B90A5] mt-0.5">
+            {addr.network} • {addr.asset} • {addr.status}
+          </p>
+        </div>
+        <button
+          className="text-[#1D8751] hover:text-red-500 transition-colors"
+          title="Delete"
+          disabled={isDeleting}
+          onClick={onDelete}
+        >
+          {isDeleting ? (
+            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="#1D8751" strokeWidth="4" fill="none" />
+              <path className="opacity-75" fill="#1D8751" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+            </svg>
+          ) : (
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 cursor-pointer" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2" />
+            </svg>
+          )}
+        </button>
+      </div>
+    </div>
+    <div>
+      <label className="text-xs font-medium text-gray-500 dark:text-[#8B90A5] mb-2 block">
+        Wallet address
+      </label>
+      <div className="rounded-full border border-[#E3E6F0] dark:border-[#2A2A35] bg-white dark:bg-[var(--card-color)] px-4 py-2 flex items-center gap-2 text-sm">
+        <input
+          type="text"
+          readOnly
+          value={addr.address}
+          className="flex-1 bg-transparent focus:outline-none text-gray-900 dark:text-white"
+        />
+        <CopyButton value={addr.address} />
+      </div>
+    </div>
+  </div>
+);
 
 const PaymentMethods = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -36,7 +113,16 @@ const PaymentMethods = () => {
     createError: p2pCreateError,
     createSuccess: p2pCreateSuccess,
   } = useSelector((state: RootState) => state.p2pDepositAddresses);
+  const {
+    addresses: userWalletAddresses,
+    loading: userWalletAddressesLoading,
+    createLoading: userWalletCreateLoading,
+    createError: userWalletCreateError,
+    createSuccess: userWalletCreateSuccess,
+    deleteLoading: userWalletDeleteLoading,
+  } = useSelector((state: RootState) => state.userWalletAddresses);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showAddWalletModal, setShowAddWalletModal] = useState(false);
   const [deletingMethodId, setDeletingMethodId] = useState<string | null>(null);
   const [activeButton, setActiveButton] = useState("Approved");
 
@@ -63,6 +149,7 @@ const PaymentMethods = () => {
   useEffect(() => {
     if (isAuthenticated && activeButton === "OMAYA Wallets") {
       dispatch(fetchP2PDepositAddresses() as any);
+      dispatch(fetchUserWalletAddresses() as any);
     }
   }, [dispatch, isAuthenticated, activeButton]);
 
@@ -83,6 +170,28 @@ const PaymentMethods = () => {
       dispatch(clearCreateStatus());
     }
   }, [p2pCreateSuccess, dispatch]);
+
+  React.useEffect(() => {
+    if (userWalletCreateError) {
+      showToast.error(userWalletCreateError);
+      dispatch(clearUserWalletCreateStatus());
+    }
+  }, [userWalletCreateError, dispatch]);
+
+  React.useEffect(() => {
+    if (userWalletCreateSuccess) {
+      dispatch(clearUserWalletCreateStatus());
+    }
+  }, [userWalletCreateSuccess, dispatch]);
+
+  const handleDeleteUserWallet = async (uuid: string) => {
+    const result = await dispatch(deleteUserWalletAddress(uuid) as any);
+    if (deleteUserWalletAddress.fulfilled.match(result)) {
+      showToast.success("Wallet address deleted successfully.");
+    } else if (deleteUserWalletAddress.rejected.match(result)) {
+      showToast.error(result.payload || "Failed to delete wallet address");
+    }
+  };
 
   const handleDeleteMethod = async (methodId: string) => {
     try {
@@ -110,76 +219,145 @@ const PaymentMethods = () => {
               Pending
             </button>
             <button className={`px-3 py-1.5 rounded-full border border-[#1D8751] text-[#1D8751] text-xs sm:text-sm font-semibold focus:outline-none ${activeButton === "OMAYA Wallets" ? "bg-[#1D8751] text-white" : "bg-transparent"}`} onClick={() => setActiveButton("OMAYA Wallets")}>
-              OMAYA Wallets
+              OMAYA.io Wallets
             </button>
           </div>
         </div>
-        <button
-          className="flex items-center gap-1 text-xs sm:text-sm dark:text-white text-gray-900 font-medium hover:underline focus:outline-none self-start"
-          onClick={() => setShowPaymentModal(true)}
-        >
-          Add Payment Method
-          <span className="text-lg leading-none">+</span>
-        </button>
+        <div className="flex items-center gap-3 self-start">
+          <button
+            className="flex items-center gap-1 text-xs sm:text-sm dark:text-white text-gray-900 font-medium hover:underline focus:outline-none"
+            onClick={() => setShowPaymentModal(true)}
+          >
+            Add Payment Method
+            <span className="text-lg leading-none">+</span>
+          </button>
+        </div>
       </div>
       <div className="flex w-full flex-col gap-3">
-        <p className="text-sm sm:text-base font-bold dark:text-white text-gray-900">
-          Payment Methods
-        </p>
+        <div className="flex items-center justify-between">
+          <p className="text-sm sm:text-base font-bold dark:text-white text-gray-900">
+            Payment Methods
+          </p>
+          {activeButton === "OMAYA Wallets" && (
+            <button
+              onClick={() => setShowAddWalletModal(true)}
+              disabled={userWalletCreateLoading}
+              className="flex items-center gap-1 text-sm sm:text-base text-[#1D8751] font-semibold hover:text-[#0f8f4d] disabled:opacity-50"
+            >
+              <span className="text-lg leading-none">+</span>
+              Add New Address
+            </button>
+          )}
+        </div>
         <div className="rounded-[32px] border border-[#20202A] dark:border-[#1E1E27] bg-white dark:bg-[var(--card-color)] p-2 sm:p-3 md:p-4 space-y-3">
           {activeButton === "OMAYA Wallets" ? (
             <>
-              {p2pAddressesLoading ? (
+              {(p2pAddressesLoading || userWalletAddressesLoading) ? (
                 <div className="rounded-2xl border border-dashed border-[#E3E6F0] dark:border-[#2A2A35] py-10 text-center text-sm text-gray-500 dark:text-[#7B819C]">
                   Loading OMAYA wallet addresses...
                 </div>
-              ) : p2pDepositAddresses.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-[#E3E6F0] dark:border-[#2A2A35] py-10 text-center text-sm text-gray-500 dark:text-[#7B819C]">
-                  No OMAYA wallet addresses yet. Click &quot;Generate New Address&quot; to create one.
-                </div>
               ) : (
-                p2pDepositAddresses.map((addr) => (
-                  <div
-                    key={addr.id}
-                    className="flex flex-col gap-3 rounded-[28px] border border-[#E3E6F0] dark:border-[#2A2A35] bg-gray-50 dark:bg-[var(--card-color)] px-4 py-4"
-                  >
-                    <div className="flex items-start gap-4">
-                      <div className="relative">
-                        <img
-                          src="/images/tether.svg"
-                          alt="USDT"
-                          className="w-12 h-12 object-contain flex-shrink-0"
-                          style={{ display: "block" }}
-                          onError={(e) => {
-                            e.currentTarget.src = "/default-provider-logo.svg";
-                          }}
-                        />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
-                          OMAYA Wallet
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-[#8B90A5] mt-0.5">
-                          {addr.network_name || addr.chain} • {addr.is_default ? "Default" : ""}
-                        </p>
-                      </div>
+                <div className="space-y-4">
+                  {/* Default Wallets (Generated) */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-medium text-gray-500 dark:text-[#8B90A5] uppercase tracking-wide">
+                        Default Wallets
+                      </p>
                     </div>
-                    <div>
-                      <label className="text-xs font-medium text-gray-500 dark:text-[#8B90A5] mb-2 block">
-                        Wallet Address
-                      </label>
-                      <div className="rounded-full border border-[#E3E6F0] dark:border-[#2A2A35] bg-white dark:bg-[var(--card-color)] px-4 py-2 flex items-center gap-2 text-sm">
-                        <input
-                          type="text"
-                          readOnly
-                          value={addr.address}
-                          className="flex-1 bg-transparent focus:outline-none text-gray-900 dark:text-white"
-                        />
-                        <CopyButton value={addr.address} />
-                      </div>
-                    </div>
+                    {p2pDepositAddresses.length > 0 && (
+                      <>
+                        {p2pDepositAddresses.map((addr) => (
+                        <div
+                          key={addr.id}
+                          className="flex flex-col gap-3 rounded-[28px] border border-[#E3E6F0] dark:border-[#2A2A35] bg-gray-50 dark:bg-[var(--card-color)] px-4 py-4"
+                        >
+                          <div className="flex items-start gap-4">
+                            <div className="relative">
+                              <img
+                                src="/images/tether.svg"
+                                alt="USDT"
+                                className="w-12 h-12 object-contain flex-shrink-0"
+                                style={{ display: "block" }}
+                                onError={(e) => {
+                                  e.currentTarget.src = "/default-provider-logo.svg";
+                                }}
+                              />
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
+                                OMAYA Wallet
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-[#8B90A5] mt-0.5">
+                                {addr.network_name || addr.chain} • {addr.is_default ? "Default" : ""}
+                              </p>
+                            </div>
+                          </div>
+                          <div>
+                            <label className="text-xs font-medium text-gray-500 dark:text-[#8B90A5] mb-2 block">
+                              Wallet address
+                            </label>
+                            <div className="rounded-full border border-[#E3E6F0] dark:border-[#2A2A35] bg-white dark:bg-[var(--card-color)] px-4 py-2 flex items-center gap-2 text-sm">
+                              <input
+                                type="text"
+                                readOnly
+                                value={addr.address}
+                                className="flex-1 bg-transparent focus:outline-none text-gray-900 dark:text-white"
+                              />
+                              <CopyButton value={addr.address} />
+                            </div>
+                          </div>
+                        </div>
+                        ))}
+                      </>
+                    )}
+                    {/* Add New Address button - visible when no default wallets */}
+                    {p2pDepositAddresses.length === 0 && (
+                      <button
+                        onClick={() => setShowAddWalletModal(true)}
+                        disabled={userWalletCreateLoading}
+                        className="w-full flex items-center justify-center gap-2 rounded-[28px] border-2 border-dashed border-[#1D8751] bg-[#1D8751]/5 dark:bg-[#1D8751]/10 py-4 px-4 text-[#1D8751] font-semibold hover:bg-[#1D8751]/10 dark:hover:bg-[#1D8751]/20 transition-colors disabled:opacity-50"
+                      >
+                        <span className="text-xl leading-none">+</span>
+                        {userWalletCreateLoading ? "Adding..." : "Add New Address"}
+                      </button>
+                    )}
                   </div>
-                ))
+
+                  {/* User Added Addresses */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-medium text-gray-500 dark:text-[#8B90A5] uppercase tracking-wide">
+                        Your Addresses
+                      </p>
+                      <button
+                        onClick={() => setShowAddWalletModal(true)}
+                        disabled={userWalletCreateLoading}
+                        className="text-xs sm:text-sm text-[#1D8751] hover:text-[#0f8f4d] font-medium disabled:opacity-50"
+                      >
+                        {userWalletCreateLoading ? "Adding..." : "+ Add New Address"}
+                      </button>
+                    </div>
+                    {userWalletAddresses.length === 0 && p2pDepositAddresses.length === 0 ? (
+                      <div className="rounded-2xl border border-dashed border-[#E3E6F0] dark:border-[#2A2A35] py-10 text-center text-sm text-gray-500 dark:text-[#7B819C]">
+                        No OMAYA wallet addresses yet. Click &quot;Generate New Address&quot; or &quot;Add New Address&quot; to create one.
+                      </div>
+                    ) : userWalletAddresses.length === 0 ? (
+                      <div className="rounded-2xl border border-dashed border-[#E3E6F0] dark:border-[#2A2A35] py-6 text-center text-sm text-gray-500 dark:text-[#7B819C]">
+                        No custom addresses. Click &quot;Add New Address&quot; to add your own wallet.
+                      </div>
+                    ) : (
+                      userWalletAddresses.map((addr: UserWalletAddress) => (
+                        <WalletAddressCard
+                          key={addr.user_wallet_address_id}
+                          addr={addr}
+                          onDelete={() => handleDeleteUserWallet(addr.user_wallet_address_id)}
+                          isDeleting={userWalletDeleteLoading === addr.user_wallet_address_id}
+                        />
+                      ))
+                    )}
+                  </div>
+                </div>
               )}
             </>
           ) : (
@@ -299,6 +477,11 @@ const PaymentMethods = () => {
         open={showPaymentModal}
         onClose={() => setShowPaymentModal(false)}
         onAdd={() => dispatch(fetchUserPaymentDetails() as any)}
+      />
+      <AddWalletAddressModal
+        open={showAddWalletModal}
+        onClose={() => setShowAddWalletModal(false)}
+        onSuccess={() => dispatch(fetchUserWalletAddresses() as any)}
       />
     </div>
   );

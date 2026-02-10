@@ -180,26 +180,49 @@ const MoneyXRates = () => {
     useState<any>(null);
   const [showExchanging, setShowExchanging] = useState(false);
   const [transactionData, setTransactionData] = useState<any>(null);
-  const [commission, setCommission] = useState(0);
+  const [apiCommission, setApiCommission] = useState<number | null>(null);
+  const [isCalculatingFromPay, setIsCalculatingFromPay] = useState(true);
+  const commissionFetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const paymentDetailsRef = useRef<HTMLDivElement>(null);
 
-  // Fetch MoneyX commission from API
+  // Amount for commission API - use pay when from pay, else approx send from receive (getAmount/0.98)
+  const commissionFetchAmount = isCalculatingFromPay ? payAmount : (getAmount > 0 ? getAmount / 0.98 : 0);
+
+  // Fetch MoneyX commission from API (API returns % e.g. {"commission":"2.00"} = 2%)
   useEffect(() => {
-    if (!payAmount || payAmount <= 0) {
-      setCommission(0);
+    const amount = commissionFetchAmount || payAmount || getAmount;
+    if (!amount || amount <= 0) {
+      setApiCommission(null);
       return;
     }
-    const timer = setTimeout(() => {
-      dispatch(fetchMoneyXCommission(payAmount))
+    if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
+    commissionFetchTimeoutRef.current = setTimeout(() => {
+      dispatch(fetchMoneyXCommission(amount))
         .unwrap()
         .then((commissionStr) => {
           const val = parseFloat(commissionStr) || 0;
-          setCommission(val);
+          setApiCommission(val);
         })
-        .catch(() => setCommission(0));
+        .catch(() => setApiCommission(null));
     }, 150);
-    return () => clearTimeout(timer);
-  }, [payAmount, dispatch]);
+    return () => {
+      if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
+    };
+  }, [payAmount, getAmount, isCalculatingFromPay, dispatch]);
+
+  // Recalculate the other field when apiCommission updates (API returns % e.g. 2 = 2%)
+  useEffect(() => {
+    const rate = apiCommission ?? 2;
+    if (isCalculatingFromPay && payAmount > 0) {
+      const calculatedGetAmount = Math.max(0, payAmount * (1 - rate / 100));
+      setGetAmount(calculatedGetAmount);
+      setGetAmountInput(calculatedGetAmount.toFixed(2));
+    } else if (!isCalculatingFromPay && getAmount > 0) {
+      const calculatedPayAmount = getAmount / (1 - rate / 100);
+      setPayAmount(calculatedPayAmount);
+      setPayAmountInput(calculatedPayAmount.toFixed(2));
+    }
+  }, [apiCommission]);
 
   // Helper function to get provider name
   const getProviderName = useCallback((payment: any) => {
@@ -347,7 +370,7 @@ const MoneyXRates = () => {
     getProviderName,
   ]);
 
-  // Calculate amounts
+  // Calculate amounts (API returns % e.g. 2 = 2%)
   const handleAmountChange = (value: string, isFromPay: boolean) => {
     if (value === "" || /^\d*\.?\d*$/.test(value)) {
       if (value.includes(".")) {
@@ -358,27 +381,31 @@ const MoneyXRates = () => {
       }
 
       const newAmount = parseFloat(value) || 0;
+      const rate = apiCommission ?? 2;
 
       if (isFromPay) {
         setPayAmountInput(value);
         setPayAmount(newAmount);
-        const calculatedGetAmount =
-          newAmount <= commission ? newAmount : Math.max(0, newAmount - commission);
+        setIsCalculatingFromPay(true);
+        // Forward: receive = send * (1 - rate/100)
+        const calculatedGetAmount = Math.max(0, newAmount * (1 - rate / 100));
         setGetAmount(calculatedGetAmount);
         setGetAmountInput(calculatedGetAmount.toFixed(2));
       } else {
         setGetAmountInput(value);
         setGetAmount(newAmount);
-        const calculatedPayAmount = newAmount + commission;
+        setIsCalculatingFromPay(false);
+        // Reverse: send = receive / (1 - rate/100)
+        const calculatedPayAmount = newAmount / (1 - rate / 100);
         setPayAmount(calculatedPayAmount);
         setPayAmountInput(calculatedPayAmount.toFixed(2));
       }
     }
   };
 
-  // Calculate fees - commission from MoneyX API
+  // Calculate fees - commission from MoneyX API (API returns % e.g. 2 = 2%)
   const amountNum = parseFloat(payAmountInput) || 0;
-  const commissionAmount = commission;
+  const commissionAmount = (amountNum * (apiCommission ?? 2)) / 100;
   const networkFee = 0;
   const totalFees = commissionAmount;
   const amountIncludingFees = amountNum + totalFees;
@@ -825,11 +852,12 @@ const MoneyXRates = () => {
 
                 // Swap the amounts
                 const tempPayAmount = payAmountInput;
+                const tempPay = payAmount;
                 setPayAmountInput(getAmountInput);
                 setPayAmount(getAmount);
-
                 setGetAmountInput(tempPayAmount);
-                setGetAmount(payAmount);
+                setGetAmount(tempPay);
+                setIsCalculatingFromPay((prev) => !prev);
               }}
               className="flex items-center justify-center p-0 bg-transparent border-none shadow-none"
             >

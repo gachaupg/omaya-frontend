@@ -27,7 +27,7 @@ const Stats = ({ summary = {} }: { summary?: any }) => {
           <span>{(summary?.total_volume || 0).toLocaleString()}</span>{" "}
         </>
       ),
-      label: "Total volume",
+      label: "",
     },
   ];
 

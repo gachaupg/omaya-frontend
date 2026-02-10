@@ -23,17 +23,11 @@ export const validateBalance = ({
   maxAmount = Infinity,
   tradeType = "buy",
 }: BalanceValidationParams): BalanceValidationResult => {
-  // Calculate available balance
-  const pendingWithdrawals =
-    transactionSummary?.total_pending_exchange_withdrawals || 0;
-  const pendingSellOrders =
-    transactionSummary?.total_sell_orders_by_status?.pending || 0;
-  const availableBalance = Math.max(
-    0,
-    walletBalance - pendingWithdrawals - pendingSellOrders
-  );
+  // For consistency with P2pProfile, treat available balance
+  // as the same P2P wallet balance shown there.
+  const availableBalance = walletBalance;
 
-  // For sell orders, check against available balance
+  // For sell orders, check against this balance
   if (tradeType === "sell" && amount > walletBalance) {
     return {
       isValid: false,

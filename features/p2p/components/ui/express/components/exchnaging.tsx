@@ -14,6 +14,7 @@ import { logger } from '@/lib/utils/logger';
 import {
   cancelP2PDepositTransaction,
 } from "@/features/express/slices/transactionSlice";
+import { fetchDepositStatus } from "../api";
 import SuccessPage from "./success";
 
 interface ExchangingProps {
@@ -61,7 +62,9 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const { isDark } = useTheme();
-  const [currentStatus, setCurrentStatus] = useState<string>("pending");
+  const [currentStatus, setCurrentStatus] = useState<string>(() =>
+    transactionData?.status || "pending"
+  );
   const [persistedTransactionData, setPersistedTransactionData] =
     useState<any>(null);
   const [wsError, setWsError] = useState<string | null>(null);
@@ -84,47 +87,25 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
   const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(
     null
   );
-
-
-  // Fallback polling function
-  const startFallbackPolling = () => {
-    if (pollingInterval) {
-      clearInterval(pollingInterval);
-    }
-
-    const poll = async () => {
-      if (!effectiveTransactionData?.transactionId) return;
-
-      try {
-      } catch (error) {
-        // logger.error('p2p', "Fallback polling error:", error);
-      }
-    };
-
-    // Poll every 10 seconds
-    const interval = setInterval(poll, 10000);
-    setPollingInterval(interval);
-
-    // Initial poll
-    poll();
-  };
+  const pollingIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
 
   const stopFallbackPolling = () => {
-    if (pollingInterval) {
-      clearInterval(pollingInterval);
-      setPollingInterval(null);
-      setFallbackPolling(false);
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
     }
+    setPollingInterval(null);
+    setFallbackPolling(false);
   };
 
   // Cleanup polling on unmount
   useEffect(() => {
     return () => {
-      if (pollingInterval) {
-        clearInterval(pollingInterval);
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
       }
     };
-  }, [pollingInterval]);
+  }, []);
 
   // Timer countdown effect
   useEffect(() => {
@@ -234,6 +215,64 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
   // Use persisted data if no transactionData is provided (page reload scenario)
   const effectiveTransactionData = transactionData || persistedTransactionData;
 
+  // Fallback polling - fetches status when WebSocket may have missed updates (e.g. user sent money before deposit)
+  const startFallbackPolling = React.useCallback(() => {
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+    }
+    const txId = effectiveTransactionData?.transactionId;
+    if (!txId || effectiveTransactionData?.type !== "deposit") return;
+
+    const poll = async () => {
+      try {
+        const result = await fetchDepositStatus(txId);
+        if (result?.status) {
+          setCurrentStatus(result.status);
+        }
+      } catch {
+        // Silent - WebSocket may still deliver updates
+      }
+    };
+
+    const interval = setInterval(poll, 10000);
+    pollingIntervalRef.current = interval;
+    setPollingInterval(interval);
+    poll();
+  }, [effectiveTransactionData?.transactionId, effectiveTransactionData?.type]);
+
+  // Sync initial status from persisted data when it loads (e.g. page refresh)
+  useEffect(() => {
+    if (persistedTransactionData?.status && !transactionData) {
+      setCurrentStatus(persistedTransactionData.status);
+    }
+  }, [persistedTransactionData?.status, transactionData]);
+
+  // Fetch latest status on mount when user sent money before hitting deposit
+  // Also start polling as backup - updates progress automatically without refresh
+  useEffect(() => {
+    const txId = effectiveTransactionData?.transactionId;
+    const isDeposit = effectiveTransactionData?.type === "deposit";
+    if (!txId || !isDeposit) return;
+
+    const fetchStatus = async () => {
+      const result = await fetchDepositStatus(txId);
+      if (result?.status) {
+        setCurrentStatus(result.status);
+      }
+    };
+    fetchStatus();
+
+    // Start polling - keeps status updated when user sent money before deposit
+    startFallbackPolling();
+    return () => stopFallbackPolling();
+  }, [effectiveTransactionData?.transactionId, effectiveTransactionData?.type, startFallbackPolling]);
+
+  // Stop polling when transaction is completed
+  useEffect(() => {
+    if (currentStatus === "completed") {
+      stopFallbackPolling();
+    }
+  }, [currentStatus]);
 
   // Store transaction data in localStorage when it's provided
   useEffect(() => {

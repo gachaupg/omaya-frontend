@@ -256,18 +256,18 @@ const KYCVerificationModal: React.FC = () => {
   const handleFaceDetectionComplete = async (data: any) => {
     setFaceDetectionData(data);
     
-    // Convert base64 face image to File object if available
-    if (data.faceImage) {
+    // Convert base64 face image to File object - FaceDetectionKYC sends capturedImage (camera) or manual upload
+    const base64Image = data.capturedImage || data.faceImage;
+    if (base64Image) {
       try {
-        const response = await fetch(data.faceImage);
+        const response = await fetch(base64Image);
         const blob = await response.blob();
         const file = new File([blob], "face-verification.jpg", { type: "image/jpeg" });
         setFaceImage(file);
-        setFacePreview(data.faceImage);
+        setFacePreview(base64Image);
       } catch (error) {
         console.error("Error converting face image:", error);
-        // Still set the face preview even if file conversion fails
-        setFacePreview(data.faceImage);
+        setFacePreview(base64Image);
       }
     }
     

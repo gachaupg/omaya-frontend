@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useLayoutEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { MarketRow } from "../types";
 import { validateBalance } from "@/utils/balanceValidator";
 import { useDispatch, useSelector } from "react-redux";
@@ -23,6 +24,7 @@ interface TradePreviewProps {
   onClose?: () => void;
   tradeType?: "buy" | "sell";
   paymentDetails?: any[];
+  scrollContainerRef?: React.RefObject<HTMLDivElement | null>;
 }
 
 /** Shorten long names to "first last" (e.g. "visual company limited Kariuki Beth" → "visual Beth") */
@@ -44,6 +46,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
   onClose,
   tradeType,
   paymentDetails,
+  scrollContainerRef,
 }) => {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
@@ -69,6 +72,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
   const [paymentSearchTerm, setPaymentSearchTerm] = useState("");
   const [selectedUserPaymentDetail, setSelectedUserPaymentDetail] = useState<any>(null);
   const [showAddPaymentModal, setShowAddPaymentModal] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
 
   const paymentDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -147,15 +151,54 @@ const TradePreview: React.FC<TradePreviewProps> = ({
     });
   }, [tradeType, paymentMethod, userPaymentDetails]);
 
-  // Close payment dropdown on outside click
+  // When selling and a payment method is chosen, auto-scroll the surrounding
+  // modal container to the bottom so the user's matching payment methods
+  // section is brought into view.
+  useEffect(() => {
+    if (tradeType !== "sell") return;
+    if (!paymentMethod) return;
+    if (!scrollContainerRef?.current) return;
+
+    const timeoutId = setTimeout(() => {
+      if (!scrollContainerRef.current) return;
+      scrollContainerRef.current.scrollTo({
+        top: scrollContainerRef.current.scrollHeight,
+        behavior: "smooth",
+      });
+    }, 100);
+
+    return () => clearTimeout(timeoutId);
+  }, [tradeType, paymentMethod, matchingUserPaymentMethods.length, scrollContainerRef]);
+
+  // Position and show dropdown outside modal (portal) on sell
+  const paymentDropdownPortalRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    if (!isPaymentDropdownOpen || tradeType !== "sell") {
+      setDropdownPosition(null);
+      return;
+    }
+    const measure = () => {
+      if (paymentDropdownRef.current) {
+        const rect = paymentDropdownRef.current.getBoundingClientRect();
+        setDropdownPosition({ top: rect.bottom + 8, left: rect.left, width: rect.width });
+      }
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    window.addEventListener("scroll", measure, true);
+    return () => {
+      window.removeEventListener("resize", measure);
+      window.removeEventListener("scroll", measure, true);
+    };
+  }, [isPaymentDropdownOpen, tradeType]);
+
+  // Close payment dropdown on outside click (trigger or portaled dropdown)
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        paymentDropdownRef.current &&
-        !paymentDropdownRef.current.contains(event.target as Node)
-      ) {
-        setIsPaymentDropdownOpen(false);
-      }
+      const target = event.target as Node;
+      if (paymentDropdownRef.current?.contains(target)) return;
+      if (paymentDropdownPortalRef.current?.contains(target)) return;
+      setIsPaymentDropdownOpen(false);
     };
 
     if (isPaymentDropdownOpen) {
@@ -168,8 +211,27 @@ const TradePreview: React.FC<TradePreviewProps> = ({
   }, [isPaymentDropdownOpen]);
 
 
-  // Get USDT wallet balance from the wallet response structure
-  const walletBalance =wallets?.total_balance ? toNumber(wallets.total_balance) : 0;
+  // Compute available P2P balance the same way as in P2pProfile:
+  // 1) Derive the profile balance from wallets (USDT wallet vs total_balance)
+  // 2) Subtract escrow / locked amounts from the transaction summary
+  const totalBalance = wallets?.total_balance ? toNumber(wallets.total_balance) : 0;
+  const baseWalletBalance = wallets?.wallet?.balance
+    ? parseFloat(wallets.wallet.balance)
+    : 0;
+  const isUSDTWallet = wallets?.wallet?.currency === "USDT";
+  const profileBalance =
+    isUSDTWallet && baseWalletBalance > 0
+      ? baseWalletBalance
+      : totalBalance && !isNaN(totalBalance) && totalBalance > 0
+        ? totalBalance
+        : baseWalletBalance;
+
+  const totalLocked =
+    (transactionSummary?.total_pending_p2p_withdrawals || 0) +
+    (transactionSummary?.total_sell_orders_by_status?.pending || 0);
+
+  // This is the same "available" amount implied by P2pProfile
+  const walletBalance = profileBalance - totalLocked;
   const handleSendAmountChange = (value: string) => {
     if (!value) {
       setSendAmount("");
@@ -683,7 +745,6 @@ const TradePreview: React.FC<TradePreviewProps> = ({
             )}
             {/* Payment Method Select */}
             <div className="flex flex-col gap-2" ref={paymentDropdownRef}>
-            
               <div className="relative">
                 <button
                   type="button"
@@ -709,9 +770,9 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                     />
                   </svg>
                 </button>
-                {isPaymentDropdownOpen && (
+                {/* Buy: inline dropdown; Sell: dropdown via portal outside modal */}
+                {isPaymentDropdownOpen && tradeType !== "sell" && (
                   <div className="absolute top-full left-0 right-0 mt-2 rounded-xl border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] shadow-lg z-20 max-h-72 overflow-hidden flex flex-col">
-                    {/* Search Input */}
                     <div className="p-2 border-b border-gray-200 dark:border-[#35353E]">
                       <input
                         type="text"
@@ -721,7 +782,6 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                         className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-[#35353E] bg-gray-50 dark:bg-[#23232B] text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-[#788099] focus:outline-none focus:ring-2 focus:ring-[#1D8751]"
                       />
                     </div>
-                    {/* Payment Options */}
                     <div className="overflow-y-auto max-h-52">
                       {paymentOptions.length === 0 ? (
                         <div className="px-4 py-3 text-sm text-gray-500 dark:text-[#788099]">
@@ -766,6 +826,77 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                     </div>
                   </div>
                 )}
+                {/* Sell: dropdown list in portal so it appears outside modal */}
+                {typeof document !== "undefined" &&
+                  isPaymentDropdownOpen &&
+                  tradeType === "sell" &&
+                  dropdownPosition &&
+                  createPortal(
+                    <div
+                      ref={paymentDropdownPortalRef}
+                      className="rounded-xl border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] shadow-lg max-h-72 overflow-hidden flex flex-col"
+                      style={{
+                        position: "fixed",
+                        top: dropdownPosition.top,
+                        left: dropdownPosition.left,
+                        width: dropdownPosition.width,
+                        zIndex: 9999,
+                      }}
+                    >
+                      <div className="p-2 border-b border-gray-200 dark:border-[#35353E]">
+                        <input
+                          type="text"
+                          placeholder="Search payment method..."
+                          value={paymentSearchTerm}
+                          onChange={(e) => setPaymentSearchTerm(e.target.value)}
+                          className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-[#35353E] bg-gray-50 dark:bg-[#23232B] text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-[#788099] focus:outline-none focus:ring-2 focus:ring-[#1D8751]"
+                        />
+                      </div>
+                      <div className="overflow-y-auto max-h-52">
+                        {paymentOptions.length === 0 ? (
+                          <div className="px-4 py-3 text-sm text-gray-500 dark:text-[#788099]">
+                            No payment methods available
+                          </div>
+                        ) : filteredPaymentOptions.length === 0 ? (
+                          <div className="px-4 py-3 text-sm text-gray-500 dark:text-[#788099]">
+                            No matching payment methods
+                          </div>
+                        ) : (
+                          filteredPaymentOptions.map((opt) => {
+                            const isSelected = paymentMethod === opt.value;
+                            return (
+                              <button
+                                key={opt.id}
+                                type="button"
+                                onClick={() => {
+                                  setPaymentMethod(opt.value);
+                                  setIsPaymentDropdownOpen(false);
+                                  setPaymentSearchTerm("");
+                                }}
+                                className={`w-full flex items-center gap-3 px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-[#35353E] ${
+                                  isSelected
+                                    ? "text-gray-900 dark:text-white bg-gray-50 dark:bg-[#35353E]"
+                                    : "text-gray-700 dark:text-[#C7CAD1]"
+                                }`}
+                              >
+                                <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                                  isSelected
+                                    ? "border-[#1D8751] bg-[#1D8751]"
+                                    : "border-gray-400 dark:border-[#788099]"
+                                }`}>
+                                  {isSelected && (
+                                    <div className="w-2 h-2 rounded-full bg-white"></div>
+                                  )}
+                                </div>
+                                <span className="text-sm sm:text-base font-semibold">{opt.label}</span>
+                              </button>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>,
+                    document.body
+                  )}
               </div>
             </div>
 
@@ -784,62 +915,73 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                     Loading your payment methods...
                   </div>
                 ) : matchingUserPaymentMethods.length > 0 ? (
-                  <div className="flex flex-col gap-2">
-                    {matchingUserPaymentMethods.map((detail: any) => {
-                      const isSelected = selectedUserPaymentDetail?.id === detail.id;
-                      const status = (detail.status || "").toLowerCase();
-                      const isPending = status && status !== "approved" && status !== "verified";
-                      return (
-                        <div
-                          key={detail.id}
-                          className={`flex items-center justify-between gap-2 p-2 rounded-lg border transition-colors ${
-                            isSelected
-                              ? "border-[#1D8751] bg-[#1D8751]/10 dark:bg-[#1D8751]/20"
-                              : "border-gray-200 dark:border-[#35353E] hover:bg-gray-100 dark:hover:bg-[#23232B]"
-                          }`}
-                        >
-                          <div className="flex items-center gap-2 min-w-0 flex-1">
-                            {detail.provider_logo || detail.logo_url ? (
-                              <img
-                                src={detail.provider_logo || detail.logo_url}
-                                alt=""
-                                className="w-6 h-6 rounded-full object-cover flex-shrink-0"
-                                onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                              />
-                            ) : (
-                              <div className="w-6 h-6 rounded-full bg-[#1D8751]/20 flex items-center justify-center flex-shrink-0">
-                                <span className="text-[#1D8751] text-xs font-bold">
-                                  {(detail.payment_provider_name || "?")[0]}
-                                </span>
-                              </div>
-                            )}
-                            <div className="min-w-0">
-                              <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                                {detail.account_name || "Account"}
-                              </div>
-                              <div className="text-xs text-gray-500 dark:text-[#788099] truncate">
-                                {detail.account_number || detail.wallet_address || "—"}
-                              </div>
-                            </div>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => !isPending && setSelectedUserPaymentDetail(isSelected ? null : detail)}
-                            disabled={isPending}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition flex-shrink-0 ${
-                              isPending
-                                ? "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 cursor-not-allowed"
-                                : isSelected
-                                  ? "bg-[#1D8751] text-white"
-                                  : "border border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751] hover:text-white"
+                  <>
+                    <div className="flex flex-col gap-2">
+                      {matchingUserPaymentMethods.map((detail: any) => {
+                        const isSelected = selectedUserPaymentDetail?.id === detail.id;
+                        const status = (detail.status || "").toLowerCase();
+                        const isPending = status && status !== "approved" && status !== "verified";
+                        return (
+                          <div
+                            key={detail.id}
+                            className={`flex items-center justify-between gap-2 p-2 rounded-lg border transition-colors ${
+                              isSelected
+                                ? "border-[#1D8751] bg-[#1D8751]/10 dark:bg-[#1D8751]/20"
+                                : "border-gray-200 dark:border-[#35353E] hover:bg-gray-100 dark:hover:bg-[#23232B]"
                             }`}
                           >
-                            {isPending ? "Pending" : isSelected ? "Selected" : "Select"}
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                              {detail.provider_logo || detail.logo_url ? (
+                                <img
+                                  src={detail.provider_logo || detail.logo_url}
+                                  alt=""
+                                  className="w-6 h-6 rounded-full object-cover flex-shrink-0"
+                                  onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                                />
+                              ) : (
+                                <div className="w-6 h-6 rounded-full bg-[#1D8751]/20 flex items-center justify-center flex-shrink-0">
+                                  <span className="text-[#1D8751] text-xs font-bold">
+                                    {(detail.payment_provider_name || "?")[0]}
+                                  </span>
+                                </div>
+                              )}
+                              <div className="min-w-0">
+                                <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                                  {detail.account_name || "Account"}
+                                </div>
+                                <div className="text-xs text-gray-500 dark:text-[#788099] truncate">
+                                  {detail.account_number || detail.wallet_address || "—"}
+                                </div>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => !isPending && setSelectedUserPaymentDetail(isSelected ? null : detail)}
+                              disabled={isPending}
+                              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition flex-shrink-0 ${
+                                isPending
+                                  ? "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 cursor-not-allowed"
+                                  : isSelected
+                                    ? "bg-[#1D8751] text-white"
+                                    : "border border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751] hover:text-white"
+                              }`}
+                            >
+                              {isPending ? "Pending" : isSelected ? "Selected" : "Select"}
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="mt-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowAddPaymentModal(true)}
+                        className="w-full sm:w-auto px-4 py-2 rounded-lg bg-[#1D8751] text-white text-sm font-semibold hover:bg-[#166b3e] transition"
+                      >
+                        Add new {paymentMethod} payment method
+                      </button>
+                    </div>
+                  </>
                 ) : (
                   <div className="flex flex-col gap-2">
                     <p className="text-sm text-gray-600 dark:text-[#788099]">
@@ -850,7 +992,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                       onClick={() => setShowAddPaymentModal(true)}
                       className="w-full sm:w-auto px-4 py-2 rounded-lg bg-[#1D8751] text-white text-sm font-semibold hover:bg-[#166b3e] transition"
                     >
-                      Add new payment method
+                      Add new {paymentMethod} payment method
                     </button>
                   </div>
                 )}
@@ -922,6 +1064,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
       onAdd={async () => {
         await dispatch(fetchUserPaymentDetails() as any);
       }}
+      filterByProviderName={tradeType === "sell" ? paymentMethod || undefined : undefined}
     />
     </>
   );

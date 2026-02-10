@@ -18,7 +18,7 @@ const VolumeChart: React.FC<VolumeChartProps> = ({ transactionSummary }) => {
     }).format(value || 0);
   };
 
-  // Clean total volume value - remove any "USD" prefix if present
+  // Clean total volume value - remove any "USD" and "USDT" currency labels
   const cleanTotalVolume = () => {
     const rawValue = transactionSummary?.total_volume;
     if (!rawValue) return "0.00";
@@ -28,11 +28,16 @@ const VolumeChart: React.FC<VolumeChartProps> = ({ transactionSummary }) => {
       return formatValue(Number(rawValue));
     }
     
-    // If it's a string, clean it up (remove "USD" prefix if present)
+    // If it's a string, clean it up (remove USD and USDT)
     if (typeof rawValue === 'string') {
-      const cleanedValue = rawValue.replace(/^USD\s*/i, '').trim();
-      if (!isNaN(Number(cleanedValue))) {
-        return formatValue(Number(cleanedValue));
+      const cleanedValue = rawValue
+        .replace(/\bUSD\b/gi, '')
+        .replace(/\bUSDT\b/gi, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+      const numValue = parseFloat(cleanedValue.replace(/,/g, ''));
+      if (!isNaN(numValue)) {
+        return formatValue(numValue);
       }
       return cleanedValue;
     }
@@ -43,7 +48,7 @@ const VolumeChart: React.FC<VolumeChartProps> = ({ transactionSummary }) => {
   const volumeData = [
     {
       title: "Total Value",
-      value: `${cleanTotalVolume()}`,
+      value: cleanTotalVolume(),
     },
     {
       title: "Exchange",

@@ -59,6 +59,12 @@ export const Table: React.FC<TableProps> = ({
   const [isDateDropdownOpen, setIsDateDropdownOpen] = useState(false);
   const modalContentRef = useRef<HTMLDivElement>(null);
   const dateDropdownRef = useRef<HTMLDivElement>(null);
+  const tableContainerRef = useRef<HTMLDivElement>(null);
+
+  const handlePageChangeWithScroll = (page: number) => {
+    onPageChange?.(page);
+    tableContainerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   const dateFilterOptions = ["ALL", "Today", "Week", "Month", "Year"];
 
@@ -721,7 +727,7 @@ export const Table: React.FC<TableProps> = ({
           </div>
         </div>
 
-        <div className="mt-3 overflow-x-auto w-full pb-4 scroll-smooth">
+        <div ref={tableContainerRef} className="mt-3 overflow-x-auto w-full pb-4 scroll-smooth">
           <div
             className={`w-full min-w-max border-2 bg-white dark:bg-[var(--card-color)] border-gray-200 dark:border-[#35353E] shadow-lg rounded-[24px] overflow-hidden`}
           >
@@ -1037,11 +1043,7 @@ export const Table: React.FC<TableProps> = ({
                   onClick={() => {
                     logger.debug('p2p', "Previous page clicked, current:", currentPage);
                     if (onPageChange) {
-                      logger.debug('p2p',
-                        "Calling onPageChange with:",
-                        currentPage - 1
-                      );
-                      onPageChange(currentPage - 1);
+                      handlePageChangeWithScroll(currentPage - 1);
                     } else {
                       logger.debug('p2p', "onPageChange is not provided");
                     }
@@ -1067,7 +1069,7 @@ export const Table: React.FC<TableProps> = ({
                           key={i}
                           onClick={() => {
                             logger.debug('p2p', "Page clicked:", i);
-                            onPageChange?.(i);
+                            handlePageChangeWithScroll(i);
                           }}
                           className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] ${currentPage === i
                             ? "bg-[#1D8751] text-white"
@@ -1084,7 +1086,7 @@ export const Table: React.FC<TableProps> = ({
                     pageButtons.push(
                       <button
                         key={1}
-                        onClick={() => onPageChange?.(1)}
+                        onClick={() => handlePageChangeWithScroll(1)}
                         className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] ${currentPage === 1
                           ? "bg-[#1D8751] text-white"
                           : "bg-white text-gray-400 hover:bg-gray-100 dark:bg-[var(--card-color)] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]"
@@ -1125,7 +1127,7 @@ export const Table: React.FC<TableProps> = ({
                           key={i}
                           onClick={() => {
                             logger.debug('p2p', "Page clicked:", i);
-                            onPageChange?.(i);
+                            handlePageChangeWithScroll(i);
                           }}
                           className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] ${currentPage === i
                             ? "bg-[#1D8751] text-white"
@@ -1153,7 +1155,7 @@ export const Table: React.FC<TableProps> = ({
                           key={totalPages}
                           onClick={() => {
                             logger.debug('p2p', "Last page clicked:", totalPages);
-                            onPageChange?.(totalPages);
+                            handlePageChangeWithScroll(totalPages);
                           }}
                           className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] ${currentPage === totalPages
                             ? "bg-[#1D8751] text-white"
@@ -1172,11 +1174,7 @@ export const Table: React.FC<TableProps> = ({
                   onClick={() => {
                     logger.debug('p2p', "Next page clicked, current:", currentPage);
                     if (onPageChange) {
-                      logger.debug('p2p',
-                        "Calling onPageChange with:",
-                        currentPage + 1
-                      );
-                      onPageChange(currentPage + 1);
+                      handlePageChangeWithScroll(currentPage + 1);
                     } else {
                       logger.debug('p2p', "onPageChange is not provided");
                     }

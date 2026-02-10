@@ -1461,6 +1461,26 @@ export default function WithdrawalForm({
     };
   }, [selectedAsset, payAmountInput, getAmountInput, payAmount, getAmount, isCalculatingFromPay]);
 
+  // Recalculate receive amount when apiCommission arrives (was null during initial calculation)
+  useEffect(() => {
+    if (selectedAsset && isCommissionApiAsset(selectedAsset) && apiCommission !== null) {
+      if (isCalculatingFromPay && payAmount > 0) {
+        // Forward: You Send -> You Receive
+        const commissionAmount = (payAmount * apiCommission) / 100;
+        const calculatedGetAmount = Math.max(0, payAmount - commissionAmount);
+        setGetAmount(calculatedGetAmount);
+        setGetAmountInput(calculatedGetAmount.toString());
+        setPreviousValidAmount(calculatedGetAmount.toString());
+      } else if (!isCalculatingFromPay && getAmount > 0) {
+        // Reverse: You Receive -> You Send
+        const commissionRate = apiCommission;
+        const calculatedPayAmount = getAmount / (1 - commissionRate / 100);
+        setPayAmount(calculatedPayAmount);
+        setPayAmountInput(calculatedPayAmount.toString());
+      }
+    }
+  }, [apiCommission, payAmount, getAmount, isCalculatingFromPay, selectedAsset]);
+
   // Helper function to check if cache entry is still valid
   const isCacheValid = (timestamp: number) => {
     return Date.now() - timestamp < CACHE_DURATION;
@@ -2185,7 +2205,7 @@ export default function WithdrawalForm({
             commissionRate = parseFloat(selectedAsset.fee_rate);
           }
 
-          const fallbackPayAmount = getAmount * (1 + commissionRate / 100);
+          const fallbackPayAmount = getAmount / (1 - (selectedAsset && isCommissionApiAsset(selectedAsset) ? (apiCommission ?? 2) : commissionRate) / 100);
           setPayAmount(fallbackPayAmount);
           setPayAmountInput(fallbackPayAmount.toString());
 
@@ -2683,12 +2703,16 @@ export default function WithdrawalForm({
   // Calculate fees and amounts - Network fee is always 0 for BEP20
   const networkFee = 0;
 
-  // Use commission from API for USDT/USDC/FX Primus, else flat $2 for direct assets or percentage for others
+  // Use commission API for USDT/USDC/FX Primus - API returns % (e.g. {"commission":"2.00"} = 2%)
   let commissionAmount = 0;
   if (selectedAsset && isCommissionApiAsset(selectedAsset)) {
-    commissionAmount = apiCommission ?? 0;
+    const rate = apiCommission ?? 2; // Default 2% while API loads
+    commissionAmount = (payAmount * rate) / 100;
   } else if (selectedAsset && isSimpleCalculationAsset(selectedAsset)) {
-    commissionAmount = payAmount >= 2 ? 2 : 0; // Flat $2 fee for direct assets fallback
+    const commissionRate = selectedAsset?.range_commissions?.[0]?.commission
+      ? parseFloat(selectedAsset.range_commissions[0].commission)
+      : 2;
+    commissionAmount = (payAmount * commissionRate) / 100;
   } else {
     // Use default commission rate for other assets
     const commissionRate = selectedAsset?.range_commissions?.[0]?.commission
@@ -2706,15 +2730,12 @@ export default function WithdrawalForm({
       clearTimeout(calculationTimeout);
     }
 
-    // For simple calculations, do them immediately without any delays
+    // For simple calculations, do them immediately without any delays (API commission is % e.g. 2 = 2%)
     if (fromPay && selectedAsset && isSimpleCalculationAsset(selectedAsset)) {
-      const commission = isCommissionApiAsset(selectedAsset) ? (apiCommission ?? 0) : 2;
-      let calculatedGetAmount;
-      if (fromAmount < commission) {
-        calculatedGetAmount = fromAmount;
-      } else {
-        calculatedGetAmount = Math.max(0, fromAmount - commission);
-      }
+      const commissionAmount = isCommissionApiAsset(selectedAsset)
+        ? (fromAmount * (apiCommission ?? 2)) / 100
+        : (fromAmount * (selectedAsset?.range_commissions?.[0]?.commission ? parseFloat(selectedAsset.range_commissions[0].commission) : 2)) / 100;
+      const calculatedGetAmount = Math.max(0, fromAmount - commissionAmount);
 
       // Show result immediately
       setGetAmount(calculatedGetAmount);
@@ -2807,15 +2828,12 @@ export default function WithdrawalForm({
 
       try {
         if (fromPay) {
-          // Calculate from pay amount to receive amount
+          // Calculate from pay amount to receive amount (API commission is % e.g. 2 = 2%)
           if (isSimpleCalculationAsset(selectedAsset)) {
-            const commission = isCommissionApiAsset(selectedAsset) ? (apiCommission ?? 0) : 2;
-            let calculatedGetAmount;
-            if (fromAmount < commission) {
-              calculatedGetAmount = fromAmount;
-            } else {
-              calculatedGetAmount = Math.max(0, fromAmount - commission);
-            }
+            const commissionAmount = isCommissionApiAsset(selectedAsset)
+              ? (fromAmount * (apiCommission ?? 2)) / 100
+              : (fromAmount * (selectedAsset?.range_commissions?.[0]?.commission ? parseFloat(selectedAsset.range_commissions[0].commission) : 2)) / 100;
+            const calculatedGetAmount = Math.max(0, fromAmount - commissionAmount);
 
             // Only show calculated amount if it's meaningful (> 0.01), otherwise show empty
             if (calculatedGetAmount >= 0.01) {
@@ -2881,15 +2899,10 @@ export default function WithdrawalForm({
             }
           }
         } else {
-          // Calculate from receive amount to pay amount
+          // Calculate from receive amount to pay amount (API commission is % e.g. 2 = 2%)
           if (isSimpleCalculationAsset(selectedAsset)) {
-            const commission = isCommissionApiAsset(selectedAsset) ? (apiCommission ?? 0) : 2;
-            let newPayAmount;
-            if (fromAmount < commission) {
-              newPayAmount = fromAmount;
-            } else {
-              newPayAmount = fromAmount + commission;
-            }
+            const commissionRate = isCommissionApiAsset(selectedAsset) ? (apiCommission ?? 2) : (selectedAsset?.range_commissions?.[0]?.commission ? parseFloat(selectedAsset.range_commissions[0].commission) : 2);
+            const newPayAmount = fromAmount / (1 - commissionRate / 100);
             setPayAmount(newPayAmount);
             setPayAmountInput(newPayAmount.toString());
 
@@ -3610,11 +3623,28 @@ export default function WithdrawalForm({
                             if (selectedAsset && newValue >= 0) {
                               // Check asset type first and handle accordingly
                               if (isSimpleCalculationAsset(selectedAsset)) {
-                                // For direct assets (USDT on BSC, USDC on BSC), calculate immediately
-                                calculateAmounts(newValue, true);
+                                // For direct assets (USDT on BSC, USDC on BSC), calculate immediately (API commission is % e.g. 2 = 2%)
+                                const commissionAmount = isCommissionApiAsset(selectedAsset)
+                                  ? (newValue * (apiCommission ?? 2)) / 100
+                                  : (newValue * (selectedAsset?.range_commissions?.[0]?.commission ? parseFloat(selectedAsset.range_commissions[0].commission) : 2)) / 100;
+                                const calculatedGetAmount = Math.max(0, newValue - commissionAmount);
+                                setGetAmount(calculatedGetAmount);
+                                setGetAmountInput(calculatedGetAmount.toString());
+                                setPreviousValidAmount(calculatedGetAmount.toString());
+                                
+                                // Clear loading states for simple assets - calculation is instant
+                                setIsCalculating(false);
+                                setIsCalculatingReceive(false);
                               } else if (isForexAsset(selectedAsset)) {
                                 // For FXP, calculate immediately without API
-                                calculateAmounts(newValue, true);
+                                const calculatedGetAmount = newValue / FXP_TO_USD_RATE;
+                                setGetAmount(calculatedGetAmount);
+                                setGetAmountInput(calculatedGetAmount.toFixed(2));
+                                setPreviousValidAmount(calculatedGetAmount.toFixed(2));
+                                
+                                // Clear loading states for FXP - calculation is instant
+                                setIsCalculating(false);
+                                setIsCalculatingReceive(false);
                               } else if (newValue > 0) {
                                 // For non-simple assets, stop normal calculation and go directly to API
 
@@ -3942,17 +3972,16 @@ export default function WithdrawalForm({
                             if (selectedAsset && newAmount >= 0) {
                               // Check asset type first and handle accordingly
                               if (isSimpleCalculationAsset(selectedAsset)) {
-                                // For direct assets (USDT on BSC, USDC on BSC), calculate immediately
+                                // For direct assets (USDT on BSC, USDC on BSC), calculate immediately (commission as % e.g. 2 = 2%)
                                 const commissionRate = selectedAsset
                                   ?.range_commissions?.[0]?.commission
                                   ? parseFloat(
                                     selectedAsset.range_commissions[0].commission
                                   )
                                   : 2;
-                                const commissionAmount =
-                                  (newAmount * commissionRate) / 100;
-                                const calculatedPayAmount =
-                                  newAmount + commissionAmount;
+                                const calculatedPayAmount = isCommissionApiAsset(selectedAsset)
+                                  ? newAmount / (1 - (apiCommission ?? 2) / 100)
+                                  : newAmount / (1 - commissionRate / 100);
                                 setPayAmount(calculatedPayAmount);
                                 setPayAmountInput(calculatedPayAmount.toString());
 
@@ -4442,7 +4471,7 @@ export default function WithdrawalForm({
 
               <span className="flex items-center bg-[#1D8751] text-white rounded-full px-5 py-1 text-sm font-medium w-fit">
                 <span className="w-2 h-2 bg-white rounded-full mr-2 inline-block"></span>
-                Commission: {selectedAsset && isSimpleCalculationAsset(selectedAsset) ? `$2 flat fee (direct assets)` : `${selectedAsset?.range_commissions?.[0]?.commission || 2}% of $${payAmount}`} = $
+                Commission: {selectedAsset && isSimpleCalculationAsset(selectedAsset) ? `${isCommissionApiAsset(selectedAsset) ? (apiCommission ?? 2) : (selectedAsset?.range_commissions?.[0]?.commission || 2)}% of $${payAmount}` : `${selectedAsset?.range_commissions?.[0]?.commission || 2}% of $${payAmount}`} = $
                 {commissionAmount}
               </span>
             </div>
