@@ -125,7 +125,7 @@ export const overviewTotalData = (
     },
     {
       label: "Exchange",
-      value: transactionSummary.total_approved_exchange_net || transactionSummary.total_approved_exchange_combined || 0,
+      value: Math.abs(transactionSummary.total_approved_exchange_net || transactionSummary.total_approved_exchange_combined || 0),
       color: "#386AB5",
     },
   ];
@@ -228,13 +228,16 @@ export const overviewTotalSummary = (
       currency: "USD",
     };
   }
+  // Calculate total as the sum of all segment values (deposits + withdrawals + in progress + exchange)
+  // Use Math.abs for net values to prevent negative totals in the donut chart
+  const exchangeNet = Math.abs(transactionSummary.total_approved_exchange_net || transactionSummary.total_approved_exchange_combined || 0);
   return {
     total:
-      (transactionSummary.total_approved_exchange_net || transactionSummary.total_approved_exchange_combined || 0) +
       transactionSummary.total_approved_exchange_deposits +
       transactionSummary.total_approved_exchange_withdrawals +
       transactionSummary.total_pending_exchange_deposits +
-      transactionSummary.total_pending_exchange_withdrawals,
+      transactionSummary.total_pending_exchange_withdrawals +
+      exchangeNet,
     currency: "USD",
   };
 };

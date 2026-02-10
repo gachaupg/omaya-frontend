@@ -2913,7 +2913,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                     disabled={
                       isSubmitting || !isVerified || !walletAddress.trim() || !!walletError
                     }
-                    className={`flex-1 font-semibold py-2 sm:py-2 px-3 sm:px-4 rounded-lg transition-colors flex items-center justify-center gap-1 sm:gap-2 text-sm sm:text-base ${isSubmitting || !isVerified || !walletAddress.trim() || !!walletError
+                    className={`flex-1 font-semibold py-2 sm:py-2 px-3 sm:px-4 rounded-lg transition-colors flex items-center justify-center text-sm sm:text-base ${isSubmitting || !isVerified || !walletAddress.trim() || !!walletError
                       ? "bg-gray-500 cursor-not-allowed text-white"
                       : "bg-[#1D8751] hover:bg-[#166b3f] text-white"
                       }`}
@@ -2925,13 +2925,9 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                       </>
                     ) : (
                       <>
+                        E
                         <img
-                          src="https://res.cloudinary.com/pitz/image/upload/v1752429993/Express_1_ggdxth.png"
-                          alt="Express"
-                          className="h-4 sm:h-5 w-auto"
-                        />
-                        <img
-                          className="mt-1 sm:mt-2 h-3 sm:h-4 w-auto"
+                          className="mt-2"
                           src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
                           alt="XCHANGE"
                         />

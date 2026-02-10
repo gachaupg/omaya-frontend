@@ -504,25 +504,30 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
 
               </div>
             </div>
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 border border-gray-200 dark:border-[#35353E] p-3 sm:p-4 rounded-xl mt-4 bg-white dark:bg-[var(--card-color)]">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 border border-gray-200 dark:border-accent p-3 sm:p-4 rounded-xl mt-4 bg-white dark:bg-[var(--card-color)]">
               <div className="flex flex-col gap-2 w-full">
                 <p className="text-[#788099] text-xs sm:text-sm">Fiat USD</p>
-                <div className="flex flex-row items-center justify-between w-full bg-[#EEF1F4] dark:bg-[#35353E] rounded-xl px-4 sm:px-6 py-2">
-                  <span className="text-[#F79330] text-base sm:text-lg font-bold">
-                    <span className="text-[#1D8751] text-lg sm:text-xl">$</span>{" "}
-                    {formatAmount(Math.round(Number(sendAmount) * Number(commissionRate)))}
-                  </span>
-                  <span className="text-xs text-[#F79330]">USD</span>
+                <div className="flex flex-row items-center justify-between w-full bg-[#EEF1F4] dark:bg-accent rounded-xl px-3 sm:px-4 py-2.5 min-h-[52px]">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="text-[#1D8751] text-lg sm:text-xl font-bold shrink-0">$</span>
+                    <span className="text-warning text-base sm:text-lg font-bold ">
+                      {formatAmount(Math.round(Number(sendAmount) * Number(commissionRate)))}
+                    </span>
+                  </div>
+                  <span className="text-xs text-warning font-medium ml-2 shrink-0">USD</span>
                 </div>
               </div>
 
               <div className="flex flex-col gap-2 w-full">
                 <p className="text-[#788099] text-xs sm:text-sm">Rate</p>
-                <div className="flex w-full flex-row justify-between items-center bg-[#EEF1F4] dark:bg-[#35353E] rounded-xl px-4 sm:px-6 py-2">
-                  <span className="text-[#1D8751] text-lg sm:text-xl">
-                    $ {commissionRate}%
-                  </span>
-                  <span className="text-xs sm:text-sm text-[#051015] dark:text-[#F79330]">
+                <div className="flex w-full flex-row justify-between items-center bg-[#EEF1F4] dark:bg-accent rounded-xl px-3 sm:px-4 py-2.5 min-h-[52px]">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="text-[#1D8751] text-lg sm:text-xl font-bold shrink-0">$</span>
+                    <span className="text-[#1D8751] text-lg sm:text-xl font-bold ">
+                      {commissionRate}%
+                    </span>
+                  </div>
+                  <span className="text-xs sm:text-sm text-[#051015] dark:text-warning font-medium ml-2 flex-shrink-0">
                     USD
                   </span>
                 </div>
@@ -530,20 +535,20 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
 
               <div className="flex flex-col gap-2 w-full">
                 <p className="text-[#788099] text-xs sm:text-sm">Total Quantity</p>
-                <div className="flex flex-row justify-between w-full items-center bg-[#EEF1F4] dark:bg-[#35353E] rounded-xl px-4 sm:px-6 py-2">
-                  <div className="flex flex-row items-center gap-2">
+                <div className="flex flex-row justify-between w-full items-center bg-[#EEF1F4] dark:bg-accent rounded-xl px-3 sm:px-4 py-2.5 min-h-[52px]">
+                  <div className="flex flex-row items-center gap-2 min-w-0">
                     <Image
                       src="https://res.cloudinary.com/pitz/image/upload/v1750918504/tether_1_yim48g.png"
                       alt="USDT"
                       width={20}
                       height={20}
-                      className="w-4 h-4 sm:w-5 sm:h-5"
+                      className="w-4 h-4 sm:w-5 sm:h-5 shrink-0"
                     />
-                    <span className="text-[#1D8751] text-base sm:text-lg font-bold">
+                    <span className="text-[#1D8751] text-base sm:text-lg font-bold ">
                       {formatAmount(Math.ceil(Number(saveOrder?.amount ?? 0)))}
                     </span>
                   </div>
-                  <span className="text-xs text-[#F79330] dark:text-[#A3A3C2]">
+                  <span className="text-xs text-warning dark:text-[#A3A3C2] font-medium ml-2 shrink-0">
                     USDT
                   </span>
                 </div>
@@ -558,7 +563,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
             </div>
             <span className="text-gray-900 dark:text-white font-semibold text-base sm:text-lg block pr-2">
               Confirm Payment is from{" "}
-              <span className="break-words inline-flex items-center gap-2 flex-wrap">
+              <span className="wrap-break-words inline-flex items-center gap-2 flex-wrap">
                 {singleOrder?.advertiser_first_name || user?.first_name}{" "}
                 {singleOrder?.advertiser_last_name ||
                   user?.last_name ||
