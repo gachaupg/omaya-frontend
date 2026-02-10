@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Button from "../../Common/Button";
 import { FaCheckCircle, FaRegClock, FaTimes } from "react-icons/fa";
 import { ThumbsUp } from "lucide-react";
@@ -80,6 +80,8 @@ const MarketTable: React.FC<MarketTableProps> = ({
     });
   };
 
+  const modalScrollRef = useRef<HTMLDivElement | null>(null);
+
   // Handle escape key to close modal
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
@@ -114,29 +116,28 @@ const MarketTable: React.FC<MarketTableProps> = ({
   });
 
   // Build pagination pages with ellipsis when there are many pages
+  // Ensures current page is always visible and stays active when selected
   const getPaginationPages = () => {
     if (totalPages <= 5) {
       return Array.from({ length: totalPages }, (_, i) => i + 1);
     }
 
     const pages: (number | string)[] = [];
-    pages.push(1, 2); // always first two
+    pages.push(1);
 
+    // Always include current page and its neighbors
+    const centerStart = Math.max(2, currentPage - 1);
+    const centerEnd = Math.min(totalPages - 1, currentPage + 1);
     if (currentPage > 4) {
       pages.push("...");
     }
-
-    const start = Math.max(3, currentPage - 1);
-    const end = Math.min(totalPages - 2, currentPage + 1);
-    for (let p = start; p <= end; p++) {
+    for (let p = centerStart; p <= centerEnd; p++) {
       if (!pages.includes(p)) pages.push(p);
     }
-
     if (currentPage < totalPages - 3) {
       pages.push("...");
     }
-
-    if (!pages.includes(totalPages)) {
+    if (totalPages > 1 && !pages.includes(totalPages)) {
       pages.push(totalPages);
     }
 
@@ -314,7 +315,7 @@ const MarketTable: React.FC<MarketTableProps> = ({
                 </div>
 
                 {/* Mobile Card View */}
-                <div className="md:hidden flex flex-col gap-2 sm:gap-3 p-2 sm:p-3 md:p-4 border-b last:border-b-0 bg-white hover:bg-gray-50 border-gray-200 dark:bg-(--card-color) dark:hover:bg-[#2d2d36] dark:border-accent">
+                <div className="md:hidden flex flex-col gap-2 sm:gap-3 p-2 sm:p-3 md:p-4 border-b last:border-b-0 bg-white hover:bg-gray-50 border-gray-200 dark:bg-[var(--card-color)] dark:hover:bg-[#2d2d36] dark:border-[#35353E]">
                   {/* Advertiser Section */}
                   <div className="flex items-center gap-2 pb-2 border-b border-gray-200 dark:border-accent">
                     {row.advertiser_photo ? (
@@ -456,7 +457,8 @@ const MarketTable: React.FC<MarketTableProps> = ({
               onClick={() => setSelectedRowIndex(null)}
             >
               <div 
-                className="w-full max-w-5xl max-h-[90vh] overflow-y-auto"
+                ref={modalScrollRef}
+                className="w-full max-w-5xl max-h-[100vh] overflow-y-auto"
                 onClick={(e) => e.stopPropagation()}
               >
                 <TradePreview
@@ -464,6 +466,7 @@ const MarketTable: React.FC<MarketTableProps> = ({
                   onClose={() => setSelectedRowIndex(null)}
                   tradeType={activeTab as "buy" | "sell"}
                   paymentDetails={filteredData[selectedRowIndex].payment_details}
+                  scrollContainerRef={modalScrollRef}
                 />
               </div>
             </div>
@@ -473,14 +476,14 @@ const MarketTable: React.FC<MarketTableProps> = ({
           {filteredData.length > 0 && (() => {
             const pagesToRender = getPaginationPages();
             return (
-              <div className="flex justify-center items-center gap-2 py-4 bg-gray-50 dark:bg-(--bg-color)">
+              <div className="flex justify-center items-center gap-2 py-4 bg-gray-50 dark:bg-[var(--bg-color)]">
                 <button
                   onClick={() => onPageChange(currentPage - 1)}
                   disabled={currentPage === 1}
                   className={`px-3 py-1 rounded-md text-sm font-medium border bg-white border-gray-200 text-gray-500 ${currentPage === 1
                     ? "opacity-50 cursor-not-allowed"
                     : "hover:bg-gray-100"
-                    } dark:bg-(--card-color) dark:border-accent dark:text-[#8C8CA1] dark:hover:bg-accent`}
+                    } dark:bg-[var(--card-color)] dark:border-[#35353E] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]`}
                 >
                   &lt;
                 </button>
@@ -498,7 +501,7 @@ const MarketTable: React.FC<MarketTableProps> = ({
                   }
 
                   const pageNumber = page as number;
-                  const isCurrentPage = currentPage === pageNumber;
+                  const isCurrentPage = Number(currentPage) === Number(pageNumber);
                   const isDisabled = isCurrentPage && filteredData.length === 0;
 
                   return (

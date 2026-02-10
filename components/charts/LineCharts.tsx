@@ -378,10 +378,12 @@ function DonutChartWithCenter({
   data,
   total,
   label,
+  hideCurrency,
 }: {
   data: DonutChartData[];
   total: number;
   label: string;
+  hideCurrency?: boolean;
 }) {
   const radius = 64;
   const stroke = 12;
@@ -457,7 +459,13 @@ function DonutChartWithCenter({
         className="dark:fill-white fill-black"
         style={{ textRendering: "geometricPrecision" }}
       >
-        {allZero ? "0 USDT" : `${formatLargeNumber(displayTotal)} USDT`}
+        {hideCurrency
+          ? allZero
+            ? "Transactions"
+            : formatLargeNumber(displayTotal)
+          : allZero
+            ? "0 USDT"
+            : `${formatLargeNumber(displayTotal)} USDT`}
       </text>
       <text
         x={center}
@@ -542,7 +550,7 @@ const Card = ({
   );
 };
 
-const Legend = ({ data }: { data: DonutChartData[] }) => (
+const Legend = ({ data, hideCurrency }: { data: DonutChartData[]; hideCurrency?: boolean }) => (
   <div className="flex flex-col gap-3 sm:gap-4 justify-center min-w-0 sm:min-w-[150px] w-full sm:w-auto">
     {data.map((d) => (
       <div
@@ -563,7 +571,7 @@ const Legend = ({ data }: { data: DonutChartData[] }) => (
           {d.label}
         </span>
         <span className="dark:text-white text-[#051015] font-medium ml-auto min-w-[60px] sm:min-w-[60px] text-right tracking-tight shrink-0 text-[11px] md:text-sm lg:text-base">
-          {formatLargeNumber(d.value)} USDT
+          {formatLargeNumber(d.value)}{hideCurrency ? "" : " USDT"}
         </span>
       </div>
     ))}
@@ -966,7 +974,10 @@ const LineCharts = React.memo(
             {/* Body */}
             <div className="flex flex-col xl:flex-row gap-3 px-4 pb-6 flex-1">
               <div className="xl:w-1/2">
-                <Legend data={overviewTotalData(transactionSummary, activeTab)} />
+                <Legend
+                  data={overviewTotalData(transactionSummary, activeTab)}
+                  hideCurrency={activeTab === "swap"}
+                />
               </div>
 
               <div className="flex-1 flex justify-center items-end">
@@ -975,11 +986,12 @@ const LineCharts = React.memo(
                   total={overviewTotalSummary(transactionSummary, activeTab).total}
                   label={
                     activeTab === "swap"
-                      ? "Swaps"
+                      ? "Transactions"
                       : activeTab === "buy"
                         ? "Buy Orders"
                         : "Transactions"
                   }
+                  hideCurrency={activeTab === "swap"}
                 />
               </div>
             </div>

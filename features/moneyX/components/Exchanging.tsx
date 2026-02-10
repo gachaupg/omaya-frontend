@@ -1498,7 +1498,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
               </div>
             )}
           </div>
-          {/* Right: To — from center to end */}
+          {/* Right: To — from center to end (shows provider + user-entered bank account) */}
           <div className="flex items-start gap-3 min-w-0 flex-1 pl-2 sm:pl-4 border-l border-dashed border-gray-300 dark:border-[#35353E]">
             {effectiveTransactionData?.toPaymentMethod ? (
               <>
@@ -1524,12 +1524,12 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                   >
                     {effectiveTransactionData.toPaymentMethod.provider_name}
                   </div>
-                  {effectiveTransactionData.toPaymentMethod.account_number && (
+                  {(effectiveTransactionData.walletAddress || effectiveTransactionData.toPaymentMethod.account_number) && (
                     <div
                       className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
                         } text-xs sm:text-sm font-mono break-all`}
                     >
-                      {effectiveTransactionData.toPaymentMethod.account_number}
+                      {effectiveTransactionData.walletAddress || effectiveTransactionData.toPaymentMethod.account_number}
                     </div>
                   )}
                 </div>

@@ -596,6 +596,16 @@ const PrivacySecurity = () => {
     currentPage * sessionsPerPage
   );
 
+  // When deleting all items on current page, go back to page 1
+  useEffect(() => {
+    if (
+      currentPage > 1 &&
+      (paginatedSessions.length === 0 || currentPage > totalPages)
+    ) {
+      setCurrentPage(1);
+    }
+  }, [allSessions.length, currentPage, paginatedSessions.length, totalPages]);
+
   // Debug logging
   logger.debug('dashboard', "Device sessions state:", {
     deviceSessions,

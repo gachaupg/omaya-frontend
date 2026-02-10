@@ -1062,6 +1062,25 @@ export default function DepositForm({
     };
   }, [selectedAsset, payAmountInput, getAmountInput, payAmount, getAmount, isCalculatingFromPay]);
 
+  // Recalculate receive amount when apiCommission arrives (was null during initial calculation)
+  useEffect(() => {
+    if (selectedAsset && isCommissionApiAsset(selectedAsset) && apiCommission !== null) {
+      if (isCalculatingFromPay && payAmount > 0) {
+        // Forward: You Send -> You Receive
+        const commissionAmount = (payAmount * apiCommission) / 100;
+        const calculatedGetAmount = Math.max(0, payAmount - commissionAmount);
+        setGetAmount(calculatedGetAmount);
+        setGetAmountInput(calculatedGetAmount.toString());
+      } else if (!isCalculatingFromPay && getAmount > 0) {
+        // Reverse: You Receive -> You Send
+        const commissionRate = apiCommission;
+        const calculatedPayAmount = getAmount / (1 - commissionRate / 100);
+        setPayAmount(calculatedPayAmount);
+        setPayAmountInput(calculatedPayAmount.toString());
+      }
+    }
+  }, [apiCommission, payAmount, getAmount, isCalculatingFromPay, selectedAsset]);
+
   // Fetch estimate for non-direct assets - debounced to avoid rapid API calls
   useEffect(() => {
 
@@ -1348,7 +1367,7 @@ export default function DepositForm({
               commissionRate = parseFloat(selectedAsset.fee_rate);
             }
 
-            const fallbackPayAmount = getAmount * (1 + commissionRate / 100);
+            const fallbackPayAmount = getAmount / (1 - commissionRate / 100);
             setPayAmount(fallbackPayAmount);
             setPayAmountInput(fallbackPayAmount.toString());
 
@@ -1899,12 +1918,13 @@ export default function DepositForm({
   const networkFee = 0;
   let commissionAmount: number;
   if (selectedAsset && isCommissionApiAsset(selectedAsset)) {
-    commissionAmount = apiCommission ?? 0;
+    const rate = apiCommission ?? 2; // Default 2% while API loads
+    commissionAmount = (payAmount * rate) / 100;
   } else {
     const commissionRate = selectedAsset?.range_commissions?.[0]?.commission
       ? parseFloat(selectedAsset.range_commissions[0].commission)
       : 2;
-    commissionAmount = (getAmount * commissionRate) / 100;
+    commissionAmount = (payAmount * commissionRate) / 100;
   }
   const totalFees = networkFee + commissionAmount;
 
@@ -1935,16 +1955,19 @@ export default function DepositForm({
       return;
     }
 
-    // For direct assets (USDT on BSC, USDC on BSC), calculate immediately
+    // For direct assets (USDT on BSC, USDC on BSC), API commission is % e.g. {"commission":"2.00"} = 2%
     if (isSimpleCalculationAsset(selectedAsset)) {
-      const commission = isCommissionApiAsset(selectedAsset) ? (apiCommission ?? 0) : 2;
+      const commissionAmount = isCommissionApiAsset(selectedAsset)
+        ? (fromAmount * (apiCommission ?? 2)) / 100
+        : (fromAmount * (selectedAsset?.range_commissions?.[0]?.commission ? parseFloat(selectedAsset.range_commissions[0].commission) : 2)) / 100;
 
       if (fromPay) {
-        const calculatedGetAmount = fromAmount < commission ? fromAmount : Math.max(0, fromAmount - commission);
+        const calculatedGetAmount = Math.max(0, fromAmount - commissionAmount);
         setGetAmount(calculatedGetAmount);
         setGetAmountInput(calculatedGetAmount.toString());
       } else {
-        const calculatedPayAmount = fromAmount + commission;
+        const commissionRate = isCommissionApiAsset(selectedAsset) ? (apiCommission ?? 2) : (selectedAsset?.range_commissions?.[0]?.commission ? parseFloat(selectedAsset.range_commissions[0].commission) : 2);
+        const calculatedPayAmount = fromAmount / (1 - commissionRate / 100);
         setPayAmount(calculatedPayAmount);
         setPayAmountInput(calculatedPayAmount.toString());
       }
@@ -1998,10 +2021,12 @@ export default function DepositForm({
 
       try {
         if (fromPay) {
-          // Forward calculation: from pay amount to receive amount
+          // Forward calculation: from pay amount to receive amount (API commission is % e.g. 2 = 2%)
           if (isSimpleCalculationAsset(selectedAsset)) {
-            const commission = isCommissionApiAsset(selectedAsset) ? (apiCommission ?? 0) : 2;
-            const calculatedGetAmount = fromAmount < commission ? fromAmount : Math.max(0, fromAmount - commission);
+            const commissionAmount = isCommissionApiAsset(selectedAsset)
+              ? (fromAmount * (apiCommission ?? 2)) / 100
+              : (fromAmount * (selectedAsset?.range_commissions?.[0]?.commission ? parseFloat(selectedAsset.range_commissions[0].commission) : 2)) / 100;
+            const calculatedGetAmount = Math.max(0, fromAmount - commissionAmount);
             setGetAmount(calculatedGetAmount);
             setGetAmountInput(calculatedGetAmount.toString());
             setReceiveAmountError(null);
@@ -2026,10 +2051,10 @@ export default function DepositForm({
             }
           }
         } else {
-          // Reverse calculation: from receive amount to pay amount
+          // Reverse calculation: from receive amount to pay amount (API commission is % e.g. 2 = 2%)
           if (isSimpleCalculationAsset(selectedAsset)) {
-            const commission = isCommissionApiAsset(selectedAsset) ? (apiCommission ?? 0) : 2;
-            const calculatedPayAmount = fromAmount + commission;
+            const commissionRate = isCommissionApiAsset(selectedAsset) ? (apiCommission ?? 2) : (selectedAsset?.range_commissions?.[0]?.commission ? parseFloat(selectedAsset.range_commissions[0].commission) : 2);
+            const calculatedPayAmount = fromAmount / (1 - commissionRate / 100);
             setPayAmount(calculatedPayAmount);
             setPayAmountInput(calculatedPayAmount.toString());
             setReceiveAmountError(null);
@@ -2042,7 +2067,8 @@ export default function DepositForm({
             // For reverse calculation, we need to estimate from the receive amount
             // We'll use a trial-and-error approach or call the API with different amounts
             // For now, show loading state and calculate a rough estimate
-            const roughEstimate = fromAmount * 1.02; // Rough estimate with 2% commission
+            const commissionRate = selectedAsset?.range_commissions?.[0]?.commission ? parseFloat(selectedAsset.range_commissions[0].commission) : 2;
+            const roughEstimate = fromAmount / (1 - commissionRate / 100);
             setPayAmount(roughEstimate);
             setPayAmountInput(roughEstimate.toString());
 
@@ -2912,10 +2938,12 @@ export default function DepositForm({
                           setIsInfoModalOpen(true);
                         }
 
-                        // For direct assets, calculate immediately
+                        // For direct assets, calculate immediately (API commission is % e.g. 2 = 2%)
                         if (selectedAsset && newAmount > 0 && isSimpleCalculationAsset(selectedAsset)) {
-                          const commission = isCommissionApiAsset(selectedAsset) ? (apiCommission ?? 0) : 2;
-                          const calculatedGetAmount = newAmount < commission ? newAmount : Math.max(0, newAmount - commission);
+                          const commissionAmount = isCommissionApiAsset(selectedAsset)
+                            ? (newAmount * (apiCommission ?? 2)) / 100
+                            : (newAmount * (selectedAsset?.range_commissions?.[0]?.commission ? parseFloat(selectedAsset.range_commissions[0].commission) : 2)) / 100;
+                          const calculatedGetAmount = Math.max(0, newAmount - commissionAmount);
                           setGetAmount(calculatedGetAmount);
                           setGetAmountInput(calculatedGetAmount.toString());
 
@@ -3186,9 +3214,10 @@ export default function DepositForm({
                         // Clear API validation error when user changes amount
                         setApiValidationError(null);
 
-                        // For direct assets, calculate immediately
+                        // For direct assets, calculate immediately (API commission is % e.g. 2 = 2%)
                         if (selectedAsset && newAmount > 0 && isSimpleCalculationAsset(selectedAsset)) {
-                          const calculatedPayAmount = newAmount < 2 ? newAmount : newAmount + 2;
+                          const commissionRate = isCommissionApiAsset(selectedAsset) ? (apiCommission ?? 2) : (selectedAsset?.range_commissions?.[0]?.commission ? parseFloat(selectedAsset.range_commissions[0].commission) : 2);
+                          const calculatedPayAmount = newAmount / (1 - commissionRate / 100);
                           setPayAmount(calculatedPayAmount);
                           setPayAmountInput(calculatedPayAmount.toString());
 

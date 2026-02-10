@@ -49,3 +49,23 @@ export const createExpressDeposit = async (data: ExpressDepositPayload): Promise
   const response = await post(API_CONFIG.P2P.P2P_DEPOSIT_CREATE, data);
   return response.data as ExpressDepositResponse;
 };
+
+// Fetch deposit status (for polls when user sent money before hitting deposit)
+export const fetchDepositStatus = async (
+  transactionId: string
+): Promise<{ status?: string } | null> => {
+  // Try P2P deposit endpoint first (used by express deposit flow)
+  const endpoints = [
+    API_CONFIG.P2P.P2P_DEPOSIT_DETAIL(transactionId),
+    API_CONFIG.EXCHANGE.DEPOSIT_DETAIL(transactionId),
+  ];
+  for (const url of endpoints) {
+    try {
+      const response = await get<{ status?: string }>(url);
+      if (response?.data) return response.data as { status?: string };
+    } catch {
+      // Try next endpoint
+    }
+  }
+  return null;
+};

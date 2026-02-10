@@ -72,77 +72,38 @@ const Stats = ({ onSupportClick }: StatsProps) => {
   } = useSelector((state: RootState) => state.referralWallet);
   logger.debug('dashboard', "summary", summary);
   const [profileImage, setProfileImage] = useState("");
-  const [depositsTimeFilter, setDepositsTimeFilter] = useState("Month");
-  const [withdrawalsTimeFilter, setWithdrawalsTimeFilter] = useState("Month");
-  const [showDepositsDropdown, setShowDepositsDropdown] = useState(false);
-  const [showWithdrawalsDropdown, setShowWithdrawalsDropdown] = useState(false);
 
-  const depositsDropdownRef = useRef<HTMLDivElement>(null);
-  const withdrawalsDropdownRef = useRef<HTMLDivElement>(null);
-
-  const timeFilterOptions = [
-    "All",
-    "Today",
-    "Last Week",
-    "Last Month",
-    "Last 6 Months",
-  ];
-
-  // Calculate filtered amounts based on time period
-  const getFilteredAmount = (baseAmount: number, timeFilter: string) => {
-    switch (timeFilter) {
-      case "All":
-        return baseAmount;
-      case "Today":
-        return baseAmount * 0.1; // Example: 10% of total for today
-      case "Last Week":
-        return baseAmount * 0.3; // Example: 30% of total for last week
-      case "Last Month":
-        return baseAmount; // Current implementation shows monthly data
-      case "Last 6 Months":
-        return baseAmount * 2; // Example: 2x for 6 months
-      default:
-        return baseAmount;
-    }
-  };
-
-  // Handle click outside dropdowns
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        depositsDropdownRef.current &&
-        !depositsDropdownRef.current.contains(event.target as Node)
-      ) {
-        setShowDepositsDropdown(false);
-      }
-      if (
-        withdrawalsDropdownRef.current &&
-        !withdrawalsDropdownRef.current.contains(event.target as Node)
-      ) {
-        setShowWithdrawalsDropdown(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
+  const p2pProfile = useSelector((state: RootState) => state.p2pMarket?.getP2PProfile);
+  const profileFetchRef = useRef<{ lastFetch: number; inProgress: boolean }>({ lastFetch: 0, inProgress: false });
 
   useEffect(() => {
     if (user) {
-      dispatch(getP2PProfileThunk())
-        .unwrap()
-        .then((response) => {
-          if (response?.profile?.photo) {
-            setProfileImage(response.profile.photo);
-          }
-        })
-        .catch((error) => {
-          console.error("Failed to fetch profile:", error);
-        });
+      // Use existing P2P profile if available
+      if (p2pProfile?.profile?.photo) {
+        setProfileImage(p2pProfile.profile.photo);
+        return;
+      }
+      // Only fetch if not already fetched recently (within 30 seconds) and not in progress
+      const now = Date.now();
+      if (!profileFetchRef.current.inProgress && (now - profileFetchRef.current.lastFetch > 30000)) {
+        profileFetchRef.current.inProgress = true;
+        profileFetchRef.current.lastFetch = now;
+        dispatch(getP2PProfileThunk())
+          .unwrap()
+          .then((response) => {
+            if (response?.profile?.photo) {
+              setProfileImage(response.profile.photo);
+            }
+          })
+          .catch((error) => {
+            console.error("Failed to fetch profile:", error);
+          })
+          .finally(() => {
+            profileFetchRef.current.inProgress = false;
+          });
+      }
     }
-  }, [dispatch, user]);
+  }, [dispatch, user, p2pProfile]);
 
   // Listen for profile photo updates from other components
   useEffect(() => {
@@ -310,80 +271,27 @@ const Stats = ({ onSupportClick }: StatsProps) => {
         </div>
       </div>
 
-      {/* Total Transactions */}
+      {/* Total Volume - same as Overview */}
       <div className="mb-4 sm:mb-6">
         <div className="dark:text-[#788099] text-gray-600 text-sm sm:text-base font-medium">
-          Total Transactions
+          Total Volume
         </div>
         <div className="text-base sm:text-lg font-semibold mt-1 mb-2 text-muted-foreground dark:text-muted">
-          {formatCurrency(
-            (summary?.total_approved_p2p_combined || 0) +
-            (summary?.total_p2p_orders || 0),
-            "USD"
-          )}
+          {formatCurrency(summary?.total_volume ?? 0, "USD")}
         </div>
         <div className="border-b dark:border-accent border-border mt-2" />
       </div>
 
-      {/* Deposits & Withdrawals */}
+      {/* Deposits & Withdrawals - approved only, same as Overview */}
       <div className="mb-4 sm:mb-6">
-        {/* Deposits */}
+        {/* Deposits - approved only */}
         <div className="mb-4">
           <div className="text-muted-foreground text-sm sm:text-base font-medium mb-1">
             Deposits
           </div>
           <div className="flex w-full items-center justify-between gap-3 mb-2">
             <div className="text-sm sm:text-base text-muted-foreground dark:text-muted font-medium">
-              {formatCurrency(
-                getFilteredAmount(
-                  summary?.total_approved_p2p_deposits || 0,
-                  depositsTimeFilter
-                )
-              )}
-            </div>
-            <div
-              className="relative w-28 sm:w-32 flex justify-end items-center"
-              ref={depositsDropdownRef}
-            >
-              <span
-                className="dark:text-[#788099] text-gray-600 text-xs sm:text-sm cursor-pointer flex items-center gap-1"
-                onClick={() => setShowDepositsDropdown(!showDepositsDropdown)}
-              >
-                <span>{depositsTimeFilter}</span>
-                <svg
-                  className={`transition-transform duration-200 text-gray-600 dark:text-[#788099] ${
-                    showDepositsDropdown ? "rotate-180" : ""
-                  }`}
-                  width="12"
-                  height="12"
-                  viewBox="0 0 20 20"
-                  fill="none"
-                >
-                  <path
-                    d="M6 8L10 12L14 8"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </span>
-              {showDepositsDropdown && (
-                <div className="absolute top-6 right-0 dark:bg-[var(--card-color)] bg-white dark:border-[#35353E] border-gray-200 rounded-lg shadow-lg z-10 w-full border">
-                  {timeFilterOptions.map((option) => (
-                    <div
-                      key={option}
-                      className="px-3 py-2 text-xs sm:text-sm dark:text-white text-gray-900 dark:hover:bg-[#2A2A2A] hover:bg-gray-100 cursor-pointer"
-                      onClick={() => {
-                        setDepositsTimeFilter(option);
-                        setShowDepositsDropdown(false);
-                      }}
-                    >
-                      {option}
-                    </div>
-                  ))}
-                </div>
-              )}
+              {formatCurrency(summary?.total_approved_p2p_deposits || 0)}
             </div>
           </div>
         </div>
@@ -404,65 +312,14 @@ const Stats = ({ onSupportClick }: StatsProps) => {
             }}
           />
         </div>
-        {/* Withdrawals */}
+        {/* Withdrawals - approved only */}
         <div className="mb-4">
           <div className="text-muted-foreground text-sm sm:text-base font-medium mb-1">
             Withdrawals
           </div>
           <div className="flex w-full items-center justify-between gap-3 mb-2">
             <div className="text-sm sm:text-base text-muted-foreground dark:text-muted font-medium">
-              {formatCurrency(
-                getFilteredAmount(
-                  summary?.total_approved_p2p_withdrawals || 0,
-                  withdrawalsTimeFilter
-                )
-              )}
-            </div>
-            <div
-              className="relative w-28 sm:w-32 flex justify-end items-center"
-              ref={withdrawalsDropdownRef}
-            >
-              <span
-                className="dark:text-[#788099] text-gray-600 text-xs sm:text-sm cursor-pointer flex items-center gap-1"
-                onClick={() =>
-                  setShowWithdrawalsDropdown(!showWithdrawalsDropdown)
-                }
-              >
-                <span>{withdrawalsTimeFilter}</span>
-                <svg
-                  className={`transition-transform duration-200 text-gray-600 dark:text-[#788099] ${
-                    showWithdrawalsDropdown ? "rotate-180" : ""
-                  }`}
-                  width="12"
-                  height="12"
-                  viewBox="0 0 20 20"
-                  fill="none"
-                >
-                  <path
-                    d="M6 8L10 12L14 8"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </span>
-              {showWithdrawalsDropdown && (
-                <div className="absolute top-6 right-0 dark:bg-[var(--card-color)] bg-white dark:border-accent border-border rounded-lg shadow-lg z-10 w-full border-2">
-                  {timeFilterOptions.map((option) => (
-                    <div
-                      key={option}
-                      className="px-3 py-2 text-xs sm:text-sm dark:text-white text-gray-900 dark:hover:bg-[#2A2A2A] hover:bg-gray-100 cursor-pointer"
-                      onClick={() => {
-                        setWithdrawalsTimeFilter(option);
-                        setShowWithdrawalsDropdown(false);
-                      }}
-                    >
-                      {option}
-                    </div>
-                  ))}
-                </div>
-              )}
+              {formatCurrency(summary?.total_approved_p2p_withdrawals || 0)}
             </div>
           </div>
         </div>
