@@ -250,10 +250,26 @@ const Notifications = () => {
         .map((trade: any) => {
         const orderType = getOrderType(trade.order_type);
         const status = getStatus(trade, user?.email || "");
-        const owner = trade.owner === user?.email ? trade.buyer : trade.seller
-        const name = trade.advertiser_name === user?.first_name ? trade.order_type === "sell" ? truncate(trade.buyer, 10) : truncate(trade.seller, 10) : trade.advertiser_name
-        const profileImage = trade.order_type === "sell" &&
-          trade.owner === user?.email ? trade.buyer_photo : trade.seller_photo
+        const owner = trade.owner === user?.email ? trade.buyer : trade.seller;
+        const isCurrentUserAdvertiser =
+          trade.advertiser_name === user?.first_name;
+
+        const name = isCurrentUserAdvertiser
+          ? trade.order_type === "sell"
+            ? truncate(trade.buyer, 10)
+            : truncate(trade.seller, 10)
+          : trade.advertiser_name;
+
+        // Keep name and photo conditions in sync:
+        // - If current user is the advertiser, show counterparty's photo
+        // - If current user is NOT the advertiser, show advertiser's photo
+        const profileImage = isCurrentUserAdvertiser
+          ? trade.order_type === "sell"
+            ? trade.buyer_photo
+            : trade.seller_photo
+          : trade.order_type === "buy"
+          ? trade.buyer_photo
+          : trade.seller_photo;
 
         return (
           <div
@@ -312,10 +328,7 @@ const Notifications = () => {
             <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto mt-3 sm:mt-0 gap-3 shrink-0">
               {/* Status Badge */}
               <span
-                className={`inline-flex items-center px-2 sm:px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-semibold bg-opacity-10 whitespace-nowrap ${status.color === "text-[#1D8751]"
-                  ? "bg-green-100 text-[#1D8751] dark:bg-green-900/30 dark:text-[#1D8751]"
-                  : "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-500"
-                  }`}
+                className="inline-flex items-center px-2 sm:px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-semibold bg-opacity-10 whitespace-nowrap bg-green-100 text-[#1D8751] dark:bg-green-900/30 dark:text-[#1D8751]"
               >
                 <span className="hidden sm:inline">{status.text}</span>
                 <span className="sm:hidden">Pending</span>

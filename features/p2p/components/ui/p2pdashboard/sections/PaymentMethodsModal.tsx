@@ -25,12 +25,15 @@ interface PaymentMethodsModalProps {
   open: boolean;
   onClose: () => void;
   onAdd?: () => void;
+  /** When set (e.g. from trade preview "Add new X payment method"), only show payment methods/providers matching this name */
+  filterByProviderName?: string;
 }
 
 const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
   open,
   onClose,
   onAdd,
+  filterByProviderName,
 }) => {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
@@ -131,17 +134,37 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
     return [];
   }, [publicPaymentMethods]);
 
+  // When opened from trade preview with a selected payment method (e.g. "Salaam Bank"),
+  // only show payment method types and providers that match that name.
+  const processedProvidersFiltered = React.useMemo(() => {
+    if (!filterByProviderName?.trim()) return processedProviders;
+    const term = filterByProviderName.trim().toLowerCase();
+    return processedProviders.filter((p: any) => {
+      const name = (p.provider_name || "").toLowerCase();
+      const prov = (p.provider || "").toLowerCase();
+      return name.includes(term) || prov.includes(term) || term.includes(name) || term.includes(prov);
+    });
+  }, [processedProviders, filterByProviderName]);
+
   const methodTypes = Array.from(
     new Set(
-      processedProviders
+      processedProvidersFiltered
         .map((p: any) => p.payment_method_type)
         .filter(Boolean)
     )
   ) as string[];
 
-  const providers = processedProviders.filter(
+  const providers = processedProvidersFiltered.filter(
     (p: any) => p.payment_method_type === method
   );
+
+  // When filtered to a single provider, auto-select its method and provider
+  const singleFilteredProvider = processedProvidersFiltered.length === 1 ? processedProvidersFiltered[0] : null;
+  useEffect(() => {
+    if (!open || !filterByProviderName?.trim() || !singleFilteredProvider) return;
+    if (singleFilteredProvider.payment_method_type) setMethod(singleFilteredProvider.payment_method_type);
+    if (singleFilteredProvider.provider_name) setProvider(singleFilteredProvider.provider_name);
+  }, [open, filterByProviderName, singleFilteredProvider?.payment_method_type, singleFilteredProvider?.provider_name]);
 
   const normalizedMethod = method.trim().toLowerCase();
   const isCryptoMethod = normalizedMethod.includes("crypto");

@@ -174,39 +174,48 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
   const [bankAddressError, setBankAddressError] = useState<string | null>(null);
   const [isAddressConfirmed, setIsAddressConfirmed] = useState(false);
   const [expandedTerms, setExpandedTerms] = useState(false);
-  const [commission, setCommission] = useState(2);
+  const [apiCommission, setApiCommission] = useState<number | null>(null);
+  const commissionFetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const paymentDetailsRef = useRef<HTMLDivElement>(null);
 
-  // Fetch commission from API when amount changes (short debounce so request fires as user types)
+  // Amount for commission API - use pay when from pay, else approx send from receive (getAmount/0.98)
+  const commissionFetchAmount = isCalculatingFromPay ? payAmount : (getAmount > 0 ? getAmount / 0.98 : 0);
+
+  // Fetch commission from API when amount changes (API returns % e.g. {"commission":"2.00"} = 2%)
   useEffect(() => {
-    if (!payAmount || payAmount <= 0) {
-      setCommission(2);
+    const amount = commissionFetchAmount || payAmount || getAmount;
+    if (!amount || amount <= 0) {
+      setApiCommission(null);
       return;
     }
-    const timer = setTimeout(() => {
-      dispatch(fetchMoneyXCommission(payAmount))
+    if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
+    commissionFetchTimeoutRef.current = setTimeout(() => {
+      dispatch(fetchMoneyXCommission(amount))
         .unwrap()
         .then((commissionStr) => {
           const val = parseFloat(commissionStr) || 0;
-          setCommission(val);
+          setApiCommission(val);
         })
-        .catch(() => setCommission(2));
+        .catch(() => setApiCommission(null));
     }, 150);
-    return () => clearTimeout(timer);
-  }, [payAmount, dispatch]);
+    return () => {
+      if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
+    };
+  }, [payAmount, getAmount, isCalculatingFromPay, dispatch]);
 
-  // Recalculate the other field when commission updates (so display stays in sync)
+  // Recalculate the other field when apiCommission updates (API returns % e.g. 2 = 2%)
   useEffect(() => {
+    const rate = apiCommission ?? 2;
     if (isCalculatingFromPay && payAmount > 0) {
-      const calculatedGetAmount = payAmount <= commission ? payAmount : Math.max(0, payAmount - commission);
+      const calculatedGetAmount = Math.max(0, payAmount * (1 - rate / 100));
       setGetAmount(calculatedGetAmount);
       setGetAmountInput(calculatedGetAmount.toString());
     } else if (!isCalculatingFromPay && getAmount > 0) {
-      const calculatedPayAmount = getAmount + commission;
+      const calculatedPayAmount = getAmount / (1 - rate / 100);
       setPayAmount(calculatedPayAmount);
       setPayAmountInput(calculatedPayAmount.toString());
     }
-  }, [commission]);
+  }, [apiCommission]);
 
   // Helper function to get provider name from payment method
   // Removes method suffixes like "- Bank", "- Mobile", "- Crypto", etc.
@@ -817,7 +826,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
     };
   });
 
-  // Calculate receive/send using commission from API
+  // Calculate receive/send using commission from API (API returns % e.g. 2 = 2%)
   const handleAmountChange = (value: string, isFromPay: boolean) => {
     // Only allow numbers and decimals
     if (value === "" || /^\d*\.?\d*$/.test(value)) {
@@ -830,14 +839,15 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
       }
 
       const newAmount = parseFloat(value) || 0;
+      const rate = apiCommission ?? 2;
 
       if (isFromPay) {
         setPayAmountInput(value);
         setPayAmount(newAmount);
         setIsCalculatingFromPay(true);
 
-        // Receive = send - commission (commission fetched from API, fallback 2)
-        const calculatedGetAmount = newAmount <= commission ? newAmount : Math.max(0, newAmount - commission);
+        // Forward: receive = send * (1 - rate/100)
+        const calculatedGetAmount = Math.max(0, newAmount * (1 - rate / 100));
         setGetAmount(calculatedGetAmount);
         setGetAmountInput(calculatedGetAmount.toString());
       } else {
@@ -845,8 +855,8 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
         setGetAmount(newAmount);
         setIsCalculatingFromPay(false);
 
-        // Send = receive + commission
-        const calculatedPayAmount = newAmount + commission;
+        // Reverse: send = receive / (1 - rate/100)
+        const calculatedPayAmount = newAmount / (1 - rate / 100);
         setPayAmount(calculatedPayAmount);
         setPayAmountInput(calculatedPayAmount.toString());
       }
@@ -1090,7 +1100,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
             {/* You Receive Section */}
             <div className="flex-1 sm:pr-4">
               <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
-                {t("express.youReceive", "You Receive")}yy
+                {t("express.youReceive", "You Receive")}
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
                 {!isCalculatingFromPay && (
                   <span className="text-xs text-[#1D8751] font-medium hidden sm:inline">

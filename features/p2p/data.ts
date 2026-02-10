@@ -9,7 +9,7 @@ export const p2pTabs: Tab[] = [
   { id: "market", label: "tabs.market", path: "/p2p/market" },
   { id: "orders", label: "tabs.orders", path: "/p2p/orders" },
   { id: "center", label: "tabs.center", path: "/p2p/center" },
-  { id: "chats", label: "Chats", path: "/p2p/chats" },
+  { id: "chats", label: "tabs.chats", path: "/p2p/chats" },
 ];
 
 // Transaction overview data

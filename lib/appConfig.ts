@@ -50,6 +50,8 @@ export const API_CONFIG = {
     WITHDRAWS: "trading_engine/p2p-withdraw/",
     P2P_WITHDRAW: "/trading_engine/p2p-withdraw/",
     P2P_DEPOSIT_CREATE: "/trading_engine/p2p/deposit/create/",
+    P2P_DEPOSIT_DETAIL: (transactionId: string) =>
+      "/trading_engine/p2p/deposits/" + transactionId + "/",
     BUY_ADS: "/ads/buy/",
     SELL_ADS: "/ads/sell/",
     ASSETS: "/administration/admin/fronted-all-asset-network-range/",
@@ -137,6 +139,8 @@ export const API_CONFIG = {
   },
   EXCHANGE: {
     DEPOSIT: "/trading_engine/deposits/",
+    DEPOSIT_DETAIL: (transactionId: string) =>
+      `/trading_engine/deposits/${transactionId}/`,
     WITHDRAW: "/trading_engine/withdraw/",
     SOCKETS: {
       TRANSACTION_STATUS: (txHash: string) =>
@@ -198,6 +202,9 @@ export const API_CONFIG = {
   PAYMENTS: {
     SEND_EDIT_OTP: "/api/payments/user-payment-details/send-edit-otp/",
     USER_PAYMENT_DETAIL: (id: string) => `/api/payments/user-payment-details/${id}/`,
+    USER_WALLET_ADDRESSES: "/payments/user-wallet-addresses/",
+    USER_WALLET_ADDRESS: (uuid: string) => `/payments/user-wallet-addresses/${uuid}/`,
+    USER_WALLET_ADDRESS_SEND_OTP: "/payments/user-wallet-addresses/send-edit-otp/",
   },
   MONEYX: {
     TRANSACTIONS: "/api/moneyx/transactions/",

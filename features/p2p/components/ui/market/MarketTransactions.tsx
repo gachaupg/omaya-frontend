@@ -586,12 +586,6 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
     const sellOrders = market?.p2pSellOrders || { results: [], total_orders_count: 0 };
     const buyCount = buyOrders.total_orders_count || 0;
     const sellCount = sellOrders.total_orders_count || 0;
-    const activeResults =
-      activeTab === "buy"
-        ? sellOrders.results || []
-        : activeTab === "sell"
-          ? buyOrders.results || []
-          : [...(buyOrders.results || []), ...(sellOrders.results || [])];
 
     const activeCount =
       activeTab === "buy"
@@ -602,11 +596,6 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
 
     let pages = Math.ceil(activeCount / 10);
     pages = pages > 0 ? pages : 1;
-
-    // If current results have 10 or fewer items, only 1 page exists
-    if (activeResults.length > 0 && activeResults.length <= 10) {
-      pages = 1;
-    }
 
     return pages;
   }, [activeTab]);
@@ -654,10 +643,6 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
     let pages = Math.ceil(activeCount / 10);
     pages = pages > 0 ? pages : 1;
 
-    // If current page has 10 or fewer items, there is only 1 page (no page 2)
-    if (getActiveOrders.length > 0 && getActiveOrders.length <= 10) {
-      pages = 1;
-    }
     // If current page has no data, cap to previous page
     if (currentPage > 1 && getActiveOrders.length === 0) {
       pages = Math.min(pages, currentPage - 1);

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import { formatNumber } from "@/utils/formatters";
 import { formatCurrency } from "@/lib/globalFormatter";
 import { useSelector, useDispatch } from "react-redux";
@@ -32,6 +32,8 @@ const P2pProfile = ({
   const { data: feedbackData } = useSelector(
     (state: RootState) => state.feedback
   );
+  const p2pProfile = useSelector((state: RootState) => state.p2pMarket?.getP2PProfile);
+  const profileFetchRef = useRef<{ hasFetched: boolean }>({ hasFetched: false });
 
   // Local state for profile image (more reliable than Redux state)
   const [profileImage, setProfileImage] = useState<string | null>(() => {
@@ -46,32 +48,54 @@ const P2pProfile = ({
   useEffect(() => {
     dispatch(fetchMerchantApplicationStatusThunk() as any);
     dispatch(fetchFeedback() as any);
-    // Fetch fresh user profile to ensure photo is synced
-    if (isAuthenticated) {
-      dispatch(getUserProfile());
-      // Also fetch P2P profile which has photo
-      dispatch(getP2PProfileThunk())
-        .unwrap()
-        .then((response: any) => {
-          if (response?.profile?.photo) {
-            setProfileImage(response.profile.photo);
-            // Cache profile image to localStorage
+    
+    // Only fetch profiles once on mount, not on every userProfile/p2pProfile change
+    if (isAuthenticated && !profileFetchRef.current.hasFetched) {
+      profileFetchRef.current.hasFetched = true;
+      
+      // Fetch fresh user profile to ensure photo is synced - only if not already loaded
+      if (!userProfile) {
+        dispatch(getUserProfile());
+      }
+      
+      // Also fetch P2P profile which has photo - only if not already loaded
+      if (!p2pProfile?.profile) {
+        dispatch(getP2PProfileThunk())
+          .unwrap()
+          .then((response: any) => {
+            if (response?.profile?.photo) {
+              setProfileImage(response.profile.photo);
+              // Cache profile image to localStorage
+              if (typeof window !== "undefined") {
+                localStorage.setItem("p2p_profile_image", response.profile.photo);
+              }
+            }
+          })
+          .catch(() => {
+            // If fetch fails, try to use cached image
             if (typeof window !== "undefined") {
-              localStorage.setItem("p2p_profile_image", response.profile.photo);
+              const cachedImage = localStorage.getItem("p2p_profile_image");
+              if (cachedImage) {
+                setProfileImage(cachedImage);
+              }
             }
-          }
-        })
-        .catch(() => {
-          // If fetch fails, try to use cached image
-          if (typeof window !== "undefined") {
-            const cachedImage = localStorage.getItem("p2p_profile_image");
-            if (cachedImage) {
-              setProfileImage(cachedImage);
-            }
-          }
-        });
+          });
+      } else if (p2pProfile?.profile?.photo) {
+        // Use existing P2P profile photo if available
+        setProfileImage(p2pProfile.profile.photo);
+      }
+    } else if (p2pProfile?.profile?.photo && !profileImage) {
+      // Use existing P2P profile photo if available (when component re-renders)
+      setProfileImage(p2pProfile.profile.photo);
     }
-  }, [dispatch, isAuthenticated]);
+  }, [dispatch, isAuthenticated]); // Removed userProfile and p2pProfile from deps to prevent loops
+
+  // Sync profile image when p2pProfile becomes available from Redux (fetched elsewhere)
+  useEffect(() => {
+    if (p2pProfile?.profile?.photo && !profileImage) {
+      setProfileImage(p2pProfile.profile.photo);
+    }
+  }, [p2pProfile?.profile?.photo, profileImage]);
 
   // Use profile.photo as fallback if profileImage is not set, also check user.photo
   const displayImage = profileImage || userProfile?.photo || (user as any)?.photo || null;

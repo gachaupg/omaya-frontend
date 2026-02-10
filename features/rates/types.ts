@@ -47,6 +47,13 @@ export interface Transaction {
   status: string;
   stages: string;
   timestamp: string;
+  // MoneyX: destination bank/provider
+  to_provider?: string;
+  from_provider_logo?: string | null;
+  to_provider_logo?: string | null;
+  // Exchange: from/to currencies
+  from_currency?: string;
+  to_currency?: string;
   // Legacy fields for backward compatibility
   source?: string;
   related_order?: string | null;
