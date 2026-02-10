@@ -24,6 +24,7 @@ interface UserPaymentSelectorProps {
   onRemove?: (detail: UserPaymentDetail) => void;
   selectedDetails: UserPaymentDetail[];
   onAddPaymentMethod?: () => void;
+  hideSelected?: boolean;
 }
 
 // Dropdown-selector + card list for a user's saved payment details.
@@ -36,6 +37,7 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
   onRemove,
   selectedDetails,
   onAddPaymentMethod,
+  hideSelected = false,
 }) => {
   const [selectedMethod, setSelectedMethod] = useState("");
   const [selectedProvider, setSelectedProvider] = useState("");
@@ -112,13 +114,22 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
 
   // Filtered details for selected method and provider - show user payment details
   const filteredDetails = useMemo(
-    () =>
-      userPaymentDetails.filter(
+    () => {
+      let details = userPaymentDetails.filter(
         (d) =>
           d.payment_method_name === selectedMethod &&
           d.payment_provider_name === selectedProvider
-      ),
-    [userPaymentDetails, selectedMethod, selectedProvider, selectedDetails]
+      );
+
+      if (hideSelected) {
+        details = details.filter(
+          (d) => !selectedDetails.some((sd) => sd.id === d.id)
+        );
+      }
+
+      return details;
+    },
+    [userPaymentDetails, selectedMethod, selectedProvider, selectedDetails, hideSelected]
   );
 
   // Check if there are admin methods for the selected provider (to show "Add Account" message)

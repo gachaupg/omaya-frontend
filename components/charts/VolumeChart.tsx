@@ -43,7 +43,7 @@ const VolumeChart: React.FC<VolumeChartProps> = ({ transactionSummary }) => {
   const volumeData = [
     {
       title: "Total Value",
-      value: `${cleanTotalVolume()} USDT`,
+      value: `${cleanTotalVolume()}`,
     },
     {
       title: "Exchange",

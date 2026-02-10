@@ -817,6 +817,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                     adminMethods={adminMethods || []}
                     onSelect={handleSelectPaymentDetail}
                     selectedDetails={selectedPaymentDetails}
+                    hideSelected={true}
                   />
 
                   {/* Display Selected Payment Methods */}

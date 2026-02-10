@@ -252,7 +252,7 @@ const Withdraw = () => {
           withdrawal_method: "crypto",
         })
       ).unwrap();
-      
+
       // Reset timer to 5 minutes
       setResendTimer(300);
       setOtpDigits(Array.from({ length: 6 }, () => "")); // Clear current OTP input
@@ -588,6 +588,11 @@ const Withdraw = () => {
                       Paste
                     </button>
                   </div>
+                  {errors.walletAddress && (
+                    <div className="text-red-500 text-xs mb-2 ml-2">
+                      {errors.walletAddress}
+                    </div>
+                  )}
                   <div className="flex items-start text-[#1D8751] text-xs mb-2">
                     <input
                       type="checkbox"
@@ -771,7 +776,7 @@ const Withdraw = () => {
                       {getOtpErrorMessage(otpError)}
                     </div>
                   )}
-                  
+
                   {/* Resend OTP Section */}
                   <div className="mb-4 text-center">
                     {resendTimer > 0 ? (
