@@ -26,26 +26,24 @@ const ASSET_ICON_URL =
 const PAYMENT_ICON_URL =
   "https://res.cloudinary.com/pitz/image/upload/v1764667057/salam_vizvxy.svg";
 
-// Map WebSocket message data to Transaction format (Omaya all-system-transactions)
+// Map WebSocket message data to Transaction format
 const mapWsDataToTransaction = (data: any): Transaction => {
   const id = data.id || data.transaction_id || `tx-${Date.now()}-${Math.random()}`;
   const amount = data.amount || data.total_amount || data.total_amount_due || "0";
   const timestamp = data.timestamp || data.created_at || new Date().toISOString();
-  const txType = data.transaction_type || data.type || "transaction";
-
-  // Derive payment_provider / display labels per type
-  let paymentProvider = data.payment_provider || data.from_provider || data.from_bank || "";
-  if (txType === "p2p_trade") paymentProvider = "P2P Trade";
-  else if (txType === "p2p_deposit") paymentProvider = data.network ? `P2P Deposit (${data.network})` : "P2P Deposit";
-  else if (txType === "p2p_withdraw") paymentProvider = data.network ? `P2P Withdraw (${data.network})` : "P2P Withdraw";
-  else if (txType === "exchange" && data.type) paymentProvider = `Exchange ${data.type}`;
-
+  
+  // Get the payment provider name from various possible fields
+  const providerName = data.payment_provider || data.from_provider || data.from_bank || data.bank_name || data.provider_name || "";
+  
+  // Get the provider logo from various possible fields
+  const providerLogo = data.payment_provider_logo || data.provider_logo || data.bank_logo || data.from_logo || null;
+  
   return {
-    transaction_type: txType,
+    transaction_type: data.transaction_type || data.type || "transaction",
     transaction_id: id,
     user: {
-      id: data.user_id || data.buyer_id || data.seller_id || 0,
-      name: data.user_name || data.from || data.from_bank || "User",
+      id: data.user_id || 0,
+      name: data.user_name || data.from || data.from_bank || providerName || "User",
       email: "",
       photo: providerLogo,
     },
@@ -59,17 +57,6 @@ const mapWsDataToTransaction = (data: any): Transaction => {
     timestamp,
     // Store additional fields for logo usage
     photo: providerLogo,
-    asset_image: data.asset_image || null,
-    total_amount_due: data.total_amount_due ?? amount,
-    payment_provider: paymentProvider,
-    status: data.status || "completed",
-    stages: "",
-    timestamp,
-    to_provider: data.to_provider || null,
-    from_provider_logo: data.from_provider_logo || null,
-    to_provider_logo: data.to_provider_logo || null,
-    from_currency: data.from_currency || undefined,
-    to_currency: data.to_currency || undefined,
   };
 };
 
@@ -88,22 +75,6 @@ const getFromTo = (tx: Transaction): { from: { name: string; logo: string }; to:
     const cryptoAssets = ['usdt', 'btc', 'eth', 'usd', 'usdc', 'bnb', 'trx', 'aurora_eth'];
     return cryptoAssets.some(crypto => name.toLowerCase().includes(crypto));
   };
-
-  // MoneyX: bank-to-bank transfer (from_provider → to_provider)
-  if (transactionType === "moneyx") {
-    const fromName = tx.payment_provider || tx.user?.name || "From";
-    const toName = tx.to_provider || tx.currency || "To";
-    return {
-      from: {
-        name: fromName,
-        logo: tx.from_provider_logo || PAYMENT_ICON_URL,
-      },
-      to: {
-        name: toName,
-        logo: tx.to_provider_logo || PAYMENT_ICON_URL,
-      },
-    };
-  }
   
   // Get the actual provider name - try multiple sources
   const getProviderName = (): string => {
@@ -122,15 +93,12 @@ const getFromTo = (tx: Transaction): { from: { name: string; logo: string }; to:
   // For deposits: From = payment provider (bank), To = crypto asset
   if (transactionType === "deposit" || transactionType === "moneyx") {
     const providerName = getProviderName();
-  if (transactionType === "deposit") {
-    const providerName = tx.payment_provider || "Payment Provider";
     const assetName = tx.currency || "USD";
     
     return {
       from: {
         name: providerName,
         logo: getProviderLogo(),
-        logo: PAYMENT_ICON_URL,
       },
       to: {
         name: assetName,
@@ -156,37 +124,18 @@ const getFromTo = (tx: Transaction): { from: { name: string; logo: string }; to:
     };
   }
   
-  // For P2P (trade, deposit, withdraw): From = type label, To = crypto asset
+  // For P2P: From = payment provider, To = crypto asset
   if (transactionType.includes("p2p")) {
     const providerName = getProviderName();
-    const typeLabel = tx.payment_provider || "P2P";
     const assetName = tx.currency || "USD";
     
     return {
       from: {
         name: providerName,
         logo: getProviderLogo(),
-        name: typeLabel,
-        logo: PAYMENT_ICON_URL,
       },
       to: {
         name: assetName,
-        logo: tx.asset_image || ASSET_ICON_URL,
-      },
-    };
-  }
-
-  // Exchange: From = from_currency, To = to_currency
-  if (transactionType === "exchange") {
-    const fromName = tx.from_currency || tx.currency || "Source";
-    const toName = tx.to_currency || tx.currency || "USD";
-    return {
-      from: {
-        name: fromName,
-        logo: tx.asset_image || ASSET_ICON_URL,
-      },
-      to: {
-        name: toName,
         logo: tx.asset_image || ASSET_ICON_URL,
       },
     };
