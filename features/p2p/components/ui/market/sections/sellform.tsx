@@ -732,7 +732,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                   </div>
 
                   <div className="flex-1">
-                    {(confirmOrder?.status !== "matched" || countdown === 0) && (
+                    {/* {(confirmOrder?.status !== "matched" || countdown === 0) && (
                       <div className="mt-4 mb-2 text-lg">
                         <span className="text-gray-900 dark:text-white">
                           I have an issue with transaction.{" "}
@@ -744,7 +744,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                           Appeal/Complain
                         </span>
                       </div>
-                    )}
+                    )} */}
                     <div className="flex flex-col md:flex-row gap-4 mt-4">
                       <button
                         className={`w-full md:w-auto flex-1 py-2 rounded-2xl border-2 border-gray-200 dark:border-[#3C3C47] text-lg ${confirmOrder?.status === "half-matched"

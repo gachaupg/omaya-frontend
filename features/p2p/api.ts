@@ -402,7 +402,7 @@ export const getAllP2POrders = async (
 ): Promise<P2PBuySellResponse> => {
   return withRetry(async () => {
     const response = await get<P2PBuySellResponse>(
-      `${API_CONFIG.P2P.ALL_ORDERS}?page=${page}`
+      `${API_CONFIG.P2P.USER_TRADES}?page=${page}`
     );
     return response.data;
   });
@@ -418,7 +418,7 @@ export const getAllP2PBuyandSell = async (
     console.log('🌐 [API] Making request to:', url);
     logger.debug('p2p', "Making API request to:", url);
     const response = await get<P2PMyOrders>(url);
-    
+
     // Log the actual response structure
     console.log('🌐 [API] Response structure:', {
       hasBuyOrders: !!response.data.buy_orders,
@@ -430,7 +430,7 @@ export const getAllP2PBuyandSell = async (
       buyOrdersKeys: response.data.buy_orders ? Object.keys(response.data.buy_orders) : [],
       sellOrdersKeys: response.data.sell_orders ? Object.keys(response.data.sell_orders) : [],
     });
-    
+
     // Check if buy_orders has results property
     if (response.data.buy_orders && !Array.isArray(response.data.buy_orders)) {
       const buyOrdersObj = response.data.buy_orders as { results?: P2POrder[] };
@@ -442,7 +442,7 @@ export const getAllP2PBuyandSell = async (
       console.log('🌐 [API] sell_orders.results count:', sellOrdersObj?.results?.length || 0);
       console.log('🌐 [API] First sell order ID:', sellOrdersObj?.results?.[0]?.id);
     }
-    
+
     logger.debug('p2p', "API response for page", page, ":", {
       buyOrdersCount: response.data.buy_orders?.length || 0,
       sellOrdersCount: response.data.sell_orders?.length || 0,
@@ -496,7 +496,7 @@ export const matchP2POrder = async (
     logger.debug('p2p', "Data:", data);
     logger.debug('p2p', "Full URL:", `${API_CONFIG.BASE_URL}${API_CONFIG.P2P.ORDER_MATCH}${id}/match/`);
     logger.debug('p2p', "========================");
-    
+
     const response = await post<{ message: string }>(
       `${API_CONFIG.P2P.ORDER_MATCH}${id}/match/`,
       data
@@ -601,12 +601,12 @@ export const postTradeMessage = async (
   return withRetry(async () => {
     const formData = new FormData();
     formData.append('message', payload.message);
-    
+
     // Append sender_name if provided
     if (payload.sender_name) {
       formData.append('sender_name', payload.sender_name);
     }
-    
+
     // Append each file to FormData
     payload.uploaded_images.forEach((file, index) => {
       formData.append(`uploaded_images`, file);
@@ -615,10 +615,10 @@ export const postTradeMessage = async (
     const response = await post(
       `${API_CONFIG.P2P.TRADE_MESSAGES(tradeId)}`,
       formData,
-      { 
-        headers: { 
-          "Content-Type": "multipart/form-data" 
-        } 
+      {
+        headers: {
+          "Content-Type": "multipart/form-data"
+        }
       }
     );
     return response.data;

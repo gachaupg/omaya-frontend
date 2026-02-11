@@ -12,7 +12,7 @@ import { P2POrder } from "@/features/p2p/types";
 const Overview = () => {
   const dispatch = useDispatch();
   const summary = useSelector(selectTransactionSummary);
-  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
 
   // Add state for date filters and order data
   const [buyDateFilter, setBuyDateFilter] = useState("ALL");
@@ -35,10 +35,54 @@ const Overview = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await getAllP2POrders(1);
+      let allOrders: any[] = [];
+      let currentPage = 1;
+      let hasMorePages = true;
+
+      // Fetch all pages
+      while (hasMorePages) {
+        const response: any = await getAllP2POrders(currentPage);
+        
+        // Handle the new API structure with flat results array
+        const results = response.results || [];
+        allOrders = [...allOrders, ...results];
+
+        // Check if there are more pages
+        hasMorePages = response.next !== null;
+        
+        currentPage++;
+        
+        // Safety limit to prevent infinite loops
+        if (currentPage > 100) break;
+      }
+
+      // Process all orders and categorize based on ownership
+      const processedBuyOrders: P2POrder[] = [];
+      const processedSellOrders: P2POrder[] = [];
+
+      // Get logged-in user's email from auth state
+      const loggedUserEmail = user?.email || '';
+
+      allOrders.forEach((order: any) => {
+        const isOwner = order.owner === loggedUserEmail;
+        let orderType = order.order_type;
+
+        // If user is not the owner, flip the order type
+        if (!isOwner) {
+          orderType = orderType === 'sell' ? 'buy' : 'sell';
+        }
+
+        // Categorize based on the processed order type
+        if (orderType === 'buy') {
+          processedBuyOrders.push({ ...order, order_type: orderType });
+        } else {
+          processedSellOrders.push({ ...order, order_type: orderType });
+        }
+      });
+
       setOrderData({
-        buyOrders: response.buy_orders?.results || [],
-        sellOrders: response.sell_orders?.results || []
+        buyOrders: processedBuyOrders,
+        sellOrders: processedSellOrders
       });
     } catch (error) {
       console.error("Error fetching order data:", error);
@@ -89,7 +133,7 @@ const Overview = () => {
     today.setHours(0, 0, 0, 0);
 
     return data.filter((item) => {
-      const itemDate = new Date(item.created_on);
+      const itemDate = new Date((item as any).timestamp || item.created_on);
 
       switch (dateFilter) {
         case "Today":
@@ -116,14 +160,6 @@ const Overview = () => {
 
   // Calculate filtered totals for buy orders
   const getFilteredBuyTotals = () => {
-    if (buyDateFilter === "ALL") {
-      return {
-        total: summary?.total_buy_orders || 0,
-        completed: summary?.total_buy_orders_by_status?.completed || 0,
-        pending: summary?.total_buy_orders_by_status?.pending || 0,
-      };
-    }
-
     const filteredBuyOrders = getFilteredData(
       orderData.buyOrders,
       buyDateFilter
@@ -137,7 +173,7 @@ const Overview = () => {
       .filter((order) => order.status === "completed")
       .reduce((sum, order) => sum + parseFloat(order.amount || "0"), 0);
     const pending = filteredBuyOrders
-      .filter((order) => order.status === "pending")
+      .filter((order) => order.status !== "completed")
       .reduce((sum, order) => sum + parseFloat(order.amount || "0"), 0);
 
     return { total, completed, pending };
@@ -145,14 +181,6 @@ const Overview = () => {
 
   // Calculate filtered totals for sell orders
   const getFilteredSellTotals = () => {
-    if (sellDateFilter === "ALL") {
-      return {
-        total: summary?.total_sell_orders || 0,
-        completed: summary?.total_sell_orders_by_status?.completed || 0,
-        pending: summary?.total_sell_orders_by_status?.pending || 0,
-      };
-    }
-
     const filteredSellOrders = getFilteredData(
       orderData.sellOrders,
       sellDateFilter
@@ -166,7 +194,7 @@ const Overview = () => {
       .filter((order) => order.status === "completed")
       .reduce((sum, order) => sum + parseFloat(order.amount || "0"), 0);
     const pending = filteredSellOrders
-      .filter((order) => order.status === "pending")
+      .filter((order) => order.status !== "completed")
       .reduce((sum, order) => sum + parseFloat(order.amount || "0"), 0);
 
     return { total, completed, pending };
@@ -175,16 +203,13 @@ const Overview = () => {
   const buyTotals = getFilteredBuyTotals();
   const sellTotals = getFilteredSellTotals();
 
-  // Calculate progress percentages for buy/sell
-  const buyProgressPercentage =
-    buyTotals.total && summary?.total_p2p_orders
-      ? (buyTotals.total / summary.total_p2p_orders) * 100
-      : 0;
+  // Calculate the total for progress bars based on filtered data
+  const filteredP2PTotal = buyTotals.total + sellTotals.total;
+  const safeFilteredTotal = filteredP2PTotal || 1; // Prevent division by zero
 
-  const sellProgressPercentage =
-    sellTotals.total && summary?.total_p2p_orders
-      ? (sellTotals.total / summary.total_p2p_orders) * 100
-      : 0;
+  // Calculate progress percentages for buy/sell using filtered totals
+  const buyProgressPercentage = (buyTotals.total / safeFilteredTotal) * 100;
+  const sellProgressPercentage = (sellTotals.total / safeFilteredTotal) * 100;
 
   // Check if there's no data (chartTotal includes pending, deposits, withdrawals, p2p)
   const hasNoData = chartTotal === 0;

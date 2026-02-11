@@ -6,14 +6,17 @@ const initialState: TransactionState = {
   transactions: [],
   loading: false,
   error: null,
+  count: 0,
+  next: null,
+  previous: null,
 };
 
 export const fetchTransactions = createAsyncThunk(
   "transaction/fetchTransactions",
-  async (_, { rejectWithValue }) => {
+  async (page: number | undefined, { rejectWithValue }) => {
     try {
-      const response = await transactionApi.fetchTransactions();
-      return response.results;
+      const response = await transactionApi.fetchTransactions(page || 1);
+      return response;
     } catch (error) {
       return rejectWithValue(
         error instanceof Error ? error.message : "Failed to fetch transactions"
@@ -50,9 +53,12 @@ const transactionSlice = createSlice({
       })
       .addCase(
         fetchTransactions.fulfilled,
-        (state, action: PayloadAction<Transaction[]>) => {
+        (state, action) => {
           state.loading = false;
-          state.transactions = action.payload;
+          state.transactions = action.payload.results;
+          state.count = action.payload.count;
+          state.next = action.payload.next;
+          state.previous = action.payload.previous;
         }
       )
       .addCase(fetchTransactions.rejected, (state, action) => {

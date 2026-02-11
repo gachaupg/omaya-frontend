@@ -692,10 +692,10 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
               )}
               {(confirmOrder?.status !== "matched" || countdown === 0) && (
                 <button
-                  onClick={() => setShowAppealModal(true)}
+                  onClick={() => window.location.href = "/dashboard/p2p/"}
                   className="bg-gray-100 dark:bg-[var(--card-color)] text-gray-600 dark:text-[#A3A3C2] rounded-lg px-4 sm:px-6 py-2 text-sm sm:text-base border border-gray-200 dark:border-[#35353E] w-full sm:w-auto hover:bg-gray-200 dark:hover:bg-[#404040] transition-colors"
                 >
-                  Appeal/Complain
+                  Cancel
                 </button>
               )}
               <button
