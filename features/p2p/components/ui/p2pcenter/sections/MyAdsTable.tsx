@@ -74,8 +74,19 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
         setMenuPosition(null);
       }
     };
+    
+    const handleScroll = () => {
+      setOpenMenuIdx(null);
+      setMenuPosition(null);
+    };
+    
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    window.addEventListener("scroll", handleScroll, true);
+    
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener("scroll", handleScroll, true);
+    };
   }, []);
 
   /** Handlers */
