@@ -437,8 +437,8 @@ const ChatBox: React.FC<{
           )}
         </div>
       </div>
-      <div className="chat-container mt-4 sm:mt-6 flex flex-col pr-2 sm:pr-10 mb-2 h-80 sm:h-96 bg-card border border-[#E8EFF5] dark:border-[#35353E] rounded-[18px] p-2 sm:p-4 relative">
-        <div>
+      <div className="chat-container mt-4 sm:mt-6 flex flex-col mb-2 h-80 sm:h-96 bg-card border border-[#E8EFF5] dark:border-[#35353E] rounded-[18px] p-2 sm:p-4 relative">
+        <div className="flex-shrink-0">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 flex-1 min-w-0">
               {otherPersonData.photo ? <img className="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-cover flex-shrink-0" src={otherPersonData.photo} alt={otherPersonData.displayName} /> : <MdAccountCircle className="w-5 h-5 sm:w-6 sm:h-6 text-[#1D8751] flex-shrink-0" />}
@@ -464,10 +464,10 @@ const ChatBox: React.FC<{
             </div>
           </div>
         </div>
-        <hr className="border-[#E8EFF5] dark:border-[#35353E] mt-2" />
+        <hr className="border-[#E8EFF5] dark:border-[#35353E] mt-2 flex-shrink-0" />
         <div
           ref={messagesListRef}
-          className="messages-list flex-1 flex flex-col gap-2 overflow-y-auto mb-2"
+          className="messages-list flex-1 flex flex-col gap-2 overflow-y-auto mb-2 min-h-0"
         >
           {autoreply && (
             <p className="text-[#051015] dark:text-white bg-gray-100 dark:bg-[var(--card-color)] p-2 rounded-lg text-sm italic">
@@ -643,10 +643,10 @@ const ChatBox: React.FC<{
           </button>
         )}
 
-        <hr className="border-[#E8EFF5] dark:border-[#35353E] mt-2" />
-        <div className="flex gap-1.5 sm:gap-2 mt-2">
+        <hr className="border-[#E8EFF5] dark:border-[#35353E] mt-2 flex-shrink-0" />
+        <div className="flex gap-1.5 sm:gap-2 mt-2 flex-shrink-0">
           <input
-            className="flex-1 rounded px-2 py-1.5 sm:py-1 text-xs sm:text-sm text-[#788099] dark:text-white border-none outline-none"
+            className="flex-1 min-w-0 rounded px-2 py-1.5 sm:py-1 text-xs sm:text-sm text-[#788099] dark:text-white border-none outline-none"
             value={message}
             onChange={(e) => dispatch(setMessage(e.target.value))}
             onKeyDown={(e) => {
@@ -707,7 +707,7 @@ const ChatBox: React.FC<{
         </div>
         {/* Preview selected images */}
         {uploaded_images.length > 0 && (
-          <div className="flex gap-2 mt-2 flex-wrap">
+          <div className="flex gap-2 mt-2 flex-wrap flex-shrink-0">
             {uploaded_images.map((file, idx) => (
               <div key={idx} className="relative w-12 h-12">
                 <img

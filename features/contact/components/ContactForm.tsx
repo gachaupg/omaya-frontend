@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useMarketingI18n } from "@/lib/useMarketingI18n";
 import { useContact } from "../hooks/useContact";
@@ -31,6 +31,35 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSuccess, onError }) => {
     clearContactError,
     clearContactSuccess,
   } = useContact();
+
+  // Clear any stale success/error state on mount and unmount
+  useEffect(() => {
+    clearContactSuccess();
+    clearContactError();
+    return () => {
+      clearContactSuccess();
+      clearContactError();
+    };
+  }, []);
+
+  // Auto-dismiss success and error messages
+  useEffect(() => {
+    if (success) {
+      const timer = setTimeout(() => {
+        clearContactSuccess();
+      }, 5000); // Auto-dismiss after 5 seconds
+      return () => clearTimeout(timer);
+    }
+  }, [success, clearContactSuccess]);
+
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => {
+        clearContactError();
+      }, 5000); // Auto-dismiss after 5 seconds
+      return () => clearTimeout(timer);
+    }
+  }, [error, clearContactError]);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>

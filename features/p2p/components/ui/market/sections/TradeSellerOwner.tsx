@@ -318,9 +318,9 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
           { label: "View order" },
         ]}
       />
-      <div className="final-buy-container grid grid-cols-1 md:grid-cols-3 gap-2 sm:gap-4 md:gap-6 p-1 sm:p-2 md:p-6 min-h-screen bg-[#EEF1F4] dark:bg-(--bg-color)">
+      <div className="final-buy-container grid grid-cols-1 lg:grid-cols-3 gap-2 sm:gap-4 lg:gap-6 p-1 sm:p-2 lg:p-6 min-h-screen bg-[#EEF1F4] dark:bg-(--bg-color)">
         {/* Left Column: Main Info */}
-        <div className="md:col-span-2 flex flex-col gap-6">
+        <div className="lg:col-span-2 flex flex-col gap-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
               <p
@@ -333,7 +333,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
               <button
                 type="button"
                 onClick={() => setShowChat((prev) => !prev)}
-                className="md:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1D8751] text-white text-xs font-medium hover:bg-[#166b3e] transition-colors"
+                className="lg:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1D8751] text-white text-xs font-medium hover:bg-[#166b3e] transition-colors"
                 aria-label={showChat ? "Close chat" : "Open chat"}
               >
                 <MessageCircle className="w-4 h-4" />
@@ -708,7 +708,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
         </div>
 
         {/* Right Column: Chat and Terms - on mobile hidden unless Chat button clicked, opens on top */}
-        <div className={`md:col-span-1 pt-10 flex flex-col gap-6 mt-6 md:mt-0 ${!showChat ? "hidden md:flex" : "order-first md:order-none flex"}`}>
+        <div className={`lg:col-span-1 pt-10 flex flex-col gap-6 mt-6 lg:mt-0 ${!showChat ? "hidden lg:flex" : "order-first lg:order-none flex"}`}>
           <ChatBox
             onClose={() => setShowChat(false)}
             tradeId={confirmOrder?.id || ""}
@@ -744,12 +744,12 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
             buyerName={user?.email === confirmOrder?.buyer ? `${user?.first_name || ""} ${user?.last_name || ""}`.trim() || "You" : "Buyer"}
           />
           {/* Advertiser's Terms */}
-          <section className="advertiser-terms rounded-lg p-4 bg-gray-50 dark:bg-[var(--card-color)]">
-            <div className="font-semibold text-lg mb-2 text-gray-900 dark:text-white">
-              Advertiser's Terms <span className="text-[#E23D3A]">⦿</span>
+          <section className="advertiser-terms rounded-lg p-4 bg-gray-50 dark:bg-[var(--card-color)] overflow-hidden w-full">
+            <div className="font-semibold text-lg mb-2 text-gray-900 dark:text-white min-w-0">
+              <span className="inline-block">Advertiser's Terms</span> <span className="text-[#E23D3A] text-sm">♦</span>
             </div>
             <div className="text-xs flex flex-col gap-2">
-              <div className="text-[#1D8751]">
+              <div className="text-[#1D8751] break-words overflow-wrap-anywhere whitespace-pre-wrap max-w-full">
                 {singleOrder?.terms_and_conditions}
               </div>
             </div>

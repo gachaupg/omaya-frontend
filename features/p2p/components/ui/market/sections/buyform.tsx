@@ -361,9 +361,9 @@ function FinalBuy({ orderData }: FinalBuyProps) {
         ]}
         className="mt-1"
       />
-      <div className="final-buy-container grid grid-cols-1 md:grid-cols-3 gap-2 sm:gap-4 md:gap-6 p-1 sm:p-2 md:p-6 min-h-screen bg-[#EEF1F4] dark:bg-[var(--bg-color)]">
+      <div className="final-buy-container grid grid-cols-1 lg:grid-cols-3 gap-2 sm:gap-4 lg:gap-6 p-1 sm:p-2 lg:p-6 min-h-screen bg-[#EEF1F4] dark:bg-[var(--bg-color)]">
         {/* Left Column: Main Info */}
-        <div className="md:col-span-2 flex flex-col mt-2 gap-1">
+        <div className="lg:col-span-2 flex flex-col mt-2 gap-1">
           {confirmOrderError && (
             <div className="text-red-500 text-[13px] mb-2">
               {confirmOrderError}
@@ -385,7 +385,7 @@ function FinalBuy({ orderData }: FinalBuyProps) {
               <button
                 type="button"
                 onClick={() => setShowChat((prev) => !prev)}
-                className="md:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1D8751] text-white text-xs font-medium hover:bg-[#166b3e] transition-colors"
+                className="lg:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1D8751] text-white text-xs font-medium hover:bg-[#166b3e] transition-colors"
                 aria-label={showChat ? "Close chat" : "Open chat"}
               >
                 <MessageCircle className="w-4 h-4" />
@@ -739,7 +739,7 @@ function FinalBuy({ orderData }: FinalBuyProps) {
         </div>
 
         {/* Right Column: Chat and Terms - on mobile hidden unless Chat button clicked, opens on top */}
-        <div className={`md:col-span-1 pt-10 flex flex-col gap-6 mt-6 md:mt-0 ${!showChat ? "hidden md:flex" : "order-first md:order-none flex"}`}>
+        <div className={`lg:col-span-1 pt-10 flex flex-col gap-6 mt-6 lg:mt-0 ${!showChat ? "hidden lg:flex" : "order-first lg:order-none flex"}`}>
           <ChatBox
             onClose={() => setShowChat(false)}
             tradeId={confirmOrder?.id || ""}

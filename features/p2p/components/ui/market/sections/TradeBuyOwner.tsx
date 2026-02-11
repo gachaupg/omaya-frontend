@@ -774,13 +774,13 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
             }
           />
           {/* Advertiser's Terms */}
-          <section className="advertiser-terms rounded-lg p-3 sm:p-4 bg-gray-50 dark:bg-[var(--card-color)]">
-            <div className="font-semibold text-base sm:text-lg mb-2 text-gray-900 dark:text-white flex items-center gap-2">
-              Advertiser's Terms
-              <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-[#E23D3A]" />
+          <section className="advertiser-terms rounded-lg p-3 sm:p-4 bg-gray-50 dark:bg-[var(--card-color)] overflow-hidden w-full">
+            <div className="font-semibold text-base sm:text-lg mb-2 text-gray-900 dark:text-white flex items-center gap-1 sm:gap-2 min-w-0">
+              <span className="truncate">Advertiser's Terms</span>
+              <AlertCircle className="w-4 h-4 text-[#E23D3A] flex-shrink-0" />
             </div>
             <div className="text-xs sm:text-sm flex flex-col gap-2">
-              <div className="text-[#1D8751] break-words">
+              <div className="text-[#1D8751] break-words overflow-wrap-anywhere whitespace-pre-wrap max-w-full">
                 {saveOrder?.terms_and_conditions}
               </div>
             </div>
