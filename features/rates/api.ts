@@ -19,9 +19,9 @@ export const blogApi = {
 };
 
 export const transactionApi = {
-  async fetchTransactions(): Promise<TransactionResponse> {
+  async fetchTransactions(page: number = 1): Promise<TransactionResponse> {
     const response = await get<TransactionResponse>(
-      API_CONFIG.RATES.TRANSACTIONS
+      `${API_CONFIG.RATES.TRANSACTIONS}?page=${page}`
     );
     return response.data;
   },

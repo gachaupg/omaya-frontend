@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback, useMemo, memo } from "react";
 import Filters from "../ui/orders/Filters";
 import OrdersTransactions from "../ui/orders/OrdersTransactions";
 import UnreadMessages from "../ui/orders/UnreadMessages";
+import ProcessingNotifications from "../ui/orders/ProcessingNotifications";
 import { fetchUserTrades } from "../../slices/userTradesSlice";
 import { TransactionType } from "../../types";
 import { setCurrentPage } from "../../slices/userTradesSlice";
@@ -12,6 +13,7 @@ import { RootState } from "@/store/rootReducer";
 import { selectUserTradesByStatus } from "../../selectors";
 import { OrdersListSkeleton } from "@/components/ui/Skeletons";
 import { useGroupedMessages } from "../../hooks/useGroupedMessages";
+import { fetchMatchedTrades } from "../../slices/matchedTradesSlice";
 
 import { logger } from "@/lib/utils/logger";
 
@@ -19,6 +21,9 @@ const Orders = memo(() => {
   const dispatch = useDispatch<AppDispatch>();
   const { trades, loading, error, currentPage } = useSelector(
     (state: RootState) => state.userTrades
+  );
+  const { data: matchedTrades, loading: matchedTradesLoading } = useSelector(
+    (state: RootState) => state.matchedTrades
   );
   const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
   
@@ -45,7 +50,11 @@ const Orders = memo(() => {
 
   useEffect(() => {
     fetchTrades();
-  }, [fetchTrades]);
+    // Fetch matched trades for Processing tab
+    if (isAuthenticated) {
+      dispatch(fetchMatchedTrades(1));
+    }
+  }, [fetchTrades, isAuthenticated, dispatch]);
 
   const handlePageChange = (page: number) => {
     logger.debug("p2p", "handlePageChange called with page:", page);
@@ -80,11 +89,14 @@ const Orders = memo(() => {
     selectUserTradesByStatus
   );
 
+  // Use matched trades count for processing tab
+  const actualProcessingCount = matchedTrades?.count || processingCount;
+
   const orderStatusTabs = useMemo(
     () =>
       staticOrderStatusTabs.map((tab) => {
         if (tab.id === "processing") {
-          return { ...tab, count: processingCount };
+          return { ...tab, count: actualProcessingCount };
         } else if (tab.id === "completed") {
           return { ...tab, count: completedCount };
         } else if (tab.id === "canceled") {
@@ -94,12 +106,17 @@ const Orders = memo(() => {
         }
         return tab;
       }),
-    [processingCount, completedCount, cancelledCount, trades.count]
+    [actualProcessingCount, completedCount, cancelledCount, trades.count]
   );
 
   // Apply client-side filtering to the data
   const filteredData = useMemo(() => {
     const currentUserEmail = (user?.email || "").trim().toLowerCase();
+
+    // If Processing tab is selected, use matched trades instead
+    if (filters.status === "processing") {
+      return matchedTrades?.results || [];
+    }
 
     return trades.results.filter((trade) => {
       // Type filter: use display type (swap for non-owner)
@@ -116,15 +133,10 @@ const Orders = memo(() => {
         }
       }
 
-      // Status filter - map UI "processing" to API "pending"/"matched"/"half-matched"
+      // Status filter - skip processing since it's handled above
       if (filters.status !== "all") {
         const tradeStatus = trade.status.toLowerCase();
-        if (filters.status === "processing") {
-          // Processing includes pending, matched, and half-matched statuses
-          if (tradeStatus !== "pending" && tradeStatus !== "matched" && tradeStatus !== "half-matched") {
-            return false;
-          }
-        } else if (tradeStatus !== filters.status.toLowerCase()) {
+        if (tradeStatus !== filters.status.toLowerCase()) {
           return false;
         }
       }
@@ -173,11 +185,13 @@ const Orders = memo(() => {
 
       return true;
     });
-  }, [trades.results, filters, user?.email]);
+  }, [trades.results, filters, user?.email, matchedTrades]);
 
 
 
-  const transformedData: TransactionType[] = filteredData.map((trade) => {
+  const transformedData: TransactionType[] = (filteredData as any[])
+    .filter(() => filters.status !== "processing")
+    .map((trade) => {
     // If logged-in user is the owner: display order_type as-is.
     // If NOT owner (user is counterparty): swap order_type (buy → sell, sell → buy).
     const currentUserEmail = (user?.email || "").trim().toLowerCase();
@@ -226,7 +240,9 @@ const Orders = memo(() => {
       
       />
       <div className="flex flex-col w-full">
-        
+        {filters.status === "processing" ? (
+          <ProcessingNotifications matchedTrades={matchedTrades} />
+        ) : (
           <OrdersTransactions
             transformedData={transformedData}
             loading={loading}
@@ -235,7 +251,7 @@ const Orders = memo(() => {
             handlePageChange={handlePageChange}
             trades={trades}
           />
-        
+        )}
       </div>
     </div>
   );

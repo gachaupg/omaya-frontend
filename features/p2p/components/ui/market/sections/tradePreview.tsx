@@ -73,6 +73,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
   const [selectedUserPaymentDetail, setSelectedUserPaymentDetail] = useState<any>(null);
   const [showAddPaymentModal, setShowAddPaymentModal] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
+  const [activeField, setActiveField] = useState<"send" | "receive" | null>(null);
 
   const paymentDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -233,6 +234,8 @@ const TradePreview: React.FC<TradePreviewProps> = ({
   // This is the same "available" amount implied by P2pProfile
   const walletBalance = profileBalance - totalLocked;
   const handleSendAmountChange = (value: string) => {
+    setActiveField("send");
+    
     if (!value) {
       setSendAmount("");
       setIsAmountValid(true);
@@ -255,26 +258,41 @@ const TradePreview: React.FC<TradePreviewProps> = ({
 
     // Only validate balance for sell orders
     if (tradeType === "sell") {
-      const validation = validateBalance({
-        walletBalance,
-        transactionSummary,
-        amount: numericAmount,
-        minAmount,
-        maxAmount,
-        tradeType,
-      });
-
-      setIsAmountValid(validation.isValid);
-      setErrorMessage(validation.errorMessage || "");
-
-      if (!validation.isValid) {
-        setReceiveAmount("");
-        return;
-      }
-      
-      // Calculate receive amount for sell orders
+      // Calculate receive amount first (always show it)
       const calculatedReceive = (numericAmount * commissionRate).toFixed(2);
       setReceiveAmount(calculatedReceive);
+
+      // Check balance first
+      if (numericAmount > walletBalance) {
+        setIsAmountValid(false);
+        setErrorMessage(`Insufficient balance. Available: ${walletBalance.toFixed(2)} USDT`);
+        return;
+      }
+
+      // Check min/max amounts (USDT)
+      if (numericAmount < minAmount) {
+        setIsAmountValid(false);
+        setErrorMessage(`Minimum amount is ${minAmount} USDT`);
+        return;
+      }
+
+      if (numericAmount > maxAmount) {
+        setIsAmountValid(false);
+        setErrorMessage(`Maximum amount is ${maxAmount} USDT`);
+        return;
+      }
+
+      // Check available amount (though usually maxAmount covers this, double check against ad availability)
+      const availableAmount = advertiserData.availableAmount || 0;
+      if (numericAmount > availableAmount) {
+         setIsAmountValid(false);
+         setErrorMessage(`Maximum available is ${availableAmount.toFixed(2)} USDT`);
+         return;
+      }
+
+      // Validation passed
+      setIsAmountValid(true);
+      setErrorMessage("");
       return;
     } else {
       // For buy orders, calculate receive amount first to validate against available amount
@@ -323,6 +341,8 @@ const TradePreview: React.FC<TradePreviewProps> = ({
   };
 
   const handleReceiveAmountChange = (value: string) => {
+    setActiveField("receive");
+    
     if (!value) {
       setReceiveAmount("");
       setIsAmountValid(true);
@@ -354,37 +374,48 @@ const TradePreview: React.FC<TradePreviewProps> = ({
     const availableAmount = advertiserData.availableAmount || 0;
 
     if (tradeType === "sell") {
-      // For sell: receiveAmount is USD, sendAmount is USDT. Validate the calculated USDT amount.
+      // For sell: receiveAmount is USD, sendAmount is USDT.
+      // numericAmount is USD (what user typed)
       const calculatedSendUsdt = numericAmount / commissionRate;
-      const validation = validateBalance({
-        walletBalance,
-        transactionSummary,
-        amount: calculatedSendUsdt,
-        minAmount,
-        maxAmount,
-        tradeType: "sell",
-      });
-
-      setIsAmountValid(validation.isValid);
-      setErrorMessage(validation.errorMessage || "");
-
-      if (!validation.isValid) {
-        setSendAmount("");
+      
+      // Always show the calculated amount
+      setSendAmount(calculatedSendUsdt.toFixed(2));
+      
+      // Check balance first
+      if (calculatedSendUsdt > walletBalance) {
+        setIsAmountValid(false);
+        setErrorMessage(`Insufficient balance. Available: ${walletBalance.toFixed(2)} USDT`);
         return;
       }
 
+      // Check min/max amounts in USD terms
+      const minUsd = minAmount * commissionRate;
+      const maxUsd = maxAmount * commissionRate;
+
+      if (numericAmount < minUsd) {
+        setIsAmountValid(false);
+        setErrorMessage(`Minimum receive amount is ${minUsd.toFixed(2)} USD`);
+        return;
+      }
+
+      if (numericAmount > maxUsd) {
+         setIsAmountValid(false);
+         setErrorMessage(`Maximum receive amount is ${maxUsd.toFixed(2)} USD`);
+         return;
+      }
+
+      // Check available amount
       if (calculatedSendUsdt > availableAmount) {
         setIsAmountValid(false);
         setErrorMessage(`Maximum available is ${availableAmount.toFixed(2)} USDT (${(availableAmount * commissionRate).toFixed(2)} USD)`);
-        setSendAmount("");
         return;
       }
 
       setIsAmountValid(true);
       setErrorMessage("");
-      setSendAmount(calculatedSendUsdt.toFixed(2));
     } else {
       // For buy: receiveAmount is USDT, sendAmount is USD
+      // numericAmount is USDT (what user typed)
       if (numericAmount > availableAmount) {
         setIsAmountValid(false);
         setErrorMessage(`Amount cannot exceed available balance (${availableAmount.toFixed(2)} USDT)`);
@@ -416,11 +447,14 @@ const TradePreview: React.FC<TradePreviewProps> = ({
     if (!sendAmount || !paymentMethod) {
       return false;
     }
+    if (!isAmountValid) {
+      return false;
+    }
     if (tradeType === "sell" && paymentMethod && !userDetailsLoading) {
       if (matchingUserPaymentMethods.length > 0 && !selectedUserPaymentDetail) return false;
       if (matchingUserPaymentMethods.length === 0) return false; // Must add one first
     }
-    return isAmountValid;
+    return true;
   };
 
   const handleSubmit = async () => {
@@ -591,44 +625,9 @@ const TradePreview: React.FC<TradePreviewProps> = ({
               Rate:{" "}
               <span className="text-[#1D8751]">{advertiserData.commission}</span>
             </div>
-            {/* For Sell: I Want to Receive (USD) first, I Want to Sell (USDT) second. For Buy: I Want to Send (USD) first, I Want to Receive (USDT) second. */}
+            {/* For Sell: I Want to Sell (USDT) first, I Want to Receive (USD) second. For Buy: I Want to Send (USD) first, I Want to Receive (USDT) second. */}
             {tradeType === "sell" ? (
               <>
-                {/* I Want to Receive - USD (buyer sends this to seller) */}
-                <div className="rounded-xl p-3 sm:p-3 flex flex-col gap-2 sm:gap-2 border border-gray-300 dark:border-[#35353E] bg-gray-100 dark:bg-transparent">
-                  <div className="text-sm sm:text-base text-gray-500 dark:text-[#788099] font-semibold">
-                    I Want to Receive
-                  </div>
-                  <div className="flex flex-col gap-2 sm:gap-2">
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                      <span className="text-2xl sm:text-3xl text-[#1D8751] font-semibold flex-shrink-0">$</span>
-                      <input
-                        type="number"
-                        value={receiveAmount}
-                        onChange={(e) => handleReceiveAmountChange(e.target.value)}
-                        placeholder="220 USD"
-                        max={advertiserData.availableAmount || 0}
-                        className={`flex-1 bg-transparent text-lg sm:text-xl font-semibold focus:outline-none rounded-xl px-3 sm:px-4 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-[#788099] ${
-                          !isAmountValid && receiveAmount ? "border border-red-500" : ""
-                        }`}
-                      />
-                      <div className="relative w-full sm:w-auto">
-                        <select
-                          className="rounded px-3 py-2 text-sm sm:text-base font-semibold min-w-[90px] sm:min-w-[100px] w-full bg-white dark:bg-transparent text-gray-900 dark:text-white"
-                          value="USD"
-                          disabled
-                        >
-                          <option>USD</option>
-                        </select>
-                      </div>
-                    </div>
-                    {!isAmountValid && receiveAmount && (
-                      <div className="text-sm text-red-500 pl-0 sm:pl-2 font-semibold">
-                        {errorMessage}
-                      </div>
-                    )}
-                  </div>
-                </div>
                 {/* I Want to Sell - USDT (seller sells this) */}
                 <div className="flex flex-col gap-2 sm:gap-2 rounded-xl p-3 sm:p-3 border border-gray-300 dark:border-[#35353E] bg-gray-100 dark:bg-transparent">
                   <div className="text-sm sm:text-base text-gray-500 dark:text-[#788099] font-semibold">
@@ -661,7 +660,42 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                         </select>
                       </div>
                     </div>
-                    {!isAmountValid && sendAmount && (
+                    {!isAmountValid && sendAmount && activeField === "send" && (
+                      <div className="text-sm text-red-500 pl-0 sm:pl-2 font-semibold">
+                        {errorMessage}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {/* I Want to Receive - USD (buyer sends this to seller) */}
+                <div className="rounded-xl p-3 sm:p-3 flex flex-col gap-2 sm:gap-2 border border-gray-300 dark:border-[#35353E] bg-gray-100 dark:bg-transparent">
+                  <div className="text-sm sm:text-base text-gray-500 dark:text-[#788099] font-semibold">
+                    I Want to Receive
+                  </div>
+                  <div className="flex flex-col gap-2 sm:gap-2">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                      <span className="text-2xl sm:text-3xl text-[#1D8751] font-semibold flex-shrink-0">$</span>
+                      <input
+                        type="number"
+                        value={receiveAmount}
+                        onChange={(e) => handleReceiveAmountChange(e.target.value)}
+                        placeholder="220 USD"
+                        max={advertiserData.availableAmount || 0}
+                        className={`flex-1 bg-transparent text-lg sm:text-xl font-semibold focus:outline-none rounded-xl px-3 sm:px-4 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-[#788099] ${
+                          !isAmountValid && receiveAmount ? "border border-red-500" : ""
+                        }`}
+                      />
+                      <div className="relative w-full sm:w-auto">
+                        <select
+                          className="rounded px-3 py-2 text-sm sm:text-base font-semibold min-w-[90px] sm:min-w-[100px] w-full bg-white dark:bg-transparent text-gray-900 dark:text-white"
+                          value="USD"
+                          disabled
+                        >
+                          <option>USD</option>
+                        </select>
+                      </div>
+                    </div>
+                    {!isAmountValid && receiveAmount && activeField === "receive" && (
                       <div className="text-sm text-red-500 pl-0 sm:pl-2 font-semibold">
                         {errorMessage}
                       </div>

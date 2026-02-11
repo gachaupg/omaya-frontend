@@ -195,7 +195,7 @@ const getFromTo = (tx: Transaction): { from: { name: string; logo: string }; to:
 
 const RatesTransactionHistory = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { transactions, loading, error } = useSelector(
+  const { transactions, loading, error, count } = useSelector(
     (state: RootState) => state.transaction
   );
   const [isConnected, setIsConnected] = useState(false);
@@ -208,20 +208,19 @@ const RatesTransactionHistory = () => {
   );
 
   // Calculate pagination values
-  const totalPages = Math.ceil(transactions.length / ITEMS_PER_PAGE);
-  const paginatedTransactions = transactions.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
+  const totalPages = Math.ceil(count / ITEMS_PER_PAGE);
+  // With server-side pagination, transactions in store are already for the current page
+  const paginatedTransactions = transactions;
 
   // Handle page change
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage);
+    dispatch(fetchTransactions(newPage));
     window.scrollTo({ top: 400, behavior: 'smooth' });
   };
 
   useEffect(() => {
-    dispatch(fetchTransactions());
+    dispatch(fetchTransactions(1));
   }, [dispatch]);
 
   useEffect(() => {
@@ -423,7 +422,7 @@ const RatesTransactionHistory = () => {
       {/* Pagination UI - Always show, but disable buttons when not applicable */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 sm:px-6 py-4 border-t border-[#E8EFF5] dark:border-[#35353E] mt-4">
         <div className="text-xs sm:text-sm text-gray-600 dark:text-[#788099]">
-          Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1}-{Math.min(currentPage * ITEMS_PER_PAGE, transactions.length)} of {transactions.length} transactions
+          Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1}-{Math.min(currentPage * ITEMS_PER_PAGE, count)} of {count} transactions
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -437,7 +436,7 @@ const RatesTransactionHistory = () => {
             <ChevronLeft className="w-4 h-4" />
           </button>
 
-          {transactions.length > ITEMS_PER_PAGE && (
+          {count > ITEMS_PER_PAGE && (
             <div className="flex items-center gap-1">
               {Array.from({ length: totalPages }, (_, i) => i + 1)
                 .filter((page) => {

@@ -74,4 +74,7 @@ export interface TransactionState {
   transactions: Transaction[];
   loading: boolean;
   error: string | null;
+  count: number;
+  next: string | null;
+  previous: string | null;
 }

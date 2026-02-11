@@ -2019,7 +2019,14 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                         paymentMethodOptions = publicMethodsData.data.providers.map((provider: any) => {
                           const providerName = provider.provider_name || provider.payment_provider_name || "Unknown";
                           const methodName = provider.method?.method_name || provider.method?.method_display || provider.method_name || null;
-                          const subtitle = methodName ? `${providerName} - ${methodName}` : null;
+                          
+                          // Extract account details (account_name and account_number)
+                          const details = provider.payment_details?.[0];
+                          const accountInfo = details ? `${details.account_name || ''} - ${details.account_number || ''}` : null;
+                          
+                          // Use account details as subtitle if available, otherwise fall back to method name
+                          const subtitle = accountInfo || (methodName ? `${providerName} - ${methodName}` : null);
+                          
                           return {
                             value: providerName,
                             label: providerName,
@@ -2499,12 +2506,24 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                     {(() => {
                       let paymentMethodOptions: Array<{ value: string; label: string; subtitle?: string; logo?: string }> = [];
                       if (Array.isArray(publicMethodsData?.data?.providers) && publicMethodsData.data.providers.length > 0) {
-                        paymentMethodOptions = publicMethodsData.data.providers.map((provider: any) => ({
-                          value: provider.provider_name || provider.payment_provider_name || "Unknown",
-                          label: provider.provider_name || provider.payment_provider_name || "Unknown",
-                          subtitle: provider.method?.method_name ? `${provider.provider_name || provider.payment_provider_name} - ${provider.method.method_name}` : undefined,
-                          logo: provider.logo || provider.provider_logo || undefined,
-                        })).filter((opt: any) => opt.value && opt.value.trim());
+                        paymentMethodOptions = publicMethodsData.data.providers.map((provider: any) => {
+                          const providerName = provider.provider_name || provider.payment_provider_name || "Unknown";
+                          const methodName = provider.method?.method_name || provider.method?.method_display || provider.method_name || null;
+                          
+                          // Extract account details (account_name and account_number)
+                          const details = provider.payment_details?.[0];
+                          const accountInfo = details ? `${details.account_name || ''} - ${details.account_number || ''}` : null;
+                          
+                          // Use account details as subtitle if available, otherwise fall back to method name
+                          const subtitle = accountInfo || (methodName ? `${providerName} - ${methodName}` : null);
+                          
+                          return {
+                            value: providerName,
+                            label: providerName,
+                            subtitle: subtitle || undefined,
+                            logo: provider.logo || provider.provider_logo || undefined,
+                          };
+                        }).filter((opt: any) => opt.value && opt.value.trim());
                       } else {
                         const providerNames = Array.from(new Set((adminWalletListDisplay.displayData || []).map((w: any) => w?.admin_payment_detail?.provider_name))).filter((t): t is string => typeof t === 'string' && t.trim().length > 0);
                         paymentMethodOptions = providerNames.map((paymentType: string) => {
@@ -2677,18 +2696,20 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
         </p>
       </div>
 
-      <button
-        onClick={handleSubmit}
-        disabled={isSubmitting || !isVerified}
-        className={`w-full py-3 px-4 rounded-xl font-semibold text-white bg-[#1D8751] hover:bg-[#0f8f4d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${(isSubmitting || !isVerified) ? "opacity-50 cursor-not-allowed" : ""
-          }`}
-      >
-        {isSubmitting
-          ? t("rates.processing", "Processing...")
-          : !isVerified
-            ? t("rates.verifyToContinue", "Verify account to continue")
-            : t("rates.exchangeNow", "Exchange Now")}
-      </button>
+      {!isFirstCardSubmitted && (
+        <button
+          onClick={handleSubmit}
+          disabled={isSubmitting || !isVerified}
+          className={`w-full py-3 px-4 rounded-xl font-semibold text-white bg-[#1D8751] hover:bg-[#0f8f4d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${(isSubmitting || !isVerified) ? "opacity-50 cursor-not-allowed" : ""
+            }`}
+        >
+          {isSubmitting
+            ? t("rates.processing", "Processing...")
+            : !isVerified
+              ? t("rates.verifyToContinue", "Verify account to continue")
+              : t("rates.exchangeNow", "Exchange Now")}
+        </button>
+      )}
 
       {/* Expanded Pages - shown after first card submission */}
       {selectedPaymentDetail && isFirstCardSubmitted && (
@@ -2709,13 +2730,14 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                   <img
                     src={
                       selectedPaymentDetail.logo ||
+                      selectedPaymentDetail.provider_logo ||
                       "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
                     }
                     alt="Bank Logo"
                     className="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-contain flex-shrink-0"
                   />
                   <span className="text-[#35353e] dark:text-[#788099] text-sm sm:text-base font-semibold truncate">
-                    {selectedPaymentDetail.payment_provider_name}
+                    {selectedPaymentDetail.provider_name || selectedPaymentDetail.payment_provider_name}
                   </span>
                 </div>
               </div>
@@ -2726,7 +2748,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                   {t("rates.accountNameLabel", "Account Name :")}
                 </span>
                 <span className="text-[#35353e] dark:text-[#788099] text-sm sm:text-base font-medium break-all">
-                  {selectedPaymentDetail.account_name}
+                  {selectedPaymentDetail.payment_details?.[0]?.account_name || selectedPaymentDetail.account_name || "-"}
                 </span>
               </div>
               <div className="border-t border-dashed border-[#39394a] mb-2"></div>
@@ -2737,10 +2759,10 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                 </span>
                 <div className="flex items-center gap-2">
                   <span className="text-[#35353e] dark:text-[#788099] text-sm sm:text-base font-medium break-all">
-                    {selectedPaymentDetail.account_number}
+                    {selectedPaymentDetail.payment_details?.[0]?.account_number || selectedPaymentDetail.account_number || "-"}
                   </span>
                   <CopyButton
-                    value={selectedPaymentDetail.account_number}
+                    value={selectedPaymentDetail.payment_details?.[0]?.account_number || selectedPaymentDetail.account_number || ""}
                     className="text-warning hover:text-[#1D8751] transition-colors p-1 rounded"
                     showIcon={true}
                     showInlineMessage={true}
