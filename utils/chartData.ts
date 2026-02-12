@@ -31,7 +31,7 @@ export const p2pOverviewData: LineChartData = {
 // Dummy data for Overview Total (Donut)
 export const overviewTotalData = (
   transactionSummary: TransactionSummary,
-  type: "exchange" | "p2p" | "swap" | "buy" = "exchange"
+  type: "exchange" | "p2p" | "swap" | "buy" | "moneyx" = "exchange"
 ): DonutChartData[] => {
   if (type === "buy") {
     const status = transactionSummary.total_buy_orders_by_status || {
@@ -101,6 +101,26 @@ export const overviewTotalData = (
       {
         label: "Failed",
         value: transactionSummary.total_failed_changenow_swaps,
+        color: "#ef4444",
+      },
+    ];
+  }
+  if (type === "moneyx") {
+    // MoneyX transactions - use exchange data as fallback since moneyx may share similar structure
+    return [
+      {
+        label: "Completed",
+        value: (transactionSummary as any).total_completed_moneyx || transactionSummary.total_approved_exchange_deposits || 0,
+        color: "#1D8751",
+      },
+      {
+        label: "Pending",
+        value: (transactionSummary as any).total_pending_moneyx || transactionSummary.total_pending_exchange_deposits || 0,
+        color: "#facc15",
+      },
+      {
+        label: "Failed",
+        value: (transactionSummary as any).total_failed_moneyx || 0,
         color: "#ef4444",
       },
     ];
@@ -208,7 +228,7 @@ export const referralCommissionsData = (
 // Summary values
 export const overviewTotalSummary = (
   transactionSummary: TransactionSummary,
-  type: "exchange" | "p2p" | "swap" | "buy" = "exchange"
+  type: "exchange" | "p2p" | "swap" | "buy" | "moneyx" = "exchange"
 ) => {
   if (type === "p2p") {
     return {
@@ -225,6 +245,15 @@ export const overviewTotalSummary = (
   if (type === "buy") {
     return {
       total: transactionSummary.total_buy_orders,
+      currency: "USD",
+    };
+  }
+  if (type === "moneyx") {
+    const completed = (transactionSummary as any).total_completed_moneyx || transactionSummary.total_approved_exchange_deposits || 0;
+    const pending = (transactionSummary as any).total_pending_moneyx || transactionSummary.total_pending_exchange_deposits || 0;
+    const failed = (transactionSummary as any).total_failed_moneyx || 0;
+    return {
+      total: completed + pending + failed,
       currency: "USD",
     };
   }
