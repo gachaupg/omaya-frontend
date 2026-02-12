@@ -74,8 +74,19 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
         setMenuPosition(null);
       }
     };
+    
+    const handleScroll = () => {
+      setOpenMenuIdx(null);
+      setMenuPosition(null);
+    };
+    
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    window.addEventListener("scroll", handleScroll, true);
+    
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener("scroll", handleScroll, true);
+    };
   }, []);
 
   /** Handlers */
@@ -87,7 +98,23 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
     }
     const target = event.currentTarget as HTMLElement;
     const rect = target.getBoundingClientRect();
-    setMenuPosition({ top: rect.bottom + 4, left: rect.right - 128 });
+    
+    // Calculate position ensuring it doesn't overflow viewport
+    const menuWidth = 140;
+    const viewportWidth = window.innerWidth;
+    let left = rect.right - menuWidth;
+    
+    // Adjust if menu would overflow left edge
+    if (left < 10) {
+      left = Math.max(10, rect.left);
+    }
+    
+    // Adjust if menu would overflow right edge
+    if (left + menuWidth > viewportWidth - 10) {
+      left = viewportWidth - menuWidth - 10;
+    }
+    
+    setMenuPosition({ top: rect.bottom + 4, left });
     setOpenMenuIdx(idx);
   };
 
@@ -173,7 +200,7 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
         createPortal(
           <div
             ref={menuRef}
-            className="fixed w-32 rounded-md shadow-xl bg-white dark:bg-[var(--card-color)] border border-[#1D8751] dark:border-[#1D8751] z-[100] py-1"
+            className="fixed w-[140px] rounded-md shadow-xl bg-white dark:bg-[var(--card-color)] border border-[#1D8751] dark:border-[#1D8751] z-[100] py-1"
             style={{ top: menuPosition.top, left: menuPosition.left }}
           >
             <ul className="py-1">

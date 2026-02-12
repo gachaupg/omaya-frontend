@@ -727,9 +727,10 @@ export const Table: React.FC<TableProps> = ({
           </div>
         </div>
 
-        <div ref={tableContainerRef} className="mt-3 overflow-x-auto w-full pb-4 scroll-smooth">
+        <div ref={tableContainerRef} className="mt-3 w-full pb-4 scroll-smooth">
+          <div className="overflow-x-auto">
           <div
-            className={`w-full min-w-max border-2 bg-white dark:bg-[var(--card-color)] border-gray-200 dark:border-[#35353E] shadow-lg rounded-[24px] overflow-hidden`}
+            className={`w-full min-w-[800px] md:min-w-0 border-2 bg-white dark:bg-[var(--card-color)] border-gray-200 dark:border-[#35353E] shadow-lg rounded-[24px] overflow-hidden`}
           >
             {/* Desktop Table Header - Hidden on mobile */}
             <div
@@ -1189,6 +1190,7 @@ export const Table: React.FC<TableProps> = ({
                 </button>
               </div>
             )}
+          </div>
           </div>
         </div>
       </div>
