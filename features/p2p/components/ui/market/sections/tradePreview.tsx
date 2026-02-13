@@ -89,6 +89,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
   const commissionRate = parseFloat(advertiserData.commission);
   const minAmount = advertiserData.minAmount;
   const maxAmount = advertiserData.maxAmount;
+  const rangeLimitSuffix = advertiserData.range_currency?.toUpperCase() === "KES" ? "KES" : "USD";
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -635,7 +636,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                   </div>
                   <div className="flex flex-col gap-2 sm:gap-2">
                     <div className="text-sm text-gray-500 dark:text-[#788099] pl-0 sm:pl-2 font-medium">
-                      Range: {minAmount}-{maxAmount} USDT
+                      Range: {minAmount}-{maxAmount} {rangeLimitSuffix}
                     </div>
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                       <span className="text-2xl sm:text-3xl text-[#1D8751] font-semibold flex-shrink-0">
@@ -667,19 +668,21 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                     )}
                   </div>
                 </div>
-                {/* I Want to Receive - USD (buyer sends this to seller) */}
+                {/* I Want to Receive - range currency (USD or KES, buyer sends this to seller) */}
                 <div className="rounded-xl p-3 sm:p-3 flex flex-col gap-2 sm:gap-2 border border-gray-300 dark:border-[#35353E] bg-gray-100 dark:bg-transparent">
                   <div className="text-sm sm:text-base text-gray-500 dark:text-[#788099] font-semibold">
                     I Want to Receive
                   </div>
                   <div className="flex flex-col gap-2 sm:gap-2">
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                      <span className="text-2xl sm:text-3xl text-[#1D8751] font-semibold flex-shrink-0">$</span>
+                      <span className="text-2xl sm:text-3xl text-[#1D8751] font-semibold flex-shrink-0">
+                        {rangeLimitSuffix === "KES" ? "KES" : "$"}
+                      </span>
                       <input
                         type="number"
                         value={receiveAmount}
                         onChange={(e) => handleReceiveAmountChange(e.target.value)}
-                        placeholder="220 USD"
+                        placeholder={`220 ${rangeLimitSuffix}`}
                         max={advertiserData.availableAmount || 0}
                         className={`flex-1 bg-transparent text-lg sm:text-xl font-semibold focus:outline-none rounded-xl px-3 sm:px-4 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-[#788099] ${
                           !isAmountValid && receiveAmount ? "border border-red-500" : ""
@@ -688,10 +691,10 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                       <div className="relative w-full sm:w-auto">
                         <select
                           className="rounded px-3 py-2 text-sm sm:text-base font-semibold min-w-[90px] sm:min-w-[100px] w-full bg-white dark:bg-transparent text-gray-900 dark:text-white"
-                          value="USD"
+                          value={rangeLimitSuffix}
                           disabled
                         >
-                          <option>USD</option>
+                          <option>{rangeLimitSuffix}</option>
                         </select>
                       </div>
                     </div>
@@ -705,22 +708,24 @@ const TradePreview: React.FC<TradePreviewProps> = ({
               </>
             ) : (
               <>
-                {/* I Want to Send - USD (buy flow) */}
+                {/* I Want to Send - range currency (USD or KES, buy flow) */}
                 <div className="flex flex-col gap-2 sm:gap-2 rounded-xl p-3 sm:p-3 border border-gray-300 dark:border-[#35353E] bg-gray-100 dark:bg-transparent">
                   <div className="text-sm sm:text-base text-gray-500 dark:text-[#788099] font-semibold">
                     I Want to Send
                   </div>
                   <div className="flex flex-col gap-2 sm:gap-2">
                     <div className="text-sm text-gray-500 dark:text-[#788099] pl-0 sm:pl-2 font-medium">
-                      Range: {minAmount}-{maxAmount} USDT
+                      Range: {minAmount}-{maxAmount} {rangeLimitSuffix}
                     </div>
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                      <span className="text-2xl sm:text-3xl text-[#1D8751] font-semibold flex-shrink-0">$</span>
+                      <span className="text-2xl sm:text-3xl text-[#1D8751] font-semibold flex-shrink-0">
+                        {rangeLimitSuffix === "KES" ? "KES" : "$"}
+                      </span>
                       <input
                         type="number"
                         value={sendAmount}
                         onChange={(e) => handleSendAmountChange(e.target.value)}
-                        placeholder="220"
+                        placeholder={`220 ${rangeLimitSuffix}`}
                         max={
                           tradeType === "buy"
                             ? (advertiserData.availableAmount || 0) * commissionRate
@@ -733,10 +738,10 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                       <div className="relative w-full sm:w-auto">
                         <select
                           className="rounded px-3 py-2 text-sm sm:text-base font-semibold min-w-[90px] sm:min-w-[100px] w-full bg-white dark:bg-transparent text-gray-900 dark:text-white"
-                          value="USD"
+                          value={rangeLimitSuffix}
                           disabled
                         >
-                          <option>USD</option>
+                          <option>{rangeLimitSuffix}</option>
                         </select>
                       </div>
                     </div>

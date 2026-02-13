@@ -96,6 +96,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
   const [terms, setTerms] = useState("");
   const [autoReply, setAutoReply] = useState("");
   const [errors, setErrors] = useState<ValidationErrors>({});
+  const [activeCurrency, setActiveCurrency] = useState("USD");
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedPaymentDetails, setSelectedPaymentDetails] = useState<
     UserPaymentDetail[]
@@ -266,6 +267,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
     const adData = {
       order_type: type,
       currency: "USDT",
+      range_currency: activeCurrency,
       amount,
       min_order_amount: orderMin,
       max_order_amount: orderMax,
@@ -281,9 +283,9 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
       completion_rate: "",
       asset: "TRON",
       advertiser_name: {
-        id: 1,
-        username: "dennis",
-        email: "denixxdenixx64@gmail.com",
+        id: '',
+        username: "",
+        email: "",
       },
       auto_reply: autoReply,
       terms_and_conditions: terms,
@@ -496,6 +498,24 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
             Amount & Payment Method
           </div>
           <Card className="w-full mb-4 px-2 py-2 sm:px-2 sm:py-2 bg-card border border-gray-200 dark:border-[#35353E] rounded-[24px]">
+           <div className="flex flex-col md:flex-row gap-4 mb-0 p-2">
+            <div className="flex-1 flex flex-col">
+              <label className="text-[15px] text-gray-600 dark:text-[#788099] mb-1">
+                Currency
+              </label>
+              <div className="flex items-center bg-card border border-gray-200 dark:border-[#35353E] rounded-[19px] px-2 py-2 min-h-[40px]">
+                <select
+                  value={activeCurrency}
+                  onChange={(e) => setActiveCurrency(e.target.value)}
+                  className="w-full bg-transparent border-none text-gray-900 dark:text-[#788099] text-base focus:outline-none"
+                >
+                  <option value="USD">USD</option>
+                  <option value="KES">KES</option>
+                </select>
+               
+              </div>
+            </div>
+           </div>
             <div className="flex flex-col md:flex-row gap-4 mb-6 p-2">
               {/* I want to Buy */}
               <div className="flex-1 flex flex-col">
@@ -692,9 +712,15 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                     className="w-full bg-transparent border-none text-gray-900 dark:text-white text-base focus:outline-none"
                     placeholder="20.00"
                   />
-                  <span className="text-gray-500 dark:text-[#788099] text-base ml-2">
-                    USD
-                  </span>
+                  <select
+                    value={activeCurrency}
+                    onChange={(e) => setActiveCurrency(e.target.value)}
+                    className="bg-transparent border-none text-gray-500 dark:text-[#788099] text-base ml-2 focus:outline-none cursor-pointer"
+                    aria-label="Select currency"
+                  >
+                    <option value="USD">USD</option>
+                    <option value="KES">KES</option>
+                  </select>
                 </div>
                 {errors.orderMin && (
                   <span className="text-red-500 text-sm mt-1">
@@ -790,9 +816,15 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                     className="w-full bg-transparent border-none text-gray-900 dark:text-white text-base focus:outline-none"
                     placeholder="200.00"
                   />
-                  <span className="text-gray-500 dark:text-[#788099] text-base ml-2">
-                    USD
-                  </span>
+                  <select
+                    value={activeCurrency}
+                    onChange={(e) => setActiveCurrency(e.target.value)}
+                    className="bg-transparent border-none text-gray-500 dark:text-[#788099] text-base ml-2 focus:outline-none cursor-pointer"
+                    aria-label="Select currency"
+                  >
+                    <option value="USD">USD</option>
+                    <option value="KES">KES</option>
+                  </select>
                 </div>
                 {errors.orderMax && (
                   <span className="text-red-500 text-sm mt-1">
