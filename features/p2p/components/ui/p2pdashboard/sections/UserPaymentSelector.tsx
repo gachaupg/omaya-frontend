@@ -132,6 +132,16 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
     [userPaymentDetails, selectedMethod, selectedProvider, selectedDetails, hideSelected]
   );
 
+  // Check if there are already selected items for current method/provider
+  const selectedForCurrentProvider = useMemo(
+    () => selectedDetails.filter(
+      (d) =>
+        d.payment_method_name === selectedMethod &&
+        d.payment_provider_name === selectedProvider
+    ),
+    [selectedDetails, selectedMethod, selectedProvider]
+  );
+
   // Check if there are admin methods for the selected provider (to show "Add Account" message)
   const hasAdminMethod = useMemo(
     () =>
@@ -252,6 +262,69 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
                 </div>
               </div>
             ))
+          ) : selectedForCurrentProvider.length > 0 ? (
+            // Show selected items with "Selected" badge when no more available items
+            <div className="space-y-4">
+              <p className="text-sm text-[#1D8751] dark:text-[#1D8751] font-medium">
+                {selectedForCurrentProvider.length} payment account{selectedForCurrentProvider.length > 1 ? 's' : ''} selected for {selectedProvider}
+              </p>
+              {selectedForCurrentProvider.map((detail) => (
+                <div
+                  key={detail.id}
+                  className="border border-[#1D8751] dark:border-[#1D8751] rounded-lg p-4 bg-[#1D8751]/5 dark:bg-[#1D8751]/10 shadow-sm"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-start gap-3 flex-1">
+                      <img
+                        src={
+                          detail.logo_url ||
+                          detail.logo ||
+                          detail.provider_logo ||
+                          "/default-provider-logo.svg"
+                        }
+                        alt={detail.payment_provider_name}
+                        className="w-12 h-12 rounded-full object-cover flex-shrink-0"
+                        onError={(e) => {
+                          e.currentTarget.src = "/default-provider-logo.svg";
+                        }}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="mb-2">
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            Account Name
+                          </p>
+                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                            {detail.account_name}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            {selectedMethod?.toLowerCase().includes('mobile') || selectedMethod?.toLowerCase().includes('money') ? 'Phone Number' : 'Account Number'}
+                          </p>
+                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                            {detail.account_number}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-2">
+                      <span className="px-3 py-1.5 text-xs font-semibold text-white bg-[#1D8751] rounded-md">
+                        Selected
+                      </span>
+                      {onRemove && (
+                        <button
+                          onClick={() => onRemove(detail)}
+                          className="px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 bg-red-500/10 border border-red-500/30 rounded-md hover:bg-red-500/20 transition-colors"
+                          type="button"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           ) : (
             <div className="text-center py-8 px-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
               <p className="text-gray-600 dark:text-gray-400 mb-4">

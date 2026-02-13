@@ -130,7 +130,7 @@ export default function Footer() {
         }`}
     >
       <div className="w-full max-w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-20 pt-8 sm:pt-12 pb-6 overflow-x-hidden">
-        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-x-4 gap-y-6 sm:gap-8 pb-8 border-b border-border dark:border-accent">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-x-3 gap-y-5 sm:gap-x-4 sm:gap-y-6 lg:gap-8 pb-8 border-b border-border dark:border-accent">
 
           {/* Logo and Social Media Column */}
           <div className="space-y-5 col-span-2 md:col-span-1 lg:col-span-1">
@@ -438,13 +438,55 @@ export default function Footer() {
               </div>
             </div>
           </div>
-          <div className="flex flex-col gap-4 items-start justify-start lg:justify-start">
-            {/* App Download Section */}
-            <div className="flex flex-col xl:items-center items-start justify-center gap-2">
+          {/* App Download Section */}
+          <div className="flex flex-col gap-1 md:gap-2 lg:gap-3 items-start justify-start">
+            {/* Mobile: Show both QR codes in compact layout */}
+            <div className="flex md:hidden flex-col gap-2 items-start">
+              <div className="flex items-center gap-2">
+                <Image
+                  src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746539125/Appstore_nqe65y.png"
+                  alt="App Store"
+                  width={60}
+                  height={60}
+                  className="object-contain"
+                  style={{ width: "60px", height: "60px" }}
+                />
+                <Image
+                  src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746551283/qr-code-bc94057f452f4806af70fd34540f72ad_3_jk8lq1.png"
+                  alt="App Store QR Code"
+                  width={60}
+                  height={60}
+                  priority
+                  className="object-contain"
+                  style={{ width: "60px", height: "60px" }}
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <Image
+                  src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746539313/googleplay_1_w8djf0.png"
+                  alt="Google Play"
+                  width={60}
+                  height={60}
+                  className="object-contain"
+                  style={{ width: "60px", height: "60px" }}
+                />
+                <Image
+                  src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746551283/qr-code-bc94057f452f4806af70fd34540f72ad_3_jk8lq1.png"
+                  alt="Google Play QR Code"
+                  width={60}
+                  height={60}
+                  className="object-contain"
+                  style={{ width: "60px", height: "60px" }}
+                />
+              </div>
+            </div>
+            
+            {/* App Download Section - Tablet and Desktop */}
+            <div className="hidden md:flex flex-col items-start justify-center">
               <table className="border-collapse" style={{ width: 'auto' }}>
                 <tbody>
                   <tr>
-                    <td style={{ padding: 0, width: '70px', height: '70px' }} className="sm:w-[84px] sm:h-[84px]">
+                    <td style={{ padding: 0, width: '70px', height: '70px' }} className="lg:w-[84px] lg:h-[84px]">
                       <Image
                         src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746539125/Appstore_nqe65y.png"
                         alt="App Store QR Code"
@@ -454,8 +496,8 @@ export default function Footer() {
                         style={{ width: "100%", height: "auto" }}
                       />
                     </td>
-                    <td style={{ padding: 0, paddingLeft: '8px' }} className="sm:pl-3">
-                      <div style={{ width: '70px', height: '70px' }} className="sm:w-[84px] sm:h-[84px]">
+                    <td style={{ padding: 0, paddingLeft: '8px' }} className="lg:pl-3">
+                      <div style={{ width: '70px', height: '70px' }} className="lg:w-[84px] lg:h-[84px]">
                         <Image
                           src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746551283/qr-code-bc94057f452f4806af70fd34540f72ad_3_jk8lq1.png"
                           alt="App Store QR Code"
@@ -472,12 +514,12 @@ export default function Footer() {
               </table>
             </div>
 
-            {/* Google Play Download */}
-            <div className="flex flex-col xl:items-center items-start justify-center gap-2">
+            {/* Google Play Download - Tablet and Desktop */}
+            <div className="hidden md:flex flex-col items-start justify-center">
               <table className="border-collapse" style={{ width: 'auto' }}>
                 <tbody>
                   <tr>
-                    <td style={{ padding: 0, width: '70px', height: '70px' }} className="sm:w-[84px] sm:h-[84px]">
+                    <td style={{ padding: 0, width: '70px', height: '70px' }} className="lg:w-[84px] lg:h-[84px]">
                       <Image
                         src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746539313/googleplay_1_w8djf0.png"
                         alt="Google Play QR Code"
@@ -487,8 +529,8 @@ export default function Footer() {
                         style={{ width: "100%", height: "auto" }}
                       />
                     </td>
-                    <td style={{ padding: 0, paddingLeft: '8px' }} className="sm:pl-3">
-                      <div style={{ width: '70px', height: '70px' }} className="sm:w-[84px] sm:h-[84px]">
+                    <td style={{ padding: 0, paddingLeft: '8px' }} className="lg:pl-3">
+                      <div style={{ width: '70px', height: '70px' }} className="lg:w-[84px] lg:h-[84px]">
                         <Image
                           src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746551283/qr-code-bc94057f452f4806af70fd34540f72ad_3_jk8lq1.png"
                           alt="Google Play QR Code"

@@ -171,13 +171,13 @@ function UserCard() {
             <HelpSupportForm />
           </div>
         ) : (
-          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between w-full gap-4 lg:gap-6 min-w-0 px-4 sm:px-0 py-2 sm:py-0">
+          <div className="flex flex-row items-center justify-between w-full gap-2 sm:gap-4 lg:gap-6 min-w-0 px-4 sm:px-0 py-2 sm:py-0">
             {/* Left Side: Avatar, User Info, User ID, User Type */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 min-w-0 flex-1 w-full">
-              <div className="flex items-center gap-3 shrink-0">
+            <div className="flex flex-row items-center gap-2 sm:gap-4 lg:gap-6 min-w-0 flex-1">
+              <div className="flex items-center gap-2 sm:gap-3 shrink-0">
                 {/* User Avatar with Edit Button */}
                 <div className="relative shrink-0 z-10">
-                  <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-full overflow-hidden relative">
+                  <div className="h-10 w-10 sm:h-12 sm:w-12 lg:h-14 lg:w-14 rounded-full overflow-hidden relative">
                     {profileImage ? (
                       <Image
                         src={profileImage}
@@ -304,8 +304,8 @@ function UserCard() {
                 </div>
               </div>
 
-              {/* Flexible Info Group (User ID + Type) */}
-              <div className="flex flex-row flex-wrap items-center gap-4 sm:gap-6 w-full md:w-auto">
+              {/* Flexible Info Group (User ID + Type) - hidden on very small screens */}
+              <div className="hidden sm:flex flex-row flex-wrap items-center gap-4 sm:gap-6 md:w-auto">
                 {/* User ID */}
                 <div className="shrink-0 min-w-0">
                   <p className="text-xs text-[#788099] mb-1">
@@ -342,19 +342,20 @@ function UserCard() {
               </div>
             </div>
 
-            {/* Right Side: Action Buttons (responsive) */}
-            <div className="flex flex-row items-center gap-2 sm:gap-3 shrink-0 self-start lg:self-center">
+            {/* Right Side: Action Buttons (responsive) - compact on mobile */}
+            <div className="flex flex-row items-center gap-1.5 sm:gap-2 lg:gap-3 shrink-0">
               <Button
                 variant="ghost"
                 size="sm"
-                className="flex items-center justify-center p-0 min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0"
+                className="flex items-center justify-center p-0 min-w-[36px] min-h-[36px] sm:min-w-[44px] sm:min-h-[44px] lg:min-w-0 lg:min-h-0"
                 onClick={() => router.push("/dashboard/notifications")}
                 icon={
-                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-[#1D8751] flex items-center justify-center p-1 relative min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0">
+                  <div className="w-8 h-8 sm:w-9 sm:h-9 lg:w-10 lg:h-10 rounded-full border border-[#1D8751] flex items-center justify-center p-1 relative">
 
                     <svg
-                      width="16"
-                      height="16"
+                      width="14"
+                      height="14"
+                      className="sm:w-4 sm:h-4"
                       viewBox="0 0 24 24"
                       fill="none"
                       xmlns="http://www.w3.org/2000/svg"
@@ -388,7 +389,7 @@ function UserCard() {
                       />
                     ) : (
                       <span
-                        className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-[#F79330] rounded-full border border-white dark:border-[#18181D]"
+                        className="absolute -bottom-0.5 -right-0.5 w-2 h-2 sm:w-2.5 sm:h-2.5 bg-[#F79330] rounded-full border border-white dark:border-[#18181D]"
                         title="Using HTTP polling (WebSocket unavailable)"
                       />
                     )}
@@ -398,15 +399,16 @@ function UserCard() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="flex items-center justify-center p-0 min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0"
+                className="flex items-center justify-center p-0 min-w-[36px] min-h-[36px] sm:min-w-[44px] sm:min-h-[44px] lg:min-w-0 lg:min-h-0"
                 onClick={() => {
                   router.push("/contactUs");
                 }}
                 icon={
-                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-[#1D8751] flex items-center justify-center p-0 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0">
+                  <div className="w-8 h-8 sm:w-9 sm:h-9 lg:w-10 lg:h-10 rounded-full border border-[#1D8751] flex items-center justify-center">
                     <svg
-                      width="16"
-                      height="16"
+                      width="14"
+                      height="14"
+                      className="sm:w-4 sm:h-4"
                       viewBox="0 0 24 24"
                       fill="none"
                       xmlns="http://www.w3.org/2000/svg"
