@@ -275,8 +275,8 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
 
     // Common mobile money keywords
     const mobileKeywords = ['mobile', 'mpesa', 'm-pesa', 'mtn', 'airtel', 'safaricom', 'vodafone', 'telesom', 'hormuud', 'golis', 'evc', 'zaad', 'sahal'];
-    
-    return mobileKeywords.some(keyword => 
+
+    return mobileKeywords.some(keyword =>
       providerName.includes(keyword) ||
       paymentMethod.includes(keyword) ||
       paymentMethodType.includes(keyword) ||
@@ -436,7 +436,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
       return;
     }
 
-   
+
 
     paymentMethodRestoreAttempted.current = true;
 
@@ -545,7 +545,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
         setFromPaymentMethod(matchedName);
         setSelectedFromPaymentDetail(matchedFromMethod);
       } else {
-       
+
         console.warn("Available methods (raw provider):", methodsToCheck.map((m: any) => m.provider || "N/A"));
       }
     }
@@ -1251,14 +1251,14 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
                   {getProviderName(selectedFromPaymentDetail) || "Your Account"}
                 </span>
               </div>
-              
+
               {/* Arrow indicator */}
               <div className="flex justify-center">
                 <svg width="24" height="24" fill="none" viewBox="0 0 24 24" className="text-[#1D8751]">
-                  <path d="M12 5v14M12 19l-4-4M12 19l4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M12 5v14M12 19l-4-4M12 19l4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </div>
-              
+
               {/* To - Where they receive */}
               <div className="flex items-center justify-between p-3 bg-white dark:bg-[#18181D] rounded-xl">
                 <div className="flex items-center gap-2">
@@ -1268,7 +1268,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
                   {getProviderName(selectedToPaymentDetail) || "Your Account"} (Enter below)
                 </span>
               </div>
-              
+
               {/* Amount Summary */}
               <div className="flex items-center justify-between p-3 bg-white dark:bg-[#18181D] rounded-xl mt-2">
                 <span className="text-[#788099] text-sm">Amount to Send:</span>
@@ -1281,12 +1281,12 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
             </div>
           </div>
 
-{/* Bank Account Address Section - Dynamic Title */}
- <h2 className="text-xl font-semibold mb-2 text-gray-900 dark:text-[#788099] inline-flex items-center gap-2">
-  2- {isMobileMethod(selectedToPaymentDetail)
-    ? `${getProviderName(selectedToPaymentDetail)} Details`
-    : `${getProviderName(selectedToPaymentDetail)} Account Details`}
-</h2>
+          {/* Bank Account Address Section - Dynamic Title */}
+          <h2 className="text-xl font-semibold mb-2 text-gray-900 dark:text-[#788099] inline-flex items-center gap-2">
+            2- {isMobileMethod(selectedToPaymentDetail)
+              ? `${getProviderName(selectedToPaymentDetail)} Details`
+              : `${getProviderName(selectedToPaymentDetail)} Account Details`}
+          </h2>
 
 
           <div
@@ -1335,8 +1335,8 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
                 }}
                 placeholder={
                   selectedToPaymentDetail?.payment_method?.toLowerCase().includes('mobile') ||
-                  selectedToPaymentDetail?.payment_method_type?.toLowerCase().includes('mobile') ||
-                  selectedToPaymentDetail?.method?.toLowerCase().includes('mobile')
+                    selectedToPaymentDetail?.payment_method_type?.toLowerCase().includes('mobile') ||
+                    selectedToPaymentDetail?.method?.toLowerCase().includes('mobile')
                     ? `Enter your ${getProviderName(selectedToPaymentDetail)} Number`
                     : `Enter your ${getProviderName(selectedToPaymentDetail)} Account Number`
                 }
@@ -1464,26 +1464,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
                     </div>
                   </div>
                 </div>
-                <button
-                  onClick={() => setExpandedTerms(!expandedTerms)}
-                  className="mt-3 sm:mt-4 text-[#1D8751] hover:text-[#166b3e] font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition-colors"
-                >
-                  {expandedTerms ? (
-                    <>
-                      <span>Show Less</span>
-                      <svg className="w-4 h-4 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                      </svg>
-                    </>
-                  ) : (
-                    <>
-                      <span>Show More</span>
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                      </svg>
-                    </>
-                  )}
-                </button>
+
                 {expandedTerms && (
                   <div className={`space-y-2 sm:space-y-3 mt-4 pt-4 border-t ${isDark ? "border-[#35353E]" : "border-gray-200"}`}>
                     <div className="flex items-start gap-2 sm:gap-3">
@@ -1506,6 +1487,26 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
                     </div>
                   </div>
                 )}
+                <button
+                  onClick={() => setExpandedTerms(!expandedTerms)}
+                  className="mt-3 sm:mt-4 text-[#1D8751] hover:text-[#166b3e] font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition-colors"
+                >
+                  {expandedTerms ? (
+                    <>
+                      <span>Show Less</span>
+                      <svg className="w-4 h-4 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                      </svg>
+                    </>
+                  ) : (
+                    <>
+                      <span>Show More</span>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                      </svg>
+                    </>
+                  )}
+                </button>
               </div>
             </div>
 
