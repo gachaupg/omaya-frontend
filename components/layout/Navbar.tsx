@@ -1663,8 +1663,8 @@ export default function Navbar() {
                         className="absolute inset-0 bg-gray-900/50 dark:bg-black/50 z-0"
                         onClick={() => setProfileModalOpen(false)}
                       />
-                      <div className="absolute bottom-0 left-0 right-0 z-10 bg-white dark:bg-[#1E2329] border-t border-gray-200 dark:border-accent rounded-t-lg">
-                        <div className="p-6">
+                      <div className="absolute bottom-0 left-0 right-0 z-10 bg-white dark:bg-[#1E2329] border-t border-gray-200 dark:border-accent rounded-t-lg pb-safe">
+                        <div className="p-6 pb-8">
                           {/* User Info */}
                           <div className="flex items-center mb-6">
                             <div className="mr-4 relative">

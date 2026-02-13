@@ -227,7 +227,7 @@ const P2PWithdrawalDepositTransactions = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <img
-                    src={getHighResAssetIcon({ ...tx, ticker: tx.currency || tx.asset_symbol })}
+                    src={getHighResAssetIcon({ ticker: tx.currency || tx.asset_symbol })}
                     alt={tx.currency || tx.asset_symbol || "Asset"}
                     className="w-10 h-10 rounded-full shadow-sm flex-shrink-0"
                     onError={(e) => {
@@ -362,7 +362,7 @@ const P2PWithdrawalDepositTransactions = () => {
                   <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 whitespace-nowrap">
                     <div className="flex items-center gap-2 sm:gap-3">
                       <img
-                        src={getHighResAssetIcon({ ...tx, ticker: tx.currency || tx.asset_symbol })}
+                        src={getHighResAssetIcon({ ticker: tx.currency || tx.asset_symbol })}
                         alt={tx.currency || tx.asset_symbol || "Asset"}
                         className="w-7 h-7 sm:w-8 sm:h-8 rounded-full shadow-sm flex-shrink-0"
                         onError={(e) => {
