@@ -61,30 +61,14 @@ const formatLimitDuration = (duration: string): string => {
 };
 
 const getCurrencyOptions = (orders: any): Option[] => {
-  // Always include USDT and KSH as base options
-  const baseCurrencies = new Set(["USDT", "KSH"]);
-  
-  if (orders?.buy_orders?.results) {
-    orders.buy_orders.results.forEach((order: any) => {
-      if (order.currency) {
-        baseCurrencies.add(order.currency);
-      }
-    });
-  }
-  
-  // Also check sell orders for currencies
-  if (orders?.sell_orders?.results) {
-    orders.sell_orders.results.forEach((order: any) => {
-      if (order.currency) {
-        baseCurrencies.add(order.currency);
-      }
-    });
-  }
-  
-  return Array.from(baseCurrencies).map((currency) => ({
-    label: formatCurrencyLabel(currency as string),
-    value: currency as string,
-  }));
+  // USDT (asset) + range currencies (KES, USD) for filtering
+  const options: Option[] = [
+    { label: "ALL", value: "ALL" },
+    { label: "USD", value: "USD" },
+
+    { label: "KES", value: "KES" },
+  ];
+  return options;
 };
 
 const getProviderOptions = (orders: any): Option[] => {
@@ -222,10 +206,9 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
 
  
 
-  const [mounted, setMounted] = useState(false);
   const hasInitializedRef = useRef(false);
   const [amount, setAmount] = useState("");
-  const [selectedCurrency, setSelectedCurrency] = useState("USDT");
+  const [selectedCurrency, setSelectedCurrency] = useState("ALL");
   const [paymentTypes, setPaymentTypes] = useState<string[]>([]);
   const [providers, setProviders] = useState<string[]>([]);
   const [isPaymentDropdownOpen, setIsPaymentDropdownOpen] = useState(false);
@@ -241,46 +224,25 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
   const [minOrderLimit, setMinOrderLimit] = useState("");
   const [maxOrderLimit, setMaxOrderLimit] = useState("");
 
+  // Use only REST API (all-orders endpoint) - no WebSocket to prevent overwriting data
   const { isConnected: wsConnected, connectionError: wsError } =
     useP2POrdersWebSocket({
-      enabled: isAuthenticated && currentPage === 1, // Only enable WebSocket on page 1 to prevent overwrites
-      fallbackToPolling: false, // Disable polling to prevent overwrites when on other pages
+      enabled: false, // Disabled - market data comes from REST API only
+      fallbackToPolling: false,
       pollingInterval: 30000,
     });
 
 
 
   useEffect(() => {
-    console.log('🔵 [MarketTransactions] Component mounted/remounted');
-    setMounted(true);
-    
-    // Only fetch on FIRST mount if no data exists AND user is authenticated
-    // This prevents automatic resets but ensures initial data loads
+    // Always fetch on mount when authenticated - ensures all data displays correctly by default
     if (!hasInitializedRef.current && isAuthenticated) {
       hasInitializedRef.current = true;
       const currentPageInState = store.getState()?.p2pMarket?.currentPage || 1;
-      const hasBuyOrders = store.getState()?.p2pMarket?.p2pBuyOrders?.results?.length > 0;
-      const hasSellOrders = store.getState()?.p2pMarket?.p2pSellOrders?.results?.length > 0;
-      
-      console.log('🔵 [MarketTransactions] FIRST mount - currentPage:', currentPageInState, 'hasData:', hasBuyOrders || hasSellOrders);
-      
-      // Only fetch if we have NO data at all (first visit)
-      if (!hasBuyOrders && !hasSellOrders) {
-        console.log('🔵 [MarketTransactions] No data found, fetching page:', currentPageInState);
-        dispatch(fetchAllP2PBuyandSell(currentPageInState) as any);
-      } else {
-        console.log('🔵 [MarketTransactions] Data already exists, skipping fetch');
-      }
-    } else {
-      console.log('🔵 [MarketTransactions] Skipping fetch - already initialized or not authenticated');
+      dispatch(fetchAllP2PBuyandSell(currentPageInState) as any);
     }
-  }, []); // Only run once on mount
+  }, [dispatch, isAuthenticated]);
 
-  // Track Redux state changes - but don't reset page
-  useEffect(() => {
-    console.log('🟡 [MarketTransactions] Orders changed, currentPage:', currentPage);
-    // Don't reset page when orders change - this was causing the issue
-  }, [buy_orders, sell_orders, currentPage]);
 
   const providerOptions = useMemo(() => getProviderOptions(orders), [orders]);
   const paymentMethodOptions = useMemo(
@@ -306,6 +268,17 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
       setSelectedCurrency(currencyOptions[0].value);
     }
   }, [currencyOptions, selectedCurrency]);
+
+  // Reset to page 1 and refetch when filters change so currency-filtered data shows correctly
+  const prevFiltersRef = useRef<string>("");
+  useEffect(() => {
+    const key = `${selectedCurrency}|${providers.join(",")}|${paymentTypes.join(",")}`;
+    if (prevFiltersRef.current && prevFiltersRef.current !== key) {
+      dispatch(setCurrentPage(1));
+      dispatch(fetchAllP2PBuyandSell(1) as any);
+    }
+    prevFiltersRef.current = key;
+  }, [selectedCurrency, providers, paymentTypes, dispatch]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -385,12 +358,6 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
     // REMOVED FILTER - Show all orders regardless of status
     // No filtering applied - display all orders from the API response
 
-    // Log to verify we're getting the right data for the current page
-    console.log('📊 [MarketTransactions] getActiveOrders - currentPage:', currentPage, 'activeTab:', activeTab, 'orders count:', activeOrdersList.length);
-    if (activeOrdersList.length > 0) {
-      console.log('📊 [MarketTransactions] First order ID:', activeOrdersList[0]?.id, 'Last order ID:', activeOrdersList[activeOrdersList.length - 1]?.id);
-    }
-
     return activeOrdersList;
   }, [orders, activeTab, buy_orders, sell_orders, currentPage]); // Add currentPage to dependencies
 
@@ -433,6 +400,10 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
         const minAmount = parseFloat(order.min_order_amount || 0);
         const maxAmount = parseFloat(order.max_order_amount || 0);
         const orderCurrency = order.currency || "USDT";
+        const rangeCurrency = order.range_currency || null;
+        // Limit uses range_currency: KES → KES, USD/USDT/null → USD
+        const limitSuffix = rangeCurrency?.toUpperCase() === "KES" ? "KES" : "USD";
+        const commissionSuffix = limitSuffix;
 
         return {
           id: order.id,
@@ -448,10 +419,10 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
           ),
           // Check online status from API - status "offline" means offline, otherwise online
           online: order.status !== 'offline',
-          commission: `${order.commission_rate || 0}`,
+          commission: `${order.commission_rate || 0}% ${commissionSuffix}`,
           available: `${availableAmount.toFixed(2)} ${orderCurrency}`,
           availableAmount,
-          limit: `${minAmount.toFixed(2)} - ${maxAmount.toFixed(2)} ${orderCurrency}`,
+          limit: `${minAmount.toFixed(2)} - ${maxAmount.toFixed(2)} ${limitSuffix}`,
           payment:
             order.payment_details?.map((detail: any) => detail.provider) || [],
           paymentType:
@@ -463,6 +434,7 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
           minAmount,
           maxAmount,
           currency: orderCurrency,
+          range_currency: rangeCurrency,
           timeLimit: formatLimitDuration(order.limit_duration),
           avgRealiseTime: formatLimitDuration(
             order.completion_time || "00:02:00"
@@ -473,11 +445,19 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
         };
       })
       .filter((row: MarketRow) => {
-        // Currency is a filter - only show orders that match the selected currency
+        // Currency filter: ALL = show all, USDT = asset, KES/USD = range_currency
         if (selectedCurrency) {
-          const rowCurrency = (row.currency || "").toUpperCase();
-          const selCurrency = selectedCurrency.toUpperCase();
-          if (rowCurrency !== selCurrency) return false;
+          const sel = selectedCurrency.toUpperCase();
+          if (sel === "ALL") {
+            // Show all orders, no currency filter
+          } else if (sel === "USDT") {
+            if ((row.currency || "").toUpperCase() !== "USDT") return false;
+          } else if (sel === "KES") {
+            if ((row.range_currency || "").toUpperCase() !== "KES") return false;
+          } else if (sel === "USD") {
+            const rc = (row.range_currency || "").toUpperCase();
+            if (rc === "KES") return false; // exclude KES, show USD/null
+          }
         }
 
         if (showMerchantOnly && !row.isMerchant) {
@@ -643,7 +623,7 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
     let pages = Math.ceil(activeCount / 10);
     pages = pages > 0 ? pages : 1;
 
-    // If current page has no data, cap to previous page
+    // If current page has no data, cap to previous pageUSDT
     if (currentPage > 1 && getActiveOrders.length === 0) {
       pages = Math.min(pages, currentPage - 1);
       if (pages < 1) pages = 1;
@@ -666,38 +646,13 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
     const currentPageInState = store.getState()?.p2pMarket?.currentPage || 1;
     const maxPages = Math.max(1, Math.min(getTotalPagesFromState(), effectiveTotalPages));
 
-    // Block moving forward if API has no data for next page
-    if (newPage > maxPages) {
-      console.log("⛔ [MarketTransactions] Blocked page change beyond data. Requested:", newPage, "max:", maxPages);
-      return;
-    }
+    if (newPage > maxPages || newPage < 1) return;
+    if (newPage === currentPageInState) return;
 
-    if (newPage < 1) {
-      return;
-    }
-    
-    // Prevent unnecessary page changes
-    if (newPage === currentPageInState) {
-      console.log('⏭️ [MarketTransactions] Skipping page change - already on page', newPage);
-      return;
-    }
-    
-    console.log('🔄 [MarketTransactions] ========== PAGE CHANGE START ==========');
-    console.log('🔄 [MarketTransactions] Requesting page:', newPage, 'from:', currentPageInState);
-    
-    // CRITICAL: Set page FIRST, then fetch
     dispatch(setCurrentPage(newPage));
-    console.log('✅ [MarketTransactions] Set currentPage to:', newPage);
-    
-    // Small delay to ensure state update, then fetch
     setTimeout(() => {
-      const verifyPage = store.getState()?.p2pMarket?.currentPage;
-      console.log('📡 [MarketTransactions] Verifying page before fetch:', verifyPage, 'requested:', newPage);
-      if (verifyPage === newPage) {
-        console.log('📡 [MarketTransactions] Fetching page:', newPage);
+      if (store.getState()?.p2pMarket?.currentPage === newPage) {
         dispatch(fetchAllP2PBuyandSell(newPage) as any);
-      } else {
-        console.error('❌ [MarketTransactions] Page mismatch! State:', verifyPage, 'Requested:', newPage);
       }
     }, 10);
   }, [dispatch, getTotalPagesFromState, effectiveTotalPages]);
@@ -710,17 +665,12 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
       effectiveTotalPages === Math.max(1, currentPage - 1)
     ) {
       const targetPage = Math.max(1, currentPage - 1);
-      console.log("↩️ [MarketTransactions] Empty page detected, resetting to page", targetPage);
       dispatch(setCurrentPage(targetPage));
       dispatch(fetchAllP2PBuyandSell(targetPage) as any);
     }
   }, [currentPage, getActiveOrders.length, effectiveTotalPages, dispatch]);
 
-  if (!mounted) {
-    return null;
-  }
-
-  // Show skeleton while loading initial data
+  // Show skeleton while loading initial data (no mounted gate - render immediately)
   if (loading && transformedData.length === 0) {
     return <P2PMarketTableSkeleton rows={8} />;
   }

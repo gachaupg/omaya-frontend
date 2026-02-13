@@ -29,6 +29,7 @@ const EditAdModal: React.FC<EditAdModalProps> = ({
     min_order_amount: "",
     max_order_amount: "",
     order_type: "",
+    exchange_rate: "0.3",
     limit_duration: "10",
     payment_details_ids: [initialData?.payment_details?.[0]?.id || "1"],
   });
@@ -41,6 +42,7 @@ const EditAdModal: React.FC<EditAdModalProps> = ({
         min_order_amount: initialData.min_order_amount || "",
         max_order_amount: initialData.max_order_amount || "",
         order_type: initialData.order_type || "",
+        exchange_rate: initialData.exchange_rate || "0.3",
         limit_duration: initialData.limit_duration?.toString() || "10",
         payment_details_ids: [initialData?.payment_details?.[0]?.id || "1"],
       });
