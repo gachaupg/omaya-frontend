@@ -6,6 +6,7 @@ import {
   deletePaymentMethod,
   getPublicPaymentMethods,
   updateUserPaymentDetail,
+  getUserPaymentDetail,
   sendPaymentDetailEditOtp as apiSendPaymentDetailEditOtp,
   updatePaymentDetailWithOtp as apiUpdatePaymentDetailWithOtp,
 } from "../api";
@@ -40,19 +41,24 @@ export const fetchPublicPaymentMethods = createAsyncThunk<
 );
 
 const extractPaymentDetailError = (error: any): string => {
-  const fallbackMessage = "Failed to add payment detail";
+  const fallbackMessage = "Failed to operate on payment detail";
 
   if (!error) return fallbackMessage;
 
+  // 1. Try to get the data from the response
   const responseData = error?.response?.data ?? error?.data ?? null;
+  console.log("🔥 [PaymentMethods] Raw Error:", error);
+  console.log("🔥 [PaymentMethods] Response Data:", responseData);
 
-  if (typeof responseData === "string") {
+  // 2. If data is a simple string, return it
+  if (typeof responseData === "string" && responseData.trim()) {
     return responseData;
   }
 
+  // 3. If data is an object, look for known error keys
   if (responseData && typeof responseData === "object") {
+    // Check for specific field errors first (like allow_auto_send)
     const allowAutoSendError = responseData.allow_auto_send;
-
     if (Array.isArray(allowAutoSendError) && allowAutoSendError.length > 0) {
       const message = allowAutoSendError.find(
         (item) => typeof item === "string" && item.trim()
@@ -60,21 +66,31 @@ const extractPaymentDetailError = (error: any): string => {
       if (message) return message;
     }
 
-    const detailKeys = ["detail", "message", "error"];
-    for (const key of detailKeys) {
+    // Check common error keys: "detail", "message", "error"
+    const errorKeys = ["detail", "message", "error"];
+    for (const key of errorKeys) {
       const value = responseData[key];
+      
+      // Case A: Value is a string (e.g. { error: "Cannot delete..." })
       if (typeof value === "string" && value.trim()) {
         return value;
       }
+      
+      // Case B: Value is an array of strings (e.g. { error: ["Invalid id"] })
       if (Array.isArray(value) && value.length > 0) {
-        const message = value.find(
-          (item) => typeof item === "string" && item.trim()
-        );
+        const message = value.find((item) => typeof item === "string" && item.trim());
         if (message) return message;
+      }
+      
+      // Case C: Value is an object (unexpected but possible) -> Try to stringify or get message from it
+      if (value && typeof value === 'object' && !Array.isArray(value)) {
+         if (value.message && typeof value.message === 'string') return value.message;
+         if (value.detail && typeof value.detail === 'string') return value.detail;
       }
     }
   }
 
+  // 4. Fallback to the error object's message property
   const errorMessage = error?.message;
   if (typeof errorMessage === "string" && errorMessage.trim()) {
     return errorMessage;
@@ -123,6 +139,26 @@ export const fetchUserPaymentDetails = createAsyncThunk<
   }
 );
 
+
+
+
+export const fetchUserPaymentDetail = createAsyncThunk<
+  P2PResponse,
+  string | number,
+  { rejectValue: string }
+>(
+  "paymentMethods/fetchUserPaymentDetail",
+  async (id, { rejectWithValue }) => {
+    try {
+      return await getUserPaymentDetail(id);
+    } catch (err: any) {
+      return rejectWithValue(
+        err.message || "Failed to fetch payment detail"
+      );
+    }
+  }
+);
+
 export const deleteUserPaymentDetail = createAsyncThunk<
   void,
   string,
@@ -134,7 +170,7 @@ export const deleteUserPaymentDetail = createAsyncThunk<
       await deletePaymentMethod(id);
       return;
     } catch (err: any) {
-      return rejectWithValue(err.message || "Failed to delete payment detail");
+      return rejectWithValue(extractPaymentDetailError(err));
     }
   }
 );
@@ -174,9 +210,7 @@ export const sendPaymentDetailEditOtp = createAsyncThunk<
     try {
       return await apiSendPaymentDetailEditOtp(paymentDetailId);
     } catch (err: any) {
-      return rejectWithValue(
-        err?.response?.data?.message || err?.message || "Failed to send OTP"
-      );
+      return rejectWithValue(extractPaymentDetailError(err));
     }
   }
 );
@@ -202,9 +236,7 @@ export const updatePaymentDetailWithOtp = createAsyncThunk<
     try {
       return await apiUpdatePaymentDetailWithOtp(id, data);
     } catch (err: any) {
-      return rejectWithValue(
-        err?.response?.data?.message || err?.message || "Failed to update payment detail"
-      );
+      return rejectWithValue(extractPaymentDetailError(err));
     }
   }
 );
@@ -227,6 +259,9 @@ interface PaymentMethodsState {
   patchLoading: boolean;
   patchError: string | null;
   patchSuccess: boolean;
+  currentPaymentDetail: any | null;
+  detailLoading: boolean;
+  detailError: string | null;
 }
 
 const initialState: PaymentMethodsState = {
@@ -247,6 +282,9 @@ const initialState: PaymentMethodsState = {
   patchLoading: false,
   patchError: null,
   patchSuccess: false,
+  currentPaymentDetail: null,
+  detailLoading: false,
+  detailError: null,
 };
 
 const paymentMethodsSlice = createSlice({
@@ -262,6 +300,11 @@ const paymentMethodsSlice = createSlice({
       state.patchLoading = false;
       state.patchError = null;
       state.patchSuccess = false;
+    },
+    clearCurrentPaymentDetail(state) {
+      state.currentPaymentDetail = null;
+      state.detailLoading = false;
+      state.detailError = null;
     },
   },
   extraReducers: (builder) => {
@@ -303,6 +346,18 @@ const paymentMethodsSlice = createSlice({
       .addCase(fetchUserPaymentDetails.rejected, (state, action) => {
         state.userDetailsLoading = false;
         state.userDetailsError = action.payload ?? null;
+      })
+      .addCase(fetchUserPaymentDetail.pending, (state) => {
+        state.detailLoading = true;
+        state.detailError = null;
+      })
+      .addCase(fetchUserPaymentDetail.fulfilled, (state, action) => {
+        state.detailLoading = false;
+        state.currentPaymentDetail = action.payload;
+      })
+      .addCase(fetchUserPaymentDetail.rejected, (state, action) => {
+        state.detailLoading = false;
+        state.detailError = action.payload ?? null;
       })
       .addCase(deleteUserPaymentDetail.pending, (state) => {
         state.deleteLoading = true;
@@ -361,5 +416,5 @@ const paymentMethodsSlice = createSlice({
   },
 });
 
-export const { clearPostStatus, clearPatchStatus } = paymentMethodsSlice.actions;
+export const { clearPostStatus, clearPatchStatus, clearCurrentPaymentDetail } = paymentMethodsSlice.actions;
 export default paymentMethodsSlice.reducer;

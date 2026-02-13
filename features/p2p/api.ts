@@ -389,6 +389,15 @@ export const getUserPaymentDetails = async (): Promise<P2PResponse[]> => {
   });
 };
 
+export const getUserPaymentDetail = async (id: string | number): Promise<P2PResponse> => {
+  return withRetry(async () => {
+    const response = await get<P2PResponse>(
+      `${API_CONFIG.P2P.USER_PAYMENT_DETAILS}${id}/`
+    );
+    return response.data;
+  });
+};
+
 // P2P Orders API calls
 export const postP2POrder = async (data: any): Promise<P2PResponse> => {
   return withRetry(async () => {
@@ -408,50 +417,13 @@ export const getAllP2POrders = async (
   });
 };
 
+/** Fetch P2P market orders from /trading_engine/p2p/all-orders/?page=N - buy_orders and sell_orders with results */
 export const getAllP2PBuyandSell = async (
   page: number = 1
 ): Promise<P2PMyOrders> => {
-  console.log('🌐 [API] getAllP2PBuyandSell called with page:', page);
-  logger.debug('p2p', "API call getAllP2PBuyandSell with page:", page);
   return withRetry(async () => {
     const url = `${API_CONFIG.P2P.ALL_ORDERS}?page=${page}`;
-    console.log('🌐 [API] Making request to:', url);
-    logger.debug('p2p', "Making API request to:", url);
     const response = await get<P2PMyOrders>(url);
-
-    // Log the actual response structure
-    console.log('🌐 [API] Response structure:', {
-      hasBuyOrders: !!response.data.buy_orders,
-      hasSellOrders: !!response.data.sell_orders,
-      buyOrdersType: typeof response.data.buy_orders,
-      sellOrdersType: typeof response.data.sell_orders,
-      buyOrdersIsArray: Array.isArray(response.data.buy_orders),
-      sellOrdersIsArray: Array.isArray(response.data.sell_orders),
-      buyOrdersKeys: response.data.buy_orders ? Object.keys(response.data.buy_orders) : [],
-      sellOrdersKeys: response.data.sell_orders ? Object.keys(response.data.sell_orders) : [],
-    });
-
-    // Check if buy_orders has results property
-    if (response.data.buy_orders && !Array.isArray(response.data.buy_orders)) {
-      const buyOrdersObj = response.data.buy_orders as { results?: P2POrder[] };
-      console.log('🌐 [API] buy_orders.results count:', buyOrdersObj?.results?.length || 0);
-      console.log('🌐 [API] First buy order ID:', buyOrdersObj?.results?.[0]?.id);
-    }
-    if (response.data.sell_orders && !Array.isArray(response.data.sell_orders)) {
-      const sellOrdersObj = response.data.sell_orders as { results?: P2POrder[] };
-      console.log('🌐 [API] sell_orders.results count:', sellOrdersObj?.results?.length || 0);
-      console.log('🌐 [API] First sell order ID:', sellOrdersObj?.results?.[0]?.id);
-    }
-
-    logger.debug('p2p', "API response for page", page, ":", {
-      buyOrdersCount: response.data.buy_orders?.length || 0,
-      sellOrdersCount: response.data.sell_orders?.length || 0,
-      totalOrders: (response.data.buy_orders?.length || 0) + (response.data.sell_orders?.length || 0),
-      buyPagination: response.data.buy_pagination,
-      sellPagination: response.data.sell_pagination,
-      firstBuyOrderId: response.data.buy_orders?.[0]?.id,
-      firstSellOrderId: response.data.sell_orders?.[0]?.id,
-    });
     return response.data;
   });
 };
@@ -790,7 +762,7 @@ export const sendPaymentDetailEditOtp = async (
   return response.data;
 };
 
-/** Update payment detail with OTP (after send-edit-otp). */
+/** Update payment detail with OTP (after send-edit-otp). PATCH per API spec. */
 export const updatePaymentDetailWithOtp = async (
   id: string | number,
   data: {
@@ -802,7 +774,7 @@ export const updatePaymentDetailWithOtp = async (
     provider_name?: string;
   }
 ): Promise<P2PResponse> => {
-  const response = await put<P2PResponse>(
+  const response = await patch<P2PResponse>(
     API_CONFIG.PAYMENTS.USER_PAYMENT_DETAIL(String(id)),
     data
   );

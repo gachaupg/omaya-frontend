@@ -172,6 +172,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   // Auto-cancel when countdown reaches 0 and status is matched - DISABLED
   useEffect(() => {
     if (confirmOrder?.status === "matched" && countdown === 0) {
+      handleCancelTransaction();
       // AUTO-CANCEL DISABLED - Countdown reached 0 but no auto-cancel
       logger.debug("p2p", "Countdown reached 0, auto-cancel is disabled");
       return;
@@ -285,6 +286,11 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   const fromConfirm = Array.isArray(confirmOrder?.payment_details) ? confirmOrder.payment_details : [];
   const fromSaveOrder = Array.isArray(saveOrder?.payment_details) ? saveOrder.payment_details : [];
   const paymentDetailsList = fromSingle.length > 0 ? fromSingle : fromConfirm.length > 0 ? fromConfirm : fromSaveOrder;
+
+  // Range currency (KES or USD) for display - from order/trade
+  const rangeCurrency = ((singleOrder as any)?.range_currency || (confirmOrder as any)?.buy_order?.range_currency || (confirmOrder as any)?.sell_order?.range_currency || "USD")?.toString().toUpperCase();
+  const rangeSuffix = rangeCurrency === "KES" ? "KES" : "USD";
+  const rangeSymbol = rangeCurrency === "KES" ? "KES" : "$";
 
   // --- Calculation logic ---
   const sendAmount = Number(confirmOrder?.amount) || 0;
@@ -505,16 +511,17 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 border border-gray-200 dark:border-accent p-3 sm:p-4 rounded-xl mt-4 bg-white dark:bg-[var(--card-color)]">
+              {/* Buy: I want to Send = fiat (KES/USD) */}
               <div className="flex flex-col gap-2 w-full">
-                <p className="text-[#788099] text-xs sm:text-sm">Fiat USD</p>
+                <p className="text-[#788099] text-xs sm:text-sm">I want to Send</p>
                 <div className="flex flex-row items-center justify-between w-full bg-[#EEF1F4] dark:bg-accent rounded-xl px-3 sm:px-4 py-2.5 min-h-[52px]">
                   <div className="flex items-center gap-1.5 min-w-0">
-                    <span className="text-[#1D8751] text-lg sm:text-xl font-bold shrink-0">$</span>
+                    <span className="text-[#1D8751] text-lg sm:text-xl font-bold shrink-0">{rangeSymbol}</span>
                     <span className="text-warning text-base sm:text-lg font-bold ">
-                      {formatAmount(Math.round(Number(sendAmount) * Number(commissionRate)))}
+                      {formatAmount(Math.round(Number(sendAmount) * Number(commissionRate) * 100) / 100)}
                     </span>
                   </div>
-                  <span className="text-xs text-warning font-medium ml-2 shrink-0">USD</span>
+                  <span className="text-xs text-warning font-medium ml-2 shrink-0">{rangeSuffix}</span>
                 </div>
               </div>
 
@@ -522,19 +529,20 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                 <p className="text-[#788099] text-xs sm:text-sm">Rate</p>
                 <div className="flex w-full flex-row justify-between items-center bg-[#EEF1F4] dark:bg-accent rounded-xl px-3 sm:px-4 py-2.5 min-h-[52px]">
                   <div className="flex items-center gap-1.5 min-w-0">
-                    <span className="text-[#1D8751] text-lg sm:text-xl font-bold shrink-0">$</span>
+                    <span className="text-[#1D8751] text-lg sm:text-xl font-bold shrink-0">{rangeSymbol}</span>
                     <span className="text-[#1D8751] text-lg sm:text-xl font-bold ">
                       {commissionRate}%
                     </span>
                   </div>
                   <span className="text-xs sm:text-sm text-[#051015] dark:text-warning font-medium ml-2 flex-shrink-0">
-                    USD
+                    {rangeSuffix}
                   </span>
                 </div>
               </div>
 
+              {/* I want to Receive = USDT */}
               <div className="flex flex-col gap-2 w-full">
-                <p className="text-[#788099] text-xs sm:text-sm">Total Quantity</p>
+                <p className="text-[#788099] text-xs sm:text-sm">I want to Receive</p>
                 <div className="flex flex-row justify-between w-full items-center bg-[#EEF1F4] dark:bg-accent rounded-xl px-3 sm:px-4 py-2.5 min-h-[52px]">
                   <div className="flex flex-row items-center gap-2 min-w-0">
                     <Image
