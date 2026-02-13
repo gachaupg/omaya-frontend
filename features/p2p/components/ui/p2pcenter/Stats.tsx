@@ -1,34 +1,15 @@
 import React from "react";
 
-const Stats = ({ summary = {} }: { summary?: any }) => {
+const Stats = ({ summary }: { summary?: any }) => {
+  const safe = summary && typeof summary === "object" && !Array.isArray(summary) ? summary : {};
+  const num = (v: any) => (typeof v === "number" && !Number.isNaN(v) ? v : typeof v === "string" ? parseFloat(v) || 0 : 0);
   const stats = [
-    { value: summary?.total_trades || 0, label: "Trades" },
-    { value: `${summary?.completion_rate || 0}%`, label: "Completion rate" },
-    {
-      value: (
-        <>
-          <span>{summary?.avg_release_time || "0"}</span>{" "}
-        </>
-      ),
-      label: "Avg. release time",
-    },
-    {
-      value: (
-        <>
-          <span>{summary?.avg_payment_time || "0"}</span>{" "}
-        </>
-      ),
-      label: "Avg. pay time",
-    },
-    { value: `${summary?.rating || 0}`, label: "Rating" },
-    {
-      value: (
-        <>
-          <span>{(summary?.total_volume || 0).toLocaleString()}</span>{" "}
-        </>
-      ),
-      label: "",
-    },
+    { value: num(safe.total_trades) || 0, label: "Trades" },
+    { value: `${num(safe.completion_rate) || 0}%`, label: "Completion rate" },
+    { value: <><span>{safe.avg_release_time ?? "0"}</span></>, label: "Avg. release time" },
+    { value: <><span>{safe.avg_payment_time ?? "0"}</span></>, label: "Avg. pay time" },
+    { value: `${num(safe.rating) || 0}`, label: "Rating" },
+    { value: <><span>{(num(safe.total_volume) || 0).toLocaleString()}</span></>, label: "" },
   ];
 
   return (

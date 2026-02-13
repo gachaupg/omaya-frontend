@@ -17,11 +17,11 @@ import FiterTabs from "../ui/p2pcenter/FilterTabs";
 // Error boundary component to catch rendering errors
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode; fallback?: React.ReactNode },
-  { hasError: boolean }
+  { hasError: boolean; error: Error | null }
 > {
   constructor(props: { children: React.ReactNode; fallback?: React.ReactNode }) {
     super(props);
-    this.state = { hasError: false };
+    this.state = { hasError: false, error: null };
   }
 
   static getDerivedStateFromError() {
@@ -29,16 +29,29 @@ class ErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('P2PCenter Error:', error, errorInfo);
+    console.error("P2PCenter Error:", error, errorInfo);
+    this.setState({ error });
   }
 
   render() {
     if (this.state.hasError) {
       return this.props.fallback || (
-        <div className="flex flex-col items-center justify-center min-h-screen px-1 sm:px-2 md:px-4">
-          <p className="text-red-500 text-center">
+        <div className="flex flex-col items-center justify-center min-h-[280px] px-4 py-8 gap-4">
+          <p className="text-red-500 dark:text-red-400 text-center font-medium">
             Something went wrong. Please refresh the page.
           </p>
+          {this.state.error && (
+            <p className="text-sm text-gray-600 dark:text-gray-400 text-center max-w-md break-words">
+              {this.state.error.message}
+            </p>
+          )}
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 text-sm font-medium text-white bg-[#1D8751] hover:bg-[#166b3e] rounded-lg transition-colors"
+          >
+            Refresh page
+          </button>
         </div>
       );
     }

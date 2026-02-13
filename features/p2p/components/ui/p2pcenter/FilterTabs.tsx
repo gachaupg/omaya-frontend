@@ -39,16 +39,17 @@ const FilterTabs: React.FC<FilterTabsProps> = ({
     dispatch(fetchFeedback());
   }, [dispatch]);
 
-  // Calculate feedback statistics
+  // Calculate feedback statistics (support both array and { feedbacks } response)
+  const feedbackList = Array.isArray(feedbackData) ? feedbackData : (feedbackData?.feedbacks ?? []);
   const feedbackStats = useMemo(() => {
-    const total = feedbackData?.length || 0;
-    const positive = feedbackData?.filter((f) => f.is_positive).length || 0;
+    const total = feedbackList.length;
+    const positive = feedbackList.filter((f: any) => f?.is_positive).length;
     const negative = total - positive;
     const positivePercentage = total > 0 ? (positive / total) * 100 : 0;
     const negativePercentage = total > 0 ? (negative / total) * 100 : 0;
-    
+
     return { total, positive, negative, positivePercentage, negativePercentage };
-  }, [feedbackData]);
+  }, [feedbackList]);
 
   // Calculate ad status indicators
   const adStatusIndicators = useMemo(() => {
