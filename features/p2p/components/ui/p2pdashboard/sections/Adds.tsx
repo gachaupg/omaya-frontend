@@ -101,6 +101,8 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
   const [selectedPaymentDetails, setSelectedPaymentDetails] = useState<
     UserPaymentDetail[]
   >([]);
+  const [selectedProviderInSelector, setSelectedProviderInSelector] =
+    useState<string | null>(null);
   const [isClient, setIsClient] = useState(false);
   const prevTypeRef = useRef<"buy" | "sell">(type);
 
@@ -498,27 +500,10 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
             Amount & Payment Method
           </div>
           <Card className="w-full mb-4 px-2 py-2 sm:px-2 sm:py-2 bg-card border border-gray-200 dark:border-[#35353E] rounded-[24px]">
-           <div className="flex flex-col md:flex-row gap-4 mb-0 p-2">
-            <div className="flex-1 flex flex-col">
-              <label className="text-[15px] text-gray-600 dark:text-[#788099] mb-1">
-                Currency
-              </label>
-              <div className="flex items-center bg-card border border-gray-200 dark:border-[#35353E] rounded-[19px] px-2 py-2 min-h-[40px]">
-                <select
-                  value={activeCurrency}
-                  onChange={(e) => setActiveCurrency(e.target.value)}
-                  className="w-full bg-transparent border-none text-gray-900 dark:text-[#788099] text-base focus:outline-none"
-                >
-                  <option value="USD">USD</option>
-                  <option value="KES">KES</option>
-                </select>
-               
-              </div>
-            </div>
-           </div>
-            <div className="flex flex-col md:flex-row gap-4 mb-6 p-2">
-              {/* I want to Buy */}
-              <div className="flex-1 flex flex-col">
+            {/* Row 1: Amount + Currency (same width) */}
+            <div className="flex flex-col md:flex-row gap-4 mb-4 p-2">
+              {/* I want to Buy (Amount) - first */}
+              <div className="flex-1 min-w-0 flex flex-col">
                 <label className="text-xs text-gray-600 dark:text-[#788099] mb-1 flex justify-between items-center">
                   <span>I want to {type.charAt(0).toUpperCase() + type.slice(1)}</span>
                   {type === "sell" && (
@@ -639,8 +624,28 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                 )}
               </div>
 
+              {/* Currency - second */}
+              <div className="flex-1 min-w-0 flex flex-col">
+                <label className="text-xs text-gray-600 dark:text-[#788099] mb-1">
+                  Currency
+                </label>
+                <div className="flex items-center bg-card border border-gray-200 dark:border-[#35353E] rounded-[19px] px-2 py-2 min-h-[40px]">
+                  <select
+                    value={activeCurrency}
+                    onChange={(e) => setActiveCurrency(e.target.value)}
+                    className="w-full bg-transparent border-none text-gray-900 dark:text-[#788099] text-base focus:outline-none"
+                  >
+                    <option value="USD">USD</option>
+                    <option value="KES">KES</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Row 2: Min order + Max order (same width) */}
+            <div className="flex flex-col md:flex-row gap-4 mb-6 p-2">
               {/* Order Min */}
-              <div className="flex-1 flex flex-col">
+              <div className="flex-1 min-w-0 flex flex-col">
                 <label className="text-xs text-gray-600 dark:text-[#788099] mb-1">
                   Order Min.
                 </label>
@@ -730,7 +735,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
               </div>
 
               {/* Order Max */}
-              <div className="flex-1 flex flex-col">
+              <div className="flex-1 min-w-0 flex flex-col">
                 <label className="text-xs text-gray-600 dark:text-[#788099] mb-1">
                   Order Max
                 </label>
@@ -850,6 +855,39 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                     onSelect={handleSelectPaymentDetail}
                     selectedDetails={selectedPaymentDetails}
                     hideSelected={true}
+                    onProviderSelect={(provider) =>
+                      setSelectedProviderInSelector(provider)
+                    }
+                    onAddPaymentMethod={() => setShowPaymentModal(true)}
+                    renderAside={
+                      <div className="flex flex-col">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Time Limit
+                        </label>
+                        <select
+                          className={`bg-card border ${errors.timeLimit
+                            ? "border-red-500"
+                            : "border-border dark:border-accent"
+                            } rounded-[16px] sm:rounded-[20px] px-3 sm:px-4 py-2.5 sm:py-3 text-gray-900 dark:text-white text-sm sm:text-base focus:outline-none w-full`}
+                          value={timeLimit}
+                          onChange={(e) => {
+                            setTimeLimit(Number(e.target.value));
+                            setErrors((prev) => ({ ...prev, timeLimit: undefined }));
+                          }}
+                        >
+                          {timeLimits.map((t) => (
+                            <option key={t.value} value={t.value}>
+                              {t.label}
+                            </option>
+                          ))}
+                        </select>
+                        {errors.timeLimit && (
+                          <span className="text-red-500 text-xs sm:text-sm mt-1">
+                            {errors.timeLimit}
+                          </span>
+                        )}
+                      </div>
+                    }
                   />
 
                   {/* Display Selected Payment Methods */}
@@ -942,50 +980,9 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                     </div>
                   )}
                 </div>
-
-                {/* Time Limit */}
-                <div className="w-full lg:w-auto lg:min-w-[200px]">
-                  <div className="flex flex-col">
-                    <label className="text-xs sm:text-sm text-gray-600 dark:text-[#788099] mb-1.5 sm:mb-1">
-                      Time Limit
-                    </label>
-                    <select
-                      className={`bg-card border ${errors.timeLimit
-                        ? "border-red-500"
-                        : "border-border dark:border-accent"
-                        } rounded-[16px] sm:rounded-[20px] px-3 sm:px-4 py-2.5 sm:py-3 text-gray-900 dark:text-white text-sm sm:text-base focus:outline-none w-full`}
-                      value={timeLimit}
-                      onChange={(e) => {
-                        setTimeLimit(Number(e.target.value));
-                        setErrors((prev) => ({ ...prev, timeLimit: undefined }));
-                      }}
-                    >
-                      {timeLimits.map((t) => (
-                        <option key={t.value} value={t.value}>
-                          {t.label}
-                        </option>
-                      ))}
-                    </select>
-                    {errors.timeLimit && (
-                      <span className="text-red-500 text-xs sm:text-sm mt-1">
-                        {errors.timeLimit}
-                      </span>
-                    )}
-                  </div>
-                </div>
               </div>
             )}
 
-            <Button
-              borderRadius={24}
-              className="flex-1 rounded-[24px] border border-[#1D8751] dark:text-white text-gray-900 bg-transparent text-base py-2 hover:bg-[#1D8751]/10 dark:hover:bg-[#1D8751]/10 transition"
-              variant="outline"
-              onClick={() => {
-                setShowPaymentModal(true);
-              }}
-            >
-              Add Payment Method
-            </Button>
           </Card>
           <PaymentMethodsModal
             open={showPaymentModal}
@@ -994,6 +991,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
               setShowPaymentModal(false);
               dispatch(fetchUserPaymentDetails() as any);
             }}
+            filterByProviderName={selectedProviderInSelector || undefined}
           />
           {/* Terms & Auto Reply */}
           <div className="text-2xl text-gray-600 dark:text-[#788099] mb-2 mt-6">

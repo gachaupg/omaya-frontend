@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import CustomSelect from "@/components/ui/CustomSelect";
 import { AdminPaymentMethod } from "@/features/p2p/types/paymentMethods";
 
@@ -24,7 +24,10 @@ interface UserPaymentSelectorProps {
   onRemove?: (detail: UserPaymentDetail) => void;
   selectedDetails: UserPaymentDetail[];
   onAddPaymentMethod?: () => void;
+  onProviderSelect?: (provider: string | null) => void;
   hideSelected?: boolean;
+  /** Renders next to Provider select with equal width (e.g. Time Limit) */
+  renderAside?: React.ReactNode;
 }
 
 // Dropdown-selector + card list for a user's saved payment details.
@@ -37,36 +40,39 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
   onRemove,
   selectedDetails,
   onAddPaymentMethod,
+  onProviderSelect,
   hideSelected = false,
+  renderAside,
 }) => {
-  const [selectedMethod, setSelectedMethod] = useState("");
   const [selectedProvider, setSelectedProvider] = useState("");
 
-  // Memoized options for payment methods - show all admin methods first, then user methods
-  const methodOptions = useMemo(() => {
+  useEffect(() => {
+    onProviderSelect?.(selectedProvider || null);
+  }, [selectedProvider, onProviderSelect]);
+
+  // Memoized options for providers - show all providers
+  const providerOptions = useMemo(() => {
     const seen = new Set<string>();
     const options: Array<{ value: string; label: string; logo?: string }> = [];
 
-    // First, add all admin payment method types
     adminMethods.forEach((m) => {
-      if (m.payment_method_type && !seen.has(m.payment_method_type)) {
-        seen.add(m.payment_method_type);
+      if (m.provider_name && !seen.has(m.provider_name)) {
+        seen.add(m.provider_name);
         options.push({
-          value: m.payment_method_type,
-          label: m.payment_method_type,
+          value: m.provider_name,
+          label: m.provider_name,
           logo: m.logo_url || m.logo || undefined,
         });
       }
     });
 
-    // Then, add user payment methods that aren't already in the list
     userPaymentDetails.forEach((d) => {
-      if (d.payment_method_name && !seen.has(d.payment_method_name)) {
-        seen.add(d.payment_method_name);
+      if (d.payment_provider_name && !seen.has(d.payment_provider_name)) {
+        seen.add(d.payment_provider_name);
         const logoUrl = d.logo_url || d.logo || d.provider_logo || undefined;
         options.push({
-          value: d.payment_method_name,
-          label: d.payment_method_name,
+          value: d.payment_provider_name,
+          label: d.payment_provider_name,
           logo: logoUrl,
         });
       }
@@ -75,50 +81,11 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
     return options;
   }, [userPaymentDetails, adminMethods]);
 
-  // Memoized options for providers - show all admin providers first, then user providers
-  const providerOptions = useMemo(() => {
-    const seen = new Set<string>();
-    const options: Array<{ value: string; label: string; logo?: string }> = [];
-
-    // First, add all admin providers for the selected method
-    adminMethods
-      .filter((m) => m.payment_method_type === selectedMethod)
-      .forEach((m) => {
-        if (m.provider_name && !seen.has(m.provider_name)) {
-          seen.add(m.provider_name);
-          options.push({
-            value: m.provider_name,
-            label: m.provider_name,
-            logo: m.logo_url || m.logo || undefined,
-          });
-        }
-      });
-
-    // Then, add user providers for the selected method
-    userPaymentDetails
-      .filter((d) => d.payment_method_name === selectedMethod)
-      .forEach((d) => {
-        if (d.payment_provider_name && !seen.has(d.payment_provider_name)) {
-          seen.add(d.payment_provider_name);
-          const logoUrl = d.logo_url || d.logo || d.provider_logo || undefined;
-          options.push({
-            value: d.payment_provider_name,
-            label: d.payment_provider_name,
-            logo: logoUrl,
-          });
-        }
-      });
-
-    return options;
-  }, [userPaymentDetails, adminMethods, selectedMethod]);
-
-  // Filtered details for selected method and provider - show user payment details
+  // Filtered details for selected provider - match by provider (method optional when provider-first)
   const filteredDetails = useMemo(
     () => {
       let details = userPaymentDetails.filter(
-        (d) =>
-          d.payment_method_name === selectedMethod &&
-          d.payment_provider_name === selectedProvider
+        (d) => d.payment_provider_name === selectedProvider
       );
 
       if (hideSelected) {
@@ -129,123 +96,90 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
 
       return details;
     },
-    [userPaymentDetails, selectedMethod, selectedProvider, selectedDetails, hideSelected]
-  );
-
-  // Check if there are already selected items for current method/provider
-  const selectedForCurrentProvider = useMemo(
-    () => selectedDetails.filter(
-      (d) =>
-        d.payment_method_name === selectedMethod &&
-        d.payment_provider_name === selectedProvider
-    ),
-    [selectedDetails, selectedMethod, selectedProvider]
+    [userPaymentDetails, selectedProvider, selectedDetails, hideSelected]
   );
 
   // Check if there are admin methods for the selected provider (to show "Add Account" message)
   const hasAdminMethod = useMemo(
     () =>
-      adminMethods.some(
-        (m) =>
-          m.payment_method_type === selectedMethod &&
-          m.provider_name === selectedProvider
-      ),
-    [adminMethods, selectedMethod, selectedProvider]
+      adminMethods.some((m) => m.provider_name === selectedProvider),
+    [adminMethods, selectedProvider]
   );
 
 
   return (
     <div className="space-y-6">
-      {/* dropdowns */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* payment-method */}
-        <div className="space-y-2">
+      {/* Provider + Aside (e.g. Time Limit) - equal width */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex-1 min-w-0 space-y-2">
           <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            Payment Method Type
+            Provider
           </label>
           <CustomSelect
-            options={methodOptions}
-            value={selectedMethod}
-            onChange={(value) => {
-              setSelectedMethod(value);
-              setSelectedProvider("");
-            }}
-            placeholder="Select Method Type"
+            options={providerOptions}
+            value={selectedProvider}
+            onChange={(value) => setSelectedProvider(value)}
+            placeholder="Select Provider (e.g. Salam Bank, M-Pesa)"
             logoSize={32}
             logoClassName="rounded-full object-cover flex-shrink-0"
             className="w-full"
             sizeMode="card"
+            searchable
           />
         </div>
-
-        {/* provider */}
-        {selectedMethod && (
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Provider
-            </label>
-            <CustomSelect
-              options={providerOptions}
-              value={selectedProvider}
-              onChange={(value) => setSelectedProvider(value)}
-              placeholder="Select Provider"
-              logoSize={32}
-              logoClassName="rounded-full object-cover flex-shrink-0"
-              className="w-full"
-              sizeMode="card"
-            />
+        {renderAside && (
+          <div className="flex-1 min-w-0">
+            {renderAside}
           </div>
         )}
       </div>
 
-      {/* detail cards */}
-      {selectedMethod && selectedProvider && (
-        <div className="space-y-4">
-          {filteredDetails.length > 0 ? (
-            filteredDetails.map((detail) => (
-              <div
-                key={detail.id}
-                className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800 shadow-sm"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-start gap-3 flex-1">
-                    {/* Logo with priority: logo_url > logo > provider_logo */}
-                    <img
-                      src={
-                        detail.logo_url ||
-                        detail.logo ||
-                        detail.provider_logo ||
-                        "/default-provider-logo.svg"
-                      }
-                      alt={detail.payment_provider_name}
-                      className="w-12 h-12 rounded-full object-cover flex-shrink-0"
-                      onError={(e) => {
-                        e.currentTarget.src = "/default-provider-logo.svg";
-                      }}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="mb-2">
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          Account Name
-                        </p>
-                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                          {detail.account_name}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {selectedMethod?.toLowerCase().includes('mobile') || selectedMethod?.toLowerCase().includes('money') ? 'Phone Number' : 'Account Number'}
-                        </p>
-                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                          {detail.account_number}
-                        </p>
-                      </div>
-                    </div>
+      {/* detail cards + Add button - shown when provider is selected, in a row */}
+      {selectedProvider && (
+        <div className="flex flex-row flex-wrap items-start gap-4">
+          {/* Card(s) or empty state */}
+          <div className="flex-1 min-w-0 space-y-4">
+            {filteredDetails.length > 0 ? (
+              filteredDetails.map((detail) => (
+                <div
+                  key={detail.id}
+                  className="flex flex-row flex-wrap items-center gap-4 rounded-lg p-4 bg-[#1D8751]/10 dark:bg-[#1D8751]/20 border border-[#1D8751]/30"
+                >
+                  {/* Logo */}
+                  <img
+                    src={
+                      detail.logo_url ||
+                      detail.logo ||
+                      detail.provider_logo ||
+                      "/default-provider-logo.svg"
+                    }
+                    alt={detail.payment_provider_name}
+                    className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                    onError={(e) => {
+                      e.currentTarget.src = "/default-provider-logo.svg";
+                    }}
+                  />
+                  {/* Account Name */}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Account Name</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                      {detail.account_name}
+                    </p>
                   </div>
+                  {/* Phone/Account Number */}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {detail.payment_method_name?.toLowerCase().includes('mobile') || detail.payment_method_name?.toLowerCase().includes('money') ? 'Phone Number' : 'Account Number'}
+                    </p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                      {detail.account_number}
+                    </p>
+                  </div>
+                  {/* Select/Remove */}
                   {selectedDetails.some((d) => d.id === detail.id) ? (
                     <button
                       onClick={() => onRemove?.(detail)}
-                      className="px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 bg-red-500/10 border border-red-500/30 rounded-md hover:bg-red-500/20 transition-colors"
+                      className="px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 bg-red-500/10 border border-red-500/30 rounded-md hover:bg-red-500/20 transition-colors flex-shrink-0"
                       type="button"
                     >
                       Remove
@@ -253,95 +187,33 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
                   ) : (
                     <button
                       onClick={() => onSelect(detail)}
-                      className="px-4 py-2 text-sm font-medium text-[#1D8751] dark:text-[#1D8751] bg-[#1D8751]/10 dark:bg-[#1D8751]/20 border border-[#1D8751] rounded-md hover:bg-[#1D8751]/20 dark:hover:bg-[#1D8751]/30 transition-colors"
+                      className="px-4 py-2 text-sm font-medium text-[#1D8751] dark:text-[#1D8751] bg-[#1D8751]/20 dark:bg-[#1D8751]/30 border border-[#1D8751] rounded-md hover:bg-[#1D8751]/30 transition-colors flex-shrink-0"
                       type="button"
                     >
                       Select
                     </button>
                   )}
                 </div>
+              ))
+            ) : (
+              <div className="flex flex-row items-center gap-4 rounded-lg p-4 bg-[#1D8751]/10 dark:bg-[#1D8751]/20 border border-[#1D8751]/30">
+                <p className="text-sm text-gray-600 dark:text-gray-400 flex-1 min-w-0">
+                  {hasAdminMethod
+                    ? `No payment account found for ${selectedProvider}. Please add a payment account first.`
+                    : "No payment details found for this combination."}
+                </p>
               </div>
-            ))
-          ) : selectedForCurrentProvider.length > 0 ? (
-            // Show selected items with "Selected" badge when no more available items
-            <div className="space-y-4">
-              <p className="text-sm text-[#1D8751] dark:text-[#1D8751] font-medium">
-                {selectedForCurrentProvider.length} payment account{selectedForCurrentProvider.length > 1 ? 's' : ''} selected for {selectedProvider}
-              </p>
-              {selectedForCurrentProvider.map((detail) => (
-                <div
-                  key={detail.id}
-                  className="border border-[#1D8751] dark:border-[#1D8751] rounded-lg p-4 bg-[#1D8751]/5 dark:bg-[#1D8751]/10 shadow-sm"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-start gap-3 flex-1">
-                      <img
-                        src={
-                          detail.logo_url ||
-                          detail.logo ||
-                          detail.provider_logo ||
-                          "/default-provider-logo.svg"
-                        }
-                        alt={detail.payment_provider_name}
-                        className="w-12 h-12 rounded-full object-cover flex-shrink-0"
-                        onError={(e) => {
-                          e.currentTarget.src = "/default-provider-logo.svg";
-                        }}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="mb-2">
-                          <p className="text-xs text-gray-500 dark:text-gray-400">
-                            Account Name
-                          </p>
-                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                            {detail.account_name}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">
-                            {selectedMethod?.toLowerCase().includes('mobile') || selectedMethod?.toLowerCase().includes('money') ? 'Phone Number' : 'Account Number'}
-                          </p>
-                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                            {detail.account_number}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-end gap-2">
-                      <span className="px-3 py-1.5 text-xs font-semibold text-white bg-[#1D8751] rounded-md">
-                        Selected
-                      </span>
-                      {onRemove && (
-                        <button
-                          onClick={() => onRemove(detail)}
-                          className="px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 bg-red-500/10 border border-red-500/30 rounded-md hover:bg-red-500/20 transition-colors"
-                          type="button"
-                        >
-                          Remove
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 px-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-              <p className="text-gray-600 dark:text-gray-400 mb-4">
-                {hasAdminMethod
-                  ? `No payment account found for ${selectedProvider}. Please add a payment account first.`
-                  : "No payment details found for this combination. Please add a payment method first."}
-              </p>
-              {onAddPaymentMethod && (
-                <button
-                  type="button"
-                  onClick={onAddPaymentMethod}
-                  className="px-4 py-2 text-sm font-medium text-white bg-[#1D8751] hover:bg-[#166b3e] border border-[#1D8751] rounded-md transition-colors"
-                >
-                  Add Payment Method
-                </button>
-              )}
-            </div>
+            )}
+          </div>
+          {/* Add Payment Method button - in same row as card(s) */}
+          {onAddPaymentMethod && (
+            <button
+              type="button"
+              onClick={onAddPaymentMethod}
+              className="px-4 py-2 text-sm font-medium text-white bg-[#1D8751] hover:bg-[#166b3e] border border-[#1D8751] rounded-md transition-colors flex-shrink-0 self-center"
+            >
+              Add Payment Method
+            </button>
           )}
         </div>
       )}
