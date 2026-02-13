@@ -1035,7 +1035,7 @@ export default function RegistrationPage() {
                           e.currentTarget.style.display = "none";
                         }}
                       />
-                      <span>{selectedCountry}</span>
+                      <span className="text-sm truncate">{countries.find((c) => c.code === selectedCountry)?.name || selectedCountry}</span>
                     </button>
                     <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                       <span className="mr-2 text-[#88898e] text-sm">
@@ -1167,7 +1167,7 @@ export default function RegistrationPage() {
                       onChange={(e) => setPhone(e.target.value)}
                       className={`w-full py-2 px-4 pl-9 rounded-full bg-white dark:bg-(--card-color) border ${errors.phone ? "border-[#FDA29B]" : "border-gray-300 dark:border-[#35353E]"
                         } text-gray-900 dark:text-white focus:outline-none focus:border-secondary`}
-                      placeholder={"+12345678"}
+                      placeholder={`${countries.find((c) => c.code === selectedCountry)?.dialCode || "+252"}12345678`}
                     />
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <svg

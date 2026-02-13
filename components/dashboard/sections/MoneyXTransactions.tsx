@@ -83,7 +83,7 @@ const MoneyXTransactions = () => {
       <div className="hidden lg:block overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-gray-200 dark:border-[#35353E]">
+            <tr className="border-b border-gray-200 dark:border-accent">
               <th className="py-3 px-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]"><span className="inline-flex items-center">Transaction ID<SortArrowsIcon /></span></th>
               <th className="py-3 px-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]"><span className="inline-flex items-center">From<SortArrowsIcon /></span></th>
               <th className="py-3 px-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]"><span className="inline-flex items-center">To<SortArrowsIcon /></span></th>
@@ -97,7 +97,7 @@ const MoneyXTransactions = () => {
             {paginatedTransactions.map((tx: any, index: number) => (
               <tr
                 key={tx.moneyx_transaction_id || index}
-                className="border-b dark:border-[#35353E] border-gray-100 hover:bg-gray-50 dark:hover:bg-[#1D1D23] transition-colors"
+                className="border-b dark:border-accent border-gray-100 hover:bg-gray-50 dark:hover:bg-[#1D1D23] transition-colors"
               >
                 <td className="py-4 px-4">
                   <span className="text-sm font-medium dark:text-white text-gray-900">
@@ -151,8 +151,8 @@ const MoneyXTransactions = () => {
                     {tx.status || "Pending"}
                   </span>
                 </td>
-                <td className="py-4 px-4 border-b border-gray-200 dark:border-[#35353E]">
-                  <span className="text-sm sm:text-base text-gray-500 dark:text-[#A0A3BC]">
+                <td className="py-4 px-4 border-b border-gray-200 dark:border-accent">
+                  <span className="text-xs sm:text-sm md:text-base text-gray-500 dark:text-[#A0A3BC]">
                     {tx.created_at
                       ? formatDistanceToNow(new Date(tx.created_at), {
                         addSuffix: true,
@@ -171,7 +171,7 @@ const MoneyXTransactions = () => {
         {paginatedTransactions.map((tx: any, index: number) => (
           <div
             key={tx.moneyx_transaction_id || index}
-            className="bg-gray-50 dark:bg-[#1D1D23] rounded-xl p-4 border dark:border-[#35353E] border-gray-200"
+            className="bg-gray-50 dark:bg-[#1D1D23] rounded-xl p-4 border dark:border-accent border-gray-200"
           >
             <div className="flex justify-between items-start mb-3">
               <div>
@@ -232,7 +232,7 @@ const MoneyXTransactions = () => {
                 </p>
               </div>
             </div>
-            <div className="mt-3 pt-3 border-t dark:border-[#35353E] border-gray-200">
+            <div className="mt-3 pt-3 border-t dark:border-accent border-gray-200">
               <p className="text-xs dark:text-[#788099] text-gray-500">
                 {tx.created_at
                   ? formatDistanceToNow(new Date(tx.created_at), { addSuffix: true })
@@ -253,7 +253,7 @@ const MoneyXTransactions = () => {
               setCurrentPage((p) => Math.max(1, p - 1));
             }}
             disabled={currentPage === 1}
-            className="px-3 py-1 rounded-lg bg-gray-100 dark:bg-[#35353E] text-gray-700 dark:text-white disabled:opacity-50"
+            className="px-3 py-1 rounded-lg bg-gray-100 dark:bg-accent text-gray-700 dark:text-white disabled:opacity-50"
           >
             Previous
           </button>
@@ -267,7 +267,7 @@ const MoneyXTransactions = () => {
               setCurrentPage((p) => Math.min(totalPages, p + 1));
             }}
             disabled={currentPage === totalPages}
-            className="px-3 py-1 rounded-lg bg-gray-100 dark:bg-[#35353E] text-gray-700 dark:text-white disabled:opacity-50"
+            className="px-3 py-1 rounded-lg bg-gray-100 dark:bg-accent text-gray-700 dark:text-white disabled:opacity-50"
           >
             Next
           </button>

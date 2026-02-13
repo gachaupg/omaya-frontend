@@ -92,36 +92,48 @@ const LiveTransactionsPage = () => {
             let toName = "";
             let toLogo = "";
 
+            // Priority: Try to get user/account names first, then fall back to currency
+            const userName = data.user_name || data.account_name || data.sender_name || data.from_name || "";
+            const receiverName = data.receiver_name || data.to_name || data.recipient_name || "";
+            const paymentProvider = data.payment_provider || data.provider || data.bank_name || "";
+            const currency = data.currency || data.asset || "USDT";
+
             if (type === "moneyx") {
-              // MoneyX: From = payment provider, To = currency/asset
-              fromName = data.payment_provider || data.user_name || "MoneyX";
-              fromLogo = getBankLogo(data.payment_provider || "");
-              toName = data.currency || "USD";
-              toLogo = getCurrencyLogo(data.currency);
+              // MoneyX: From = user or payment provider, To = receiver or currency
+              fromName = userName || paymentProvider || "MoneyX";
+              fromLogo = getBankLogo(paymentProvider || fromName);
+              toName = receiverName || currency;
+              toLogo = receiverName ? getBankLogo(receiverName) : getCurrencyLogo(currency);
             } else if (type === "p2p_deposit") {
               // P2P deposit: From = user, To = asset
-              fromName = data.user_name || "P2P Deposit";
-              fromLogo = getBankLogo(data.payment_provider || fromName);
-              toName = data.currency || "USDT";
-              toLogo = getCurrencyLogo(data.currency);
+              fromName = userName || "P2P Deposit";
+              fromLogo = getBankLogo(paymentProvider || fromName);
+              toName = currency;
+              toLogo = getCurrencyLogo(currency);
             } else if (type === "p2p_withdraw") {
               // P2P withdraw: From = asset, To = user
-              fromName = data.currency || "USDT";
-              fromLogo = getCurrencyLogo(data.currency);
-              toName = data.user_name || "P2P Withdraw";
-              toLogo = getBankLogo(data.payment_provider || toName);
+              fromName = currency;
+              fromLogo = getCurrencyLogo(currency);
+              toName = userName || receiverName || "P2P Withdraw";
+              toLogo = getBankLogo(paymentProvider || toName);
             } else if (type === "p2p_trade") {
-              // P2P trade: From = payment provider, To = payment provider
-              fromName = data.payment_provider || data.currency || "Buyer";
-              fromLogo = getBankLogo(fromName);
-              toName = data.payment_provider || data.currency || "Seller";
-              toLogo = getBankLogo(toName);
+              // P2P trade: From = seller/provider, To = buyer/receiver
+              fromName = userName || paymentProvider || "Seller";
+              fromLogo = getBankLogo(paymentProvider || fromName);
+              toName = receiverName || currency;
+              toLogo = receiverName ? getBankLogo(receiverName) : getCurrencyLogo(currency);
+            } else if (type === "exchange" || type === "swap") {
+              // Exchange/Swap: From = source, To = destination
+              fromName = userName || paymentProvider || currency;
+              fromLogo = userName || paymentProvider ? getBankLogo(fromName) : getCurrencyLogo(currency);
+              toName = receiverName || currency;
+              toLogo = receiverName ? getBankLogo(receiverName) : getCurrencyLogo(currency);
             } else {
-              // Fallback: From = currency, To = payment provider or user
-              fromName = data.currency || data.user_name || "Transaction";
-              fromLogo = getCurrencyLogo(data.currency);
-              toName = data.payment_provider || data.user_name || "Destination";
-              toLogo = getBankLogo(data.payment_provider || "");
+              // Default fallback: prioritize user names over currency
+              fromName = userName || paymentProvider || currency;
+              fromLogo = userName || paymentProvider ? getBankLogo(fromName) : getCurrencyLogo(currency);
+              toName = receiverName || paymentProvider || currency;
+              toLogo = receiverName || paymentProvider ? getBankLogo(toName) : getCurrencyLogo(currency);
             }
 
             return {
@@ -159,20 +171,32 @@ const LiveTransactionsPage = () => {
         // Handle incremental single-transaction updates
         if (message.type === "transaction" || message.type === "new_transaction") {
           const data = message.data;
+          const type = String(data.transaction_type || "").toLowerCase();
+
+          // Use same logic as initial payload for consistent display
+          const userName = data.user_name || data.account_name || data.sender_name || data.from_name || "";
+          const receiverName = data.receiver_name || data.to_name || data.recipient_name || "";
+          const paymentProvider = data.payment_provider || data.provider || data.bank_name || "";
+          const currency = data.currency || data.asset || "USDT";
+
+          let fromName = data.from || userName || paymentProvider || currency;
+          let fromLogo = data.from_logo || (userName || paymentProvider ? getBankLogo(fromName) : getCurrencyLogo(currency));
+          let toName = data.to || receiverName || paymentProvider || currency;
+          let toLogo = data.to_logo || (receiverName || paymentProvider ? getBankLogo(toName) : getCurrencyLogo(currency));
 
           // Transform the message data to Transaction format
           const transaction: Transaction = {
             id: data.id || data.transaction_id || `tx-${Date.now()}-${Math.random()}`,
             from: {
-              name: data.from || data.from_bank || data.from_provider || "Unknown",
-              logo: data.from_logo || getBankLogo(data.from || data.from_bank || ""),
+              name: fromName,
+              logo: fromLogo,
             },
             to: {
-              name: data.to || data.to_bank || data.to_provider || "Unknown",
-              logo: data.to_logo || getBankLogo(data.to || data.to_bank || ""),
+              name: toName,
+              logo: toLogo,
             },
             amount: data.amount || data.total_amount || "0",
-            currency: data.currency || "USD",
+            currency: currency,
             timestamp: data.timestamp || data.created_at || new Date().toISOString(),
             when: formatTimeAgo(data.timestamp || data.created_at || new Date().toISOString()),
           };

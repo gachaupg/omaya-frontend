@@ -207,7 +207,7 @@ const ExchangeTransactions = ({ itemsPerPage = 10 }) => {
             disabled={currentPage === 1}
             className={`px-2 sm:px-3 py-1.5 sm:py-1 rounded-md border transition-colors duration-150 text-xs sm:text-sm min-h-[44px] sm:min-h-0 lg:min-h-0
               ${currentPage > 1
-                ? "bg-transparent text-gray-600 dark:text-gray-400 border-[#d1d5db] dark:border-[#35353E] hover:bg-[#1D8751] hover:text-white"
+                ? "bg-transparent text-gray-600 dark:text-gray-400 border-[#d1d5db] dark:border-accent hover:bg-[#1D8751] hover:text-white"
                 : "bg-gray-200 dark:bg-gray-600 text-gray-400 cursor-not-allowed border-transparent"
               }`}
           >
@@ -222,7 +222,7 @@ const ExchangeTransactions = ({ itemsPerPage = 10 }) => {
               className={`mx-0.5 sm:mx-1 px-2 sm:px-3 py-1.5 sm:py-1 rounded-md border transition-colors duration-150 text-xs sm:text-sm min-h-[44px] sm:min-h-0 lg:min-h-0
                 ${pageNum === currentPage
                   ? "bg-[#1D8751] text-white border-[#1D8751]"
-                  : "bg-transparent text-gray-600 dark:text-gray-400 border-[#d1d5db] dark:border-[#35353E] hover:bg-[#1D8751] hover:text-white"
+                  : "bg-transparent text-gray-600 dark:text-gray-400 border-[#d1d5db] dark:border-accent hover:bg-[#1D8751] hover:text-white"
                 }`}
             >
               {pageNum}
@@ -235,7 +235,7 @@ const ExchangeTransactions = ({ itemsPerPage = 10 }) => {
             disabled={currentPage === totalPages}
             className={`px-2 sm:px-3 py-1.5 sm:py-1 rounded-md border transition-colors duration-150 text-xs sm:text-sm min-h-[44px] sm:min-h-0 lg:min-h-0
               ${currentPage < totalPages
-                ? "bg-transparent text-gray-600 dark:text-gray-400 border-[#d1d5db] dark:border-[#35353E] hover:bg-[#1D8751] hover:text-white"
+                ? "bg-transparent text-gray-600 dark:text-gray-400 border-[#d1d5db] dark:border-accent hover:bg-[#1D8751] hover:text-white"
                 : "bg-gray-200 dark:bg-gray-600 text-gray-400 cursor-not-allowed border-transparent"
               }`}
           >
@@ -257,14 +257,14 @@ const ExchangeTransactions = ({ itemsPerPage = 10 }) => {
           return (
             <div
               key={tx.transaction_id || `tx-${index}`}
-              className="bg-transparent border border-[#E8EFF5] dark:border-[#35353E] rounded-xl p-4 space-y-3"
+              className="bg-transparent border border-[#E8EFF5] dark:border-accent rounded-xl p-4 space-y-3"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <img
                     src={getHighResAssetIcon({ ...tx, ticker: tx.currency })}
                     alt={tx.currency || "Asset"}
-                    className="w-10 h-10 rounded-full shadow-sm flex-shrink-0"
+                    className="w-10 h-10 rounded-full shadow-sm shrink-0"
                     onError={(e) => {
                       e.currentTarget.style.display = 'none';
                     }}
@@ -379,7 +379,7 @@ const ExchangeTransactions = ({ itemsPerPage = 10 }) => {
                       <img
                         src={paymentInfo.displayImage}
                         alt={paymentInfo.providerName || "Payment method"}
-                        className="w-8 h-8 rounded-full border border-[#E8EFF5] dark:border-[#35353E] bg-white dark:bg-[#1D1D23]"
+                        className="w-8 h-8 rounded-full border border-[#E8EFF5] dark:border-accent bg-white dark:bg-[#1D1D23]"
                         onError={(e) => {
                           e.currentTarget.style.display = 'none';
                         }}
@@ -414,9 +414,9 @@ const ExchangeTransactions = ({ itemsPerPage = 10 }) => {
 
       {/* Desktop Table Layout */}
       <div className="hidden sm:block overflow-x-auto">
-        <table className="min-w-full divide-y divide-[#d1d5db] dark:divide-[#35353E]">
+        <table className="min-w-full divide-y divide-[#d1d5db] dark:divide-accent">
           <thead className="bg-transparent">
-            <tr className="border-b border-gray-200 dark:border-[#35353E]">
+            <tr className="border-b border-gray-200 dark:border-accent">
               {[
                 t("transactions.asset", "Asset"),
                 t("transactions.from", "From"),
@@ -438,7 +438,7 @@ const ExchangeTransactions = ({ itemsPerPage = 10 }) => {
             </tr>
           </thead>
 
-          <tbody className="divide-y divide-[#d1d5db] dark:divide-[#35353E]">
+          <tbody className="divide-y divide-[#d1d5db] dark:divide-accent">
             {filteredResults.map((tx: any, index: number) => {
               const paymentInfo = extractPaymentInfo(tx);
 
@@ -448,12 +448,12 @@ const ExchangeTransactions = ({ itemsPerPage = 10 }) => {
                   className="hover:bg-gray-100 dark:hover:bg-[#23232A] transition-colors"
                 >
                   {/* Asset */}
-                  <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E]">
+                  <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-accent">
                     <div className="flex items-center gap-2 sm:gap-3">
                       <img
                         src={getHighResAssetIcon({ ...tx, ticker: tx.currency })}
                         alt={tx.currency || "Asset"}
-                        className="w-7 h-7 sm:w-8 sm:h-8 rounded-full shadow-sm flex-shrink-0"
+                        className="w-7 h-7 sm:w-8 sm:h-8 rounded-full shadow-sm shrink-0"
                         onError={(e) => {
                           e.currentTarget.style.display = 'none';
                         }}
@@ -470,7 +470,7 @@ const ExchangeTransactions = ({ itemsPerPage = 10 }) => {
                   </td>
 
                   {/* From - Bank/Mobile or Asset based on transaction type */}
-                  <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E]">
+                  <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-accent">
                     <div className="flex items-center gap-2 min-w-0">
                       {tx.transaction_type === "deposit" ? (
                         <>
@@ -478,7 +478,7 @@ const ExchangeTransactions = ({ itemsPerPage = 10 }) => {
                             <img
                               src={paymentInfo.displayImage}
                               alt={paymentInfo.providerName || "Payment method"}
-                              className="w-7 h-7 rounded-full border border-[#E8EFF5] dark:border-[#35353E] bg-white dark:bg-[#1D1D23] flex-shrink-0"
+                              className="w-7 h-7 rounded-full border border-[#E8EFF5] dark:border-accent bg-white dark:bg-[#1D1D23] shrink-0"
                               onError={(e) => {
                                 e.currentTarget.style.display = 'none';
                               }}
@@ -493,7 +493,7 @@ const ExchangeTransactions = ({ itemsPerPage = 10 }) => {
                           <img
                             src={getHighResAssetIcon({ ...tx, ticker: tx.currency })}
                             alt={tx.currency || "Asset"}
-                            className="w-7 h-7 rounded-full shadow-sm flex-shrink-0"
+                            className="w-7 h-7 rounded-full shadow-sm shrink-0"
                             onError={(e) => {
                               e.currentTarget.style.display = 'none';
                             }}
@@ -503,7 +503,7 @@ const ExchangeTransactions = ({ itemsPerPage = 10 }) => {
                               <span className="font-medium text-sm text-gray-900 dark:text-white">
                                 {tx.currency || "USDT"}
                               </span>
-                              <span className="text-[10px] bg-[#1D8751] text-white px-1.5 py-0.5 rounded-full">
+                              <span className="text-[10px] bg-[#1D8751] text-white px-2 py-1 rounded-full min-w-30 max-w-40">
                                 {paymentInfo.assetNetwork}
                               </span>
                             </div>
@@ -514,14 +514,14 @@ const ExchangeTransactions = ({ itemsPerPage = 10 }) => {
                   </td>
 
                   {/* To - Asset or Bank based on transaction type */}
-                  <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E]">
+                  <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-accent">
                     <div className="flex items-center gap-2 min-w-0">
                       {tx.transaction_type === "deposit" ? (
                         <>
                           <img
                             src={getHighResAssetIcon({ ...tx, ticker: tx.currency })}
                             alt={tx.currency || "Asset"}
-                            className="w-7 h-7 rounded-full shadow-sm flex-shrink-0"
+                            className="w-7 h-7 rounded-full shadow-sm shrink-0"
                             onError={(e) => {
                               e.currentTarget.style.display = 'none';
                             }}
@@ -531,7 +531,7 @@ const ExchangeTransactions = ({ itemsPerPage = 10 }) => {
                               <span className="font-medium text-sm text-gray-900 dark:text-white">
                                 {tx.currency || "USDT"}
                               </span>
-                              <span className="text-[10px] bg-[#1D8751] text-white px-1.5 py-0.5 rounded-full">
+                              <span className="text-[10px] bg-[#1D8751] text-white px-2 py-1 rounded-full min-w-30 max-w-40">
                                 {paymentInfo.assetNetwork}
                               </span>
                             </div>
@@ -548,7 +548,7 @@ const ExchangeTransactions = ({ itemsPerPage = 10 }) => {
                             <img
                               src={paymentInfo.displayImage}
                               alt={paymentInfo.providerName || "Payment method"}
-                              className="w-7 h-7 rounded-full border border-[#E8EFF5] dark:border-[#35353E] bg-white dark:bg-[#1D1D23] flex-shrink-0"
+                              className="w-7 h-7 rounded-full border border-[#E8EFF5] dark:border-accent bg-white dark:bg-[#1D1D23] shrink-0"
                               onError={(e) => {
                                 e.currentTarget.style.display = 'none';
                               }}
@@ -564,7 +564,7 @@ const ExchangeTransactions = ({ itemsPerPage = 10 }) => {
 
                   {/* Amount */}
                   <td
-                    className={`px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E] text-sm sm:text-base font-semibold ${tx.transaction_type === "deposit"
+                    className={`px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-accent text-sm sm:text-base font-semibold ${tx.transaction_type === "deposit"
                       ? "text-[#1D8751]"
                       : "text-red-500 dark:text-red-400"
                       }`}
@@ -573,7 +573,7 @@ const ExchangeTransactions = ({ itemsPerPage = 10 }) => {
                   </td>
 
                   {/* Status */}
-                  <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E]">
+                  <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-accent">
                     <span
                       className={`px-2 py-1 rounded-full text-xs font-medium ${tx.status === "completed"
                         ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
@@ -591,7 +591,7 @@ const ExchangeTransactions = ({ itemsPerPage = 10 }) => {
                   </td>
 
                   {/* When */}
-                  <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E] text-sm sm:text-base text-gray-500 dark:text-[#A0A3BC]">
+                  <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-accent text-sm sm:text-base text-gray-500 dark:text-[#A0A3BC]">
                     {formatDistanceToNow(new Date(tx.created_at), {
                       addSuffix: true,
                     })}

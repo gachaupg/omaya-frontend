@@ -954,7 +954,7 @@ const LineCharts = React.memo(
               </h3>
 
               <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                {["exchange", "p2p", "swap"].map(t => (
+                {["exchange", "p2p", "swap", "moneyx"].map(t => (
                   <button
                     key={t}
                     onClick={() => setActiveTab(t as any)}
@@ -965,7 +965,7 @@ const LineCharts = React.memo(
                       }
           `}
                   >
-                    {t.toUpperCase()}
+                    {t === "moneyx" ? "MONEYX" : t.toUpperCase()}
                   </button>
                 ))}
               </div>
