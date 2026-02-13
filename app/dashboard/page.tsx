@@ -82,7 +82,7 @@ export default function DashboardPage() {
   const userName = user?.first_name || user?.email?.split('@')[0] || '';
 
   return (
-    <div className="w-full min-h-screen pt-0 pb-4 flex flex-col gap-0 sm:gap-4 overflow-x-hidden px-3 sm:px-4 md:px-6 lg:px-8">
+    <div className="w-full min-h-screen pt-0 pb-4 flex flex-col gap-0 sm:gap-4 overflow-x-hidden px-3   md:px-6">
       <UserCard />
       <div className="w-full flex flex-col gap-4">
         <PriceCards />
