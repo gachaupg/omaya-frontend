@@ -32,9 +32,10 @@ export const validateP2PAd = {
     return "";
   },
 
-  commission: (value: number) => {
+  commission: (value: number, currency?: string) => {
     if (value < 0) return "Commission cannot be negative";
-    if (value > 100) return "Commission cannot exceed 100%";
+    // When KES, rate can exceed 100% (e.g. exchange rate); when USD, cap at 100%
+    if (currency !== "KES" && value > 100) return "Commission cannot exceed 100%";
     return "";
   },
 
