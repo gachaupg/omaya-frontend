@@ -168,17 +168,25 @@ const AddPaymentDetailsModal: React.FC<AddPaymentDetailsModalProps> = ({
              />
            </div>
 
-          {/* Account Number */}
+          {/* Account Number / Mobile Number - dynamic based on payment method */}
           <div>
             <label className="block text-sm mb-1 text-[#788099]">
-              Account Number
+              {selectedMethod?.name.toLowerCase().includes("mobile") ||
+              selectedMethod?.name.toLowerCase().includes("money")
+                ? "Mobile Number"
+                : "Account Number"}
             </label>
             <input
               type="text"
               value={accountNumber}
               onChange={(e) => setAccountNumber(e.target.value)}
               className="w-full p-3 rounded-lg text-sm bg-[#18181D] text-white border border-[#35353E] focus:outline-none h-12"
-              placeholder="123456"
+              placeholder={
+                selectedMethod?.name.toLowerCase().includes("mobile") ||
+                selectedMethod?.name.toLowerCase().includes("money")
+                  ? "0712345678"
+                  : "123456"
+              }
             />
           </div>
 

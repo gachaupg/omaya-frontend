@@ -202,8 +202,8 @@ export const API_CONFIG = {
   PAYMENTS: {
     SEND_EDIT_OTP: "/payments/user-payment-details/send-edit-otp/",
     USER_PAYMENT_DETAIL: (id: string) => `/payments/user-payment-details/${id}/`,
-    USER_WALLET_ADDRESSES: "/api/payments/user-wallet-addresses/",
-    USER_WALLET_ADDRESS: (uuid: string) => `/api/payments/user-wallet-addresses/${uuid}/`,
+    USER_WALLET_ADDRESSES: "/payments/user-wallet-addresses/",
+    USER_WALLET_ADDRESS: (uuid: string) => `/payments/user-wallet-addresses/${uuid}/`,
     USER_WALLET_ADDRESS_SEND_OTP: "/payments/user-wallet-addresses/send-edit-otp/",
   },
   MONEYX: {

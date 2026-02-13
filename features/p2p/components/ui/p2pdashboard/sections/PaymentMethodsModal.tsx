@@ -169,7 +169,20 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
   const normalizedMethod = method.trim().toLowerCase();
   const isCryptoMethod = normalizedMethod.includes("crypto");
   const isForexMethod = normalizedMethod.includes("forex");
+  const isMobileMethod =
+    normalizedMethod.includes("mobile") || normalizedMethod.includes("money") || normalizedMethod.includes("mpesa");
   const shouldUseWalletAddressField = isCryptoMethod || isForexMethod;
+
+  const accountFieldLabel = shouldUseWalletAddressField
+    ? "Wallet Address"
+    : isMobileMethod
+      ? "Mobile Number"
+      : "Account Number";
+  const accountFieldPlaceholder = shouldUseWalletAddressField
+    ? "Enter wallet address"
+    : isMobileMethod
+      ? "0712345678"
+      : "Enter account number";
 
    logger.debug('p2p', "DEBUG: publicPaymentMethods:", publicPaymentMethods);
    logger.debug('p2p', "DEBUG: processedProviders:", processedProviders);
@@ -395,18 +408,14 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                disabled
              />
            </div>
-                     {/* Account Number Input */}
+                     {/* Account Number / Mobile Number / Wallet - dynamic based on payment method */}
           <div>
             <label className="block text-gray-600 dark:text-[#788099] text-sm mb-1">
-              {shouldUseWalletAddressField ? "Wallet Address" : "Account Number"}
+              {accountFieldLabel}
             </label>
              <input
                className="w-full bg-gray-50 dark:bg-[#23232B] text-gray-900 dark:text-white rounded-lg px-3 sm:px-4 py-2.5 sm:py-3 focus:outline-none focus:ring-2 focus:ring-[#1D8751] placeholder:text-gray-400 dark:placeholder:text-[#788099] text-sm sm:text-base"
-               placeholder={
-                 shouldUseWalletAddressField
-                   ? "Enter wallet address"
-                   : "Enter account number"
-               }
+               placeholder={accountFieldPlaceholder}
                value={account}
                onChange={(e) => setAccount(e.target.value)}
                disabled={publicMethodsLoading}
