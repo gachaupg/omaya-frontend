@@ -844,13 +844,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
               <div className="my-4 sm:my-6 gap-6 sm:gap-10 flex flex-col lg:flex-row p-2">
                 <div className="flex-1">
                   <UserPaymentSelector
-                    userPaymentDetails={
-                      (userPaymentDetails || []).filter(
-                        (d) =>
-                          !d.status ||
-                          d.status?.toLowerCase() === "approved"
-                      )
-                    }
+                    userPaymentDetails={userPaymentDetails || []}
                     adminMethods={adminMethods || []}
                     onSelect={handleSelectPaymentDetail}
                     selectedDetails={selectedPaymentDetails}
@@ -900,11 +894,13 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                         {selectedPaymentDetails.map((detail) => {
                           // Get logo URL with priority: logo_url > logo > provider_logo
                           const logoUrl = detail.logo_url || detail.logo || detail.provider_logo || "/default-provider-logo.svg";
+                          const status = detail.status?.toLowerCase() || "approved";
+                          const isPending = status === "pending";
 
                           return (
                             <div
                               key={detail.id}
-                              className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 sm:p-4 rounded-[12px] sm:rounded-[16px] bg-[#1D8751]/10 dark:bg-[#1D8751]/20 border border-[#1D8751]/30"
+                              className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 sm:p-4 rounded-[12px] sm:rounded-[16px] bg-gray-100 dark:bg-[#2a2d35] border border-gray-200 dark:border-[#35353E]"
                             >
                               <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0 w-full sm:w-auto">
                                 {/* Logo */}
@@ -940,14 +936,25 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                                     </span>
                                   </div>
 
-                                  {/* Account Number */}
+                                  {/* Account Number / Wallet Address */}
                                   <div>
                                     <span className="text-[10px] sm:text-xs text-gray-500 dark:text-[#788099]">
-                                      •••• {detail.account_number?.slice(-4) || 'N/A'}
+                                      •••• {(detail.account_number || detail.wallet_address)?.slice(-4) || 'N/A'}
                                     </span>
                                   </div>
                                 </div>
                               </div>
+
+                              {/* Status Badge */}
+                              <span
+                                className={`flex-shrink-0 px-2.5 py-1 rounded-md text-xs font-medium ${
+                                  isPending
+                                    ? "bg-amber-500/20 dark:bg-amber-500/30 text-amber-700 dark:text-amber-400 border border-amber-500/40"
+                                    : "bg-[#1D8751]/20 dark:bg-[#1D8751]/30 text-[#1D8751] border border-[#1D8751]/40"
+                                }`}
+                              >
+                                {isPending ? "Pending" : "Approved"}
+                              </span>
 
                               {/* Remove Button */}
                               <button
