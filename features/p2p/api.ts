@@ -639,8 +639,15 @@ export const getUserTrades = async (
 
 export const getFeedbackReviews = async (): Promise<Feedback[]> => {
   return withRetry(async () => {
-    const response = await get<Feedback[]>(API_CONFIG.P2P.FEEDBACK_REVIEW);
-    return response.data;
+    const response = await get<{ summary?: unknown; feedbacks?: Feedback[] } | Feedback[]>(
+      API_CONFIG.P2P.FEEDBACK_REVIEW
+    );
+    const data = response.data;
+    if (Array.isArray(data)) return data;
+    if (data && typeof data === "object" && Array.isArray((data as { feedbacks?: Feedback[] }).feedbacks)) {
+      return (data as { feedbacks: Feedback[] }).feedbacks;
+    }
+    return [];
   });
 };
 

@@ -128,14 +128,15 @@ const P2pProfile = ({
     };
   }, []);
 
-  // Calculate feedback statistics
+  // Calculate feedback statistics (support both array and { feedbacks } response)
+  const feedbackList = Array.isArray(feedbackData) ? feedbackData : (feedbackData?.feedbacks ?? []);
   const feedbackStats = useMemo(() => {
-    const total = feedbackData?.length || 0;
-    const positive = feedbackData?.filter((f) => f.is_positive).length || 0;
+    const total = feedbackList.length;
+    const positive = feedbackList.filter((f: any) => f?.is_positive).length;
     const positivePercentage = total > 0 ? ((positive / total) * 100).toFixed(1) : "0.0";
-    
+
     return { total, positive, positivePercentage };
-  }, [feedbackData]);
+  }, [feedbackList]);
   
   logger.debug('p2p', "P2pProfile user:", user);
   logger.debug('p2p', "P2pProfile wallets:", wallets);

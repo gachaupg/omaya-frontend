@@ -217,7 +217,19 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
       isValid = false;
     }
 
-    const commissionError = validateP2PAd.commission(parseFloat(commission) || 0);
+    // When KES: Order Max cannot exceed rate × amount (using Rate at top)
+    if (activeCurrency === "KES" && orderMax && amount && commission) {
+      const rate = Number(commission) || 0;
+      const amountNum = Number(amount) || 0;
+      const maxNum = Number(orderMax) || 0;
+      const maxAllowed = rate * amountNum;
+      if (!isNaN(maxNum) && !isNaN(maxAllowed) && maxNum > maxAllowed) {
+        newErrors.orderMax = `Maximum order amount cannot exceed rate × amount (KSh ${formatLargeNumber(maxAllowed)})`;
+        isValid = false;
+      }
+    }
+
+    const commissionError = validateP2PAd.commission(parseFloat(commission) || 0, activeCurrency);
     if (commissionError) {
       newErrors.commission = commissionError;
       isValid = false;
@@ -573,8 +585,8 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                             amount: "Amount must be greater than or equal to minimum order amount"
                           }));
                         }
-                        // Check if orderMax is greater than amount
-                        else if (orderMax && !isNaN(Number(orderMax)) && Number(orderMax) > amountNum) {
+                        // When USD: check if orderMax is greater than amount
+                        else if (activeCurrency === "USD" && orderMax && !isNaN(Number(orderMax)) && Number(orderMax) > amountNum) {
                           setErrors((prev) => ({
                             ...prev,
                             amount: "Amount must be greater than or equal to maximum order amount"
@@ -593,12 +605,23 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                               }));
                             }
                           }
-                          if (orderMax) {
+                          if (activeCurrency === "USD" && orderMax) {
                             const maxNum = Number(orderMax);
                             if (!isNaN(maxNum) && maxNum > amountNum) {
                               setErrors((prev) => ({
                                 ...prev,
                                 orderMax: "Maximum order amount cannot be greater than amount"
+                              }));
+                            }
+                          }
+                          if (activeCurrency === "KES" && orderMax && amount && commission) {
+                            const rate = Number(commission) || 0;
+                            const maxNum = Number(orderMax) || 0;
+                            const maxAllowed = rate * amountNum;
+                            if (!isNaN(maxNum) && !isNaN(maxAllowed) && maxNum > maxAllowed) {
+                              setErrors((prev) => ({
+                                ...prev,
+                                orderMax: `Maximum order amount cannot exceed rate × amount (KSh ${formatLargeNumber(maxAllowed)})`
                               }));
                             }
                           }
@@ -653,7 +676,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                   ? "border-red-500"
                   : "border-gray-200 dark:border-[#35353E]"
                   } rounded-[19px] px-2 py-2 min-h-[40px]`}>
-                  <span className="text-[#1D8751] text-lg mr-1">$</span>
+                  <span className="text-[#1D8751] text-lg mr-1">{activeCurrency === "KES" ? "KSh" : "$"}</span>
                   <input
                     type="text"
                     value={orderMin}
@@ -743,7 +766,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                   ? "border-red-500"
                   : "border-gray-200 dark:border-[#35353E]"
                   } rounded-[19px] px-2 py-2 min-h-[40px]`}>
-                  <span className="text-[#1D8751] text-lg mr-1">$</span>
+                  <span className="text-[#1D8751] text-lg mr-1">{activeCurrency === "KES" ? "KSh" : "$"}</span>
                   <input
                     type="text"
                     value={orderMax}
@@ -783,8 +806,33 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                             orderMax: "Maximum order amount must be greater than minimum order amount"
                           }));
                         }
-                        // Check if it's greater than amount (if amount is set)
-                        else if (amount && !isNaN(Number(amount)) && valueNum > Number(amount)) {
+                        // When KES: Order Max cannot exceed rate × amount (Rate at top)
+                        else if (activeCurrency === "KES" && amount && commission) {
+                          const rate = Number(commission) || 0;
+                          const amountNum = Number(amount) || 0;
+                          const maxAllowed = rate * amountNum;
+                          if (!isNaN(maxAllowed) && valueNum > maxAllowed) {
+                            setErrors((prev) => ({
+                              ...prev,
+                              orderMax: `Maximum order amount cannot exceed rate × amount (KSh ${formatLargeNumber(maxAllowed)})`
+                            }));
+                          } else {
+                            setErrors((prev) => ({ ...prev, orderMax: undefined }));
+                            if (orderMin && !isNaN(Number(orderMin))) {
+                              const minNum = Number(orderMin);
+                              if (minNum >= valueNum) {
+                                setErrors((prev) => ({
+                                  ...prev,
+                                  orderMin: "Minimum order amount must be less than maximum order amount"
+                                }));
+                              } else if (errors.orderMin?.includes("less than maximum")) {
+                                setErrors((prev) => ({ ...prev, orderMin: undefined }));
+                              }
+                            }
+                          }
+                        }
+                        // When USD: check if it's greater than amount (if amount is set)
+                        else if (activeCurrency === "USD" && amount && !isNaN(Number(amount)) && valueNum > Number(amount)) {
                           setErrors((prev) => ({
                             ...prev,
                             orderMax: "Maximum order amount cannot be greater than amount"
@@ -844,17 +892,12 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
               <div className="my-4 sm:my-6 gap-6 sm:gap-10 flex flex-col lg:flex-row p-2">
                 <div className="flex-1">
                   <UserPaymentSelector
-                    userPaymentDetails={
-                      (userPaymentDetails || []).filter(
-                        (d) =>
-                          !d.status ||
-                          d.status?.toLowerCase() === "approved"
-                      )
-                    }
+                    userPaymentDetails={userPaymentDetails || []}
                     adminMethods={adminMethods || []}
                     onSelect={handleSelectPaymentDetail}
+                    onRemove={handleRemovePaymentDetail}
                     selectedDetails={selectedPaymentDetails}
-                    hideSelected={true}
+                    hideSelected={false}
                     onProviderSelect={(provider) =>
                       setSelectedProviderInSelector(provider)
                     }
@@ -889,96 +932,6 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                       </div>
                     }
                   />
-
-                  {/* Display Selected Payment Methods */}
-                  {selectedPaymentDetails.length > 0 && (
-                    <div className="mt-4">
-                      <label className="text-xs sm:text-sm text-gray-600 dark:text-[#788099] mb-2 block">
-                        Selected Payment Methods ({selectedPaymentDetails.length})
-                      </label>
-                      <div className="space-y-2 sm:space-y-3">
-                        {selectedPaymentDetails.map((detail) => {
-                          // Get logo URL with priority: logo_url > logo > provider_logo
-                          const logoUrl = detail.logo_url || detail.logo || detail.provider_logo || "/default-provider-logo.svg";
-
-                          return (
-                            <div
-                              key={detail.id}
-                              className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 sm:p-4 rounded-[12px] sm:rounded-[16px] bg-[#1D8751]/10 dark:bg-[#1D8751]/20 border border-[#1D8751]/30"
-                            >
-                              <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0 w-full sm:w-auto">
-                                {/* Logo */}
-                                <div className="flex-shrink-0">
-                                  <img
-                                    src={logoUrl}
-                                    alt={`${detail.payment_provider_name} logo`}
-                                    className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-white dark:border-card"
-                                    onError={(e) => {
-                                      e.currentTarget.src = "/default-provider-logo.svg";
-                                    }}
-                                  />
-                                </div>
-
-                                {/* Details */}
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-1.5 sm:gap-2 mb-1 flex-wrap">
-                                    <span className="text-[10px] sm:text-xs font-semibold text-[#1D8751] dark:text-[#1D8751] uppercase bg-white dark:bg-card px-1.5 sm:px-2 py-0.5 sm:py-1 rounded">
-                                      {detail.payment_method_name}
-                                    </span>
-                                    <span className="text-xs text-gray-600 dark:text-[#788099] hidden sm:inline">
-                                      •
-                                    </span>
-                                    <span className="text-xs text-gray-900 dark:text-white font-medium truncate">
-                                      {detail.payment_provider_name}
-                                    </span>
-                                  </div>
-
-                                  {/* Account Name - Prominent Display */}
-                                  <div className="mb-0.5 sm:mb-1">
-                                    <span className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white truncate block">
-                                      {detail.account_name || 'N/A'}
-                                    </span>
-                                  </div>
-
-                                  {/* Account Number */}
-                                  <div>
-                                    <span className="text-[10px] sm:text-xs text-gray-500 dark:text-[#788099]">
-                                      •••• {detail.account_number?.slice(-4) || 'N/A'}
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-
-                              {/* Remove Button */}
-                              <button
-                                className="w-full sm:w-auto sm:ml-3 flex-shrink-0 p-2 text-[#E23D3A] hover:bg-[#E23D3A]/10 rounded-full transition flex items-center justify-center gap-1.5 sm:gap-0"
-                                onClick={() => handleRemovePaymentDetail(detail)}
-                                title="Remove payment method"
-                              >
-                                <svg
-                                  className="w-4 h-4 sm:w-5 sm:h-5"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M6 18L18 6M6 6l12 12"
-                                  />
-                                </svg>
-                                <span className="text-xs sm:hidden">Remove</span>
-                              </button>
-                            </div>
-                          );
-                        })}
-                      </div>
-                      <p className="text-[10px] sm:text-xs text-gray-500 dark:text-[#788099] mt-2">
-                        💡 You can add multiple payment methods from different types (Bank, Mobile Money, etc.)
-                      </p>
-                    </div>
-                  )}
                 </div>
               </div>
             )}

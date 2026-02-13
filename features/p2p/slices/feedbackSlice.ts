@@ -21,7 +21,8 @@ const feedbackSlice = createStandardSlice<Feedback[]>(
       })
       .addCase(fetchFeedback.fulfilled, (state: any, action: any) => {
         state.loading = false;
-        state.data = action.payload;
+        const payload = action.payload;
+        state.data = Array.isArray(payload) ? payload : (payload?.feedbacks ?? []);
         state.lastUpdated = Date.now();
       })
       .addCase(fetchFeedback.rejected, (state: any, action: any) => {

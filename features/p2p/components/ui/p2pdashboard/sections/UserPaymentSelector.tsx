@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import CustomSelect from "@/components/ui/CustomSelect";
 import { AdminPaymentMethod } from "@/features/p2p/types/paymentMethods";
+import { FaTimes } from "react-icons/fa";
 
 export interface UserPaymentDetail {
   id: number;
@@ -99,14 +100,6 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
     [userPaymentDetails, selectedProvider, selectedDetails, hideSelected]
   );
 
-  // Check if there are admin methods for the selected provider (to show "Add Account" message)
-  const hasAdminMethod = useMemo(
-    () =>
-      adminMethods.some((m) => m.provider_name === selectedProvider),
-    [adminMethods, selectedProvider]
-  );
-
-
   return (
     <div className="space-y-6">
       {/* Provider + Aside (e.g. Time Limit) - equal width */}
@@ -175,15 +168,21 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
                       {detail.account_number}
                     </p>
                   </div>
-                  {/* Select/Remove */}
+                  {/* Select / X / Pending on same card */}
                   {selectedDetails.some((d) => d.id === detail.id) ? (
                     <button
                       onClick={() => onRemove?.(detail)}
-                      className="px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 bg-red-500/10 border border-red-500/30 rounded-md hover:bg-red-500/20 transition-colors flex-shrink-0"
+                      className="p-2 text-red-600 dark:text-red-400 bg-red-500/10 border border-red-500/30 rounded-md hover:bg-red-500/20 transition-colors flex-shrink-0"
                       type="button"
+                      title="Deselect"
+                      aria-label="Deselect"
                     >
-                      Remove
+                      <FaTimes className="w-5 h-5" />
                     </button>
+                  ) : (detail.status?.toLowerCase() === "pending") ? (
+                    <span className="px-4 py-2 text-sm font-medium text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/30 rounded-md flex-shrink-0 cursor-default">
+                      Pending
+                    </span>
                   ) : (
                     <button
                       onClick={() => onSelect(detail)}
@@ -196,17 +195,26 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
                 </div>
               ))
             ) : (
-              <div className="flex flex-row items-center gap-4 rounded-lg p-4 bg-[#1D8751]/10 dark:bg-[#1D8751]/20 border border-[#1D8751]/30">
-                <p className="text-sm text-gray-600 dark:text-gray-400 flex-1 min-w-0">
-                  {hasAdminMethod
-                    ? `No payment account found for ${selectedProvider}. Please add a payment account first.`
-                    : "No payment details found for this combination."}
-                </p>
+              <div className="flex flex-row flex-wrap items-center gap-4">
+                <div className="rounded-lg px-4 py-3 bg-[#1D8751]/10 dark:bg-[#1D8751]/20 border border-[#1D8751]/30">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Click the button to add a payment method
+                  </p>
+                </div>
+                {onAddPaymentMethod && (
+                  <button
+                    type="button"
+                    onClick={onAddPaymentMethod}
+                    className="px-4 py-2 text-sm font-medium text-white bg-[#1D8751] hover:bg-[#166b3e] border border-[#1D8751] rounded-md transition-colors flex-shrink-0"
+                  >
+                    Add Payment Method
+                  </button>
+                )}
               </div>
             )}
           </div>
-          {/* Add Payment Method button - in same row as card(s) */}
-          {onAddPaymentMethod && (
+          {/* Add Payment Method button - only when we have cards (empty state has its own button) */}
+          {filteredDetails.length > 0 && onAddPaymentMethod && (
             <button
               type="button"
               onClick={onAddPaymentMethod}
