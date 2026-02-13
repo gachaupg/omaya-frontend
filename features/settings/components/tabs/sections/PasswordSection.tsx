@@ -94,6 +94,8 @@ const PasswordSection: React.FC = () => {
       newErrors.new_password = "New password is required";
     } else if (formData.new_password.length < 8) {
       newErrors.new_password = "Password must be at least 8 characters";
+    } else if (!/(?=.*[a-zA-Z])(?=.*[0-9])/.test(formData.new_password)) {
+      newErrors.new_password = "Password must contain both letters and numbers";
     }
 
     if (!formData.confirm_password) {
