@@ -274,6 +274,10 @@ function FinalBuy({ orderData }: FinalBuyProps) {
   const fromConfirm = Array.isArray(confirmOrder?.payment_details) ? confirmOrder.payment_details : [];
   const fromUrl = Array.isArray(parsedOrderData?.payment_details) ? parsedOrderData.payment_details : [];
   const paymentDetailsList = fromSingle.length > 0 ? fromSingle : fromConfirm.length > 0 ? fromConfirm : fromUrl;
+  // Range currency (KES or USD) for display - from order/trade/URL
+  const rangeCurrency = ((singleOrder as any)?.range_currency || (confirmOrder as any)?.buy_order?.range_currency || (confirmOrder as any)?.sell_order?.range_currency || parsedOrderData?.range_currency || "USD")?.toString().toUpperCase();
+  const rangeSuffix = rangeCurrency === "KES" ? "KES" : "USD";
+  const rangeSymbol = rangeCurrency === "KES" ? "KES" : "$";
   // --- Calculation logic ---
   const sendAmount = Number(confirmOrder?.amount) || 0;
   const commissionRate = Number(singleOrder?.commission_rate) || Number(commissionFromUrl) || 0;
@@ -511,19 +515,18 @@ function FinalBuy({ orderData }: FinalBuyProps) {
           </div>
           <section className="order-info rounded-[18px] p-4 border-2 border-[#E8EFF5] dark:border-[#35353E] bg-gray-50 dark:bg-[var(--bg-color)] ">
             <div className="flex flex-col md:flex-row gap-4">
-              {/* I want to Send */}
+              {/* Buy: I want to Send = fiat (KES/USD), I want to Receive = USDT */}
               <div className="flex-1 flex flex-col mb-2 md:mb-0">
                 <div className="mb-1 text-gray-600 dark:text-[#788099] text-[0.95rem] font-medium">
                   I want to Send
                 </div>
                 <div className="flex items-center h-[46px] rounded-2xl border border-[#E8EFF5] dark:border-[#35353E] bg-white dark:bg-[var(--bg-color)] px-2">
-                  <span className="text-[#1D8751] text-2xl mr-2">$</span>
+                  <span className="text-[#1D8751] text-2xl mr-2">{rangeSymbol}</span>
                   <span className="text-[#1D8751] text-xl font-semibold">
                     {formatAmount(receiveAmount)}
-
                   </span>
                   <span className="ml-auto text-gray-900 dark:text-white text-base font-medium">
-                    USD
+                    {rangeSuffix}
                   </span>
                 </div>
               </div>
@@ -533,16 +536,15 @@ function FinalBuy({ orderData }: FinalBuyProps) {
                   I want to Receive
                 </div>
                 <div className="flex items-center h-[46px] rounded-2xl border border-[#E8EFF5] dark:border-[#35353E] bg-white dark:bg-[var(--bg-color)] px-2">
-                  {/* Placeholder for Tether/USDT icon */}
                   <span className="text-[#1D8751] text-2xl mr-2">
                     <img
                       src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
-                      alt=""
+                      alt="USDT"
+                      className="w-6 h-6"
                     />
                   </span>
                   <span className="text-[#1D8751] text-xl font-semibold">
                     {formatAmount(sendAmount)}
-
                   </span>
                   <span className="ml-2 text-gray-900 dark:text-white text-base font-medium">
                     USDT
@@ -571,7 +573,7 @@ function FinalBuy({ orderData }: FinalBuyProps) {
           <section className="rounded-[18px] p-2 md:p-4 w-full">
             <div className="flex flex-col md:flex-row justify-between w-full items-center mb-4 gap-2 md:gap-0">
               <div className="text-lg flex-1 text-gray-900 dark:text-white">
-                Send Money Togdgdgdg
+                Send Money To
               </div>
               <div className="text-xs flex items-center gap-1">
                 <span className="text-[#1D8751]">Transaction time:</span>

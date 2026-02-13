@@ -108,12 +108,14 @@ const MarketTable: React.FC<MarketTableProps> = ({
     return <TiArrowUnsorted className="w-3 h-3 ml-1 text-gray-400" />;
   };
 
-  // Filter out trades where amount is 0 or "00" and offline orders
-  const filteredData = data.filter((row) => {
-    const amount = row.availableAmount ?? parseFloat(row.available?.replace(/[^\d.]/g, '') || '0');
-    // Only show orders that are explicitly online (true), filter out false, undefined, or null
-    return amount > 0 && row.online === true;
-  });
+  // Display all data from parent - no extra filtering (parent already filters)
+  const filteredData = data;
+
+  // Reset selection when data changes to avoid stale/wrong row in modal
+  const dataIds = data.map((r) => r?.id).join(",");
+  useEffect(() => {
+    setSelectedRowIndex(null);
+  }, [dataIds]);
 
   // Build pagination pages with ellipsis when there are many pages
   // Ensures current page is always visible and stays active when selected
@@ -195,7 +197,7 @@ const MarketTable: React.FC<MarketTableProps> = ({
           ) : (
             /* ---------------- table rows --------------- */
             filteredData.map((row, idx) => (
-              <React.Fragment key={idx}>
+              <React.Fragment key={row.id ?? `row-${idx}`}>
                 {/* Desktop Grid View */}
                 <div className="hidden md:grid grid-cols-5 items-center py-4 px-4 border-b last:border-b-0 bg-white hover:bg-gray-50 border-gray-200 dark:bg-[var(--card-color)] dark:hover:bg-[#2d2d36] dark:border-[#35353E]">
                   {/* Advertiser */}

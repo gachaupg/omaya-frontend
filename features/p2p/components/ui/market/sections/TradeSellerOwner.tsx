@@ -141,7 +141,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   useEffect(() => {
     if (isAuthenticated) {
       if (confirmOrder?.status === "matched" && countdown === 0) {
-        // AUTO-CANCEL DISABLED - Countdown reached 0 but no auto-cancel
+        handleCancelTransaction();
         logger.debug('p2p', "Countdown reached 0, auto-cancel is disabled");
         return;
       }
@@ -250,6 +250,11 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   const fromConfirm = Array.isArray(confirmOrder?.payment_details) ? confirmOrder.payment_details : [];
   const fromTradeData = Array.isArray(tradeDataJson?.payment_details) ? tradeDataJson.payment_details : [];
   const paymentDetailsList = fromSingle.length > 0 ? fromSingle : fromConfirm.length > 0 ? fromConfirm : fromTradeData;
+
+  // Range currency (KES or USD) for display - from order/trade
+  const rangeCurrency = ((singleOrder as any)?.range_currency || (confirmOrder as any)?.buy_order?.range_currency || (confirmOrder as any)?.sell_order?.range_currency || tradeDataJson?.range_currency || "USD")?.toString().toUpperCase();
+  const rangeSuffix = rangeCurrency === "KES" ? "KES" : "USD";
+  const rangeSymbol = rangeCurrency === "KES" ? "KES" : "$";
 
   // --- Calculation logic ---
   const sendAmount = Number(confirmOrder?.amount) || 0;
@@ -462,18 +467,20 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
           </div>
           <section className="order-info rounded-[18px] p-2   border-2 border-gray-200 dark:border-[#35353E] bg-gray-50 dark:bg-[var(--card-color)] ">
             <div className="flex flex-col md:flex-row gap-4">
-              {/* I want to Send */}
+              {/* Sell: I want to Send = USDT, I want to Receive = fiat (KES/USD) */}
               <div className="flex-1 flex flex-col mb-2 md:mb-0">
                 <div className="mb-1 text-gray-600 dark:text-[#788099] text-[0.95rem] font-medium">
                   I want to Send
                 </div>
                 <div className="flex items-center h-[46px] rounded-2xl border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] px-2">
-                  <span className="text-[#1D8751] text-2xl mr-2">$</span>
+                  <span className="text-[#1D8751] text-2xl mr-2">
+                    <img src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png" alt="USDT" className="w-6 h-6" />
+                  </span>
                   <span className="text-[#1D8751] text-xl font-semibold">
-                    {formatAmount(Math.round(Number(sendAmount) / Number(commissionRate) * 100) / 100)}
+                    {formatAmount(sendAmount)}
                   </span>
                   <span className="ml-auto text-gray-900 dark:text-white text-base font-medium">
-                    USD
+                    USDT
                   </span>
                 </div>
               </div>
@@ -483,28 +490,27 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                   I want to Receive
                 </div>
                 <div className="flex items-center h-[46px] rounded-2xl border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] px-2">
-                  {/* Placeholder for Tether/USDT icon */}
-                  <span className="text-[#1D8751] text-2xl mr-2">&#x20BF;</span>
+                  <span className="text-[#1D8751] text-2xl mr-2">{rangeSymbol}</span>
                   <span className="text-[#1D8751] text-xl font-semibold">
-                    {formatAmount(sendAmount)}
+                    {formatAmount(Math.round(Number(sendAmount) / Number(commissionRate) * 100) / 100)}
                   </span>
                   <span className="ml-2 text-gray-900 dark:text-white text-base font-medium">
-                    USDT
+                    {rangeSuffix}
                   </span>
                 </div>
               </div>
               {/* Commission */}
               <div className="flex-1 flex flex-col">
                 <div className="mb-1 text-gray-600 dark:text-[#788099] text-[0.95rem] font-medium">
-                  Commission
+                  Rate
                 </div>
                 <div className="flex items-center h-[46px] rounded-2xl border border-gray-200 dark:border-[#35353E] bg-gray-100 dark:bg-[#35353E] px-2">
-                  <span className="text-[#1D8751] text-2xl mr-2">$</span>
+                  <span className="text-[#1D8751] text-2xl mr-2">{rangeSymbol}</span>
                   <span className="text-[#1D8751] text-xl font-semibold">
                     {commissionRate}%
                   </span>
                   <span className="ml-auto text-gray-900 dark:text-white text-base font-medium">
-                    USD
+                    {rangeSuffix}
                   </span>
                 </div>
               </div>

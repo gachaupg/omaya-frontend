@@ -16,6 +16,7 @@ export interface MarketRow {
   minAmount: number;
   maxAmount: number;
   currency: string;
+  range_currency?: string | null; // KES, USD, etc. - for limit/commission display
   originalCurrency?: string; // Original currency before conversion (for filtering)
   paymentType: string[];
   isMerchant?: boolean;

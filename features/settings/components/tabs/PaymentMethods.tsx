@@ -127,6 +127,7 @@ const PaymentMethods = () => {
   const [activeButton, setActiveButton] = useState("Approved");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ type: 'payment' | 'wallet', id: string } | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const isCryptoWallet = (p: UserPaymentDetail) =>
     p?.payment_method_name?.toLowerCase() === "crypto" ||
@@ -202,12 +203,15 @@ const PaymentMethods = () => {
         showToast.error(result.payload || "Failed to delete wallet address");
       }
     } else if (deleteTarget.type === 'payment') {
-      try {
-        setDeletingMethodId(deleteTarget.id);
-        await dispatch(deleteUserPaymentDetail(deleteTarget.id) as any);
+      setDeletingMethodId(deleteTarget.id);
+      const result = await dispatch(deleteUserPaymentDetail(deleteTarget.id) as any);
+      setDeletingMethodId(null);
+
+      if (deleteUserPaymentDetail.fulfilled.match(result)) {
         await dispatch(fetchUserPaymentDetails() as any);
-      } finally {
-        setDeletingMethodId(null);
+        showToast.success("Payment method deleted successfully");
+      } else if (deleteUserPaymentDetail.rejected.match(result)) {
+        setErrorMessage((result.payload as string) || "Failed to delete payment method");
       }
     }
 
@@ -236,7 +240,7 @@ const PaymentMethods = () => {
               Pending
             </button>
             <button className={`px-3 py-1.5 rounded-full border border-[#1D8751] text-[#1D8751] text-xs sm:text-sm font-semibold focus:outline-none ${activeButton === "OMAYA Wallets" ? "bg-[#1D8751] text-white" : "bg-transparent"}`} onClick={() => setActiveButton("OMAYA Wallets")}>
-              OMAYA.io Wallets
+              OMAYA Wallets
             </button>
           </div>
         </div>
@@ -285,46 +289,46 @@ const PaymentMethods = () => {
                     {p2pDepositAddresses.length > 0 && (
                       <>
                         {p2pDepositAddresses.map((addr) => (
-                        <div
-                          key={addr.id}
-                          className="flex flex-col gap-3 rounded-[28px] border border-[#E3E6F0] dark:border-[#2A2A35] bg-gray-50 dark:bg-[var(--card-color)] px-4 py-4"
-                        >
-                          <div className="flex items-start gap-4">
-                            <div className="relative">
-                              <img
-                                src="/images/tether.svg"
-                                alt="USDT"
-                                className="w-12 h-12 object-contain flex-shrink-0"
-                                style={{ display: "block" }}
-                                onError={(e) => {
-                                  e.currentTarget.src = "/default-provider-logo.svg";
-                                }}
-                              />
+                          <div
+                            key={addr.id}
+                            className="flex flex-col gap-3 rounded-[28px] border border-[#E3E6F0] dark:border-[#2A2A35] bg-gray-50 dark:bg-[var(--card-color)] px-4 py-4"
+                          >
+                            <div className="flex items-start gap-4">
+                              <div className="relative">
+                                <img
+                                  src="/images/tether.svg"
+                                  alt="USDT"
+                                  className="w-12 h-12 object-contain flex-shrink-0"
+                                  style={{ display: "block" }}
+                                  onError={(e) => {
+                                    e.currentTarget.src = "/default-provider-logo.svg";
+                                  }}
+                                />
+                              </div>
+                              <div className="flex-1">
+                                <p className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
+                                  OMAYA Wallet
+                                </p>
+                                <p className="text-xs text-gray-500 dark:text-[#8B90A5] mt-0.5">
+                                  {addr.network_name || addr.chain} • {addr.is_default ? "Default" : ""}
+                                </p>
+                              </div>
                             </div>
-                            <div className="flex-1">
-                              <p className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
-                                OMAYA Wallet
-                              </p>
-                              <p className="text-xs text-gray-500 dark:text-[#8B90A5] mt-0.5">
-                                {addr.network_name || addr.chain} • {addr.is_default ? "Default" : ""}
-                              </p>
+                            <div>
+                              <label className="text-xs font-medium text-gray-500 dark:text-[#8B90A5] mb-2 block">
+                                Wallet address
+                              </label>
+                              <div className="rounded-full border border-[#E3E6F0] dark:border-[#2A2A35] bg-white dark:bg-[var(--card-color)] px-4 py-2 flex items-center gap-2 text-sm">
+                                <input
+                                  type="text"
+                                  readOnly
+                                  value={addr.address}
+                                  className="flex-1 bg-transparent focus:outline-none text-gray-900 dark:text-white"
+                                />
+                                <CopyButton value={addr.address} />
+                              </div>
                             </div>
                           </div>
-                          <div>
-                            <label className="text-xs font-medium text-gray-500 dark:text-[#8B90A5] mb-2 block">
-                              Wallet address
-                            </label>
-                            <div className="rounded-full border border-[#E3E6F0] dark:border-[#2A2A35] bg-white dark:bg-[var(--card-color)] px-4 py-2 flex items-center gap-2 text-sm">
-                              <input
-                                type="text"
-                                readOnly
-                                value={addr.address}
-                                className="flex-1 bg-transparent focus:outline-none text-gray-900 dark:text-white"
-                              />
-                              <CopyButton value={addr.address} />
-                            </div>
-                          </div>
-                        </div>
                         ))}
                       </>
                     )}
@@ -385,107 +389,107 @@ const PaymentMethods = () => {
                 </div>
               )}
               {filteredPayments.map((payment: UserPaymentDetail) => {
-            const isPending = payment.status?.toLowerCase() === "pending";
-            const isBankMethod =
-              payment?.payment_method_name
-                ?.toLowerCase()
-                .includes("bank") ||
-              payment?.payment_provider_name?.toLowerCase().includes("bank");
-            const inputLabel = isBankMethod ? "Bank Account" : "Wallet Address";
-            const placeholderText = isBankMethod
-              ? "Type in here your bank account number"
-              : "Type in here your wallet address";
-            // For crypto: use wallet_address; for bank: use account_number
-            const displayAddress =
-              payment?.wallet_address || payment?.account_number || "";
-            return (
-              <div
-                key={payment.id}
-                className="flex flex-col gap-3 rounded-[28px] border border-[#E3E6F0] dark:border-[#2A2A35] bg-gray-50 dark:bg-[var(--card-color)] px-4 py-4"
-              >
-                <div className="flex items-start gap-4">
-                  <div className="relative">
-                    <img
-                      src={payment?.provider_logo || (isCryptoWallet(payment) ? "/images/tether.svg" : "/default-provider-logo.svg")}
-                      alt={payment?.payment_provider_name || payment?.payment_method_name}
-                      className="w-12 h-12 object-contain flex-shrink-0"
-                      style={{ display: 'block' }}
-                      onError={(e) => {
-                        e.currentTarget.src = isCryptoWallet(payment) ? "/images/tether.svg" : "/default-provider-logo.svg";
-                      }}
-                    />
-                    {isPending && (
-                      <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-[#FF4D55] border-2 border-white dark:border-[#13131A]" />
-                    )}
-                  </div>
-                  <div className="flex-1 flex items-center justify-between">
-                    <div>
-                      <p className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
-                        {payment?.payment_method_name}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-[#8B90A5] mt-0.5">
-                        {payment?.payment_provider_name}
-                      </p>
-                    </div>
-                    <button
-                      className="text-[#1D8751] hover:text-red-500 transition-colors"
-                      title="Delete"
-                      disabled={deletingMethodId === payment.id.toString()}
-                      onClick={() => handleDeleteMethod(payment.id.toString())}
-                    >
-                      {deletingMethodId === payment.id.toString() ? (
-                        <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="#1D8751"
-                            strokeWidth="4"
-                            fill="none"
-                          />
-                          <path
-                            className="opacity-75"
-                            fill="#1D8751"
-                            d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-                          />
-                        </svg>
-                      ) : (
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="w-4 h-4 cursor-pointer"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
+                const isPending = payment.status?.toLowerCase() === "pending";
+                const isBankMethod =
+                  payment?.payment_method_name
+                    ?.toLowerCase()
+                    .includes("bank") ||
+                  payment?.payment_provider_name?.toLowerCase().includes("bank");
+                const inputLabel = isBankMethod ? "Bank Account" : "Wallet Address";
+                const placeholderText = isBankMethod
+                  ? "Type in here your bank account number"
+                  : "Type in here your wallet address";
+                // For crypto: use wallet_address; for bank: use account_number
+                const displayAddress =
+                  payment?.wallet_address || payment?.account_number || "";
+                return (
+                  <div
+                    key={payment.id}
+                    className="flex flex-col gap-3 rounded-[28px] border border-[#E3E6F0] dark:border-[#2A2A35] bg-gray-50 dark:bg-[var(--card-color)] px-4 py-4"
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className="relative">
+                        <img
+                          src={payment?.provider_logo || (isCryptoWallet(payment) ? "/images/tether.svg" : "/default-provider-logo.svg")}
+                          alt={payment?.payment_provider_name || payment?.payment_method_name}
+                          className="w-12 h-12 object-contain flex-shrink-0"
+                          style={{ display: 'block' }}
+                          onError={(e) => {
+                            e.currentTarget.src = isCryptoWallet(payment) ? "/images/tether.svg" : "/default-provider-logo.svg";
+                          }}
+                        />
+                        {isPending && (
+                          <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-[#FF4D55] border-2 border-white dark:border-[#13131A]" />
+                        )}
+                      </div>
+                      <div className="flex-1 flex items-center justify-between">
+                        <div>
+                          <p className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
+                            {payment?.payment_method_name}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-[#8B90A5] mt-0.5">
+                            {payment?.payment_provider_name}
+                          </p>
+                        </div>
+                        <button
+                          className="text-[#1D8751] hover:text-red-500 transition-colors"
+                          title="Delete"
+                          disabled={deletingMethodId === payment.id.toString()}
+                          onClick={() => handleDeleteMethod(payment.id.toString())}
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"
-                          />
-                        </svg>
-                      )}
-                    </button>
+                          {deletingMethodId === payment.id.toString() ? (
+                            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                              <circle
+                                className="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="#1D8751"
+                                strokeWidth="4"
+                                fill="none"
+                              />
+                              <path
+                                className="opacity-75"
+                                fill="#1D8751"
+                                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                              />
+                            </svg>
+                          ) : (
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="w-4 h-4 cursor-pointer"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"
+                              />
+                            </svg>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-gray-500 dark:text-[#8B90A5] mb-2 block">
+                        {inputLabel}
+                      </label>
+                      <div className="rounded-full border border-[#E3E6F0] dark:border-[#2A2A35] bg-white dark:bg-[var(--card-color)] px-4 py-2 flex items-center text-sm text-gray-500 dark:text-[#8890A6]">
+                        <input
+                          type="text"
+                          readOnly
+                          value={displayAddress}
+                          placeholder={placeholderText}
+                          className="w-full bg-transparent focus:outline-none placeholder:text-gray-400 dark:placeholder:text-[#5C6175] text-gray-900 dark:text-white"
+                        />
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-gray-500 dark:text-[#8B90A5] mb-2 block">
-                    {inputLabel}
-                  </label>
-                  <div className="rounded-full border border-[#E3E6F0] dark:border-[#2A2A35] bg-white dark:bg-[var(--card-color)] px-4 py-2 flex items-center text-sm text-gray-500 dark:text-[#8890A6]">
-                    <input
-                      type="text"
-                      readOnly
-                      value={displayAddress}
-                      placeholder={placeholderText}
-                      className="w-full bg-transparent focus:outline-none placeholder:text-gray-400 dark:placeholder:text-[#5C6175] text-gray-900 dark:text-white"
-                    />
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+                );
+              })}
             </>
           )}
         </div>
@@ -500,7 +504,7 @@ const PaymentMethods = () => {
         onClose={() => setShowAddWalletModal(false)}
         onSuccess={() => dispatch(fetchUserWalletAddresses() as any)}
       />
-      
+
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
@@ -520,11 +524,11 @@ const PaymentMethods = () => {
                 </p>
               </div>
             </div>
-            
+
             <p className="text-sm text-gray-600 dark:text-gray-300 mb-6">
               Are you sure you want to delete this {deleteTarget?.type === 'wallet' ? 'wallet address' : 'payment method'}? This action is permanent and cannot be reversed.
             </p>
-            
+
             <div className="flex gap-3">
               <button
                 onClick={() => {
@@ -540,6 +544,39 @@ const PaymentMethods = () => {
                 className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-medium transition-colors"
               >
                 Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Error Modal */}
+      {errorMessage && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-[#1D1D23] rounded-2xl shadow-xl max-w-md w-full mx-4 p-6 border border-gray-200 dark:border-[#35353E]">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
+                <svg className="w-6 h-6 text-red-600 dark:text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Action Failed
+                </h3>
+              </div>
+            </div>
+
+            <p className="text-sm text-gray-600 dark:text-gray-300 mb-6">
+              {errorMessage}
+            </p>
+
+            <div className="flex justify-end">
+              <button
+                onClick={() => setErrorMessage(null)}
+                className="w-full px-4 py-2.5 rounded-xl bg-[#1D8751] hover:bg-[#156b3f] text-white font-medium transition-colors"
+              >
+                Okay
               </button>
             </div>
           </div>

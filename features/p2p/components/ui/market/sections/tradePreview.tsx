@@ -89,6 +89,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
   const commissionRate = parseFloat(advertiserData.commission);
   const minAmount = advertiserData.minAmount;
   const maxAmount = advertiserData.maxAmount;
+  const rangeLimitSuffix = advertiserData.range_currency?.toUpperCase() === "KES" ? "KES" : "USD";
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -171,10 +172,10 @@ const TradePreview: React.FC<TradePreviewProps> = ({
     return () => clearTimeout(timeoutId);
   }, [tradeType, paymentMethod, matchingUserPaymentMethods.length, scrollContainerRef]);
 
-  // Position and show dropdown outside modal (portal) for both buy and sell
+  // Position and show dropdown outside modal (portal) on sell
   const paymentDropdownPortalRef = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
-    if (!isPaymentDropdownOpen) {
+    if (!isPaymentDropdownOpen || tradeType !== "sell") {
       setDropdownPosition(null);
       return;
     }
@@ -191,7 +192,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
       window.removeEventListener("resize", measure);
       window.removeEventListener("scroll", measure, true);
     };
-  }, [isPaymentDropdownOpen]);
+  }, [isPaymentDropdownOpen, tradeType]);
 
   // Close payment dropdown on outside click (trigger or portaled dropdown)
   useEffect(() => {
@@ -635,7 +636,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                   </div>
                   <div className="flex flex-col gap-2 sm:gap-2">
                     <div className="text-sm text-gray-500 dark:text-[#788099] pl-0 sm:pl-2 font-medium">
-                      Range: {minAmount}-{maxAmount} USDT
+                      Range: {minAmount}-{maxAmount} {rangeLimitSuffix}
                     </div>
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                       <span className="text-2xl sm:text-3xl text-[#1D8751] font-semibold flex-shrink-0">
@@ -667,19 +668,21 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                     )}
                   </div>
                 </div>
-                {/* I Want to Receive - USD (buyer sends this to seller) */}
+                {/* I Want to Receive - range currency (USD or KES, buyer sends this to seller) */}
                 <div className="rounded-xl p-3 sm:p-3 flex flex-col gap-2 sm:gap-2 border border-gray-300 dark:border-[#35353E] bg-gray-100 dark:bg-transparent">
                   <div className="text-sm sm:text-base text-gray-500 dark:text-[#788099] font-semibold">
                     I Want to Receive
                   </div>
                   <div className="flex flex-col gap-2 sm:gap-2">
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                      <span className="text-2xl sm:text-3xl text-[#1D8751] font-semibold flex-shrink-0">$</span>
+                      <span className="text-2xl sm:text-3xl text-[#1D8751] font-semibold flex-shrink-0">
+                        {rangeLimitSuffix === "KES" ? "KES" : "$"}
+                      </span>
                       <input
                         type="number"
                         value={receiveAmount}
                         onChange={(e) => handleReceiveAmountChange(e.target.value)}
-                        placeholder="220 USD"
+                        placeholder={`220 ${rangeLimitSuffix}`}
                         max={advertiserData.availableAmount || 0}
                         className={`flex-1 bg-transparent text-lg sm:text-xl font-semibold focus:outline-none rounded-xl px-3 sm:px-4 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-[#788099] ${
                           !isAmountValid && receiveAmount ? "border border-red-500" : ""
@@ -688,10 +691,10 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                       <div className="relative w-full sm:w-auto">
                         <select
                           className="rounded px-3 py-2 text-sm sm:text-base font-semibold min-w-[90px] sm:min-w-[100px] w-full bg-white dark:bg-transparent text-gray-900 dark:text-white"
-                          value="USD"
+                          value={rangeLimitSuffix}
                           disabled
                         >
-                          <option>USD</option>
+                          <option>{rangeLimitSuffix}</option>
                         </select>
                       </div>
                     </div>
@@ -705,22 +708,24 @@ const TradePreview: React.FC<TradePreviewProps> = ({
               </>
             ) : (
               <>
-                {/* I Want to Send - USD (buy flow) */}
+                {/* I Want to Send - range currency (USD or KES, buy flow) */}
                 <div className="flex flex-col gap-2 sm:gap-2 rounded-xl p-3 sm:p-3 border border-gray-300 dark:border-[#35353E] bg-gray-100 dark:bg-transparent">
                   <div className="text-sm sm:text-base text-gray-500 dark:text-[#788099] font-semibold">
                     I Want to Send
                   </div>
                   <div className="flex flex-col gap-2 sm:gap-2">
                     <div className="text-sm text-gray-500 dark:text-[#788099] pl-0 sm:pl-2 font-medium">
-                      Range: {(minAmount * commissionRate).toFixed(0)}-{(maxAmount * commissionRate).toFixed(0)} USD
+                      Range: {minAmount}-{maxAmount} {rangeLimitSuffix}
                     </div>
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                      <span className="text-2xl sm:text-3xl text-[#1D8751] font-semibold flex-shrink-0">$</span>
+                      <span className="text-2xl sm:text-3xl text-[#1D8751] font-semibold flex-shrink-0">
+                        {rangeLimitSuffix === "KES" ? "KES" : "$"}
+                      </span>
                       <input
                         type="number"
                         value={sendAmount}
                         onChange={(e) => handleSendAmountChange(e.target.value)}
-                        placeholder="220"
+                        placeholder={`220 ${rangeLimitSuffix}`}
                         max={
                           tradeType === "buy"
                             ? (advertiserData.availableAmount || 0) * commissionRate
@@ -733,10 +738,10 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                       <div className="relative w-full sm:w-auto">
                         <select
                           className="rounded px-3 py-2 text-sm sm:text-base font-semibold min-w-[90px] sm:min-w-[100px] w-full bg-white dark:bg-transparent text-gray-900 dark:text-white"
-                          value="USD"
+                          value={rangeLimitSuffix}
                           disabled
                         >
-                          <option>USD</option>
+                          <option>{rangeLimitSuffix}</option>
                         </select>
                       </div>
                     </div>
@@ -804,77 +809,62 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                     />
                   </svg>
                 </button>
-                {/* Dropdown via portal outside modal for both buy and sell to avoid scrolling issues */}
-                {typeof document !== "undefined" &&
-                  isPaymentDropdownOpen &&
-                  tradeType !== "sell" &&
-                  dropdownPosition &&
-                  createPortal(
-                    <div
-                      ref={paymentDropdownPortalRef}
-                      className="rounded-xl border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] shadow-lg max-h-72 overflow-hidden flex flex-col"
-                      style={{
-                        position: "fixed",
-                        top: dropdownPosition.top,
-                        left: dropdownPosition.left,
-                        width: dropdownPosition.width,
-                        zIndex: 9999,
-                      }}
-                    >
-                      <div className="p-2 border-b border-gray-200 dark:border-[#35353E]">
-                        <input
-                          type="text"
-                          placeholder="Search payment method..."
-                          value={paymentSearchTerm}
-                          onChange={(e) => setPaymentSearchTerm(e.target.value)}
-                          className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-[#35353E] bg-gray-50 dark:bg-[#23232B] text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-[#788099] focus:outline-none focus:ring-2 focus:ring-[#1D8751]"
-                        />
-                      </div>
-                      <div className="overflow-y-auto max-h-52">
-                        {paymentOptions.length === 0 ? (
-                          <div className="px-4 py-3 text-sm text-gray-500 dark:text-[#788099]">
-                            No payment methods available
-                          </div>
-                        ) : filteredPaymentOptions.length === 0 ? (
-                          <div className="px-4 py-3 text-sm text-gray-500 dark:text-[#788099]">
-                            No matching payment methods
-                          </div>
-                        ) : (
-                          filteredPaymentOptions.map((opt) => {
-                            const isSelected = paymentMethod === opt.value;
-                            return (
-                              <button
-                                key={opt.id}
-                                type="button"
-                                onClick={() => {
-                                  setPaymentMethod(opt.value);
-                                  setIsPaymentDropdownOpen(false);
-                                  setPaymentSearchTerm("");
-                                }}
-                                className={`w-full flex items-center gap-3 px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-[#35353E] ${
-                                  isSelected
-                                    ? "text-gray-900 dark:text-white bg-gray-50 dark:bg-[#35353E]"
-                                    : "text-gray-700 dark:text-[#C7CAD1]"
-                                }`}
-                              >
-                                <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                                  isSelected
-                                    ? "border-[#1D8751] bg-[#1D8751]"
-                                    : "border-gray-400 dark:border-[#788099]"
-                                }`}>
-                                  {isSelected && (
-                                    <div className="w-2 h-2 rounded-full bg-white"></div>
-                                  )}
-                                </div>
-                                <span className="text-sm sm:text-base font-semibold">{opt.label}</span>
-                              </button>
-                            );
-                          })
-                        )}
-                      </div>
-                    </div>,
-                    document.body
-                  )}
+                {/* Buy: inline dropdown; Sell: dropdown via portal outside modal */}
+                {isPaymentDropdownOpen && tradeType !== "sell" && (
+                  <div className="absolute top-full left-0 right-0 mt-2 rounded-xl border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] shadow-lg z-20 max-h-72 overflow-hidden flex flex-col">
+                    <div className="p-2 border-b border-gray-200 dark:border-[#35353E]">
+                      <input
+                        type="text"
+                        placeholder="Search payment method..."
+                        value={paymentSearchTerm}
+                        onChange={(e) => setPaymentSearchTerm(e.target.value)}
+                        className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-[#35353E] bg-gray-50 dark:bg-[#23232B] text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-[#788099] focus:outline-none focus:ring-2 focus:ring-[#1D8751]"
+                      />
+                    </div>
+                    <div className="overflow-y-auto max-h-52">
+                      {paymentOptions.length === 0 ? (
+                        <div className="px-4 py-3 text-sm text-gray-500 dark:text-[#788099]">
+                          No payment methods available
+                        </div>
+                      ) : filteredPaymentOptions.length === 0 ? (
+                        <div className="px-4 py-3 text-sm text-gray-500 dark:text-[#788099]">
+                          No matching payment methods
+                        </div>
+                      ) : (
+                        filteredPaymentOptions.map((opt) => {
+                          const isSelected = paymentMethod === opt.value;
+                          return (
+                            <button
+                              key={opt.id}
+                              type="button"
+                              onClick={() => {
+                                setPaymentMethod(opt.value);
+                                setIsPaymentDropdownOpen(false);
+                                setPaymentSearchTerm("");
+                              }}
+                              className={`w-full flex items-center gap-3 px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-[#35353E] ${
+                                isSelected
+                                  ? "text-gray-900 dark:text-white bg-gray-50 dark:bg-[#35353E]"
+                                  : "text-gray-700 dark:text-[#C7CAD1]"
+                              }`}
+                            >
+                              <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                                isSelected
+                                  ? "border-[#1D8751] bg-[#1D8751]"
+                                  : "border-gray-400 dark:border-[#788099]"
+                              }`}>
+                                {isSelected && (
+                                  <div className="w-2 h-2 rounded-full bg-white"></div>
+                                )}
+                              </div>
+                              <span className="text-sm sm:text-base font-semibold">{opt.label}</span>
+                            </button>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                )}
                 {/* Sell: dropdown list in portal so it appears outside modal */}
                 {typeof document !== "undefined" &&
                   isPaymentDropdownOpen &&

@@ -9,6 +9,7 @@ import {
   clearPostStatus,
 } from "@/features/p2p/slices/paymentMethodsSlice";
 import EditPaymentMethodModal from "./EditPaymentMethodModal";
+import DeleteErrorModal from "./DeleteErrorModal";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/store/rootReducer";
 import { showToast } from "@/lib/utils/toast";
@@ -21,6 +22,7 @@ import { getHighResPaymentLogo, PAYMENT_LOGO_SIZE } from "@/features/express/uti
 // Types
 interface PaymentMethod {
   id: number;
+  user_payment_detail_id?: string; // UUID for /api/payments/ OTP endpoints
   payment_method_name: string;
   payment_provider_name: string;
   account_name: string;
@@ -28,6 +30,7 @@ interface PaymentMethod {
   wallet_address: string | null;
   editable?: boolean;
   provider_logo?: string;
+  allow_auto_send?: boolean;
 }
 
 const ITEMS_PER_PAGE = 5;
@@ -39,6 +42,7 @@ const PaymentMethods = () => {
   const [deletingMethodId, setDeletingMethodId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deleteSuccess, setDeleteSuccess] = useState(false);
+  const [showDeleteErrorModal, setShowDeleteErrorModal] = useState(false);
 
   // Inline add method states
   const [showAddDropdown, setShowAddDropdown] = useState(false);
@@ -64,6 +68,7 @@ const PaymentMethods = () => {
     postLoading,
     postError,
     postSuccess,
+    deleteError: reduxDeleteError,
   } = useSelector((state: RootState) => state.paymentMethods);
 
   /** Effects */
@@ -140,17 +145,32 @@ const PaymentMethods = () => {
     [allProviders, selectedProvider]
   );
 
+  /** Show delete error modal when Redux store has delete error (fallback) */
+  useEffect(() => {
+    if (reduxDeleteError) {
+      setDeleteError(reduxDeleteError);
+      setShowDeleteErrorModal(true);
+    }
+  }, [reduxDeleteError]);
+
   /** Handlers */
   const handleDeleteMethod = async (methodId: string) => {
+    setDeletingMethodId(methodId);
+    setDeleteError(null);
+    setDeleteSuccess(false);
+
     try {
-      setDeletingMethodId(methodId);
-      setDeleteError(null);
-      setDeleteSuccess(false);
-      await dispatch(deleteUserPaymentDetail(methodId) as any);
+      await dispatch(deleteUserPaymentDetail(methodId)).unwrap();
       setDeleteSuccess(true);
+      showToast.success("Payment method deleted successfully");
       await dispatch(fetchUserPaymentDetails() as any);
-    } catch {
-      setDeleteError("Failed to delete payment method");
+    } catch (err: unknown) {
+      const errorMsg =
+        typeof err === "string"
+          ? err
+          : (err as { message?: string })?.message || "Failed to delete payment method";
+      setDeleteError(errorMsg);
+      setShowDeleteErrorModal(true);
     } finally {
       setDeletingMethodId(null);
     }
@@ -779,6 +799,16 @@ const PaymentMethods = () => {
           setEditingPaymentMethod(null);
         }}
         paymentMethod={editingPaymentMethod}
+      />
+
+      {/* Delete Error Modal - shows API errors like "Cannot delete payment detail. You have active orders using this payment method." */}
+      <DeleteErrorModal
+        isOpen={showDeleteErrorModal}
+        onClose={() => {
+          setShowDeleteErrorModal(false);
+          setDeleteError(null);
+        }}
+        error={deleteError}
       />
     </div>
   );
