@@ -486,8 +486,8 @@ export default function MarketingPage() {
         </div>
 
         <div className="w-full max-w-[1600px] mx-auto px-2 sm:px-4 lg:px-8 xl:px-10 relative z-10 mt-4" style={{ paddingTop: 'clamp(1rem, 3vw, 2rem)' }}>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 items-start gap-y-5 md:gap-y-4 md:gap-x-6 lg:gap-x-8 xl:gap-x-10">
-            <div className="space-y-2 md:space-y-3 pl-0 md:pl-4 lg:pl-5 text-center md:text-left">
+          <div className="grid grid-cols-1 lg:grid-cols-2 items-start gap-y-5 md:gap-y-4 md:gap-x-6 lg:gap-x-8 xl:gap-x-10">
+            <div className="space-y-2 md:space-y-3 pl-0 md:pl-4 lg:pl-5 text-center lg:text-left">
               {/* Green pill banner */}
               <div className="inline-flex items-center justify-center md:justify-start">
                 <span className="bg-[#1D8751]/10 border border-[#1D8751] text-[#1D8751] px-3 py-1 rounded-full text-xs sm:text-sm font-medium">
@@ -516,12 +516,12 @@ export default function MarketingPage() {
                 <span className="relative">
                   <span className="text-gray-900 dark:text-[#788099]">Experience lightning-fast trades, ultra-low fees and bank grade security</span>
                   <br />
-                  <span className="text-[#1D8751] dark:text-[#13B562]">Join 500,000+ traders worldwide.</span>
+                  <span className="text-[#1D8751] dark:text-secondary">Join 500,000+ traders worldwide.</span>
                 </span>
               </p>
 
               {/* CTA Buttons */}
-              <div className="flex flex-wrap gap-2 sm:gap-3 justify-center md:justify-start w-full sm:w-auto">
+              <div className="flex flex-wrap gap-2 sm:gap-3 justify-center lg:justify-start w-full sm:w-auto">
                 <button
                   type="button"
                   onClick={() =>
@@ -539,7 +539,7 @@ export default function MarketingPage() {
               </div>
 
               {/* Stats */}
-              <div className="flex flex-wrap gap-3 sm:gap-4 justify-center md:justify-start pt-4 md:pt-6 w-full">
+              <div className="flex flex-wrap gap-3 sm:gap-4 justify-center lg:justify-start pt-4 md:pt-6 w-full">
                 {heroStats.map((stat, index) => (
                   <div key={index} className="bg-white/5 dark:bg-white/5 backdrop-blur-sm rounded-2xl px-2 py-3 sm:px-5 sm:py-4 flex flex-col items-center sm:items-start gap-3 shadow-lg border border-white/10 flex-1 min-w-[120px] max-w-[180px]">
                     <div className={`w-10 h-10 rounded-xl bg-linear-to-br ${stat.gradient} flex items-center justify-center shadow-lg`}>
