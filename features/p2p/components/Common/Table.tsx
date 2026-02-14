@@ -728,9 +728,9 @@ export const Table: React.FC<TableProps> = ({
         </div>
 
         <div ref={tableContainerRef} className="mt-3 w-full pb-4 scroll-smooth">
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto md:overflow-visible">
           <div
-            className={`w-full min-w-[800px] md:min-w-0 border-2 bg-white dark:bg-[var(--card-color)] border-gray-200 dark:border-[#35353E] shadow-lg rounded-[24px] overflow-hidden`}
+            className={`w-full md:min-w-0 border-2 bg-white dark:bg-[var(--card-color)] border-gray-200 dark:border-[#35353E] shadow-lg rounded-[24px] overflow-hidden`}
           >
             {/* Desktop Table Header - Hidden on mobile */}
             <div
@@ -940,24 +940,24 @@ export const Table: React.FC<TableProps> = ({
 
                       {/* Mobile Card View */}
                       <div
-                        className={`md:hidden flex flex-col gap-2 p-3 mx-4 relative hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors duration-200 bg-white dark:bg-[var(--card-color)]`}
+                        className={`md:hidden flex flex-col gap-2 p-3 mx-2 relative hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors duration-200 bg-white dark:bg-[var(--card-color)]`}
                       >
                         {/* Top Row: Asset and Type */}
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
                             <img
                               src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
                               alt={row.asset || "Asset"}
-                              className="w-6 h-6"
+                              className="w-6 h-6 flex-shrink-0"
                             />
                             {getAssetLabel(row.asset) && (
-                              <span className="text-sm font-medium text-[#1D8751] dark:text-[#1D8751]">
+                              <span className="text-sm font-medium text-[#1D8751] dark:text-[#1D8751] truncate">
                                 {getAssetLabel(row.asset)}
                               </span>
                             )}
                           </div>
                           <div
-                            className={`text-sm font-semibold ${getAmountColor(String(row.type))}`}
+                            className={`text-sm font-semibold flex-shrink-0 ${getAmountColor(String(row.type))}`}
                           >
                             {formatTypeLabel(row.type)}
                           </div>

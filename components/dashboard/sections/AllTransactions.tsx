@@ -8,6 +8,7 @@ import { NoDataFound } from "../ui/Transactions";
 import { useDashboardI18n } from "@/lib/useDashboardI18n";
 import { SortArrowsIcon } from "@/components/ui/SortArrowsIcon";
 import { FaUniversity } from "react-icons/fa";
+import { getHighResAssetIcon } from "@/features/express/utils/imageHelpers";
 import type { AllTransactionItem } from "@/features/transactions/api";
 
 const formatAmount = (amount: string | number | undefined | null): string => {
@@ -193,18 +194,20 @@ const AllTransactions = () => {
   };
 
   const renderAssetIcon = (tx: AllTransactionItem) => {
-    if (tx.type === "moneyx" && !tx.asset_image) {
+    if (tx.type === "moneyx" && !tx.currency && !tx.asset) {
       return (
         <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#1D8751] flex items-center justify-center flex-shrink-0">
           <FaUniversity className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
         </div>
       );
     }
-    if (tx.asset_image) {
+    // Use getHighResAssetIcon based on currency/ticker for proper asset logos
+    const ticker = tx.currency || tx.asset;
+    if (ticker) {
       return (
         <img
-          src={tx.asset_image}
-          alt={tx.currency || "Asset"}
+          src={getHighResAssetIcon({ ticker })}
+          alt={ticker}
           className="w-7 h-7 sm:w-8 sm:h-8 rounded-full shadow-sm flex-shrink-0"
           onError={(e) => {
             e.currentTarget.style.display = "none";

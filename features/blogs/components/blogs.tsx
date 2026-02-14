@@ -88,7 +88,10 @@ const BlogPage = () => {
 
   const handlePageChange = (newPage: number | ((prev: number) => number)) => {
     setCurrentPage(newPage);
-    window.scrollTo({ top: 90, behavior: "smooth" });
+    // Scroll to top of page when changing pages - use setTimeout to ensure content renders first
+    setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: "instant" });
+    }, 10);
   };
 
   // Calculate pagination
