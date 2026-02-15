@@ -100,6 +100,23 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
     [userPaymentDetails, selectedProvider, selectedDetails, hideSelected]
   );
 
+  // Check if there are admin methods for the selected provider (to show "Add Account" message)
+  const hasAdminMethod = useMemo(
+    () =>
+      adminMethods.some((m) => m.provider_name === selectedProvider),
+    [adminMethods, selectedProvider]
+  );
+
+  // When hideSelected is true, filteredDetails may be empty because ALL accounts for this provider are already selected
+  const allMatchingSelected = useMemo(
+    () =>
+      hideSelected &&
+      filteredDetails.length === 0 &&
+      selectedDetails.some((d) => d.payment_provider_name === selectedProvider),
+    [hideSelected, filteredDetails.length, selectedDetails, selectedProvider]
+  );
+
+
   return (
     <div className="space-y-6">
       {/* Provider + Aside (e.g. Time Limit) - equal width */}
@@ -129,14 +146,20 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
 
       {/* detail cards + Add button - shown when provider is selected, in a row */}
       {selectedProvider && (
-        <div className="flex flex-row flex-wrap items-start gap-4">
-          {/* Card(s) or empty state */}
-          <div className="flex-1 min-w-0 space-y-4">
-            {filteredDetails.length > 0 ? (
-              filteredDetails.map((detail) => (
+        <div className="flex flex-col gap-4">
+          <p className="text-[10px] sm:text-xs text-gray-500 dark:text-[#788099]">
+            Newly added methods may show as pending until verified.
+          </p>
+          <div className="flex flex-row flex-wrap items-start gap-4">
+            {/* Card(s) or empty state */}
+            <div className="flex-1 min-w-0 space-y-4">
+              {filteredDetails.length > 0 ? (
+                filteredDetails.map((detail) => {
+                  const isPending = detail.status?.toLowerCase() === "pending";
+                  return (
                 <div
                   key={detail.id}
-                  className="flex flex-row flex-wrap items-center gap-4 rounded-lg p-4 bg-[#1D8751]/10 dark:bg-[#1D8751]/20 border border-[#1D8751]/30"
+                  className="flex flex-row flex-wrap items-center gap-4 rounded-lg p-4 bg-gray-100 dark:bg-[#2a2d35] border border-gray-200 dark:border-[#35353E]"
                 >
                   {/* Logo */}
                   <img
@@ -159,16 +182,28 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
                       {detail.account_name}
                     </p>
                   </div>
-                  {/* Phone/Account Number */}
+                  {/* Phone/Account Number / Wallet */}
                   <div className="min-w-0 flex-1">
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {detail.payment_method_name?.toLowerCase().includes('mobile') || detail.payment_method_name?.toLowerCase().includes('money') ? 'Phone Number' : 'Account Number'}
+                      {detail.payment_method_name?.toLowerCase().includes('mobile') || detail.payment_method_name?.toLowerCase().includes('money') ? 'Phone Number' : detail.wallet_address ? 'Wallet' : 'Account Number'}
                     </p>
                     <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                      {detail.account_number}
+                      {detail.account_number || detail.wallet_address || 'N/A'}
                     </p>
                   </div>
-                  {/* Select / X / Pending on same card */}
+                  {/* Status Badge */}
+                  {/* {detail.status && (
+                    <span
+                      className={`flex-shrink-0 px-2.5 py-1 rounded-md text-xs font-medium ${
+                        detail.status?.toLowerCase() === "pending"
+                          ? "bg-amber-500/20 dark:bg-amber-500/30 text-amber-700 dark:text-amber-400 border border-amber-500/40"
+                          : "bg-[#1D8751]/20 dark:bg-[#1D8751]/30 text-[#1D8751] border border-[#1D8751]/40"
+                      }`}
+                    >
+                      {detail.status?.toLowerCase() === "pending" ? "Pending" : "Approved"}
+                    </span>
+                  )} */}
+                  {/* Select/Remove - only approved methods can be selected */}
                   {selectedDetails.some((d) => d.id === detail.id) ? (
                     <button
                       onClick={() => onRemove?.(detail)}
@@ -179,8 +214,11 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
                     >
                       <FaTimes className="w-5 h-5" />
                     </button>
-                  ) : (detail.status?.toLowerCase() === "pending") ? (
-                    <span className="px-4 py-2 text-sm font-medium text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/30 rounded-md flex-shrink-0 cursor-default">
+                  ) : isPending ? (
+                    <span
+                      className="px-4 py-2 text-sm font-medium text-amber-700 dark:text-amber-400 bg-amber-500/20 dark:bg-amber-500/30 border border-amber-500/40 rounded-md cursor-not-allowed flex-shrink-0"
+                      title="Pending verification. Select when approved."
+                    >
                       Pending
                     </span>
                   ) : (
@@ -193,36 +231,31 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
                     </button>
                   )}
                 </div>
-              ))
-            ) : (
-              <div className="flex flex-row flex-wrap items-center gap-4">
-                <div className="rounded-lg px-4 py-3 bg-[#1D8751]/10 dark:bg-[#1D8751]/20 border border-[#1D8751]/30">
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Click the button to add a payment method
+                  );
+                })
+              ) : (
+                <div className="flex flex-row items-center gap-4 rounded-lg p-4 bg-gray-100 dark:bg-[#2a2d35] border border-gray-200 dark:border-[#35353E]">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 flex-1 min-w-0">
+                    {allMatchingSelected
+                      ? `All accounts for ${selectedProvider} have been selected. See Selected Payment Methods below.`
+                      : hasAdminMethod
+                        ? `No payment account found for ${selectedProvider}. Please add a payment account first.`
+                        : "No payment details found for this combination."}
                   </p>
                 </div>
-                {onAddPaymentMethod && (
-                  <button
-                    type="button"
-                    onClick={onAddPaymentMethod}
-                    className="px-4 py-2 text-sm font-medium text-white bg-[#1D8751] hover:bg-[#166b3e] border border-[#1D8751] rounded-md transition-colors flex-shrink-0"
-                  >
-                    Add Payment Method
-                  </button>
-                )}
-              </div>
+              )}
+            </div>
+            {/* Add Payment Method button - in same row as card(s) */}
+            {onAddPaymentMethod && (
+              <button
+                type="button"
+                onClick={onAddPaymentMethod}
+                className="px-4 py-2 text-sm font-medium text-white bg-[#1D8751] hover:bg-[#166b3e] border border-[#1D8751] rounded-md transition-colors flex-shrink-0 self-center"
+              >
+                Add Payment Method
+              </button>
             )}
           </div>
-          {/* Add Payment Method button - only when we have cards (empty state has its own button) */}
-          {filteredDetails.length > 0 && onAddPaymentMethod && (
-            <button
-              type="button"
-              onClick={onAddPaymentMethod}
-              className="px-4 py-2 text-sm font-medium text-white bg-[#1D8751] hover:bg-[#166b3e] border border-[#1D8751] rounded-md transition-colors flex-shrink-0 self-center"
-            >
-              Add Payment Method
-            </button>
-          )}
         </div>
       )}
     </div>
