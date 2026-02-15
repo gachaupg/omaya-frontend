@@ -932,7 +932,6 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                       </div>
                     }
                   />
-<<<<<<< HEAD
 
                   {/* Display Selected Payment Methods */}
                   {selectedPaymentDetails.length > 0 && (
@@ -1036,8 +1035,6 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                       </p>
                     </div>
                   )}
-=======
->>>>>>> 6f7745632fdfc08a72c598e4332941f4c57feb5c
                 </div>
               </div>
             )}
