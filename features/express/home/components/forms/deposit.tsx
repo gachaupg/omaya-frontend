@@ -3861,7 +3861,7 @@ export default function DepositForm({
               </h2>
               <div className="mb-6 flex flex-col gap-3 w-full px-0 sm:px-2">
                 <div
-                  className={`border-1 rounded-2xl p-3 sm:p-4 shadow-lg w-full ${isDark ? "bg-[#0F0F17] border-[#35353E] text-[#788099]" : "bg-white border-[#E2E8F0] text-[#1F2937]"
+                  className={`border rounded-2xl p-3 sm:p-4 shadow-lg w-full ${isDark ? "bg-[#0F0F17] border-accent text-[#788099]" : "bg-white border-[#E2E8F0] text-[#1F2937]"
                     }`}
                 >
                   {/* Transaction Code Row */}
@@ -3873,7 +3873,7 @@ export default function DepositForm({
                           key={index}
                           className="w-8 h-10 sm:w-10 sm:h-12 text-gray-900 dark:text-white dark:bg-[#35353E] bg-[#F5F6F7] border dark:border-[#4A4A4A] border-[#E2E8F0] rounded-lg flex items-center justify-center"
                         >
-                          <span className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white font-mono">
+                          <span className="text-lg md:text-xl font-bold text-gray-900 dark:text-white font-mono">
                             {char}
                           </span>
                         </div>
@@ -3976,7 +3976,7 @@ export default function DepositForm({
               Wallet/Account Address
             </label>
             {/* Input group */}
-            <div className="relative flex flex-wrap items-center bg-transparent dark:bg-transparent border border-[#39394a] dark:border-[#39394A] rounded-2xl px-2 sm:px-4 py-2 mb-4 gap-2">
+            <div className="relative flex items-center bg-transparent dark:bg-transparent border border-[#39394a] dark:border-[#39394A] rounded-2xl px-2 sm:px-4 py-2 mb-4 gap-1 sm:gap-2 overflow-hidden">
               {/* Left icon */}
               <span className="mr-2 text-[#1D8751]">
                 <svg width="22" height="22" fill="none" viewBox="0 0 24 24">
@@ -4031,7 +4031,7 @@ export default function DepositForm({
               {/* Bookmark icon - clickable to load from bookmarks */}
               <span
                 ref={bookmarkAnchorRef}
-                className="mx-1 sm:mx-2 text-[#1D8751] cursor-pointer flex-shrink-0 hover:opacity-80 transition-opacity"
+                className="mx-1 sm:mx-2 text-[#1D8751] cursor-pointer shrink-0 hover:opacity-80 transition-opacity"
                 onClick={async () => {
                   if (bookmarkOpen) {
                     setBookmarkOpen(false);
@@ -4090,7 +4090,7 @@ export default function DepositForm({
                     showToast.error("Failed to paste from clipboard");
                   }
                 }}
-                className="flex items-center gap-1 dark:bg-[#1D1D23] border border-[#1D8751] text-[#1D8751] rounded-full px-2 sm:px-4 py-1 ml-1 sm:ml-2 font-semibold text-xs sm:text-base hover:bg-[#1D8751] hover:text-white transition-colors"
+                className="flex items-center gap-1 dark:bg-[#1D1D23] border border-[#1D8751] text-[#1D8751] rounded-full px-2 sm:px-4 py-1 font-semibold text-xs sm:text-sm hover:bg-[#1D8751] hover:text-white transition-colors"
               >
                 <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
                   <path
@@ -4101,7 +4101,7 @@ export default function DepositForm({
                     strokeLinejoin="round"
                   />
                 </svg>
-                Paste
+                <span className="hidden lg:block">Paste</span>
               </button>
             </div>
 

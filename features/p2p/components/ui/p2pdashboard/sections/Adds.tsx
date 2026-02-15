@@ -217,7 +217,19 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
       isValid = false;
     }
 
-    const commissionError = validateP2PAd.commission(parseFloat(commission) || 0);
+    // When KES: Order Max cannot exceed rate × amount (using Rate at top)
+    if (activeCurrency === "KES" && orderMax && amount && commission) {
+      const rate = Number(commission) || 0;
+      const amountNum = Number(amount) || 0;
+      const maxNum = Number(orderMax) || 0;
+      const maxAllowed = rate * amountNum;
+      if (!isNaN(maxNum) && !isNaN(maxAllowed) && maxNum > maxAllowed) {
+        newErrors.orderMax = `Maximum order amount cannot exceed rate × amount (KSh ${formatLargeNumber(maxAllowed)})`;
+        isValid = false;
+      }
+    }
+
+    const commissionError = validateP2PAd.commission(parseFloat(commission) || 0, activeCurrency);
     if (commissionError) {
       newErrors.commission = commissionError;
       isValid = false;
@@ -573,8 +585,8 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                             amount: "Amount must be greater than or equal to minimum order amount"
                           }));
                         }
-                        // Check if orderMax is greater than amount
-                        else if (orderMax && !isNaN(Number(orderMax)) && Number(orderMax) > amountNum) {
+                        // When USD: check if orderMax is greater than amount
+                        else if (activeCurrency === "USD" && orderMax && !isNaN(Number(orderMax)) && Number(orderMax) > amountNum) {
                           setErrors((prev) => ({
                             ...prev,
                             amount: "Amount must be greater than or equal to maximum order amount"
@@ -593,12 +605,23 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                               }));
                             }
                           }
-                          if (orderMax) {
+                          if (activeCurrency === "USD" && orderMax) {
                             const maxNum = Number(orderMax);
                             if (!isNaN(maxNum) && maxNum > amountNum) {
                               setErrors((prev) => ({
                                 ...prev,
                                 orderMax: "Maximum order amount cannot be greater than amount"
+                              }));
+                            }
+                          }
+                          if (activeCurrency === "KES" && orderMax && amount && commission) {
+                            const rate = Number(commission) || 0;
+                            const maxNum = Number(orderMax) || 0;
+                            const maxAllowed = rate * amountNum;
+                            if (!isNaN(maxNum) && !isNaN(maxAllowed) && maxNum > maxAllowed) {
+                              setErrors((prev) => ({
+                                ...prev,
+                                orderMax: `Maximum order amount cannot exceed rate × amount (KSh ${formatLargeNumber(maxAllowed)})`
                               }));
                             }
                           }
@@ -653,7 +676,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                   ? "border-red-500"
                   : "border-gray-200 dark:border-[#35353E]"
                   } rounded-[19px] px-2 py-2 min-h-[40px]`}>
-                  <span className="text-[#1D8751] text-lg mr-1">$</span>
+                  <span className="text-[#1D8751] text-lg mr-1">{activeCurrency === "KES" ? "KSh" : "$"}</span>
                   <input
                     type="text"
                     value={orderMin}
@@ -743,7 +766,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                   ? "border-red-500"
                   : "border-gray-200 dark:border-[#35353E]"
                   } rounded-[19px] px-2 py-2 min-h-[40px]`}>
-                  <span className="text-[#1D8751] text-lg mr-1">$</span>
+                  <span className="text-[#1D8751] text-lg mr-1">{activeCurrency === "KES" ? "KSh" : "$"}</span>
                   <input
                     type="text"
                     value={orderMax}
@@ -783,8 +806,33 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                             orderMax: "Maximum order amount must be greater than minimum order amount"
                           }));
                         }
-                        // Check if it's greater than amount (if amount is set)
-                        else if (amount && !isNaN(Number(amount)) && valueNum > Number(amount)) {
+                        // When KES: Order Max cannot exceed rate × amount (Rate at top)
+                        else if (activeCurrency === "KES" && amount && commission) {
+                          const rate = Number(commission) || 0;
+                          const amountNum = Number(amount) || 0;
+                          const maxAllowed = rate * amountNum;
+                          if (!isNaN(maxAllowed) && valueNum > maxAllowed) {
+                            setErrors((prev) => ({
+                              ...prev,
+                              orderMax: `Maximum order amount cannot exceed rate × amount (KSh ${formatLargeNumber(maxAllowed)})`
+                            }));
+                          } else {
+                            setErrors((prev) => ({ ...prev, orderMax: undefined }));
+                            if (orderMin && !isNaN(Number(orderMin))) {
+                              const minNum = Number(orderMin);
+                              if (minNum >= valueNum) {
+                                setErrors((prev) => ({
+                                  ...prev,
+                                  orderMin: "Minimum order amount must be less than maximum order amount"
+                                }));
+                              } else if (errors.orderMin?.includes("less than maximum")) {
+                                setErrors((prev) => ({ ...prev, orderMin: undefined }));
+                              }
+                            }
+                          }
+                        }
+                        // When USD: check if it's greater than amount (if amount is set)
+                        else if (activeCurrency === "USD" && amount && !isNaN(Number(amount)) && valueNum > Number(amount)) {
                           setErrors((prev) => ({
                             ...prev,
                             orderMax: "Maximum order amount cannot be greater than amount"
@@ -847,8 +895,9 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                     userPaymentDetails={userPaymentDetails || []}
                     adminMethods={adminMethods || []}
                     onSelect={handleSelectPaymentDetail}
+                    onRemove={handleRemovePaymentDetail}
                     selectedDetails={selectedPaymentDetails}
-                    hideSelected={true}
+                    hideSelected={false}
                     onProviderSelect={(provider) =>
                       setSelectedProviderInSelector(provider)
                     }
@@ -883,6 +932,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                       </div>
                     }
                   />
+<<<<<<< HEAD
 
                   {/* Display Selected Payment Methods */}
                   {selectedPaymentDetails.length > 0 && (
@@ -986,6 +1036,8 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                       </p>
                     </div>
                   )}
+=======
+>>>>>>> 6f7745632fdfc08a72c598e4332941f4c57feb5c
                 </div>
               </div>
             )}

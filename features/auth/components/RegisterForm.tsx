@@ -830,7 +830,7 @@ export default function RegistrationPage() {
                   "Please Register with correct Information"
                 )}
               </p>
-              {formErrors.length > 0 && (
+              {/* {formErrors.length > 0 && (
                 <div
                   ref={formErrors.length > 0 ? errorBannerRef : null}
                   role="alert"
@@ -849,7 +849,7 @@ export default function RegistrationPage() {
                     ))}
                   </ul>
                 </div>
-              )}
+              )} */}
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
@@ -1693,7 +1693,7 @@ export default function RegistrationPage() {
               </div>
 
               {/* Global form errors */}
-              {formErrors.length > 0 && (
+              {/* {formErrors.length > 0 && (
                 <div
                   role="alert"
                   aria-live="assertive"
@@ -1711,7 +1711,7 @@ export default function RegistrationPage() {
                     ))}
                   </ul>
                 </div>
-              )}
+              )} */}
 
               {/* Register Button */}
               <button

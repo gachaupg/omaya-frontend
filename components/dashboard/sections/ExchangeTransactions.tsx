@@ -64,28 +64,50 @@ const extractPaymentInfo = (tx: any) => {
   const displayImage =
     providerLogoFromDetails ||
     providerLogoFromTransaction ||
-    tx?.asset_image ||
-    null;
+    null; // Don't fall back to asset_image - it might be a profile photo
 
-  const providerName =
+  // Helper function to check if a value is a UUID
+  const isUUID = (value: string | null | undefined): boolean => {
+    if (!value) return false;
+    // UUIDs have format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+  };
+
+  // Helper to filter out invalid values (undefined string, UUIDs, empty)
+  const sanitizeValue = (value: string | null | undefined): string | null => {
+    if (!value || value === 'undefined' || isUUID(value)) return null;
+    return value;
+  };
+
+  // Get provider name with proper fallbacks, filter out 'undefined' string and UUIDs
+  const rawProviderName =
     detailWithLogo?.provider_name ||
     detailWithLogo?.provider ||
     tx?.payment_provider ||
     tx?.payment_provider_display ||
+    tx?.sender_provider ||
+    tx?.receiver_provider ||
     null;
+  
+  const providerName = sanitizeValue(rawProviderName);
 
-  const methodLabel =
+  const rawMethodLabel =
     tx?.payment_method ||
     tx?.payment_method_display ||
     detailWithLogo?.payment_method_name ||
+    detailWithLogo?.payment_method ||
     detailWithLogo?.method ||
     null;
+  
+  const methodLabel = sanitizeValue(rawMethodLabel);
 
   // Extract asset info for To column
   const assetSymbol = tx?.currency || tx?.asset_symbol || "USDT";
   const assetNetwork = tx?.network || tx?.asset_network || "BSC";
-  const assetImage = tx?.asset_image || null;
-  const walletAddress = tx?.wallet_address || tx?.destination_address || null;
+  
+  // Get wallet address, but filter out UUIDs (transaction IDs)
+  const rawWalletAddress = tx?.wallet_address || tx?.destination_address || null;
+  const walletAddress = sanitizeValue(rawWalletAddress);
 
   return {
     displayImage,
@@ -93,7 +115,7 @@ const extractPaymentInfo = (tx: any) => {
     methodLabel,
     assetSymbol,
     assetNetwork,
-    assetImage,
+    assetImage: null, // Don't expose asset_image as it might be a profile photo
     walletAddress,
   };
 };
@@ -262,7 +284,7 @@ const ExchangeTransactions = ({ itemsPerPage = 10 }) => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <img
-                    src={getHighResAssetIcon({ ...tx, ticker: tx.currency })}
+                    src={getHighResAssetIcon({ ticker: tx.currency })}
                     alt={tx.currency || "Asset"}
                     className="w-10 h-10 rounded-full shadow-sm shrink-0"
                     onError={(e) => {
@@ -309,13 +331,13 @@ const ExchangeTransactions = ({ itemsPerPage = 10 }) => {
                           />
                         )}
                         <span className="font-medium text-sm text-gray-900 dark:text-white truncate">
-                          {paymentInfo.providerName || "Bank"}
+                          {paymentInfo.providerName || paymentInfo.methodLabel || "Bank / Payment"}
                         </span>
                       </>
                     ) : (
                       <>
                         <img
-                          src={getHighResAssetIcon({ ...tx, ticker: tx.currency })}
+                          src={getHighResAssetIcon({ ticker: tx.currency })}
                           alt={tx.currency || "Asset"}
                           className="w-6 h-6 rounded-full"
                           onError={(e) => { e.currentTarget.style.display = 'none'; }}
@@ -333,7 +355,7 @@ const ExchangeTransactions = ({ itemsPerPage = 10 }) => {
                     {tx.transaction_type === "deposit" ? (
                       <>
                         <img
-                          src={getHighResAssetIcon({ ...tx, ticker: tx.currency })}
+                          src={getHighResAssetIcon({ ticker: tx.currency })}
                           alt={tx.currency || "Asset"}
                           className="w-6 h-6 rounded-full"
                           onError={(e) => { e.currentTarget.style.display = 'none'; }}
@@ -353,7 +375,7 @@ const ExchangeTransactions = ({ itemsPerPage = 10 }) => {
                           />
                         )}
                         <span className="font-medium text-sm text-gray-900 dark:text-white truncate">
-                          {paymentInfo.providerName || "Bank"}
+                          {paymentInfo.providerName || paymentInfo.methodLabel || "Bank / Wallet"}
                         </span>
                       </>
                     )}
@@ -451,8 +473,7 @@ const ExchangeTransactions = ({ itemsPerPage = 10 }) => {
                   <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-accent">
                     <div className="flex items-center gap-2 sm:gap-3">
                       <img
-                        src={getHighResAssetIcon({ ...tx, ticker: tx.currency })}
-                        alt={tx.currency || "Asset"}
+                        src={getHighResAssetIcon({ ticker: tx.currency })}                        alt={tx.currency || "Asset"}
                         className="w-7 h-7 sm:w-8 sm:h-8 rounded-full shadow-sm shrink-0"
                         onError={(e) => {
                           e.currentTarget.style.display = 'none';
@@ -485,13 +506,13 @@ const ExchangeTransactions = ({ itemsPerPage = 10 }) => {
                             />
                           )}
                           <span className="font-medium text-sm text-gray-900 dark:text-white truncate">
-                            {paymentInfo.providerName || paymentInfo.methodLabel || "Bank"}
+                            {paymentInfo.providerName || paymentInfo.methodLabel || "Bank / Payment"}
                           </span>
                         </>
                       ) : (
                         <>
                           <img
-                            src={getHighResAssetIcon({ ...tx, ticker: tx.currency })}
+                            src={getHighResAssetIcon({ ticker: tx.currency })}
                             alt={tx.currency || "Asset"}
                             className="w-7 h-7 rounded-full shadow-sm shrink-0"
                             onError={(e) => {
@@ -519,7 +540,7 @@ const ExchangeTransactions = ({ itemsPerPage = 10 }) => {
                       {tx.transaction_type === "deposit" ? (
                         <>
                           <img
-                            src={getHighResAssetIcon({ ...tx, ticker: tx.currency })}
+                            src={getHighResAssetIcon({ ticker: tx.currency })}
                             alt={tx.currency || "Asset"}
                             className="w-7 h-7 rounded-full shadow-sm shrink-0"
                             onError={(e) => {
@@ -555,7 +576,7 @@ const ExchangeTransactions = ({ itemsPerPage = 10 }) => {
                             />
                           )}
                           <span className="font-medium text-sm text-gray-900 dark:text-white truncate">
-                            {paymentInfo.providerName || paymentInfo.methodLabel || "Bank"}
+                            {paymentInfo.providerName || paymentInfo.methodLabel || "Bank / Wallet"}
                           </span>
                         </>
                       )}

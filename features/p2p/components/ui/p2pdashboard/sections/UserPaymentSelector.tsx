@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import CustomSelect from "@/components/ui/CustomSelect";
 import { AdminPaymentMethod } from "@/features/p2p/types/paymentMethods";
+import { FaTimes } from "react-icons/fa";
 
 export interface UserPaymentDetail {
   id: number;
@@ -206,10 +207,12 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
                   {selectedDetails.some((d) => d.id === detail.id) ? (
                     <button
                       onClick={() => onRemove?.(detail)}
-                      className="px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 bg-red-500/10 border border-red-500/30 rounded-md hover:bg-red-500/20 transition-colors flex-shrink-0"
+                      className="p-2 text-red-600 dark:text-red-400 bg-red-500/10 border border-red-500/30 rounded-md hover:bg-red-500/20 transition-colors flex-shrink-0"
                       type="button"
+                      title="Deselect"
+                      aria-label="Deselect"
                     >
-                      Remove
+                      <FaTimes className="w-5 h-5" />
                     </button>
                   ) : isPending ? (
                     <span

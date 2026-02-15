@@ -475,8 +475,10 @@ const MarketTable: React.FC<MarketTableProps> = ({
           )}
 
           {/* ---------------- pagination --------------- */}
-          {filteredData.length > 0 && (() => {
+          {(filteredData.length > 0 || currentPage > 1) && (() => {
             const pagesToRender = getPaginationPages();
+            // Disable next button if current page is empty or at last page
+            const isNextDisabled = currentPage >= totalPages || filteredData.length === 0;
             return (
               <div className="flex justify-center items-center gap-2 py-4 bg-gray-50 dark:bg-[var(--bg-color)]">
                 <button
@@ -504,7 +506,8 @@ const MarketTable: React.FC<MarketTableProps> = ({
 
                   const pageNumber = page as number;
                   const isCurrentPage = Number(currentPage) === Number(pageNumber);
-                  const isDisabled = isCurrentPage && filteredData.length === 0;
+                  // Don't disable the button if it's a previous page we can navigate to
+                  const isDisabled = isCurrentPage && filteredData.length === 0 && pageNumber >= currentPage;
 
                   return (
                     <button
@@ -524,8 +527,8 @@ const MarketTable: React.FC<MarketTableProps> = ({
 
                 <button
                   onClick={() => onPageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                  className={`px-3 py-1 rounded-md text-sm font-medium border bg-white border-gray-200 text-gray-500 ${currentPage === totalPages
+                  disabled={isNextDisabled}
+                  className={`px-3 py-1 rounded-md text-sm font-medium border bg-white border-gray-200 text-gray-500 ${isNextDisabled
                     ? "opacity-50 cursor-not-allowed"
                     : "hover:bg-gray-100"
                     } dark:bg-[var(--card-color)] dark:border-[#35353E] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]`}

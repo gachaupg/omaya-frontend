@@ -84,7 +84,7 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
   // Process payment methods similar to deposit form
   useEffect(() => {
     const methodsToProcess = isHomePage ? publicPaymentMethods : adminMethods;
-    
+
     // Handle public payment methods structure (similar to ExchangeForm)
     let processedMethods: any[] = [];
     if (isHomePage && publicPaymentMethods) {
@@ -232,11 +232,11 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
   // Removes method suffixes like "- Bank", "- Mobile", "- Crypto", etc.
   const getProviderName = useCallback((payment: any) => {
     let providerName = payment?.provider_name || payment?.provider?.provider_name || payment?.provider || payment?.method?.method_name || payment?.payment_method_name || "";
-    
+
     // Remove common method suffixes (case-insensitive)
     // Matches patterns like "- Bank", "- Mobile", "- Crypto", "- Forex", "- Marchant", "- Money Transfer", etc.
     providerName = providerName.replace(/\s*-\s*(Bank|Mobile|Crypto|Forex|Marchant|Money\s*Transfer|Merchant)\s*$/i, "").trim();
-    
+
     return providerName;
   }, []);
 
@@ -256,7 +256,7 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
     const paymentMethod = (method?.payment_method || "").toLowerCase();
     const paymentMethodType = (method?.payment_method_type || "").toLowerCase();
     const provider = (method?.provider || "").toLowerCase();
-    
+
     return (
       providerName.includes("bank") ||
       paymentMethod.includes("bank") ||
@@ -268,7 +268,7 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
   // Restore state from localStorage after login (only for home page)
   const hasRestoredState = useRef(false);
   const paymentMethodRestoreAttempted = useRef(false);
-  
+
   useEffect(() => {
     if (!isHomePage || hasRestoredState.current || !isAuthenticated) {
       return;
@@ -278,9 +278,9 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
       const savedState = localStorage.getItem("moneyx_form_state");
       if (savedState) {
         const state = JSON.parse(savedState);
-        
+
         console.log("Restoring moneyx form state:", state);
-        
+
         // Restore amounts immediately
         if (state.amountInput !== undefined && state.amountInput !== null) {
           setPayAmountInput(state.amountInput);
@@ -325,11 +325,11 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
 
     const restoreFrom = localStorage.getItem("moneyx_restore_from");
     const restoreTo = localStorage.getItem("moneyx_restore_to");
-    
+
     if (restoreFrom || restoreTo) {
       console.log("Restoring payment methods - From:", restoreFrom, "To:", restoreTo);
       paymentMethodRestoreAttempted.current = true;
-      
+
       // Restore "from" payment method
       if (restoreFrom) {
         const savedFromDetail = localStorage.getItem("moneyx_restore_from_detail");
@@ -339,7 +339,7 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
           try {
             const fromDetail = JSON.parse(savedFromDetail);
             console.log("Trying to match from payment detail:", fromDetail);
-            
+
             // Try multiple matching strategies
             matchedFromMethod = finalPaymentMethods.find(
               (m: any) => {
@@ -384,7 +384,7 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
           try {
             const toDetail = JSON.parse(savedToDetail);
             console.log("Trying to match to payment detail:", toDetail);
-            
+
             // Try multiple matching strategies
             matchedToMethod = finalPaymentMethods.find(
               (m: any) => {
@@ -443,8 +443,8 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
     // Check if current selection still exists in the latest list (using cleaned names)
     const currentExists = fromPaymentMethod
       ? finalPaymentMethods.some(
-          (m: any) => getProviderName(m) === fromPaymentMethod
-        )
+        (m: any) => getProviderName(m) === fromPaymentMethod
+      )
       : false;
 
     // If nothing selected OR the current selection no longer exists, (re)auto-select
@@ -478,11 +478,11 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
       : (Array.isArray(stablePaymentMethods) && stablePaymentMethods.length > 0
         ? stablePaymentMethods
         : null);
-    
+
     if (methodsToCheck && methodsToCheck.length > 1 && fromPaymentMethod && !toPaymentMethod) {
       // Filter for banks first
       const bankMethods = methodsToCheck.filter(isBankMethod);
-      
+
       // Select the second bank (index 1) if it exists, otherwise select the second method overall
       let methodToSelect;
       if (bankMethods.length > 1) {
@@ -509,7 +509,7 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
           );
         }
       }
-      
+
       const providerName = getProviderName(methodToSelect);
       if (providerName) {
         setToPaymentMethod(providerName);
@@ -543,7 +543,7 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
 
     // Clean provider name - remove "- Bank" suffix if present
     providerName = providerName.replace(/\s*-\s*Bank\s*$/i, "").trim();
-    
+
     // Create subtitle: Provider - Method
     const subtitle = paymentMethod ? `${providerName} - ${paymentMethod}` : null;
 
@@ -608,7 +608,7 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
       // Get the base provider name (without suffix) for better matching
       const fromProviderBase = selectedFromPaymentDetail?.provider || getProviderName(selectedFromPaymentDetail) || fromPaymentMethod;
       const toProviderBase = selectedToPaymentDetail?.provider || getProviderName(selectedToPaymentDetail) || toPaymentMethod;
-      
+
       const state = {
         mode: "moneyx",
         // Send amounts (You Send)
@@ -625,18 +625,18 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
         fromPaymentDetail: selectedFromPaymentDetail ? { ...selectedFromPaymentDetail } : null,
         toPaymentDetail: selectedToPaymentDetail ? { ...selectedToPaymentDetail } : null,
       };
-      
+
       console.log("💾 [Home] Saving moneyx form state before login:", state);
       console.log("💾 [Home] From payment detail:", selectedFromPaymentDetail);
       console.log("💾 [Home] To payment detail:", selectedToPaymentDetail);
-      
+
       // Save to localStorage
       localStorage.setItem("moneyx_form_state", JSON.stringify(state));
-      
+
       // Set redirect path - redirect to moneyX in dashboard
       const redirectPath = `/dashboard/exchange?mode=moneyx&source=public-express`;
       setAuthRedirectPath(redirectPath);
-      
+
       // Redirect to login
       router.push("/auth/login");
       return;
@@ -677,7 +677,7 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
       try {
         const kycResult = await dispatch(checkKYCStatus()).unwrap();
         const kycStatus = kycResult as any;
-        
+
         // Only open modal if API confirms user is NOT verified
         if (kycStatus && kycStatus.is_verified === false) {
           dispatch(openKYCModal());
@@ -700,14 +700,14 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
 
     try {
       // Extract provider IDs from selected payment methods
-      const senderProviderId = 
-        selectedFromPaymentDetail?.id || 
-        selectedFromPaymentDetail?.provider_id || 
+      const senderProviderId =
+        selectedFromPaymentDetail?.id ||
+        selectedFromPaymentDetail?.provider_id ||
         selectedFromPaymentDetail?.providerId;
-      
-      const receiverProviderId = 
-        selectedToPaymentDetail?.id || 
-        selectedToPaymentDetail?.provider_id || 
+
+      const receiverProviderId =
+        selectedToPaymentDetail?.id ||
+        selectedToPaymentDetail?.provider_id ||
         selectedToPaymentDetail?.providerId;
 
       if (!senderProviderId || !receiverProviderId) {
@@ -725,7 +725,7 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
       ).unwrap();
 
       setIsFirstCardSubmitted(true);
-      
+
       // Scroll to the next section
       setTimeout(() => {
         if (paymentDetailsRef.current) {
@@ -763,7 +763,7 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
   return (
     <div className="w-full flex flex-col dark:bg-[#18181D]">
       <div className="mb-2" />
-    
+
       {/* API Validation Error - Show as simple red text */}
       {apiValidationError && (
         <div className="mb-4 text-red-500 text-sm font-medium">
@@ -777,8 +777,8 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
           {moneyXError}
         </div>
       )}
-      
-      
+
+
       <div className={`w-full ${isDark ? "text-white" : "text-[#1F2937]"}`}>
         {/* Top Section - Amount and From Payment Method in one card */}
         <div className="relative mb-4">
@@ -786,23 +786,20 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
           <div
             data-asset-card="true"
             data-select-card="true"
-            className={`relative flex flex-col sm:flex-row gap-4 rounded-2xl p-3 sm:p-4 overflow-visible ${
-              isDark ? "bg-[#0F0F17] border border-[#2F2F3A]" : "bg-white border border-[#E2E8F0] shadow-sm"
-            }`}
+            className={`relative flex flex-col sm:flex-row gap-4 rounded-2xl p-3 sm:p-4 overflow-visible ${isDark ? "bg-[#0F0F17] border border-[#2F2F3A]" : "bg-white border border-[#E2E8F0] shadow-sm"
+              }`}
           >
             {/* Amount Section */}
             <div className="flex-1 min-w-0">
               <label
-                className={`block text-[15px] mb-2 font-semibold flex items-center gap-2 ${
-                  isDark ? "text-[#9CA3AF]" : "text-[#475569]"
-                }`}
+                className={`block text-[15px] mb-2 font-semibold flex items-center gap-2 ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"
+                  }`}
               >
                 You Send
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
               </label>
-              <div className={`text-xs mb-1 ${
-                isDark ? "text-[#788099]" : "text-[#64748B]"
-              }`}>
+              <div className={`text-xs mb-1 ${isDark ? "text-[#788099]" : "text-[#64748B]"
+                }`}>
                 Amount
               </div>
               <div className="relative">
@@ -814,18 +811,16 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
                     handleAmountChange(e.target.value, true);
                   }}
                   placeholder="Enter amount"
-                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${
-                    isDark ? "border-white/10 text-white" : "border-gray-200 text-[#111827]"
-                  }`}
+                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${isDark ? "border-white/10 text-white" : "border-gray-200 text-[#111827]"
+                    }`}
                 />
               </div>
             </div>
 
             {/* From Payment Method Section */}
             <div className="flex-1 min-w-0">
-              <div className={`text-xs mb-1 mt-[30px] ${
-                isDark ? "text-[#788099]" : "text-[#64748B]"
-              }`}>
+              <div className={`text-xs mb-1 mt-[30px] ${isDark ? "text-[#788099]" : "text-[#64748B]"
+                }`}>
                 Payment Method
               </div>
               <div className="relative">
@@ -834,9 +829,8 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
                   value={fromPaymentMethod}
                   className="w-full"
                   placeholderClassName="text-white dark:text-white"
-                  triggerClassName={`px-4 py-2 text-lg border rounded-2xl bg-transparent ${
-                    isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
-                  }`}
+                  triggerClassName={`px-4 py-2 text-lg border rounded-2xl bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
+                    }`}
                   onChange={(value) => {
                     const selectedPayment = finalPaymentMethods?.find(
                       (payment: any) => {
@@ -903,23 +897,20 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
         <div className="relative mb-3">
           <div
             data-asset-card="true"
-            className={`relative flex flex-col sm:flex-row gap-4 rounded-2xl p-3 sm:p-4 overflow-visible ${
-              isDark ? "bg-[#0F0F17] border border-[#2F2F3A]" : "bg-white border border-[#E2E8F0] shadow-sm"
-            }`}
+            className={`relative flex flex-col sm:flex-row gap-4 rounded-2xl p-3 sm:p-4 overflow-visible ${isDark ? "bg-[#0F0F17] border border-[#2F2F3A]" : "bg-white border border-[#E2E8F0] shadow-sm"
+              }`}
           >
             {/* You Receive Section */}
             <div className="flex-1 min-w-0">
               <label
-                className={`block text-[15px] mb-2 font-semibold flex items-center gap-2 ${
-                  isDark ? "text-[#9CA3AF]" : "text-[#475569]"
-                }`}
+                className={`block text-[15px] mb-2 font-semibold flex items-center gap-2 ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"
+                  }`}
               >
                 You Receive
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
               </label>
-              <div className={`text-xs mb-1 ${
-                isDark ? "text-[#788099]" : "text-[#64748B]"
-              }`}>
+              <div className={`text-xs mb-1 ${isDark ? "text-[#788099]" : "text-[#64748B]"
+                }`}>
                 Amount
               </div>
               <div className="relative">
@@ -931,18 +922,16 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
                     handleAmountChange(e.target.value, false);
                   }}
                   placeholder="Enter amount"
-                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${
-                    isDark ? "border-white/10 text-white" : "border-gray-200 text-[#111827]"
-                  }`}
+                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${isDark ? "border-white/10 text-white" : "border-gray-200 text-[#111827]"
+                    }`}
                 />
               </div>
             </div>
 
             {/* To Payment Method Section */}
             <div className="flex-1 min-w-0">
-              <div className={`text-xs mb-1 mt-[30px] ${
-                isDark ? "text-[#788099]" : "text-[#64748B]"
-              }`}>
+              <div className={`text-xs mb-1 mt-[30px] ${isDark ? "text-[#788099]" : "text-[#64748B]"
+                }`}>
                 Payment Method
               </div>
               <div className="relative">
@@ -953,9 +942,8 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
                   value={toPaymentMethod}
                   className="w-full"
                   placeholderClassName="text-white dark:text-white"
-                  triggerClassName={`px-4 py-2 text-lg border rounded-2xl bg-transparent ${
-                    isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
-                  }`}
+                  triggerClassName={`px-4 py-2 text-lg border rounded-2xl bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
+                    }`}
                   onChange={(value) => {
                     const selectedPayment = finalPaymentMethods?.find(
                       (payment: any) => {
@@ -993,9 +981,8 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
         {validationErrors.length > 0 && (
           <div className="w-full px-2 mb-4">
             <div
-              className={`border border-[#1D8751] rounded-2xl p-3 sm:p-4 ${
-                isDark ? "bg-[#1D1D23]" : "bg-[#F8FAFF]"
-              }`}
+              className={`border border-[#1D8751] rounded-2xl p-3 sm:p-4 ${isDark ? "bg-[#1D1D23]" : "bg-[#F8FAFF]"
+                }`}
             >
               <h3 className="text-[#1D8751] font-semibold mb-2">
                 Please fix the following errors:
@@ -1028,11 +1015,10 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
           <div className="relative">
             <button
               type="button"
-              className={`w-full text-base font-medium py-1.5 rounded-full flex items-center justify-center gap-2 transition-colors text-white ${
-                isTransferDisabled
+              className={`w-full text-base font-medium py-1.5 rounded-full flex items-center justify-center gap-2 transition-colors text-white ${isTransferDisabled
                   ? "bg-gray-500 cursor-not-allowed"
                   : "bg-[#1D8751] hover:bg-[#1D8751]/80"
-              }`}
+                }`}
               onClick={handleFirstCardSubmit}
               disabled={!!isTransferDisabled}
             >
@@ -1044,13 +1030,13 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
               ) : (
                 <span className="flex items-center justify-center gap-2">
                   <span className="text-base font-medium text-white">MoneyX</span>
-                    
+
                 </span>
               )}
             </button>
           </div>
         )}
-        </div>
+      </div>
 
       {isFirstCardSubmitted && (
         <>
@@ -1102,13 +1088,12 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
                   setBankAddressError(null);
                 }}
                 placeholder="Paste here your Bank Account Address"
-                className={`flex-1 min-w-0 bg-transparent border-none outline-none text-[#35353e] dark:text-[#788099] placeholder-[#788099] text-sm sm:text-base ${
-                  bankAddressError
+                className={`flex-1 min-w-0 bg-transparent border-none outline-none text-[#35353e] dark:text-[#788099] placeholder-[#788099] text-sm sm:text-base ${bankAddressError
                     ? "border-red-500"
                     : bankAccountAddress.trim() && !bankAddressError
                       ? "border-green-500"
                       : ""
-                }`}
+                  }`}
               />
               {/* Bookmark icon - clickable to load from bookmarks */}
               <span
@@ -1230,26 +1215,7 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
                     </div>
                   </div>
                 </div>
-                <button
-                  onClick={() => setExpandedTerms(!expandedTerms)}
-                  className="mt-3 sm:mt-4 text-[#1D8751] hover:text-[#166b3e] font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition-colors"
-                >
-                  {expandedTerms ? (
-                    <>
-                      <span>Show Less</span>
-                      <svg className="w-4 h-4 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                      </svg>
-                    </>
-                  ) : (
-                    <>
-                      <span>Show More</span>
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                      </svg>
-                    </>
-                  )}
-                </button>
+
                 {expandedTerms && (
                   <div className={`space-y-2 sm:space-y-3 mt-4 pt-4 border-t ${isDark ? "border-[#35353E]" : "border-gray-200"}`}>
                     <div className="flex items-start gap-2 sm:gap-3">
@@ -1272,6 +1238,26 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
                     </div>
                   </div>
                 )}
+                <button
+                  onClick={() => setExpandedTerms(!expandedTerms)}
+                  className="mt-3 sm:mt-4 text-[#1D8751] hover:text-[#166b3e] font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition-colors"
+                >
+                  {expandedTerms ? (
+                    <>
+                      <span>Show Less</span>
+                      <svg className="w-4 h-4 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                      </svg>
+                    </>
+                  ) : (
+                    <>
+                      <span>Show More</span>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                      </svg>
+                    </>
+                  )}
+                </button>
               </div>
             </div>
           </div>
@@ -1291,11 +1277,10 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
           {/* Final Submit Button */}
           <div className="flex flex-col gap-3 w-full px-2">
             <button
-              className={`w-full text-base font-medium py-1.5 rounded-full flex items-center justify-center gap-2 transition-colors text-white ${
-                !bankAccountAddress.trim() || bankAddressError || !isAddressConfirmed
+              className={`w-full text-base font-medium py-1.5 rounded-full flex items-center justify-center gap-2 transition-colors text-white ${!bankAccountAddress.trim() || bankAddressError || !isAddressConfirmed
                   ? "bg-gray-500 cursor-not-allowed"
                   : "bg-[#1D8751] hover:bg-[#1D8751]/80"
-              }`}
+                }`}
               onClick={async () => {
                 if (!bankAccountAddress.trim()) {
                   showToast.error("Please enter a bank account address");
@@ -1321,7 +1306,7 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
                   try {
                     const kycResult = await dispatch(checkKYCStatus()).unwrap();
                     const kycStatus = kycResult as any;
-                    
+
                     // Only open modal if API confirms user is NOT verified
                     if (kycStatus && kycStatus.is_verified === false) {
                       dispatch(openKYCModal());
@@ -1354,7 +1339,7 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
                   ).unwrap();
 
                   showToast.success("Transaction is successful", "Account updated successfully.");
-                  
+
                   // Call onTransfer callback with transaction data including MoneyX transaction ID
                   if (onTransfer) {
                     onTransfer({
@@ -1385,7 +1370,7 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
               ) : (
                 <span className="flex items-center justify-center gap-2">
                   <span className="text-base font-medium text-white">MoneyX</span>
-                
+
                 </span>
               )}
             </button>
