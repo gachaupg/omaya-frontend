@@ -144,115 +144,126 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
         )}
       </div>
 
-      {/* detail cards + Add button - shown when provider is selected, in a row */}
+      {/* detail cards + Add button - shown when provider is selected */}
       {selectedProvider && (
         <div className="flex flex-col gap-4">
-          <p className="text-[10px] sm:text-xs text-gray-500 dark:text-[#788099]">
+          <p className="text-[11px] sm:text-xs text-gray-500 dark:text-[#788099] font-medium italic">
             Newly added methods may show as pending until verified.
           </p>
-          <div className="flex flex-row flex-wrap items-start gap-4">
+
+          <div className="flex flex-col lg:flex-row items-start gap-4">
             {/* Card(s) or empty state */}
-            <div className="flex-1 min-w-0 space-y-4">
+            <div className="flex-1 w-full space-y-3">
               {filteredDetails.length > 0 ? (
                 filteredDetails.map((detail) => {
                   const isPending = detail.status?.toLowerCase() === "pending";
                   return (
-                <div
-                  key={detail.id}
-                  className="flex flex-row flex-wrap items-center gap-4 rounded-lg p-4 bg-gray-100 dark:bg-[#2a2d35] border border-gray-200 dark:border-[#35353E]"
-                >
-                  {/* Logo */}
-                  <img
-                    src={
-                      detail.logo_url ||
-                      detail.logo ||
-                      detail.provider_logo ||
-                      "/default-provider-logo.svg"
-                    }
-                    alt={detail.payment_provider_name}
-                    className="w-10 h-10 rounded-full object-cover flex-shrink-0"
-                    onError={(e) => {
-                      e.currentTarget.src = "/default-provider-logo.svg";
-                    }}
-                  />
-                  {/* Account Name */}
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Account Name</p>
-                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                      {detail.account_name}
-                    </p>
-                  </div>
-                  {/* Phone/Account Number / Wallet */}
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {detail.payment_method_name?.toLowerCase().includes('mobile') || detail.payment_method_name?.toLowerCase().includes('money') ? 'Phone Number' : detail.wallet_address ? 'Wallet' : 'Account Number'}
-                    </p>
-                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                      {detail.account_number || detail.wallet_address || 'N/A'}
-                    </p>
-                  </div>
-                  {/* Status Badge */}
-                  {/* {detail.status && (
-                    <span
-                      className={`flex-shrink-0 px-2.5 py-1 rounded-md text-xs font-medium ${
-                        detail.status?.toLowerCase() === "pending"
-                          ? "bg-amber-500/20 dark:bg-amber-500/30 text-amber-700 dark:text-amber-400 border border-amber-500/40"
-                          : "bg-[#1D8751]/20 dark:bg-[#1D8751]/30 text-[#1D8751] border border-[#1D8751]/40"
-                      }`}
+                    <div
+                      key={detail.id}
+                      className="group flex flex-col sm:flex-row items-start sm:items-center gap-4 rounded-[19px] p-4 bg-gray-50 dark:bg-[#1e2026] border border-gray-200 dark:border-[#35353E] hover:border-[#1D8751] dark:hover:border-[#1D8751] transition-all duration-300 shadow-sm hover:shadow-md"
                     >
-                      {detail.status?.toLowerCase() === "pending" ? "Pending" : "Approved"}
-                    </span>
-                  )} */}
-                  {/* Select/Remove - only approved methods can be selected */}
-                  {selectedDetails.some((d) => d.id === detail.id) ? (
-                    <button
-                      onClick={() => onRemove?.(detail)}
-                      className="p-2 text-red-600 dark:text-red-400 bg-red-500/10 border border-red-500/30 rounded-md hover:bg-red-500/20 transition-colors flex-shrink-0"
-                      type="button"
-                      title="Deselect"
-                      aria-label="Deselect"
-                    >
-                      <FaTimes className="w-5 h-5" />
-                    </button>
-                  ) : isPending ? (
-                    <span
-                      className="px-4 py-2 text-sm font-medium text-amber-700 dark:text-amber-400 bg-amber-500/20 dark:bg-amber-500/30 border border-amber-500/40 rounded-md cursor-not-allowed flex-shrink-0"
-                      title="Pending verification. Select when approved."
-                    >
-                      Pending
-                    </span>
-                  ) : (
-                    <button
-                      onClick={() => onSelect(detail)}
-                      className="px-4 py-2 text-sm font-medium text-[#1D8751] dark:text-[#1D8751] bg-[#1D8751]/20 dark:bg-[#1D8751]/30 border border-[#1D8751] rounded-md hover:bg-[#1D8751]/30 transition-colors flex-shrink-0"
-                      type="button"
-                    >
-                      Select
-                    </button>
-                  )}
-                </div>
+                      {/* Logo & Info Header (Mobile optimization) */}
+                      <div className="flex items-center gap-3 w-full sm:w-auto">
+                        <div className="relative">
+                          <img
+                            src={
+                              detail.logo_url ||
+                              detail.logo ||
+                              detail.provider_logo ||
+                              "/default-provider-logo.svg"
+                            }
+                            alt={detail.payment_provider_name}
+                            className="w-12 h-12 rounded-full object-cover border-2 border-white dark:border-[#2a2d35] shadow-sm"
+                            onError={(e) => {
+                              e.currentTarget.src = "/default-provider-logo.svg";
+                            }}
+                          />
+                          {isPending && (
+                            <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-amber-500 rounded-full border-2 border-white dark:border-[#1e2026]" />
+                          )}
+                        </div>
+                        <div className="sm:hidden flex-1 min-w-0">
+                          <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Account Name</p>
+                          <p className="text-sm font-bold text-gray-900 dark:text-white truncate">
+                            {detail.account_name}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Desktop Account Name */}
+                      <div className="hidden sm:block min-w-0 flex-1">
+                        <p className="text-[10px] text-gray-500 dark:text-[#788099] uppercase tracking-wider font-semibold mb-0.5">Account Name</p>
+                        <p className="text-sm font-bold text-gray-900 dark:text-white truncate">
+                          {detail.account_name}
+                        </p>
+                      </div>
+
+                      {/* Phone/Account Number / Wallet */}
+                      <div className="min-w-0 flex-1 w-full sm:w-auto">
+                        <p className="text-[10px] text-gray-500 dark:text-[#788099] uppercase tracking-wider font-semibold mb-0.5">
+                          {detail.payment_method_name?.toLowerCase().includes('mobile') || detail.payment_method_name?.toLowerCase().includes('money') ? 'Phone Number' : detail.wallet_address ? 'Wallet' : 'Account Number'}
+                        </p>
+                        <p className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate font-mono">
+                          {detail.account_number || detail.wallet_address || 'N/A'}
+                        </p>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex items-center justify-end w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100 dark:border-[#35353E]">
+                        {selectedDetails.some((d) => d.id === detail.id) ? (
+                          <button
+                            onClick={() => onRemove?.(detail)}
+                            className="w-full sm:w-auto px-4 py-2 text-sm font-semibold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-[12px] hover:bg-red-100 dark:hover:bg-red-500/20 transition-all flex items-center justify-center gap-2"
+                            type="button"
+                          >
+                            <FaTimes className="w-4 h-4" />
+                            <span>Remove</span>
+                          </button>
+                        ) : isPending ? (
+                          <div
+                            className="w-full sm:w-auto px-4 py-2 text-sm font-semibold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-[12px] cursor-not-allowed flex items-center justify-center gap-2"
+                            title="Pending verification."
+                          >
+                            <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
+                            <span>Pending</span>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => onSelect(detail)}
+                            className="w-full sm:w-auto px-6 py-2 text-sm font-bold text-white bg-[#1D8751] rounded-[12px] hover:bg-[#166b3e] transform active:scale-95 transition-all shadow-sm hover:shadow-md"
+                            type="button"
+                          >
+                            Select
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   );
                 })
               ) : (
-                <div className="flex flex-row items-center gap-4 rounded-lg p-4 bg-gray-100 dark:bg-[#2a2d35] border border-gray-200 dark:border-[#35353E]">
-                  <p className="text-sm text-gray-600 dark:text-gray-400 flex-1 min-w-0">
+                <div className="flex flex-row items-center gap-4 rounded-[19px] p-6 bg-gray-50 dark:bg-[#1e2026] border border-dashed border-gray-300 dark:border-[#35353E]">
+                  <p className="text-sm text-gray-600 dark:text-[#788099] flex-1 leading-relaxed text-center sm:text-left">
                     {allMatchingSelected
                       ? `All accounts for ${selectedProvider} have been selected. See Selected Payment Methods below.`
                       : hasAdminMethod
-                        ? `No payment account found for ${selectedProvider}. Please add a payment account first.`
+                        ? `No payment account found for ${selectedProvider}. Please add a payment account first to continue.`
                         : "No payment details found for this combination."}
                   </p>
                 </div>
               )}
             </div>
-            {/* Add Payment Method button - in same row as card(s) */}
+
+            {/* Add Payment Method button */}
             {onAddPaymentMethod && (
               <button
                 type="button"
                 onClick={onAddPaymentMethod}
-                className="px-4 py-2 text-sm font-medium text-white bg-[#1D8751] hover:bg-[#166b3e] border border-[#1D8751] rounded-md transition-colors flex-shrink-0 self-center"
+                className="w-full lg:w-[220px] px-6 py-4 lg:py-8 flex flex-col items-center justify-center gap-3 text-sm font-bold text-white bg-linear-to-br from-[#1D8751] to-[#166b3e] hover:from-[#166b3e] hover:to-[#125832] rounded-[24px] shadow-lg hover:shadow-[#1D8751]/20 transition-all duration-300 group ring-4 ring-transparent hover:ring-[#1D8751]/10"
               >
-                Add Payment Method
+                <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <span className="text-2xl">+</span>
+                </div>
+                <span className="text-center">Add Payment Method</span>
               </button>
             )}
           </div>

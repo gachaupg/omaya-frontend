@@ -571,17 +571,17 @@ const Withdraw = () => {
                     Wallet/Account Address
                   </label>
                   <div className="flex gap-2 mb-2">
-                    <div className="flex items-center dark:bg-[var(--bg-color)] border border-[#E8EFF5] dark:border-[#35353F] rounded-[18px] px-4 py-2 flex-1">
+                    <div className="flex items-center dark:bg-(--bg-color) border border-[#E8EFF5] dark:border-[#35353F] rounded-[18px] px-4 py-2 flex-1 min-w-0">
                       <span className="text-[#1D8751] mr-2">📋</span>
                       <input
-                        className="flex-1 bg-transparent text:dark:text-white text-sm sm:text-base lg:text-lg focus:outline-none"
+                        className="flex-1 min-w-0 bg-transparent dark:text-white text-sm sm:text-base lg:text-lg focus:outline-none"
                         placeholder="Paste your crypto address"
                         value={walletAddress}
                         onChange={(e) => setWalletAddress(e.target.value)}
                       />
                     </div>
                     <button
-                      className="text-[#1D8751] px-4 py-1 rounded-xl bg-white dark:bg-[#35353F] text-sm border border-border dark:border-accent dark:hover:bg-[#2A2A32] transition-colors"
+                      className="text-[#1D8751] px-4 py-1 rounded-xl bg-white dark:bg-[#35353F] text-xs sm:text-sm border border-border dark:border-accent dark:hover:bg-[#2A2A32] transition-colors shrink-0"
                       type="button"
                       onClick={handlePaste}
                     >
