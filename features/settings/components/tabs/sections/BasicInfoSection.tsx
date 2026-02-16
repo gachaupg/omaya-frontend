@@ -52,6 +52,10 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ user }) => {
   }, [formData, user]);
 
   const handleInputChange = (field: string, value: string) => {
+    // For phone_number field, only allow numeric characters
+    if (field === "phone_number") {
+      value = value.replace(/[^0-9]/g, "");
+    }
     setFormData((prev) => ({
       ...prev,
       [field]: value,
@@ -142,6 +146,9 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ user }) => {
               Phone*
             </label>
             <input
+              type="tel"
+              inputMode="numeric"
+              pattern="[0-9]*"
               className="dark:bg-[var(--card-color)] bg-white border dark:border-[#35353E] border-[#E8EFF5] rounded-[18px] px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base dark:text-[#788099] text-[#0D0D0D] w-full focus:outline-none focus:border-[#1D8751]"
               value={formData.phone_number}
               onChange={(e) => handleInputChange("phone_number", e.target.value)}
