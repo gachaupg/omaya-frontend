@@ -599,7 +599,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
           <section className="send-money rounded-[18px] p-2 md:p-4">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-2 md:gap-0">
               <div className="text-[13px] flex-1 text-gray-900 dark:text-white">
-                You will receive money to tHis account below:
+                You will receive money to this account below:
               </div>
               <div className="text-xs flex items-center gap-1">
                 <span className="text-[#1D8751]">Transaction time:</span>
