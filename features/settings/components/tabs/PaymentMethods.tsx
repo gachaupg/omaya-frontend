@@ -37,9 +37,9 @@ const WalletAddressCard = ({
     <div className="flex items-start gap-4">
       <div className="relative">
         <img
-          src="/images/tether.svg"
+          src={addr.asset_details?.image || "/images/tether.svg"}
           alt={addr.asset}
-          className="w-12 h-12 object-contain flex-shrink-0"
+          className="w-12 h-12 rounded-full object-cover flex-shrink-0"
           style={{ display: "block" }}
           onError={(e) => {
             e.currentTarget.src = "/default-provider-logo.svg";
