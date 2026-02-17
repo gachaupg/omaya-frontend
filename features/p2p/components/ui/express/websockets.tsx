@@ -57,6 +57,7 @@ export interface TransactionStatusMessage {
     // New deposit status update format fields
     transaction_type?: "deposit" | "withdrawal";
     tx_hash?: string;
+    transaction_hash?: string;
     created_at?: string;
     updated_at?: string;
     // Final status indicator
@@ -117,7 +118,8 @@ export class BaseTransactionStatusWebSocket {
           return;
         }
 
-                 logger.debug('p2p', 
+                 console.log("[P2P Status] WebSocket URL:", this.wsUrl, "transactionId:", this.transactionId);
+         logger.debug('p2p', 
            "DEBUG: WebSocket connecting with transactionId:",
            this.transactionId
          );
@@ -147,6 +149,7 @@ export class BaseTransactionStatusWebSocket {
         this.ws.onmessage = (event) => {
           try {
             const data: TransactionStatusMessage = JSON.parse(event.data);
+            console.log("[P2P Status] WebSocket data received:", data);
 
             // Handle database errors gracefully
             if (

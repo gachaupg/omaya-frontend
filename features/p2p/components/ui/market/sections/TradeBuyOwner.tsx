@@ -190,21 +190,14 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   const saveOrder = localStorage.getItem("new_order")
     ? JSON.parse(localStorage.getItem("new_order")!)
     : null;
-  const singgleuseid = confirmOrder?.buy_order;
+  const orderIdToFetch = confirmOrder?.buy_order ?? confirmOrder?.sell_order;
 
-  // Fetch single order when confirmOrder is loaded
+  // Fetch single order only when the order id changes (not on every confirmOrder ref from WebSocket refresh)
   useEffect(() => {
-    const orderToFetch = confirmOrder?.buy_order || confirmOrder?.sell_order;
-    if (isAuthenticated && orderToFetch && singgleuseid) {
-      dispatch(fetchSingleOrder(singgleuseid.toString()));
+    if (isAuthenticated && orderIdToFetch) {
+      dispatch(fetchSingleOrder(String(orderIdToFetch)));
     }
-  }, [
-    confirmOrder?.buy_order,
-    confirmOrder?.sell_order,
-    dispatch,
-    isAuthenticated,
-    singgleuseid,
-  ]);
+  }, [orderIdToFetch, dispatch, isAuthenticated]);
 
   useEffect(() => {
     setIsClient(true);
@@ -570,14 +563,8 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
               2
             </div>
             <span className="text-gray-900 dark:text-white font-semibold text-base sm:text-lg block pr-2">
-              Confirm Payment is from{" "}
-              <span className="wrap-break-words inline-flex items-center gap-2 flex-wrap">
-                {singleOrder?.advertiser_first_name || user?.first_name}{" "}
-                {singleOrder?.advertiser_last_name ||
-                  user?.last_name ||
-                  "Mohammed Zyad Yousef"}
-                <UserStatusBadge isLive={statusWsConnected} className="flex-shrink-0" />
-              </span>
+              Your Payments Will Be Sent To:{" "}
+            
             </span>
             <div className="bg-white dark:bg-[var(--card-color)] rounded-2xl p-4 sm:p-6 mt-4 flex flex-col gap-4 sm:gap-6 border border-gray-200 dark:border-[#35353E]">
               {/* Payment methods from API - display all from payment_details */}

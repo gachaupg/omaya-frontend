@@ -9,12 +9,16 @@ import { fetchMatchedTrades } from "@/features/p2p/slices/matchedTradesSlice";
 import { MatchedTradesResponse } from "@/features/p2p/types";
 import { div } from "framer-motion/client";
 
-const getOrderType = (order_type: string) => {
-  if (order_type === "buy") {
-    return { label: "Sell", color: "text-red-400" };
-  } else {
-    return { label: "Buy", color: "text-[#1D8751]" };
+/** When owner === logged user: show order_type as-is (Buy/Sell). When not owner: show counterparty action (buy ad → Sell, sell ad → Buy). */
+const getOrderType = (order_type: string, isOwner: boolean) => {
+  if (isOwner) {
+    return order_type === "buy"
+      ? { label: "Buy", color: "text-[#1D8751]" }
+      : { label: "Sell", color: "text-red-400" };
   }
+  return order_type === "buy"
+    ? { label: "Sell", color: "text-red-400" }
+    : { label: "Buy", color: "text-[#1D8751]" };
 };
 
 const getStatus = (trade: any, userEmail: string) => {
@@ -83,29 +87,23 @@ const Notifications = () => {
   // console.log(user?.email);
   // console.log(matchedTrades?.results);
   const handleViewOrder = (trade: any) => {
-    // Store the full order in local storage
     try {
       const fullOrderData = {
-        ...trade, // Store the complete trade object
+        ...trade,
         storedAt: new Date().toISOString(),
         viewedFrom: "notifications",
       };
-
       localStorage.setItem("new_order", JSON.stringify(fullOrderData));
-
-      // Also store in a general orders list for easy access
       const existingOrders = JSON.parse(
         localStorage.getItem("p2p_orders") || "[]"
       );
       const orderExists = existingOrders.find(
         (order: any) => order.id === trade.id
       );
-
       if (!orderExists) {
         existingOrders.push(fullOrderData);
         localStorage.setItem("p2p_orders", JSON.stringify(existingOrders));
       } else {
-        // Update existing order with latest data
         const orderIndex = existingOrders.findIndex(
           (order: any) => order.id === trade.id
         );
@@ -116,35 +114,20 @@ const Notifications = () => {
       console.error("Error storing order in localStorage:", error);
     }
 
-    const status = getStatus(trade, user?.email || "");
-    if (status.text === `Pending ${trade.order_type} Trade`) {
-      if (trade.owner === user?.email) {
-        router.push(
-          `/p2p/${trade.id}/matched?order_type=${trade.order_type === "sell" ? "sell" : "buy"
-          }&trade=buyer`
-        );
-      } else {
-        const searchParams = new URLSearchParams();
-        searchParams.set(
-          "orderData",
-          JSON.stringify({
-            order_type: trade.order_type === "sell" ? "sell" : "buy",
-          })
-        );
+    const isOwner = trade.owner === user?.email;
 
-        router.push(`/p2p/${trade.id}/matched?${searchParams.toString()}`);
-      }
-    } else {
-      {
-        trade.owner === user?.email ? router.push(
-          `/p2p/${trade.id}/matched?order_type=${trade.order_type === "sell" ? "sell" : "buy"
-          }&trade=seller`
-        ) : router.push(
-          `/p2p/${trade.id}/matched?order_type=${trade.order_type === "buy" ? "sell" : "buy"
-          }&trade=buyer`
-        )
-      }
+    if (isOwner) {
+      router.push(
+        `/p2p/${trade.id}/matched?order_type=${trade.order_type}&trade=${trade.order_type === "buy" ? "buyer" : "seller"}`
+      );
+      return;
     }
+
+    // Not owner: order_type "buy" → navigate to sellform (I am seller); order_type "sell" → navigate to buyform (I am buyer)
+    const orderData = encodeURIComponent(
+      JSON.stringify({ order_type: trade.order_type === "buy" ? "buy" : "sell" })
+    );
+    router.push(`/p2p/${trade.id}/matched?orderData=${orderData}`);
   };
 
   if (loading)
@@ -248,7 +231,8 @@ const Notifications = () => {
           return timeB - timeA; // Newest first
         })
         .map((trade: any) => {
-        const orderType = getOrderType(trade.order_type);
+        const isOwner = trade.owner === user?.email;
+        const orderType = getOrderType(trade.order_type, isOwner);
         const status = getStatus(trade, user?.email || "");
         const owner = trade.owner === user?.email ? trade.buyer : trade.seller;
         const isCurrentUserAdvertiser =

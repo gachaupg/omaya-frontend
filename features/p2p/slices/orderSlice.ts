@@ -707,9 +707,13 @@ const p2pMarketSlice = createSlice({
         state.matchLoading = false;
         state.matchError = action.payload as string;
       })
-      .addCase(fetchConfirmOrder.pending, (state) => {
-        state.confirmOrderLoading = true;
-        state.confirmOrderError = null;
+      .addCase(fetchConfirmOrder.pending, (state, action) => {
+        const requestedId = String(action.meta.arg ?? "");
+        const currentId = state.confirmOrder?.id ?? "";
+        if (requestedId !== currentId) {
+          state.confirmOrderLoading = true;
+          state.confirmOrderError = null;
+        }
       })
       .addCase(fetchConfirmOrder.fulfilled, (state, action) => {
         state.confirmOrderLoading = false;
@@ -719,9 +723,13 @@ const p2pMarketSlice = createSlice({
         state.confirmOrderLoading = false;
         state.confirmOrderError = action.payload as string;
       })
-      .addCase(fetchSingleOrder.pending, (state) => {
-        state.singleOrderLoading = true;
-        state.singleOrderError = null;
+      .addCase(fetchSingleOrder.pending, (state, action) => {
+        const requestedId = String(action.meta.arg ?? "");
+        const currentId = state.singleOrder?.id != null ? String(state.singleOrder.id) : "";
+        if (requestedId !== currentId) {
+          state.singleOrderLoading = true;
+          state.singleOrderError = null;
+        }
       })
       .addCase(fetchSingleOrder.fulfilled, (state, action) => {
         state.singleOrderLoading = false;
