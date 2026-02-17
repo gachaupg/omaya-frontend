@@ -350,6 +350,7 @@ export default function DepositForm({
       }
 
       logger.debug('p2p', `Attempting WebSocket connection to: ${finalUrl}${isRetry ? ' (retry attempt)' : ''}`);
+      console.log("[P2P Deposit] WebSocket URL:", finalUrl);
 
       // Pre-connection validation and logging
       logger.debug('p2p', "WebSocket connection attempt details:", {
@@ -387,19 +388,26 @@ export default function DepositForm({
 
       ws.onmessage = (event) => {
         try {
-          const data = JSON.parse(event.data);
-          logger.debug('p2p', "WebSocket message received:", data);
+          const raw = JSON.parse(event.data);
+          console.log("[P2P Deposit] WebSocket data received:", raw);
+          logger.debug('p2p', "WebSocket message received:", raw);
 
-          if (data.status) {
-            setTransactionStatus(data.status);
+          // Handle wrapped format: { type: "status_update", data: { status?, transaction_id?, transaction_hash? } }
+          const payload = raw.type === "status_update" && raw.data
+            ? raw.data
+            : raw;
+          const status = payload.status ?? (payload.transaction_hash ? "pending_blockchain" : undefined) ?? raw.status;
 
-            if (data.status === "completed") {
+          if (status) {
+            setTransactionStatus(status);
+
+            if (status === "completed") {
               showToast.success("Deposit completed successfully!");
               // Reload the page instead of going to success page
               setTimeout(() => {
                 window.location.reload();
               }, 2000); // Wait 2 seconds to show success message
-            } else if (data.status === "failed") {
+            } else if (status === "failed") {
               showToast.error("Deposit failed. Please contact support.");
             }
           }

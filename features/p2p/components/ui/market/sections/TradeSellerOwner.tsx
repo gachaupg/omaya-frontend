@@ -158,12 +158,12 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   }, [params?.id, dispatch, isAuthenticated]);
 
   // Fetch single order when confirmOrder is loaded
+  const orderIdToFetch = confirmOrder?.buy_order ?? confirmOrder?.sell_order;
   useEffect(() => {
-    const orderToFetch = confirmOrder?.buy_order || confirmOrder?.sell_order;
-    if (isAuthenticated && orderToFetch) {
-      dispatch(fetchSingleOrder(orderToFetch.toString()));
+    if (isAuthenticated && orderIdToFetch) {
+      dispatch(fetchSingleOrder(String(orderIdToFetch)));
     }
-  }, [confirmOrder?.buy_order, confirmOrder?.sell_order, dispatch, isAuthenticated]);
+  }, [orderIdToFetch, dispatch, isAuthenticated]);
 
 
   useEffect(() => {

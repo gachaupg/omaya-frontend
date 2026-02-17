@@ -25,8 +25,8 @@ const FilterTabs: React.FC<FilterTabsProps> = ({
   const [activeTab, setActiveTab] = useState(0);
   const [filters, setFilters] = useState({
     token: "Tether",
-    type: "Type",
-    status: "Status",
+    type: "All",
+    status: "All",
     date: "Date",
   });
 
@@ -40,7 +40,9 @@ const FilterTabs: React.FC<FilterTabsProps> = ({
   }, [dispatch]);
 
   // Calculate feedback statistics (support both array and { feedbacks } response)
-  const feedbackList = Array.isArray(feedbackData) ? feedbackData : (feedbackData?.feedbacks ?? []);
+  const feedbackList = Array.isArray(feedbackData)
+    ? feedbackData
+    : ((feedbackData as { feedbacks?: any[] } | null | undefined)?.feedbacks ?? []);
   const feedbackStats = useMemo(() => {
     const total = feedbackList.length;
     const positive = feedbackList.filter((f: any) => f?.is_positive).length;
@@ -104,6 +106,7 @@ const FilterTabs: React.FC<FilterTabsProps> = ({
         return false;
       if (
         filters.type !== "Type" &&
+        filters.type !== "All" &&
         trade.order_type &&
         typeof trade.order_type === 'string' &&
         trade.order_type.toLowerCase() !== filters.type.toLowerCase()
@@ -111,12 +114,13 @@ const FilterTabs: React.FC<FilterTabsProps> = ({
         return false;
       if (
         filters.status !== "Status" &&
+        filters.status !== "All" &&
         trade.status &&
         typeof trade.status === 'string' &&
         trade.status.toLowerCase() !== filters.status.toLowerCase()
       )
         return false;
-      if (filters.date !== "Date" && trade.created_on) {
+      if (filters.date !== "Date" && filters.date !== "All" && trade.created_on) {
         try {
           const tradeDate = new Date(trade.created_on);
           if (isNaN(tradeDate.getTime())) return false; // Invalid date
@@ -198,9 +202,9 @@ const FilterTabs: React.FC<FilterTabsProps> = ({
         value={filters.type}
         onChange={(e) => setFilters((p) => ({ ...p, type: e.target.value }))}
       >
-        <option>All</option>
-        <option>Buy</option>
-        <option>Sell</option>
+        <option value="All">All</option>
+        <option value="Buy">Buy</option>
+        <option value="Sell">Sell</option>
       </select>
       {/* Status */}
       <select
@@ -208,9 +212,9 @@ const FilterTabs: React.FC<FilterTabsProps> = ({
         value={filters.status}
         onChange={(e) => setFilters((p) => ({ ...p, status: e.target.value }))}
       >
-        <option>Status</option>
-        <option>Published</option>
-        <option>Offline</option>
+        <option value="All">All</option>
+        <option value="Published">Published</option>
+        <option value="Offline">Offline</option>
       </select>
       {/* Date */}
       <select

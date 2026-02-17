@@ -172,11 +172,11 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     }
   }, [params?.id, dispatch, isAuthenticated]);
 
-  // Handle single order fetch after confirm order is loaded
+  // Fetch single order only when the order id changes (not on every confirmOrder ref from WebSocket refresh)
+  const orderIdToFetch = confirmOrder?.buy_order ?? confirmOrder?.sell_order;
   useEffect(() => {
-    const orderToFetch = confirmOrder?.buy_order || confirmOrder?.sell_order;
-    if (orderToFetch) {
-      dispatch(fetchSingleOrder(orderToFetch.toString()))
+    if (orderIdToFetch) {
+      dispatch(fetchSingleOrder(String(orderIdToFetch)))
         .unwrap()
         .catch((error) => {
           showToast.error(
@@ -185,7 +185,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
           );
         });
     }
-  }, [confirmOrder, dispatch]);
+  }, [orderIdToFetch, dispatch]);
 
   // Reset modal and previous status when switching to a different trade
   useEffect(() => {
@@ -599,7 +599,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
           <section className="send-money rounded-[18px] p-2 md:p-4">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-2 md:gap-0">
               <div className="text-[13px] flex-1 text-gray-900 dark:text-white">
-                You will receive money to tHis account below:
+                You will receive money to this account below:
               </div>
               <div className="text-xs flex items-center gap-1">
                 <span className="text-[#1D8751]">Transaction time:</span>

@@ -10,7 +10,9 @@ const Feedback = () => {
   const { data, loading, error } = useSelector(
     (state: RootState) => state.feedback
   );
-  const feedbackData = Array.isArray(data) ? data : (data?.feedbacks ?? []);
+  const feedbackData = Array.isArray(data)
+    ? data
+    : ((data as { feedbacks?: any[] } | null | undefined)?.feedbacks ?? []);
 
   useEffect(() => {
     dispatch(fetchFeedback());

@@ -1,3 +1,9 @@
+/**
+ * WebSocket hook for real-time trade status updates (matched, half-matched, completed, cancelled).
+ * Used by: TradeBuyOwner, TradeSellerOwner, sellform, buyform.
+ * The callback is stored in a ref so the effect only depends on tradeId/enabled—avoids reconnect
+ * loops when the parent re-renders after a status update (which would otherwise change the callback reference).
+ */
 import { useEffect, useRef } from "react";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/store";
@@ -22,6 +28,9 @@ export const useTradeStatusWebSocket = (options: UseTradeStatusWebSocketOptions)
   const dispatch = useDispatch<AppDispatch>();
   const wsRef = useRef(getTradeStatusWebSocket(tradeId));
   const mountedRef = useRef(true);
+  // Keep latest callback in a ref so effect only depends on tradeId/enabled (avoids reconnect loops when callback reference changes)
+  const onStatusUpdateRef = useRef(onStatusUpdate);
+  onStatusUpdateRef.current = onStatusUpdate;
 
   useEffect(() => {
     mountedRef.current = true;
@@ -31,49 +40,28 @@ export const useTradeStatusWebSocket = (options: UseTradeStatusWebSocketOptions)
   }, []);
 
   useEffect(() => {
-    logger.debug('p2p', "🔌 useTradeStatusWebSocket effect triggered:", { 
-      enabled, 
-      tradeId,
-      hasCallback: !!onStatusUpdate 
-    });
-    
+    logger.debug('p2p', "🔌 useTradeStatusWebSocket effect triggered:", { enabled, tradeId });
+
     if (!enabled || !tradeId) {
       logger.debug('p2p', "⚠️ WebSocket not enabled or no tradeId:", { enabled, tradeId });
       return;
     }
 
     const getAccessToken = (): string | null => {
-      // First try to get from cookies (primary storage)
       const cookieToken = cookieUtils.getCookie("access_token");
-      if (cookieToken) {
-        return cookieToken;
-      }
-      
-      // Fallback to localStorage (for backward compatibility)
+      if (cookieToken) return cookieToken;
       if (typeof window !== "undefined") {
         const localToken = localStorage.getItem("access_token");
-        if (localToken) {
-          return localToken;
-        }
+        if (localToken) return localToken;
       }
-      
       return null;
     };
 
     const token = getAccessToken();
-
-    if (!token) {
-      return;
-    }
-
-    // Validate token format (basic check)
-    if (!token.includes('.')) {
-      return;
-    }
+    if (!token || !token.includes('.')) return;
 
     const ws = wsRef.current;
 
-    // Handle WebSocket messages
     const unsubscribeMessage = ws.onMessage((message: WebSocketMessage) => {
       if (!mountedRef.current) return;
 
@@ -84,12 +72,8 @@ export const useTradeStatusWebSocket = (options: UseTradeStatusWebSocketOptions)
             break;
 
           case "status_update":
-          case "trade_update":
-            // Trade status update - handle both nested and flat data structures
-            logger.debug('p2p', "🔍 Processing status_update/trade_update...");
-            const data = message.data || message; // Support both formats
-            logger.debug('p2p', "📦 Data to process:", data);
-            
+          case "trade_update": {
+            const data = message.data || message;
             if (data && data.status) {
               const tradeStatus: TradeStatus = {
                 id: data.id || data.trade_id || tradeId,
@@ -99,21 +83,14 @@ export const useTradeStatusWebSocket = (options: UseTradeStatusWebSocketOptions)
                 seller: data.seller || data.seller_id,
                 ...data,
               };
-              
-              logger.debug('p2p', "✅ Extracted Trade Status:", tradeStatus);
-              logger.debug('p2p', "🎯 Calling onStatusUpdate with status:", tradeStatus.status);
-              
-              if (onStatusUpdate) {
-                onStatusUpdate(tradeStatus);
-              } else {
-                console.warn("⚠️ onStatusUpdate callback not provided!");
-              }
+              const cb = onStatusUpdateRef.current;
+              if (cb) cb(tradeStatus);
+              else console.warn("⚠️ onStatusUpdate callback not provided!");
             } else {
               console.warn("⚠️ Status update missing 'status' field:", message);
-              console.warn("📦 Data object:", data);
-              console.warn("📦 Message object:", message);
             }
             break;
+          }
 
           case "error":
             console.warn("⚠️ Trade status error:", message.data || message);
@@ -156,7 +133,7 @@ export const useTradeStatusWebSocket = (options: UseTradeStatusWebSocketOptions)
       unsubscribeOpen();
       cleanupTradeStatusWebSocket(tradeId);
     };
-  }, [enabled, tradeId, onStatusUpdate]);
+  }, [enabled, tradeId]);
 
   return {
     isConnected: wsRef.current.isConnected(),

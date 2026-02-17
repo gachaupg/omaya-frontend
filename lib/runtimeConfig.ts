@@ -12,7 +12,7 @@ let cachedConfig: PublicRuntimeConfig | null = null;
 // Hardcoded safe public defaults (non-secret). Used only if env vars are missing.
 const DEFAULTS: PublicRuntimeConfig = {
   NEXT_PUBLIC_GOOGLE_CLIENT_ID:
-    '454150377252-nhnl44hh48rfh8v2hdt0skagf03vr05r.apps.googleusercontent.com',
+    '866830600136-044nv75li085t9ketdpo3ggvgelhd2h7.apps.googleusercontent.com',
   NEXT_PUBLIC_GOOGLE_REDIRECT_URI: 'https://dev.omaya.io/auth/google/callback',
   NEXT_PUBLIC_API_URL: 'https://dev.backend.omaya.io',
   NEXT_PUBLIC_APP_URL: 'https://dev.omaya.io',
