@@ -1658,13 +1658,13 @@ export default function Navbar() {
 
                   {/* Mobile Profile Modal */}
                   {profileModalOpen && (
-                    <div className="fixed inset-0 z-[9999] md:hidden">
+                    <div className="fixed inset-0 z-[9999] md:hidden pointer-events-auto">
                       <div
-                        className="absolute inset-0 bg-gray-900/50 dark:bg-black/50 z-0"
+                        className="absolute inset-0 bg-gray-900/50 dark:bg-black/50 z-0 pointer-events-auto"
                         onClick={() => setProfileModalOpen(false)}
                       />
-                      <div className="absolute bottom-0 left-0 right-0 z-10 bg-white dark:bg-[#1E2329] border-t border-gray-200 dark:border-accent rounded-t-lg pb-safe">
-                        <div className="p-6 pb-8">
+                      <div className="absolute bottom-0 left-0 right-0 z-10 bg-white dark:bg-[#1E2329] border-t border-gray-200 dark:border-accent rounded-t-lg pb-safe pointer-events-auto">
+                        <div className="p-6 pb-8 pointer-events-auto">
                           {/* User Info */}
                           <div className="flex items-center mb-6">
                             <div className="mr-4 relative">
@@ -1768,29 +1768,46 @@ export default function Navbar() {
                           </div>
 
                           {/* Menu Items */}
-                          <div className="space-y-4">
-                            <Link
-                              href="/dashboard/account"
-                              className="flex items-center w-full px-4 py-3 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[#35353E] rounded-lg transition-colors duration-200"
-                              onClick={() => setProfileModalOpen(false)}
-                            >
-                              <Settings size={20} className="mr-3" />
-                              <span className="text-base whitespace-nowrap">Account settings</span>
-                            </Link>
-
+                          <div className="space-y-3 relative" style={{zIndex: 10000}}>
                             <button
+                              type="button"
+                              onTouchEnd={(e) => {
+                                e.preventDefault();
+                                setProfileModalOpen(false);
+                                setMobileMenuOpen(false);
+                                setTimeout(() => router.push("/dashboard/account"), 100);
+                              }}
                               onClick={(e) => {
                                 e.preventDefault();
-                                e.stopPropagation();
                                 setProfileModalOpen(false);
-                                handleLogout();
-                                setTimeout(() => {
-                                  setMobileMenuOpen(false);
-                                }, 300);
+                                setMobileMenuOpen(false);
+                                router.push("/dashboard/account");
                               }}
-                              className="flex items-center w-full px-4 py-3 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[#35353E] rounded-lg transition-colors duration-200"
+                              className="flex items-center w-full px-4 py-3 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[#35353E] rounded-lg transition-colors duration-200 active:bg-gray-200 dark:active:bg-[#2A2A2A] select-none"
+                              style={{WebkitTapHighlightColor: 'rgba(0,0,0,0)'}}
                             >
-                              <LogOut size={20} className="mr-3" />
+                              <Settings size={20} className="mr-3 flex-shrink-0" />
+                              <span className="text-base">Account settings</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onTouchEnd={(e) => {
+                                e.preventDefault();
+                                setProfileModalOpen(false);
+                                setMobileMenuOpen(false);
+                                setTimeout(() => handleLogout(), 100);
+                              }}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setProfileModalOpen(false);
+                                setMobileMenuOpen(false);
+                                handleLogout();
+                              }}
+                              className="flex items-center w-full px-4 py-3 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[#35353E] rounded-lg transition-colors duration-200 active:bg-gray-200 dark:active:bg-[#2A2A2A] select-none"
+                              style={{WebkitTapHighlightColor: 'rgba(0,0,0,0)'}}
+                            >
+                              <LogOut size={20} className="mr-3 flex-shrink-0" />
                               <span className="text-base">Logout</span>
                             </button>
                           </div>
