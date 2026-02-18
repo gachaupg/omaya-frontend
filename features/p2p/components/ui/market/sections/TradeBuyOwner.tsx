@@ -846,19 +846,12 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                 {/* Action Buttons */}
                 <div className="flex flex-col gap-2 sm:gap-3">
                   <button
-                    onClick={() => setShowFeedbackModal(true)}
-                    className="w-full bg-[#F79330] text-white rounded-lg px-4 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base font-semibold hover:bg-[#e6821a] transition-colors"
-                  >
-                    Provide Feedback
-                  </button>
-                  <button
                     onClick={() => {
                       setShowSuccessModal(false);
                       // Clean up the localStorage key so modal can be shown again for new trades
                       if (confirmOrder?.id) {
                         localStorage.removeItem(`success_modal_shown_${confirmOrder.id}`);
                       }
-                      // router.push("/dashboard");
                       window.location.href = "/dashboard/p2p/";
                     }}
                     className="w-full bg-[#1D8751] text-white rounded-lg px-4 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base font-semibold hover:bg-[#167a45] transition-colors"
