@@ -205,6 +205,10 @@ export const API_CONFIG = {
     USER_WALLET_ADDRESSES: "/payments/user-wallet-addresses/",
     USER_WALLET_ADDRESS: (uuid: string) => `/payments/user-wallet-addresses/${uuid}/`,
     USER_WALLET_ADDRESS_SEND_OTP: "/payments/user-wallet-addresses/send-edit-otp/",
+    SOCKETS: {
+      USER_PAYMENT_DETAILS: (token: string) =>
+        `${getWebSocketBaseUrl()}/ws/user-payment-details/?token=${token}`,
+    },
   },
   MONEYX: {
     TRANSACTIONS: "/api/moneyx/transactions/",

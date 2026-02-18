@@ -20,6 +20,7 @@ import { formatLargeNumber } from "@/utils/formatters";
 import PaymentMethodsModal from "./PaymentMethodsModal";
 import UserPaymentSelector, { UserPaymentDetail } from "./UserPaymentSelector";
 import { usePendingTotal } from "@/utils/pending";
+import { useUserPaymentDetailsWebSocket } from "@/features/p2p/hooks/useUserPaymentDetailsWebSocket";
 
 import { logger } from '@/lib/utils/logger';
 import { MdCheckCircle } from "react-icons/md";
@@ -79,6 +80,9 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
 
   // Get available balance from pending hook
   const { availableBalance } = usePendingTotal();
+
+  // WebSocket for real-time payment detail updates (e.g. pending -> approved)
+  useUserPaymentDetailsWebSocket({ enabled: isAuthenticated });
 
   const searchParams = useSearchParams();
   const queryType = searchParams ? (searchParams.get("type") as "buy" | "sell" | null) : null;
