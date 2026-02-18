@@ -13,6 +13,7 @@ import {
   cancelP2POrderThunk,
   confirmP2PTradeThunk,
 } from "@/features/p2p/slices/orderSlice";
+import { submitFeedbackThunk } from "@/features/p2p/slices/feedbackSubmissionSlice";
 import AppealModal from "./appeal";
 import { UserStatusBadge } from "./UserStatusBadge";
 import ChatBox from "./ChatBox";
@@ -56,7 +57,14 @@ function FinalBuy({ orderData }: FinalBuyProps) {
   const [showCancelMsg, setShowCancelMsg] = useState(false);
   const [copiedButton, setCopiedButton] = useState<string | null>(null);
   const [showChat, setShowChat] = useState(false);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [feedbackRating, setFeedbackRating] = useState<boolean | null>(null);
+  const [feedbackComment, setFeedbackComment] = useState("");
   const router = useRouter();
+
+  const { loading: feedbackLoading } = useSelector(
+    (state: RootState) => state.feedbackSubmission
+  );
 
   // WebSocket status update callback - use useCallback to prevent reconnections
   const handleStatusUpdate = React.useCallback((status: any) => {
@@ -336,6 +344,33 @@ function FinalBuy({ orderData }: FinalBuyProps) {
             "Failed to confirm trade",
             error.message || "Please try again"
           );
+        });
+    }
+  };
+
+  const handleFeedbackSubmit = () => {
+    if (feedbackRating === null) {
+      showToast.error("Please select a rating", "Choose positive or negative feedback");
+      return;
+    }
+    if (confirmOrder?.id) {
+      dispatch(submitFeedbackThunk({
+        trade_id: String(confirmOrder.id),
+        is_positive: feedbackRating,
+        comment: feedbackComment,
+      }))
+        .unwrap()
+        .then(() => {
+          showToast.success("Feedback submitted successfully!", "Thank you for your feedback");
+          setShowFeedbackModal(false);
+          setFeedbackRating(null);
+          setFeedbackComment("");
+          setTimeout(() => {
+            window.location.href = "/dashboard/p2p/";
+          }, 1500);
+        })
+        .catch((error) => {
+          showToast.error("Failed to submit feedback", error.message || "Please try again");
         });
     }
   };
@@ -890,26 +925,98 @@ function FinalBuy({ orderData }: FinalBuyProps) {
                     </div>
                   </div>
 
-                  {/* Go to Dashboard Button */}
-                  <button
-                    onClick={() => {
-                      setShowSuccessModal(false);
-                      // Clean up the localStorage key so modal can be shown again for new trades
-                      if (confirmOrder?.id) {
-                        localStorage.removeItem(`success_modal_shown_${confirmOrder.id}`);
-                      }
-                      // router.push("/dashboard");
-                      window.location.href = "/dashboard/p2p/";
-                    }}
-                    className="w-full bg-[#1D8751] text-white rounded-lg px-6 py-3 font-semibold hover:bg-[#167a45] transition-colors"
-                  >
-                    Go to Dashboard
-                  </button>
+                  {/* Action Buttons */}
+                  <div className="flex flex-col gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowSuccessModal(false);
+                        setShowFeedbackModal(true);
+                      }}
+                      className="w-full bg-[#F79330] text-white rounded-lg px-6 py-3 font-semibold hover:bg-[#e6821a] transition-colors"
+                    >
+                      Provide Feedback
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowSuccessModal(false);
+                        if (confirmOrder?.id) {
+                          localStorage.removeItem(`success_modal_shown_${confirmOrder.id}`);
+                        }
+                        window.location.href = "/dashboard/p2p/";
+                      }}
+                      className="w-full bg-[#1D8751] text-white rounded-lg px-6 py-3 font-semibold hover:bg-[#167a45] transition-colors"
+                    >
+                      Go to Dashboard
+                    </button>
+                  </div>
                 </div>
               </div>
             </Dialog.Panel>
           </div>
         </Dialog>
+
+        {/* Feedback Modal - only one modal open so clicks work */}
+        {showFeedbackModal && (
+          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60] p-4" onClick={(e) => { if (e.target === e.currentTarget) { setShowFeedbackModal(false); setFeedbackRating(null); setFeedbackComment(""); } }}>
+            <div className="bg-white dark:bg-[var(--card-color)] rounded-2xl p-4 sm:p-6 min-[900px]:p-8 max-w-md w-full mx-4 border border-gray-200 dark:border-[#35353E] max-h-[90vh] overflow-y-auto shadow-xl" onClick={(e) => e.stopPropagation()}>
+              <div className="text-center">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-[#F79330] rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
+                  <svg className="w-6 h-6 sm:w-8 sm:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                  </svg>
+                </div>
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-3 sm:mb-4">Rate Your Experience</h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Tap Positive or Negative to enable Submit</p>
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mb-4 sm:mb-6">
+                  <button
+                    type="button"
+                    onClick={() => setFeedbackRating(true)}
+                    className={`flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg text-sm sm:text-base font-semibold transition-all duration-200 border-2 min-w-[120px] ${feedbackRating === true ? "bg-[#1D8751] text-white border-[#1D8751] shadow-lg ring-2 ring-[#1D8751] ring-offset-2" : "bg-gray-100 dark:bg-[#35353E] text-gray-700 dark:text-gray-300 border-transparent hover:bg-gray-200 dark:hover:bg-[#404040]"}`}
+                  >
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M7.493 18.75c-.425 0-.82-.236-.975-.632A7.48 7.48 0 016 15.375c0-1.75.599-3.358 1.602-4.634.151-.192.373-.309.6-.397.473-.183.89-.514 1.212-.924a9.042 9.042 0 012.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 00.322-1.672V3a.75.75 0 01.75-.75 2.25 2.25 0 012.25 2.25c0 1.152-.26 2.243-.723 3.218-.266.558-.107 1.282.725 1.282h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 01-2.649 7.521c-.388.482-.987.729-1.605.729H14.23c-.483 0-.964-.078-1.423-.23l-3.114-1.04a4.501 4.501 0 00-1.423-.23h-.777zM2.331 10.977a11.969 11.969 0 00-.831 4.398 12 12 0 00.52 3.507c.26.85 1.084 1.368 1.973 1.368H4.9c.445 0 .72-.498.523-.898a8.963 8.963 0 01-.924-3.977c0-1.708.476-3.305 1.302-4.666.245-.403-.028-.959-.5-.959H4.25c-.833 0-1.612.453-1.918 1.227z" /></svg>
+                    Positive
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFeedbackRating(false)}
+                    className={`flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg text-sm sm:text-base font-semibold transition-all duration-200 border-2 min-w-[120px] ${feedbackRating === false ? "bg-[#E23D3A] text-white border-[#E23D3A] shadow-lg ring-2 ring-[#E23D3A] ring-offset-2" : "bg-gray-100 dark:bg-[#35353E] text-gray-700 dark:text-gray-300 border-transparent hover:bg-gray-200 dark:hover:bg-[#404040]"}`}
+                  >
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M15.73 5.25h1.035A7.465 7.465 0 0118 9.375a7.465 7.465 0 01-1.235 4.125h-.148c-.806 0-1.534.446-2.031 1.08a9.04 9.04 0 01-2.861 2.4c-.723.384-1.35.956-1.653 1.715a4.498 4.498 0 00-.322 1.672V21a.75.75 0 01-.75.75 2.25 2.25 0 01-2.25-2.25c0-1.152.26-2.243.723-3.218C7.74 15.724 7.366 15 8.25 15h3.126c.618 0 .991.724.725 1.282A7.471 7.471 0 0012 19.5a7.471 7.471 0 00-.1-3.218c-.266-.558.107-1.282.725-1.282H12.75c-.445 0-.72-.498-.523-.898a8.963 8.963 0 01.924-3.977c0-1.708-.476-3.305-1.302-4.666-.245-.403.028-.959.5-.959H15.73zM2.331 10.977a11.969 11.969 0 00-.831 4.398 12 12 0 00.52 3.507c.26.85 1.084 1.368 1.973 1.368H4.9c.445 0 .72-.498.523-.898a8.963 8.963 0 01-.924-3.977c0-1.708.476-3.305 1.302-4.666.245-.403-.028-.959-.5-.959H4.25c-.833 0-1.612.453-1.918 1.227z" /></svg>
+                    Negative
+                  </button>
+                </div>
+                <div className="mb-4 sm:mb-6">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 text-left">Comment (Optional)</label>
+                  <textarea
+                    value={feedbackComment}
+                    onChange={(e) => setFeedbackComment(e.target.value)}
+                    placeholder="Share your experience..."
+                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border border-gray-300 dark:border-[#35353E] rounded-lg bg-white dark:bg-[var(--card-color)] text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-[#1D8751] focus:border-transparent resize-none"
+                    rows={3}
+                  />
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                  <button
+                    type="button"
+                    onClick={() => { setShowFeedbackModal(false); setFeedbackRating(null); setFeedbackComment(""); }}
+                    className="flex-1 bg-gray-100 dark:bg-[#35353E] text-gray-700 dark:text-gray-300 rounded-lg px-4 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base font-semibold hover:bg-gray-200 dark:hover:bg-[#404040] transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleFeedbackSubmit}
+                    disabled={feedbackLoading || feedbackRating === null}
+                    className={`flex-1 rounded-lg px-4 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base font-semibold transition-colors ${feedbackRating !== null && !feedbackLoading ? "bg-[#1D8751] text-white hover:bg-[#167a45] cursor-pointer" : "bg-[#1D8751]/50 text-white cursor-not-allowed"}`}
+                  >
+                    {feedbackLoading ? "Submitting..." : "Submit Feedback"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
