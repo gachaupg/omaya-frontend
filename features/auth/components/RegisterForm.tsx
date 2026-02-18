@@ -511,14 +511,10 @@ export default function RegistrationPage() {
         }));
       }
 
-      const combinedMessages = [
-        ...Object.values(fieldErrors),
-        ...generalMessages,
-      ].filter(Boolean);
-
-      return combinedMessages.length > 0
-        ? combinedMessages
-        : ["Registration failed. Please check your inputs."];
+      // Return only general (non-field) errors for the banner - field errors show inline under each field
+      return generalMessages.length > 0
+        ? generalMessages
+        : [];
     }
 
     if (typeof errorData === "string") {
@@ -642,6 +638,7 @@ export default function RegistrationPage() {
     }
 
     setFormErrors([]);
+    setErrors({ firstName: "", lastName: "", email: "", phone: "", password: "", confirmPassword: "", terms: "" });
     setIsSubmitting(true);
 
     try {
@@ -667,8 +664,9 @@ export default function RegistrationPage() {
       if (registerUser.fulfilled.match(result)) {
         setShowVerificationModal(true);
         setFormErrors([]);
-      } else if (result.payload) {
+      } else if (registerUser.rejected.match(result) && result.payload) {
         const errorData = result.payload;
+        setErrors({ firstName: "", lastName: "", email: "", phone: "", password: "", confirmPassword: "", terms: "" });
         setFormErrors(parseApiErrors(errorData));
       } else if (result.error && result.error.message) {
         setFormErrors([
@@ -830,12 +828,12 @@ export default function RegistrationPage() {
                   "Please Register with correct Information"
                 )}
               </p>
-              {/* {formErrors.length > 0 && (
+              {formErrors.length > 0 && (
                 <div
-                  ref={formErrors.length > 0 ? errorBannerRef : null}
+                  ref={errorBannerRef}
                   role="alert"
                   aria-live="assertive"
-                  className="mt-4 rounded-xl border border-[#F04438] bg-[#FDECEC] px-4 py-3 text-left"
+                  className="mt-4 rounded-xl border border-[#F04438] bg-[#FDECEC] dark:bg-[#FDECEC]/10 dark:border-[#F04438] px-4 py-3 text-left"
                 >
                   <p className="text-[#B42318] text-sm font-semibold mb-2">
                     {t(
@@ -849,7 +847,7 @@ export default function RegistrationPage() {
                     ))}
                   </ul>
                 </div>
-              )} */}
+              )}
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
@@ -1161,11 +1159,13 @@ export default function RegistrationPage() {
                   </label>
                   <div className="relative">
                     <input
-                      type="number"
+                      type="tel"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
                       id="phone"
                       value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      className={`w-full py-2 px-4 pl-9 rounded-full bg-white dark:bg-(--card-color) border ${errors.phone ? "border-[#FDA29B]" : "border-gray-300 dark:border-[#35353E]"
+                      onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
+                      className={`w-full py-2 px-4 pl-9 rounded-full bg-white dark:bg-[var(--card-color)] border ${errors.phone ? "border-[#FDA29B]" : "border-gray-300 dark:border-[#35353E]"
                         } text-gray-900 dark:text-white focus:outline-none focus:border-secondary`}
                       placeholder={`${countries.find((c) => c.code === selectedCountry)?.dialCode || "+252"}12345678`}
                     />
@@ -1716,7 +1716,7 @@ export default function RegistrationPage() {
               {/* Register Button */}
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isSubmitting || !agreeToTerms}
                 className="w-full bg-[#1D8751] text-white py-3 px-4 rounded-full hover:bg-[#0E5531] transition-colors duration-300 mt-4 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {isSubmitting ? (
