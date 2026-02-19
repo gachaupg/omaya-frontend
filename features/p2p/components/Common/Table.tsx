@@ -63,7 +63,12 @@ export const Table: React.FC<TableProps> = ({
 
   const handlePageChangeWithScroll = (page: number) => {
     onPageChange?.(page);
-    tableContainerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    // Scroll to top of page for better UX on mobile and desktop
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    // Also scroll the table container into view as fallback
+    setTimeout(() => {
+      tableContainerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
   };
 
   const dateFilterOptions = ["ALL", "Today", "Week", "Month", "Year"];

@@ -144,22 +144,22 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
         )}
       </div>
 
-      {/* detail cards + Add button - shown when provider is selected, in a row */}
+      {/* detail cards + Add button - shown when provider is selected */}
       {selectedProvider && (
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-3 sm:gap-4">
           <p className="text-[10px] sm:text-xs text-gray-500 dark:text-[#788099]">
             Newly added methods may show as pending until verified.
           </p>
-          <div className="flex flex-row flex-wrap items-start gap-4">
+          <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-start gap-3 sm:gap-4">
             {/* Card(s) or empty state */}
-            <div className="flex-1 min-w-0 space-y-4">
+            <div className="flex-1 min-w-0 space-y-3 sm:space-y-4">
               {filteredDetails.length > 0 ? (
                 filteredDetails.map((detail) => {
                   const isPending = detail.status?.toLowerCase() === "pending";
                   return (
                     <div
                       key={detail.id}
-                      className="flex flex-row flex-wrap items-center gap-4 rounded-lg p-4 bg-gray-100 dark:bg-[#2a2d35] border border-gray-200 dark:border-[#35353E]"
+                      className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-3 sm:gap-4 rounded-lg p-3 sm:p-4 bg-gray-100 dark:bg-[#2a2d35] border border-gray-200 dark:border-[#35353E]"
                     >
                       {/* Logo */}
                       <img
@@ -234,8 +234,8 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
                   );
                 })
               ) : (
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 rounded-lg p-4 bg-[#1D8751]/10 dark:bg-[#1D8751]/20 border border-[#1D8751]/30">
-                  <p className="text-sm text-gray-600 dark:text-gray-400 flex-1 min-w-0 text-left">
+                <div className="flex flex-col gap-3 rounded-lg p-3 sm:p-4 bg-[#1D8751]/10 dark:bg-[#1D8751]/20 border border-[#1D8751]/30">
+                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 text-left">
                     {hasAdminMethod
                       ? `No payment account found for ${selectedProvider}. Please add a payment account first.`
                       : "No payment details found for this combination."}
@@ -243,12 +243,12 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
                 </div>
               )}
             </div>
-            {/* Add Payment Method button - in same row as card(s) */}
+            {/* Add Payment Method button - below cards on mobile, inline on larger screens */}
             {onAddPaymentMethod && (
               <button
                 type="button"
                 onClick={onAddPaymentMethod}
-                className="px-4 py-2 text-sm font-medium text-white bg-[#1D8751] hover:bg-[#166b3e] border border-[#1D8751] rounded-md transition-colors flex-shrink-0 self-center"
+                className="w-full sm:w-auto px-4 py-2.5 text-sm font-medium text-white bg-[#1D8751] hover:bg-[#166b3e] border border-[#1D8751] rounded-md transition-colors flex-shrink-0 self-center mt-2 sm:mt-0"
               >
                 Add Payment Method
               </button>

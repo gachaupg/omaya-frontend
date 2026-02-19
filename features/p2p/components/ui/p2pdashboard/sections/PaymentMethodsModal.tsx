@@ -419,6 +419,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                value={account}
                onChange={(e) => setAccount(e.target.value)}
                disabled={publicMethodsLoading}
+               maxLength={20}
              />
            </div>
 
