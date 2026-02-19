@@ -92,13 +92,13 @@ export const registerUser = createAsyncThunk<RegisterResponse, RegisterPayload>(
       // Check if error has field-specific validation errors
       if (error instanceof AxiosError && error.response?.data) {
         const data = error.response.data;
-        // Check if it's a validation error object with field-specific errors
-        if (typeof data === "object" && data !== null && !Array.isArray(data)) {
-          // Check if any key has an array of error messages (field validation format)
+        // Preserve object structure for field errors (arrays or strings)
+        if (typeof data === "object" && data !== null && !Array.isArray(data) && Object.keys(data).length > 0) {
           const hasFieldErrors = Object.values(data).some(
-            (value) => Array.isArray(value) && value.length > 0
+            (value) =>
+              (Array.isArray(value) && value.length > 0) ||
+              (typeof value === "string" && value.trim().length > 0)
           );
-          // If it has field errors, preserve the structure
           if (hasFieldErrors) {
             return rejectWithValue(data);
           }
