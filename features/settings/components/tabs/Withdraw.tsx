@@ -521,7 +521,7 @@ const Withdraw = () => {
 
                     <div className="flex justify-between font-bold">
                       <span className="text:[#051015] dark:text-[#A3A3A3]">Total Fees</span>
-                      <span className="text-[#EF4444]">
+                      <span className="text-error">
                         {feesLoading ? (
                           <span className="animate-pulse">...</span>
                         ) : (
@@ -531,13 +531,13 @@ const Withdraw = () => {
                     </div>
                   </div>
                 </div>
-                <div className="flex items-start text-[#F79330] text-xs mb-1">
+                <div className="flex items-start text-warning text-xs mb-1">
                   <svg
                     width="16"
                     height="16"
                     fill="none"
                     viewBox="0 0 24 24"
-                    className="mr-1 mt-0.5 flex-shrink-0"
+                    className="mr-1 mt-0.5 shrink-0"
                   >
                     <circle
                       cx="12"
@@ -571,17 +571,17 @@ const Withdraw = () => {
                     Wallet/Account Address
                   </label>
                   <div className="flex gap-2 mb-2">
-                    <div className="flex items-center dark:bg-[var(--bg-color)] border border-[#E8EFF5] dark:border-[#35353F] rounded-[18px] px-4 py-2 flex-1">
+                    <div className="flex min-w-0 items-center dark:bg-(--bg-color) border border-[#E8EFF5] dark:border-[#35353F] rounded-[18px] px-4 py-2 flex-1 overflow-hidden">
                       <span className="text-[#1D8751] mr-2">📋</span>
                       <input
-                        className="flex-1 bg-transparent text:dark:text-white text-sm sm:text-base lg:text-lg focus:outline-none"
+                        className="bg-transparent text:dark:text-white text-sm sm:text-base lg:text-lg focus:outline-none"
                         placeholder="Paste your crypto address"
                         value={walletAddress}
                         onChange={(e) => setWalletAddress(e.target.value)}
                       />
                     </div>
                     <button
-                      className="text-[#1D8751] px-4 py-1 rounded-xl bg-white dark:bg-[#35353F] text-sm border border-border dark:border-accent dark:hover:bg-[#2A2A32] transition-colors"
+                      className="text-[#1D8751] px-1 sm:px-4 sm:py-1 text-sx sm:text-base rounded-xl bg-white dark:bg-[#35353F] text-sm border border-border dark:border-accent dark:hover:bg-[#2A2A32] transition-colors"
                       type="button"
                       onClick={handlePaste}
                     >

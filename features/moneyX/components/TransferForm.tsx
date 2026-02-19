@@ -1479,7 +1479,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
                     </div>
                   </div>
                   <div className="flex items-start gap-2 sm:gap-3">
-                    <span className="text-[#1D8751] font-bold text-sm sm:text-base flex-shrink-0">3.</span>
+                    <span className="text-[#1D8751] font-bold text-sm sm:text-base shrink-0">3.</span>
                     <div>
                       <span className={`${isDark ? "text-white" : "text-gray-900"} text-xs sm:text-sm font-semibold block`}>Send funds only to our official accounts</span>
                       <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-xs sm:text-sm`}>
@@ -1490,9 +1490,9 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
                 </div>
 
                 {expandedTerms && (
-                  <div className={`space-y-2 sm:space-y-3 mt-4 pt-4 border-t ${isDark ? "border-[#35353E]" : "border-gray-200"}`}>
+                  <div className={`space-y-2 sm:space-y-3 mt-4 ${isDark ? "border-accent" : "border-gray-200"}`}>
                     <div className="flex items-start gap-2 sm:gap-3">
-                      <span className="text-[#1D8751] font-bold text-sm sm:text-base flex-shrink-0">4.</span>
+                      <span className="text-[#1D8751] font-bold text-sm sm:text-base shrink-0">4.</span>
                       <div>
                         <span className={`${isDark ? "text-white" : "text-gray-900"} text-xs sm:text-sm font-semibold block`}>Irreversible transactions & user responsibility</span>
                         <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-xs sm:text-sm`}>
@@ -1501,7 +1501,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
                       </div>
                     </div>
                     <div className="flex items-start gap-2 sm:gap-3">
-                      <span className="text-[#1D8751] font-bold text-sm sm:text-base flex-shrink-0">5.</span>
+                      <span className="text-[#1D8751] font-bold text-sm sm:text-base shrink-0">5.</span>
                       <div>
                         <span className={`${isDark ? "text-white" : "text-gray-900"} text-xs sm:text-sm font-semibold block`}>Transaction time limit</span>
                         <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-xs sm:text-sm`}>
