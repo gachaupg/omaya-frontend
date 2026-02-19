@@ -191,6 +191,7 @@ const P2PCharts = () => {
     if (page !== currentPage) {
       dispatch(setUserTradesCurrentPage(page));
       dispatch(fetchUserTrades({ page, currency: "USDT" }));
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 

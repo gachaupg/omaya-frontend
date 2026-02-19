@@ -4531,7 +4531,6 @@ export default function DepositForm({
                 className="mt-3 sm:mt-0 flex items-center justify-center gap-2 bg-[#1D8751]  border border-[#4A4A5A] dark:border-[#4A4A5A] 
                 text-muted  rounded-2xl px-4 py-2 font-semibold text-sm sm:text-base hover:bg-[#1D8751]/90 ] transition-colors min-h-[44px] sm:min-h-0 touch-manipulation w-full sm:w-auto"
               >
-                <span>{t("express.paste", "Paste")}</span>
                 <svg width="18" height="18" fill="none" viewBox="0 0 24 24" className="text-muted">
                   <path
                     d="M19 21H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h4l2-2h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2z"
@@ -4599,7 +4598,7 @@ export default function DepositForm({
             </div>
             <div className={`border border-[#1D8751] rounded-xl overflow-hidden transition-all duration-300 ${isDark ? "bg-[#1D1D23]" : "bg-[#F8FAFF]"}`}>
               <div className="p-4">
-                <div className={`space-y-2 sm:space-y-3 ${expandedTerms ? "" : "line-clamp-3"}`}>
+                <div className="space-y-2 sm:space-y-3">
                   <div className="flex items-start gap-2 sm:gap-3">
                     <span className="text-[#1D8751] font-bold text-sm sm:text-base flex-shrink-0">1.</span>
                     <p className={`text-xs sm:text-sm ${isDark ? "text-[#788099]" : "text-[#475569]"}`}>
@@ -4619,26 +4618,6 @@ export default function DepositForm({
                     </p>
                   </div>
                 </div>
-                <button
-                  onClick={() => setExpandedTerms(!expandedTerms)}
-                  className="mt-3 sm:mt-4 text-[#1D8751] hover:text-[#166b3e] font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition-colors"
-                >
-                  {expandedTerms ? (
-                    <>
-                      <span>Show Less</span>
-                      <svg className="w-4 h-4 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                      </svg>
-                    </>
-                  ) : (
-                    <>
-                      <span>Show More</span>
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                      </svg>
-                    </>
-                  )}
-                </button>
               </div>
             </div>
           </div>

@@ -66,6 +66,12 @@ const getCurrencyLogo = (currency: string): string => {
   return currencyLogos[currencyLower] || "/icons/usdt.svg";
 };
 
+// Helper function to check if name is a currency
+const isCurrency = (name: string): boolean => {
+  const currencies = ["usdt", "usd", "btc", "bitcoin", "eth", "ethereum"];
+  return currencies.includes((name || "").toLowerCase());
+};
+
 const LiveTransactionsPage = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isConnected, setIsConnected] = useState(false);
@@ -101,13 +107,13 @@ const LiveTransactionsPage = () => {
             if (type === "moneyx") {
               // MoneyX: From = user or payment provider, To = receiver or currency
               fromName = userName || paymentProvider || "MoneyX";
-              fromLogo = getBankLogo(paymentProvider || fromName);
+              fromLogo = isCurrency(fromName) ? getCurrencyLogo(fromName) : getBankLogo(paymentProvider || fromName);
               toName = receiverName || currency;
-              toLogo = receiverName ? getBankLogo(receiverName) : getCurrencyLogo(currency);
+              toLogo = isCurrency(toName) ? getCurrencyLogo(toName) : getBankLogo(receiverName);
             } else if (type === "p2p_deposit") {
               // P2P deposit: From = user, To = asset
               fromName = userName || "P2P Deposit";
-              fromLogo = getBankLogo(paymentProvider || fromName);
+              fromLogo = isCurrency(fromName) ? getCurrencyLogo(fromName) : getBankLogo(paymentProvider || fromName);
               toName = currency;
               toLogo = getCurrencyLogo(currency);
             } else if (type === "p2p_withdraw") {
@@ -115,25 +121,25 @@ const LiveTransactionsPage = () => {
               fromName = currency;
               fromLogo = getCurrencyLogo(currency);
               toName = userName || receiverName || "P2P Withdraw";
-              toLogo = getBankLogo(paymentProvider || toName);
+              toLogo = isCurrency(toName) ? getCurrencyLogo(toName) : getBankLogo(paymentProvider || toName);
             } else if (type === "p2p_trade") {
               // P2P trade: From = seller/provider, To = buyer/receiver
               fromName = userName || paymentProvider || "Seller";
-              fromLogo = getBankLogo(paymentProvider || fromName);
+              fromLogo = isCurrency(fromName) ? getCurrencyLogo(fromName) : getBankLogo(paymentProvider || fromName);
               toName = receiverName || currency;
-              toLogo = receiverName ? getBankLogo(receiverName) : getCurrencyLogo(currency);
+              toLogo = isCurrency(toName) ? getCurrencyLogo(toName) : getBankLogo(receiverName);
             } else if (type === "exchange" || type === "swap") {
               // Exchange/Swap: From = source, To = destination
               fromName = userName || paymentProvider || currency;
-              fromLogo = userName || paymentProvider ? getBankLogo(fromName) : getCurrencyLogo(currency);
+              fromLogo = isCurrency(fromName) ? getCurrencyLogo(fromName) : getBankLogo(fromName);
               toName = receiverName || currency;
-              toLogo = receiverName ? getBankLogo(receiverName) : getCurrencyLogo(currency);
+              toLogo = isCurrency(toName) ? getCurrencyLogo(toName) : getBankLogo(receiverName);
             } else {
               // Default fallback: prioritize user names over currency
               fromName = userName || paymentProvider || currency;
-              fromLogo = userName || paymentProvider ? getBankLogo(fromName) : getCurrencyLogo(currency);
+              fromLogo = isCurrency(fromName) ? getCurrencyLogo(fromName) : getBankLogo(fromName);
               toName = receiverName || paymentProvider || currency;
-              toLogo = receiverName || paymentProvider ? getBankLogo(toName) : getCurrencyLogo(currency);
+              toLogo = isCurrency(toName) ? getCurrencyLogo(toName) : getBankLogo(toName);
             }
 
             return {
@@ -180,9 +186,11 @@ const LiveTransactionsPage = () => {
           const currency = data.currency || data.asset || "USDT";
 
           let fromName = data.from || userName || paymentProvider || currency;
-          let fromLogo = data.from_logo || (userName || paymentProvider ? getBankLogo(fromName) : getCurrencyLogo(currency));
           let toName = data.to || receiverName || paymentProvider || currency;
-          let toLogo = data.to_logo || (receiverName || paymentProvider ? getBankLogo(toName) : getCurrencyLogo(currency));
+          
+          // Determine logos - use currency logo if name matches currency, otherwise use bank logo
+          let fromLogo = data.from_logo || (isCurrency(fromName) ? getCurrencyLogo(fromName) : getBankLogo(fromName));
+          let toLogo = data.to_logo || (isCurrency(toName) ? getCurrencyLogo(toName) : getBankLogo(toName));
 
           // Transform the message data to Transaction format
           const transaction: Transaction = {

@@ -330,7 +330,6 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                       d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
                     />
                   </svg>
-                  <span className="text-xs sm:text-sm font-medium whitespace-nowrap">Paste</span>
                 </button>
               </div>
 
@@ -422,8 +421,9 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
 
                 </div>
 
-                {/* Additional Terms */}
-                  <div className="px-4 sm:px-5 py-2 sm:py-3 space-y-4 sm:space-y-5">
+                {/* Additional Terms - Collapsible */}
+                {expandedTerms && (
+                  <div className="px-4 sm:px-5 py-2 sm:py-3 space-y-4 sm:space-y-5 border-t border-gray-200 dark:border-[#35353E]">
                     {/* Term 4 */}
                     <div className="flex items-start gap-2 sm:gap-3">
                       <span className="text-[#1D8751] font-bold text-sm sm:text-base flex-shrink-0">4.</span>
@@ -462,7 +462,31 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                       </div>
                     </div>
                   </div>
+                )}
               </div>
+
+              {/* Show More / Show Less Button */}
+              <button
+                type="button"
+                onClick={() => setExpandedTerms(!expandedTerms)}
+                className="mt-3 sm:mt-4 text-[#1D8751] hover:text-[#166b3e] font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition-colors"
+              >
+                {expandedTerms ? (
+                  <>
+                    <span>Show Less</span>
+                    <svg className="w-4 h-4 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                    </svg>
+                  </>
+                ) : (
+                  <>
+                    <span>Show More</span>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                    </svg>
+                  </>
+                )}
+              </button>
 
               {/* Terms Acceptance Checkbox */}
               <div className="flex items-start gap-2 sm:gap-3">

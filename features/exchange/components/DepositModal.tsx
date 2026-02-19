@@ -563,9 +563,9 @@ const DepositModal: React.FC<DepositModalProps> = ({ asset, assetType, onClose }
             <button 
               className="bg-[#35353E] py-2 px-3 rounded-full sm:ml-2 flex gap-2 w-full sm:w-auto justify-center"
               onClick={handlePasteClick}
+              title="Paste"
             >
-              <p className='text-[#1D8751]'>Paste</p>
-              <img src="https://res.cloudinary.com/dam1sxczj/image/upload/v1748885082/Vector_se1lvr.png" alt="" className='w-5 h-5' />
+              <img src="https://res.cloudinary.com/dam1sxczj/image/upload/v1748885082/Vector_se1lvr.png" alt="Paste" className='w-5 h-5' />
             </button>
           </div>
 
