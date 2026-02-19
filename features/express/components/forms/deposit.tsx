@@ -4392,15 +4392,15 @@ export default function DepositForm({
           
           {/* Dynamic Crypto Warning Banner */}
           {selectedAsset && (
-            <div className="mb-4 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl">
-              <div className="flex items-start gap-2">
-                <span className="text-amber-500 mt-0.5">
+            <div className="mb-4 p-3 sm:p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800/50 rounded-xl">
+              <div className="flex items-start gap-2 sm:gap-3">
+                <span className="text-yellow-600 dark:text-yellow-500 mt-0.5 flex-shrink-0">
                   <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
-                    <path d="M12 9v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </span>
-                <p className="text-sm text-amber-600 dark:text-amber-400 font-medium">
-                  Please send only <span className="font-bold">{selectedAsset?.symbol || selectedAsset?.ticker || 'crypto'}</span> on <span className="font-bold">{currentNetwork || selectedAsset?.network || 'the selected network'}</span>. Any other Crypto or Network will be lost Permanently.
+                <p className="text-xs sm:text-sm text-yellow-800 dark:text-yellow-200 font-medium">
+                  <span className="font-bold">Important:</span> Please send only <span className="font-bold text-yellow-900 dark:text-yellow-100">{selectedAsset?.symbol || selectedAsset?.ticker || 'crypto'}</span> on <span className="font-bold text-yellow-900 dark:text-yellow-100">{currentNetwork || selectedAsset?.network || 'the selected network'}</span>. Any other Crypto or Network will be <span className="font-bold">lost Permanently</span>.
                 </p>
               </div>
             </div>

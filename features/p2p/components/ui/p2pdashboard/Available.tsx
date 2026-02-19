@@ -5,7 +5,7 @@ import { RootState } from "@/store/rootReducer";
 import { fetchTransactionSummary } from "@/features/p2p/slices/transactionSummarySlice";
 import { formatCurrency } from "@/lib/globalFormatter";
 import { fetchWallets } from "@/features/p2p/slices/walletSlice";
-import { usePendingTotal } from "@/utils/pending";
+import { selectP2PWalletAmounts, selectTransactionSummary } from "@/features/p2p/selectors";
 
 const USDT_ICON =
   "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
@@ -13,9 +13,10 @@ const USDT_ICON =
 const Available = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
-  
-  // Get all exportable values: pending total, balance, available balance, and total locked
-  const { total: pendingTotal, balance: walletBalance, availableBalance, totalLocked } = usePendingTotal();
+  const summary = useSelector(selectTransactionSummary);
+  const { availableAmount, escrow } = useSelector(selectP2PWalletAmounts);
+  const availableBalance = summary != null ? availableAmount : 0;
+  const totalLocked = summary != null ? escrow : 0;
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -65,11 +66,11 @@ const Available = () => {
             </div>
             {/* Available */}
             <div className="text-center self-center text-sm sm:text-base text-gray-900 dark:text-white font-medium">
-              {formatCurrency(availableBalance ?? 0, "USDT")}
+              {formatCurrency(availableBalance, "USDT")}
             </div>
-            {/* Locked */}
+            {/* In Escrow / Locked */}
             <div className="text-center self-center text-sm sm:text-base text-gray-900 dark:text-white font-medium">
-              {formatCurrency(totalLocked ?? 0, "USDT")}
+              {formatCurrency(totalLocked, "USDT")}
             </div>
           </div>
         </div>

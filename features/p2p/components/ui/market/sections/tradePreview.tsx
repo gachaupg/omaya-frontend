@@ -7,6 +7,7 @@ import { AppDispatch } from "@/store";
 import { fetchWallets } from "@/features/p2p/slices/walletSlice";
 import { getTransactionSummary, matchP2POrder } from "@/features/p2p/api";
 import { TransactionSummary, OrderMatchRequest } from "@/features/p2p/types";
+import { getWalletAmountsFromSummary } from "@/features/p2p/walletAmounts";
 import { useRouter } from "next/navigation";
 import { RootState } from "@/store/rootReducer";
 import Loader from "../../../Common/Loader";
@@ -213,9 +214,8 @@ const TradePreview: React.FC<TradePreviewProps> = ({
   }, [isPaymentDropdownOpen]);
 
 
-  // Compute available P2P balance the same way as in P2pProfile:
-  // 1) Derive the profile balance from wallets (USDT wallet vs total_balance)
-  // 2) Subtract escrow / locked amounts from the transaction summary
+  // For sell: use common wallet amounts from transaction summary (available_amount) when available
+  const summaryAmounts = transactionSummary ? getWalletAmountsFromSummary(transactionSummary) : null;
   const totalBalance = wallets?.total_balance ? toNumber(wallets.total_balance) : 0;
   const baseWalletBalance = wallets?.wallet?.balance
     ? parseFloat(wallets.wallet.balance)
@@ -232,8 +232,11 @@ const TradePreview: React.FC<TradePreviewProps> = ({
     (transactionSummary?.total_pending_p2p_withdrawals || 0) +
     (transactionSummary?.total_sell_orders_by_status?.pending || 0);
 
-  // This is the same "available" amount implied by P2pProfile
-  const walletBalance = profileBalance - totalLocked;
+  const fallbackWalletBalance = profileBalance - totalLocked;
+  const walletBalance =
+    tradeType === "sell" && summaryAmounts != null
+      ? summaryAmounts.availableAmount
+      : fallbackWalletBalance;
   const handleSendAmountChange = (value: string) => {
     setActiveField("send");
     
