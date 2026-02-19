@@ -1,6 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
+import { useDispatch } from "react-redux";
+import { AppDispatch } from "@/store";
+import { resetMoneyXState } from "../slices/moneyXSlice";
 import TransferForm from "./TransferForm";
 import Exchanging from "./Exchanging";
 
@@ -18,6 +21,7 @@ interface MoneyXProps {
 }
 
 const MoneyX = ({ isHomePage = false, onTransferComplete }: MoneyXProps) => {
+  const dispatch = useDispatch<AppDispatch>();
   const [showExchanging, setShowExchanging] = useState(false);
   const [transactionData, setTransactionData] = useState<any>(null);
 
@@ -81,7 +85,8 @@ const MoneyX = ({ isHomePage = false, onTransferComplete }: MoneyXProps) => {
         onBackToTransfer={() => {
           setShowExchanging(false);
           setTransactionData(null);
-          // Clear localStorage to reset on refresh
+          // Clear Redux MoneyX state so next transfer starts fresh (terms and form reset)
+          dispatch(resetMoneyXState());
           localStorage.removeItem("moneyx_transaction_data");
           localStorage.removeItem("express_transaction_data");
         }}

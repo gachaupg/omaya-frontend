@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { AppDispatch } from "@/store";
 import {
   fetchPublicPaymentMethods,
@@ -185,9 +186,19 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
   const [bankAddressError, setBankAddressError] = useState<string | null>(null);
   const [isAddressConfirmed, setIsAddressConfirmed] = useState(false);
   const [expandedTerms, setExpandedTerms] = useState(false);
+  const [isTermsAccepted, setIsTermsAccepted] = useState(false);
   const [apiCommission, setApiCommission] = useState<number | null>(null);
   const commissionFetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const paymentDetailsRef = useRef<HTMLDivElement>(null);
+
+  // Auto-confirm bank address when it's non-empty and has no validation error (so the second-step submit can enable)
+  useEffect(() => {
+    if (bankAccountAddress.trim() && !bankAddressError) {
+      setIsAddressConfirmed(true);
+    } else {
+      setIsAddressConfirmed(false);
+    }
+  }, [bankAccountAddress, bankAddressError]);
 
   // Amount for commission API - use pay when from pay, else approx send from receive (getAmount/0.98)
   const commissionFetchAmount = isCalculatingFromPay ? payAmount : (getAmount > 0 ? getAmount / 0.98 : 0);
@@ -1045,6 +1056,21 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
             <span className="text-[#7e7e8f] dark:text-[#788099]">2-</span>
             Bank Account Address
           </h2>
+
+          {/* Important Warning Banner - same style as swap/deposit */}
+          <div className="mb-4 p-3 sm:p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800/50 rounded-xl">
+            <div className="flex items-start gap-2 sm:gap-3">
+              <span className="text-yellow-600 dark:text-yellow-500 mt-0.5 flex-shrink-0">
+                <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
+                  <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </span>
+              <p className="text-xs sm:text-sm text-yellow-800 dark:text-yellow-200 font-medium">
+                <span className="font-bold">Important:</span> Please send only the agreed amount from your own bank or mobile money account. Sending from a third-party account or to wrong details may result in <span className="font-bold">delays or permanent loss</span>.
+              </p>
+            </div>
+          </div>
+
           <div
             ref={paymentDetailsRef}
             className="flex flex-col dark:bg-[#0F0F17] border-1 border-[#35353E] rounded-2xl p-3 sm:p-5 shadow-lg w-full text-[#35353e] dark:text-[#788099] mb-6"
@@ -1262,6 +1288,28 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
             </div>
           </div>
 
+          {/* Terms Acceptance Checkbox */}
+          <div className="flex items-start gap-3 mt-4">
+            <style>{`
+              input[type="checkbox"].terms-checkbox-green:checked {
+                background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3e%3c/svg%3e");
+              }
+            `}</style>
+            <input
+              type="checkbox"
+              id="moneyx-terms-accept"
+              className="terms-checkbox-green mt-1 mr-3 w-4 h-4 rounded border-2 border-[#1D8751] focus:ring-[#1D8751] appearance-none bg-transparent checked:bg-[#1D8751] checked:border-[#1D8751] flex-shrink-0"
+              checked={isTermsAccepted}
+              onChange={(e) => setIsTermsAccepted(e.target.checked)}
+            />
+            <label htmlFor="moneyx-terms-accept" className={`text-sm cursor-pointer ${isDark ? "text-[#788099]" : "text-gray-700"}`}>
+              I agree to the{" "}
+              <Link href="/legal/terms-of-service" target="_blank" className="text-[#1D8751] cursor-pointer hover:underline">
+                Terms of Use
+              </Link>
+            </label>
+          </div>
+
           {/* Warning Message */}
           <div className="mt-4 mb-3 flex items-center gap-3 p-3 rounded-2xl bg-transparent">
             <img
@@ -1277,7 +1325,7 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
           {/* Final Submit Button */}
           <div className="flex flex-col gap-3 w-full px-2">
             <button
-              className={`w-full text-base font-medium py-1.5 rounded-full flex items-center justify-center gap-2 transition-colors text-white ${!bankAccountAddress.trim() || bankAddressError || !isAddressConfirmed
+              className={`w-full text-base font-medium py-1.5 rounded-full flex items-center justify-center gap-2 transition-colors text-white ${!bankAccountAddress.trim() || bankAddressError || !isAddressConfirmed || !isTermsAccepted
                   ? "bg-gray-500 cursor-not-allowed"
                   : "bg-[#1D8751] hover:bg-[#1D8751]/80"
                 }`}
@@ -1292,6 +1340,10 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
                 }
                 if (!isAddressConfirmed) {
                   showToast.error("Please confirm the bank account address");
+                  return;
+                }
+                if (!isTermsAccepted) {
+                  showToast.error("Please accept the Terms of Use to continue");
                   return;
                 }
 
@@ -1360,7 +1412,7 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
                   setIsUpdatingTransaction(false);
                 }
               }}
-              disabled={!bankAccountAddress.trim() || !!bankAddressError || !isAddressConfirmed || isSubmitting || isUpdatingTransaction || moneyXLoading}
+              disabled={!bankAccountAddress.trim() || !!bankAddressError || !isAddressConfirmed || !isTermsAccepted || isSubmitting || isUpdatingTransaction || moneyXLoading}
             >
               {isSubmitting || isUpdatingTransaction ? (
                 <div className="flex items-center gap-2">

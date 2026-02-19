@@ -35,7 +35,7 @@ import { logger } from '@/lib/utils/logger';
 import { useExpressI18n } from "@/lib/useExpressI18n";
 import { useTheme } from "@/context/theme";
 import { TermsAndConditionsSummary } from "./TermsAndConditionsSummary";
-import { usePendingTotal } from "@/utils/pending";
+import { selectP2PWalletAmounts, selectTransactionSummary } from "@/features/p2p/selectors";
 
 // Success Modal Component
 const SuccessModal = ({
@@ -242,13 +242,14 @@ export default function WithdrawalForm({
   isHomePage = false,
   onCancel,
 }: DepositFormProps) {
-  // Use availableBalance from usePendingTotal to match Available.tsx (balance minus escrow/locked)
-  const { availableBalance } = usePendingTotal();
+  // Use available amount from transaction summary (same common source as Available.tsx / P2PDashboard)
+  const summary = useSelector(selectTransactionSummary);
+  const { availableAmount } = useSelector(selectP2PWalletAmounts);
+  const availableBalance = summary != null ? availableAmount : (balance ?? 0);
   const effectiveBalance = (typeof availableBalance === "number" && !isNaN(availableBalance))
     ? availableBalance
     : (balance ?? 0);
 
-  // Debug logging for balance
   logger.debug('p2p', "WithdrawalForm - Received balance:", balance, "availableBalance:", availableBalance);
 
   const dispatch = useDispatch<AppDispatch>();

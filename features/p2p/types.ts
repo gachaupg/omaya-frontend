@@ -384,6 +384,12 @@ export interface TransactionSummary {
   avg_payment_time: string;
   rating: string;
   total_volume: string;
+  /** From transaction summary API – total balance */
+  total_balance?: string;
+  /** From transaction summary API – available to use */
+  available_amount?: string;
+  /** From transaction summary API – in escrow / locked */
+  escrow?: string;
 }
 
 export interface TransactionSummaryState {

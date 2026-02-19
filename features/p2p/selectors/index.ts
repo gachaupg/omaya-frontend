@@ -13,6 +13,7 @@
 import { createSelector } from "@reduxjs/toolkit";
 import { RootState } from "@/store/rootReducer";
 import { toNumber } from "@/lib/finanacial";
+import { getWalletAmountsFromSummary } from "@/features/p2p/walletAmounts";
 
 // ======================
 // Base Selectors (Input Selectors)
@@ -157,6 +158,15 @@ export const selectTransactionSummaryWithLoading = createSelector(
     loading: summaryState.loading,
     error: summaryState.error,
   })
+);
+
+/**
+ * Select reusable wallet amounts from transaction summary (balance, available, escrow).
+ * Use in P2pWallet (balance), P2PDashboard/Available (available + escrow).
+ */
+export const selectP2PWalletAmounts = createSelector(
+  [selectTransactionSummary],
+  getWalletAmountsFromSummary
 );
 
 // ======================
