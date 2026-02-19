@@ -234,7 +234,12 @@ const EditPaymentMethodModal: React.FC<EditPaymentMethodModalProps> = ({
   const isForexMethod =
     paymentMethod.payment_method_name?.toLowerCase().includes("forex");
 
-  const canSendOtp = hasValidOtpId && !sendOtpLoading && cooldownRemaining <= 0;
+  // Check if account number or wallet address is filled based on payment method type
+  const hasAccountOrWallet = isCryptoMethod || isForexMethod
+    ? formData.wallet_address.trim().length > 0
+    : formData.account_number.trim().length > 0;
+
+  const canSendOtp = hasValidOtpId && !sendOtpLoading && cooldownRemaining <= 0 && hasAccountOrWallet;
 
   return (
     <div className="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">

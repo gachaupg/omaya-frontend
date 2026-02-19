@@ -3966,6 +3966,22 @@ export default function DepositForm({
             </>
           )}
 
+          {/* Dynamic Crypto Warning Banner */}
+          {selectedAsset && (
+            <div className="mb-4 p-3 sm:p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800/50 rounded-xl">
+              <div className="flex items-start gap-2 sm:gap-3">
+                <span className="text-yellow-600 dark:text-yellow-500 mt-0.5 flex-shrink-0">
+                  <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
+                    <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </span>
+                <p className="text-xs sm:text-sm text-yellow-800 dark:text-yellow-200 font-medium">
+                  <span className="font-bold">Important:</span> Please send only <span className="font-bold text-yellow-900 dark:text-yellow-100">{selectedAsset?.symbol || selectedAsset?.ticker || "crypto"}</span> on <span className="font-bold text-yellow-900 dark:text-yellow-100">{currentNetwork || selectedAsset?.network || "the selected network"}</span>. Any other Crypto or Network will be <span className="font-bold">lost Permanently</span>.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Wallet Address Section */}
           <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
             Wallet Address
@@ -4090,9 +4106,9 @@ export default function DepositForm({
                     showToast.error("Failed to paste from clipboard");
                   }
                 }}
-                className="flex items-center gap-1 dark:bg-[#1D1D23] border border-[#1D8751] text-[#1D8751] rounded-full px-2 sm:px-4 py-1 font-semibold text-xs sm:text-sm hover:bg-[#1D8751] hover:text-white transition-colors"
+                className={`flex items-center justify-center gap-1 ${isDark ? "bg-[#1D1D23]" : "bg-white"} border border-[#1D8751] text-[#1D8751] rounded-full p-0 w-9 h-9 sm:w-auto sm:h-auto sm:px-3 sm:py-2 ml-2 font-semibold text-sm hover:bg-[#1D8751] hover:text-white transition-colors flex-shrink-0 whitespace-nowrap`}
               >
-                <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
+                <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
                   <path
                     d="M19 21H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h4l2-2h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2z"
                     stroke="currentColor"
@@ -4101,7 +4117,7 @@ export default function DepositForm({
                     strokeLinejoin="round"
                   />
                 </svg>
-                <span className="hidden lg:block">Paste</span>
+                <span className="hidden sm:inline">Paste</span>
               </button>
             </div>
 

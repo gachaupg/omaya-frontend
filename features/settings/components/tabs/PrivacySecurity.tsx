@@ -10,6 +10,8 @@ import {
   createDeviceSession,
 } from "../../slices/settingsSlice";
 import { logout } from "../../../auth/slices/authSlice";
+import { API_ENDPOINTS } from "../../../auth/api";
+import { post } from "../../../../lib/apiClient";
 import { DeviceSession, CreateDeviceSessionPayload } from "../../types";
 import { showToast } from "../../../../lib/utils/toast";
 import {
@@ -319,41 +321,44 @@ const PrivacySecurity = () => {
     setLogoutMode("all");
     setLogoutProgress(0);
 
-    try {
-      await dispatch(logoutAllDevices()).unwrap();
-      setLogoutProgress(100);
-      showToast.success("All devices logged out successfully");
-
-      // Log out locally and redirect to login page
+    const clearAndRedirect = () => {
       dispatch(logout());
       if (typeof window !== "undefined") {
-        // Preserve p2p_act before clearing localStorage
         const p2pAct = localStorage.getItem("p2p_act");
-        // Clear all localStorage data
         localStorage.clear();
-        // Restore p2p_act after clearing
         if (p2pAct) {
           localStorage.setItem("p2p_act", p2pAct);
         }
-        // Clear all cookies
         document.cookie = "access_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
         document.cookie = "refresh_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
         document.cookie = "twoFA_enabled=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
-        // Clear sessionStorage
         sessionStorage.clear();
-        // Clear any other stored data
-        if (typeof window !== 'undefined' && 'indexedDB' in window) {
-          window.indexedDB.databases().then(databases => {
-            databases.forEach(db => {
+        if (typeof window !== "undefined" && "indexedDB" in window) {
+          window.indexedDB.databases().then((databases) => {
+            databases.forEach((db) => {
               if (db.name) {
                 window.indexedDB.deleteDatabase(db.name);
               }
             });
           });
         }
-        // Redirect to login page
-        window.location.href = "/auth/login";
+        // Hard redirect so user is fully logged out from the system
+        window.location.replace("/auth/login");
       }
+    };
+
+    try {
+      await dispatch(logoutAllDevices()).unwrap();
+      setLogoutProgress(50);
+      // Call auth logout endpoint so server invalidates current session
+      try {
+        await post(API_ENDPOINTS.LOGOUT, {});
+      } catch (_) {
+        // Ignore - we're clearing locally anyway
+      }
+      setLogoutProgress(100);
+      showToast.success("All devices logged out successfully");
+      clearAndRedirect();
     } catch (error) {
       console.error("Failed to logout all devices:", error);
       showToast.error("Failed to logout all devices");
@@ -505,78 +510,34 @@ const PrivacySecurity = () => {
     (session: DeviceSession) => session.is_active
   );
 
-  // Auto logout if no devices are signed in
+  // Auto logout only when the API explicitly returns an auth error (401/403), NOT when the
+  // session list is simply empty. After "logout all devices" + fresh login, the device session
+  // list can be empty until useGlobalSessionCreation creates one (e.g. after ~2s). Auto-logging
+  // out on "no active sessions" was causing legitimate users to be logged out when visiting
+  // this page right after login. 401/403 from fetchDeviceSessions is already handled by the
+  // apiClient (token refresh + redirect on failure), so we only run cleanup here if we have
+  // an explicit auth error in state and want to sync UI.
   useEffect(() => {
-    const checkAndAutoLogout = () => {
-      const hasAnyActiveSessions = allSessions.some(
-        (session: DeviceSession) => session.is_active
-      );
+    const authError =
+      deviceSessionsError &&
+      (String(deviceSessionsError).includes("401") ||
+        String(deviceSessionsError).includes("403") ||
+        String(deviceSessionsError).toLowerCase().includes("unauthorized") ||
+        String(deviceSessionsError).toLowerCase().includes("forbidden"));
 
-      // Auto-logout conditions:
-      // 1. Not currently loading sessions
-      // 2. User is authenticated (to avoid logging out unauthenticated users)
-      // 3. No active sessions found
-      // 4. Not on auth pages (to avoid logging out during login process)
-      // 5. Not currently creating a session
-      if (
-        !deviceSessionsLoading &&
-        isAuthenticated &&
-        !hasAnyActiveSessions &&
-        !isCreatingSession &&
-        typeof window !== "undefined" &&
-        !window.location.pathname.includes('/auth/')
-      ) {
-        logger.debug('dashboard', "No active devices detected, auto logging out...");
-        logger.debug('dashboard', "Sessions state:", {
-          totalSessions: allSessions.length,
-          activeSessions: allSessions.filter((s: DeviceSession) => s.is_active).length,
-          deviceSessionsLoading,
-          isAuthenticated
-        });
-
-        showToast.info("No active devices detected, logging out automatically");
-
-        // Auto logout after a short delay
-        setTimeout(() => {
-          logger.debug('dashboard', "Executing auto logout...");
-          dispatch(logout());
-          if (typeof window !== "undefined") {
-            // Preserve p2p_act before clearing localStorage
-            const p2pAct = localStorage.getItem("p2p_act");
-            // Clear all localStorage data
-            localStorage.clear();
-            // Restore p2p_act after clearing
-            if (p2pAct) {
-              localStorage.setItem("p2p_act", p2pAct);
-            }
-            // Clear all cookies
-            document.cookie = "access_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
-            document.cookie = "refresh_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
-            document.cookie = "twoFA_enabled=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
-            // Clear sessionStorage
-            sessionStorage.clear();
-            // Clear any other stored data
-            if (typeof window !== 'undefined' && 'indexedDB' in window) {
-              window.indexedDB.databases().then(databases => {
-                databases.forEach(db => {
-                  if (db.name) {
-                    window.indexedDB.deleteDatabase(db.name);
-                  }
-                });
-              });
-            }
-            // Redirect to login page
-            window.location.href = "/auth/login";
-          }
-        }, 2000);
-      }
-    };
-
-    // Check after sessions are loaded
-    if (!deviceSessionsLoading) {
-      checkAndAutoLogout();
+    if (
+      !deviceSessionsLoading &&
+      isAuthenticated &&
+      authError &&
+      typeof window !== "undefined" &&
+      !window.location.pathname.includes("/auth/")
+    ) {
+      logger.debug("dashboard", "Device sessions API returned auth error, clearing local state", {
+        deviceSessionsError,
+      });
+      // Let apiClient/tokenRefresh handle redirect; we don't double-logout here to avoid races.
     }
-  }, [deviceSessionsLoading, allSessions, isAuthenticated, isCreatingSession, dispatch]);
+  }, [deviceSessionsLoading, deviceSessionsError, isAuthenticated]);
 
   // Scroll to top when page changes (but not on initial load)
   useEffect(() => {
@@ -837,25 +798,6 @@ const PrivacySecurity = () => {
                       active sessions
                     </div>
                   </button>
-
-                  <button
-                    className={`w-full py-2.5 sm:py-3 px-4 rounded-xl border transition font-semibold text-sm ${hasOtherActiveSessions
-                      ? "border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751] hover:text-white"
-                      : "border-[#808080] text-[#808080] cursor-not-allowed"
-                      }`}
-                    onClick={handleLogoutOneByOne}
-                    disabled={!hasOtherActiveSessions}
-                  >
-                    Sign out from other devices only
-                    <div className="text-xs mt-1 opacity-75">
-                      {hasOtherActiveSessions
-                        ? `${allSessions.filter(
-                          (s: DeviceSession) => s.is_active && !s.is_current
-                        ).length
-                        } other active sessions`
-                        : "No other active sessions"}
-                    </div>
-                  </button>
                 </div>
 
                 <button
@@ -868,9 +810,7 @@ const PrivacySecurity = () => {
             ) : (
               <>
                 <div className="dark:text-[#8C8CA1] text-gray-600 text-sm mb-4">
-                  {logoutMode === "all"
-                    ? "Signing out from all devices..."
-                    : "Signing out from other devices..."}
+                  Signing out from all devices...
                 </div>
 
                 {/* Progress bar */}
@@ -880,13 +820,6 @@ const PrivacySecurity = () => {
                     style={{ width: `${logoutProgress}%` }}
                   ></div>
                 </div>
-
-                {logoutMode === "one-by-one" && currentLogoutSession && (
-                  <div className="dark:text-[#8C8CA1] text-gray-600 text-xs mb-4">
-                    Currently signing out: {currentLogoutSession.browser} -{" "}
-                    {currentLogoutSession.location}
-                  </div>
-                )}
 
                 <div className="flex items-center justify-center">
                   <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-[#1D8751]"></div>

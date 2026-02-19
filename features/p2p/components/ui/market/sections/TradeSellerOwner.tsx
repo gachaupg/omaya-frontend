@@ -158,12 +158,12 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   }, [params?.id, dispatch, isAuthenticated]);
 
   // Fetch single order when confirmOrder is loaded
+  const orderIdToFetch = confirmOrder?.buy_order ?? confirmOrder?.sell_order;
   useEffect(() => {
-    const orderToFetch = confirmOrder?.buy_order || confirmOrder?.sell_order;
-    if (isAuthenticated && orderToFetch) {
-      dispatch(fetchSingleOrder(orderToFetch.toString()));
+    if (isAuthenticated && orderIdToFetch) {
+      dispatch(fetchSingleOrder(String(orderIdToFetch)));
     }
-  }, [confirmOrder?.buy_order, confirmOrder?.sell_order, dispatch, isAuthenticated]);
+  }, [orderIdToFetch, dispatch, isAuthenticated]);
 
 
   useEffect(() => {
@@ -323,9 +323,9 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
           { label: "View order" },
         ]}
       />
-      <div className="final-buy-container grid grid-cols-1 md:grid-cols-3 gap-2 sm:gap-4 md:gap-6 p-1 sm:p-2 md:p-6 min-h-screen bg-[#EEF1F4] dark:bg-(--bg-color)">
+      <div className="final-buy-container grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-2 sm:gap-4 md:gap-6 p-1 sm:p-2 md:p-6 min-h-screen bg-[#EEF1F4] dark:bg-[var(--bg-color)] overflow-x-hidden">
         {/* Left Column: Main Info */}
-        <div className="md:col-span-2 flex flex-col gap-6">
+        <div className="md:col-span-2 flex flex-col gap-6 min-w-0">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
               <p
@@ -397,7 +397,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                     <span className="truncate block sm:inline">Advertiser User Name</span>
                   )}
                   <UserStatusBadge isLive={statusWsConnected} className="flex-shrink-0 ml-1" />
-                  <span className="text-[10px] sm:text-xs text-[#1D8751] flex items-center gap-1 whitespace-nowrap ml-1">
+                  <span className="text-[10px] sm:text-xs text-[#1D8751] flex items-center gap-1 whitespace-nowrap ml-1 mb-4">
                     Transaction time:{" "}
                     {isClient ? (
                       <TimeDisplay
@@ -420,7 +420,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                 </div>
               </div>
             </div>
-            <div className="sm:ml-auto flex flex-wrap sm:flex-nowrap gap-4 sm:gap-6 lg:gap-8 text-xs justify-start sm:justify-end pt-3 sm:pt-0 border-t sm:border-t-0 border-gray-200 dark:border-[#35353E]">
+            <div className="sm:ml-auto flex flex-wrap sm:flex-nowrap gap-4 sm:gap-6 lg:gap-8 text-xs justify-start sm:justify-end pt-3 sm:pt-0 border-t sm:border-t-0 border-gray-200 dark:border-[#35353E] min-w-0">
               <div className="flex-shrink-0">
                 <span className="text-xs sm:text-[13px] text-gray-900 dark:text-white font-medium block">
                   {formatDurationForDisplay(singleOrder?.limit_duration) || "10 Minutes"}
@@ -643,7 +643,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
               </div>
               <div className="flex flex-col  gap-4">
                 <div className="flex-1">
-                  <div className="rounded-2xl border border-[#1D8751] bg-gray-50 dark:bg-(--bg-color) p-6 mt-2 text-base flex flex-col gap-2">
+                  <div className="rounded-2xl border border-[#1D8751] bg-gray-50 dark:bg-[var(--bg-color)] p-6 mt-2 text-base flex flex-col gap-2">
                     <div className="flex items-center gap-3 text-gray-900 dark:text-white">
                       <span className="w-3 h-3 rounded-full bg-[#1D8751] inline-block shrink-0"></span>
                       Please send the money from your own account Only
@@ -714,7 +714,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
         </div>
 
         {/* Right Column: Chat and Terms - on mobile hidden unless Chat button clicked, opens on top */}
-        <div className={`md:col-span-1 pt-10 flex flex-col gap-6 mt-6 md:mt-0 ${!showChat ? "hidden md:flex" : "order-first md:order-none flex"}`}>
+        <div className={`md:col-span-1 pt-10 flex flex-col gap-6 mt-6 md:mt-0 min-w-0 overflow-hidden ${!showChat ? "hidden md:flex" : "order-first md:order-none flex"}`}>
           <ChatBox
             onClose={() => setShowChat(false)}
             tradeId={confirmOrder?.id || ""}

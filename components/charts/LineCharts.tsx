@@ -976,7 +976,7 @@ const LineCharts = React.memo(
               <div className="xl:w-1/2">
                 <Legend
                   data={overviewTotalData(transactionSummary, activeTab)}
-                  hideCurrency={activeTab === "swap"}
+                  hideCurrency={false}
                 />
               </div>
 
@@ -991,7 +991,7 @@ const LineCharts = React.memo(
                         ? "Buy Orders"
                         : "Transactions"
                   }
-                  hideCurrency={activeTab === "swap"}
+                  hideCurrency={false}
                 />
               </div>
             </div>

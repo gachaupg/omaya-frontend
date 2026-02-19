@@ -1546,9 +1546,9 @@ export default function Navbar() {
               <div className={`flex flex-col items-center space-y-3 mt-4 ${mobileDepositDropdownOpen ? 'invisible' : ''}`}>
                 <button
                   onClick={toggleProfileModal}
-                  className="flex items-center space-x-3 justify-between w-full text-left focus:outline-none"
+                  className="flex items-start space-x-3 justify-between w-full text-left focus:outline-none"
                 >
-                  <div className="relative">
+                  <div className="relative shrink-0 flex-shrink-0 flex-none self-start" style={{ width: 40, height: 40 }}>
                     {(p2pProfile?.profile?.photo || cachedProfilePhoto || userProfile?.photo) &&
                       !profileImageError ? (
                       <>
@@ -1560,7 +1560,8 @@ export default function Navbar() {
                             ""
                           }
                           alt="Profile"
-                          className="w-10 h-10 rounded-full object-cover border-2 border-white dark:border-gray-600 shadow-lg"
+                          className="block w-full h-full rounded-full object-cover object-center border-2 border-white dark:border-gray-600 shadow-lg"
+                          style={{ width: 40, height: 40, minWidth: 40, minHeight: 40 }}
                           onError={(e) => {
                             const target = e.currentTarget;
                             target.onerror = null;
@@ -1622,10 +1623,12 @@ export default function Navbar() {
                         )}
                       </>
                     ) : (
-                      <DefaultProfileIcon />
+                      <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center bg-[#1D8751] border-2 border-white dark:border-gray-600">
+                        <DefaultProfileIcon />
+                      </div>
                     )}
                   </div>
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 overflow-hidden">
                     <div className="flex items-center gap-1.5">
                       <h4 className="dark:text-white text-gray-900 font-medium text-sm truncate">
                         {user?.first_name && user?.last_name
@@ -1658,18 +1661,18 @@ export default function Navbar() {
 
                   {/* Mobile Profile Modal */}
                   {profileModalOpen && (
-                    <div className="fixed inset-0 z-[9999] md:hidden">
+                    <div className="fixed inset-0 z-[9999] md:hidden pointer-events-auto">
                       <div
-                        className="absolute inset-0 bg-gray-900/50 dark:bg-black/50 z-0"
+                        className="absolute inset-0 bg-gray-900/50 dark:bg-black/50 z-0 pointer-events-auto"
                         onClick={() => setProfileModalOpen(false)}
                       />
-                      <div className="absolute bottom-0 left-0 right-0 z-10 bg-white dark:bg-[#1E2329] border-t border-gray-200 dark:border-accent rounded-t-lg pb-safe">
-                        <div className="p-6 pb-8">
+                      <div className="absolute bottom-0 left-0 right-0 z-10 bg-white dark:bg-[#1E2329] border-t border-gray-200 dark:border-accent rounded-t-lg pb-safe pointer-events-auto">
+                        <div className="p-6 pb-8 pointer-events-auto">
                           {/* User Info */}
-                          <div className="flex items-center mb-6">
-                            <div className="mr-4 relative">
+                          <div className="flex items-start mb-6 gap-4">
+                            <div className="shrink-0 flex-shrink-0 flex-none self-start" style={{ width: 64, height: 64 }}>
                               <button
-                                className="relative cursor-pointer hover:opacity-80 transition-opacity"
+                                className="block w-full h-full rounded-full overflow-hidden border-2 border-white dark:border-gray-600 shadow-lg cursor-pointer hover:opacity-80 transition-opacity relative"
                                 onClick={toggleImageModal}
                                 type="button"
                               >
@@ -1684,7 +1687,8 @@ export default function Navbar() {
                                         ""
                                       }
                                       alt="Profile"
-                                      className="w-16 h-16 rounded-full object-cover border-2 border-white dark:border-gray-600 shadow-lg"
+                                      className="block w-full h-full object-cover object-center"
+                                      style={{ width: 64, height: 64, minWidth: 64, minHeight: 64 }}
                                       onError={(e) => {
                                         const target = e.currentTarget;
                                         target.onerror = null;
@@ -1751,46 +1755,63 @@ export default function Navbar() {
                                     )}
                                   </>
                                 ) : (
-                                  <div className="w-16 h-16 rounded-full flex items-center justify-center bg-[#1D8751] border-2 border-white">
+                                  <div className="w-full h-full rounded-full flex items-center justify-center bg-[#1D8751]">
                                     <User className="w-8 h-8 text-white" />
                                   </div>
                                 )}
                               </button>
                             </div>
-                            <div>
-                              <h4 className="text-gray-900 dark:text-white font-medium text-lg">
+                            <div className="min-w-0 flex-1 overflow-hidden">
+                              <h4 className="text-gray-900 dark:text-white font-medium text-lg truncate" title={`${user?.first_name || ""} ${user?.last_name || ""}`.trim()}>
                                 {user?.first_name} {user?.last_name}
                               </h4>
-                              <p className="text-gray-500 dark:text-gray-400 text-sm">
+                              <p className="text-gray-500 dark:text-gray-400 text-sm truncate mt-0.5" title={user?.email}>
                                 {user?.email}
                               </p>
                             </div>
                           </div>
 
                           {/* Menu Items */}
-                          <div className="space-y-4">
-                            <Link
-                              href="/dashboard/account"
-                              className="flex items-center w-full px-4 py-3 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[#35353E] rounded-lg transition-colors duration-200"
-                              onClick={() => setProfileModalOpen(false)}
-                            >
-                              <Settings size={20} className="mr-3" />
-                              <span className="text-base whitespace-nowrap">Account settings</span>
-                            </Link>
-
+                          <div className="space-y-3 relative" style={{zIndex: 10000}}>
                             <button
+                              type="button"
+                              onTouchEnd={(e) => {
+                                e.preventDefault();
+                                setProfileModalOpen(false);
+                                setMobileMenuOpen(false);
+                                setTimeout(() => router.push("/dashboard/account"), 100);
+                              }}
                               onClick={(e) => {
                                 e.preventDefault();
-                                e.stopPropagation();
                                 setProfileModalOpen(false);
-                                handleLogout();
-                                setTimeout(() => {
-                                  setMobileMenuOpen(false);
-                                }, 300);
+                                setMobileMenuOpen(false);
+                                router.push("/dashboard/account");
                               }}
-                              className="flex items-center w-full px-4 py-3 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[#35353E] rounded-lg transition-colors duration-200"
+                              className="flex items-center w-full px-4 py-3 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[#35353E] rounded-lg transition-colors duration-200 active:bg-gray-200 dark:active:bg-[#2A2A2A] select-none"
+                              style={{WebkitTapHighlightColor: 'rgba(0,0,0,0)'}}
                             >
-                              <LogOut size={20} className="mr-3" />
+                              <Settings size={20} className="mr-3 flex-shrink-0" />
+                              <span className="text-base">Account settings</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onTouchEnd={(e) => {
+                                e.preventDefault();
+                                setProfileModalOpen(false);
+                                setMobileMenuOpen(false);
+                                setTimeout(() => handleLogout(), 100);
+                              }}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setProfileModalOpen(false);
+                                setMobileMenuOpen(false);
+                                handleLogout();
+                              }}
+                              className="flex items-center w-full px-4 py-3 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[#35353E] rounded-lg transition-colors duration-200 active:bg-gray-200 dark:active:bg-[#2A2A2A] select-none"
+                              style={{WebkitTapHighlightColor: 'rgba(0,0,0,0)'}}
+                            >
+                              <LogOut size={20} className="mr-3 flex-shrink-0" />
                               <span className="text-base">Logout</span>
                             </button>
                           </div>

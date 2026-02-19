@@ -84,13 +84,13 @@ const MoneyXTransactions = () => {
         <table className="w-full">
           <thead>
             <tr className="border-b border-gray-200 dark:border-accent">
-              <th className="py-3 px-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]"><span className="inline-flex items-center">Transaction ID<SortArrowsIcon /></span></th>
-              <th className="py-3 px-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]"><span className="inline-flex items-center">From<SortArrowsIcon /></span></th>
-              <th className="py-3 px-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]"><span className="inline-flex items-center">To<SortArrowsIcon /></span></th>
-              <th className="py-3 px-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]"><span className="inline-flex items-center">Amount Sent<SortArrowsIcon /></span></th>
-              <th className="py-3 px-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]"><span className="inline-flex items-center">Amount Received<SortArrowsIcon /></span></th>
-              <th className="py-3 px-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]"><span className="inline-flex items-center">Status<SortArrowsIcon /></span></th>
-              <th className="py-3 px-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]"><span className="inline-flex items-center">Date<SortArrowsIcon /></span></th>
+              <th className="py-3 px-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099] text-left"><span className="inline-flex items-center gap-1">Transaction ID<SortArrowsIcon /></span></th>
+              <th className="py-3 px-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099] text-left"><span className="inline-flex items-center gap-1">From<SortArrowsIcon /></span></th>
+              <th className="py-3 px-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099] text-left"><span className="inline-flex items-center gap-1">To<SortArrowsIcon /></span></th>
+              <th className="py-3 px-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099] text-right"><span className="inline-flex items-center gap-1 justify-end">Amount Sent<SortArrowsIcon /></span></th>
+              <th className="py-3 px-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099] text-right"><span className="inline-flex items-center gap-1 justify-end">Amount Received<SortArrowsIcon /></span></th>
+              <th className="py-3 px-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099] text-center"><span className="inline-flex items-center gap-1 justify-center">Status<SortArrowsIcon /></span></th>
+              <th className="py-3 px-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099] text-right"><span className="inline-flex items-center gap-1 justify-end">Date<SortArrowsIcon /></span></th>
             </tr>
           </thead>
           <tbody>
@@ -99,12 +99,12 @@ const MoneyXTransactions = () => {
                 key={tx.moneyx_transaction_id || index}
                 className="border-b dark:border-accent border-gray-100 hover:bg-gray-50 dark:hover:bg-[#1D1D23] transition-colors"
               >
-                <td className="py-4 px-4">
+                <td className="py-4 px-4 text-left">
                   <span className="text-sm font-medium dark:text-white text-gray-900">
                     {tx.moneyx_transaction_id?.slice(0, 8) || "-"}...
                   </span>
                 </td>
-                <td className="py-4 px-4">
+                <td className="py-4 px-4 text-left">
                   <div className="flex items-center gap-2">
                     {tx.sender_provider?.logo && (
                       <img
@@ -118,7 +118,7 @@ const MoneyXTransactions = () => {
                     </span>
                   </div>
                 </td>
-                <td className="py-4 px-4">
+                <td className="py-4 px-4 text-left">
                   <div className="flex items-center gap-2">
                     {tx.receiver_provider?.logo && (
                       <img
@@ -132,17 +132,17 @@ const MoneyXTransactions = () => {
                     </span>
                   </div>
                 </td>
-                <td className="py-4 px-4">
+                <td className="py-4 px-4 text-right">
                   <span className="text-sm font-medium dark:text-white text-gray-900">
                     {formatCurrency(tx.send_amount || tx.amount || 0, tx.from_currency || tx.currency || "USDT")}
                   </span>
                 </td>
-                <td className="py-4 px-4">
+                <td className="py-4 px-4 text-right">
                   <span className="text-sm font-medium text-[#1D8751]">
                     {formatCurrency(tx.receive_amount || tx.net_amount || 0, tx.to_currency || tx.currency || "USDT")}
                   </span>
                 </td>
-                <td className="py-4 px-4">
+                <td className="py-4 px-4 text-center">
                   <span
                     className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
                       tx.status
@@ -151,7 +151,7 @@ const MoneyXTransactions = () => {
                     {tx.status || "Pending"}
                   </span>
                 </td>
-                <td className="py-4 px-4 border-b border-gray-200 dark:border-accent">
+                <td className="py-4 px-4 text-right">
                   <span className="text-xs sm:text-sm md:text-base text-gray-500 dark:text-[#A0A3BC]">
                     {tx.created_at
                       ? formatDistanceToNow(new Date(tx.created_at), {

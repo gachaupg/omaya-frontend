@@ -12,7 +12,11 @@ import { FinancialCalculator } from "@/lib/utils/financial";
 import { toNumber } from "@/lib/finanacial";
 import { fetchTransactionSummary } from "@/features/p2p/slices/transactionSummarySlice";
 import { formatCurrency } from "@/lib/globalFormatter";
-import { selectWalletBalance } from "@/features/p2p/selectors";
+import {
+  selectWalletBalance,
+  selectP2PWalletAmounts,
+  selectTransactionSummary,
+} from "@/features/p2p/selectors";
 
 import { logger } from "@/lib/utils/logger";
 
@@ -47,8 +51,10 @@ const P2pWallet = memo(
   }) => {
     const dispatch = useDispatch<AppDispatch>();
 
-    // Use memoized selector for better performance
-    const { balance, currency, loading } = useSelector(selectWalletBalance);
+    // Balance from transaction summary when available, else wallet selector
+    const { balance: walletBalance, currency, loading } = useSelector(selectWalletBalance);
+    const summary = useSelector(selectTransactionSummary);
+    const { balance: summaryBalance } = useSelector(selectP2PWalletAmounts);
     const { data: matchedTrades, loading: matchedTradesLoading } = useSelector(
       (state: RootState) => state.matchedTrades
     );
@@ -56,13 +62,13 @@ const P2pWallet = memo(
     const transactionSummaryState = useSelector(
       (state: RootState) => state.transactionSummary
     );
-    const summary = transactionSummaryState.summary;
     const summaryLoading = transactionSummaryState.loading;
     const { isAuthenticated } = useSelector((state: RootState) => state.auth);
 
-    logger.debug("p2p", "P2pWallet render", { balance, currency, loading });
+    // Use transaction summary total_balance when summary is loaded
+    const balance = summary != null ? summaryBalance : walletBalance;
 
-    const usdValue = balance;
+    logger.debug("p2p", "P2pWallet render", { balance, currency, loading });
 
     const getTitle = () => {
       if (isOpenForm === "deposit") return "P2P Deposit";

@@ -2,6 +2,12 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { get, post, del } from "@/lib/apiClient";
 import { API_CONFIG } from "@/lib/appConfig";
 
+export interface AssetDetails {
+  symbol: string;
+  name: string;
+  image: string | null;
+}
+
 export interface UserWalletAddress {
   id: number;
   user_wallet_address_id: string;
@@ -10,6 +16,7 @@ export interface UserWalletAddress {
   label: string;
   network: string;
   asset: string;
+  asset_details?: AssetDetails;
   status: "pending" | "approved" | "rejected";
   rejection_reason: string | null;
   created_at: string;

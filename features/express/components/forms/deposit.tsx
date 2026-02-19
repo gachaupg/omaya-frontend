@@ -4392,15 +4392,15 @@ export default function DepositForm({
           
           {/* Dynamic Crypto Warning Banner */}
           {selectedAsset && (
-            <div className="mb-4 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl">
-              <div className="flex items-start gap-2">
-                <span className="text-amber-500 mt-0.5">
+            <div className="mb-4 p-3 sm:p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800/50 rounded-xl">
+              <div className="flex items-start gap-2 sm:gap-3">
+                <span className="text-yellow-600 dark:text-yellow-500 mt-0.5 flex-shrink-0">
                   <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
-                    <path d="M12 9v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </span>
-                <p className="text-sm text-amber-600 dark:text-amber-400 font-medium">
-                  Please send only <span className="font-bold">{selectedAsset?.symbol || selectedAsset?.ticker || 'crypto'}</span> on <span className="font-bold">{currentNetwork || selectedAsset?.network || 'the selected network'}</span>. Any other Crypto or Network will be lost Permanently.
+                <p className="text-xs sm:text-sm text-yellow-800 dark:text-yellow-200 font-medium">
+                  <span className="font-bold">Important:</span> Please send only <span className="font-bold text-yellow-900 dark:text-yellow-100">{selectedAsset?.symbol || selectedAsset?.ticker || 'crypto'}</span> on <span className="font-bold text-yellow-900 dark:text-yellow-100">{currentNetwork || selectedAsset?.network || 'the selected network'}</span>. Any other Crypto or Network will be <span className="font-bold">lost Permanently</span>.
                 </p>
               </div>
             </div>
@@ -4531,7 +4531,6 @@ export default function DepositForm({
                 className="mt-3 sm:mt-0 flex items-center justify-center gap-2 bg-[#1D8751]  border border-[#4A4A5A] dark:border-[#4A4A5A] 
                 text-muted  rounded-2xl px-4 py-2 font-semibold text-sm sm:text-base hover:bg-[#1D8751]/90 ] transition-colors min-h-[44px] sm:min-h-0 touch-manipulation w-full sm:w-auto"
               >
-                <span>{t("express.paste", "Paste")}</span>
                 <svg width="18" height="18" fill="none" viewBox="0 0 24 24" className="text-muted">
                   <path
                     d="M19 21H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h4l2-2h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2z"
@@ -4599,7 +4598,7 @@ export default function DepositForm({
             </div>
             <div className={`border border-[#1D8751] rounded-xl overflow-hidden transition-all duration-300 ${isDark ? "bg-[#1D1D23]" : "bg-[#F8FAFF]"}`}>
               <div className="p-4">
-                <div className={`space-y-2 sm:space-y-3 ${expandedTerms ? "" : "line-clamp-3"}`}>
+                <div className="space-y-2 sm:space-y-3">
                   <div className="flex items-start gap-2 sm:gap-3">
                     <span className="text-[#1D8751] font-bold text-sm sm:text-base flex-shrink-0">1.</span>
                     <p className={`text-xs sm:text-sm ${isDark ? "text-[#788099]" : "text-[#475569]"}`}>
@@ -4619,26 +4618,6 @@ export default function DepositForm({
                     </p>
                   </div>
                 </div>
-                <button
-                  onClick={() => setExpandedTerms(!expandedTerms)}
-                  className="mt-3 sm:mt-4 text-[#1D8751] hover:text-[#166b3e] font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition-colors"
-                >
-                  {expandedTerms ? (
-                    <>
-                      <span>Show Less</span>
-                      <svg className="w-4 h-4 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                      </svg>
-                    </>
-                  ) : (
-                    <>
-                      <span>Show More</span>
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                      </svg>
-                    </>
-                  )}
-                </button>
               </div>
             </div>
           </div>

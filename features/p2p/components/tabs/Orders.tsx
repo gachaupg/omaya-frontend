@@ -61,6 +61,7 @@ const Orders = memo(() => {
     dispatch(setCurrentPage(page));
     // Fetch data for the new page
     dispatch(fetchUserTrades({ page, ...filters }));
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleFilterChange = (newFilters: {

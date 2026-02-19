@@ -216,6 +216,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
   const effectiveTransactionData = transactionData || persistedTransactionData;
 
   // Fallback polling - fetches status when WebSocket may have missed updates (e.g. user sent money before deposit)
+  // Use shorter interval (3s) for deposits so we detect completion soon after opening the page
   const startFallbackPolling = React.useCallback(() => {
     if (pollingIntervalRef.current) {
       clearInterval(pollingIntervalRef.current);
@@ -234,10 +235,11 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
       }
     };
 
-    const interval = setInterval(poll, 10000);
+    const intervalMs = effectiveTransactionData?.type === "deposit" ? 3000 : 10000;
+    const interval = setInterval(poll, intervalMs);
     pollingIntervalRef.current = interval;
     setPollingInterval(interval);
-    poll();
+    poll(); // run immediately
   }, [effectiveTransactionData?.transactionId, effectiveTransactionData?.type]);
 
   // Sync initial status from persisted data when it loads (e.g. page refresh)
@@ -256,15 +258,18 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
 
     const fetchStatus = async () => {
       const result = await fetchDepositStatus(txId);
-      if (result?.status) {
-        setCurrentStatus(result.status);
-      }
+      if (result?.status) setCurrentStatus(result.status);
     };
     fetchStatus();
 
-    // Start polling - keeps status updated when user sent money before deposit
+    // Second fetch after short delay so we catch completion that happened right after page load
+    const earlyRetry = setTimeout(fetchStatus, 1500);
+
     startFallbackPolling();
-    return () => stopFallbackPolling();
+    return () => {
+      clearTimeout(earlyRetry);
+      stopFallbackPolling();
+    };
   }, [effectiveTransactionData?.transactionId, effectiveTransactionData?.type, startFallbackPolling]);
 
   // Stop polling when transaction is completed
@@ -334,7 +339,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
       finalWebsocketUrl,
       {
         onMessage: (data: TransactionStatusMessage) => {
-
+          console.log("[P2P Exchanging] WebSocket message:", data);
 
           // Clear any WebSocket errors when we receive a message
           setWsError(null);
@@ -438,14 +443,28 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
             // ChangeNow status update format
             status = data.data.status;
             message = data.data.message;
+          } else if (data.type === "status_update" && (data.data as { transaction_hash?: string })?.transaction_hash && !data.data?.status) {
+            // P2P deposit: backend sent transaction_hash but no status (e.g. tx detected) – show confirming and sync with API
+            status = "pending_blockchain";
+            message = data.data.message;
+            logger.debug('p2p', "Status update with transaction_hash (no status), syncing with API");
+            const txId = effectiveTransactionData?.transactionId || data.data?.transaction_id;
+            if (txId) {
+              fetchDepositStatus(txId).then((result) => {
+                if (!result?.status) return;
+                const s = result.status;
+                setCurrentStatus(s === "completed" ? "completed" : s === "pending_blockchain" ? "confirming" : s);
+              }).catch(() => {});
+            }
           } else if (data.status && typeof data.status === "string") {
             // ChangeNow format
             status = data.status;
             message = (data as any).message;
-          } else if (data.data?.status) {
-            // Backend format
-            status = data.data.status;
-            message = data.data.message;
+          } else if (data.data?.status || (data.data as any)?.stage) {
+            // Backend format (status or stage e.g. P2P deposit)
+            const d = data.data as any;
+            status = d.status ?? d.stage;
+            message = d.message;
           } else if (data.status) {
             // Legacy format
             status = data.status;
@@ -646,9 +665,21 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
     }
   }, [isConnected, fallbackPolling]);
 
-  // Debug logging
+  // When WebSocket connects, fetch current status so we don't miss updates that happened before opening the page
+  useEffect(() => {
+    if (!isConnected) return;
+    const txId = effectiveTransactionData?.transactionId;
+    if (!txId || effectiveTransactionData?.type !== "deposit") return;
+    fetchDepositStatus(txId).then((result) => {
+      if (result?.status) setCurrentStatus(result.status);
+    }).catch(() => {});
+  }, [isConnected, effectiveTransactionData?.transactionId, effectiveTransactionData?.type]);
+
+  // Debug logging (and print socket URL + data for debugging)
   useEffect(() => {
     if (shouldUseWebSocket) {
+      const url = effectiveTransactionData?.websocketUrl || effectiveTransactionData?.websocket_url || "(fallback: by transactionId)";
+      console.log("[P2P Exchanging] WebSocket URL:", url, "transactionId:", effectiveTransactionData?.transactionId);
       logger.debug('p2p',
         "WebSocket enabled for transaction:",
         effectiveTransactionData?.transactionId

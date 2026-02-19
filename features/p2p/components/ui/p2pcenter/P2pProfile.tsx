@@ -129,7 +129,9 @@ const P2pProfile = ({
   }, []);
 
   // Calculate feedback statistics (support both array and { feedbacks } response)
-  const feedbackList = Array.isArray(feedbackData) ? feedbackData : (feedbackData?.feedbacks ?? []);
+  const feedbackList = Array.isArray(feedbackData)
+    ? feedbackData
+    : ((feedbackData as { feedbacks?: any[] } | null | undefined)?.feedbacks ?? []);
   const feedbackStats = useMemo(() => {
     const total = feedbackList.length;
     const positive = feedbackList.filter((f: any) => f?.is_positive).length;

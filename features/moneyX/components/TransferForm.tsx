@@ -175,6 +175,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
   const [isAddressConfirmed, setIsAddressConfirmed] = useState(false);
   const [expandedTerms, setExpandedTerms] = useState(false);
   const [apiCommission, setApiCommission] = useState<number | null>(null);
+  const [accountNumberCopied, setAccountNumberCopied] = useState(false);
   const commissionFetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const paymentDetailsRef = useRef<HTMLDivElement>(null);
 
@@ -1232,54 +1233,77 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
 
       {isFirstCardSubmitted && (
         <>
-          {/* Transaction Summary - Shows where to send and receive */}
-          <div className="bg-[#F5FFF9] dark:bg-[#1D2B25] border border-[#1D8751] rounded-2xl p-4 mb-4 sm:mb-6">
-            <h3 className="text-[#1D8751] font-semibold mb-3 flex items-center gap-2">
-              <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="10" stroke="#1D8751" strokeWidth="2" />
-                <path d="M12 8v4M12 16h.01" stroke="#1D8751" strokeWidth="2" strokeLinecap="round" />
-              </svg>
-              Transaction Summary
-            </h3>
-            <div className="space-y-3">
-              {/* From - Where they send from */}
-              <div className="flex items-center justify-between p-3 bg-white dark:bg-[#18181D] rounded-xl">
-                <div className="flex items-center gap-2">
-                  <span className="text-[#788099] text-sm">Send From:</span>
+          {/* Account details - title outside, same style as "2- ... Account Details" */}
+          <h2 className="text-xl font-semibold mb-2 text-gray-900 dark:text-[#788099] inline-flex items-center gap-2">
+            1- Account details
+          </h2>
+
+          {/* Card: instruction + account name/number with copy */}
+          {(() => {
+            const accountName =
+              selectedToPaymentDetail?.account_name ??
+              selectedToPaymentDetail?.payment_details?.[0]?.account_name ??
+              getProviderName(selectedToPaymentDetail) ??
+              "—";
+            const accountNumber =
+              bankAccountAddress.trim() ||
+              selectedToPaymentDetail?.account_number ??
+              selectedToPaymentDetail?.payment_details?.[0]?.account_number ??
+              "—";
+            const copyAccountNumber = () => {
+              if (!accountNumber || accountNumber === "—") return;
+              navigator.clipboard.writeText(accountNumber).then(
+                () => {
+                  setAccountNumberCopied(true);
+                  showToast.success("Account number copied");
+                  setTimeout(() => setAccountNumberCopied(false), 2000);
+                },
+                () => showToast.error("Failed to copy")
+              );
+            };
+            return (
+              <div className="bg-white dark:bg-[#18181D] border border-border dark:border-[#35353E] rounded-2xl p-4 mb-4 sm:mb-6">
+                <p className="text-[#35353e] dark:text-[#788099] text-sm sm:text-base mb-4">
+                  Copy the following account to deposit the <span className="font-semibold text-gray-900 dark:text-white">${payAmount.toFixed(2)}</span> amount
+                </p>
+                <div className="space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 p-3 border border-border dark:border-[#35353E] rounded-xl">
+                    <span className="text-[#788099] text-sm">Account name</span>
+                    <span className="text-[#35353e] dark:text-white font-medium text-sm truncate">
+                      {accountName}
+                    </span>
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 border border-border dark:border-[#35353E] rounded-xl">
+                    <span className="text-[#788099] text-sm">Account number</span>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-[#35353e] dark:text-white font-medium text-sm truncate">
+                        {accountNumber}
+                      </span>
+                      {accountNumber !== "—" && (
+                        <button
+                          type="button"
+                          onClick={copyAccountNumber}
+                          className="flex-shrink-0 p-1.5 rounded-lg bg-[#1D8751]/20 text-[#1D8751] hover:bg-[#1D8751]/30 transition-colors"
+                          title="Copy account number"
+                          aria-label="Copy account number"
+                        >
+                          {accountNumberCopied ? (
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                          ) : (
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h2m8 0h2a2 2 0 012 2v2m2 4a2 2 0 01-2 2h-8a2 2 0 01-2-2v-8" />
+                            </svg>
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <span className="text-[#35353e] dark:text-white font-medium text-sm">
-                  {getProviderName(selectedFromPaymentDetail) || "Your Account"}
-                </span>
               </div>
-
-              {/* Arrow indicator */}
-              <div className="flex justify-center">
-                <svg width="24" height="24" fill="none" viewBox="0 0 24 24" className="text-[#1D8751]">
-                  <path d="M12 5v14M12 19l-4-4M12 19l4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </div>
-
-              {/* To - Where they receive */}
-              <div className="flex items-center justify-between p-3 bg-white dark:bg-[#18181D] rounded-xl">
-                <div className="flex items-center gap-2">
-                  <span className="text-[#788099] text-sm">Receive To:</span>
-                </div>
-                <span className="text-[#35353e] dark:text-white font-medium text-sm">
-                  {getProviderName(selectedToPaymentDetail) || "Your Account"} (Enter below)
-                </span>
-              </div>
-
-              {/* Amount Summary */}
-              <div className="flex items-center justify-between p-3 bg-white dark:bg-[#18181D] rounded-xl mt-2">
-                <span className="text-[#788099] text-sm">Amount to Send:</span>
-                <span className="text-[#1D8751] font-bold">${payAmount.toFixed(2)}</span>
-              </div>
-              <div className="flex items-center justify-between p-3 bg-white dark:bg-[#18181D] rounded-xl">
-                <span className="text-[#788099] text-sm">Amount to Receive:</span>
-                <span className="text-[#1D8751] font-bold">${getAmount.toFixed(2)}</span>
-              </div>
-            </div>
-          </div>
+            );
+          })()}
 
           {/* Bank Account Address Section - Dynamic Title */}
           <h2 className="text-xl font-semibold mb-2 text-gray-900 dark:text-[#788099] inline-flex items-center gap-2">
@@ -1403,6 +1427,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
                 }}
                 className="flex items-center justify-center gap-2 bg-[#1D8751] hover:bg-[#166b3e]
                 text-white rounded-xl px-4 py-2 font-semibold text-sm transition-colors min-h-[44px] touch-manipulation flex-shrink-0 whitespace-nowrap"
+                title="Paste"
               >
                 <svg width="18" height="18" fill="none" viewBox="0 0 24 24" className="text-white">
                   <path
@@ -1413,7 +1438,6 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
                     strokeLinejoin="round"
                   />
                 </svg>
-                <span>Paste</span>
               </button>
             </div>
 
