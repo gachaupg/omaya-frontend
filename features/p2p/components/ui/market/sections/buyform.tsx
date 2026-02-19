@@ -720,9 +720,9 @@ function FinalBuy({ orderData }: FinalBuyProps) {
                     )}
                     <div className="flex flex-col md:flex-row gap-4 mt-4">
                       <button
-                        className={`w-full md:w-auto flex-1 py-2 rounded-2xl border-2 border-[#E8EFF5] dark:border-[#3C3C47] text-lg  ${confirmOrder?.status === "half-matched"
-                          ? "bg-white dark:bg-[var(--card-color)] text-gray-400 dark:text-[#888]"
-                          : "bg-transparent text-gray-600 dark:text-[#788099]"
+                        className={`w-full md:w-auto flex-1 py-2 rounded-2xl border-2 border-[#E8EFF5] dark:border-[#3C3C47] text-lg transition-colors ${confirmOrder?.status === "half-matched" || cancelLoading
+                          ? "bg-white dark:bg-[var(--card-color)] text-gray-400 dark:text-[#888] cursor-not-allowed opacity-60"
+                          : "bg-transparent text-gray-600 dark:text-[#788099] hover:bg-gray-100 dark:hover:bg-[#35353E] cursor-pointer"
                           }`}
                         onClick={handleCancelTransaction}
                         disabled={

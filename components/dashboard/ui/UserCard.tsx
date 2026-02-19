@@ -171,10 +171,10 @@ function UserCard() {
             <HelpSupportForm />
           </div>
         ) : (
-          <div className="flex flex-row items-center justify-between w-full gap-2 sm:gap-4 lg:gap-6 min-w-0 px-4 sm:px-0 py-2 sm:py-0">
+          <div className="flex flex-row items-center justify-between w-full gap-2 sm:gap-4 lg:gap-6 min-w-0 px-4 sm:px-0 py-2 sm:py-0 overflow-hidden">
             {/* Left Side: Avatar, User Info, User ID, User Type */}
-            <div className="flex flex-row items-center gap-2 sm:gap-4 lg:gap-6 min-w-0 flex-1">
-              <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            <div className="flex flex-row items-center gap-2 sm:gap-4 lg:gap-6 min-w-0 flex-1 overflow-hidden">
+              <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 overflow-hidden">
                 {/* User Avatar with Edit Button */}
                 <div className="relative shrink-0 z-10">
                   <div className="h-10 w-10 sm:h-12 sm:w-12 lg:h-14 lg:w-14 rounded-full overflow-hidden relative">
@@ -251,15 +251,15 @@ function UserCard() {
                 </div>
 
                 {/* User Info */}
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1 sm:gap-2">
-                    <h2 className="text-sm sm:text-base lg:text-lg font-semibold dark:text-[#FFFFFF] text-[#0D0D0D] break-words">
+                <div className="min-w-0 flex-1 overflow-hidden">
+                  <div className="flex items-center gap-1 sm:gap-2 min-w-0 overflow-hidden">
+                    <h2 className="text-sm sm:text-base lg:text-lg font-semibold dark:text-[#FFFFFF] text-[#0D0D0D] truncate" title={user?.first_name || user?.last_name ? `Hello, ${user.first_name} ${user.last_name}!` : undefined}>
                       {t("userCard.hello", "Hello, {{name}}!", {
-                        name: `${user?.first_name} ${user?.last_name}`,
+                        name: `${user?.first_name || ""} ${user?.last_name || ""}`.trim() || "User",
                       })}
                     </h2>
                   </div>
-                  <div className="flex items-center gap-1.5 mt-0.5 sm:mt-1 shrink-0">
+                  <div className="flex items-center gap-1.5 mt-0.5 sm:mt-1 shrink-0 flex-wrap">
                     <span
                       className={`text-xs sm:text-sm lg:text-sm whitespace-nowrap shrink-0 font-medium ${isVerified ? "text-[#1D8751]" : "text-[#E23D3A]"
                         }`}
@@ -343,16 +343,17 @@ function UserCard() {
             </div>
 
             {/* Right Side: Action Buttons (responsive) - compact on mobile */}
-            <div className="flex flex-row items-center gap-1.5 sm:gap-2 lg:gap-3 shrink-0">
+            <div className="flex flex-row items-center gap-1 sm:gap-2 lg:gap-3 shrink-0">
               <Button
                 variant="ghost"
                 size="sm"
-                className="flex items-center justify-center p-0 min-w-[36px] min-h-[36px] sm:min-w-[44px] sm:min-h-[44px] lg:min-w-0 lg:min-h-0"
+                className="flex items-center justify-center p-0 min-w-9 min-h-9 w-9 h-9 sm:min-w-10 sm:min-h-10 sm:w-10 sm:h-10 rounded-full shrink-0 flex-shrink-0 aspect-square overflow-hidden"
                 onClick={() => router.push("/dashboard/notifications")}
                 icon={
-                  <div className="w-8 h-8 sm:w-9 sm:h-9 lg:w-10 lg:h-10 rounded-full border border-[#1D8751] flex items-center justify-center p-1 relative">
+                  <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full border border-[#1D8751] flex items-center justify-center p-1 relative shrink-0">
 
                     <svg
+                    
                       width="14"
                       height="14"
                       className="sm:w-4 sm:h-4"
@@ -399,12 +400,12 @@ function UserCard() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="flex items-center justify-center p-0 min-w-[36px] min-h-[36px] sm:min-w-[44px] sm:min-h-[44px] lg:min-w-0 lg:min-h-0"
+                className="flex items-center justify-center p-0 min-w-9 min-h-9 w-9 h-9 sm:min-w-10 sm:min-h-10 sm:w-10 sm:h-10 rounded-full shrink-0 flex-shrink-0 aspect-square overflow-hidden"
                 onClick={() => {
                   router.push("/contactUs");
                 }}
                 icon={
-                  <div className="w-8 h-8 sm:w-9 sm:h-9 lg:w-10 lg:h-10 rounded-full border border-[#1D8751] flex items-center justify-center">
+                  <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full border border-[#1D8751] flex items-center justify-center shrink-0">
                     <svg
                       width="14"
                       height="14"

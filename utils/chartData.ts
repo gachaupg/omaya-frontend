@@ -69,19 +69,20 @@ export const overviewTotalData = (
     return [
       {
         label: "Deposits",
-        value: transactionSummary.total_approved_p2p_deposits,
+        value: Math.abs(transactionSummary.total_approved_p2p_deposits || 0),
         color: "#1D8751",
       },
       {
         label: "Withdrawals",
-        value: transactionSummary.total_approved_p2p_withdrawals,
+        value: Math.abs(transactionSummary.total_approved_p2p_withdrawals || 0),
         color: "#ef4444",
       },
       {
         label: "In Progress",
-        value:
-          transactionSummary.total_pending_p2p_deposits +
-          transactionSummary.total_pending_p2p_withdrawals,
+        value: Math.abs(
+          (transactionSummary.total_pending_p2p_deposits || 0) +
+          (transactionSummary.total_pending_p2p_withdrawals || 0)
+        ),
         color: "#facc15",
       },
     ];
@@ -128,19 +129,20 @@ export const overviewTotalData = (
   return [
     {
       label: "Deposits",
-      value: transactionSummary.total_approved_exchange_deposits,
+      value: Math.abs(transactionSummary.total_approved_exchange_deposits || 0),
       color: "#1D8751",
     },
     {
       label: "Withdrawals",
-      value: transactionSummary.total_approved_exchange_withdrawals,
+      value: Math.abs(transactionSummary.total_approved_exchange_withdrawals || 0),
       color: "#ef4444",
     },
     {
       label: "In Progress",
-      value:
-        transactionSummary.total_pending_exchange_deposits +
-        transactionSummary.total_pending_exchange_withdrawals,
+      value: Math.abs(
+        (transactionSummary.total_pending_exchange_deposits || 0) +
+        (transactionSummary.total_pending_exchange_withdrawals || 0)
+      ),
       color: "#facc15",
     },
     {
@@ -231,41 +233,43 @@ export const overviewTotalSummary = (
   type: "exchange" | "p2p" | "swap" | "buy" | "moneyx" = "exchange"
 ) => {
   if (type === "p2p") {
+    // Use Math.abs to prevent negative display values
+    const netValue = transactionSummary.total_approved_p2p_net || transactionSummary.total_approved_p2p_combined || 0;
     return {
-      total: transactionSummary.total_approved_p2p_net || transactionSummary.total_approved_p2p_combined || 0,
+      total: Math.abs(netValue),
       currency: "USD",
     };
   }
   if (type === "swap") {
     return {
-      total: transactionSummary.total_changenow_swaps,
+      total: Math.abs(transactionSummary.total_changenow_swaps || 0),
       currency: "USD",
     };
   }
   if (type === "buy") {
     return {
-      total: transactionSummary.total_buy_orders,
+      total: Math.abs(transactionSummary.total_buy_orders || 0),
       currency: "USD",
     };
   }
   if (type === "moneyx") {
-    const completed = (transactionSummary as any).total_completed_moneyx || transactionSummary.total_approved_exchange_deposits || 0;
-    const pending = (transactionSummary as any).total_pending_moneyx || transactionSummary.total_pending_exchange_deposits || 0;
-    const failed = (transactionSummary as any).total_failed_moneyx || 0;
+    const completed = Math.abs((transactionSummary as any).total_completed_moneyx || transactionSummary.total_approved_exchange_deposits || 0);
+    const pending = Math.abs((transactionSummary as any).total_pending_moneyx || transactionSummary.total_pending_exchange_deposits || 0);
+    const failed = Math.abs((transactionSummary as any).total_failed_moneyx || 0);
     return {
       total: completed + pending + failed,
       currency: "USD",
     };
   }
   // Calculate total as the sum of all segment values (deposits + withdrawals + in progress + exchange)
-  // Use Math.abs for net values to prevent negative totals in the donut chart
+  // Use Math.abs for all values to prevent negative totals in the donut chart
   const exchangeNet = Math.abs(transactionSummary.total_approved_exchange_net || transactionSummary.total_approved_exchange_combined || 0);
   return {
     total:
-      transactionSummary.total_approved_exchange_deposits +
-      transactionSummary.total_approved_exchange_withdrawals +
-      transactionSummary.total_pending_exchange_deposits +
-      transactionSummary.total_pending_exchange_withdrawals +
+      Math.abs(transactionSummary.total_approved_exchange_deposits || 0) +
+      Math.abs(transactionSummary.total_approved_exchange_withdrawals || 0) +
+      Math.abs(transactionSummary.total_pending_exchange_deposits || 0) +
+      Math.abs(transactionSummary.total_pending_exchange_withdrawals || 0) +
       exchangeNet,
     currency: "USD",
   };

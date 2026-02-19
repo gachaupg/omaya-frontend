@@ -378,7 +378,7 @@ const PasswordSection: React.FC = () => {
             {otpVerified && (
               <div className="mt-2 text-xs text-green-600 dark:text-green-400 flex items-center">
                 <CheckCircle2 size={16} className="mr-1" strokeWidth={2} />
-                OTP Verified & Password Changed
+                OTP Verified
               </div>
             )}
           </div>
@@ -386,7 +386,11 @@ const PasswordSection: React.FC = () => {
 
         {/* Action Buttons */}
         <div className="flex flex-col gap-2">
-          {!otpSent ? (
+          {passwordSuccess ? (
+            <div className="w-full py-2 sm:py-2.5 rounded-[18px] border border-green-500 bg-green-500/10 text-green-600 dark:text-green-400 text-sm sm:text-base text-center">
+              ✓ Password Changed Successfully
+            </div>
+          ) : !otpSent ? (
             <button
               className="w-full mt-2 py-2 sm:py-2.5 rounded-[18px] border border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751] hover:text-white transition text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={handleSendOTP}
@@ -403,9 +407,12 @@ const PasswordSection: React.FC = () => {
               {verifyingOtp ? "Verifying & Changing Password..." : "Verify OTP & Change Password"}
             </button>
           ) : (
-            <div className="w-full py-2 sm:py-2.5 rounded-[18px] border border-green-500 bg-green-500/10 text-green-600 dark:text-green-400 text-sm sm:text-base text-center">
-              ✓ Password Changed Successfully
-            </div>
+            <button
+              className="w-full py-2 sm:py-2.5 rounded-[18px] border border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751] hover:text-white transition text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={handleChangePassword}
+            >
+              Change Password
+            </button>
           )}
 
           {otpSent && !otpVerified && (

@@ -47,7 +47,9 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
   const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedTrade, setSelectedTrade] = useState<any>(null);
+  /** Refs */
   const menuRef = useRef<HTMLDivElement>(null);
+  const toggleButtonRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
 
   /** Derived values */
   const totalPages = Math.ceil(trades.length / ITEMS_PER_PAGE);
@@ -69,10 +71,19 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
   /** Effects */
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setOpenMenuIdx(null);
-        setMenuPosition(null);
+      const target = event.target as Node;
+      // Don't close if clicking inside the menu
+      if (menuRef.current && menuRef.current.contains(target)) {
+        return;
       }
+      // Don't close if clicking on any toggle button
+      for (const [, buttonRef] of toggleButtonRefs.current) {
+        if (buttonRef && buttonRef.contains(target)) {
+          return;
+        }
+      }
+      setOpenMenuIdx(null);
+      setMenuPosition(null);
     };
     
     const handleScroll = () => {
@@ -362,6 +373,11 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
                 {/* Action */}
                 <td className="px-4 py-4">
                   <button
+                    ref={(el) => {
+                      const key = `desktop-${idx}`;
+                      if (el) toggleButtonRefs.current.set(key, el);
+                      else toggleButtonRefs.current.delete(key);
+                    }}
                     className="bg-[#1D8751] p-2.5 rounded-full hover:bg-[#176e43] transition-colors"
                     onClick={(e) => handleMenuToggle(idx, e)}
                   >
@@ -405,6 +421,11 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
                   {trade.order_type}
                 </span>
                 <button
+                  ref={(el) => {
+                    const key = `mobile-${idx}`;
+                    if (el) toggleButtonRefs.current.set(key, el);
+                    else toggleButtonRefs.current.delete(key);
+                  }}
                   className="bg-[#1D8751] p-2 rounded-full hover:bg-[#176e43] transition-colors"
                   onClick={(e) => handleMenuToggle(idx, e)}
                 >

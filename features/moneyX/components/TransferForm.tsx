@@ -1427,6 +1427,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
                 }}
                 className="flex items-center justify-center gap-2 bg-[#1D8751] hover:bg-[#166b3e]
                 text-white rounded-xl px-4 py-2 font-semibold text-sm transition-colors min-h-[44px] touch-manipulation flex-shrink-0 whitespace-nowrap"
+                title="Paste"
               >
                 <svg width="18" height="18" fill="none" viewBox="0 0 24 24" className="text-white">
                   <path
@@ -1437,7 +1438,6 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
                     strokeLinejoin="round"
                   />
                 </svg>
-                <span>Paste</span>
               </button>
             </div>
 

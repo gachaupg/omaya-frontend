@@ -650,6 +650,7 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
     if (newPage === currentPageInState) return;
 
     dispatch(setCurrentPage(newPage));
+    window.scrollTo({ top: 0, behavior: "smooth" });
     setTimeout(() => {
       if (store.getState()?.p2pMarket?.currentPage === newPage) {
         dispatch(fetchAllP2PBuyandSell(newPage) as any);

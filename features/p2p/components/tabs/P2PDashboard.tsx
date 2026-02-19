@@ -11,13 +11,12 @@ import UserCard from "../ui/p2pdashboard/UserCard";
 import Deposit from "../ui/p2pdashboard/sections/Deposit";
 import Withdraw from "../ui/p2pdashboard/sections/Withdraw";
 import Express from "../ui/express/components/express";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "../../../../store";
 import { fetchWallets } from "../../slices/walletSlice";
 import { fetchMatchedTrades } from "../../slices/matchedTradesSlice";
 import { fetchTransactionSummary } from "../../slices/transactionSummarySlice";
-import { usePendingTotal } from "@/utils/pending";
-import { useDispatch } from "react-redux";
+import { selectP2PWalletAmounts, selectTransactionSummary } from "../../selectors";
 import { AppDispatch } from "../../../../store";
 
 const P2PDashboard = () => {
@@ -39,8 +38,10 @@ const P2PDashboard = () => {
     }
   }, [dispatch, isAuthenticated]);
 
-  // Get available balance from usePendingTotal (matches Available.tsx - balance minus escrow/locked)
-  const { availableBalance } = usePendingTotal();
+  // Available and escrow from transaction summary API when loaded
+  const summary = useSelector(selectTransactionSummary);
+  const { availableAmount, escrow } = useSelector(selectP2PWalletAmounts);
+  const availableBalance = summary != null ? availableAmount : 0;
 
   return (
     <div className="flex flex-col gap-4">
