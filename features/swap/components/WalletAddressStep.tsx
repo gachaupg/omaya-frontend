@@ -195,9 +195,9 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
               </div>
 
               {/* Input Field with Paste Button */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-start gap-2 sm:gap-3">
+              <div className={`flex items-center bg-white dark:bg-(--card-color) ${strongBorder} rounded-2xl px-2 sm:px-3 md:px-4 py-2 sm:py-3 min-h-12 gap-2`}>
                 <div className="flex-1 relative min-w-0">
-                  <div className={`flex items-center bg-white dark:bg-(--card-color) ${strongBorder} rounded-2xl px-2 sm:px-3 md:px-4 py-2 sm:py-3 min-h-12`}>
+                  <div className="flex items-center">
                     {/* Wallet Icon */}
                     <svg
                       className="w-4 h-4 sm:w-5 sm:h-5 text-[#1D8751] mr-2 sm:mr-3 shrink-0"
@@ -315,10 +315,11 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                 <button
                   onClick={handlePaste}
                   disabled={isLoading}
-                  className="bg-[#1D8751] hover:bg-[#166b3e] disabled:bg-gray-500 disabled:cursor-not-allowed text-white px-3 sm:px-4 md:px-5 py-2.5 sm:py-3 rounded-xl flex items-center justify-center gap-1.5 sm:gap-2 transition-colors min-h-12 w-full sm:w-auto sm:shrink-0"
+                  title="Paste"
+                  className="bg-[#1D8751] hover:bg-[#166b3e] disabled:bg-gray-500 disabled:cursor-not-allowed text-white px-3 py-1.5 rounded-xl flex items-center justify-center gap-2 transition-colors flex-shrink-0 whitespace-nowrap"
                 >
                   <svg
-                    className="w-4 h-4 sm:w-5 sm:h-5 text-white shrink-0"
+                    className="w-4 h-4 text-white shrink-0"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"

@@ -159,9 +159,9 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
                   return (
                     <div
                       key={detail.id}
-                      className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-3 sm:gap-4 rounded-lg p-3 sm:p-4 bg-gray-100 dark:bg-[#2a2d35] border border-gray-200 dark:border-[#35353E]"
+                      className="flex flex-col gap-2 sm:gap-0 sm:flex-row sm:flex-wrap sm:items-center rounded-lg p-2.5 sm:p-4 bg-gray-100 dark:bg-[#2a2d35] border border-gray-200 dark:border-[#35353E]"
                     >
-                      {/* Logo */}
+                      {/* Logo - Smaller on mobile */}
                       <img
                         src={
                           detail.logo_url ||
@@ -170,53 +170,42 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
                           "/default-provider-logo.svg"
                         }
                         alt={detail.payment_provider_name}
-                        className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                        className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover flex-shrink-0"
                         onError={(e) => {
                           e.currentTarget.src = "/default-provider-logo.svg";
                         }}
                       />
-                      {/* Account Name */}
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Account Name</p>
-                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                      {/* Account Name - Full width on mobile */}
+                      <div className="min-w-0 flex-1 sm:ml-3">
+                        <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">Account Name</p>
+                        <p className="text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                           {detail.account_name}
                         </p>
                       </div>
-                      {/* Phone/Account Number / Wallet */}
+                      {/* Phone/Account Number / Wallet - Full width on mobile */}
                       <div className="min-w-0 flex-1">
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                        <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
                           {detail.payment_method_name?.toLowerCase().includes('mobile') || detail.payment_method_name?.toLowerCase().includes('money') ? 'Phone Number' : detail.wallet_address ? 'Wallet' : 'Account Number'}
                         </p>
-                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                        <p className="text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                           {detail.account_number || detail.wallet_address || 'N/A'}
                         </p>
                       </div>
-                      {/* Status Badge */}
-                      {/* {detail.status && (
-                        <span
-                          className={`flex-shrink-0 px-2.5 py-1 rounded-md text-xs font-medium ${
-                            detail.status?.toLowerCase() === "pending"
-                              ? "bg-amber-500/20 dark:bg-amber-500/30 text-amber-700 dark:text-amber-400 border border-amber-500/40"
-                              : "bg-[#1D8751]/20 dark:bg-[#1D8751]/30 text-[#1D8751] border border-[#1D8751]/40"
-                          }`}
-                        >
-                          {detail.status?.toLowerCase() === "pending" ? "Pending" : "Approved"}
-                        </span>
-                      )} */}
-                      {/* Select/Remove - only approved methods can be selected */}
+                      {/* Select/Remove - Full width on mobile, compact */}
                       {selectedDetails.some((d) => d.id === detail.id) ? (
                         <button
                           onClick={() => onRemove?.(detail)}
-                          className="p-2 text-red-600 dark:text-red-400 bg-red-500/10 border border-red-500/30 rounded-md hover:bg-red-500/20 transition-colors flex-shrink-0"
+                          className="w-full sm:w-auto p-1.5 sm:p-2 text-red-600 dark:text-red-400 bg-red-500/10 border border-red-500/30 rounded-md hover:bg-red-500/20 transition-colors flex items-center justify-center gap-1.5"
                           type="button"
                           title="Deselect"
                           aria-label="Deselect"
                         >
-                          <FaTimes className="w-5 h-5" />
+                          <FaTimes className="w-4 h-4" />
+                          <span className="text-xs sm:hidden">Deselect</span>
                         </button>
                       ) : isPending ? (
                         <span
-                          className="px-4 py-2 text-sm font-medium text-amber-700 dark:text-amber-400 bg-amber-500/20 dark:bg-amber-500/30 border border-amber-500/40 rounded-md cursor-not-allowed flex-shrink-0"
+                          className="w-full sm:w-auto px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-amber-700 dark:text-amber-400 bg-amber-500/20 dark:bg-amber-500/30 border border-amber-500/40 rounded-md cursor-not-allowed text-center"
                           title="Pending verification. Select when approved."
                         >
                           Pending
@@ -224,7 +213,7 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
                       ) : (
                         <button
                           onClick={() => onSelect(detail)}
-                          className="px-4 py-2 text-sm font-medium text-[#1D8751] dark:text-[#1D8751] bg-[#1D8751]/20 dark:bg-[#1D8751]/30 border border-[#1D8751] rounded-md hover:bg-[#1D8751]/30 transition-colors flex-shrink-0"
+                          className="w-full sm:w-auto px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-[#1D8751] dark:text-[#1D8751] bg-[#1D8751]/20 dark:bg-[#1D8751]/30 border border-[#1D8751] rounded-md hover:bg-[#1D8751]/30 transition-colors"
                           type="button"
                         >
                           Select
