@@ -4,6 +4,7 @@ import {
   sendPasswordResetOTP,
   verifyPasswordResetOTP,
   changePasswordWithOTP,
+  clearError,
 } from "@/features/settings/slices/settingsSlice";
 import { RootState, AppDispatch } from "@/store/rootReducer";
 import { showToast } from "@/lib/utils/toast";
@@ -128,6 +129,8 @@ const PasswordSection: React.FC = () => {
       const response = await dispatch(sendPasswordResetOTP()).unwrap();
       setOtpSent(true);
       setMaskedEmail(response.masked_email || null);
+      setErrors((prev) => ({ ...prev, otp: undefined }));
+      setOtp("");
       showToast.success("OTP sent to your email");
     } catch (error: any) {
       // Error is handled by the slice and toast
@@ -177,19 +180,25 @@ const PasswordSection: React.FC = () => {
           confirm: false,
         });
       } catch (passwordError: any) {
-        // Store backend error to display it in the UI
         const errorMessage = passwordError || "Failed to change password";
-        setBackendError(errorMessage);
-        // Also set it in the errors object for the new_password field
-        setErrors((prev) => ({
-          ...prev,
-          new_password: errorMessage,
-        }));
-        // Don't reset OTP verified state since OTP was successfully verified
+        showToast.error(errorMessage);
+        // Reset everything so user can try again with a fresh OTP (old OTP is consumed/expired)
+        setFormData({ new_password: "", confirm_password: "" });
+        setOtp("");
+        setOtpSent(false);
+        setOtpVerified(false);
+        setMaskedEmail(null);
+        setErrors({});
+        setBackendError(null);
+        setShowPasswords({ new: false, confirm: false });
       }
     } catch (error: any) {
-      // Error is handled by the slice and toast
-      console.error("Verify OTP error:", error);
+      // Verify OTP failed - show error inline below OTP field only
+      const errorMessage = error || "Invalid OTP. Please try again.";
+      setErrors((prev) => ({ ...prev, otp: errorMessage, new_password: undefined }));
+      setBackendError(null);
+      dispatch(clearError());
+      setOtp("");
     } finally {
       setVerifyingOtp(false);
     }
@@ -229,14 +238,17 @@ const PasswordSection: React.FC = () => {
         confirm: false,
       });
     } catch (error: any) {
-      // Store backend error to display it in the UI
       const errorMessage = error || "Failed to change password";
-      setBackendError(errorMessage);
-      // Also set it in the errors object for the new_password field
-      setErrors((prev) => ({
-        ...prev,
-        new_password: errorMessage,
-      }));
+      showToast.error(errorMessage);
+      // Reset everything so user can try again with a fresh OTP (old OTP is consumed/expired)
+      setFormData({ new_password: "", confirm_password: "" });
+      setOtp("");
+      setOtpSent(false);
+      setOtpVerified(false);
+      setMaskedEmail(null);
+      setErrors({});
+      setBackendError(null);
+      setShowPasswords({ new: false, confirm: false });
     }
   };
 
@@ -253,10 +265,10 @@ const PasswordSection: React.FC = () => {
     }
   }, [passwordSuccess]);
 
-  // Clear backend error when Redux error changes (from other actions)
+  // Sync Redux error to password field only for password-related errors (not OTP)
   useEffect(() => {
-    if (error && error !== backendError) {
-      // Only update if it's a different error (not already set)
+    const isOtpError = error?.toLowerCase().includes("otp") || error?.toLowerCase().includes("attempts remaining");
+    if (error && error !== backendError && !isOtpError) {
       if (!backendError) {
         setBackendError(error);
         setErrors((prev) => ({
@@ -373,7 +385,20 @@ const PasswordSection: React.FC = () => {
               />
             </div>
             {errors.otp && (
-              <div className="text-red-500 text-xs mt-1">{errors.otp}</div>
+              <div className="mt-1 space-y-1">
+                <div className="text-red-500 text-xs">{errors.otp}</div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Re-enter the code above or{" "}
+                  <button
+                    type="button"
+                    onClick={handleSendOTP}
+                    disabled={sendingOtp}
+                    className="underline hover:no-underline text-[#1D8751] font-medium"
+                  >
+                    resend OTP
+                  </button>
+                </p>
+              </div>
             )}
             {otpVerified && (
               <div className="mt-2 text-xs text-green-600 dark:text-green-400 flex items-center">
@@ -394,7 +419,7 @@ const PasswordSection: React.FC = () => {
             <button
               className="w-full mt-2 py-2 sm:py-2.5 rounded-[18px] border border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751] hover:text-white transition text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={handleSendOTP}
-              disabled={sendingOtp}
+              disabled={sendingOtp} 
             >
               {sendingOtp ? "Sending..." : "Send OTP"}
             </button>
