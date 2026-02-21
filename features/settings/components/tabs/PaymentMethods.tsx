@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "@/store";
 import { RootState } from "@/store/rootReducer";
@@ -7,6 +7,7 @@ import {
   fetchUserPaymentDetails,
   deleteUserPaymentDetail,
 } from "@/features/p2p/slices/paymentMethodsSlice";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
   fetchP2PDepositAddresses,
   createP2PDepositAddress,
@@ -94,6 +95,8 @@ const WalletAddressCard = ({
   </div>
 );
 
+const ITEMS_PER_PAGE = 5;
+
 const PaymentMethods = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
@@ -125,6 +128,7 @@ const PaymentMethods = () => {
   const [showAddWalletModal, setShowAddWalletModal] = useState(false);
   const [deletingMethodId, setDeletingMethodId] = useState<string | null>(null);
   const [activeButton, setActiveButton] = useState("Approved");
+  const [paymentPage, setPaymentPage] = useState(1);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ type: 'payment' | 'wallet', id: string } | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -133,14 +137,36 @@ const PaymentMethods = () => {
     p?.payment_method_name?.toLowerCase() === "crypto" ||
     !!p?.wallet_address;
 
-  const filteredPayments = userPaymentDetails.filter(
-    (payment: UserPaymentDetail) => {
-      if (activeButton === "OMAYA Wallets") {
-        return isCryptoWallet(payment);
-      }
-      return payment.status?.toLowerCase() === activeButton.toLowerCase();
-    }
+  const filteredPayments = useMemo(
+    () =>
+      userPaymentDetails.filter((payment: UserPaymentDetail) => {
+        if (activeButton === "OMAYA Wallets") {
+          return isCryptoWallet(payment);
+        }
+        return payment.status?.toLowerCase() === activeButton.toLowerCase();
+      }),
+    [userPaymentDetails, activeButton]
   );
+
+  const totalPaymentPages = Math.max(1, Math.ceil(filteredPayments.length / ITEMS_PER_PAGE));
+  const paginatedPayments = useMemo(
+    () =>
+      filteredPayments.slice(
+        (paymentPage - 1) * ITEMS_PER_PAGE,
+        paymentPage * ITEMS_PER_PAGE
+      ),
+    [filteredPayments, paymentPage]
+  );
+
+  useEffect(() => {
+    setPaymentPage(1);
+  }, [activeButton]);
+
+  useEffect(() => {
+    if (paymentPage > totalPaymentPages) {
+      setPaymentPage(totalPaymentPages);
+    }
+  }, [totalPaymentPages, paymentPage]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -388,7 +414,7 @@ const PaymentMethods = () => {
                   No payment methods in {activeButton.toLowerCase()} state yet.
                 </div>
               )}
-              {filteredPayments.map((payment: UserPaymentDetail) => {
+              {paginatedPayments.map((payment: UserPaymentDetail) => {
                 const isPending = payment.status?.toLowerCase() === "pending";
                 const isBankMethod =
                   payment?.payment_method_name
@@ -490,6 +516,48 @@ const PaymentMethods = () => {
                   </div>
                 );
               })}
+              {filteredPayments.length > 0 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 mt-2 border-t border-[#E3E6F0] dark:border-[#2A2A35]">
+                  <p className="text-xs sm:text-sm text-gray-500 dark:text-[#8B90A5]">
+                    Showing {(paymentPage - 1) * ITEMS_PER_PAGE + 1}–
+                    {Math.min(paymentPage * ITEMS_PER_PAGE, filteredPayments.length)} of {filteredPayments.length}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setPaymentPage((p) => Math.max(1, p - 1))}
+                      disabled={paymentPage <= 1}
+                      className="p-2 rounded-lg border border-[#E3E6F0] dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#23232B] disabled:opacity-50 disabled:cursor-not-allowed"
+                      aria-label="Previous page"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    {Array.from({ length: totalPaymentPages }, (_, i) => i + 1).map((page) => (
+                      <button
+                        key={page}
+                        type="button"
+                        onClick={() => setPaymentPage(page)}
+                        className={`min-w-[36px] h-9 px-2 rounded-lg text-sm font-medium border transition-colors ${
+                          paymentPage === page
+                            ? "bg-[#1D8751] text-white border-[#1D8751]"
+                            : "border-[#E3E6F0] dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#23232B]"
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => setPaymentPage((p) => Math.min(totalPaymentPages, p + 1))}
+                      disabled={paymentPage >= totalPaymentPages}
+                      className="p-2 rounded-lg border border-[#E3E6F0] dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#23232B] disabled:opacity-50 disabled:cursor-not-allowed"
+                      aria-label="Next page"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>

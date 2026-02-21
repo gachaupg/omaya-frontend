@@ -815,14 +815,16 @@ export default function DepositForm({
     dispatch(fetchAdminPaymentMethods());
   }, [dispatch, isHomePage]);
 
-  // Close expanded section when user changes payment method or asset (user must post again)
+  // When user changes asset or payment method, reset post state so they can post again
+  const selectedAssetKey = selectedAsset
+    ? (selectedAsset.asset_id ?? selectedAsset.ticker ?? selectedAsset.symbol ?? selectedAsset.name ?? "")
+    : "";
   useEffect(() => {
-    if (isFirstCardSubmitted) {
-      setIsFirstCardSubmitted(false);
-      setApiResponse(null);
-      setTransactionCode("");
-    }
-  }, [selectedAsset, payBank]);
+    setIsFirstCardSubmitted(false);
+    setApiResponse(null);
+    setTransactionCode("");
+    setShowForexForm(false);
+  }, [selectedAssetKey, payBank]);
 
   // Fetch public payment methods for home page
   useEffect(() => {
@@ -3543,7 +3545,7 @@ export default function DepositForm({
               {isSubmitting ? (
                 <div className="flex items-center gap-2">
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#35353e] dark:border-[#788099]"></div>
-                  <span>Posting...</span>
+                  <span>Submiting...</span>
                 </div>
               ) : (
                 <span className="flex items-center justify-center">

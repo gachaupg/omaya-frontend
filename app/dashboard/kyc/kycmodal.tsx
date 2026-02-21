@@ -56,8 +56,11 @@ const KYCVerificationModal: React.FC = () => {
     if (user?.email) {
       setVerificationData(prev => ({ ...prev, email: user.email }));
     }
-    // Do NOT auto-fill phone number; user must type it manually
-  }, [user?.email]);
+    // Auto-populate phone from profile so it matches registered number
+    if (user?.phone_number && user.phone_number.trim()) {
+      setPhoneNumber(user.phone_number.trim());
+    }
+  }, [user?.email, user?.phone_number]);
 
   // Check KYC status for phone verification
   useEffect(() => {
@@ -69,7 +72,10 @@ const KYCVerificationModal: React.FC = () => {
           if (status.phone_verified === true) {
             setPhoneVerified(true);
           }
-          // Do NOT auto-fill phone number from KYC status; user must type it manually
+          // Keep phone field in sync with profile if API returns a phone
+          if (user?.phone_number?.trim()) {
+            setPhoneNumber(user.phone_number.trim());
+          }
         }
       });
     }

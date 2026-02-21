@@ -181,6 +181,7 @@ const MoneyXRates = () => {
   const [showExchanging, setShowExchanging] = useState(false);
   const [transactionData, setTransactionData] = useState<any>(null);
   const [apiCommission, setApiCommission] = useState<number | null>(null);
+  const [accountNumberCopied, setAccountNumberCopied] = useState(false);
   const [isCalculatingFromPay, setIsCalculatingFromPay] = useState(true);
   const commissionFetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const paymentDetailsRef = useRef<HTMLDivElement>(null);
@@ -210,15 +211,15 @@ const MoneyXRates = () => {
     };
   }, [payAmount, getAmount, isCalculatingFromPay, dispatch]);
 
-  // Recalculate the other field when apiCommission updates (API returns % e.g. 2 = 2%)
+  // Recalculate the other field when apiCommission updates (commission = fixed amount: receive = send - commission, send = receive + commission)
   useEffect(() => {
-    const rate = apiCommission ?? 2;
+    const commissionAmount = apiCommission ?? 0;
     if (isCalculatingFromPay && payAmount > 0) {
-      const calculatedGetAmount = Math.max(0, payAmount * (1 - rate / 100));
+      const calculatedGetAmount = Math.max(0, payAmount - commissionAmount);
       setGetAmount(calculatedGetAmount);
       setGetAmountInput(calculatedGetAmount.toFixed(2));
     } else if (!isCalculatingFromPay && getAmount > 0) {
-      const calculatedPayAmount = getAmount / (1 - rate / 100);
+      const calculatedPayAmount = getAmount + commissionAmount;
       setPayAmount(calculatedPayAmount);
       setPayAmountInput(calculatedPayAmount.toFixed(2));
     }
@@ -381,31 +382,29 @@ const MoneyXRates = () => {
       }
 
       const newAmount = parseFloat(value) || 0;
-      const rate = apiCommission ?? 2;
+      const commissionAmount = apiCommission ?? 0;
 
       if (isFromPay) {
         setPayAmountInput(value);
         setPayAmount(newAmount);
         setIsCalculatingFromPay(true);
-        // Forward: receive = send * (1 - rate/100)
-        const calculatedGetAmount = Math.max(0, newAmount * (1 - rate / 100));
+        const calculatedGetAmount = Math.max(0, newAmount - commissionAmount);
         setGetAmount(calculatedGetAmount);
         setGetAmountInput(calculatedGetAmount.toFixed(2));
       } else {
         setGetAmountInput(value);
         setGetAmount(newAmount);
         setIsCalculatingFromPay(false);
-        // Reverse: send = receive / (1 - rate/100)
-        const calculatedPayAmount = newAmount / (1 - rate / 100);
+        const calculatedPayAmount = newAmount + commissionAmount;
         setPayAmount(calculatedPayAmount);
         setPayAmountInput(calculatedPayAmount.toFixed(2));
       }
     }
   };
 
-  // Calculate fees - commission from MoneyX API (API returns % e.g. 2 = 2%)
+  // Commission from API = fixed amount (add/subtract directly)
   const amountNum = parseFloat(payAmountInput) || 0;
-  const commissionAmount = (amountNum * (apiCommission ?? 2)) / 100;
+  const commissionAmount = apiCommission ?? 0;
   const networkFee = 0;
   const totalFees = commissionAmount;
   const amountIncludingFees = amountNum + totalFees;
@@ -1098,9 +1097,81 @@ const MoneyXRates = () => {
           </button>
         )}
 
-        {/* Bank Account Address Section - Show after first card is submitted */}
+        {/* Show after first card is submitted: 1- Account details, then 2- Bank Account Address */}
         {isFirstCardSubmitted && (
           <>
+            {/* 1- Account details: display provider's account (where user sends money) - fixed, not user input */}
+            <h2 className={`text-xl font-semibold mb-2 ${isDark ? "text-[#788099]" : "text-gray-900"} inline-flex items-center gap-2`}>
+              1- {t("rates.accountDetails", "Account details")}
+            </h2>
+            {(() => {
+              const accountName =
+                selectedToPaymentDetail?.account_name ??
+                selectedToPaymentDetail?.payment_details?.[0]?.account_name ??
+                getProviderName(selectedToPaymentDetail) ??
+                "—";
+              const accountNumber =
+                selectedToPaymentDetail?.account_number ??
+                selectedToPaymentDetail?.payment_details?.[0]?.account_number ??
+                "—";
+              const copyAccountNumber = () => {
+                if (!accountNumber || accountNumber === "—") return;
+                navigator.clipboard.writeText(accountNumber).then(
+                  () => {
+                    setAccountNumberCopied(true);
+                    showToast.success("Account number copied");
+                    setTimeout(() => setAccountNumberCopied(false), 2000);
+                  },
+                  () => showToast.error("Failed to copy")
+                );
+              };
+              return (
+                <div className={`rounded-2xl p-4 mb-4 border ${isDark ? "bg-[#18181D] border-[#35353E]" : "bg-white border-[#E2E8F0]"}`}>
+                  <p className={`text-sm sm:text-base mb-4 ${isDark ? "text-[#788099]" : "text-[#475569]"}`}>
+                    {t("rates.copyAccountToDeposit", "Copy the following account to deposit the")}{" "}
+                    <span className={`font-semibold ${isDark ? "text-white" : "text-gray-900"}`}>${payAmount.toFixed(2)}</span>{" "}
+                    {t("rates.amount", "amount")}
+                  </p>
+                  <div className="space-y-3">
+                    <div className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 p-3 rounded-xl border ${isDark ? "border-[#35353E]" : "border-[#E2E8F0]"}`}>
+                      <span className="text-[#788099] text-sm">{t("rates.accountName", "Account name")}</span>
+                      <span className={`font-medium text-sm truncate ${isDark ? "text-white" : "text-[#35353e]"}`}>
+                        {accountName}
+                      </span>
+                    </div>
+                    <div className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 rounded-xl border ${isDark ? "border-[#35353E]" : "border-[#E2E8F0]"}`}>
+                      <span className="text-[#788099] text-sm">{t("rates.accountNumber", "Account number")}</span>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className={`font-medium text-sm truncate ${isDark ? "text-white" : "text-[#35353e]"}`}>
+                          {accountNumber}
+                        </span>
+                        {accountNumber !== "—" && (
+                          <button
+                            type="button"
+                            onClick={copyAccountNumber}
+                            className="flex-shrink-0 p-1.5 rounded-lg bg-[#1D8751]/20 text-[#1D8751] hover:bg-[#1D8751]/30 transition-colors"
+                            title="Copy account number"
+                            aria-label="Copy account number"
+                          >
+                            {accountNumberCopied ? (
+                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                            ) : (
+                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h2m8 0h2a2 2 0 012 2v2m2 4a2 2 0 01-2 2h-8a2 2 0 01-2-2v-8" />
+                              </svg>
+                            )}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* 2- Bank Account Address (user's receiving account) */}
             <div
               ref={paymentDetailsRef}
               className={`flex flex-col ${isDark ? "bg-[#1D1D23]" : "bg-white"} border-2 ${isDark ? "border-[#35353E]" : "border-[#E2E8F0]"} rounded-2xl p-4 sm:p-5 shadow-lg w-full mb-4`}

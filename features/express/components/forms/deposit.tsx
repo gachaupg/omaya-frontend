@@ -3922,7 +3922,7 @@ export default function DepositForm({
               {isSubmitting ? (
                 <div className="flex items-center gap-2">
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#35353e] dark:border-[#788099]"></div>
-                  <span>{t("express.posting", "Posting...")}</span>
+                  <span>{t("express.posting", "Submiting...")}</span>
                 </div>
               ) : (
                 <span className="flex items-center justify-center">
