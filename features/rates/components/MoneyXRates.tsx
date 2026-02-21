@@ -189,7 +189,7 @@ const MoneyXRates = () => {
   // Amount for commission API - use pay when from pay, else approx send from receive (getAmount/0.98)
   const commissionFetchAmount = isCalculatingFromPay ? payAmount : (getAmount > 0 ? getAmount / 0.98 : 0);
 
-  // Fetch MoneyX commission from API (API returns % e.g. {"commission":"2.00"} = 2%)
+  // Fetch MoneyX commission from API (API returns fixed amount e.g. {"commission":"120.00"})
   useEffect(() => {
     const amount = commissionFetchAmount || payAmount || getAmount;
     if (!amount || amount <= 0) {
@@ -371,7 +371,7 @@ const MoneyXRates = () => {
     getProviderName,
   ]);
 
-  // Calculate amounts (API returns % e.g. 2 = 2%)
+  // Calculate amounts (commission = fixed amount: receive = send - commission, send = receive + commission)
   const handleAmountChange = (value: string, isFromPay: boolean) => {
     if (value === "" || /^\d*\.?\d*$/.test(value)) {
       if (value.includes(".")) {
@@ -402,12 +402,12 @@ const MoneyXRates = () => {
     }
   };
 
-  // Commission from API = fixed amount (add/subtract directly)
+  // Commission from API = fixed amount (You Receive = You Send - commission)
   const amountNum = parseFloat(payAmountInput) || 0;
   const commissionAmount = apiCommission ?? 0;
   const networkFee = 0;
   const totalFees = commissionAmount;
-  const amountIncludingFees = amountNum + totalFees;
+  const amountIncludingFees = amountNum; // Amount to transfer (You Send); commission is deducted to get You Receive
 
   // Filter payment methods based on search
   const filteredFromMethods = finalPaymentMethods.filter((method: any) => {
