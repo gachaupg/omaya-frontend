@@ -133,7 +133,7 @@ export const sendPasswordResetOTP = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await settingsApi.sendPasswordResetOTP();
-      showToast.success(response.message || "OTP sent to your email");
+      // No toast here - PasswordSection shows it to avoid duplicate toasts
       return response;
     } catch (error: any) {
       showToast.error(error.message || "Failed to send OTP");
@@ -148,15 +148,26 @@ export const verifyPasswordResetOTP = createAsyncThunk(
     try {
       const response = await settingsApi.verifyPasswordResetOTP(otp);
       if (response.otp_verified) {
-        showToast.success(response.message || "OTP verified successfully");
+        // No toast here - PasswordSection shows "OTP Verified" inline to avoid duplicate toasts
       } else {
-        showToast.error(response.message || "Invalid OTP");
-        return rejectWithValue(response.message || "Invalid OTP");
+        const errorMessage = response.message || "Invalid OTP";
+        return rejectWithValue(errorMessage);
       }
       return response;
     } catch (error: any) {
-      showToast.error(error.message || "Failed to verify OTP");
-      return rejectWithValue(error.message || "Failed to verify OTP");
+      // Extract backend error - backend returns: {"error":"Invalid OTP. 4 attempts remaining."}
+      let errorMessage = "Failed to verify OTP";
+      if (error?.response?.data) {
+        if (error.response.data.error) {
+          errorMessage = error.response.data.error;
+        } else if (error.response.data.message) {
+          errorMessage = error.response.data.message;
+        }
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      // No toast here - PasswordSection shows error inline for better UX
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -198,7 +209,7 @@ export const changePasswordWithOTP = createAsyncThunk(
         errorMessage = error.message;
       }
       
-      showToast.error(errorMessage);
+      // No toast here - PasswordSection handles error display to avoid duplicate toasts
       return rejectWithValue(errorMessage);
     }
   }
