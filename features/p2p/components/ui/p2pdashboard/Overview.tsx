@@ -313,10 +313,10 @@ const Overview = () => {
           <div className="absolute inset-0 flex flex-col items-center justify-center">
 
             <span className="text-xs sm:text-sm md:text-[15px] font-bold text-gray-900 dark:text-white">
-              {formatCurrency(summary?.total_volume ?? 0, "USD")}
+              {formatCurrency(transactionTotal ?? 0, "USD")}
             </span>
             <span className="text-[10px] sm:text-xs md:text-base text-gray-500 dark:text-gray-400">
-              Total Volume
+              Total
             </span>
           </div>
         </div>

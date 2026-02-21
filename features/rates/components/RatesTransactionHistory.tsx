@@ -21,10 +21,50 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 // Pagination constant
 const ITEMS_PER_PAGE = 10;
 
-const ASSET_ICON_URL =
-  "https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png";
-const PAYMENT_ICON_URL =
-  "https://res.cloudinary.com/pitz/image/upload/v1764667057/salam_vizvxy.svg";
+// Get initials from a name (e.g. "USDT" -> "US", "Sahaal Golis" -> "SG", "Equity Bank" -> "EB")
+function getInitials(name: string): string {
+  if (!name || !name.trim()) return "?";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) {
+    const first = parts[0].charAt(0);
+    const last = parts[parts.length - 1].charAt(0);
+    return (first + last).toUpperCase().slice(0, 2);
+  }
+  return name.slice(0, 2).toUpperCase();
+}
+
+// Avatar: show image when src is valid, otherwise initials (no dummy image)
+function Avatar({
+  src,
+  name,
+  className = "w-6 h-6 sm:w-8 sm:h-8 rounded-full object-cover flex-shrink-0",
+}: {
+  src: string | null;
+  name: string;
+  className?: string;
+}) {
+  const [useInitials, setUseInitials] = React.useState(!src || !src.startsWith("http"));
+  const initials = getInitials(name);
+
+  if (useInitials || !src || !src.startsWith("http")) {
+    return (
+      <div
+        className={`${className} flex items-center justify-center bg-[#2D2D37] text-gray-300 dark:text-gray-400 text-xs font-semibold overflow-hidden`}
+        title={name}
+      >
+        {initials}
+      </div>
+    );
+  }
+  return (
+    <img
+      src={src}
+      alt={name}
+      className={className}
+      onError={() => setUseInitials(true)}
+    />
+  );
+}
 
 // Map WebSocket message data to Transaction format
 const mapWsDataToTransaction = (data: any): Transaction => {
@@ -60,14 +100,9 @@ const mapWsDataToTransaction = (data: any): Transaction => {
   };
 };
 
-// Helper function to get bank logo
-const getBankLogo = (bankName: string): string => {
-  // To avoid 404s from /banks/*.png, always use the Cloudinary default for now
-  return "https://res.cloudinary.com/pitz/image/upload/v1764667057/salam_vizvxy.svg";
-};
-
+// Logo type: use actual URL or null (null => show initials, no dummy image)
 // Helper function to determine From and To based on transaction type
-const getFromTo = (tx: Transaction): { from: { name: string; logo: string }; to: { name: string; logo: string } } => {
+const getFromTo = (tx: Transaction): { from: { name: string; logo: string | null }; to: { name: string; logo: string | null } } => {
   const transactionType = tx.transaction_type?.toLowerCase() || "";
   
   // Helper to check if a name is likely a crypto asset (USDT, BTC, ETH, etc.)
@@ -83,12 +118,14 @@ const getFromTo = (tx: Transaction): { from: { name: string; logo: string }; to:
     return tx.currency || "Unknown";
   };
   
-  // Get the provider logo - try multiple sources
-  const getProviderLogo = (): string => {
+  // Get the provider logo - actual URL or null (no dummy)
+  const getProviderLogo = (): string | null => {
     if (tx.photo && tx.photo.startsWith('http')) return tx.photo;
     if (tx.user?.photo && tx.user.photo.startsWith('http')) return tx.user.photo;
-    return PAYMENT_ICON_URL;
+    return null;
   };
+  
+  const assetLogo = tx.asset_image && tx.asset_image.startsWith("http") ? tx.asset_image : null;
   
   // For deposits: From = payment provider (bank), To = crypto asset
   if (transactionType === "deposit" || transactionType === "moneyx") {
@@ -96,14 +133,8 @@ const getFromTo = (tx: Transaction): { from: { name: string; logo: string }; to:
     const assetName = tx.currency || "USD";
     
     return {
-      from: {
-        name: providerName,
-        logo: getProviderLogo(),
-      },
-      to: {
-        name: assetName,
-        logo: tx.asset_image || ASSET_ICON_URL,
-      },
+      from: { name: providerName, logo: getProviderLogo() },
+      to: { name: assetName, logo: assetLogo },
     };
   }
   
@@ -113,31 +144,19 @@ const getFromTo = (tx: Transaction): { from: { name: string; logo: string }; to:
     const providerName = getProviderName();
     
     return {
-      from: {
-        name: assetName,
-        logo: tx.asset_image || ASSET_ICON_URL,
-      },
-      to: {
-        name: providerName,
-        logo: getProviderLogo(),
-      },
+      from: { name: assetName, logo: assetLogo },
+      to: { name: providerName, logo: getProviderLogo() },
     };
   }
   
-  // For P2P: From = payment provider, To = crypto asset
+  // For P2P: From = seller/buyer (counterparty), To = crypto asset
   if (transactionType.includes("p2p")) {
     const providerName = getProviderName();
     const assetName = tx.currency || "USD";
     
     return {
-      from: {
-        name: providerName,
-        logo: getProviderLogo(),
-      },
-      to: {
-        name: assetName,
-        logo: tx.asset_image || ASSET_ICON_URL,
-      },
+      from: { name: providerName, logo: getProviderLogo() },
+      to: { name: assetName, logo: assetLogo },
     };
   }
   
@@ -145,30 +164,16 @@ const getFromTo = (tx: Transaction): { from: { name: string; logo: string }; to:
   const firstName = getProviderName();
   const secondName = tx.currency || "Destination";
   
-  // If first name is crypto, swap them
   if (isCryptoAsset(firstName)) {
     return {
-      from: {
-        name: firstName,
-        logo: tx.asset_image || ASSET_ICON_URL,
-      },
-      to: {
-        name: secondName,
-        logo: getProviderLogo(),
-      },
+      from: { name: firstName, logo: assetLogo },
+      to: { name: secondName, logo: getProviderLogo() },
     };
   }
   
-  // Default: From = payment provider, To = asset
   return {
-    from: {
-      name: firstName,
-      logo: getProviderLogo(),
-    },
-    to: {
-      name: secondName,
-      logo: tx.asset_image || ASSET_ICON_URL,
-    },
+    from: { name: firstName, logo: getProviderLogo() },
+    to: { name: secondName, logo: assetLogo },
   };
 };
 
@@ -282,26 +287,10 @@ const RatesTransactionHistory = () => {
           <div key={tx.transaction_id} className="border border-gray-200 dark:border-[#35353E] rounded-lg p-4">
             <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                <img
-                    src={from.logo}
-                    alt={from.name}
-                    className="w-8 h-8 rounded-full object-cover"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src =
-                        "https://res.cloudinary.com/pitz/image/upload/v1764667057/salam_vizvxy.svg";
-                    }}
-                  />
+                <Avatar src={from.logo} name={from.name} className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
                   <span className="text-gray-900 dark:text-white font-medium">{from.name}</span>
                   <span className="text-gray-500">→</span>
-                  <img
-                    src={to.logo}
-                    alt={to.name}
-                    className="w-8 h-8 rounded-full object-cover"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src =
-                        "https://res.cloudinary.com/pitz/image/upload/v1764667057/salam_vizvxy.svg";
-                    }}
-                  />
+                  <Avatar src={to.logo} name={to.name} className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
                   <span className="text-gray-900 dark:text-white font-medium">{to.name}</span>
                 </div>
             </div>
@@ -354,15 +343,7 @@ const RatesTransactionHistory = () => {
             >
                 <td className="px-4 sm:px-6 py-3 sm:py-4">
                   <div className="flex items-center gap-2 sm:gap-3">
-                <img
-                      src={from.logo}
-                      alt={from.name}
-                      className="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-cover flex-shrink-0"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src =
-                          "https://res.cloudinary.com/pitz/image/upload/v1764667057/salam_vizvxy.svg";
-                      }}
-                    />
+                    <Avatar src={from.logo} name={from.name} />
                     <span className="text-sm sm:text-base font-medium text-gray-900 dark:text-white">
                       {from.name}
                   </span>
@@ -370,15 +351,7 @@ const RatesTransactionHistory = () => {
               </td>
                 <td className="px-4 sm:px-6 py-3 sm:py-4">
                   <div className="flex items-center gap-2 sm:gap-3">
-                    <img
-                      src={to.logo}
-                      alt={to.name}
-                      className="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-cover flex-shrink-0"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src =
-                          "https://res.cloudinary.com/pitz/image/upload/v1764667057/salam_vizvxy.svg";
-                      }}
-                    />
+                    <Avatar src={to.logo} name={to.name} />
                     <span className="text-sm sm:text-base font-medium text-gray-900 dark:text-white">
                       {to.name}
                     </span>
