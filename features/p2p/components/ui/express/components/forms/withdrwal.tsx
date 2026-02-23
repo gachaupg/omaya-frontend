@@ -3151,9 +3151,8 @@ export default function WithdrawalForm({
           // Don't automatically acknowledge when just closing - user must reduce amount
         }}
         onContactUs={() => {
-          // Handle contact us action - you can customize this
-          window.open("https://wa.me/your-whatsapp-number", "_blank");
           setIsInfoModalOpen(false);
+          router.push("/contactUs");
         }}
       />
 

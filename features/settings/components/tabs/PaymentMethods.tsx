@@ -285,16 +285,6 @@ const PaymentMethods = () => {
           <p className="text-sm sm:text-base font-bold dark:text-white text-gray-900">
             Payment Methods
           </p>
-          {activeButton === "OMAYA Wallets" && (
-            <button
-              onClick={() => setShowAddWalletModal(true)}
-              disabled={userWalletCreateLoading}
-              className="flex items-center gap-1 text-sm sm:text-base text-[#1D8751] font-semibold hover:text-[#0f8f4d] disabled:opacity-50"
-            >
-              <span className="text-lg leading-none">+</span>
-              Add New Address
-            </button>
-          )}
         </div>
         <div className="rounded-[32px] border border-[#20202A] dark:border-[#1E1E27] bg-white dark:bg-[var(--card-color)] p-2 sm:p-3 md:p-4 space-y-3">
           {activeButton === "OMAYA Wallets" ? (
@@ -358,17 +348,6 @@ const PaymentMethods = () => {
                         ))}
                       </>
                     )}
-                    {/* Add New Address button - visible when no default wallets */}
-                    {p2pDepositAddresses.length === 0 && (
-                      <button
-                        onClick={() => setShowAddWalletModal(true)}
-                        disabled={userWalletCreateLoading}
-                        className="w-full flex items-center justify-center gap-2 rounded-[28px] border-2 border-dashed border-[#1D8751] bg-[#1D8751]/5 dark:bg-[#1D8751]/10 py-4 px-4 text-[#1D8751] font-semibold hover:bg-[#1D8751]/10 dark:hover:bg-[#1D8751]/20 transition-colors disabled:opacity-50"
-                      >
-                        <span className="text-xl leading-none">+</span>
-                        {userWalletCreateLoading ? "Adding..." : "Add New Address"}
-                      </button>
-                    )}
                   </div>
 
                   {/* User Added Addresses */}
@@ -385,15 +364,7 @@ const PaymentMethods = () => {
                         {userWalletCreateLoading ? "Adding..." : "+ Add New Address"}
                       </button>
                     </div>
-                    {userWalletAddresses.length === 0 && p2pDepositAddresses.length === 0 ? (
-                      <div className="rounded-2xl border border-dashed border-[#E3E6F0] dark:border-[#2A2A35] py-10 text-center text-sm text-gray-500 dark:text-[#7B819C]">
-                        No OMAYA wallet addresses yet. Click &quot;Generate New Address&quot; or &quot;Add New Address&quot; to create one.
-                      </div>
-                    ) : userWalletAddresses.length === 0 ? (
-                      <div className="rounded-2xl border border-dashed border-[#E3E6F0] dark:border-[#2A2A35] py-6 text-center text-sm text-gray-500 dark:text-[#7B819C]">
-                        No custom addresses. Click &quot;Add New Address&quot; to add your own wallet.
-                      </div>
-                    ) : (
+                    {userWalletAddresses.length > 0 &&
                       userWalletAddresses.map((addr: UserWalletAddress) => (
                         <WalletAddressCard
                           key={addr.user_wallet_address_id}
@@ -401,8 +372,7 @@ const PaymentMethods = () => {
                           onDelete={() => handleDeleteUserWallet(addr.user_wallet_address_id)}
                           isDeleting={userWalletDeleteLoading === addr.user_wallet_address_id}
                         />
-                      ))
-                    )}
+                      ))}
                   </div>
                 </div>
               )}

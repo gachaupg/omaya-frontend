@@ -4,23 +4,12 @@ import Link from "next/link";
 import RatesCalculator from "./RatesCalculator";
 import RatesTransactionHistory from "./RatesTransactionHistory";
 import { useRatesI18n } from "@/lib/useRatesI18n";
-import { useSelector, useDispatch } from "react-redux";
-import { RootState } from "@/store/rootReducer";
-import { openKYCModal } from "@/features/auth/slices/authSlice";
-
 const Rates = () => {
   const [activeTab, setActiveTab] = React.useState<'crypto' | 'moneyx'>('crypto');
   const { t } = useRatesI18n();
-  const dispatch = useDispatch();
-  const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
-  const isVerified = user?.is_verified === true;
 
-  // Handle Money X tab click - check verification
+  // Allow selecting Money X tab (logged in or out). KYC can be required when user tries to perform a transaction inside the calculator.
   const handleMoneyXClick = () => {
-    if (!isAuthenticated || !isVerified) {
-      dispatch(openKYCModal());
-      return;
-    }
     setActiveTab('moneyx');
   };
 

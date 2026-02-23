@@ -865,11 +865,7 @@ export const Table: React.FC<TableProps> = ({
                             alt={row.asset || "Asset"}
                             className="w-6 h-6"
                           />
-                          {getAssetLabel(row.asset) && (
-                            <span className="text-sm font-medium text-[#1D8751] dark:text-[#1D8751]">
-                              {getAssetLabel(row.asset)}
-                            </span>
-                          )}
+                         
                         </div>
                         {type === "p2p" && (
                           <div
