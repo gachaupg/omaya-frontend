@@ -763,7 +763,7 @@ export default function RegistrationPage() {
 
   return (
     <>
-      <div className="min-h-screen bg-app dark:bg-app flex flex-col md:flex-row items-start justify-center relative overflow-hidden px-4 sm:px-6 md:px-8 lg:px-12 py-12 sm:py-16 md:pt-24 md:pb-24">
+      <div className="min-h-screen bg-[#0a0a0a] dark:bg-[#0a0a0a] flex flex-col md:flex-row items-start justify-center relative overflow-hidden px-4 sm:px-6 md:px-8 lg:px-12 py-12 sm:py-16 md:pt-24 md:pb-24">
         {/* Left Side - Mobile App Preview */}
         <div className="w-full md:w-1/2 flex justify-center mb-8 md:mb-0 relative z-10">
           {/* Background Glow Effect */}
@@ -816,16 +816,16 @@ export default function RegistrationPage() {
         </div>
 
         {/* Right Side - Registration Form */}
-        <div className="w-full md:w-1/2 relative z-10 px-4 sm:px-6 md:px-8 lg:px-0">
-          <div className="max-w-md mx-auto 2xl:max-w-3/4 w-full">
+        <div className="w-full md:w-1/2 relative z-10 px-4 sm:px-6 md:px-8 lg:px-0 flex justify-center md:justify-start">
+          <div className="max-w-xl mx-auto 2xl:max-w-2xl w-full rounded-2xl p-6 sm:p-8 shadow-[0_4px_20px_rgba(0,0,0,0.25),0_15px_50px_rgba(0,0,0,0.4),0_30px_80px_rgba(0,0,0,0.5)]">
             <div className="mb-6">
-              <h1 className="dark:text-white text-gray-900 text-2xl font-semibold">
+              <h1 className="text-white text-2xl sm:text-3xl font-bold">
                 {t("auth.register.title", "Registration")}
               </h1>
-              <p className="dark:text-[#788099] text-gray-600">
+              <p className="text-[#9CA3AF] text-sm mt-1">
                 {t(
                   "auth.register.subtitle",
-                  "Please Register with correct Information"
+                  "Please register with correct information"
                 )}
               </p>
               {formErrors.length > 0 && (
@@ -833,7 +833,7 @@ export default function RegistrationPage() {
                   ref={errorBannerRef}
                   role="alert"
                   aria-live="assertive"
-                  className="mt-4 rounded-xl border border-[#F04438] bg-[#FDECEC] dark:bg-[#FDECEC]/10 dark:border-[#F04438] px-4 py-3 text-left"
+                  className="mt-4 rounded-xl border border-[#F04438] bg-[#FDECEC]/10 dark:bg-[#FDECEC]/10 dark:border-[#F04438] px-4 py-3 text-left"
                 >
                   <p className="text-[#B42318] text-sm font-semibold mb-2">
                     {t(
@@ -855,9 +855,9 @@ export default function RegistrationPage() {
                 <div>
                   <label
                     htmlFor="first-name"
-                    className="block dark:text-white text-gray-900 text-sm mb-2"
+                    className="block text-[#9CA3AF] text-xs font-semibold uppercase tracking-wide mb-2"
                   >
-                    {t("auth.register.firstName", "First Name*")}
+                    {t("auth.register.firstName", "First Name")} <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <input
@@ -865,10 +865,10 @@ export default function RegistrationPage() {
                       id="company-name"
                       value={firstName}
                       onChange={(e) => setFirstName(e.target.value)}
-                      className={`w-full py-2 px-4 pl-9 rounded-full bg-white dark:bg-[var(--card-color)] border ${errors.firstName
+                      className={`w-full py-2.5 px-4 pl-10 rounded-lg bg-transparent border ${errors.firstName
                         ? "border-[#FDA29B]"
-                        : "border-gray-300 dark:border-[#35353E]"
-                        } text-gray-900 dark:text-white focus:outline-none focus:border-[#13B562]`}
+                        : "border-[#35353e]"
+                        } text-white placeholder-[#6B7280] focus:outline-none focus:border-[#1D8751] focus:ring-1 focus:ring-[#1D8751]`}
                       placeholder={t("auth.register.firstName", "Full Name")}
                     />
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -906,9 +906,9 @@ export default function RegistrationPage() {
                 <div>
                   <label
                     htmlFor="establishment-date"
-                    className="block dark:text-white text-gray-900 text-sm mb-2"
+                    className="block text-[#9CA3AF] text-xs font-semibold uppercase tracking-wide mb-2"
                   >
-                    {t("auth.register.lastName", "Last Name*")}
+                    {t("auth.register.lastName", "Last Name")} <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <input
@@ -916,8 +916,8 @@ export default function RegistrationPage() {
                       id="establishment-date"
                       value={lastName}
                       onChange={(e) => setLastName(e.target.value)}
-                      className={`w-full py-2 px-4 pl-9 rounded-full bg-white dark:bg-[var(--card-color)] border ${errors.lastName ? "border-[#FDA29B]" : "border-gray-300 dark:border-[#35353E]"
-                        } text-gray-900 dark:text-white focus:outline-none focus:border-[#13B562]`}
+                      className={`w-full py-2.5 px-4 pl-10 rounded-lg bg-transparent border ${errors.lastName ? "border-[#FDA29B]" : "border-[#35353e]"
+                        } text-white placeholder-[#6B7280] focus:outline-none focus:border-[#1D8751] focus:ring-1 focus:ring-[#1D8751]`}
                       placeholder={t("auth.register.lastName", "Last Name")}
                     />
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -953,13 +953,14 @@ export default function RegistrationPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Email */}
                 <div>
                   <label
                     htmlFor="email"
-                    className="block dark:text-white text-gray-900 text-sm mb-2"
+                    className="block text-[#9CA3AF] text-xs font-semibold uppercase tracking-wide mb-2"
                   >
-                    {t("auth.register.email", "Email*")}
+                    {t("auth.register.email", "Email")} <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <input
@@ -967,8 +968,8 @@ export default function RegistrationPage() {
                       id="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className={`w-full py-2 px-4 pl-9 rounded-full bg-white dark:bg-[var(--card-color)] border ${errors.email ? "border-[#FDA29B]" : "border-gray-300 dark:border-[#35353E]"
-                        } text-gray-900 dark:text-white focus:outline-none focus:border-[#13B562]`}
+                      className={`w-full py-2.5 px-4 pl-10 rounded-lg bg-transparent border ${errors.email ? "border-[#FDA29B]" : "border-[#35353e]"
+                        } text-white placeholder-[#6B7280] focus:outline-none focus:border-[#1D8751] focus:ring-1 focus:ring-[#1D8751]`}
                       placeholder={t(
                         "auth.login.email.placeholder",
                         "Email Address"
@@ -1007,190 +1008,124 @@ export default function RegistrationPage() {
                     </p>
                   )}
                 </div>
-              </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {/* Phone: one input with country code (flag +252) on the left */}
                 <div>
                   <label
-                    htmlFor="country-code"
-                    className="block dark:text-white text-gray-900 text-sm mb-2"
+                    htmlFor="phone"
+                    className="block text-[#9CA3AF] text-xs font-semibold uppercase tracking-wide mb-2"
                   >
-                    Country Code*
+                    {t("auth.register.phone", "Phone")} <span className="text-red-500">*</span>
                   </label>
-                  <div className="relative country-dropdown-container">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setShowCountryDropdown(!showCountryDropdown)
-                      }
-                      className="w-full py-2 px-4 pl-3 pr-20 rounded-full bg-white dark:bg-[var(--card-color)] border border-gray-300 dark:border-[#35353E] text-gray-900 dark:text-white focus:outline-none focus:border-[#13B562] text-left flex items-center"
-                    >
-                      <img
-                        src={`https://flagcdn.com/16x12/${selectedCountry.toLowerCase()}.png`}
-                        alt={`${selectedCountry} flag`}
-                        className="w-4 h-3 object-cover rounded-sm mr-2"
-                        onError={(e) => {
-                          e.currentTarget.style.display = "none";
-                        }}
-                      />
-                      <span className="text-sm truncate">{countries.find((c) => c.code === selectedCountry)?.name || selectedCountry}</span>
-                    </button>
-                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                      <span className="mr-2 text-[#88898e] text-sm">
-                        {
-                          countries.find((c) => c.code === selectedCountry)
-                            ?.dialCode
+                  <div
+                    className={`flex items-stretch rounded-lg border bg-transparent overflow-hidden ${errors.phone ? "border-[#FDA29B]" : "border-[#35353e]"}`}
+                  >
+                    <div className="relative country-dropdown-container flex-shrink-0">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setShowCountryDropdown(!showCountryDropdown)
                         }
-                      </span>
-                      <svg
-                        width="12"
-                        height="12"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-full py-2.5 pl-3 pr-2 flex items-center gap-1.5 border-r border-[#35353e] text-white focus:outline-none focus:ring-1 focus:ring-[#1D8751] focus:ring-inset min-w-0"
                       >
-                        <path
-                          d="M6 9L12 15L18 9"
-                          stroke="#788099"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
+                        <img
+                          src={`https://flagcdn.com/16x12/${selectedCountry.toLowerCase()}.png`}
+                          alt=""
+                          className="w-4 h-3 object-cover rounded-sm flex-shrink-0"
+                          onError={(e) => {
+                            e.currentTarget.style.display = "none";
+                          }}
                         />
-                      </svg>
-                    </div>
-
-                    {/* Custom Dropdown */}
-                    {showCountryDropdown && (
-                      <div className="absolute z-50 w-full sm:w-80 left-0 right-0 sm:right-auto mt-1 max-h-[60vh] overflow-hidden bg-white dark:bg-[var(--card-color)] border border-gray-300 dark:border-[#35353E] rounded-lg shadow-lg">
-                        {/* Search Input */}
-                        <div className="p-2 sm:p-3 border-b border-gray-300 dark:border-[#35353E]">
-                          <div className="relative">
-                            <input
-                              type="text"
-                              placeholder="Search countries..."
-                              value={countrySearchTerm}
-                              onChange={(e) =>
-                                setCountrySearchTerm(e.target.value)
-                              }
-                              className="w-full py-2 px-3 pl-9 rounded-md dark:bg-[#2A2A30] bg-gray-50 border dark:border-gray-600 border-gray-300 dark:text-white text-gray-900 focus:outline-none focus:border-[#13B562] text-xs sm:text-sm"
-                              autoFocus
-                            />
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                              <svg
-                                width="14"
-                                height="14"
-                                viewBox="0 0 20 20"
-                                fill="none"
-                                xmlns="http://www.w3.org/2000/svg"
-                              >
-                                <path
-                                  d="M9 17C13.4183 17 17 13.4183 17 9C17 4.58172 13.4183 1 9 1C4.58172 1 1 4.58172 1 9C1 13.4183 4.58172 17 9 17Z"
-                                  stroke="#788099"
-                                  strokeWidth="1.5"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                                <path
-                                  d="M19 19L14.65 14.65"
-                                  stroke="#788099"
-                                  strokeWidth="1.5"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                              </svg>
+                        <span className="text-sm text-[#9CA3AF] whitespace-nowrap">
+                          {countries.find((c) => c.code === selectedCountry)?.dialCode || "+252"}
+                        </span>
+                        <svg
+                          width="10"
+                          height="10"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          className="flex-shrink-0 text-[#9CA3AF]"
+                        >
+                          <path
+                            d="M6 9L12 15L18 9"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      </button>
+                      {showCountryDropdown && (
+                        <div className="absolute z-50 left-0 sm:left-0 right-0 sm:right-auto sm:w-80 mt-1 max-h-[60vh] overflow-hidden bg-white dark:bg-[var(--card-color)] border border-gray-300 dark:border-[#35353E] rounded-lg shadow-lg">
+                          <div className="p-2 sm:p-3 border-b border-gray-300 dark:border-[#35353E]">
+                            <div className="relative">
+                              <input
+                                type="text"
+                                placeholder="Search countries..."
+                                value={countrySearchTerm}
+                                onChange={(e) =>
+                                  setCountrySearchTerm(e.target.value)
+                                }
+                                className="w-full py-2 px-3 pl-9 rounded-md dark:bg-[#2A2A30] bg-gray-50 border dark:border-gray-600 border-gray-300 dark:text-white text-gray-900 focus:outline-none focus:border-[#13B562] text-xs sm:text-sm"
+                                autoFocus
+                              />
+                              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
+                                  <path d="M9 17C13.4183 17 17 13.4183 17 9C17 4.58172 13.4183 1 9 1C4.58172 1 1 4.58172 1 9C1 13.4183 4.58172 17 9 17Z" stroke="#788099" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                  <path d="M19 19L14.65 14.65" stroke="#788099" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                </svg>
+                              </div>
                             </div>
                           </div>
-                        </div>
-
-                        {/* Countries List */}
-                        <div className="max-h-[50vh] sm:max-h-60 overflow-y-auto scrollbar-thin">
-                          {filteredCountries.length > 0 ? (
-                            filteredCountries.map((country) => (
-                              <button
-                                key={country.code}
-                                type="button"
-                                onClick={() => {
-                                  setSelectedCountry(country.code);
-                                  setShowCountryDropdown(false);
-                                  setCountrySearchTerm("");
-                                }}
-                                className="w-full px-3 sm:px-4 py-3 sm:py-3 text-left hover:bg-[#13B562] hover:bg-opacity-10 flex items-center dark:text-white text-gray-900 border-b border-gray-200 dark:border-[#35353E] last:border-b-0 min-h-[48px]"
-                              >
-                                <img
-                                  src={`https://flagcdn.com/16x12/${country.code.toLowerCase()}.png`}
-                                  alt={`${country.code} flag`}
-                                  className="w-4 h-3 object-cover rounded-sm mr-2 sm:mr-3 flex-shrink-0"
-                                  onError={(e) => {
-                                    e.currentTarget.style.display = "none";
+                          <div className="max-h-[50vh] sm:max-h-60 overflow-y-auto scrollbar-thin">
+                            {filteredCountries.length > 0 ? (
+                              filteredCountries.map((country) => (
+                                <button
+                                  key={country.code}
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedCountry(country.code);
+                                    setShowCountryDropdown(false);
+                                    setCountrySearchTerm("");
                                   }}
-                                />
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center justify-between gap-2">
-                                    <span className="font-medium text-sm sm:text-base truncate">
-                                      {country.name}
-                                    </span>
-                                    <span className="text-[#788099] text-xs sm:text-sm flex-shrink-0">
-                                      {country.dialCode}
-                                    </span>
+                                  className="w-full px-3 sm:px-4 py-3 text-left hover:bg-[#13B562] hover:bg-opacity-10 flex items-center dark:text-white text-gray-900 border-b border-gray-200 dark:border-[#35353E] last:border-b-0 min-h-[48px]"
+                                >
+                                  <img
+                                    src={`https://flagcdn.com/16x12/${country.code.toLowerCase()}.png`}
+                                    alt=""
+                                    className="w-4 h-3 object-cover rounded-sm mr-2 sm:mr-3 flex-shrink-0"
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = "none";
+                                    }}
+                                  />
+                                  <div className="flex-1 min-w-0 text-left">
+                                    <span className="font-medium text-sm truncate block">{country.name}</span>
+                                    <span className="text-[#788099] text-xs">{country.dialCode}</span>
                                   </div>
-                                  <div className="text-[#788099] text-xs">
-                                    {country.code}
-                                  </div>
-                                </div>
-                              </button>
-                            ))
-                          ) : (
-                            <div className="px-4 py-3 text-center text-[#788099] text-sm">
-                              No countries found
-                            </div>
-                          )}
+                                </button>
+                              ))
+                            ) : (
+                              <div className="px-4 py-3 text-center text-[#788099] text-sm">No countries found</div>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="col-span-2">
-                  <label
-                    htmlFor="phone"
-                    className="block dark:text-white text-gray-900 text-sm mb-2"
-                  >
-                    {t("auth.register.phone", "Phone*")}
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="tel"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      id="phone"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
-                      className={`w-full py-2 px-4 pl-9 rounded-full bg-white dark:bg-[var(--card-color)] border ${errors.phone ? "border-[#FDA29B]" : "border-gray-300 dark:border-[#35353E]"
-                        } text-gray-900 dark:text-white focus:outline-none focus:border-secondary`}
-                      placeholder={`${countries.find((c) => c.code === selectedCountry)?.dialCode || "+252"}12345678`}
-                    />
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 20 20"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M17 13V16C17 16.5304 16.7893 17.0391 16.4142 17.4142C16.0391 17.7893 15.5304 18 15 18C12.6266 18 10.3065 17.1571 8.3432 15.6569C6.5276 14.2921 5.0461 12.4787 4.0567 10.375C3.35236 8.77321 2.99913 7.0312 3 5.27276C3 4.74232 3.21071 4.23363 3.58579 3.85855C3.96086 3.48348 4.46957 3.27277 5 3.27277H8C8.47171 3.27132 8.92936 3.46188 9.26542 3.8049C9.60148 4.14793 9.79281 4.61042 9.79 5.08213C9.78207 5.87858 9.86506 6.67266 10.0367 7.44455C10.1549 7.90095 10.1367 8.3877 9.98511 8.83222C9.83357 9.27674 9.55903 9.65729 9.2 9.92277L8.21 10.9128C9.1654 12.7952 10.6348 14.2646 12.5172 15.22L13.507 14.23C13.7725 13.871 14.153 13.5964 14.5976 13.4449C15.0421 13.2933 15.5288 13.2751 15.9852 13.3933C16.7571 13.5649 17.5512 13.6479 18.3476 13.64C18.8202 13.6372 19.2834 13.8293 19.6263 14.1666C19.9692 14.5039 20.158 14.9629 20.1547 15.4355V18.0001C20.1547 18.5305 19.944 19.0392 19.5689 19.4143C19.1938 19.7893 18.6851 20.0001 18.1547 20.0001"
-                          stroke="#1D8751"
-                          strokeWidth="1.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
+                      )}
+                    </div>
+                    <div className="relative flex-1 min-w-0">
+                      <input
+                        type="tel"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        id="phone"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
+                        className={`w-full h-full py-2.5 px-4 rounded-r-lg bg-transparent border-0 text-white placeholder-[#6B7280] focus:outline-none focus:ring-1 focus:ring-[#1D8751] focus:ring-inset ${errors.phone ? "border-[#FDA29B]" : ""}`}
+                        placeholder="612345678"
+                      />
                     </div>
                   </div>
                   {errors.phone && (
-                    <p className="mt-1 text-xs text-[#F04438]">
-                      {errors.phone}
-                    </p>
+                    <p className="mt-1 text-xs text-[#F04438]">{errors.phone}</p>
                   )}
                 </div>
               </div>
@@ -1199,9 +1134,9 @@ export default function RegistrationPage() {
                 <div>
                   <label
                     htmlFor="password"
-                    className="block dark:text-white text-gray-900 text-sm mb-2"
+                    className="block text-[#9CA3AF] text-xs font-semibold uppercase tracking-wide mb-2"
                   >
-                    {t("auth.register.password", "Password*")}
+                    {t("auth.register.password", "Password")} <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <input
@@ -1213,8 +1148,8 @@ export default function RegistrationPage() {
                         if (submitAttempted) setSubmitAttempted(false);
                       }}
                       autoComplete="new-password"
-                      className={`w-full py-2 px-4 pl-9 rounded-full bg-white dark:bg-[var(--card-color)] border ${errors.password ? "border-[#FDA29B]" : "border-gray-300 dark:border-[#35353E]"
-                        } text-gray-900 dark:text-white focus:outline-none focus:border-[#13B562]`}
+                      className={`w-full py-2.5 px-4 pl-10 rounded-lg bg-transparent border ${errors.password ? "border-[#FDA29B]" : "border-[#35353e]"
+                        } text-white placeholder-[#6B7280] focus:outline-none focus:border-[#1D8751] focus:ring-1 focus:ring-[#1D8751]`}
                       placeholder={t(
                         "auth.register.password.placeholder",
                         "Enter password"
@@ -1338,9 +1273,9 @@ export default function RegistrationPage() {
                 <div>
                   <label
                     htmlFor="confirm-password"
-                    className="block dark:text-white text-gray-900 text-sm mb-2"
+                    className="block text-[#9CA3AF] text-xs font-semibold uppercase tracking-wide mb-2"
                   >
-                    {t("auth.register.confirm", "Confirm password*")}
+                    {t("auth.register.confirm", "Confirm")} <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <input
@@ -1349,10 +1284,10 @@ export default function RegistrationPage() {
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       autoComplete="new-password"
-                      className={`w-full py-2 px-4 pl-9 rounded-full bg-white dark:bg-[var(--card-color)] border ${errors.confirmPassword
+                      className={`w-full py-2.5 px-4 pl-10 rounded-lg bg-transparent border ${errors.confirmPassword
                         ? "border-[#FDA29B]"
-                        : "border-gray-300 dark:border-[#35353E]"
-                        } text-gray-900 dark:text-white focus:outline-none focus:border-[#13B562]`}
+                        : "border-[#35353e]"
+                        } text-white placeholder-[#6B7280] focus:outline-none focus:border-[#1D8751] focus:ring-1 focus:ring-[#1D8751]`}
                       placeholder={t(
                         "auth.register.confirm.placeholder",
                         "Confirm password"
@@ -1476,74 +1411,44 @@ export default function RegistrationPage() {
               </div>
 
               {/* Password Requirements */}
-              <div className="flex flex-col space-y-1 ml-1">
+              <div className="flex flex-wrap gap-x-4 gap-y-1 ml-1 text-sm">
                 <div className="flex items-center space-x-2">
                   <div
-                    className={`h-2 w-2 rounded-full ${hasMinChars
+                    className={`h-2 w-2 rounded-full flex-shrink-0 ${hasMinChars
                       ? "bg-[#1D8751]"
                       : submitAttempted
                         ? "bg-red-500"
-                        : "bg-gray-400 dark:bg-gray-500"
+                        : "border border-[#6B7280] bg-transparent"
                       }`}
                   ></div>
-                  <span
-                    className={`text-sm ${hasMinChars
-                      ? "text-[#1D8751]"
-                      : submitAttempted
-                        ? "text-red-500"
-                        : "text-gray-900 dark:text-white"
-                      }`}
-                  >
-                    {t(
-                      "auth.register.requirements.8chars",
-                      "At least 8 characters"
-                    )}
+                  <span className="text-[#9CA3AF]">
+                    {t("auth.register.requirements.8chars", "8+ characters")}
                   </span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <div
-                    className={`h-2 w-2 rounded-full ${hasNumber || hasSymbol
+                    className={`h-2 w-2 rounded-full flex-shrink-0 ${hasNumber || hasSymbol
                       ? "bg-[#1D8751]"
                       : submitAttempted
                         ? "bg-red-500"
-                        : "bg-gray-400 dark:bg-gray-500"
+                        : "border border-[#6B7280] bg-transparent"
                       }`}
                   ></div>
-                  <span
-                    className={`text-sm ${hasNumber || hasSymbol
-                      ? "text-[#1D8751]"
-                      : submitAttempted
-                        ? "text-red-500"
-                        : "text-gray-900 dark:text-white"
-                      }`}
-                  >
-                    {t(
-                      "auth.register.requirements.numberSymbol",
-                      "At least one number or symbol"
-                    )}
+                  <span className="text-[#9CA3AF]">
+                    {t("auth.register.requirements.numberSymbol", "Number or symbol")}
                   </span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <div
-                    className={`h-2 w-2 rounded-full ${hasMixedCase
+                    className={`h-2 w-2 rounded-full flex-shrink-0 ${hasMixedCase
                       ? "bg-[#1D8751]"
                       : submitAttempted
                         ? "bg-red-500"
-                        : "bg-gray-400 dark:bg-gray-500"
+                        : "border border-[#6B7280] bg-transparent"
                       }`}
                   ></div>
-                  <span
-                    className={`text-sm ${hasMixedCase
-                      ? "text-[#1D8751]"
-                      : submitAttempted
-                        ? "text-red-500"
-                        : "text-gray-900 dark:text-white"
-                      }`}
-                  >
-                    {t(
-                      "auth.register.requirements.mixedCase",
-                      "Both uppercase and lowercase letters"
-                    )}
+                  <span className="text-[#9CA3AF]">
+                    {t("auth.register.requirements.mixedCase", "Mixed case")}
                   </span>
                 </div>
               </div>
@@ -1552,7 +1457,7 @@ export default function RegistrationPage() {
               <div>
                 <label
                   htmlFor="referral-code"
-                  className="block dark:text-white text-gray-900 text-sm mb-2"
+                  className="block text-[#9CA3AF] text-xs font-semibold uppercase tracking-wide mb-2"
                 >
                   {t("auth.register.referral", "Referral Code")}
                 </label>
@@ -1562,7 +1467,7 @@ export default function RegistrationPage() {
                     id="referral-code"
                     value={referralCode}
                     onChange={(e) => setReferralCode(e.target.value)}
-                    className="w-full py-2 px-4 pl-9 rounded-full bg-white dark:bg-[var(--card-color)] border border-gray-300 dark:border-[#35353E] text-gray-900 dark:text-white focus:outline-none focus:border-[#13B562]"
+                    className="w-full py-2.5 px-4 pl-10 rounded-lg bg-transparent border border-[#35353e] text-white placeholder-[#6B7280] focus:outline-none focus:border-[#1D8751] focus:ring-1 focus:ring-[#1D8751]"
                     placeholder={t(
                       "auth.register.referral.placeholder",
                       "Paste here your referral code"
@@ -1677,11 +1582,17 @@ export default function RegistrationPage() {
                   </div>
                   <label
                     htmlFor="terms"
-                    className="text-xs sm:text-sm dark:text-white text-gray-900 cursor-pointer break-words leading-relaxed flex-1"
+                    className="text-xs sm:text-sm text-[#9CA3AF] cursor-pointer break-words leading-relaxed flex-1"
                   >
                     {t(
                       "auth.register.terms",
                       "By clicking Register, you agree to our Terms of Services and that you have read our Data Use Policy, including our Cookie Use"
+                    ).split(/(Terms of Services|Data Use Policy|Cookie Use)/).map((part, i) =>
+                      ["Terms of Services", "Data Use Policy", "Cookie Use"].includes(part) ? (
+                        <Link key={i} href="/legal/terms" className="text-[#1D8751] hover:underline">{part}</Link>
+                      ) : (
+                        part
+                      )
                     )}
                   </label>
                 </div>
@@ -1717,7 +1628,7 @@ export default function RegistrationPage() {
               <button
                 type="submit"
                 disabled={isSubmitting || !agreeToTerms}
-                className="w-full bg-[#1D8751] text-white py-3 px-4 rounded-full hover:bg-[#0E5531] transition-colors duration-300 mt-4 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full bg-[#1D8751] hover:bg-[#167a47] text-white py-3 px-4 rounded-lg font-semibold transition-colors duration-300 mt-4 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {isSubmitting ? (
                   <>
@@ -1732,23 +1643,22 @@ export default function RegistrationPage() {
               </button>
 
               {/* Login Link */}
-              <div className="text-center mt-2">
-                <p className="text-gray-400">
+              <div className="text-center mt-4">
+                <p className="text-[#9CA3AF] text-sm">
                   {t("auth.register.haveAccount", "Already have an account?")}{" "}
                   <Link
                     href="/auth/login"
-                    className="text-[#1D8751] hover:text-[#0E5531] cursor-pointer"
+                    className="text-[#1D8751] hover:text-[#00D28E] font-medium cursor-pointer"
                   >
                     {t("auth.register.login", "Log In")}
                   </Link>
                 </p>
-                <div className="border-t border-gray-300 dark:border-[#35353E] flex-grow mt-2"></div>
               </div>
 
               {/* Or Sign Up with */}
               <div className="mt-4">
                 <div className="relative flex items-center justify-center">
-                  <span className="mx-4 text-gray-400 text-sm">
+                  <span className="mx-4 text-[#9CA3AF] text-sm">
                     {t("auth.register.or", "Or Sign Up with")}
                   </span>
                 </div>

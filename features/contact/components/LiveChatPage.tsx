@@ -5,7 +5,7 @@ import { ArrowLeft, Send, MessageCircle, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useLiveChatWebSocket } from "../hooks/useLiveChatWebSocket";
 import { createChatSession, getChatMessages, ChatSession, ChatMessage } from "../services/liveChatApi";
-import { showToast } from "@/lib/utils/toast";
+import { setAuthRedirectPath } from "@/lib/utils/authRedirect";
 import { logger } from "@/lib/utils/logger";
 
 const LiveChatPage: React.FC = () => {
@@ -84,8 +84,8 @@ const LiveChatPage: React.FC = () => {
       logger.debug("live-chat", "Session created:", response.session);
     } catch (error: any) {
       logger.error("live-chat", "Failed to create session:", error);
-      showToast.error(error?.response?.data?.message || "Failed to start chat session");
-      router.back();
+      setAuthRedirectPath("/live-chat");
+      router.push("/auth/login");
     } finally {
       setIsCreatingSession(false);
     }

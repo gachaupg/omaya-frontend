@@ -4,8 +4,9 @@ import React, { useState, useEffect, useRef } from "react";
 import { X, Send, MessageCircle, Loader2 } from "lucide-react";
 import { useLiveChatWebSocket } from "../hooks/useLiveChatWebSocket";
 import { createChatSession, getChatMessages, ChatSession, ChatMessage } from "../services/liveChatApi";
-import { showToast } from "@/lib/utils/toast";
+import { setAuthRedirectPath } from "@/lib/utils/authRedirect";
 import { logger } from "@/lib/utils/logger";
+import { useRouter } from "next/navigation";
 
 interface LiveChatModalProps {
   isOpen: boolean;
@@ -13,6 +14,7 @@ interface LiveChatModalProps {
 }
 
 const LiveChatModal: React.FC<LiveChatModalProps> = ({ isOpen, onClose }) => {
+  const router = useRouter();
   const [session, setSession] = useState<ChatSession | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [messageInput, setMessageInput] = useState("");
@@ -86,8 +88,9 @@ const LiveChatModal: React.FC<LiveChatModalProps> = ({ isOpen, onClose }) => {
       logger.debug("live-chat", "Session created:", response.session);
     } catch (error: any) {
       logger.error("live-chat", "Failed to create session:", error);
-      showToast.error(error?.response?.data?.message || "Failed to start chat session");
       onClose();
+      setAuthRedirectPath("/live-chat");
+      router.push("/auth/login");
     } finally {
       setIsCreatingSession(false);
     }

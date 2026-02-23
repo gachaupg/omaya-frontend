@@ -4750,8 +4750,8 @@ export default function DepositForm({
           setIsInfoModalOpen(false);
         }}
         onContactUs={() => {
-          // Handle contact us action - you can customize this
-          window.open("https://wa.me/your-whatsapp-number", "_blank");
+          setIsInfoModalOpen(false);
+          router.push("/contactUs");
           // When modal closes, reset amount to maximum allowed (15000)
           if (payAmount > 15000) {
             setPayAmount(15000);
@@ -4761,7 +4761,6 @@ export default function DepositForm({
             setGetAmount(15000);
             setGetAmountInput("15000");
           }
-          setIsInfoModalOpen(false);
         }}
       />
     </div>
