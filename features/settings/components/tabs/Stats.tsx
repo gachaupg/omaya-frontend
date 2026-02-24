@@ -158,7 +158,7 @@ const Stats = ({ onSupportClick }: StatsProps) => {
   }, [dispatch, isAuthenticated, user?.referral_code]);
 
  return (
-   <Card className="w-full p-3 sm:p-4 dark:bg-[var(--card-color)] bg-gray-50 rounded-2xl dark:border-[#35353E] border-gray-300 border dark:text-white text-gray-900 shadow-lg">
+   <Card className="w-full p-3 sm:p-4 dark:bg-(--card-color) bg-gray-50 rounded-2xl dark:border-accent border-gray-300 border dark:text-white text-gray-900 shadow-lg">
       {/* Header */}
       <div className="flex w-full flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
         <div className="flex items-center gap-3 sm:gap-4 min-w-0">
@@ -188,7 +188,7 @@ const Stats = ({ onSupportClick }: StatsProps) => {
             </span>
             <span className="flex items-center gap-1.5 text-[#1D8751] text-[8px] sm:text-xs font-medium whitespace-nowrap">
               <span className="shrink-0">Verified Profile</span>
-              <span className="inline-flex items-center justify-center w-5 h-5 flex-shrink-0" style={{position: 'relative'}}>
+              <span className="inline-flex items-center justify-center w-5 h-5 shrink-0" style={{position: 'relative'}}>
                       <svg width="16" height="16" viewBox="0 0 20 20" style={{position: 'absolute'}}>
                         <circle cx="10" cy="10" r="9" fill="white" />
                         <circle cx="10" cy="10" r="7.5" fill="#1D8751" />
@@ -207,7 +207,7 @@ const Stats = ({ onSupportClick }: StatsProps) => {
                         fill="none"
                         xmlns="http://www.w3.org/2000/svg"
                         style={{position: 'relative', zIndex: 1}}
-                        className="flex-shrink-0"
+                        className="shrink-0"
                       >
                         <path
                           d="M2 5L4 7L8 3"
@@ -221,7 +221,7 @@ const Stats = ({ onSupportClick }: StatsProps) => {
             </span>
           </div>
         </div>
-        <div className="flex gap-4 sm:gap-5 shrink-0 ml-auto">
+        <div className="flex gap-6 shrink-0 ml-auto">
           <div 
             className="p-2 rounded-full border border-[#1D8751] flex items-center justify-center relative cursor-pointer"
             onClick={() => router.push("/dashboard/notifications")}

@@ -560,6 +560,7 @@ export default function Navbar() {
   const dispatch = useDispatch<AppDispatch>();
   const depositDropdownRef = useRef<HTMLDivElement>(null);
   const profileModalRef = useRef<HTMLDivElement>(null);
+  const mobileProfileRef = useRef<HTMLDivElement>(null);
   const profileFetchRef = useRef<{ lastFetch: number; inProgress: boolean; hasFetched: boolean }>({ lastFetch: 0, inProgress: false, hasFetched: false });
   const p2pProfileFetchRef = useRef<{ lastFetch: number; inProgress: boolean; hasFetched: boolean }>({ lastFetch: 0, inProgress: false, hasFetched: false });
 
@@ -678,7 +679,7 @@ export default function Navbar() {
               setProfileImageError(false);
             }
           })
-          .catch(() => {})
+          .catch(() => { })
           .finally(() => {
             p2pProfileFetchRef.current.inProgress = false;
           });
@@ -790,7 +791,8 @@ export default function Navbar() {
 
       if (
         profileModalRef.current &&
-        !profileModalRef.current.contains(event.target as Node)
+        !profileModalRef.current.contains(event.target as Node) &&
+        (!mobileProfileRef.current || !mobileProfileRef.current.contains(event.target as Node))
       ) {
         setProfileModalOpen(false);
       }
@@ -989,8 +991,8 @@ export default function Navbar() {
         className={`fixed top-0 left-0 right-0 z-50 w-full flex items-center justify-between px-3 py-4 md:h-20 lg:h-auto md:px-4 md:py-2.5 lg:px-8 lg:py-4 xl:px-12 2xl:px-20 transition-all duration-300 ${getNavbarBackground()}`}
       >
         <div className="flex items-center min-w-0 flex-1">
-          <Link
-            href="/"
+          <div
+            onClick={() => (window.location.href='/')}
             className="mr-4 sm:mr-8 md:mr-6 lg:mr-12 xl:mr-20 shrink-0 flex items-center h-full"
           >
             {/* Optimized logo selection using memoized config */}
@@ -1004,7 +1006,7 @@ export default function Navbar() {
                 priority
               />
             )}
-          </Link>
+          </div>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-1 md:space-x-2 lg:space-x-3 xl:space-x-4 2xl:space-x-6 shrink min-w-0">
@@ -1469,54 +1471,54 @@ export default function Navbar() {
                       onClick={toggleMobileDepositDropdown}
                     />
                     {/* Dropdown Menu */}
-                        <div className="fixed inset-x-2 sm:inset-x-4 top-[4.5rem] sm:top-20 z-[70] md:hidden dark:bg-[var(--card-color)] bg-white dark:border-[#35353E] border-gray-200 border rounded-xl shadow-xl overflow-hidden max-h-[calc(100vh-6rem)] overflow-y-auto">
-                          <div className="p-3 sm:p-4">
-                            {depositItems.map((item, index) => {
-                              const isActive = pathname === item.href || pathname?.startsWith(item.href + "/");
-                              return (
-                                <Link
-                                  key={index}
-                                  href={item.href}
-                                  className="block mb-2 last:mb-0"
-                                  onClick={(e) => {
-                                    handleProtectedNavigation(e, item.href);
-                                    setMobileDepositDropdownOpen(false);
-                                    toggleMobileMenu();
-                                  }}
-                                >
-                                  <div
-                                    className={`flex items-center rounded-lg transition-colors duration-200 group p-2 sm:p-3 ${isActive
-                                      ? "dark:bg-[#35353E] bg-gray-100"
-                                      : "dark:hover:bg-[#35353E] hover:bg-gray-50"
-                                      }`}
-                                  >
-                                    <div className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center mr-2 sm:mr-4 shrink-0">
-                                      <img
-                                        className="w-6 h-6 sm:w-8 sm:h-8 object-contain"
-                                        src={item.icon}
-                                        alt=""
-                                      />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                      <h4 className="dark:text-white flex flex-row items-center text-gray-900 font-medium text-sm sm:text-base mb-0.5 sm:mb-1">
-                                        {item.title}
-                                      </h4>
-                                      <p className="dark:text-gray-400 text-gray-600 text-xs sm:text-sm leading-relaxed line-clamp-2">
-                                        {item.description}
-                                      </p>
-                                    </div>
-                                    <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 dark:text-gray-400 text-gray-500 group-hover:text-[#1D8751] transition-colors shrink-0 ml-1 sm:ml-2" />
-                                  </div>
-                                </Link>
-                              );
-                            })}
-                          </div>
-                        </div>
+                    <div className="fixed inset-x-2 sm:inset-x-4 top-[4.5rem] sm:top-20 z-[70] md:hidden dark:bg-[var(--card-color)] bg-white dark:border-[#35353E] border-gray-200 border rounded-xl shadow-xl overflow-hidden max-h-[calc(100vh-6rem)] overflow-y-auto">
+                      <div className="p-3 sm:p-4">
+                        {depositItems.map((item, index) => {
+                          const isActive = pathname === item.href || pathname?.startsWith(item.href + "/");
+                          return (
+                            <Link
+                              key={index}
+                              href={item.href}
+                              className="block mb-2 last:mb-0"
+                              onClick={(e) => {
+                                handleProtectedNavigation(e, item.href);
+                                setMobileDepositDropdownOpen(false);
+                                toggleMobileMenu();
+                              }}
+                            >
+                              <div
+                                className={`flex items-center rounded-lg transition-colors duration-200 group p-2 sm:p-3 ${isActive
+                                  ? "dark:bg-[#35353E] bg-gray-100"
+                                  : "dark:hover:bg-[#35353E] hover:bg-gray-50"
+                                  }`}
+                              >
+                                <div className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center mr-2 sm:mr-4 shrink-0">
+                                  <img
+                                    className="w-6 h-6 sm:w-8 sm:h-8 object-contain"
+                                    src={item.icon}
+                                    alt=""
+                                  />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="dark:text-white flex flex-row items-center text-gray-900 font-medium text-sm sm:text-base mb-0.5 sm:mb-1">
+                                    {item.title}
+                                  </h4>
+                                  <p className="dark:text-gray-400 text-gray-600 text-xs sm:text-sm leading-relaxed line-clamp-2">
+                                    {item.description}
+                                  </p>
+                                </div>
+                                <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 dark:text-gray-400 text-gray-500 group-hover:text-[#1D8751] transition-colors shrink-0 ml-1 sm:ml-2" />
+                              </div>
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    </div>
                   </>
                 )}
-                  </div>
-                  <div className="relative mt-4 flex justify-center">
-                    {/* <button
+              </div>
+              <div className="relative mt-4 flex justify-center">
+                {/* <button
                     onClick={toggleProfileModal}
                     className="text-white focus:outline-none"
                   >
@@ -1543,7 +1545,7 @@ export default function Navbar() {
                     </svg>
                   </span> */}
               </div>
-              <div className={`flex flex-col items-center space-y-3 mt-4 ${mobileDepositDropdownOpen ? 'invisible' : ''}`}>
+              <div className={`flex flex-col items-center space-y-3 mt-4 ${mobileDepositDropdownOpen ? 'invisible' : ''}`} ref={mobileProfileRef}>
                 <button
                   onClick={toggleProfileModal}
                   className="flex items-start space-x-3 justify-between w-full text-left focus:outline-none"
@@ -1659,166 +1661,56 @@ export default function Navbar() {
               </div>
 
 
-                  {/* Mobile Profile Modal */}
-                  {profileModalOpen && (
-                    <div className="fixed inset-0 z-[9999] md:hidden pointer-events-auto">
-                      <div
-                        className="absolute inset-0 bg-gray-900/50 dark:bg-black/50 z-0 pointer-events-auto"
-                        onClick={() => setProfileModalOpen(false)}
-                      />
-                      <div className="absolute bottom-0 left-0 right-0 z-10 bg-white dark:bg-[#1E2329] border-t border-gray-200 dark:border-accent rounded-t-lg pb-safe pointer-events-auto">
-                        <div className="p-6 pb-8 pointer-events-auto">
-                          {/* User Info */}
-                          <div className="flex items-start mb-6 gap-4">
-                            <div className="shrink-0 flex-shrink-0 flex-none self-start" style={{ width: 64, height: 64 }}>
-                              <button
-                                className="block w-full h-full rounded-full overflow-hidden border-2 border-white dark:border-gray-600 shadow-lg cursor-pointer hover:opacity-80 transition-opacity relative"
-                                onClick={toggleImageModal}
-                                type="button"
-                              >
-                                {(p2pProfile?.profile?.photo || cachedProfilePhoto || userProfile?.photo) &&
-                                  !profileImageError ? (
-                                  <>
-                                    <img
-                                      src={
-                                        p2pProfile?.profile?.photo ||
-                                        cachedProfilePhoto ||
-                                        userProfile?.photo ||
-                                        ""
-                                      }
-                                      alt="Profile"
-                                      className="block w-full h-full object-cover object-center"
-                                      style={{ width: 64, height: 64, minWidth: 64, minHeight: 64 }}
-                                      onError={(e) => {
-                                        const target = e.currentTarget;
-                                        target.onerror = null;
-                                        target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='32' fill='%231D8751'/%3E%3Cg fill='white'%3E%3Ccircle cx='32' cy='24' r='8'/%3E%3Cpath d='M32 36c-8 0-14 5-14 10v4c0 1 1 2 2 2h24c1 0 2-1 2-2v-4c0-5-6-10-14-10z'/%3E%3C/g%3E%3C/svg%3E";
-                                      }}
-                                    />
-                                    {/* Verification Badge - only show for verified users */}
-                                    {isVerified && (
-                                      <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-6 h-6 z-10">
-                                        <svg
-                                          width="24"
-                                          height="24"
-                                          viewBox="0 0 24 24"
-                                          className="absolute"
-                                        >
-                                          <circle
-                                            cx="12"
-                                            cy="12"
-                                            r="11"
-                                            fill="white"
-                                          />
-                                          <circle
-                                            cx="12"
-                                            cy="12"
-                                            r="9"
-                                            fill="#1D8751"
-                                          />
-                                          {/* Serrated edge using small circles */}
-                                          {[
-                                            0, 30, 60, 90, 120, 150, 180, 210,
-                                            240, 270, 300, 330,
-                                          ].map((angle) => {
-                                            const rad = (angle * Math.PI) / 180;
-                                            const x = 12 + 10 * Math.cos(rad);
-                                            const y = 12 + 10 * Math.sin(rad);
-                                            return (
-                                              <circle
-                                                key={angle}
-                                                cx={x}
-                                                cy={y}
-                                                r="1.2"
-                                                fill="white"
-                                              />
-                                            );
-                                          })}
-                                        </svg>
-                                        <svg
-                                          width="12"
-                                          height="12"
-                                          viewBox="0 0 12 12"
-                                          fill="none"
-                                          xmlns="http://www.w3.org/2000/svg"
-                                          className="relative z-10"
-                                        >
-                                          <path
-                                            d="M2.5 6L5 8.5L9.5 4"
-                                            stroke="#FFFFFF"
-                                            strokeWidth="1.8"
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                          />
-                                        </svg>
-                                      </span>
-                                    )}
-                                  </>
-                                ) : (
-                                  <div className="w-full h-full rounded-full flex items-center justify-center bg-[#1D8751]">
-                                    <User className="w-8 h-8 text-white" />
-                                  </div>
-                                )}
-                              </button>
-                            </div>
-                            <div className="min-w-0 flex-1 overflow-hidden">
-                              <h4 className="text-gray-900 dark:text-white font-medium text-lg truncate" title={`${user?.first_name || ""} ${user?.last_name || ""}`.trim()}>
-                                {user?.first_name} {user?.last_name}
-                              </h4>
-                              <p className="text-gray-500 dark:text-gray-400 text-sm truncate mt-0.5" title={user?.email}>
-                                {user?.email}
-                              </p>
-                            </div>
-                          </div>
-
-                          {/* Menu Items */}
-                          <div className="space-y-3 relative" style={{zIndex: 10000}}>
-                            <button
-                              type="button"
-                              onTouchEnd={(e) => {
-                                e.preventDefault();
-                                setProfileModalOpen(false);
-                                setMobileMenuOpen(false);
-                                setTimeout(() => router.push("/dashboard/account"), 100);
-                              }}
-                              onClick={(e) => {
-                                e.preventDefault();
-                                setProfileModalOpen(false);
-                                setMobileMenuOpen(false);
-                                router.push("/dashboard/account");
-                              }}
-                              className="flex items-center w-full px-4 py-3 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[#35353E] rounded-lg transition-colors duration-200 active:bg-gray-200 dark:active:bg-[#2A2A2A] select-none"
-                              style={{WebkitTapHighlightColor: 'rgba(0,0,0,0)'}}
-                            >
-                              <Settings size={20} className="mr-3 flex-shrink-0" />
-                              <span className="text-base">Account settings</span>
-                            </button>
-
-                            <button
-                              type="button"
-                              onTouchEnd={(e) => {
-                                e.preventDefault();
-                                setProfileModalOpen(false);
-                                setMobileMenuOpen(false);
-                                setTimeout(() => handleLogout(), 100);
-                              }}
-                              onClick={(e) => {
-                                e.preventDefault();
-                                setProfileModalOpen(false);
-                                setMobileMenuOpen(false);
-                                handleLogout();
-                              }}
-                              className="flex items-center w-full px-4 py-3 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[#35353E] rounded-lg transition-colors duration-200 active:bg-gray-200 dark:active:bg-[#2A2A2A] select-none"
-                              style={{WebkitTapHighlightColor: 'rgba(0,0,0,0)'}}
-                            >
-                              <LogOut size={20} className="mr-3 flex-shrink-0" />
-                              <span className="text-base">Logout</span>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
+              {/* Mobile Profile Menu - Inline */}
+              {profileModalOpen && (
+                <div className="w-full mt-2 space-y-1 overflow-hidden transition-all duration-300">
+                  <button
+                    type="button"
+                    onTouchEnd={(e) => {
+                      e.preventDefault();
+                      setProfileModalOpen(false);
+                      setMobileMenuOpen(false);
+                      setTimeout(() => router.push("/dashboard/account"), 100);
+                    }}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setProfileModalOpen(false);
+                      setMobileMenuOpen(false);
+                      router.push("/dashboard/account");
+                    }}
+                    className="flex items-center w-full px-4 py-2.5 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-accent rounded-xl transition-all duration-200"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-accent flex items-center justify-center mr-3 transition-colors group-hover:bg-white dark:group-hover:bg-gray-700">
+                      <Settings size={18} />
                     </div>
-                  )}
+                    <span className="text-[15px] font-medium">Account settings</span>
+                    <ChevronRight size={16} className="ml-auto text-gray-400" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onTouchEnd={(e) => {
+                      e.preventDefault();
+                      setProfileModalOpen(false);
+                      setMobileMenuOpen(false);
+                      setTimeout(() => handleLogout(), 100);
+                    }}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setProfileModalOpen(false);
+                      setMobileMenuOpen(false);
+                      handleLogout();
+                    }}
+                    className="flex items-center w-full px-4 py-2.5 text-red-500 hover:bg-red-50 dark:hover:bg-accent rounded-xl transition-all duration-200"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-red-50 dark:bg-red-900/20 flex items-center justify-center mr-3 transition-colors">
+                      <LogOut size={18} />
+                    </div>
+                    <span className="text-[15px] font-medium">Logout</span>
+                    <ChevronRight size={16} className="ml-auto opacity-0" />
+                  </button>
+                </div>
+              )}
             </>
           ) : (
             <>

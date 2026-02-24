@@ -3922,7 +3922,7 @@ export default function DepositForm({
               {isSubmitting ? (
                 <div className="flex items-center gap-2">
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#35353e] dark:border-[#788099]"></div>
-                  <span>{t("express.posting", "Posting...")}</span>
+                  <span>{t("express.posting", "Submiting...")}</span>
                 </div>
               ) : (
                 <span className="flex items-center justify-center">
@@ -4749,8 +4749,8 @@ export default function DepositForm({
           setIsInfoModalOpen(false);
         }}
         onContactUs={() => {
-          // Handle contact us action - you can customize this
-          window.open("https://wa.me/your-whatsapp-number", "_blank");
+          setIsInfoModalOpen(false);
+          router.push("/contactUs");
           // When modal closes, reset amount to maximum allowed (15000)
           if (payAmount > 15000) {
             setPayAmount(15000);
@@ -4760,7 +4760,6 @@ export default function DepositForm({
             setGetAmount(15000);
             setGetAmountInput("15000");
           }
-          setIsInfoModalOpen(false);
         }}
       />
     </div>

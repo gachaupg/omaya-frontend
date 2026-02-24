@@ -16,7 +16,7 @@ import { FaceDetectionKYC } from "@/features/kyc/components";
 
 const KYCVerificationModal: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { kycModalOpen, loading, user, tokens } = useSelector((state: RootState) => state.auth);
+  const { kycModalOpen, loading, user, tokens, isAuthenticated } = useSelector((state: RootState) => state.auth);
   
   const [error, setError] = useState<string | null>(null);
   const [showManualVerification, setShowManualVerification] = useState(false);
@@ -56,20 +56,39 @@ const KYCVerificationModal: React.FC = () => {
     if (user?.email) {
       setVerificationData(prev => ({ ...prev, email: user.email }));
     }
-    // Do NOT auto-fill phone number; user must type it manually
-  }, [user?.email]);
+    // Auto-populate phone from profile so it matches registered number
+    if (user?.phone_number && user.phone_number.trim()) {
+      setPhoneNumber(user.phone_number.trim());
+    }
+  }, [user?.email, user?.phone_number]);
 
-  // Check KYC status for phone verification
+  // Close KYC modal when user is not logged in (e.g. on market page for guests)
+  useEffect(() => {
+    if (kycModalOpen && (!isAuthenticated || !user)) {
+      dispatch(closeKYCModal());
+    }
+  }, [kycModalOpen, isAuthenticated, user, dispatch]);
+
+  // Check KYC status for phone verification; close modal if user is already verified
   useEffect(() => {
     if (kycModalOpen && user) {
       dispatch(checkAuthKYCStatus()).then((result: any) => {
         if (result.payload) {
           const status = result.payload as any;
           setKycStatus(status);
+          // If API says user is already verified, close modal and do not show it
+          if (status?.is_verified === true || status?.status === "approved") {
+            localStorage.removeItem("kyc_verification_status");
+            dispatch(closeKYCModal());
+            return;
+          }
           if (status.phone_verified === true) {
             setPhoneVerified(true);
           }
-          // Do NOT auto-fill phone number from KYC status; user must type it manually
+          // Keep phone field in sync with profile if API returns a phone
+          if (user?.phone_number?.trim()) {
+            setPhoneNumber(user.phone_number.trim());
+          }
         }
       });
     }
@@ -554,6 +573,9 @@ const KYCVerificationModal: React.FC = () => {
   };
 
   if (!kycModalOpen) return null;
+
+  // Do not show KYC modal when user is not logged in
+  if (!isAuthenticated || !user) return null;
 
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/50">

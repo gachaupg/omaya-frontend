@@ -815,14 +815,16 @@ export default function DepositForm({
     dispatch(fetchAdminPaymentMethods());
   }, [dispatch, isHomePage]);
 
-  // Close expanded section when user changes payment method or asset (user must post again)
+  // When user changes asset or payment method, reset post state so they can post again
+  const selectedAssetKey = selectedAsset
+    ? (selectedAsset.asset_id ?? selectedAsset.ticker ?? selectedAsset.symbol ?? selectedAsset.name ?? "")
+    : "";
   useEffect(() => {
-    if (isFirstCardSubmitted) {
-      setIsFirstCardSubmitted(false);
-      setApiResponse(null);
-      setTransactionCode("");
-    }
-  }, [selectedAsset, payBank]);
+    setIsFirstCardSubmitted(false);
+    setApiResponse(null);
+    setTransactionCode("");
+    setShowForexForm(false);
+  }, [selectedAssetKey, payBank]);
 
   // Fetch public payment methods for home page
   useEffect(() => {
@@ -3543,7 +3545,7 @@ export default function DepositForm({
               {isSubmitting ? (
                 <div className="flex items-center gap-2">
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#35353e] dark:border-[#788099]"></div>
-                  <span>Posting...</span>
+                  <span>Submiting...</span>
                 </div>
               ) : (
                 <span className="flex items-center justify-center">
@@ -4274,8 +4276,8 @@ export default function DepositForm({
           setIsInfoModalOpen(false);
         }}
         onContactUs={() => {
-          // Handle contact us action - you can customize this
-          window.open('https://wa.me/your-whatsapp-number', '_blank');
+          setIsInfoModalOpen(false);
+          router.push("/contactUs");
           // When modal closes, reset amount to maximum allowed (15000)
           if (payAmount > 15000) {
             setPayAmount(15000);
@@ -4285,7 +4287,6 @@ export default function DepositForm({
             setGetAmount(15000);
             setGetAmountInput("15000");
           }
-          setIsInfoModalOpen(false);
         }}
       />
 

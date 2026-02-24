@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "@/store";
 import { RootState } from "@/store/rootReducer";
@@ -7,6 +7,7 @@ import {
   fetchUserPaymentDetails,
   deleteUserPaymentDetail,
 } from "@/features/p2p/slices/paymentMethodsSlice";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
   fetchP2PDepositAddresses,
   createP2PDepositAddress,
@@ -94,6 +95,8 @@ const WalletAddressCard = ({
   </div>
 );
 
+const ITEMS_PER_PAGE = 5;
+
 const PaymentMethods = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
@@ -125,6 +128,7 @@ const PaymentMethods = () => {
   const [showAddWalletModal, setShowAddWalletModal] = useState(false);
   const [deletingMethodId, setDeletingMethodId] = useState<string | null>(null);
   const [activeButton, setActiveButton] = useState("Approved");
+  const [paymentPage, setPaymentPage] = useState(1);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ type: 'payment' | 'wallet', id: string } | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -133,14 +137,36 @@ const PaymentMethods = () => {
     p?.payment_method_name?.toLowerCase() === "crypto" ||
     !!p?.wallet_address;
 
-  const filteredPayments = userPaymentDetails.filter(
-    (payment: UserPaymentDetail) => {
-      if (activeButton === "OMAYA Wallets") {
-        return isCryptoWallet(payment);
-      }
-      return payment.status?.toLowerCase() === activeButton.toLowerCase();
-    }
+  const filteredPayments = useMemo(
+    () =>
+      userPaymentDetails.filter((payment: UserPaymentDetail) => {
+        if (activeButton === "OMAYA Wallets") {
+          return isCryptoWallet(payment);
+        }
+        return payment.status?.toLowerCase() === activeButton.toLowerCase();
+      }),
+    [userPaymentDetails, activeButton]
   );
+
+  const totalPaymentPages = Math.max(1, Math.ceil(filteredPayments.length / ITEMS_PER_PAGE));
+  const paginatedPayments = useMemo(
+    () =>
+      filteredPayments.slice(
+        (paymentPage - 1) * ITEMS_PER_PAGE,
+        paymentPage * ITEMS_PER_PAGE
+      ),
+    [filteredPayments, paymentPage]
+  );
+
+  useEffect(() => {
+    setPaymentPage(1);
+  }, [activeButton]);
+
+  useEffect(() => {
+    if (paymentPage > totalPaymentPages) {
+      setPaymentPage(totalPaymentPages);
+    }
+  }, [totalPaymentPages, paymentPage]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -259,16 +285,6 @@ const PaymentMethods = () => {
           <p className="text-sm sm:text-base font-bold dark:text-white text-gray-900">
             Payment Methods
           </p>
-          {activeButton === "OMAYA Wallets" && (
-            <button
-              onClick={() => setShowAddWalletModal(true)}
-              disabled={userWalletCreateLoading}
-              className="flex items-center gap-1 text-sm sm:text-base text-[#1D8751] font-semibold hover:text-[#0f8f4d] disabled:opacity-50"
-            >
-              <span className="text-lg leading-none">+</span>
-              Add New Address
-            </button>
-          )}
         </div>
         <div className="rounded-[32px] border border-[#20202A] dark:border-[#1E1E27] bg-white dark:bg-[var(--card-color)] p-2 sm:p-3 md:p-4 space-y-3">
           {activeButton === "OMAYA Wallets" ? (
@@ -332,17 +348,6 @@ const PaymentMethods = () => {
                         ))}
                       </>
                     )}
-                    {/* Add New Address button - visible when no default wallets */}
-                    {p2pDepositAddresses.length === 0 && (
-                      <button
-                        onClick={() => setShowAddWalletModal(true)}
-                        disabled={userWalletCreateLoading}
-                        className="w-full flex items-center justify-center gap-2 rounded-[28px] border-2 border-dashed border-[#1D8751] bg-[#1D8751]/5 dark:bg-[#1D8751]/10 py-4 px-4 text-[#1D8751] font-semibold hover:bg-[#1D8751]/10 dark:hover:bg-[#1D8751]/20 transition-colors disabled:opacity-50"
-                      >
-                        <span className="text-xl leading-none">+</span>
-                        {userWalletCreateLoading ? "Adding..." : "Add New Address"}
-                      </button>
-                    )}
                   </div>
 
                   {/* User Added Addresses */}
@@ -359,15 +364,7 @@ const PaymentMethods = () => {
                         {userWalletCreateLoading ? "Adding..." : "+ Add New Address"}
                       </button>
                     </div>
-                    {userWalletAddresses.length === 0 && p2pDepositAddresses.length === 0 ? (
-                      <div className="rounded-2xl border border-dashed border-[#E3E6F0] dark:border-[#2A2A35] py-10 text-center text-sm text-gray-500 dark:text-[#7B819C]">
-                        No OMAYA wallet addresses yet. Click &quot;Generate New Address&quot; or &quot;Add New Address&quot; to create one.
-                      </div>
-                    ) : userWalletAddresses.length === 0 ? (
-                      <div className="rounded-2xl border border-dashed border-[#E3E6F0] dark:border-[#2A2A35] py-6 text-center text-sm text-gray-500 dark:text-[#7B819C]">
-                        No custom addresses. Click &quot;Add New Address&quot; to add your own wallet.
-                      </div>
-                    ) : (
+                    {userWalletAddresses.length > 0 &&
                       userWalletAddresses.map((addr: UserWalletAddress) => (
                         <WalletAddressCard
                           key={addr.user_wallet_address_id}
@@ -375,8 +372,7 @@ const PaymentMethods = () => {
                           onDelete={() => handleDeleteUserWallet(addr.user_wallet_address_id)}
                           isDeleting={userWalletDeleteLoading === addr.user_wallet_address_id}
                         />
-                      ))
-                    )}
+                      ))}
                   </div>
                 </div>
               )}
@@ -388,7 +384,7 @@ const PaymentMethods = () => {
                   No payment methods in {activeButton.toLowerCase()} state yet.
                 </div>
               )}
-              {filteredPayments.map((payment: UserPaymentDetail) => {
+              {paginatedPayments.map((payment: UserPaymentDetail) => {
                 const isPending = payment.status?.toLowerCase() === "pending";
                 const isBankMethod =
                   payment?.payment_method_name
@@ -490,6 +486,48 @@ const PaymentMethods = () => {
                   </div>
                 );
               })}
+              {filteredPayments.length > 0 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 mt-2 border-t border-[#E3E6F0] dark:border-[#2A2A35]">
+                  <p className="text-xs sm:text-sm text-gray-500 dark:text-[#8B90A5]">
+                    Showing {(paymentPage - 1) * ITEMS_PER_PAGE + 1}–
+                    {Math.min(paymentPage * ITEMS_PER_PAGE, filteredPayments.length)} of {filteredPayments.length}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setPaymentPage((p) => Math.max(1, p - 1))}
+                      disabled={paymentPage <= 1}
+                      className="p-2 rounded-lg border border-[#E3E6F0] dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#23232B] disabled:opacity-50 disabled:cursor-not-allowed"
+                      aria-label="Previous page"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    {Array.from({ length: totalPaymentPages }, (_, i) => i + 1).map((page) => (
+                      <button
+                        key={page}
+                        type="button"
+                        onClick={() => setPaymentPage(page)}
+                        className={`min-w-[36px] h-9 px-2 rounded-lg text-sm font-medium border transition-colors ${
+                          paymentPage === page
+                            ? "bg-[#1D8751] text-white border-[#1D8751]"
+                            : "border-[#E3E6F0] dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#23232B]"
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => setPaymentPage((p) => Math.min(totalPaymentPages, p + 1))}
+                      disabled={paymentPage >= totalPaymentPages}
+                      className="p-2 rounded-lg border border-[#E3E6F0] dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#23232B] disabled:opacity-50 disabled:cursor-not-allowed"
+                      aria-label="Next page"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>

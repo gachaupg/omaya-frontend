@@ -188,6 +188,7 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
   const [expandedTerms, setExpandedTerms] = useState(false);
   const [isTermsAccepted, setIsTermsAccepted] = useState(false);
   const [apiCommission, setApiCommission] = useState<number | null>(null);
+  const [accountNumberCopied, setAccountNumberCopied] = useState(false);
   const commissionFetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const paymentDetailsRef = useRef<HTMLDivElement>(null);
 
@@ -203,7 +204,7 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
   // Amount for commission API - use pay when from pay, else approx send from receive (getAmount/0.98)
   const commissionFetchAmount = isCalculatingFromPay ? payAmount : (getAmount > 0 ? getAmount / 0.98 : 0);
 
-  // Fetch commission from API when amount changes (API returns % e.g. {"commission":"2.00"} = 2%)
+  // Fetch commission from API when amount changes (API returns fixed amount e.g. {"commission":"120.00"})
   useEffect(() => {
     const amount = commissionFetchAmount || payAmount || getAmount;
     if (!amount || amount <= 0) {
@@ -225,19 +226,26 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
     };
   }, [payAmount, getAmount, isCalculatingFromPay, dispatch]);
 
-  // Recalculate the other field when apiCommission updates (API returns % e.g. 2 = 2%)
+  // Recalculate the other field when apiCommission updates (commission = fixed amount: receive = send - commission, send = receive + commission)
   useEffect(() => {
-    const rate = apiCommission ?? 2;
+    const commissionAmount = apiCommission ?? 0;
     if (isCalculatingFromPay && payAmount > 0) {
-      const calculatedGetAmount = Math.max(0, payAmount * (1 - rate / 100));
+      const calculatedGetAmount = Math.max(0, payAmount - commissionAmount);
       setGetAmount(calculatedGetAmount);
       setGetAmountInput(calculatedGetAmount.toString());
     } else if (!isCalculatingFromPay && getAmount > 0) {
-      const calculatedPayAmount = getAmount / (1 - rate / 100);
+      const calculatedPayAmount = getAmount + commissionAmount;
       setPayAmount(calculatedPayAmount);
       setPayAmountInput(calculatedPayAmount.toString());
     }
   }, [apiCommission]);
+
+  // When user changes payment methods or amount, minimise the expanded form (they must submit again)
+  const fromKey = selectedFromPaymentDetail?.id ?? selectedFromPaymentDetail?.provider_id ?? fromPaymentMethod ?? "";
+  const toKey = selectedToPaymentDetail?.id ?? selectedToPaymentDetail?.provider_id ?? toPaymentMethod ?? "";
+  useEffect(() => {
+    setIsFirstCardSubmitted(false);
+  }, [fromKey, toKey, payAmount, getAmount]);
 
   // Helper function to get provider name from payment method (cleaned - removes method suffixes)
   // Removes method suffixes like "- Bank", "- Mobile", "- Crypto", etc.
@@ -568,9 +576,8 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
     };
   });
 
-  // Calculate receive/send using commission from API (API returns % e.g. 2 = 2%)
+  // Calculate receive/send using commission from API (commission = fixed amount: receive = send - commission, send = receive + commission)
   const handleAmountChange = (value: string, isFromPay: boolean) => {
-    // Only allow numbers and decimals
     if (value === "" || /^\d*\.?\d*$/.test(value)) {
       if (value.includes(".")) {
         const decimalPart = value.split(".")[1];
@@ -581,31 +588,26 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
       }
 
       const newAmount = parseFloat(value) || 0;
-      const rate = apiCommission ?? 2;
+      const commissionAmount = apiCommission ?? 0;
 
       if (isFromPay) {
         setPayAmountInput(value);
         setPayAmount(newAmount);
         setIsCalculatingFromPay(true);
-
-        // Forward: receive = send * (1 - rate/100)
-        const calculatedGetAmount = Math.max(0, newAmount * (1 - rate / 100));
+        const calculatedGetAmount = Math.max(0, newAmount - commissionAmount);
         setGetAmount(calculatedGetAmount);
         setGetAmountInput(calculatedGetAmount.toString());
       } else {
         setGetAmountInput(value);
         setGetAmount(newAmount);
         setIsCalculatingFromPay(false);
-
-        // Reverse: send = receive / (1 - rate/100)
-        const calculatedPayAmount = newAmount / (1 - rate / 100);
+        const calculatedPayAmount = newAmount + commissionAmount;
         setPayAmount(calculatedPayAmount);
         setPayAmountInput(calculatedPayAmount.toString());
       }
 
       setApiValidationError(null);
 
-      // Show info modal if amount exceeds $15,000
       if (newAmount > 15000) {
         // You can add an info modal here similar to deposit form
       }
@@ -707,53 +709,17 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
       }
     }
 
-    setIsSubmitting(true);
+    // First button: only expand (no API post); post happens on final submit
+    setIsFirstCardSubmitted(true);
 
-    try {
-      // Extract provider IDs from selected payment methods
-      const senderProviderId =
-        selectedFromPaymentDetail?.id ||
-        selectedFromPaymentDetail?.provider_id ||
-        selectedFromPaymentDetail?.providerId;
-
-      const receiverProviderId =
-        selectedToPaymentDetail?.id ||
-        selectedToPaymentDetail?.provider_id ||
-        selectedToPaymentDetail?.providerId;
-
-      if (!senderProviderId || !receiverProviderId) {
-        throw new Error("Provider IDs not found in payment methods");
+    setTimeout(() => {
+      if (paymentDetailsRef.current) {
+        paymentDetailsRef.current.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
       }
-
-      // Create MoneyX transaction
-      const result = await dispatch(
-        createMoneyXTransaction({
-          amount: payAmount.toFixed(2),
-          sender_provider: senderProviderId,
-          receiver_provider: receiverProviderId,
-          recipient_name: "John Doe", // TODO: Add recipient name input field if needed
-        })
-      ).unwrap();
-
-      setIsFirstCardSubmitted(true);
-
-      // Scroll to the next section
-      setTimeout(() => {
-        if (paymentDetailsRef.current) {
-          paymentDetailsRef.current.scrollIntoView({
-            behavior: "smooth",
-            block: "start",
-          });
-        }
-      }, 100);
-    } catch (error: any) {
-      console.error("Transfer error:", error);
-      const errorMessage = error || "An error occurred. Please try again.";
-      setValidationErrors([errorMessage]);
-      showToast.error(errorMessage);
-    } finally {
-      setIsSubmitting(false);
-    }
+    }, 100);
   };
 
   const isTransferDisabled =
@@ -1036,7 +1002,7 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
               {isSubmitting ? (
                 <div className="flex items-center gap-2">
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#35353e] dark:border-[#788099]"></div>
-                  <span>Posting...</span>
+                  <span>Submiting...</span>
                 </div>
               ) : (
                 <span className="flex items-center justify-center gap-2">
@@ -1051,7 +1017,76 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
 
       {isFirstCardSubmitted && (
         <>
-          {/* Bank Account Address Section */}
+          {/* 1- Account details: display provider's account (where user sends money) - do not use what user types */}
+          <h2 className="text-xl font-semibold mb-2 text-gray-900 dark:text-[#788099] inline-flex items-center gap-2">
+            1- Account details
+          </h2>
+          {(() => {
+            const accountName =
+              selectedToPaymentDetail?.account_name ??
+              selectedToPaymentDetail?.payment_details?.[0]?.account_name ??
+              getProviderName(selectedToPaymentDetail) ??
+              "—";
+            const accountNumber =
+              selectedToPaymentDetail?.account_number ??
+              selectedToPaymentDetail?.payment_details?.[0]?.account_number ??
+              "—";
+            const copyAccountNumber = () => {
+              if (!accountNumber || accountNumber === "—") return;
+              navigator.clipboard.writeText(accountNumber).then(
+                () => {
+                  setAccountNumberCopied(true);
+                  showToast.success("Account number copied");
+                  setTimeout(() => setAccountNumberCopied(false), 2000);
+                },
+                () => showToast.error("Failed to copy")
+              );
+            };
+            return (
+              <div className="bg-white dark:bg-[#18181D] border border-border dark:border-[#35353E] rounded-2xl p-4 mb-4 sm:mb-6">
+                <p className="text-[#35353e] dark:text-[#788099] text-sm sm:text-base mb-4">
+                  Copy the following account to deposit the <span className="font-semibold text-gray-900 dark:text-white">${payAmount.toFixed(2)}</span> amount
+                </p>
+                <div className="space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 p-3 border border-border dark:border-[#35353E] rounded-xl">
+                    <span className="text-[#788099] text-sm">Account name</span>
+                    <span className="text-[#35353e] dark:text-white font-medium text-sm truncate">
+                      {accountName}
+                    </span>
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 border border-border dark:border-[#35353E] rounded-xl">
+                    <span className="text-[#788099] text-sm">Account number</span>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-[#35353e] dark:text-white font-medium text-sm truncate">
+                        {accountNumber}
+                      </span>
+                      {accountNumber !== "—" && (
+                        <button
+                          type="button"
+                          onClick={copyAccountNumber}
+                          className="flex-shrink-0 p-1.5 rounded-lg bg-[#1D8751]/20 text-[#1D8751] hover:bg-[#1D8751]/30 transition-colors"
+                          title="Copy account number"
+                          aria-label="Copy account number"
+                        >
+                          {accountNumberCopied ? (
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                          ) : (
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h2m8 0h2a2 2 0 012 2v2m2 4a2 2 0 01-2 2h-8a2 2 0 01-2-2v-8" />
+                            </svg>
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* 2- Bank Account Address (user's receiving account) */}
           <h2 className="text-xl font-bold mb-2 text-[#788099] dark:text-[#788099] inline-flex items-center gap-2">
             <span className="text-[#7e7e8f] dark:text-[#788099]">2-</span>
             Bank Account Address
@@ -1232,7 +1267,7 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
                     </div>
                   </div>
                   <div className="flex items-start gap-2 sm:gap-3">
-                    <span className="text-[#1D8751] font-bold text-sm sm:text-base flex-shrink-0">3.</span>
+                    <span className="text-[#1D8751] font-bold text-sm sm:text-base shrink-0">3.</span>
                     <div>
                       <span className={`${isDark ? "text-white" : "text-gray-900"} text-xs sm:text-sm font-semibold block`}>Send funds only to our official accounts</span>
                       <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-xs sm:text-sm`}>
@@ -1243,9 +1278,9 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
                 </div>
 
                 {expandedTerms && (
-                  <div className={`space-y-2 sm:space-y-3 mt-4 pt-4 border-t ${isDark ? "border-[#35353E]" : "border-gray-200"}`}>
+                  <div className={`space-y-2 sm:space-y-3 mt-4 ${isDark ? "border-accent" : "border-gray-200"}`}>
                     <div className="flex items-start gap-2 sm:gap-3">
-                      <span className="text-[#1D8751] font-bold text-sm sm:text-base flex-shrink-0">4.</span>
+                      <span className="text-[#1D8751] font-bold text-sm sm:text-base shrink-0">4.</span>
                       <div>
                         <span className={`${isDark ? "text-white" : "text-gray-900"} text-xs sm:text-sm font-semibold block`}>Irreversible transactions & user responsibility</span>
                         <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-xs sm:text-sm`}>
@@ -1254,7 +1289,7 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
                       </div>
                     </div>
                     <div className="flex items-start gap-2 sm:gap-3">
-                      <span className="text-[#1D8751] font-bold text-sm sm:text-base flex-shrink-0">5.</span>
+                      <span className="text-[#1D8751] font-bold text-sm sm:text-base shrink-0">5.</span>
                       <div>
                         <span className={`${isDark ? "text-white" : "text-gray-900"} text-xs sm:text-sm font-semibold block`}>Transaction time limit</span>
                         <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-xs sm:text-sm`}>
@@ -1347,32 +1382,20 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
                   return;
                 }
 
-                if (!moneyXTransaction?.moneyx_transaction_id) {
-                  showToast.error("Transaction not found. Please submit the transfer form first.");
-                  return;
-                }
-
                 // Check if user is verified (KYC check) - verify with API
                 if (isAuthenticated && user) {
-                  // Check KYC status from API to get the latest status
                   try {
                     const kycResult = await dispatch(checkKYCStatus()).unwrap();
                     const kycStatus = kycResult as any;
-
-                    // Only open modal if API confirms user is NOT verified
                     if (kycStatus && kycStatus.is_verified === false) {
                       dispatch(openKYCModal());
                       return;
                     }
-                    // If verified (is_verified === true), continue with the flow
                   } catch (error) {
-                    // If API check fails, fallback to user.is_verified
-                    // But only open modal if explicitly false (not undefined/null)
                     if (user.is_verified === false) {
                       dispatch(openKYCModal());
                       return;
                     }
-                    // If verification status is unknown, allow the action to proceed
                     console.warn("KYC status check failed, proceeding with caution:", error);
                   }
                 }
@@ -1380,10 +1403,45 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
                 setIsUpdatingTransaction(true);
 
                 try {
+                  let transactionId = moneyXTransaction?.moneyx_transaction_id;
+
+                  // Create transaction on last submit if not already created (post happens here, not on first button)
+                  if (!transactionId) {
+                    const senderProviderId =
+                      selectedFromPaymentDetail?.id ||
+                      selectedFromPaymentDetail?.provider_id ||
+                      selectedFromPaymentDetail?.providerId;
+                    const receiverProviderId =
+                      selectedToPaymentDetail?.id ||
+                      selectedToPaymentDetail?.provider_id ||
+                      selectedToPaymentDetail?.providerId;
+                    if (!senderProviderId || !receiverProviderId) {
+                      showToast.error("Provider IDs not found in payment methods");
+                      return;
+                    }
+                    const recipientName =
+                      user?.first_name && user?.last_name
+                        ? `${user.first_name} ${user.last_name}`.trim()
+                        : user?.first_name || user?.last_name || "";
+                    const createResult = await dispatch(
+                      createMoneyXTransaction({
+                        amount: payAmount.toFixed(2),
+                        sender_provider: senderProviderId,
+                        receiver_provider: receiverProviderId,
+                        recipient_name: recipientName || "User",
+                      })
+                    ).unwrap();
+                    transactionId = createResult?.moneyx_transaction_id;
+                    if (!transactionId) {
+                      showToast.error("Failed to create transaction");
+                      return;
+                    }
+                  }
+
                   // Update MoneyX transaction with account number
                   const result = await dispatch(
                     updateMoneyXTransaction({
-                      transactionId: moneyXTransaction.moneyx_transaction_id,
+                      transactionId,
                       payload: {
                         recipient_account_number: bankAccountAddress.trim(),
                       },
@@ -1392,7 +1450,6 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
 
                   showToast.success("Transaction is successful", "Account updated successfully.");
 
-                  // Call onTransfer callback with transaction data including MoneyX transaction ID
                   if (onTransfer) {
                     onTransfer({
                       fromPaymentMethod: selectedFromPaymentDetail,

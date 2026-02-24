@@ -182,7 +182,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
   // Amount for commission API - use pay when from pay, else approx send from receive (getAmount/0.98)
   const commissionFetchAmount = isCalculatingFromPay ? payAmount : (getAmount > 0 ? getAmount / 0.98 : 0);
 
-  // Fetch commission from API when amount changes (API returns % e.g. {"commission":"2.00"} = 2%)
+  // Fetch commission from API when amount changes (API returns fixed amount e.g. {"commission":"120.00"})
   useEffect(() => {
     const amount = commissionFetchAmount || payAmount || getAmount;
     if (!amount || amount <= 0) {
@@ -204,19 +204,26 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
     };
   }, [payAmount, getAmount, isCalculatingFromPay, dispatch]);
 
-  // Recalculate the other field when apiCommission updates (API returns % e.g. 2 = 2%)
+  // Recalculate the other field when apiCommission updates (commission = fixed amount: receive = send - commission, send = receive + commission)
   useEffect(() => {
-    const rate = apiCommission ?? 2;
+    const commissionAmount = apiCommission ?? 0;
     if (isCalculatingFromPay && payAmount > 0) {
-      const calculatedGetAmount = Math.max(0, payAmount * (1 - rate / 100));
+      const calculatedGetAmount = Math.max(0, payAmount - commissionAmount);
       setGetAmount(calculatedGetAmount);
       setGetAmountInput(calculatedGetAmount.toString());
     } else if (!isCalculatingFromPay && getAmount > 0) {
-      const calculatedPayAmount = getAmount / (1 - rate / 100);
+      const calculatedPayAmount = getAmount + commissionAmount;
       setPayAmount(calculatedPayAmount);
       setPayAmountInput(calculatedPayAmount.toString());
     }
   }, [apiCommission]);
+
+  // When user changes payment methods or amount, minimise the expanded form (they must submit again)
+  const fromKey = selectedFromPaymentDetail?.id ?? selectedFromPaymentDetail?.provider_id ?? fromPaymentMethod ?? "";
+  const toKey = selectedToPaymentDetail?.id ?? selectedToPaymentDetail?.provider_id ?? toPaymentMethod ?? "";
+  useEffect(() => {
+    setIsFirstCardSubmitted(false);
+  }, [fromKey, toKey, payAmount, getAmount]);
 
   // Helper function to get provider name from payment method
   // Removes method suffixes like "- Bank", "- Mobile", "- Crypto", etc.
@@ -827,9 +834,8 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
     };
   });
 
-  // Calculate receive/send using commission from API (API returns % e.g. 2 = 2%)
+  // Calculate receive/send using commission from API (commission = fixed amount: receive = send - commission, send = receive + commission)
   const handleAmountChange = (value: string, isFromPay: boolean) => {
-    // Only allow numbers and decimals
     if (value === "" || /^\d*\.?\d*$/.test(value)) {
       if (value.includes(".")) {
         const decimalPart = value.split(".")[1];
@@ -840,43 +846,37 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
       }
 
       const newAmount = parseFloat(value) || 0;
-      const rate = apiCommission ?? 2;
+      const commissionAmount = apiCommission ?? 0;
 
       if (isFromPay) {
         setPayAmountInput(value);
         setPayAmount(newAmount);
         setIsCalculatingFromPay(true);
-
-        // Forward: receive = send * (1 - rate/100)
-        const calculatedGetAmount = Math.max(0, newAmount * (1 - rate / 100));
+        const calculatedGetAmount = Math.max(0, newAmount - commissionAmount);
         setGetAmount(calculatedGetAmount);
         setGetAmountInput(calculatedGetAmount.toString());
       } else {
         setGetAmountInput(value);
         setGetAmount(newAmount);
         setIsCalculatingFromPay(false);
-
-        // Reverse: send = receive / (1 - rate/100)
-        const calculatedPayAmount = newAmount / (1 - rate / 100);
+        const calculatedPayAmount = newAmount + commissionAmount;
         setPayAmount(calculatedPayAmount);
         setPayAmountInput(calculatedPayAmount.toString());
       }
 
       setApiValidationError(null);
 
-      // Show info modal if amount exceeds $15,000
       if (newAmount > 15000) {
         // You can add an info modal here similar to deposit form
       }
     }
   };
 
-  const handleFirstCardSubmit = async () => {
-    // Clear previous errors
+  // First button: validate and show next section only (no API post)
+  const handleFirstCardSubmit = () => {
     setValidationErrors([]);
     setApiValidationError(null);
 
-    // Validation
     const errors: string[] = [];
 
     if (!payAmountInput || payAmountInput.trim() === "" || !payAmount || payAmount <= 0) {
@@ -901,59 +901,16 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
       return;
     }
 
-    setIsSubmitting(true);
+    setIsFirstCardSubmitted(true);
 
-    try {
-      // Extract provider IDs from selected payment methods
-      const senderProviderId =
-        selectedFromPaymentDetail?.id ||
-        selectedFromPaymentDetail?.provider_id ||
-        selectedFromPaymentDetail?.providerId;
-
-      const receiverProviderId =
-        selectedToPaymentDetail?.id ||
-        selectedToPaymentDetail?.provider_id ||
-        selectedToPaymentDetail?.providerId;
-
-      if (!senderProviderId || !receiverProviderId) {
-        throw new Error("Provider IDs not found in payment methods");
+    setTimeout(() => {
+      if (paymentDetailsRef.current) {
+        paymentDetailsRef.current.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
       }
-
-      // Use logged-in user's full name for recipient_name
-      const recipientName =
-        user?.first_name && user?.last_name
-          ? `${user.first_name} ${user.last_name}`.trim()
-          : user?.first_name || user?.last_name || "";
-
-      // Create MoneyX transaction
-      const result = await dispatch(
-        createMoneyXTransaction({
-          amount: payAmount.toFixed(2),
-          sender_provider: senderProviderId,
-          receiver_provider: receiverProviderId,
-          recipient_name: recipientName,
-        })
-      ).unwrap();
-
-      setIsFirstCardSubmitted(true);
-
-      // Scroll to the next section
-      setTimeout(() => {
-        if (paymentDetailsRef.current) {
-          paymentDetailsRef.current.scrollIntoView({
-            behavior: "smooth",
-            block: "start",
-          });
-        }
-      }, 100);
-    } catch (error: any) {
-      console.error("Transfer error:", error);
-      const errorMessage = error || "An error occurred. Please try again.";
-      setValidationErrors([errorMessage]);
-      showToast.error(errorMessage);
-    } finally {
-      setIsSubmitting(false);
-    }
+    }, 100);
   };
 
   const isTransferDisabled =
@@ -1245,8 +1202,8 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
               selectedToPaymentDetail?.payment_details?.[0]?.account_name ??
               getProviderName(selectedToPaymentDetail) ??
               "—";
+            // Display only the provider's account number (where user sends money); do not use what user types
             const accountNumber =
-              bankAccountAddress.trim() ||
               selectedToPaymentDetail?.account_number ??
               selectedToPaymentDetail?.payment_details?.[0]?.account_number ??
               "—";
@@ -1479,7 +1436,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
                     </div>
                   </div>
                   <div className="flex items-start gap-2 sm:gap-3">
-                    <span className="text-[#1D8751] font-bold text-sm sm:text-base flex-shrink-0">3.</span>
+                    <span className="text-[#1D8751] font-bold text-sm sm:text-base shrink-0">3.</span>
                     <div>
                       <span className={`${isDark ? "text-white" : "text-gray-900"} text-xs sm:text-sm font-semibold block`}>Send funds only to our official accounts</span>
                       <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-xs sm:text-sm`}>
@@ -1490,9 +1447,9 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
                 </div>
 
                 {expandedTerms && (
-                  <div className={`space-y-2 sm:space-y-3 mt-4 pt-4 border-t ${isDark ? "border-[#35353E]" : "border-gray-200"}`}>
+                  <div className={`space-y-2 sm:space-y-3 mt-4 ${isDark ? "border-accent" : "border-gray-200"}`}>
                     <div className="flex items-start gap-2 sm:gap-3">
-                      <span className="text-[#1D8751] font-bold text-sm sm:text-base flex-shrink-0">4.</span>
+                      <span className="text-[#1D8751] font-bold text-sm sm:text-base shrink-0">4.</span>
                       <div>
                         <span className={`${isDark ? "text-white" : "text-gray-900"} text-xs sm:text-sm font-semibold block`}>Irreversible transactions & user responsibility</span>
                         <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-xs sm:text-sm`}>
@@ -1501,7 +1458,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
                       </div>
                     </div>
                     <div className="flex items-start gap-2 sm:gap-3">
-                      <span className="text-[#1D8751] font-bold text-sm sm:text-base flex-shrink-0">5.</span>
+                      <span className="text-[#1D8751] font-bold text-sm sm:text-base shrink-0">5.</span>
                       <div>
                         <span className={`${isDark ? "text-white" : "text-gray-900"} text-xs sm:text-sm font-semibold block`}>Transaction time limit</span>
                         <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-xs sm:text-sm`}>
@@ -1569,18 +1526,48 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
                   return;
                 }
 
-                if (!moneyXTransaction?.moneyx_transaction_id) {
-                  showToast.error("Transaction not found. Please submit the transfer form first.");
-                  return;
-                }
-
                 setIsUpdatingTransaction(true);
 
                 try {
+                  let transactionId = moneyXTransaction?.moneyx_transaction_id;
+
+                  // Create transaction on last submit if not already created (post happens here, not on first button)
+                  if (!transactionId) {
+                    const senderProviderId =
+                      selectedFromPaymentDetail?.id ||
+                      selectedFromPaymentDetail?.provider_id ||
+                      selectedFromPaymentDetail?.providerId;
+                    const receiverProviderId =
+                      selectedToPaymentDetail?.id ||
+                      selectedToPaymentDetail?.provider_id ||
+                      selectedToPaymentDetail?.providerId;
+                    if (!senderProviderId || !receiverProviderId) {
+                      showToast.error("Provider IDs not found in payment methods");
+                      return;
+                    }
+                    const recipientName =
+                      user?.first_name && user?.last_name
+                        ? `${user.first_name} ${user.last_name}`.trim()
+                        : user?.first_name || user?.last_name || "";
+                    const createResult = await dispatch(
+                      createMoneyXTransaction({
+                        amount: payAmount.toFixed(2),
+                        sender_provider: senderProviderId,
+                        receiver_provider: receiverProviderId,
+                        recipient_name: recipientName,
+                      })
+                    ).unwrap();
+                    transactionId = createResult?.moneyx_transaction_id;
+                    if (!transactionId) {
+                      showToast.error("Failed to create transaction");
+                      return;
+                    }
+                  }
+
                   // Update MoneyX transaction with account number
                   const result = await dispatch(
                     updateMoneyXTransaction({
-                      transactionId: moneyXTransaction.moneyx_transaction_id,
+                      transactionId,
                       payload: {
                         recipient_account_number: bankAccountAddress.trim(),
                       },
@@ -1589,10 +1576,8 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
 
                   showToast.success("Transaction is successful", "Account updated successfully.");
 
-                  // Scroll to top of page after successful submission
                   window.scrollTo({ top: 0, behavior: 'smooth' });
 
-                  // Call onTransfer callback with transaction data including MoneyX transaction ID
                   if (onTransfer) {
                     onTransfer({
                       fromPaymentMethod: selectedFromPaymentDetail,
