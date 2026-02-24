@@ -6,6 +6,7 @@ import {
   fetchDeviceSessions,
   logoutDevice,
   logoutAllDevices,
+  clearDeviceSessionsError,
   toggleTwoFactor,
   createDeviceSession,
 } from "../../slices/settingsSlice";
@@ -320,6 +321,7 @@ const PrivacySecurity = () => {
     setLogoutLoading(true);
     setLogoutMode("all");
     setLogoutProgress(0);
+    dispatch(clearDeviceSessionsError());
 
     const clearAndRedirect = () => {
       dispatch(logout());
@@ -359,9 +361,11 @@ const PrivacySecurity = () => {
       setLogoutProgress(100);
       showToast.success("All devices logged out successfully");
       clearAndRedirect();
-    } catch (error) {
-      console.error("Failed to logout all devices:", error);
-      showToast.error("Failed to logout all devices");
+    } catch (_) {
+      // Server may return 400 (e.g. already logged out); still clear local state and redirect
+      setLogoutProgress(100);
+      showToast.success("Signed out");
+      clearAndRedirect();
     } finally {
       setLogoutLoading(false);
       setShowLogoutModal(false);
@@ -439,7 +443,9 @@ const PrivacySecurity = () => {
       router.push("/dashboard/account/?tab=privacy");
     } catch (error: any) {
       console.error("Failed to remove device session:", error);
-      showToast.error(error?.message || "Failed to remove device session");
+      const msg = error?.message || "";
+      const isRawStatus = /request failed with status code \d+/i.test(msg) || /status code \d+/i.test(msg);
+      showToast.error(isRawStatus ? "Failed to remove device session" : msg || "Failed to remove device session");
     } finally {
       setDeletingSessionId(null);
       setSessionToDelete(null);
@@ -566,6 +572,14 @@ const PrivacySecurity = () => {
       setCurrentPage(1);
     }
   }, [allSessions.length, currentPage, paginatedSessions.length, totalPages]);
+
+  // Never show raw "Request failed with status 400" etc. on the UI
+  const displaySessionError =
+    deviceSessionsError && !/request failed with status code \d+/i.test(deviceSessionsError) && !/status code \d+/i.test(deviceSessionsError)
+      ? deviceSessionsError
+      : deviceSessionsError
+        ? "Unable to load device sessions"
+        : null;
 
   // Debug logging
   logger.debug('dashboard', "Device sessions state:", {
@@ -974,9 +988,9 @@ const PrivacySecurity = () => {
           )} */}
             </div>
 
-            {deviceSessionsError && (
+            {displaySessionError && !logoutLoading && (
               <div className="text-red-500 text-sm mb-3">
-                Error: {deviceSessionsError}
+                Error: {displaySessionError}
               </div>
             )}
 
@@ -990,9 +1004,9 @@ const PrivacySecurity = () => {
             ) : paginatedSessions.length === 0 ? (
               <div className="text-center py-6 dark:text-[#808080] text-gray-600 text-sm">
                 No active device sessions found
-                {deviceSessionsError && (
+                {displaySessionError && !logoutLoading && (
                   <div className="mt-2 text-xs text-red-400">
-                    API Error: {deviceSessionsError}
+                    API Error: {displaySessionError}
                   </div>
                 )}
                 {/* Debug info */}

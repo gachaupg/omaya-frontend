@@ -2,7 +2,8 @@
  * RegisterForm.tsx – auto‑generated placeholder
  */
 "use client";
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import Image from "next/image";
 import { useDispatch } from "react-redux";
@@ -365,6 +366,8 @@ export default function RegistrationPage() {
   const [selectedCountry, setSelectedCountry] = useState("SO"); // Default to Somalia
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
   const [countrySearchTerm, setCountrySearchTerm] = useState("");
+  const countryTriggerRef = useRef<HTMLDivElement>(null);
+  const [countryDropdownRect, setCountryDropdownRect] = useState({ top: 0, left: 0, width: 240 });
   const [showReferralTooltip, setShowReferralTooltip] = useState(false);
   const [formErrors, setFormErrors] = useState<string[]>([]);
   const referralTooltipRef = React.useRef<HTMLDivElement | null>(null);
@@ -382,13 +385,30 @@ export default function RegistrationPage() {
       country.dialCode.includes(countrySearchTerm)
   );
 
+  // Position dropdown when it opens (viewport coords for position: fixed)
+  useEffect(() => {
+    if (!showCountryDropdown || !countryTriggerRef.current) return;
+    const el = countryTriggerRef.current;
+    const measure = () => {
+      const rect = el.getBoundingClientRect();
+      setCountryDropdownRect({
+        top: rect.bottom + 4,
+        left: rect.left,
+        width: Math.max(rect.width, 280),
+      });
+    };
+    const raf = requestAnimationFrame(measure);
+    return () => cancelAnimationFrame(raf);
+  }, [showCountryDropdown]);
+
   // Close dropdown when clicking outside
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
       if (
         showCountryDropdown &&
-        !target.closest(".country-dropdown-container")
+        !target.closest(".country-dropdown-container") &&
+        !target.closest(".country-dropdown-panel")
       ) {
         setShowCountryDropdown(false);
         setCountrySearchTerm(""); // Clear search when closing
@@ -763,7 +783,7 @@ export default function RegistrationPage() {
 
   return (
     <>
-      <div className="min-h-screen bg-[#0a0a0a] dark:bg-[#0a0a0a] flex flex-col md:flex-row items-start justify-center relative overflow-hidden px-4 sm:px-6 md:px-8 lg:px-12 py-12 sm:py-16 md:pt-24 md:pb-24">
+      <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a] flex flex-col md:flex-row items-start justify-center relative overflow-hidden px-4 sm:px-6 md:px-8 lg:px-12 py-12 sm:py-16 md:pt-24 md:pb-24">
         {/* Left Side - Mobile App Preview */}
         <div className="w-full md:w-1/2 flex justify-center mb-8 md:mb-0 relative z-10">
           {/* Background Glow Effect */}
@@ -817,12 +837,12 @@ export default function RegistrationPage() {
 
         {/* Right Side - Registration Form */}
         <div className="w-full md:w-1/2 relative z-10 px-4 sm:px-6 md:px-8 lg:px-0 flex justify-center md:justify-start">
-          <div className="max-w-xl mx-auto 2xl:max-w-2xl w-full rounded-2xl p-6 sm:p-8 shadow-[0_4px_20px_rgba(0,0,0,0.25),0_15px_50px_rgba(0,0,0,0.4),0_30px_80px_rgba(0,0,0,0.5)]">
+          <div className="max-w-xl mx-auto 2xl:max-w-2xl w-full rounded-2xl p-6 sm:p-8 bg-white dark:bg-transparent shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_10px_20px_-5px_rgba(0,0,0,0.1)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.25),0_15px_50px_rgba(0,0,0,0.4),0_30px_80px_rgba(0,0,0,0.5)]">
             <div className="mb-6">
-              <h1 className="text-white text-2xl sm:text-3xl font-bold">
+              <h1 className="text-gray-900 dark:text-white text-2xl sm:text-3xl font-bold">
                 {t("auth.register.title", "Registration")}
               </h1>
-              <p className="text-[#9CA3AF] text-sm mt-1">
+              <p className="text-gray-600 dark:text-[#9CA3AF] text-sm mt-1">
                 {t(
                   "auth.register.subtitle",
                   "Please register with correct information"
@@ -833,15 +853,15 @@ export default function RegistrationPage() {
                   ref={errorBannerRef}
                   role="alert"
                   aria-live="assertive"
-                  className="mt-4 rounded-xl border border-[#F04438] bg-[#FDECEC]/10 dark:bg-[#FDECEC]/10 dark:border-[#F04438] px-4 py-3 text-left"
+                  className="mt-4 rounded-xl border border-red-200 dark:border-[#F04438] bg-red-50 dark:bg-[#FDECEC]/10 px-4 py-3 text-left"
                 >
-                  <p className="text-[#B42318] text-sm font-semibold mb-2">
+                  <p className="text-red-800 dark:text-[#B42318] text-sm font-semibold mb-2">
                     {t(
                       "auth.register.fixIssues",
                       "Please resolve the following:"
                     )}
                   </p>
-                  <ul className="list-disc space-y-1 pl-5 text-[#B42318] text-sm">
+                  <ul className="list-disc space-y-1 pl-5 text-red-800 dark:text-[#B42318] text-sm">
                     {formErrors.map((message, index) => (
                       <li key={`summary-${message}-${index}`}>{message}</li>
                     ))}
@@ -855,7 +875,7 @@ export default function RegistrationPage() {
                 <div>
                   <label
                     htmlFor="first-name"
-                    className="block text-[#9CA3AF] text-xs font-semibold uppercase tracking-wide mb-2"
+                    className="block text-gray-600 dark:text-[#9CA3AF] text-xs font-semibold uppercase tracking-wide mb-2"
                   >
                     {t("auth.register.firstName", "First Name")} <span className="text-red-500">*</span>
                   </label>
@@ -867,8 +887,8 @@ export default function RegistrationPage() {
                       onChange={(e) => setFirstName(e.target.value)}
                       className={`w-full py-2.5 px-4 pl-10 rounded-lg bg-transparent border ${errors.firstName
                         ? "border-[#FDA29B]"
-                        : "border-[#35353e]"
-                        } text-white placeholder-[#6B7280] focus:outline-none focus:border-[#1D8751] focus:ring-1 focus:ring-[#1D8751]`}
+                        : "border-gray-300 dark:border-[#35353e]"
+                        } text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-[#6B7280] focus:outline-none focus:border-[#1D8751] focus:ring-1 focus:ring-[#1D8751]`}
                       placeholder={t("auth.register.firstName", "Full Name")}
                     />
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -906,7 +926,7 @@ export default function RegistrationPage() {
                 <div>
                   <label
                     htmlFor="establishment-date"
-                    className="block text-[#9CA3AF] text-xs font-semibold uppercase tracking-wide mb-2"
+                    className="block text-gray-600 dark:text-[#9CA3AF] text-xs font-semibold uppercase tracking-wide mb-2"
                   >
                     {t("auth.register.lastName", "Last Name")} <span className="text-red-500">*</span>
                   </label>
@@ -916,8 +936,8 @@ export default function RegistrationPage() {
                       id="establishment-date"
                       value={lastName}
                       onChange={(e) => setLastName(e.target.value)}
-                      className={`w-full py-2.5 px-4 pl-10 rounded-lg bg-transparent border ${errors.lastName ? "border-[#FDA29B]" : "border-[#35353e]"
-                        } text-white placeholder-[#6B7280] focus:outline-none focus:border-[#1D8751] focus:ring-1 focus:ring-[#1D8751]`}
+                      className={`w-full py-2.5 px-4 pl-10 rounded-lg bg-transparent border ${errors.lastName ? "border-[#FDA29B]" : "border-gray-300 dark:border-[#35353e]"
+                        } text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-[#6B7280] focus:outline-none focus:border-[#1D8751] focus:ring-1 focus:ring-[#1D8751]`}
                       placeholder={t("auth.register.lastName", "Last Name")}
                     />
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -958,7 +978,7 @@ export default function RegistrationPage() {
                 <div>
                   <label
                     htmlFor="email"
-                    className="block text-[#9CA3AF] text-xs font-semibold uppercase tracking-wide mb-2"
+                    className="block text-gray-600 dark:text-[#9CA3AF] text-xs font-semibold uppercase tracking-wide mb-2"
                   >
                     {t("auth.register.email", "Email")} <span className="text-red-500">*</span>
                   </label>
@@ -968,8 +988,8 @@ export default function RegistrationPage() {
                       id="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className={`w-full py-2.5 px-4 pl-10 rounded-lg bg-transparent border ${errors.email ? "border-[#FDA29B]" : "border-[#35353e]"
-                        } text-white placeholder-[#6B7280] focus:outline-none focus:border-[#1D8751] focus:ring-1 focus:ring-[#1D8751]`}
+                      className={`w-full py-2.5 px-4 pl-10 rounded-lg bg-transparent border ${errors.email ? "border-[#FDA29B]" : "border-gray-300 dark:border-[#35353e]"
+                        } text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-[#6B7280] focus:outline-none focus:border-[#1D8751] focus:ring-1 focus:ring-[#1D8751]`}
                       placeholder={t(
                         "auth.login.email.placeholder",
                         "Email Address"
@@ -1013,20 +1033,22 @@ export default function RegistrationPage() {
                 <div>
                   <label
                     htmlFor="phone"
-                    className="block text-[#9CA3AF] text-xs font-semibold uppercase tracking-wide mb-2"
+                    className="block text-gray-600 dark:text-[#9CA3AF] text-xs font-semibold uppercase tracking-wide mb-2"
                   >
                     {t("auth.register.phone", "Phone")} <span className="text-red-500">*</span>
                   </label>
                   <div
-                    className={`flex items-stretch rounded-lg border bg-transparent overflow-hidden ${errors.phone ? "border-[#FDA29B]" : "border-[#35353e]"}`}
+                    className={`flex items-stretch rounded-lg border bg-transparent overflow-visible ${errors.phone ? "border-[#FDA29B]" : "border-gray-300 dark:border-[#35353e]"}`}
                   >
-                    <div className="relative country-dropdown-container flex-shrink-0">
+                    <div ref={countryTriggerRef} className="relative country-dropdown-container flex-shrink-0">
                       <button
                         type="button"
-                        onClick={() =>
-                          setShowCountryDropdown(!showCountryDropdown)
-                        }
-                        className="h-full py-2.5 pl-3 pr-2 flex items-center gap-1.5 border-r border-[#35353e] text-white focus:outline-none focus:ring-1 focus:ring-[#1D8751] focus:ring-inset min-w-0"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setShowCountryDropdown(!showCountryDropdown);
+                        }}
+                        className="h-full py-2.5 pl-3 pr-2 flex items-center gap-1.5 border-r border-gray-300 dark:border-[#35353e] text-gray-700 dark:text-white focus:outline-none focus:ring-1 focus:ring-[#1D8751] focus:ring-inset min-w-0 cursor-pointer"
                       >
                         <img
                           src={`https://flagcdn.com/16x12/${selectedCountry.toLowerCase()}.png`}
@@ -1036,7 +1058,7 @@ export default function RegistrationPage() {
                             e.currentTarget.style.display = "none";
                           }}
                         />
-                        <span className="text-sm text-[#9CA3AF] whitespace-nowrap">
+                        <span className="text-sm text-gray-600 dark:text-[#9CA3AF] whitespace-nowrap">
                           {countries.find((c) => c.code === selectedCountry)?.dialCode || "+252"}
                         </span>
                         <svg
@@ -1044,7 +1066,7 @@ export default function RegistrationPage() {
                           height="10"
                           viewBox="0 0 24 24"
                           fill="none"
-                          className="flex-shrink-0 text-[#9CA3AF]"
+                          className="flex-shrink-0 text-gray-500 dark:text-[#9CA3AF]"
                         >
                           <path
                             d="M6 9L12 15L18 9"
@@ -1055,61 +1077,71 @@ export default function RegistrationPage() {
                           />
                         </svg>
                       </button>
-                      {showCountryDropdown && (
-                        <div className="absolute z-50 left-0 sm:left-0 right-0 sm:right-auto sm:w-80 mt-1 max-h-[60vh] overflow-hidden bg-white dark:bg-[var(--card-color)] border border-gray-300 dark:border-[#35353E] rounded-lg shadow-lg">
-                          <div className="p-2 sm:p-3 border-b border-gray-300 dark:border-[#35353E]">
-                            <div className="relative">
-                              <input
-                                type="text"
-                                placeholder="Search countries..."
-                                value={countrySearchTerm}
-                                onChange={(e) =>
-                                  setCountrySearchTerm(e.target.value)
-                                }
-                                className="w-full py-2 px-3 pl-9 rounded-md dark:bg-[#2A2A30] bg-gray-50 border dark:border-gray-600 border-gray-300 dark:text-white text-gray-900 focus:outline-none focus:border-[#13B562] text-xs sm:text-sm"
-                                autoFocus
-                              />
-                              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
-                                  <path d="M9 17C13.4183 17 17 13.4183 17 9C17 4.58172 13.4183 1 9 1C4.58172 1 1 4.58172 1 9C1 13.4183 4.58172 17 9 17Z" stroke="#788099" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                                  <path d="M19 19L14.65 14.65" stroke="#788099" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                                </svg>
+                      {showCountryDropdown &&
+                        typeof document !== "undefined" &&
+                        createPortal(
+                          <div
+                            className="country-dropdown-panel fixed z-[9999] max-h-[60vh] overflow-hidden bg-white dark:bg-[var(--card-color)] border border-gray-200 dark:border-[#35353E] rounded-lg shadow-xl"
+                            style={{
+                              top: countryDropdownRect.top,
+                              left: countryDropdownRect.left,
+                              width: countryDropdownRect.width,
+                            }}
+                          >
+                            <div className="p-2 sm:p-3 border-b border-gray-200 dark:border-[#35353E]">
+                              <div className="relative">
+                                <input
+                                  type="text"
+                                  placeholder="Search countries..."
+                                  value={countrySearchTerm}
+                                  onChange={(e) =>
+                                    setCountrySearchTerm(e.target.value)
+                                  }
+                                  className="w-full py-2 px-3 pl-9 rounded-md bg-gray-50 dark:bg-[#2A2A30] border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-[#13B562] text-xs sm:text-sm"
+                                  autoFocus
+                                />
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                  <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
+                                    <path d="M9 17C13.4183 17 17 13.4183 17 9C17 4.58172 13.4183 1 9 1C4.58172 1 1 4.58172 1 9C1 13.4183 4.58172 17 9 17Z" stroke="#788099" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                    <path d="M19 19L14.65 14.65" stroke="#788099" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                  </svg>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                          <div className="max-h-[50vh] sm:max-h-60 overflow-y-auto scrollbar-thin">
-                            {filteredCountries.length > 0 ? (
-                              filteredCountries.map((country) => (
-                                <button
-                                  key={country.code}
-                                  type="button"
-                                  onClick={() => {
-                                    setSelectedCountry(country.code);
-                                    setShowCountryDropdown(false);
-                                    setCountrySearchTerm("");
-                                  }}
-                                  className="w-full px-3 sm:px-4 py-3 text-left hover:bg-[#13B562] hover:bg-opacity-10 flex items-center dark:text-white text-gray-900 border-b border-gray-200 dark:border-[#35353E] last:border-b-0 min-h-[48px]"
-                                >
-                                  <img
-                                    src={`https://flagcdn.com/16x12/${country.code.toLowerCase()}.png`}
-                                    alt=""
-                                    className="w-4 h-3 object-cover rounded-sm mr-2 sm:mr-3 flex-shrink-0"
-                                    onError={(e) => {
-                                      e.currentTarget.style.display = "none";
+                            <div className="max-h-[50vh] overflow-y-auto">
+                              {filteredCountries.length > 0 ? (
+                                filteredCountries.map((country) => (
+                                  <button
+                                    key={country.code}
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedCountry(country.code);
+                                      setShowCountryDropdown(false);
+                                      setCountrySearchTerm("");
                                     }}
-                                  />
-                                  <div className="flex-1 min-w-0 text-left">
-                                    <span className="font-medium text-sm truncate block">{country.name}</span>
-                                    <span className="text-[#788099] text-xs">{country.dialCode}</span>
-                                  </div>
-                                </button>
-                              ))
-                            ) : (
-                              <div className="px-4 py-3 text-center text-[#788099] text-sm">No countries found</div>
-                            )}
-                          </div>
-                        </div>
-                      )}
+                                    className="w-full px-3 sm:px-4 py-3 text-left hover:bg-[#13B562] hover:bg-opacity-10 flex items-center text-gray-900 dark:text-white border-b border-gray-200 dark:border-[#35353E] last:border-b-0 min-h-[48px] cursor-pointer"
+                                  >
+                                    <img
+                                      src={`https://flagcdn.com/16x12/${country.code.toLowerCase()}.png`}
+                                      alt=""
+                                      className="w-4 h-3 object-cover rounded-sm mr-2 sm:mr-3 flex-shrink-0"
+                                      onError={(e) => {
+                                        e.currentTarget.style.display = "none";
+                                      }}
+                                    />
+                                    <div className="flex-1 min-w-0 text-left">
+                                      <span className="font-medium text-sm truncate block">{country.name}</span>
+                                      <span className="text-gray-500 dark:text-[#788099] text-xs">{country.dialCode}</span>
+                                    </div>
+                                  </button>
+                                ))
+                              ) : (
+                                <div className="px-4 py-3 text-center text-gray-500 dark:text-[#788099] text-sm">No countries found</div>
+                              )}
+                            </div>
+                          </div>,
+                          document.body
+                        )}
                     </div>
                     <div className="relative flex-1 min-w-0">
                       <input
@@ -1119,7 +1151,7 @@ export default function RegistrationPage() {
                         id="phone"
                         value={phone}
                         onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
-                        className={`w-full h-full py-2.5 px-4 rounded-r-lg bg-transparent border-0 text-white placeholder-[#6B7280] focus:outline-none focus:ring-1 focus:ring-[#1D8751] focus:ring-inset ${errors.phone ? "border-[#FDA29B]" : ""}`}
+                        className={`w-full h-full py-2.5 px-4 rounded-r-lg bg-transparent border-0 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-[#6B7280] focus:outline-none focus:ring-1 focus:ring-[#1D8751] focus:ring-inset ${errors.phone ? "border-[#FDA29B]" : ""}`}
                         placeholder="612345678"
                       />
                     </div>
@@ -1134,7 +1166,7 @@ export default function RegistrationPage() {
                 <div>
                   <label
                     htmlFor="password"
-                    className="block text-[#9CA3AF] text-xs font-semibold uppercase tracking-wide mb-2"
+                    className="block text-gray-600 dark:text-[#9CA3AF] text-xs font-semibold uppercase tracking-wide mb-2"
                   >
                     {t("auth.register.password", "Password")} <span className="text-red-500">*</span>
                   </label>
@@ -1148,8 +1180,8 @@ export default function RegistrationPage() {
                         if (submitAttempted) setSubmitAttempted(false);
                       }}
                       autoComplete="new-password"
-                      className={`w-full py-2.5 px-4 pl-10 rounded-lg bg-transparent border ${errors.password ? "border-[#FDA29B]" : "border-[#35353e]"
-                        } text-white placeholder-[#6B7280] focus:outline-none focus:border-[#1D8751] focus:ring-1 focus:ring-[#1D8751]`}
+                      className={`w-full py-2.5 px-4 pl-10 rounded-lg bg-transparent border ${errors.password ? "border-[#FDA29B]" : "border-gray-300 dark:border-[#35353e]"
+                        } text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-[#6B7280] focus:outline-none focus:border-[#1D8751] focus:ring-1 focus:ring-[#1D8751]`}
                       placeholder={t(
                         "auth.register.password.placeholder",
                         "Enter password"
@@ -1273,7 +1305,7 @@ export default function RegistrationPage() {
                 <div>
                   <label
                     htmlFor="confirm-password"
-                    className="block text-[#9CA3AF] text-xs font-semibold uppercase tracking-wide mb-2"
+                    className="block text-gray-600 dark:text-[#9CA3AF] text-xs font-semibold uppercase tracking-wide mb-2"
                   >
                     {t("auth.register.confirm", "Confirm")} <span className="text-red-500">*</span>
                   </label>
@@ -1286,8 +1318,8 @@ export default function RegistrationPage() {
                       autoComplete="new-password"
                       className={`w-full py-2.5 px-4 pl-10 rounded-lg bg-transparent border ${errors.confirmPassword
                         ? "border-[#FDA29B]"
-                        : "border-[#35353e]"
-                        } text-white placeholder-[#6B7280] focus:outline-none focus:border-[#1D8751] focus:ring-1 focus:ring-[#1D8751]`}
+                        : "border-gray-300 dark:border-[#35353e]"
+                        } text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-[#6B7280] focus:outline-none focus:border-[#1D8751] focus:ring-1 focus:ring-[#1D8751]`}
                       placeholder={t(
                         "auth.register.confirm.placeholder",
                         "Confirm password"
@@ -1418,10 +1450,10 @@ export default function RegistrationPage() {
                       ? "bg-[#1D8751]"
                       : submitAttempted
                         ? "bg-red-500"
-                        : "border border-[#6B7280] bg-transparent"
+                        : "border border-gray-400 dark:border-[#6B7280] bg-transparent"
                       }`}
                   ></div>
-                  <span className="text-[#9CA3AF]">
+                  <span className="text-gray-600 dark:text-[#9CA3AF]">
                     {t("auth.register.requirements.8chars", "8+ characters")}
                   </span>
                 </div>
@@ -1431,10 +1463,10 @@ export default function RegistrationPage() {
                       ? "bg-[#1D8751]"
                       : submitAttempted
                         ? "bg-red-500"
-                        : "border border-[#6B7280] bg-transparent"
+                        : "border border-gray-400 dark:border-[#6B7280] bg-transparent"
                       }`}
                   ></div>
-                  <span className="text-[#9CA3AF]">
+                  <span className="text-gray-600 dark:text-[#9CA3AF]">
                     {t("auth.register.requirements.numberSymbol", "Number or symbol")}
                   </span>
                 </div>
@@ -1444,10 +1476,10 @@ export default function RegistrationPage() {
                       ? "bg-[#1D8751]"
                       : submitAttempted
                         ? "bg-red-500"
-                        : "border border-[#6B7280] bg-transparent"
+                        : "border border-gray-400 dark:border-[#6B7280] bg-transparent"
                       }`}
                   ></div>
-                  <span className="text-[#9CA3AF]">
+                  <span className="text-gray-600 dark:text-[#9CA3AF]">
                     {t("auth.register.requirements.mixedCase", "Mixed case")}
                   </span>
                 </div>
@@ -1457,7 +1489,7 @@ export default function RegistrationPage() {
               <div>
                 <label
                   htmlFor="referral-code"
-                  className="block text-[#9CA3AF] text-xs font-semibold uppercase tracking-wide mb-2"
+                  className="block text-gray-600 dark:text-[#9CA3AF] text-xs font-semibold uppercase tracking-wide mb-2"
                 >
                   {t("auth.register.referral", "Referral Code")}
                 </label>
@@ -1467,7 +1499,7 @@ export default function RegistrationPage() {
                     id="referral-code"
                     value={referralCode}
                     onChange={(e) => setReferralCode(e.target.value)}
-                    className="w-full py-2.5 px-4 pl-10 rounded-lg bg-transparent border border-[#35353e] text-white placeholder-[#6B7280] focus:outline-none focus:border-[#1D8751] focus:ring-1 focus:ring-[#1D8751]"
+                    className="w-full py-2.5 px-4 pl-10 rounded-lg bg-transparent border border-gray-300 dark:border-[#35353e] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-[#6B7280] focus:outline-none focus:border-[#1D8751] focus:ring-1 focus:ring-[#1D8751]"
                     placeholder={t(
                       "auth.register.referral.placeholder",
                       "Paste here your referral code"
@@ -1582,7 +1614,7 @@ export default function RegistrationPage() {
                   </div>
                   <label
                     htmlFor="terms"
-                    className="text-xs sm:text-sm text-[#9CA3AF] cursor-pointer break-words leading-relaxed flex-1"
+                    className="text-xs sm:text-sm text-gray-600 dark:text-[#9CA3AF] cursor-pointer break-words leading-relaxed flex-1"
                   >
                     {t(
                       "auth.register.terms",
@@ -1644,7 +1676,7 @@ export default function RegistrationPage() {
 
               {/* Login Link */}
               <div className="text-center mt-4">
-                <p className="text-[#9CA3AF] text-sm">
+                <p className="text-gray-600 dark:text-[#9CA3AF] text-sm">
                   {t("auth.register.haveAccount", "Already have an account?")}{" "}
                   <Link
                     href="/auth/login"
@@ -1658,7 +1690,7 @@ export default function RegistrationPage() {
               {/* Or Sign Up with */}
               <div className="mt-4">
                 <div className="relative flex items-center justify-center">
-                  <span className="mx-4 text-[#9CA3AF] text-sm">
+                  <span className="mx-4 text-gray-600 dark:text-[#9CA3AF] text-sm">
                     {t("auth.register.or", "Or Sign Up with")}
                   </span>
                 </div>
