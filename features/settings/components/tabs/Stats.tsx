@@ -108,32 +108,32 @@ const Stats = ({ onSupportClick }: StatsProps) => {
   // Listen for profile photo updates from other components
   useEffect(() => {
     if (typeof window === "undefined") return;
-    
+
     const handleProfilePhotoUpdate = (event: CustomEvent) => {
       const newPhotoUrl = event.detail?.photoUrl;
       if (newPhotoUrl) {
         // Add cache-busting parameter to force browser to reload the image
-        const photoWithTimestamp = newPhotoUrl.includes('?') 
+        const photoWithTimestamp = newPhotoUrl.includes('?')
           ? `${newPhotoUrl}&t=${Date.now()}`
           : `${newPhotoUrl}?t=${Date.now()}`;
         setProfileImage(photoWithTimestamp);
       }
     };
-    
+
     window.addEventListener('profilePhotoUpdated', handleProfilePhotoUpdate as EventListener);
-    
+
     // Also check localStorage in case profile was updated in another tab
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'profile_photo' && e.newValue) {
-        const photoWithTimestamp = e.newValue.includes('?') 
+        const photoWithTimestamp = e.newValue.includes('?')
           ? `${e.newValue}&t=${Date.now()}`
           : `${e.newValue}?t=${Date.now()}`;
         setProfileImage(photoWithTimestamp);
       }
     };
-    
+
     window.addEventListener('storage', handleStorageChange);
-    
+
     return () => {
       window.removeEventListener('profilePhotoUpdated', handleProfilePhotoUpdate as EventListener);
       window.removeEventListener('storage', handleStorageChange);
@@ -146,7 +146,7 @@ const Stats = ({ onSupportClick }: StatsProps) => {
       dispatch(fetchTransactionSummary());
       dispatch(fetchWallets());
       dispatch(fetchMatchedTrades(1));
-      
+
       // Fetch referral data
       if (user?.referral_code) {
         dispatch(fetchReferredUsers(user.referral_code));
@@ -157,10 +157,10 @@ const Stats = ({ onSupportClick }: StatsProps) => {
     }
   }, [dispatch, isAuthenticated, user?.referral_code]);
 
- return (
-   <Card className="w-full p-3 sm:p-4 dark:bg-(--card-color) bg-gray-50 rounded-2xl dark:border-accent border-gray-300 border dark:text-white text-gray-900 shadow-lg">
+  return (
+    <Card className="w-full p-3 sm:p-4 dark:bg-(--card-color) bg-gray-50 rounded-2xl dark:border-accent border-gray-300 border dark:text-white text-gray-900 shadow-lg">
       {/* Header */}
-      <div className="flex w-full flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
+      <div className="flex w-full flex-row items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
         <div className="flex items-center gap-3 sm:gap-4 min-w-0">
           {profileImage ? (
             <div className="relative">
@@ -174,72 +174,72 @@ const Stats = ({ onSupportClick }: StatsProps) => {
                   unoptimized={true}
                 />
               </div>
-              
+
             </div>
           ) : (
             <div className="relative">
               <DefaultProfileIcon />
-             
+
             </div>
           )}
           <div className="flex flex-col min-w-0">
             <span className="text-sm sm:text-[14px] font-semibold truncate max-w-xs sm:max-w-sm text-gray-900 dark:text-white">
-              {user?.first_name} 
+              {user?.first_name}
             </span>
             <span className="flex items-center gap-1.5 text-[#1D8751] text-[8px] sm:text-xs font-medium whitespace-nowrap">
               <span className="shrink-0">Verified Profile</span>
-              <span className="inline-flex items-center justify-center w-5 h-5 shrink-0" style={{position: 'relative'}}>
-                      <svg width="16" height="16" viewBox="0 0 20 20" style={{position: 'absolute'}}>
-                        <circle cx="10" cy="10" r="9" fill="white" />
-                        <circle cx="10" cy="10" r="7.5" fill="#1D8751" />
-                        {/* Serrated edge using small circles */}
-                        {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map(angle => {
-                          const rad = (angle * Math.PI) / 180;
-                          const x = 10 + 8.5 * Math.cos(rad);
-                          const y = 10 + 8.5 * Math.sin(rad);
-                          return <circle key={angle} cx={x} cy={y} r="1" fill="white" />;
-                        })}
-                      </svg>
-                      <svg
-                        width="10"
-                        height="10"
-                        viewBox="0 0 10 10"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                        style={{position: 'relative', zIndex: 1}}
-                        className="shrink-0"
-                      >
-                        <path
-                          d="M2 5L4 7L8 3"
-                          stroke="#FFFFFF"
-                          strokeWidth="1.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    </span>
+              <span className="inline-flex items-center justify-center w-5 h-5 shrink-0" style={{ position: 'relative' }}>
+                <svg width="16" height="16" viewBox="0 0 20 20" style={{ position: 'absolute' }}>
+                  <circle cx="10" cy="10" r="9" fill="white" />
+                  <circle cx="10" cy="10" r="7.5" fill="#1D8751" />
+                  {/* Serrated edge using small circles */}
+                  {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map(angle => {
+                    const rad = (angle * Math.PI) / 180;
+                    const x = 10 + 8.5 * Math.cos(rad);
+                    const y = 10 + 8.5 * Math.sin(rad);
+                    return <circle key={angle} cx={x} cy={y} r="1" fill="white" />;
+                  })}
+                </svg>
+                <svg
+                  width="10"
+                  height="10"
+                  viewBox="0 0 10 10"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  style={{ position: 'relative', zIndex: 1 }}
+                  className="shrink-0"
+                >
+                  <path
+                    d="M2 5L4 7L8 3"
+                    stroke="#FFFFFF"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </span>
             </span>
           </div>
         </div>
-        <div className="flex gap-6 shrink-0 ml-auto">
-          <div 
+        <div className="flex gap-3 sm:gap-6 shrink-0 items-center">
+          <div
             className="p-2 rounded-full border border-[#1D8751] flex items-center justify-center relative cursor-pointer"
             onClick={() => router.push("/dashboard/notifications")}
-            >
-            <svg 
-              xmlns="http://www.w3.org/2000/svg" 
-              width="16" 
-              height="16" 
-              viewBox="0 0 24 24" 
-              fill="none" 
-              stroke="currentColor" 
-              strokeWidth="1" 
-              strokeLinecap="round" 
-              strokeLinejoin="round" 
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1"
+              strokeLinecap="round"
+              strokeLinejoin="round"
               className="text-[#1D8751]"
-              >
-              <path d="M10.268 21a2 2 0 0 0 3.464 0"/>
-              <path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/>
+            >
+              <path d="M10.268 21a2 2 0 0 0 3.464 0" />
+              <path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326" />
             </svg>
             {matchedTrades?.results && matchedTrades.results.length > 0 && (
               <span className="absolute -top-1 -right-2 bg-[#E23D3A] text-white text-[10px] sm:text-xs rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center">
@@ -297,18 +297,16 @@ const Stats = ({ onSupportClick }: StatsProps) => {
         </div>
         <div className="w-full h-4 sm:h-5 dark:bg-accent bg-gray-300 rounded-r-full mb-4">
           <div
-            className={`h-4 sm:h-5 rounded-r-full ${
-              (summary?.total_approved_p2p_deposits || 0) > 0
+            className={`h-4 sm:h-5 rounded-r-full ${(summary?.total_approved_p2p_deposits || 0) > 0
                 ? "bg-[#1D8751]"
                 : "bg-[#788099]"
-            }`}
+              }`}
             style={{
-              width: `${
-                ((summary?.total_approved_p2p_deposits || 0) /
+              width: `${((summary?.total_approved_p2p_deposits || 0) /
                   ((summary?.total_approved_p2p_deposits || 0) +
                     (summary?.total_approved_p2p_withdrawals || 0))) *
                 100
-              }%`,
+                }%`,
             }}
           />
         </div>
@@ -325,18 +323,16 @@ const Stats = ({ onSupportClick }: StatsProps) => {
         </div>
         <div className="w-full h-4 sm:h-5 dark:bg-accent bg-gray-300 rounded-r-full mb-4">
           <div
-            className={`h-4 sm:h-5 rounded-r-full ${
-              (summary?.total_approved_p2p_withdrawals || 0) > 0
+            className={`h-4 sm:h-5 rounded-r-full ${(summary?.total_approved_p2p_withdrawals || 0) > 0
                 ? "bg-[#E23D3A]"
                 : "bg-[#788099]"
-            }`}
+              }`}
             style={{
-              width: `${
-                ((summary?.total_approved_p2p_withdrawals || 0) /
+              width: `${((summary?.total_approved_p2p_withdrawals || 0) /
                   ((summary?.total_approved_p2p_deposits || 0) +
                     (summary?.total_approved_p2p_withdrawals || 0))) *
                 100
-              }%`,
+                }%`,
             }}
           />
         </div>

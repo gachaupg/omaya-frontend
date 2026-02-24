@@ -190,15 +190,15 @@ const FeedbackTable: React.FC<FeedbackTableProps> = ({ data, loading }) => {
                 </tr>
                 {/* Expandable Comment Row */}
                 {expandedRows.has(item.trade_id) && (
-                  <tr className="border-b border-[#35354a] bg-[#1a1a1f]">
+                  <tr className="border-b border-border bg-white dark:bg-[#23232b]">
                     <td colSpan={9} className="px-4 py-3">
                       <div className="flex items-start gap-3">
-                        <div className="w-2 h-2 bg-[#1D8751] rounded-full mt-2 flex-shrink-0"></div>
+                        <div className="w-2 h-2 bg-[#1D8751] rounded-full mt-2 shrink-0"></div>
                         <div className="flex-1">
-                          <div className="text-sm text-[#A0A3BC] mb-1">
+                          <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">
                             Comment:
                           </div>
-                          <div className="text-sm dark:text-white text-gray-900 bg-[#23232b] rounded-lg p-3 border border-[#35354a]">
+                          <div className="text-sm dark:text-white text-gray-900 dark:bg-[#23232b] bg-white rounded-lg p-3 border border-border">
                             {item.comment || "No comment provided"}
                           </div>
                         </div>
@@ -320,7 +320,7 @@ const FeedbackTable: React.FC<FeedbackTableProps> = ({ data, loading }) => {
       </div>
 
       {/* Pagination Controls */}
-      <div className="flex items-center justify-between px-4 py-3 bg-[#23232b] rounded-lg">
+      <div className="flex items-center justify-between px-4 py-3 dark:bg-[#23232b] bg-white rounded-lg">
         <div className="dark:text-white text-gray-900">
           Showing {startIndex + 1} to {Math.min(endIndex, data.length)} of{" "}
           {data.length} entries
