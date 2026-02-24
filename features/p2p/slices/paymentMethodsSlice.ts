@@ -47,45 +47,34 @@ const extractPaymentDetailError = (error: any): string => {
 
   // 1. Try to get the data from the response
   const responseData = error?.response?.data ?? error?.data ?? null;
-  console.log("🔥 [PaymentMethods] Raw Error:", error);
-  console.log("🔥 [PaymentMethods] Response Data:", responseData);
 
   // 2. If data is a simple string, return it
   if (typeof responseData === "string" && responseData.trim()) {
     return responseData;
   }
 
-  // 3. If data is an object, look for known error keys
+  // 3. If data is an object, look for ANY string or array of strings
   if (responseData && typeof responseData === "object") {
-    // Check for specific field errors first (like allow_auto_send)
-    const allowAutoSendError = responseData.allow_auto_send;
-    if (Array.isArray(allowAutoSendError) && allowAutoSendError.length > 0) {
-      const message = allowAutoSendError.find(
-        (item) => typeof item === "string" && item.trim()
-      );
-      if (message) return message;
+    // Priority keys
+    const priorityKeys = ["detail", "message", "error"];
+
+    // Check priority keys first
+    for (const key of priorityKeys) {
+      const val = responseData[key];
+      if (typeof val === "string" && val.trim()) return val;
+      if (Array.isArray(val) && typeof val[0] === "string" && val[0].trim()) return val[0];
     }
 
-    // Check common error keys: "detail", "message", "error"
-    const errorKeys = ["detail", "message", "error"];
-    for (const key of errorKeys) {
-      const value = responseData[key];
-      
-      // Case A: Value is a string (e.g. { error: "Cannot delete..." })
-      if (typeof value === "string" && value.trim()) {
-        return value;
+    // Check ALL other keys (django field errors like account_number)
+    for (const key in responseData) {
+      if (priorityKeys.includes(key)) continue;
+      const val = responseData[key];
+      // DRF typically sends { field: ["error"] }
+      if (Array.isArray(val) && typeof val[0] === "string" && val[0].trim()) {
+        return val[0];
       }
-      
-      // Case B: Value is an array of strings (e.g. { error: ["Invalid id"] })
-      if (Array.isArray(value) && value.length > 0) {
-        const message = value.find((item) => typeof item === "string" && item.trim());
-        if (message) return message;
-      }
-      
-      // Case C: Value is an object (unexpected but possible) -> Try to stringify or get message from it
-      if (value && typeof value === 'object' && !Array.isArray(value)) {
-         if (value.message && typeof value.message === 'string') return value.message;
-         if (value.detail && typeof value.detail === 'string') return value.detail;
+      if (typeof val === "string" && val.trim()) {
+        return val;
       }
     }
   }
@@ -397,8 +386,8 @@ const paymentMethodsSlice = createSlice({
         state.patchError = action.payload ?? null;
         state.patchSuccess = false;
       })
-      .addCase(sendPaymentDetailEditOtp.fulfilled, () => {})
-      .addCase(sendPaymentDetailEditOtp.rejected, () => {})
+      .addCase(sendPaymentDetailEditOtp.fulfilled, () => { })
+      .addCase(sendPaymentDetailEditOtp.rejected, () => { })
       .addCase(updatePaymentDetailWithOtp.pending, (state) => {
         state.patchLoading = true;
         state.patchError = null;

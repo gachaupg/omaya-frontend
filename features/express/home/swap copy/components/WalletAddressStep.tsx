@@ -164,7 +164,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
       <div className="w-full mx-auto">
         {/* Combined Wallet Address and Terms Card */}
         <div className={`flex flex-col rounded-2xl p-3 sm:p-5 shadow-lg w-full ${
-          isDark ? "bg-[#0F0F17] border-1 border-[#35353E]" : "bg-white border-1 border-[#E2E8F0]"
+          isDark ? "bg-[#0F0F17] border border-accent" : "bg-white border border-[#E2E8F0]"
         } text-[#35353e] dark:text-[#788099]`}>
           <div className="flex flex-col gap-4 sm:gap-6">
             {/* Wallet Address Input Section */}
@@ -172,7 +172,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
               <label className="block text-sm sm:text-[17px] text-[#7e7e8f] mb-1 sm:mb-2 font-semibold">
                 Wallet/Account Address
               </label>
-              <div className={`flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-2 rounded-xl sm:rounded-2xl px-3 sm:px-4 py-3 sm:py-2 mb-2 sm:mb-4 ${
+              <div className={`flex flex-row items-center gap-2 rounded-xl sm:rounded-2xl px-3 sm:px-4 py-2 mb-2 sm:mb-4 ${
                 isDark 
                   ? "bg-[#2a2a33] border-2 border-[#4a4a55] sm:border sm:border-[#39394a] sm:bg-transparent" 
                   : "bg-[#f5f7fa] border-2 border-[#d1d5db] sm:border sm:border-[#39394a] sm:bg-transparent"
@@ -182,7 +182,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                     ? "bg-[#1D1D23] border border-[#5a5a66] sm:border-0 sm:bg-transparent" 
                     : "bg-white border border-[#c4c9d4] sm:border-0 sm:bg-transparent"
                 }`}>
-                  <span className="mr-2 text-[#1D8751] flex-shrink-0">
+                  <span className="mr-2 text-[#1D8751] shrink-0">
                     <svg width="20" height="20" className="sm:w-[22px] sm:h-[22px]" fill="none" viewBox="0 0 24 24">
                       <path
                         d="M7 17v2a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"
@@ -273,20 +273,17 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                 <button
                   onClick={handlePaste}
                   disabled={isLoading}
-                  className={`flex items-center justify-center gap-1 border text-[#1D8751] rounded-full px-3 sm:px-4 py-2 sm:py-1 lg:ml-2 font-semibold text-sm sm:text-base hover:bg-[#1D8751] hover:text-white transition-colors flex-shrink-0 w-full lg:w-auto ${
-                    isDark ? "bg-[#1D1D23] border-[#1D8751]" : "bg-transparent border-[#1D8751]"
-                  }`}
+                  className="flex items-center justify-center gap-2 bg-[#1D8751] hover:bg-[#166b3e] text-white rounded-xl px-3 py-1.5 font-semibold text-sm transition-colors min-h-[36px] touch-manipulation flex-shrink-0 whitespace-nowrap"
                 >
-                  <svg width="16" height="16" className="sm:w-[18px] sm:h-[18px]" fill="none" viewBox="0 0 24 24">
+                  <svg width="16" height="16" fill="none" viewBox="0 0 24 24" className="text-white">
                     <path
-                      d="M19 21H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h4l2-2h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2z"
+                      d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
                       stroke="currentColor"
                       strokeWidth="2"
                       strokeLinecap="round"
                       strokeLinejoin="round"
                     />
                   </svg>
-                  Paste
                 </button>
               </div>
               {walletError && (
@@ -356,51 +353,30 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                 <div className="p-4 sm:p-5">
                   <div className={`space-y-2 sm:space-y-3 ${expandedTerms ? "" : "line-clamp-3"}`}>
                     <div className="flex items-start gap-2 sm:gap-3">
-                      <span className="text-[#1D8751] font-bold text-sm sm:text-base flex-shrink-0">1.</span>
+                      <span className="text-[#1D8751] font-bold text-sm sm:text-base shrink-0">1.</span>
                       <p className={`text-xs sm:text-sm ${isDark ? "text-[#788099]" : "text-gray-900"}`}>
                         <span className="font-semibold">Send from your own wallet only:</span> You must send the crypto asset from a wallet that you personally own and control. Third-party or intermediary wallets are not allowed.
                       </p>
                     </div>
                     <div className="flex items-start gap-2 sm:gap-3">
-                      <span className="text-[#1D8751] font-bold text-sm sm:text-base flex-shrink-0">2.</span>
+                      <span className="text-[#1D8751] font-bold text-sm sm:text-base shrink-0">2.</span>
                       <p className={`text-xs sm:text-sm ${isDark ? "text-[#788099]" : "text-gray-900"}`}>
                         <span className="font-semibold">Send the correct asset and network:</span> You must send {sendAssetName} on the {sendNetwork} only. Sending any other asset or using a different network will result in PERMANENT LOSS of funds.
                       </p>
                     </div>
                     <div className="flex items-start gap-2 sm:gap-3">
-                      <span className="text-[#1D8751] font-bold text-sm sm:text-base flex-shrink-0">3.</span>
+                      <span className="text-[#1D8751] font-bold text-sm sm:text-base shrink-0">3.</span>
                       <p className={`text-xs sm:text-sm ${isDark ? "text-[#788099]" : "text-gray-900"}`}>
                         <span className="font-semibold">Provide the correct receiving address:</span> You must enter the correct receiving wallet address for {sendAssetName} on {sendNetwork}. Putting any other asset or using a different network will result in PERMANENT LOSS of funds.
                       </p>
                     </div>
                   </div>
-
-                  <button
-                    onClick={() => setExpandedTerms(!expandedTerms)}
-                    className="mt-3 sm:mt-4 text-[#1D8751] hover:text-[#166b3e] font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition-colors"
-                  >
-                    {expandedTerms ? (
-                      <>
-                        <span>Show Less</span>
-                        <svg className="w-4 h-4 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                        </svg>
-                      </>
-                    ) : (
-                      <>
-                        <span>Show More</span>
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                        </svg>
-                      </>
-                    )}
-                  </button>
                 </div>
 
                 {expandedTerms && (
-                  <div className={`border-t px-4 sm:px-5 py-4 sm:py-5 space-y-4 sm:space-y-5 ${isDark ? "border-[#35353E]" : "border-gray-200"}`}>
+                  <div className={`px-4 sm:px-5 pb-4 sm:pb-5 space-y-4 sm:space-y-5`}>
                     <div className="flex items-start gap-2 sm:gap-3">
-                      <span className="text-[#1D8751] font-bold text-sm sm:text-base flex-shrink-0">4.</span>
+                      <span className="text-[#1D8751] font-bold text-sm sm:text-base shrink-0">4.</span>
                       <div className="flex-1">
                         <p className={`text-xs sm:text-sm font-semibold mb-2 ${isDark ? "text-white" : "text-gray-900"}`}>
                           Irreversible transactions & user responsibility:
@@ -419,7 +395,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                       </div>
                     </div>
                     <div className="flex items-start gap-2 sm:gap-3">
-                      <span className="text-[#1D8751] font-bold text-sm sm:text-base flex-shrink-0">5.</span>
+                      <span className="text-[#1D8751] font-bold text-sm sm:text-base shrink-0">5.</span>
                       <div className="flex-1">
                         <p className={`text-xs sm:text-sm font-semibold mb-2 ${isDark ? "text-white" : "text-gray-900"}`}>
                           Acceptance of terms:
@@ -435,13 +411,53 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                     </div>
                   </div>
                 )}
+                 <button
+                    onClick={() => setExpandedTerms(!expandedTerms)}
+                    className="mb-3 sm:mb-4 mx-11 text-[#1D8751] hover:text-[#166b3e] font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition-colors"
+                  >
+                    {expandedTerms ? (
+                      <>
+                        <span>Show Less</span>
+                        <svg className="w-4 h-4 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                        </svg>
+                      </>
+                    ) : (
+                      <>
+                        <span>Show More</span>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                        </svg>
+                      </>
+                    )}
+                  </button>
               </div>
+              <button
+                onClick={() => setExpandedTerms(!expandedTerms)}
+                className="mt-3 sm:mt-4 text-[#1D8751] hover:text-[#166b3e] font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition-colors"
+              >
+                {expandedTerms ? (
+                  <>
+                    <span>Show Less</span>
+                    <svg className="w-4 h-4 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                    </svg>
+                  </>
+                ) : (
+                  <>
+                    <span>Show More</span>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                    </svg>
+                  </>
+                )}
+              </button>
 
               {/* Terms Acceptance Checkbox */}
               <label
                 className={`flex items-start gap-3 cursor-pointer select-none mt-2 p-3 rounded-xl border ${
                   isDark
-                    ? "border-[#35353E] hover:bg-[#1a1a22]"
+                    ? "border-accent hover:bg-[#1a1a22]"
                     : "border-[#E2E8F0] hover:bg-[#f8fafc]"
                 } transition-colors`}
               >
@@ -492,7 +508,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
           >
             {isLoading ? (
               <div className="flex items-center gap-2">
-                <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-[#35353e] dark:border-[#35353E]"></div>
+                <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-[#35353e] dark:border-accent"></div>
                 <span className="text-sm sm:text-base">Processing...</span>
               </div>
             ) : (
