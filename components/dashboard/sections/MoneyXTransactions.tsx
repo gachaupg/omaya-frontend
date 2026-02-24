@@ -244,7 +244,7 @@ const MoneyXTransactions = () => {
       </div>
 
       {/* Pagination */}
-      {totalPages > 1 && (
+      {totalPages && (
         <div className="flex justify-center items-center gap-2 mt-4">
           <button
             onClick={(e) => {
