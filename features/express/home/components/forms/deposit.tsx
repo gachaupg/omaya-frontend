@@ -4095,6 +4095,7 @@ export default function DepositForm({
               />
               {/* Paste button */}
               <button
+                title="Paste"
                 onClick={async () => {
                   try {
                     const text = await navigator.clipboard.readText();
@@ -4108,18 +4109,17 @@ export default function DepositForm({
                     showToast.error("Failed to paste from clipboard");
                   }
                 }}
-                className={`flex items-center justify-center gap-1 ${isDark ? "bg-[#1D1D23]" : "bg-white"} border border-[#1D8751] text-[#1D8751] rounded-full p-0 w-9 h-9 sm:w-auto sm:h-auto sm:px-3 sm:py-2 ml-2 font-semibold text-sm hover:bg-[#1D8751] hover:text-white transition-colors flex-shrink-0 whitespace-nowrap`}
+                className="flex items-center justify-center gap-2 bg-[#1D8751] hover:bg-[#166b3e] text-white rounded-xl px-3 py-1.5 font-semibold text-sm transition-colors min-h-[36px] touch-manipulation flex-shrink-0 whitespace-nowrap"
               >
-                <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
+                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" className="text-white">
                   <path
-                    d="M19 21H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h4l2-2h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2z"
+                    d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
                     stroke="currentColor"
                     strokeWidth="2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   />
                 </svg>
-                <span className="hidden sm:inline">Paste</span>
               </button>
             </div>
 
@@ -4185,7 +4185,7 @@ export default function DepositForm({
             </div>
             <div className={`border border-[#1D8751] rounded-xl overflow-hidden transition-all duration-300 ${isDark ? "bg-[#1D1D23]" : "bg-[#F8FAFF]"}`}>
               <div className="p-4">
-                <div className={`space-y-2 sm:space-y-3 ${expandedTerms ? "" : "line-clamp-3"}`}>
+                <div className="space-y-2 sm:space-y-3">
                   <div className="flex items-start gap-2 sm:gap-3">
                     <span className="text-[#1D8751] font-bold text-sm sm:text-base flex-shrink-0">1.</span>
                     <p className={`text-xs sm:text-sm ${isDark ? "text-[#788099]" : "text-[#475569]"}`}>
@@ -4205,26 +4205,6 @@ export default function DepositForm({
                     </p>
                   </div>
                 </div>
-                <button
-                  onClick={() => setExpandedTerms(!expandedTerms)}
-                  className="mt-3 sm:mt-4 text-[#1D8751] hover:text-[#166b3e] font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition-colors"
-                >
-                  {expandedTerms ? (
-                    <>
-                      <span>Show Less</span>
-                      <svg className="w-4 h-4 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                      </svg>
-                    </>
-                  ) : (
-                    <>
-                      <span>Show More</span>
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                      </svg>
-                    </>
-                  )}
-                </button>
               </div>
             </div>
 

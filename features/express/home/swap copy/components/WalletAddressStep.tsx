@@ -172,7 +172,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
               <label className="block text-sm sm:text-[17px] text-[#7e7e8f] mb-1 sm:mb-2 font-semibold">
                 Wallet/Account Address
               </label>
-              <div className={`flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-2 rounded-xl sm:rounded-2xl px-3 sm:px-4 py-3 sm:py-2 mb-2 sm:mb-4 ${
+              <div className={`flex flex-row items-center gap-2 rounded-xl sm:rounded-2xl px-3 sm:px-4 py-2 mb-2 sm:mb-4 ${
                 isDark 
                   ? "bg-[#2a2a33] border-2 border-[#4a4a55] sm:border sm:border-[#39394a] sm:bg-transparent" 
                   : "bg-[#f5f7fa] border-2 border-[#d1d5db] sm:border sm:border-[#39394a] sm:bg-transparent"
@@ -273,20 +273,17 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                 <button
                   onClick={handlePaste}
                   disabled={isLoading}
-                  className={`flex items-center justify-center gap-1 border text-[#1D8751] rounded-full px-3 sm:px-4 py-2 sm:py-1 lg:ml-2 font-semibold text-sm sm:text-base hover:bg-[#1D8751] hover:text-white transition-colors shrink-0 w-full lg:w-auto ${
-                    isDark ? "bg-[#1D1D23] border-[#1D8751]" : "bg-transparent border-[#1D8751]"
-                  }`}
+                  className="flex items-center justify-center gap-2 bg-[#1D8751] hover:bg-[#166b3e] text-white rounded-xl px-3 py-1.5 font-semibold text-sm transition-colors min-h-[36px] touch-manipulation flex-shrink-0 whitespace-nowrap"
                 >
-                  <svg width="16" height="16" className="sm:w-[18px] sm:h-[18px]" fill="none" viewBox="0 0 24 24">
+                  <svg width="16" height="16" fill="none" viewBox="0 0 24 24" className="text-white">
                     <path
-                      d="M19 21H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h4l2-2h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2z"
+                      d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
                       stroke="currentColor"
                       strokeWidth="2"
                       strokeLinecap="round"
                       strokeLinejoin="round"
                     />
                   </svg>
-                  Paste
                 </button>
               </div>
               {walletError && (
@@ -435,6 +432,26 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                     )}
                   </button>
               </div>
+              <button
+                onClick={() => setExpandedTerms(!expandedTerms)}
+                className="mt-3 sm:mt-4 text-[#1D8751] hover:text-[#166b3e] font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition-colors"
+              >
+                {expandedTerms ? (
+                  <>
+                    <span>Show Less</span>
+                    <svg className="w-4 h-4 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                    </svg>
+                  </>
+                ) : (
+                  <>
+                    <span>Show More</span>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                    </svg>
+                  </>
+                )}
+              </button>
 
               {/* Terms Acceptance Checkbox */}
               <label

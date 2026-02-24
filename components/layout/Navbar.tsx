@@ -1348,7 +1348,7 @@ export default function Navbar() {
             </>
           )}
 
-          <div className={`flex items-center space-x-1 sm:space-x-1.5 md:space-x-1.5 lg:space-x-2 xl:space-x-3 2xl:space-x-4 ${depositDropdownOpen ? 'invisible' : ''}`}>
+          <div className={`hidden sm:flex items-center space-x-1 sm:space-x-1.5 md:space-x-1.5 lg:space-x-2 xl:space-x-3 2xl:space-x-4 ${depositDropdownOpen ? 'invisible' : ''}`}>
             <LanguageSelector />
             <ThemeSelector isTransparentNavbar={isTransparentNavbar} />
           </div>
