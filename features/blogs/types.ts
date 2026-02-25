@@ -23,6 +23,10 @@ export interface BlogPost {
     | string;
   author_name?: string;
   createdAt?: string;
+  status?: string;
+  statusChangedAt?: string;
+  requestedReviewAt?: string;
+  publishedAt?: string;
   // Legacy fields for UI compatibility
   id?: number;
   created_at?: string;

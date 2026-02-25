@@ -3,13 +3,17 @@ import { client } from "@/sanity/lib/client";
 import { BlogPost } from "../types";
 import { logger } from '@/lib/utils/logger';
 
-const BLOG_QUERY = `*[_type == "blog"] | order(createdAt desc) {
+const BLOG_QUERY = `*[_type == "blog" && (status == "published" || !defined(status))] | order(coalesce(publishedAt, createdAt) desc) {
   _id, 
   title, 
   description, 
   category,
   author_name, 
   createdAt,
+  status,
+  statusChangedAt,
+  requestedReviewAt,
+  publishedAt,
   image {
     asset->{
       _id,
@@ -60,8 +64,8 @@ export const useLiveBlog = () => {
         const transformedBlogs = data.map((blog: BlogPost, index: number) => ({
           ...blog,
           id: index + 1,
-          created_at: blog.createdAt || blog.created_at || new Date().toISOString(),
-          updated_at: blog.createdAt || blog.created_at || new Date().toISOString(),
+          created_at: blog.publishedAt || blog.createdAt || blog.created_at || new Date().toISOString(),
+          updated_at: blog.statusChangedAt || blog.createdAt || blog.created_at || new Date().toISOString(),
           image: blog.image,
           author_name: blog.author_name || "Anonymous",
         }));
@@ -111,8 +115,8 @@ export const useLiveBlog = () => {
             const transformedBlogs = data.map((blog: BlogPost, index: number) => ({
               ...blog,
               id: index + 1,
-              created_at: blog.createdAt || blog.created_at || new Date().toISOString(),
-              updated_at: blog.createdAt || blog.created_at || new Date().toISOString(),
+              created_at: blog.publishedAt || blog.createdAt || blog.created_at || new Date().toISOString(),
+              updated_at: blog.statusChangedAt || blog.createdAt || blog.created_at || new Date().toISOString(),
               image: blog.image,
               author_name: blog.author_name || "Anonymous",
             }));
