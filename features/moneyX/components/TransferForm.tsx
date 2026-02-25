@@ -219,9 +219,16 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
   }, [apiCommission]);
 
   // When user changes payment methods or amount, minimise the expanded form (they must submit again)
+  // Skip when we've just restored from login - keep form expanded with bank account
   const fromKey = selectedFromPaymentDetail?.id ?? selectedFromPaymentDetail?.provider_id ?? fromPaymentMethod ?? "";
   const toKey = selectedToPaymentDetail?.id ?? selectedToPaymentDetail?.provider_id ?? toPaymentMethod ?? "";
+  const isRestoringRef = useRef(false);
   useEffect(() => {
+    if (isRestoringRef.current) {
+      isRestoringRef.current = false;
+      return;
+    }
+    if (hasRestoredState.current) return; // Never collapse after restore
     setIsFirstCardSubmitted(false);
   }, [fromKey, toKey, payAmount, getAmount]);
 
@@ -321,6 +328,9 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
 
         console.log("🔄 [Dashboard] Restoring moneyx form state:", state);
 
+        // Prevent minimise effect from collapsing the form when we restore amounts
+        isRestoringRef.current = true;
+
         // Restore amounts immediately
         if (state.amountInput !== undefined && state.amountInput !== null && state.amountInput !== "") {
           const sendAmount = state.amountValue || parseFloat(state.amountInput) || 0;
@@ -333,6 +343,13 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
           setGetAmountInput(state.receiveAmountInput);
           setGetAmount(receiveAmount);
           console.log("✅ [Dashboard] Restored receive amount:", state.receiveAmountInput, "=", receiveAmount);
+        }
+
+        // Restore bank account address and expand form
+        if (state.bankAccountAddress) {
+          setBankAccountAddress(state.bankAccountAddress);
+          setIsFirstCardSubmitted(true);
+          console.log("✅ [Dashboard] Restored bank account and expanded form");
         }
 
         // Store payment method data for later restoration (after payment methods are loaded)
@@ -441,12 +458,15 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
     // Only attempt restoration once
     if (paymentMethodRestoreAttempted.current) {
       console.log("⏳ [Dashboard] Restoration already attempted, skipping");
+
+
       return;
     }
 
-
-
     paymentMethodRestoreAttempted.current = true;
+
+    // Prevent minimise effect from collapsing when we set selected payment details
+    isRestoringRef.current = true;
 
     let matchedFromMethod = null;
     let matchedToMethod = null;

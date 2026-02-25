@@ -345,24 +345,14 @@ const swapSlice = createSlice({
         state.supportedAssets = action.payload;
         logger.debug('swap', "🎯 Redux: supportedAssets set to:", state.supportedAssets?.length || 0, "assets");
         
-        // Set default assets if not set - BTC for fromAsset, ETH for toAsset
+        // Set default assets - always first and second
         if (!state.fromAsset && action.payload.length > 0) {
-          // Find BTC asset, fallback to first asset if BTC not found
-          const btcAsset = action.payload.find(asset => 
-            asset?.ticker?.toLowerCase() === 'btc' || 
-            asset?.symbol?.toLowerCase() === 'btc'
-          );
-          state.fromAsset = btcAsset || action.payload[0];
-          logger.debug('swap', "🎯 Redux: fromAsset set to:", state.fromAsset);
+          state.fromAsset = action.payload[0];
+          logger.debug('swap', "🎯 Redux: fromAsset set to first:", state.fromAsset);
         }
         if (!state.toAsset && action.payload.length > 1) {
-          // Find ETH asset, fallback to second asset if ETH not found
-          const ethAsset = action.payload.find(asset => 
-            asset?.ticker?.toLowerCase() === 'eth' || 
-            asset?.symbol?.toLowerCase() === 'eth'
-          );
-          state.toAsset = ethAsset || action.payload[1];
-          logger.debug('swap', "🎯 Redux: toAsset set to:", state.toAsset);
+          state.toAsset = action.payload[1];
+          logger.debug('swap', "🎯 Redux: toAsset set to second:", state.toAsset);
         }
       })
       .addCase(fetchSupportedAssets.rejected, (state, action) => {

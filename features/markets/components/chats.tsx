@@ -151,10 +151,6 @@ export const Chats = ({ data, symbol = 'BTC/USD', timeRange = '1', height = '100
         yAxis: {
           show: true,
           size: 'auto',
-          position: 'right',
-          type: 'normal',
-          inside: false,
-          reverse: false,
           axisLine: {
             show: true,
             color: '#35353E',
@@ -231,108 +227,73 @@ export const Chats = ({ data, symbol = 'BTC/USD', timeRange = '1', height = '100
         },
       } as any);
 
-      // Process and apply data to chart
-      const days = Number(timeRange);
+      // klinecharts v10: use setDataLoader instead of applyNewData (removed in v10)
+      const days = Number(timeRange) || 1;
+      const span = 1;
+      const periodType = days <= 1 ? 'hour' : 'day';
 
-      if (data?.prices && Array.isArray(data.prices) && data.prices.length > 0) {
-        // Convert price data to OHLCV format
-        const ohlcvData: Array<{
-          timestamp: number;
-          open: number;
-          high: number;
-          low: number;
-          close: number;
-          volume: number;
-        }> = [];
+      chart.setSymbol({ ticker: symbol });
+      chart.setPeriod({ span, type: periodType });
 
-        // Create a map for volumes if available
-        const volumeMap = new Map<number, number>();
-        if (data.total_volumes && Array.isArray(data.total_volumes)) {
-          data.total_volumes.forEach(([timestamp, volume]) => {
-            volumeMap.set(timestamp, volume);
-          });
-        }
-
-        // Group prices into candles
-        const prices = data.prices;
-
-        // Determine interval based on timeRange
-        let intervalMs: number;
-        if (days === 1) {
-          intervalMs = 60 * 60 * 1000; // 1 hour
-        } else if (days <= 7) {
-          intervalMs = 4 * 60 * 60 * 1000; // 4 hours
-        } else if (days <= 30) {
-          intervalMs = 24 * 60 * 60 * 1000; // 1 day
-        } else {
-          intervalMs = 7 * 24 * 60 * 60 * 1000; // 1 week
-        }
-
-        // Group prices into intervals
-        const groupedData = new Map<number, number[]>();
-
-        prices.forEach(([timestamp, price]) => {
-          // Round timestamp to nearest interval
-          const intervalTimestamp = Math.floor(timestamp / intervalMs) * intervalMs;
-          if (!groupedData.has(intervalTimestamp)) {
-            groupedData.set(intervalTimestamp, []);
+      chart.setDataLoader({
+        getBars: ({ callback }: { callback: (data: any[]) => void }) => {
+          if (!data?.prices || !Array.isArray(data.prices) || data.prices.length === 0) {
+            callback([]);
+            return;
           }
-          groupedData.get(intervalTimestamp)!.push(price);
-        });
 
-        // Convert grouped data to OHLCV
-        Array.from(groupedData.entries())
-          .sort(([a], [b]) => a - b)
-          .forEach(([timestamp, groupPrices]) => {
-            if (groupPrices.length > 0) {
-              const open = groupPrices[0];
-              const close = groupPrices[groupPrices.length - 1];
-              const high = Math.max(...groupPrices);
-              const low = Math.min(...groupPrices);
-              const volume = volumeMap.get(timestamp) || 0;
+          const volumeMap = new Map<number, number>();
+          if (data.total_volumes && Array.isArray(data.total_volumes)) {
+            data.total_volumes.forEach(([ts, vol]: [number, number]) => {
+              volumeMap.set(ts, vol);
+            });
+          }
 
-              ohlcvData.push({
-                timestamp,
-                open,
-                high,
-                low,
-                close,
-                volume,
-              });
-            }
-          });
-
-        // Apply data directly to the chart
-        // Using type assertion since klinecharts types may not be complete
-        if (ohlcvData.length > 0) {
-          const chartAny = chart as any;
-          
-          // Try multiple methods to apply data (klinecharts API variations)
-          if (typeof chartAny.applyNewData === 'function') {
-            chartAny.applyNewData(ohlcvData);
-          } else if (typeof chartAny.updateData === 'function') {
-            chartAny.updateData(ohlcvData);
-          } else if (typeof chartAny.setData === 'function') {
-            chartAny.setData(ohlcvData);
+          let intervalMs: number;
+          if (days === 1) {
+            intervalMs = 60 * 60 * 1000;
+          } else if (days <= 7) {
+            intervalMs = 4 * 60 * 60 * 1000;
+          } else if (days <= 30) {
+            intervalMs = 24 * 60 * 60 * 1000;
           } else {
-            // Try to get/create series and set data
-            try {
-              let series = chartAny.getSeries?.();
-              if (!series || (Array.isArray(series) && series.length === 0)) {
-                series = chartAny.createCandleStickSeries?.() || chartAny.createSeries?.('candle');
-              }
-              if (series) {
-                const targetSeries = Array.isArray(series) ? series[0] : series;
-                if (targetSeries && typeof targetSeries.setData === 'function') {
-                  targetSeries.setData(ohlcvData);
-                }
-              }
-            } catch (error) {
-              console.warn('Failed to update chart data:', error);
-            }
+            intervalMs = 7 * 24 * 60 * 60 * 1000;
           }
-        }
-      }
+
+          const groupedData = new Map<number, number[]>();
+          data.prices.forEach(([timestamp, price]: [number, number]) => {
+            const intervalTimestamp = Math.floor(timestamp / intervalMs) * intervalMs;
+            if (!groupedData.has(intervalTimestamp)) {
+              groupedData.set(intervalTimestamp, []);
+            }
+            groupedData.get(intervalTimestamp)!.push(price);
+          });
+
+          const ohlcvData: Array<{
+            timestamp: number;
+            open: number;
+            high: number;
+            low: number;
+            close: number;
+            volume: number;
+          }> = [];
+
+          Array.from(groupedData.entries())
+            .sort(([a], [b]) => a - b)
+            .forEach(([timestamp, groupPrices]) => {
+              if (groupPrices.length > 0) {
+                const open = groupPrices[0];
+                const close = groupPrices[groupPrices.length - 1];
+                const high = Math.max(...groupPrices);
+                const low = Math.min(...groupPrices);
+                const volume = volumeMap.get(timestamp) || 0;
+                ohlcvData.push({ timestamp, open, high, low, close, volume });
+              }
+            });
+
+          callback(ohlcvData);
+        },
+      });
     }
 
     return () => {

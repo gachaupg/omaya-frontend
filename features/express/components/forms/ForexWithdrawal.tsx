@@ -130,9 +130,9 @@ export default function ForexWithdrawal({
                   <span className="text-base font-semibold text-[#35353e] dark:text-white">OMAYA EXCHANGE LTD</span>
                 </div>
               </div>
-              <div className="mt-3 p-2 border border-[#F79330] rounded-lg">
-                <p className="text-xs text-[#35353e] dark:text-[#D1D2D4] font-medium">
-                  ⚠️ Important: Please send {payAmount.toFixed(2)} FXP from your forex account to the above FXPRIMUS account before submitting this form.
+              <div className="mt-3 p-3 sm:p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800/50 rounded-xl">
+                <p className="text-xs sm:text-sm text-yellow-800 dark:text-yellow-200 font-medium">
+                  <span className="font-bold">Important:</span> Please send {payAmount.toFixed(2)} FXP from your forex account to the above FXPRIMUS account before submitting this form.
                 </p>
               </div>
             </div>

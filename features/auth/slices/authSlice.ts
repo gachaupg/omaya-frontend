@@ -351,6 +351,18 @@ const authSlice = createSlice({
         });
       }
     },
+    updateUser: (
+      state,
+      action: PayloadAction<{ email?: string; phone_number?: string }>
+    ) => {
+      if (!state.user) return;
+      const { email, phone_number } = action.payload;
+      if (email !== undefined) state.user.email = email;
+      if (phone_number !== undefined) state.user.phone_number = phone_number;
+      if (typeof window !== "undefined" && state.user) {
+        localStorage.setItem("user", JSON.stringify(state.user));
+      }
+    },
     updateTokens: (
       state,
       action: PayloadAction<{ access?: string; refresh?: string }>
@@ -824,6 +836,7 @@ export const {
   open2FAModal,
   close2FAModal,
   setCredentials,
+  updateUser,
   updateTokens,
 } = authSlice.actions;
 export default authSlice.reducer;
