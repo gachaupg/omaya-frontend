@@ -1135,7 +1135,7 @@ export default function Navbar() {
                 )}
               </div>
 
-              <div className={`relative flex-shrink-0 ${depositDropdownOpen ? 'invisible' : ''}`} ref={profileModalRef}>
+              <div className="relative flex-shrink-0" ref={profileModalRef}>
                 <button
                   onClick={toggleProfileModal}
                   className="text-white focus:outline-none relative"
@@ -1348,7 +1348,7 @@ export default function Navbar() {
             </>
           )}
 
-          <div className={`hidden sm:flex items-center space-x-1 sm:space-x-1.5 md:space-x-1.5 lg:space-x-2 xl:space-x-3 2xl:space-x-4 ${depositDropdownOpen ? 'invisible' : ''}`}>
+          <div className="flex items-center space-x-1 sm:space-x-1.5 md:space-x-1.5 lg:space-x-2 xl:space-x-3 2xl:space-x-4">
             <LanguageSelector />
             <ThemeSelector isTransparentNavbar={isTransparentNavbar} />
           </div>
@@ -1545,7 +1545,7 @@ export default function Navbar() {
                     </svg>
                   </span> */}
               </div>
-              <div className={`flex flex-col items-center space-y-3 mt-4 ${mobileDepositDropdownOpen ? 'invisible' : ''}`} ref={mobileProfileRef}>
+              <div className="flex flex-col items-center space-y-3 mt-4">
                 <button
                   onClick={toggleProfileModal}
                   className="flex items-start space-x-3 justify-between w-full text-left focus:outline-none"
@@ -1728,7 +1728,7 @@ export default function Navbar() {
           )}
         </div>
 
-        <div className={`flex items-center justify-center gap-6 pt-4 border-t dark:border-gray-700 border-gray-200 ${mobileDepositDropdownOpen ? 'invisible' : ''}`}>
+        <div className="flex items-center justify-center gap-6 pt-4 border-t dark:border-gray-700 border-gray-200">
           <LanguageSelector isMobile={true} />
           <ThemeSelector isTransparentNavbar={isTransparentNavbar} isMobile={true} />
         </div>
