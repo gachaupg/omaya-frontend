@@ -18,8 +18,8 @@ const SingleBlogPage = () => {
   useEffect(() => {
     if (params?.id && allPosts.length > 0) {
       const post = allPosts.find((post) => {
-        const postId = post.id || post._id;
-        return postId.toString() === params.id;
+        const postId = post._id || post.id;
+        return postId?.toString() === params.id;
       });
       setBlogPost(post || null);
     }
@@ -121,7 +121,7 @@ const SingleBlogPage = () => {
 
           {/* Article Content */}
           <div className="p-6 md:p-8">
-            <div className="prose prose-lg dark:prose-invert max-w-none">
+            <div className="blog-content prose prose-lg dark:prose-invert max-w-none">
               <div
                 className="text-gray-700 dark:text-gray-300 leading-relaxed"
                 dangerouslySetInnerHTML={{ __html: decodeHtml(blogPost.description) }}

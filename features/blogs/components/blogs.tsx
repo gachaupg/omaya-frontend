@@ -8,7 +8,7 @@ import { useBlog } from "../hooks/blog";
 import { BlogPost } from "../types";
 import { useBlogsI18n } from "@/lib/useBlogsI18n";
 import { imageBuilder } from "@/sanity/lib/client";
-import { decodeHtml } from "@/lib/utils/html";
+import { decodeHtml, stripAllImagesFromHtml } from "@/lib/utils/html";
 
 import { logger } from '@/lib/utils/logger';
 
@@ -129,9 +129,9 @@ const BlogPage = () => {
     }
   };
 
-  // Get post ID for routing
-  const getPostId = (post: BlogPost) => {
-    return post.id || post._id;
+  // Get post ID for routing - prefer _id for stable, shareable URLs
+  const getPostId = (post: BlogPost): string | number => {
+    return (post._id || post.id) ?? "";
   };
 
   if (loading) {
@@ -288,8 +288,8 @@ const BlogPage = () => {
                       : post.description}
                   </p> */}
                     <div
-                      className="text-gray-600 dark:text-gray-400 mb-4 text-sm line-clamp-3 prose prose-sm dark:prose-invert max-w-none"
-                      dangerouslySetInnerHTML={{ __html: decodeHtml(post.description) }}
+                      className="blog-content text-gray-600 dark:text-gray-400 mb-4 text-sm line-clamp-3 prose prose-sm dark:prose-invert max-w-none"
+                      dangerouslySetInnerHTML={{ __html: decodeHtml(stripAllImagesFromHtml(post.description)) }}
                     />
                     <p className="text-xs text-gray-500 dark:text-gray-500 mb-6">
                       {t("blogs.byAuthor", "By {{author}}", {
