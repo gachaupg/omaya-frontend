@@ -149,110 +149,66 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
     if (typeof window === "undefined") {
       return {
         position: "fixed",
-        top: 200,
+        top: "50%",
         left: "50%",
-        transform: "translateX(-50%)",
-        width: 280,
+        transform: "translate(-50%, -50%)",
+        width: 320,
       };
     }
 
     const viewportWidth = window.innerWidth || 0;
-    const minMargin = 16;
-    const minWidth = 280;
-    const maxWidth = 450;
+    const isMobile = viewportWidth < 640;
 
-    // Find the card that contains the dropdown trigger
-    const dropdownElement = isFrom ? fromAssetDropdownRef.current : toAssetDropdownRef.current;
-    let currentCard: Element | null = null;
-
-    if (dropdownElement) {
-      let parent = dropdownElement.parentElement;
-      while (parent) {
-        if (parent.hasAttribute("data-swap-card")) {
-          currentCard = parent;
-          break;
-        }
-        parent = parent.parentElement;
-      }
-    }
-
-    // Fallback to card order if we can't find via DOM traversal
-    if (!currentCard) {
-      const allCards = document.querySelectorAll("[data-swap-card='true']");
-      if (isFrom && allCards.length > 0) {
-        currentCard = allCards[0];
-      } else if (!isFrom && allCards.length > 1) {
-        currentCard = allCards[1];
-      } else if (allCards.length > 0) {
-        currentCard = allCards[0];
-      }
-    }
-
-    let dropdownStyle: React.CSSProperties = {
-      position: "fixed",
-      top: 200,
-      left: (viewportWidth - minWidth) / 2,
-      width: minWidth,
-    };
-
-    if (currentCard && dropdownElement) {
-      const cardRect = currentCard.getBoundingClientRect();
-      const dropdownRect = dropdownElement.getBoundingClientRect();
-
-      // Calculate reduced width so dropdowns don't cover amount inputs (40% of card width)
-      let desiredWidth = Math.min(maxWidth, Math.max(minWidth, cardRect.width * 0.4));
-
-      // Position at the top of the card, allow different offsets per section
-      let top = cardRect.top - 15; // default: slightly above card
-      if (isFrom) {
-        top = cardRect.top + 1; // push "You Send" dropdown down a little more
-      } else {
-        top = cardRect.top - 15 + 15.7; // push "You Receive" dropdown down
-      }
-
-      let left: number;
-
-      // Both "You Send" and "You Receive" - position from right side of card, pushed more right
-      // Position it very close to the right edge
-      left = cardRect.right - desiredWidth - 3; // 3px from right edge of card
-
-      // Push both dropdowns to the right
-      left += 18; // additional right offset for both dropdowns
-
-      // Ensure it doesn't go off the left edge
-      if (left < cardRect.left) {
-        left = cardRect.left;
-      }
-
-      // Ensure it doesn't go off screen on the right
-      if (left + desiredWidth > viewportWidth - minMargin) {
-        left = viewportWidth - desiredWidth - minMargin;
-      }
-
-      // Ensure it doesn't go off the left edge
-      if (left < minMargin) {
-        left = minMargin;
-      }
-
-      // If card is too narrow, center it
-      if (cardRect.width < desiredWidth + 16) {
-        left = cardRect.left + (cardRect.width - desiredWidth) / 2;
-      }
-
-      // Final boundary check to ensure it doesn't go off screen
-      if (left + desiredWidth > viewportWidth - minMargin) {
-        left = viewportWidth - desiredWidth - minMargin;
-      }
-
-      dropdownStyle = {
+    // On mobile: render as a centered modal overlay
+    if (isMobile) {
+      return {
         position: "fixed",
-        top,
-        left,
-        width: desiredWidth,
+        top: "10vh",
+        left: "50%",
+        transform: "translateX(-50%)",
+        width: Math.min(viewportWidth - 32, 380),
+        maxHeight: "80vh",
       };
     }
 
-    return dropdownStyle;
+    const minMargin = 16;
+    const minWidth = 280;
+    const maxWidth = 400;
+
+    const triggerEl = isFrom ? fromAssetDropdownRef.current : toAssetDropdownRef.current;
+
+    if (!triggerEl) {
+      return {
+        position: "fixed",
+        top: 200,
+        left: (viewportWidth - minWidth) / 2,
+        width: minWidth,
+      };
+    }
+
+    const triggerRect = triggerEl.getBoundingClientRect();
+    const desiredWidth = Math.min(maxWidth, Math.max(minWidth, triggerRect.width));
+
+    // Position directly below the trigger button
+    let top = triggerRect.bottom + 4;
+    let left = triggerRect.left;
+
+    // Clamp so it doesn't overflow the right edge
+    if (left + desiredWidth > viewportWidth - minMargin) {
+      left = viewportWidth - desiredWidth - minMargin;
+    }
+    // Clamp so it doesn't overflow the left edge
+    if (left < minMargin) {
+      left = minMargin;
+    }
+
+    return {
+      position: "fixed",
+      top,
+      left,
+      width: desiredWidth,
+      maxHeight: "60vh",
+    };
   };
 
   const renderAssetDropdown = (
@@ -282,14 +238,25 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
       );
     });
 
+    const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
+
     return createPortal(
       (
-        <div
-          ref={isFrom ? fromAssetDropdownContentRef : toAssetDropdownContentRef}
-          data-asset-dropdown="true"
-          className="bg-white dark:bg-[#1D1D23] border border-gray-300 dark:border-[#35353E] rounded-2xl shadow-xl z-[9999] max-h-[70vh] sm:max-h-[60vh] overflow-hidden flex flex-col"
-          style={dropdownStyle}
-        >
+        <>
+          {/* Backdrop for mobile - closes dropdown on tap outside */}
+          {isMobile && (
+            <div
+              className="fixed inset-0 bg-black/50 z-[9998]"
+              onClick={toggle}
+              aria-hidden="true"
+            />
+          )}
+          <div
+            ref={isFrom ? fromAssetDropdownContentRef : toAssetDropdownContentRef}
+            data-asset-dropdown="true"
+            className="bg-white dark:bg-[#1D1D23] border border-gray-300 dark:border-[#35353E] rounded-2xl shadow-xl z-[9999] max-h-[70vh] sm:max-h-[60vh] overflow-hidden flex flex-col"
+            style={dropdownStyle}
+          >
           {/* Dropdown Title */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-600 shrink-0">
             <h3 className="text-base font-semibold text-gray-900 dark:text-white">Currency {isFrom ? "from" : "to"}</h3>
@@ -371,6 +338,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
             )}
           </div>
         </div>
+        </>
       ),
       document.body
     );
