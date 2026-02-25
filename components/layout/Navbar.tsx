@@ -538,6 +538,12 @@ export default function Navbar() {
       title: "Swap",
       description: "Exchange one cryptocurrency for another instantly and securely within your wallet",
     },
+    {
+      href: "/dashboard/account?tab=referral",
+      icon: "https://res.cloudinary.com/pitz/image/upload/v1747237692/users-profiles-left_e2oejc.png",
+      title: "Referral",
+      description: "Share your referral link and earn rewards from your referrals",
+    },
   ];
 
   const [profileImageError, setProfileImageError] = useState(false);

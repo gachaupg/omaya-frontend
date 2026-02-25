@@ -241,9 +241,15 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
   }, [apiCommission]);
 
   // When user changes payment methods or amount, minimise the expanded form (they must submit again)
+  // Skip during restore - we want to keep form expanded with restored bank account
   const fromKey = selectedFromPaymentDetail?.id ?? selectedFromPaymentDetail?.provider_id ?? fromPaymentMethod ?? "";
   const toKey = selectedToPaymentDetail?.id ?? selectedToPaymentDetail?.provider_id ?? toPaymentMethod ?? "";
+  const isRestoringRef = useRef(false);
   useEffect(() => {
+    if (isRestoringRef.current) {
+      isRestoringRef.current = false;
+      return;
+    }
     setIsFirstCardSubmitted(false);
   }, [fromKey, toKey, payAmount, getAmount]);
 
@@ -300,6 +306,8 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
 
         console.log("Restoring moneyx form state:", state);
 
+        isRestoringRef.current = true;
+
         // Restore amounts immediately
         if (state.amountInput !== undefined && state.amountInput !== null) {
           setPayAmountInput(state.amountInput);
@@ -308,6 +316,12 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
         if (state.receiveAmountInput !== undefined && state.receiveAmountInput !== null) {
           setGetAmountInput(state.receiveAmountInput);
           setGetAmount(state.receiveAmountValue || parseFloat(state.receiveAmountInput) || 0);
+        }
+
+        // Restore bank account address and expand form
+        if (state.bankAccountAddress) {
+          setBankAccountAddress(state.bankAccountAddress);
+          setIsFirstCardSubmitted(true);
         }
 
         // Store payment method data for later restoration (after payment methods are loaded)
@@ -348,6 +362,9 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
     if (restoreFrom || restoreTo) {
       console.log("Restoring payment methods - From:", restoreFrom, "To:", restoreTo);
       paymentMethodRestoreAttempted.current = true;
+
+      // Prevent minimise effect from collapsing when we set selected payment details
+      isRestoringRef.current = true;
 
       // Restore "from" payment method
       if (restoreFrom) {
@@ -615,46 +632,7 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
   };
 
   const handleFirstCardSubmit = async () => {
-    // Check if user needs to login first
-    if (requiresLoginRedirect) {
-      // Save state to localStorage for restoration after login
-      // Get the base provider name (without suffix) for better matching
-      const fromProviderBase = selectedFromPaymentDetail?.provider || getProviderName(selectedFromPaymentDetail) || fromPaymentMethod;
-      const toProviderBase = selectedToPaymentDetail?.provider || getProviderName(selectedToPaymentDetail) || toPaymentMethod;
-
-      const state = {
-        mode: "moneyx",
-        // Send amounts (You Send)
-        amountInput: payAmountInput,
-        amountValue: payAmount,
-        // Receive amounts (You Receive)
-        receiveAmountInput: getAmountInput,
-        receiveAmountValue: getAmount,
-        // Payment methods - save cleaned names and base provider names for better matching
-        fromPaymentMethod: fromPaymentMethod, // Cleaned name (already cleaned by getProviderName)
-        toPaymentMethod: toPaymentMethod, // Cleaned name
-        fromProviderBase: fromProviderBase, // Base provider name from API
-        toProviderBase: toProviderBase, // Base provider name from API
-        fromPaymentDetail: selectedFromPaymentDetail ? { ...selectedFromPaymentDetail } : null,
-        toPaymentDetail: selectedToPaymentDetail ? { ...selectedToPaymentDetail } : null,
-      };
-
-      console.log("💾 [Home] Saving moneyx form state before login:", state);
-      console.log("💾 [Home] From payment detail:", selectedFromPaymentDetail);
-      console.log("💾 [Home] To payment detail:", selectedToPaymentDetail);
-
-      // Save to localStorage
-      localStorage.setItem("moneyx_form_state", JSON.stringify(state));
-
-      // Set redirect path - redirect to moneyX in dashboard
-      const redirectPath = `/dashboard/exchange?mode=moneyx&source=public-express`;
-      setAuthRedirectPath(redirectPath);
-
-      // Redirect to login
-      router.push("/auth/login");
-      return;
-    }
-
+    // First button: expand only (login redirect happens on final submit after bank account)
     // Clear previous errors
     setValidationErrors([]);
     setApiValidationError(null);
@@ -1379,6 +1357,30 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
                 }
                 if (!isTermsAccepted) {
                   showToast.error("Please accept the Terms of Use to continue");
+                  return;
+                }
+
+                // Redirect to login when not authenticated (save state including bank account)
+                if (requiresLoginRedirect) {
+                  const fromProviderBase = selectedFromPaymentDetail?.provider || getProviderName(selectedFromPaymentDetail) || fromPaymentMethod;
+                  const toProviderBase = selectedToPaymentDetail?.provider || getProviderName(selectedToPaymentDetail) || toPaymentMethod;
+                  const state = {
+                    mode: "moneyx",
+                    amountInput: payAmountInput,
+                    amountValue: payAmount,
+                    receiveAmountInput: getAmountInput,
+                    receiveAmountValue: getAmount,
+                    fromPaymentMethod: fromPaymentMethod,
+                    toPaymentMethod: toPaymentMethod,
+                    fromProviderBase,
+                    toProviderBase,
+                    fromPaymentDetail: selectedFromPaymentDetail ? { ...selectedFromPaymentDetail } : null,
+                    toPaymentDetail: selectedToPaymentDetail ? { ...selectedToPaymentDetail } : null,
+                    bankAccountAddress: bankAccountAddress.trim(),
+                  };
+                  localStorage.setItem("moneyx_form_state", JSON.stringify(state));
+                  setAuthRedirectPath("/dashboard/exchange?mode=moneyx&source=public-express");
+                  router.push("/auth/login");
                   return;
                 }
 

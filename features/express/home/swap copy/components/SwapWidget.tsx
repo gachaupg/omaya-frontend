@@ -97,6 +97,22 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
   const assetsLoadingState =
     homeSwapAssets && homeSwapAssets.length > 0 ? homeAssetsLoading : loading;
 
+  // Auto-select first and second assets when combinedAssets loads (always)
+  useEffect(() => {
+    if (combinedAssets.length >= 2) {
+      const first = combinedAssets[0];
+      const second = combinedAssets[1];
+      if (!fromAsset || !toAsset) {
+        if (!fromAsset) {
+          dispatch(setFromAsset(first));
+        }
+        if (!toAsset) {
+          dispatch(setToAsset(second));
+        }
+      }
+    }
+  }, [combinedAssets, fromAsset, toAsset, dispatch]);
+
   // Close asset dropdowns when the user scrolls the page,
   // but NOT when scrolling inside the dropdown lists themselves
   useEffect(() => {
@@ -344,32 +360,8 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
     }
   }, [swapError]);
 
-  // Handle next step validation
+  // Handle next step validation - first button: expand only (login redirect happens on wallet step)
   const handleNextStep = () => {
-    if (!isAuthenticated) {
-      // Save current swap state before redirecting
-      const swapState = {
-        fromAsset: fromAsset ? {
-          ticker: fromAsset.ticker,
-          symbol: fromAsset.symbol,
-          name: fromAsset.name,
-          network: fromAsset.network,
-        } : null,
-        toAsset: toAsset ? {
-          ticker: toAsset.ticker,
-          symbol: toAsset.symbol,
-          name: toAsset.name,
-          network: toAsset.network,
-        } : null,
-        fromAmount: fromAmount,
-        toAmount: toAmount,
-        walletAddress: walletAddress,
-      };
-      setAuthRedirectPath(buildSwapRedirectPath(swapState));
-      router.push("/auth/login");
-      return;
-    }
-
     if (!hasUserInteracted) {
       setHasUserInteracted(true);
     }

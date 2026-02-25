@@ -47,6 +47,34 @@ export const settingsApi = {
     });
   },
 
+  // Request OTP to change email or phone
+  requestProfileChange: async (
+    type: "email" | "phone",
+    value: string
+  ): Promise<{ message: string }> => {
+    return withRetry(async () => {
+      const response = await apiClient.post(
+        `${SETTINGS_API_BASE}/profile/request-change/`,
+        { type, value }
+      );
+      return response.data;
+    });
+  },
+
+  // Verify OTP and apply email/phone change
+  verifyProfileChange: async (
+    otp: string,
+    value: string
+  ): Promise<{ message: string }> => {
+    return withRetry(async () => {
+      const response = await apiClient.post(
+        `${SETTINGS_API_BASE}/profile/verify-change/`,
+        { otp, value }
+      );
+      return response.data;
+    });
+  },
+
   updateProfilePhoto: async (photo: File): Promise<ProfileUpdateResponse> => {
     return withRetry(async () => {
       const formData = new FormData();

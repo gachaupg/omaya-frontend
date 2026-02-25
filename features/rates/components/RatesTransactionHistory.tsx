@@ -16,7 +16,6 @@ import {
   formatTimeAgo,
   getStatusColor,
 } from "../utils/transactionUtils";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 
 // Pagination constant
 const ITEMS_PER_PAGE = 10;
@@ -385,7 +384,9 @@ const RatesTransactionHistory = () => {
                 : "border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#1D1D23] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#23232B]"
               }`}
           >
-            <ChevronLeft className="w-4 h-4" />
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
           </button>
 
           {count > ITEMS_PER_PAGE && (
@@ -428,7 +429,9 @@ const RatesTransactionHistory = () => {
                 : "border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#1D1D23] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#23232B]"
               }`}
           >
-            <ChevronRight className="w-4 h-4" />
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
           </button>
         </div>
       </div>

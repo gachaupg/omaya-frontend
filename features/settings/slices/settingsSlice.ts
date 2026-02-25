@@ -71,7 +71,7 @@ export const fetchProfile = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await settingsApi.getProfile();
-      return response.data;
+      return response;
     } catch (error: any) {
       return rejectWithValue(error.message || "Failed to fetch profile");
     }
@@ -88,6 +88,48 @@ export const updateProfile = createAsyncThunk(
     } catch (error: any) {
       showToast.error(error.message || "Failed to update profile");
       return rejectWithValue(error.message || "Failed to update profile");
+    }
+  }
+);
+
+export const requestProfileChange = createAsyncThunk(
+  "settings/requestProfileChange",
+  async (
+    payload: { type: "email" | "phone"; value: string },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await settingsApi.requestProfileChange(
+        payload.type,
+        payload.value
+      );
+      return { ...response, type: payload.type, value: payload.value };
+    } catch (error: any) {
+      return rejectWithValue(
+        error?.response?.data?.message || error?.message || "Failed to send OTP"
+      );
+    }
+  }
+);
+
+export const verifyProfileChange = createAsyncThunk(
+  "settings/verifyProfileChange",
+  async (
+    payload: { otp: string; value: string; field: "email" | "phone_number" },
+    { rejectWithValue, dispatch }
+  ) => {
+    try {
+      const response = await settingsApi.verifyProfileChange(
+        payload.otp,
+        payload.value
+      );
+      return { ...response, field: payload.field, value: payload.value };
+    } catch (error: any) {
+      return rejectWithValue(
+        error?.response?.data?.message ||
+          error?.message ||
+          "Failed to verify and apply change"
+      );
     }
   }
 );
@@ -484,7 +526,8 @@ const settingsSlice = createSlice({
       })
       .addCase(fetchProfile.fulfilled, (state, action) => {
         state.loading = false;
-        state.profile = action.payload;
+        // API returns { user, profile, require_2fa }; store as-is for ProfileSettings
+        state.profile = action.payload as any;
       })
       .addCase(fetchProfile.rejected, (state, action) => {
         state.loading = false;
@@ -573,6 +616,30 @@ const settingsSlice = createSlice({
         state.success = action.payload.message || "Password changed successfully";
       })
       .addCase(changePasswordWithOTP.rejected, (state, action) => {
+        state.updating = false;
+        state.error = action.payload as string;
+      })
+      .addCase(requestProfileChange.pending, (state) => {
+        state.updating = true;
+        state.error = null;
+      })
+      .addCase(requestProfileChange.fulfilled, (state) => {
+        state.updating = false;
+        state.success = "OTP sent successfully";
+      })
+      .addCase(requestProfileChange.rejected, (state, action) => {
+        state.updating = false;
+        state.error = action.payload as string;
+      })
+      .addCase(verifyProfileChange.pending, (state) => {
+        state.updating = true;
+        state.error = null;
+      })
+      .addCase(verifyProfileChange.fulfilled, (state) => {
+        state.updating = false;
+        state.success = "Profile updated successfully";
+      })
+      .addCase(verifyProfileChange.rejected, (state, action) => {
         state.updating = false;
         state.error = action.payload as string;
       });

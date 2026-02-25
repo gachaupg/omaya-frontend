@@ -3,8 +3,8 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/store";
-import { updateProfile } from "@/features/settings/slices/settingsSlice";
 import { showToast } from "@/lib/utils/toast";
+import EmailPhoneChangeModal from "./EmailPhoneChangeModal";
 
 interface BasicInfoSectionProps {
   user: any;
@@ -20,14 +20,20 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ user }) => {
     phone_number: "",
     email: "",
   });
+  const [changeModal, setChangeModal] = useState<{
+    open: boolean;
+    type: "email" | "phone";
+    initialValue?: string;
+  }>({ open: false, type: "email" });
 
-  // Initialize form data when user changes
+  // Initialize form data when user changes (phone stored/displayed without leading +)
   useEffect(() => {
     if (user) {
+      const phone = (user.phone_number || "").replace(/^\+/, "");
       setFormData({
         first_name: user.first_name || "",
         last_name: user.last_name || "",
-        phone_number: user.phone_number || "",
+        phone_number: phone,
         email: user.email || "",
       });
     }
@@ -41,18 +47,17 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ user }) => {
     };
   }, []);
 
-  // Check if form data has actually changed from original user data
+  // Check if email or phone has changed (first/last are disabled)
   const hasChanges = useMemo(() => {
     if (!user) return false;
-    return (
-      formData.first_name.trim() !== (user.first_name || "").trim() ||
-      formData.last_name.trim() !== (user.last_name || "").trim() ||
-      formData.phone_number.trim() !== (user.phone_number || "").trim()
-    );
+    const emailChanged =
+      formData.email.trim() !== (user.email || "").trim();
+    const userPhone = (user.phone_number || "").replace(/^\+/, "");
+    const phoneChanged = formData.phone_number.trim() !== userPhone;
+    return emailChanged || phoneChanged;
   }, [formData, user]);
 
   const handleInputChange = (field: string, value: string) => {
-    // For phone_number field, only allow numeric characters
     if (field === "phone_number") {
       value = value.replace(/[^0-9]/g, "");
     }
@@ -62,53 +67,23 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ user }) => {
     }));
   };
 
-  const handleUpdate = async () => {
-    // Prevent update if component is unmounting (navigation in progress)
-    if (!isMountedRef.current) {
-      return;
-    }
+  const handleUpdate = () => {
+    if (!isMountedRef.current || !hasChanges) return;
 
-    // Check if there are actual changes
-    if (!hasChanges) {
+    // Prefer email change first if both changed
+    if (formData.email.trim() !== (user?.email || "").trim()) {
+      setChangeModal({ open: true, type: "email", initialValue: formData.email });
+    } else if (
+      formData.phone_number.trim() !==
+      (user?.phone_number || "").replace(/^\+/, "")
+    ) {
+      setChangeModal({
+        open: true,
+        type: "phone",
+        initialValue: formData.phone_number,
+      });
+    } else {
       showToast.info("No changes to update");
-      return;
-    }
-
-    // Validate required fields
-    if (!formData.first_name.trim() || !formData.last_name.trim()) {
-      showToast.error("First name and last name are required");
-      return;
-    }
-
-    setIsUpdating(true);
-    try {
-      // Only send editable fields (exclude email as it's typically not editable)
-      // Double-check mounted state before making request
-      if (!isMountedRef.current) {
-        return;
-      }
-      
-      await dispatch(
-        updateProfile({
-          first_name: formData.first_name.trim(),
-          last_name: formData.last_name.trim(),
-          phone_number: formData.phone_number.trim(),
-        })
-      ).unwrap();
-      
-      // Only show success if still mounted
-      if (isMountedRef.current) {
-        showToast.success("Profile updated successfully");
-      }
-    } catch (error: any) {
-      // Only show error if still mounted
-      if (isMountedRef.current) {
-        showToast.error(error?.message || "Failed to update profile");
-      }
-    } finally {
-      if (isMountedRef.current) {
-        setIsUpdating(false);
-      }
     }
   };
 
@@ -124,10 +99,10 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ user }) => {
               First Name*
             </label>
             <input
-              className="dark:bg-[var(--card-color)] bg-white border  border-[#E8EFF5] dark:border-[#35353E] rounded-[18px] px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base dark:text-[#788099] text-[#0D0D0D] w-full focus:outline-none focus:border-[#1D8751]"
+              className="dark:bg-[var(--card-color)] bg-white border border-[#E8EFF5] dark:border-[#35353E] rounded-[18px] px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base dark:text-[#788099] text-[#0D0D0D] w-full opacity-60 cursor-not-allowed"
               value={formData.first_name}
-              onChange={(e) => handleInputChange("first_name", e.target.value)}
-              placeholder="Enter first name"
+              readOnly
+              disabled
             />
           </div>
           <div>
@@ -135,10 +110,10 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ user }) => {
               Last Name*
             </label>
             <input
-              className="dark:bg-[var(--card-color)] bg-white border dark:border-[#35353E] border-[#E8EFF5] rounded-[18px] px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base dark:text-[#788099] text-[#0D0D0D] w-full focus:outline-none focus:border-[#1D8751]"
+              className="dark:bg-[var(--card-color)] bg-white border dark:border-[#35353E] border-[#E8EFF5] rounded-[18px] px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base dark:text-[#788099] text-[#0D0D0D] w-full opacity-60 cursor-not-allowed"
               value={formData.last_name}
-              onChange={(e) => handleInputChange("last_name", e.target.value)}
-              placeholder="Enter last name"
+              readOnly
+              disabled
             />
           </div>
           <div>
@@ -148,11 +123,10 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ user }) => {
             <input
               type="tel"
               inputMode="numeric"
-              pattern="[0-9]*"
               className="dark:bg-[var(--card-color)] bg-white border dark:border-[#35353E] border-[#E8EFF5] rounded-[18px] px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base dark:text-[#788099] text-[#0D0D0D] w-full focus:outline-none focus:border-[#1D8751]"
               value={formData.phone_number}
               onChange={(e) => handleInputChange("phone_number", e.target.value)}
-              placeholder="Enter phone number"
+              placeholder="+254712345678"
             />
           </div>
           <div>
@@ -160,22 +134,35 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ user }) => {
               Email*
             </label>
             <input
-              className="dark:bg-[var(--card-color)] bg-white border dark:border-[#35353E] border-[#E8EFF5] rounded-[18px] px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base dark:text-[#788099] text-[#0D0D0D] w-full opacity-60 cursor-not-allowed"
+              type="email"
+              className="dark:bg-[var(--card-color)] bg-white border dark:border-[#35353E] border-[#E8EFF5] rounded-[18px] px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base dark:text-[#788099] text-[#0D0D0D] w-full focus:outline-none focus:border-[#1D8751]"
               value={formData.email}
-              readOnly
-              title="Email cannot be changed"
+              onChange={(e) => handleInputChange("email", e.target.value)}
+              placeholder="newemail@example.com"
             />
           </div>
         </div>
         <button
-          className={`w-full mt-3 py-2.5 rounded-xl bg-transparent border border-[#1D8751] text-[#1D8751] font-semibold text-sm hover:bg-[#1D8751] hover:text-white transition disabled:opacity-50 disabled:cursor-not-allowed ${!hasChanges ? 'opacity-50' : ''}`}
+          className={`w-full mt-3 py-2.5 rounded-xl bg-transparent border border-[#1D8751] text-[#1D8751] font-semibold text-sm hover:bg-[#1D8751] hover:text-white transition disabled:opacity-50 disabled:cursor-not-allowed ${!hasChanges ? "opacity-50" : ""}`}
           type="button"
           onClick={handleUpdate}
-          disabled={isUpdating || !hasChanges}
+          disabled={!hasChanges}
         >
-          {isUpdating ? "Updating..." : "Update"}
+          Update
         </button>
       </section>
+
+      <EmailPhoneChangeModal
+        isOpen={changeModal.open}
+        onClose={() => setChangeModal({ open: false, type: "email" })}
+        type={changeModal.type}
+        currentValue={
+          changeModal.type === "email"
+            ? user?.email || ""
+            : (user?.phone_number || "").replace(/^\+/, "")
+        }
+        initialValue={changeModal.initialValue}
+      />
     </>
   );
 };
