@@ -20,6 +20,8 @@ const categoryColors: { [key: string]: string } = {
   security: "bg-gradient-to-r from-red-500 to-orange-500",
   defi: "bg-gradient-to-r from-green-400 to-green-600",
   market_analysis: "bg-gradient-to-r from-blue-500 to-purple-500",
+  technology: "bg-gradient-to-r from-cyan-500 to-blue-500",
+  regulation: "bg-gradient-to-r from-amber-500 to-orange-500",
   blog: "bg-gradient-to-r from-purple-500 to-pink-500",
   news: "bg-gradient-to-r from-blue-500 to-indigo-500",
   test: "bg-gradient-to-r from-green-400 to-green-600",
@@ -27,6 +29,8 @@ const categoryColors: { [key: string]: string } = {
   Security: "bg-gradient-to-r from-red-500 to-orange-500",
   DeFi: "bg-gradient-to-r from-green-400 to-green-600",
   "Market Analysis": "bg-gradient-to-r from-blue-500 to-purple-500",
+  Technology: "bg-gradient-to-r from-cyan-500 to-blue-500",
+  Regulation: "bg-gradient-to-r from-amber-500 to-orange-500",
   Blog: "bg-gradient-to-r from-purple-500 to-pink-500",
   News: "bg-gradient-to-r from-blue-500 to-indigo-500",
 };

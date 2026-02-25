@@ -37,8 +37,8 @@ export const useBlog = () => {
         const transformed = (data || []).map((blog: BlogPost, index: number) => ({
           ...blog,
           id: index + 1,
-          created_at: blog.createdAt || blog.created_at || new Date().toISOString(),
-          updated_at: blog.createdAt || blog.created_at || new Date().toISOString(),
+          created_at: blog.publishedAt || blog.createdAt || blog.created_at || new Date().toISOString(),
+          updated_at: blog.statusChangedAt || blog.createdAt || blog.created_at || new Date().toISOString(),
           image: blog.image,
           author_name: blog.author_name || "Anonymous",
         }));
@@ -83,8 +83,8 @@ export const useBlog = () => {
       const transformedBlogs = data.map((blog: BlogPost, index: number) => ({
         ...blog,
         id: index + 1, // Generate numeric ID for UI compatibility
-        created_at: blog.createdAt || blog.created_at || new Date().toISOString(),
-        updated_at: blog.createdAt || blog.created_at || new Date().toISOString(),
+        created_at: blog.publishedAt || blog.createdAt || blog.created_at || new Date().toISOString(),
+        updated_at: blog.statusChangedAt || blog.createdAt || blog.created_at || new Date().toISOString(),
         image: blog.image, // Keep image as object for proper handling in components
         author_name: blog.author_name || "Anonymous",
       }));

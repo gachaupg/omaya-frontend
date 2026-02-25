@@ -11,7 +11,36 @@ export interface Blog {
   image?: any;
   author_name?: string;
   createdAt?: string;
+  status?: string;
+  statusChangedAt?: string;
+  requestedReviewAt?: string;
+  publishedAt?: string;
 }
+
+const BLOG_QUERY = `*[_type == "blog" && (status == "published" || !defined(status))] | order(coalesce(publishedAt, createdAt) desc) {
+  _id, 
+  title, 
+  description, 
+  category,
+  author_name, 
+  createdAt,
+  status,
+  statusChangedAt,
+  requestedReviewAt,
+  publishedAt,
+  image {
+    asset->{
+      _id,
+      url,
+      metadata {
+        dimensions {
+          width,
+          height
+        }
+      }
+    }
+  }
+}`;
 
 const fetchBlogsFromSanity = async (): Promise<Blog[]> => {
   try {
@@ -20,28 +49,7 @@ const fetchBlogsFromSanity = async (): Promise<Blog[]> => {
       return getFallbackBlogs();
     }
 
-    const data = await client.fetch(
-      `*[_type == "blog"] | order(createdAt desc) {
-          _id, 
-          title, 
-          description, 
-          category,
-          author_name, 
-          createdAt,
-          image {
-            asset->{
-              _id,
-              url,
-              metadata {
-                dimensions {
-                  width,
-                  height
-                }
-              }
-            }
-          }
-        }`
-    );
+    const data = await client.fetch(BLOG_QUERY);
     
     console.log(`[API] Successfully fetched ${data?.length || 0} blogs from Sanity`);
     return data || [];
