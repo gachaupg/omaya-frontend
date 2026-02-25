@@ -240,12 +240,16 @@ export default function DepositForm({
   // Use state to hold payment methods - will trigger re-render when updated
   const [stablePaymentMethods, setStablePaymentMethods] = useState<any[]>([]);
 
-  // Use appropriate payment methods data based on isHomePage
-  const paymentMethodsData = isHomePage ? publicPaymentMethods : adminMethods;
-  const paymentMethodsLoading = isHomePage
+  // Use public API payment methods when available (same as home); fallback to admin
+  const hasPublicMethods =
+    publicPaymentMethods?.data?.providers &&
+    Array.isArray(publicPaymentMethods.data.providers) &&
+    publicPaymentMethods.data.providers.length > 0;
+  const paymentMethodsData = hasPublicMethods ? publicPaymentMethods : adminMethods;
+  const paymentMethodsLoading = hasPublicMethods
     ? publicMethodsLoading
     : adminMethodsLoading;
-  const paymentMethodsError = isHomePage
+  const paymentMethodsError = hasPublicMethods
     ? publicMethodsError
     : adminMethodsError;
 
@@ -269,20 +273,22 @@ export default function DepositForm({
         : 0,
     });
 
-    // Check if we have payment methods data
-    const hasPaymentData = isHomePage
-      ? publicPaymentMethods?.data?.providers &&
+    // Check if we have payment methods data (use public API when available, same as home)
+    const hasPublicData =
+      publicPaymentMethods?.data?.providers &&
       Array.isArray(publicPaymentMethods.data.providers) &&
-      publicPaymentMethods.data.providers.length > 0
+      publicPaymentMethods.data.providers.length > 0;
+    const hasPaymentData = hasPublicData
+      ? true
       : paymentMethodsData &&
-      Array.isArray(paymentMethodsData) &&
-      paymentMethodsData.length > 0;
+        Array.isArray(paymentMethodsData) &&
+        paymentMethodsData.length > 0;
 
     if (hasPaymentData) {
       let activeMethods;
 
-      if (isHomePage) {
-        // For public payment methods, handle the new API structure
+      if (hasPublicData) {
+        // For public payment methods, handle the new API structure (same as home)
         let flattenedMethods: any[] = [];
 
         // Check for new structure: data.providers (direct providers array)
@@ -572,7 +578,7 @@ export default function DepositForm({
         publicPaymentMethodsStructure: publicPaymentMethods,
       });
     }
-  }, [paymentMethodsData, isHomePage, publicPaymentMethods]); // Update when payment data changes
+  }, [paymentMethodsData, publicPaymentMethods]); // Update when payment data changes
 
   // Use stable state - React will properly render this
   const effectivePaymentMethods = stablePaymentMethods;
@@ -956,22 +962,10 @@ export default function DepositForm({
     }
   }, [selectedAsset, payBank]);
 
-  // Fetch public payment methods for home page
+  // Fetch public payment methods (same as home: always use public API when available)
   useEffect(() => {
-    if (!isHomePage) {
-      return;
-    }
-
-    console.log("Fetching public payment methods for home page");
-    dispatch(fetchPublicPaymentMethods())
-      .unwrap()
-      .then((result) => {
-        console.log("Public payment methods fetched successfully:", result);
-      })
-      .catch((error: unknown) => {
-        console.error("Failed to fetch public payment methods:", error);
-      });
-  }, [dispatch, isHomePage]);
+    dispatch(fetchPublicPaymentMethods());
+  }, [dispatch]);
 
   useEffect(() => {
     // Skip API calls on home page - buttons will redirect to login

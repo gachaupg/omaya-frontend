@@ -837,7 +837,7 @@ export default function RegistrationPage() {
 
         {/* Right Side - Registration Form */}
         <div className="w-full md:w-1/2 relative z-10 px-4 sm:px-6 md:px-8 lg:px-0 flex justify-center md:justify-start">
-          <div className="max-w-xl mx-auto 2xl:max-w-2xl w-full rounded-2xl p-6 sm:p-8 bg-white dark:bg-transparent shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_10px_20px_-5px_rgba(0,0,0,0.1)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.25),0_15px_50px_rgba(0,0,0,0.4),0_30px_80px_rgba(0,0,0,0.5)]">
+          <div className="max-w-xl mx-auto 2xl:max-w-2xl w-full rounded-2xl p-6 sm:p-8 bg-white dark:bg-transparent shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_10px_20px_-5px_rgba(0,0,0,0.1)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.7),0_20px_60px_rgba(0,0,0,0.8),0_40px_100px_rgba(0,0,0,0.6)]">
             <div className="mb-6">
               <h1 className="text-gray-900 dark:text-white text-2xl sm:text-3xl font-bold">
                 {t("auth.register.title", "Registration")}
