@@ -108,10 +108,10 @@ const Charts: React.FC<ChartProps> = ({
 
     let newData: { name: string; buyValue: number; sellValue: number }[] = [];
 
-    // Swap for graph: API "buy" -> show on Sells line, API "sell" -> show on Buys line
+    // Add amount to the correct slot based on type
     const addToSlot = (idx: number, amt: number, rawType: string) => {
       if (newData[idx]) {
-        if (rawType === "sell") newData[idx].buyValue += amt;
+        if (rawType === "buy") newData[idx].buyValue += amt;
         else newData[idx].sellValue += amt;
       }
     };

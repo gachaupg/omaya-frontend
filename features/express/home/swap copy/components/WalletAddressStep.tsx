@@ -501,7 +501,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
             onClick={handleNext}
             disabled={isSubmitDisabled}
             className={`w-full text-sm sm:text-base font-medium py-2.5 sm:py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors text-white ${
-              isLoading || !hasWalletInput || !hasAcceptedTerms
+              isSubmitDisabled
                 ? "bg-gray-500 cursor-not-allowed"
                 : "bg-[#1D8751] hover:bg-[#166b3e]"
             }`}

@@ -1597,22 +1597,14 @@ export default function DepositForm({
       // Check if this is "You Send" section (has data-select-card) or "You Receive" section
       const isYouSend = currentCard.hasAttribute('data-select-card');
 
-      // Calculate reduced width so dropdowns don't cover amount inputs (40% of card width)
-      let desiredWidth = Math.min(maxWidth, Math.max(minWidth, cardRect.width * 0.4));
+      // Width: span from the asset selector's left edge to the card's right edge
+      let desiredWidth = Math.min(maxWidth, Math.max(minWidth, cardRect.right - dropdownRect.left));
 
-      // Position at the top of the card, moved up a little more, then pushed down by 18px for both dropdowns
-      let top = cardRect.top - 15 + 15.7; // 15px above card top, then push down by 18px
+      // Position dropdown directly below the asset selector element that was clicked
+      let top = dropdownRect.bottom + 8;
 
-      let left: number;
-
-      // Both "You Send" and "You Receive" - position from right side of card, pushed more right
-      // Position it very close to the right edge
-      left = cardRect.right - desiredWidth - 3; // 3px from right edge of card
-
-      // Push the "You Receive" dropdown a bit further right to match requested layout
-      if (!isYouSend) {
-        left += 18;
-      }
+      // Left-align with the asset selector (not the card's left edge)
+      let left = dropdownRect.left;
 
       // Ensure it doesn't go off the left edge
       if (left < cardRect.left) {
