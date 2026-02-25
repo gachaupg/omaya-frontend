@@ -205,6 +205,7 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
     favoriteAssets,
     loading: loadingAssets,
   } = useSelector((state: RootState) => state.exchange);
+  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
   const { markets, loading, error, lastUpdated, refetch, clearError } =
     useSimpleMarkets(100);
 
@@ -241,9 +242,16 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
     if (!allAvailableAssets) {
       dispatch(fetchAssets());
     }
-    dispatch(getFavoriteAssets());
     // eslint-disable-next-line
   }, []);
+
+  // Re-fetch favourites whenever auth state changes so that mobile login
+  // correctly loads favourites that were saved on another device.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    dispatch(getFavoriteAssets());
+    // eslint-disable-next-line
+  }, [isAuthenticated]);
 
   useEffect(() => {
     setLocalFavorites(getStoredFavorites());

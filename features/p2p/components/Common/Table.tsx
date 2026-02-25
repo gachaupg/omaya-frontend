@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { tokens } from "@/styles/tokens";
 import { TransactionType } from "@/features/p2p/types";
 import Button from "./Button";
@@ -60,12 +60,18 @@ export const Table: React.FC<TableProps> = ({
   const modalContentRef = useRef<HTMLDivElement>(null);
   const dateDropdownRef = useRef<HTMLDivElement>(null);
   const tableContainerRef = useRef<HTMLDivElement>(null);
+  const [isSmallScreen, setIsSmallScreen] = useState(false);
+
+  useEffect(() => {
+    const checkScreen = () => setIsSmallScreen(window.innerWidth < 640);
+    checkScreen();
+    window.addEventListener("resize", checkScreen);
+    return () => window.removeEventListener("resize", checkScreen);
+  }, []);
 
   const handlePageChangeWithScroll = (page: number) => {
     onPageChange?.(page);
-    // Scroll to top of page for better UX on mobile and desktop
-    window.scrollTo({ top: 0, behavior: "smooth" });
-    // Also scroll the table container into view as fallback
+    // Delay scroll so React updates the DOM first before scrolling
     setTimeout(() => {
       tableContainerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 100);
@@ -865,11 +871,7 @@ export const Table: React.FC<TableProps> = ({
                             alt={row.asset || "Asset"}
                             className="w-6 h-6"
                           />
-                          {getAssetLabel(row.asset) && (
-                            <span className="text-sm font-medium text-[#1D8751] dark:text-[#1D8751]">
-                              {getAssetLabel(row.asset)}
-                            </span>
-                          )}
+                         
                         </div>
                         {type === "p2p" && (
                           <div
@@ -1044,7 +1046,7 @@ export const Table: React.FC<TableProps> = ({
             </div>
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex justify-center items-center gap-2 py-4 pb-6 bg-white dark:bg-[var(--card-color)] rounded-b-[24px]">
+              <div className="flex justify-center items-center gap-1.5 sm:gap-2 py-4 pb-6 bg-white dark:bg-[var(--card-color)] rounded-b-[24px] overflow-x-auto px-2">
                 <button
                   onClick={() => {
                     logger.debug('p2p', "Previous page clicked, current:", currentPage);
@@ -1055,123 +1057,97 @@ export const Table: React.FC<TableProps> = ({
                     }
                   }}
                   disabled={currentPage === 1}
-                  className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] text-gray-400 dark:text-[#8C8CA1] ${currentPage === 1
-                    ? "opacity-50 cursor-not-allowed"
-                    : "hover:bg-gray-100 dark:hover:bg-[#35353E]"
-                    }`}
+                  className={`min-w-[36px] px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium border flex items-center justify-center ${
+                    currentPage === 1
+                      ? "opacity-50 cursor-not-allowed border-gray-200 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] text-gray-400 dark:text-[#8C8CA1]"
+                      : "border-[#1D8751] bg-white dark:bg-[var(--card-color)] text-[#1D8751] hover:bg-[#1D8751] hover:text-white transition-colors"
+                  }`}
                 >
-                  &lt;
+                  <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M15 18l-6-6 6-6" />
+                  </svg>
                 </button>
                 {(() => {
                   const pageButtons = [];
-                  const maxPagesToShow = 7; // Show up to 7 page numbers
-                  const sidePages = 2; // Pages to show on each side of current page
+                  // On small screens show fewer pages so prev/next buttons are always visible
+                  const maxPagesToShow = isSmallScreen ? 3 : 7;
+                  const sidePages = isSmallScreen ? 0 : 2;
+
+                  const btnClass = (active: boolean) =>
+                    `min-w-[28px] px-1.5 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-medium border border-gray-200 dark:border-[#35353E] text-center ${
+                      active
+                        ? "bg-[#1D8751] text-white border-[#1D8751]"
+                        : "bg-white text-gray-400 hover:bg-gray-100 dark:bg-[var(--card-color)] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]"
+                    }`;
 
                   if (totalPages <= maxPagesToShow) {
-                    // Show all pages if total is 7 or less
+                    // Show all pages if total fits
                     for (let i = 1; i <= totalPages; i++) {
                       pageButtons.push(
                         <button
                           key={i}
-                          onClick={() => {
-                            logger.debug('p2p', "Page clicked:", i);
-                            handlePageChangeWithScroll(i);
-                          }}
-                          className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] ${currentPage === i
-                            ? "bg-[#1D8751] text-white"
-                            : "bg-white text-gray-400 hover:bg-gray-100 dark:bg-[var(--card-color)] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]"
-                            }`}
+                          onClick={() => handlePageChangeWithScroll(i)}
+                          className={btnClass(currentPage === i)}
                         >
                           {i}
                         </button>
                       );
                     }
                   } else {
-                    // Smart pagination with ellipsis
-                    // Always show first page
+                    // Smart pagination: first page
                     pageButtons.push(
-                      <button
-                        key={1}
-                        onClick={() => handlePageChangeWithScroll(1)}
-                        className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] ${currentPage === 1
-                          ? "bg-[#1D8751] text-white"
-                          : "bg-white text-gray-400 hover:bg-gray-100 dark:bg-[var(--card-color)] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]"
-                          }`}
-                      >
-                        1
-                      </button>
+                      <button key={1} onClick={() => handlePageChangeWithScroll(1)} className={btnClass(currentPage === 1)}>1</button>
                     );
 
                     // Calculate range around current page
                     let startPage = Math.max(2, currentPage - sidePages);
                     let endPage = Math.min(totalPages - 1, currentPage + sidePages);
 
-                    // Adjust if we're near the start
-                    if (currentPage <= 4) {
+                    // Clamp near start
+                    if (!isSmallScreen && currentPage <= 4) {
                       startPage = 2;
                       endPage = Math.min(6, totalPages - 1);
-                    }
-                    // Adjust if we're near the end
-                    else if (currentPage >= totalPages - 3) {
+                    } else if (!isSmallScreen && currentPage >= totalPages - 3) {
                       startPage = Math.max(2, totalPages - 5);
                       endPage = totalPages - 1;
+                    }
+
+                    // On small screens only show current page in the middle (between first and last)
+                    if (isSmallScreen) {
+                      startPage = currentPage === 1 ? totalPages : currentPage;
+                      endPage = currentPage === totalPages ? 1 : currentPage;
+                      // Just show current if it's not 1 or last
+                      startPage = currentPage;
+                      endPage = currentPage;
                     }
 
                     // Left ellipsis
                     if (startPage > 2) {
                       pageButtons.push(
-                        <span key="ellipsis-left" className="px-2 text-gray-400 dark:text-[#8C8CA1]">
-                          ...
-                        </span>
+                        <span key="el" className="px-0.5 text-xs text-gray-400 dark:text-[#8C8CA1]">…</span>
                       );
                     }
 
-                    // Pages around current page
+                    // Middle pages
                     for (let i = startPage; i <= endPage; i++) {
-                      pageButtons.push(
-                        <button
-                          key={i}
-                          onClick={() => {
-                            logger.debug('p2p', "Page clicked:", i);
-                            handlePageChangeWithScroll(i);
-                          }}
-                          className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] ${currentPage === i
-                            ? "bg-[#1D8751] text-white"
-                            : "bg-white text-gray-400 hover:bg-gray-100 dark:bg-[var(--card-color)] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]"
-                            }`}
-                        >
-                          {i}
-                        </button>
-                      );
+                      if (i > 1 && i < totalPages) {
+                        pageButtons.push(
+                          <button key={i} onClick={() => handlePageChangeWithScroll(i)} className={btnClass(currentPage === i)}>{i}</button>
+                        );
+                      }
                     }
 
                     // Right ellipsis
                     if (endPage < totalPages - 1) {
                       pageButtons.push(
-                        <span key="ellipsis-right" className="px-2 text-gray-400 dark:text-[#8C8CA1]">
-                          ...
-                        </span>
+                        <span key="er" className="px-0.5 text-xs text-gray-400 dark:text-[#8C8CA1]">…</span>
                       );
                     }
 
-                    // Always show last page
-                    if (totalPages > 1) {
-                      pageButtons.push(
-                        <button
-                          key={totalPages}
-                          onClick={() => {
-                            logger.debug('p2p', "Last page clicked:", totalPages);
-                            handlePageChangeWithScroll(totalPages);
-                          }}
-                          className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] ${currentPage === totalPages
-                            ? "bg-[#1D8751] text-white"
-                            : "bg-white text-gray-400 hover:bg-gray-100 dark:bg-[var(--card-color)] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]"
-                            }`}
-                        >
-                          {totalPages}
-                        </button>
-                      );
-                    }
+                    // Last page
+                    pageButtons.push(
+                      <button key={totalPages} onClick={() => handlePageChangeWithScroll(totalPages)} className={btnClass(currentPage === totalPages)}>{totalPages}</button>
+                    );
                   }
 
                   return pageButtons;
@@ -1186,12 +1162,15 @@ export const Table: React.FC<TableProps> = ({
                     }
                   }}
                   disabled={currentPage === totalPages}
-                  className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] text-gray-400 dark:text-[#8C8CA1] ${currentPage === totalPages
-                    ? "opacity-50 cursor-not-allowed"
-                    : "hover:bg-gray-100 dark:hover:bg-[#35353E]"
-                    }`}
+                  className={`min-w-[36px] px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium border flex items-center justify-center ${
+                    currentPage === totalPages
+                      ? "opacity-50 cursor-not-allowed border-gray-200 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] text-gray-400 dark:text-[#8C8CA1]"
+                      : "border-[#1D8751] bg-white dark:bg-[var(--card-color)] text-[#1D8751] hover:bg-[#1D8751] hover:text-white transition-colors"
+                  }`}
                 >
-                  &gt;
+                  <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M9 18l6-6-6-6" />
+                  </svg>
                 </button>
               </div>
             )}

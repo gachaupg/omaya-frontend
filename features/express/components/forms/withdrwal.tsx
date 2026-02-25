@@ -446,35 +446,9 @@ export default function WithdrawalForm({
   const effectivePaymentMethods = paymentMethodsRef.current;
   const effectiveUserPaymentMethods = userPaymentMethodsRef.current;
 
-  // Fetch public payment methods for withdrawal with caching (1 hour TTL)
+  // Fetch public payment methods for withdrawal (same as home: direct public API)
   useEffect(() => {
-    const fetchWithCache = async () => {
-      try {
-        const { sliceCache } = await import("@/lib/utils/sliceCache");
-
-        // Try to get from cache first
-        const cachedData = await sliceCache.get<any>('paymentMethods', 'fetchPublicPaymentMethods');
-
-        if (cachedData) {
-          // Use cached data
-          dispatch({
-            type: 'paymentMethods/fetchPublicPaymentMethods/fulfilled',
-            payload: cachedData,
-          });
-        } else {
-          // Fetch fresh data and cache it
-          const result = await dispatch(fetchPublicPaymentMethods()).unwrap();
-          if (result) {
-            await sliceCache.set('paymentMethods', 'fetchPublicPaymentMethods', result, undefined, 60 * 60 * 1000); // 1 hour TTL
-          }
-        }
-      } catch (error) {
-        // If cache fails, just fetch normally
-        dispatch(fetchPublicPaymentMethods());
-      }
-    };
-
-    fetchWithCache();
+    dispatch(fetchPublicPaymentMethods());
   }, [dispatch]);
 
   // Initialize refs with cached data IMMEDIATELY on mount (runs only once)
@@ -4980,8 +4954,8 @@ export default function WithdrawalForm({
               setIsInfoModalOpen(false);
             }}
             onContactUs={() => {
-              // Handle contact us action - you can customize this
-              window.open("https://wa.me/your-whatsapp-number", "_blank");
+              setIsInfoModalOpen(false);
+              router.push("/contactUs");
               // When modal closes, reset amount to maximum allowed (15000)
               if (payAmount > 15000) {
                 setPayAmount(15000);
@@ -4991,7 +4965,6 @@ export default function WithdrawalForm({
                 setGetAmount(15000);
                 setGetAmountInput("15000");
               }
-              setIsInfoModalOpen(false);
             }}
           />
         </>

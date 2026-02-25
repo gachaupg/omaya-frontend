@@ -2342,31 +2342,14 @@ export default function WithdrawalForm({
       // "You Receive" has only data-select-card
       const isYouSend = currentCard.hasAttribute('data-asset-card');
 
-      // Calculate reduced width so dropdowns don't cover amount inputs (40% of card width)
-      let desiredWidth = Math.min(maxWidth, Math.max(minWidth, cardRect.width * 0.4));
+      // Width: span from the asset selector's left edge to the card's right edge
+      let desiredWidth = Math.min(maxWidth, Math.max(minWidth, cardRect.right - dropdownRect.left));
 
-      // Position dropdown vertically based on section
-      let top = cardRect.top - 45; // default: above the card
-      if (isYouSend) {
-        top = cardRect.top + 1; // push "You Send" asset dropdown down a little more
-      } else {
-        // "You Receive" section - pushed down significantly below the card bottom
-        top = cardRect.bottom + 20; // Push "You Receive" dropdown down by 20px below card bottom
-      }
+      // Position dropdown directly below the asset selector element that was clicked
+      let top = dropdownRect.bottom + 8;
 
-      let left: number;
-
-      // Both "You Send" and "You Receive" - position from right side of card, pushed more right
-      // Position it very close to the right edge
-      left = cardRect.right - desiredWidth - 3; // 3px from right edge of card
-
-      // Push "You Send" dropdown further to the right
-      if (isYouSend) {
-        left += 18; // additional right offset for "You Send"
-      } else {
-        // Push "You Receive" dropdown to the right a little more
-        left += 40; // additional right offset for "You Receive"
-      }
+      // Left-align with the asset selector (not the card's left edge)
+      let left = dropdownRect.left;
 
       // Ensure it doesn't go off the left edge
       if (left < cardRect.left) {
@@ -5042,8 +5025,8 @@ export default function WithdrawalForm({
               setIsInfoModalOpen(false);
             }}
             onContactUs={() => {
-              // Handle contact us action - you can customize this
-              window.open("https://wa.me/your-whatsapp-number", "_blank");
+              setIsInfoModalOpen(false);
+              router.push("/contactUs");
               // When modal closes, reset amount to maximum allowed (15000)
               if (payAmount > 15000) {
                 setPayAmount(15000);
@@ -5053,7 +5036,6 @@ export default function WithdrawalForm({
                 setGetAmount(15000);
                 setGetAmountInput("15000");
               }
-              setIsInfoModalOpen(false);
             }}
           />
         </>

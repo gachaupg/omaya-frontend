@@ -648,18 +648,34 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
               ) : (
                 <div className="text-[#788099] text-sm py-4">No payment methods available</div>
               )}
-              {/* Buyer's Name */}
+              {/* Seller's name (advertiser - who receives payment) */}
               <div className="border border-[#F79330] rounded-2xl px-3 sm:px-4 min-[900px]:px-8 py-4 sm:py-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mt-2 bg-white dark:bg-[var(--card-color)]">
                 <p className="text-[#F79330] font-semibold text-sm sm:text-lg sm:mr-6">
-                  Buyer&apos;s Name
+                  Owner Name
                 </p>
                 <div className="flex items-center flex-wrap gap-2">
                   <span className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-[#051015] dark:bg-white flex-shrink-0"></span>
                   <span className="text-gray-900 dark:text-white font-semibold text-sm sm:text-lg break-words">
-                    {singleOrder?.advertiser_first_name || user?.first_name}{" "}
-                    {singleOrder?.advertiser_last_name ||
-                      user?.last_name ||
-                      "Mohammed Zyad Yousef"}
+                    {(() => {
+                      const firstName =
+                        (singleOrder as any)?.advertiser_first_name ??
+                        (confirmOrder as any)?.advertiser_first_name ??
+                        (saveOrder as any)?.advertiser_first_name ??
+                        "";
+                      const lastName =
+                        (singleOrder as any)?.advertiser_last_name ??
+                        (confirmOrder as any)?.advertiser_last_name ??
+                        (saveOrder as any)?.advertiser_last_name ??
+                        "";
+                      const fullName =
+                        firstName && lastName
+                          ? `${firstName} ${lastName}`.trim()
+                          : (singleOrder as any)?.advertiser_name ??
+                            (confirmOrder as any)?.advertiser_name ??
+                            (saveOrder as any)?.advertiser_name ??
+                            "";
+                      return fullName || "—";
+                    })()}
                   </span>
                   <UserStatusBadge isLive={statusWsConnected} className="flex-shrink-0" />
                 </div>

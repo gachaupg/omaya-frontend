@@ -21,6 +21,15 @@ import { showToast } from "@/lib/utils/toast";
 
 import { logger } from '@/lib/utils/logger';
 
+/** Avoid showing raw "Request failed with status code 400" etc. on the UI. */
+function normalizeApiErrorMessage(error: any, fallback: string): string {
+  const msg = error?.message || error?.response?.data?.message || String(error || "");
+  if (!msg || /request failed with status code \d+/i.test(msg) || /status code \d+/i.test(msg) || /^\d{3}\s/i.test(msg)) {
+    return fallback;
+  }
+  return msg;
+}
+
 const initialState: SettingsState = {
   profile: null,
   theme: {
@@ -373,10 +382,9 @@ export const createDeviceSession = createAsyncThunk(
       const response = await settingsApi.createDeviceSession(payload);
       return response.data;
     } catch (error: any) {
-      showToast.error(error.message || "Failed to create device session");
-      return rejectWithValue(
-        error.message || "Failed to create device session"
-      );
+      const msg = normalizeApiErrorMessage(error, "Failed to create device session");
+      showToast.error(msg);
+      return rejectWithValue(msg);
     }
   }
 );
@@ -390,7 +398,7 @@ export const fetchDeviceSessions = createAsyncThunk(
       return response.data || response;
     } catch (error: any) {
       return rejectWithValue(
-        error.message || "Failed to fetch device sessions"
+        normalizeApiErrorMessage(error, "Unable to load device sessions")
       );
     }
   }
@@ -404,8 +412,9 @@ export const logoutDevice = createAsyncThunk(
       showToast.success("Device logged out successfully");
       return { sessionId, response: response.data };
     } catch (error: any) {
-      showToast.error(error.message || "Failed to logout device");
-      return rejectWithValue(error.message || "Failed to logout device");
+      const msg = normalizeApiErrorMessage(error, "Failed to logout device");
+      showToast.error(msg);
+      return rejectWithValue(msg);
     }
   }
 );
@@ -415,11 +424,10 @@ export const logoutAllDevices = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await settingsApi.logoutAllDevices();
-      showToast.success("All devices logged out successfully");
       return response.data;
     } catch (error: any) {
-      showToast.error(error.message || "Failed to logout all devices");
-      return rejectWithValue(error.message || "Failed to logout all devices");
+      // Don't show toast here – component handles success/error and clears local state on sign out
+      return rejectWithValue(normalizeApiErrorMessage(error, "Failed to logout all devices"));
     }
   }
 );
@@ -450,6 +458,9 @@ const settingsSlice = createSlice({
     },
     clearSuccess: (state) => {
       state.success = null;
+    },
+    clearDeviceSessionsError: (state) => {
+      state.deviceSessionsError = null;
     },
     setThemeMode: (
       state,
@@ -726,9 +737,13 @@ const settingsSlice = createSlice({
         );
         state.success = "Device logged out successfully";
       })
-      .addCase(logoutAllDevices.fulfilled, (state, action) => {
+      .addCase(logoutAllDevices.fulfilled, (state) => {
         state.deviceSessions = [];
+        state.deviceSessionsError = null;
         state.success = "All devices logged out successfully";
+      })
+      .addCase(logoutAllDevices.rejected, (state) => {
+        state.deviceSessionsError = null;
       });
 
     // Support Request
@@ -751,6 +766,7 @@ const settingsSlice = createSlice({
 export const {
   clearError,
   clearSuccess,
+  clearDeviceSessionsError,
   setThemeMode,
   setLoading,
   setUpdating,

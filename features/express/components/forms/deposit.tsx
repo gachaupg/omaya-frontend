@@ -240,12 +240,16 @@ export default function DepositForm({
   // Use state to hold payment methods - will trigger re-render when updated
   const [stablePaymentMethods, setStablePaymentMethods] = useState<any[]>([]);
 
-  // Use appropriate payment methods data based on isHomePage
-  const paymentMethodsData = isHomePage ? publicPaymentMethods : adminMethods;
-  const paymentMethodsLoading = isHomePage
+  // Use public API payment methods when available (same as home); fallback to admin
+  const hasPublicMethods =
+    publicPaymentMethods?.data?.providers &&
+    Array.isArray(publicPaymentMethods.data.providers) &&
+    publicPaymentMethods.data.providers.length > 0;
+  const paymentMethodsData = hasPublicMethods ? publicPaymentMethods : adminMethods;
+  const paymentMethodsLoading = hasPublicMethods
     ? publicMethodsLoading
     : adminMethodsLoading;
-  const paymentMethodsError = isHomePage
+  const paymentMethodsError = hasPublicMethods
     ? publicMethodsError
     : adminMethodsError;
 
@@ -269,20 +273,22 @@ export default function DepositForm({
         : 0,
     });
 
-    // Check if we have payment methods data
-    const hasPaymentData = isHomePage
-      ? publicPaymentMethods?.data?.providers &&
+    // Check if we have payment methods data (use public API when available, same as home)
+    const hasPublicData =
+      publicPaymentMethods?.data?.providers &&
       Array.isArray(publicPaymentMethods.data.providers) &&
-      publicPaymentMethods.data.providers.length > 0
+      publicPaymentMethods.data.providers.length > 0;
+    const hasPaymentData = hasPublicData
+      ? true
       : paymentMethodsData &&
-      Array.isArray(paymentMethodsData) &&
-      paymentMethodsData.length > 0;
+        Array.isArray(paymentMethodsData) &&
+        paymentMethodsData.length > 0;
 
     if (hasPaymentData) {
       let activeMethods;
 
-      if (isHomePage) {
-        // For public payment methods, handle the new API structure
+      if (hasPublicData) {
+        // For public payment methods, handle the new API structure (same as home)
         let flattenedMethods: any[] = [];
 
         // Check for new structure: data.providers (direct providers array)
@@ -572,7 +578,7 @@ export default function DepositForm({
         publicPaymentMethodsStructure: publicPaymentMethods,
       });
     }
-  }, [paymentMethodsData, isHomePage, publicPaymentMethods]); // Update when payment data changes
+  }, [paymentMethodsData, publicPaymentMethods]); // Update when payment data changes
 
   // Use stable state - React will properly render this
   const effectivePaymentMethods = stablePaymentMethods;
@@ -956,22 +962,10 @@ export default function DepositForm({
     }
   }, [selectedAsset, payBank]);
 
-  // Fetch public payment methods for home page
+  // Fetch public payment methods (same as home: always use public API when available)
   useEffect(() => {
-    if (!isHomePage) {
-      return;
-    }
-
-    console.log("Fetching public payment methods for home page");
-    dispatch(fetchPublicPaymentMethods())
-      .unwrap()
-      .then((result) => {
-        console.log("Public payment methods fetched successfully:", result);
-      })
-      .catch((error: unknown) => {
-        console.error("Failed to fetch public payment methods:", error);
-      });
-  }, [dispatch, isHomePage]);
+    dispatch(fetchPublicPaymentMethods());
+  }, [dispatch]);
 
   useEffect(() => {
     // Skip API calls on home page - buttons will redirect to login
@@ -4411,12 +4405,11 @@ export default function DepositForm({
             <label className="block text-sm sm:text-[17px] text-[#7e7e8f] mb-2 font-semibold">
               {t("express.walletAccountAddress", "Wallet/Account Address")}
             </label>
-            {/* Input + Paste row - stacked on small screens so input is always visible */}
-            <div className="flex flex-col sm:flex-row gap-3 items-stretch">
-              {/* Input group - icon + input only; full width on small so input is visible */}
-              <div className="relative flex items-center bg-white dark:bg-[#18181D] border border-[#39394a] dark:border-[#35353E] rounded-2xl px-2 sm:px-3 md:px-4 py-2 mb-0 flex-1 min-w-0 w-full">
-                {/* Left icon */}
-                <span className="mr-2 flex-shrink-0 text-[#1D8751]">
+            {/* Input + Paste row - always inline so paste button sits next to input */}
+            <div className="flex items-center gap-2 w-full">
+            <div className="relative flex items-center flex-1 bg-white dark:bg-[#18181D] border border-[#39394a] dark:border-[#35353E] rounded-2xl px-2 sm:px-3 md:px-4 py-2">
+              {/* Left icon */}
+                <span className="flex-shrink-0 text-[#1D8751] mr-1">
                   <svg width="22" height="22" fill="none" viewBox="0 0 24 24">
                     <path
                       d="M7 17v2a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"
@@ -4513,6 +4506,7 @@ export default function DepositForm({
                 />
               </div>
               <button
+                title="Paste"
                 onClick={async () => {
                   try {
                     const text = await navigator.clipboard.readText();
@@ -4528,12 +4522,11 @@ export default function DepositForm({
                     showToast.error("Failed to paste from clipboard");
                   }
                 }}
-                className="mt-3 sm:mt-0 flex items-center justify-center gap-2 bg-[#1D8751]  border border-[#4A4A5A] dark:border-[#4A4A5A] 
-                text-muted  rounded-2xl px-4 py-2 font-semibold text-sm sm:text-base hover:bg-[#1D8751]/90 ] transition-colors min-h-[44px] sm:min-h-0 touch-manipulation w-full sm:w-auto"
+                className="flex items-center justify-center gap-2 bg-[#1D8751] hover:bg-[#166b3e] text-white rounded-xl px-3 py-1.5 font-semibold text-sm transition-colors min-h-[36px] touch-manipulation flex-shrink-0 whitespace-nowrap"
               >
-                <svg width="18" height="18" fill="none" viewBox="0 0 24 24" className="text-muted">
+                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" className="text-white">
                   <path
-                    d="M19 21H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h4l2-2h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2z"
+                    d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
                     stroke="currentColor"
                     strokeWidth="2"
                     strokeLinecap="round"
@@ -4750,8 +4743,8 @@ export default function DepositForm({
           setIsInfoModalOpen(false);
         }}
         onContactUs={() => {
-          // Handle contact us action - you can customize this
-          window.open("https://wa.me/your-whatsapp-number", "_blank");
+          setIsInfoModalOpen(false);
+          router.push("/contactUs");
           // When modal closes, reset amount to maximum allowed (15000)
           if (payAmount > 15000) {
             setPayAmount(15000);
@@ -4761,7 +4754,6 @@ export default function DepositForm({
             setGetAmount(15000);
             setGetAmountInput("15000");
           }
-          setIsInfoModalOpen(false);
         }}
       />
     </div>

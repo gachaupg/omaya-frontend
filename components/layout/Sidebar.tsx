@@ -33,12 +33,10 @@ export default function Sidebar() {
   const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
   const kycState = useSelector((state: RootState) => state.kyc);
   
-  // Check verification status from both auth.user.is_verified and kyc.isVerified
-  // If verification status is undefined (not checked yet), treat as verified to allow navigation
-  // Only block if we explicitly know the user is unverified (isVerified === false)
+
   const isVerified = kycState.isVerified !== undefined 
     ? kycState.isVerified 
-    : (user?.is_verified !== undefined ? user.is_verified : true); // Default to true if undefined
+    : (user?.is_verified !== undefined ? user.is_verified : true);
     
   const { isDark } = useTheme();
 
@@ -98,7 +96,6 @@ export default function Sidebar() {
         <nav>
           <ul className="space-y-1">
             {navItems.map((item) => {
-              // Normalize paths for comparison (handle trailing slashes)
               const normalizedPathname = pathname?.replace(/\/$/, "") || "";
               const normalizedHref = item.href.replace(/\/$/, "");
               const isActive =
@@ -108,7 +105,6 @@ export default function Sidebar() {
                   (normalizedPathname &&
                     normalizedPathname.startsWith(normalizedHref + "/"));
               const label = t(item.labelKey, NAV_LABEL_FALLBACKS[item.labelKey] ?? item.labelKey);
-              // Only disable for unverified authenticated users (explicitly false, not undefined)
               const isUnverifiedUser = isAuthenticated && user && isVerified === false;
               const isDisabled = isUnverifiedUser && item.href !== "/dashboard/" && item.href !== "/dashboard";
               return (

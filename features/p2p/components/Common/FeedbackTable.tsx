@@ -329,11 +329,11 @@ const FeedbackTable: React.FC<FeedbackTableProps> = ({ data, loading }) => {
           <button
             onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
             disabled={currentPage === 1}
-            className="px-3 py-1 rounded bg-[#35354a] text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#28293d]"
+            className="px-3 py-1 rounded bg-gray-200 dark:bg-[#35354a] text-gray-700 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-300 dark:hover:bg-[#28293d]"
           >
             Previous
           </button>
-          <span className="px-3 py-1 dark:text-white text-gray-900">
+          <span className="px-3 py-1 text-gray-900 dark:text-white">
             Page {currentPage} of {totalPages}
           </span>
           <button
@@ -341,7 +341,7 @@ const FeedbackTable: React.FC<FeedbackTableProps> = ({ data, loading }) => {
               setCurrentPage((prev) => Math.min(prev + 1, totalPages))
             }
             disabled={currentPage === totalPages}
-            className="px-3 py-1 rounded bg-[#35354a] text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#28293d]"
+            className="px-3 py-1 rounded bg-gray-200 dark:bg-[#35354a] text-gray-700 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-300 dark:hover:bg-[#28293d]"
           >
             Next
           </button>
