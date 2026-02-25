@@ -2196,8 +2196,8 @@ export default function MarketingPage() {
                       >
                         <div
                           className={`bg-gray-50 dark:bg-[#18181D] border rounded-xl overflow-hidden ${isOpen
-                              ? "dark:border-accent border-border"
-                              : "border-gray-200 dark:border-[#2A2A2A]"
+                            ? "dark:border-accent border-border"
+                            : "border-gray-200 dark:border-[#2A2A2A]"
                             }`}
                         >
                           <button
@@ -2214,8 +2214,8 @@ export default function MarketingPage() {
                             </div>
                             <div
                               className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ml-4 transition-colors ${isOpen
-                                  ? "bg-[#1D8751]"
-                                  : "bg-gray-200 dark:bg-[#2A2A2A]"
+                                ? "bg-[#1D8751]"
+                                : "bg-gray-200 dark:bg-[#2A2A2A]"
                                 }`}
                             >
                               {isOpen ? (
@@ -2263,8 +2263,8 @@ export default function MarketingPage() {
                           key={i}
                           onClick={() => setFaqPage(i + 1)}
                           className={`min-w-[36px] h-9 px-2 rounded-lg text-sm font-medium transition-colors ${faqPage === i + 1
-                              ? "bg-[#1D8751] text-white"
-                              : "border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#23232B] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#2A2A2A]"
+                            ? "bg-[#1D8751] text-white"
+                            : "border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#23232B] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#2A2A2A]"
                             }`}
                         >
                           {i + 1}

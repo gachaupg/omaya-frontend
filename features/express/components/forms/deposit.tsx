@@ -4405,12 +4405,11 @@ export default function DepositForm({
             <label className="block text-sm sm:text-[17px] text-[#7e7e8f] mb-2 font-semibold">
               {t("express.walletAccountAddress", "Wallet/Account Address")}
             </label>
-            {/* Input + Paste row - stacked on small screens so input is always visible */}
-            <div className="flex flex-col sm:flex-row gap-3 items-stretch">
-              {/* Input group - icon + input only; full width on small so input is visible */}
-              <div className="relative flex items-center bg-white dark:bg-[#18181D] border border-[#39394a] dark:border-[#35353E] rounded-2xl px-2 sm:px-3 md:px-4 py-2 mb-0 flex-1 min-w-0 w-full">
-                {/* Left icon */}
-                <span className="mr-2 flex-shrink-0 text-[#1D8751]">
+            {/* Input + Paste row - always inline so paste button sits next to input */}
+            <div className="flex items-center gap-2 w-full">
+            <div className="relative flex items-center flex-1 bg-white dark:bg-[#18181D] border border-[#39394a] dark:border-[#35353E] rounded-2xl px-2 sm:px-3 md:px-4 py-2">
+              {/* Left icon */}
+                <span className="flex-shrink-0 text-[#1D8751] mr-1">
                   <svg width="22" height="22" fill="none" viewBox="0 0 24 24">
                     <path
                       d="M7 17v2a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"
@@ -4507,6 +4506,7 @@ export default function DepositForm({
                 />
               </div>
               <button
+                title="Paste"
                 onClick={async () => {
                   try {
                     const text = await navigator.clipboard.readText();
@@ -4522,12 +4522,11 @@ export default function DepositForm({
                     showToast.error("Failed to paste from clipboard");
                   }
                 }}
-                className="mt-3 sm:mt-0 flex items-center justify-center gap-2 bg-[#1D8751]  border border-[#4A4A5A] dark:border-[#4A4A5A] 
-                text-muted  rounded-2xl px-4 py-2 font-semibold text-sm sm:text-base hover:bg-[#1D8751]/90 ] transition-colors min-h-[44px] sm:min-h-0 touch-manipulation w-full sm:w-auto"
+                className="flex items-center justify-center gap-2 bg-[#1D8751] hover:bg-[#166b3e] text-white rounded-xl px-3 py-1.5 font-semibold text-sm transition-colors min-h-[36px] touch-manipulation flex-shrink-0 whitespace-nowrap"
               >
-                <svg width="18" height="18" fill="none" viewBox="0 0 24 24" className="text-muted">
+                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" className="text-white">
                   <path
-                    d="M19 21H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h4l2-2h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2z"
+                    d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
                     stroke="currentColor"
                     strokeWidth="2"
                     strokeLinecap="round"
