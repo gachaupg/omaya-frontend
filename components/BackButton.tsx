@@ -6,9 +6,20 @@ import { ArrowLeft } from 'lucide-react';
 export default function BackButton() {
     const router = useRouter();
 
+    const handleBack = () => {
+        // When page is opened in a new tab (e.g. from policy links with target="_blank"),
+        // window.history.length is 1 and router.back() has nowhere to go.
+        // In that case navigate to the home page instead.
+        if (typeof window !== 'undefined' && window.history.length > 1) {
+            router.back();
+        } else {
+            router.push('/');
+        }
+    };
+
     return (
         <button
-            onClick={() => router.back()}
+            onClick={handleBack}
             className="inline-block mb-2"
             aria-label="Go back"
         >

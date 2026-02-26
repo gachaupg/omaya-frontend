@@ -1597,19 +1597,14 @@ export default function DepositForm({
       // Check if this is "You Send" section (has data-select-card) or "You Receive" section
       const isYouSend = currentCard.hasAttribute('data-select-card');
 
-      // Width: span from the asset selector's left edge to the card's right edge
-      let desiredWidth = Math.min(maxWidth, Math.max(minWidth, cardRect.right - dropdownRect.left));
+      // Width: match only the asset selector element (right column), not the full card
+      let desiredWidth = dropdownRect.width;
 
-      // Position dropdown directly below the asset selector element that was clicked
-      let top = dropdownRect.bottom + 8;
+      // Position dropdown starting at the top of the card container
+      let top = cardRect.top;
 
-      // Left-align with the asset selector (not the card's left edge)
+      // Left-align with the asset selector element's left edge
       let left = dropdownRect.left;
-
-      // Ensure it doesn't go off the left edge
-      if (left < cardRect.left) {
-        left = cardRect.left;
-      }
 
       // Ensure it doesn't go off screen on the right
       if (left + desiredWidth > viewportWidth - minMargin) {
@@ -1619,16 +1614,6 @@ export default function DepositForm({
       // Ensure it doesn't go off the left edge
       if (left < minMargin) {
         left = minMargin;
-      }
-
-      // If card is too narrow, center it
-      if (cardRect.width < desiredWidth + 16) {
-        left = cardRect.left + (cardRect.width - desiredWidth) / 2;
-      }
-
-      // Final boundary check to ensure it doesn't go off screen
-      if (left + desiredWidth > viewportWidth - minMargin) {
-        left = viewportWidth - desiredWidth - minMargin;
       }
 
       dropdownStyle = {
