@@ -32,12 +32,12 @@ export default function Sidebar() {
   const dispatch = useDispatch<AppDispatch>();
   const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
   const kycState = useSelector((state: RootState) => state.kyc);
-  
 
-  const isVerified = kycState.isVerified !== undefined 
-    ? kycState.isVerified 
+
+  const isVerified = kycState.isVerified !== undefined
+    ? kycState.isVerified
     : (user?.is_verified !== undefined ? user.is_verified : true);
-    
+
   const { isDark } = useTheme();
 
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
@@ -50,7 +50,7 @@ export default function Sidebar() {
     // Block only if: authenticated, user exists, and explicitly not verified (isVerified === false)
     // Allow navigation if verification status is undefined (hasn't been checked yet)
     const isUnverifiedUser = isAuthenticated && user && isVerified === false;
-    
+
     if (isUnverifiedUser) {
       e.preventDefault();
       e.stopPropagation();
@@ -64,7 +64,7 @@ export default function Sidebar() {
     const isActive = normalizedHref === "/dashboard"
       ? normalizedPathname === normalizedHref
       : normalizedPathname === normalizedHref ||
-        (normalizedPathname && normalizedPathname.startsWith(normalizedHref + "/"));
+      (normalizedPathname && normalizedPathname.startsWith(normalizedHref + "/"));
 
     // If the clicked item is already active, navigate to its base/default route
     if (isActive && normalizedHref !== "/dashboard") {
@@ -80,7 +80,7 @@ export default function Sidebar() {
       window.location.href = href;
       return false;
     }
-    
+
     // Allow navigation for verified users, unauthenticated users, and users with undefined verification status
   };
 
@@ -193,7 +193,7 @@ export default function Sidebar() {
                             {/* Light-mode image: shown in light mode always (active or not), 
             also shown in dark mode when not active */}
                             <img
-                              src="https://res.cloudinary.com/pitz/image/upload/v1764698096/Group_9_momvgo.png"
+                              src="/images/Group_9_momvgo.png"
                               className={isActive ? "block dark:hidden" : "block"}
                               alt=""
                             />
@@ -201,7 +201,7 @@ export default function Sidebar() {
                             {/* Dark-mode active image: only visible in dark mode AND active */}
                             {isActive && (
                               <img
-                                src="https://res.cloudinary.com/pitz/image/upload/v1764698106/Group_8_hjhlxe.png"
+                                src="/images/Group_5_gkxzdz.png"
                                 className="hidden dark:block"
                                 alt=""
                               />
@@ -280,8 +280,8 @@ export default function Sidebar() {
                             src={isActive
 
                               ? isDark ? "https://res.cloudinary.com/pitz/image/upload/v1764663236/Group_7_ichuyz.png"
-                                : "https://res.cloudinary.com/pitz/image/upload/v1764661972/Group_6_ohph9q.png"
-                              : "https://res.cloudinary.com/pitz/image/upload/v1764661972/Group_6_ohph9q.png"
+                                : "/images/x.png"
+                              : "/images/x.png"
                             }
                             alt=""
                           />
@@ -314,9 +314,9 @@ export default function Sidebar() {
                               src={
                                 isActive
 
-                                  ? isDark ? "https://res.cloudinary.com/pitz/image/upload/v1764698106/Group_8_hjhlxe.png"
-                                    : "https://res.cloudinary.com/pitz/image/upload/v1764698096/Group_9_momvgo.png"
-                                  : "https://res.cloudinary.com/pitz/image/upload/v1764698096/Group_9_momvgo.png"
+                                  ? isDark ? "/images/Group_5_gkxzdz.png"
+                                    : "/images/Group_9_momvgo.png"
+                                  : "/images/Group_9_momvgo.png"
                               }
                               alt="Express"
                             />

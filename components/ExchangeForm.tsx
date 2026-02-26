@@ -1245,13 +1245,13 @@ export default function ExchangeForm({
     // Express / Exchange Icons (from Sidebar)
     // Light Mode / Inactive: Group_9 (Usually Dark/Grey X)
     // Dark Mode Active: Group_8 (Usually White/Green X)
-    const exchangeIconSrc1 = "https://res.cloudinary.com/pitz/image/upload/v1764698096/Group_9_momvgo.png";
-    const exchangeIconSrc2 = "https://res.cloudinary.com/pitz/image/upload/v1764698106/Group_8_hjhlxe.png";
+    const exchangeIconSrc1 = "/images/Group_9_momvgo.png";
+    const exchangeIconSrc2 = "/images/Group_5_gkxzdz.png";
 
     // MoneyX Icons (from Sidebar)
     // Light Mode / Inactive: Group_6 (Dark X)
     // Dark Mode Active: Group_7 (Green/White X)
-    const moneyXIconSrc1 = "https://res.cloudinary.com/pitz/image/upload/v1764661972/Group_6_ohph9q.png";
+    const moneyXIconSrc1 = "/images/x.png";
     const moneyXIconSrc2 = "https://res.cloudinary.com/pitz/image/upload/v1764663236/Group_7_ichuyz.png";
 
     // Process label rendering
