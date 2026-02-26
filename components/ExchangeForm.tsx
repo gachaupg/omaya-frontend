@@ -127,7 +127,7 @@ const getAssetImageUrl = (asset: Asset) => {
   }
 
   // Final fallback
-  return "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+  return "/images/tether.svg";
 };
 
 // Check if asset uses simple calculation (USDT on BSC, USDC on BSC) - only for Express Exchange
@@ -1481,7 +1481,7 @@ export default function ExchangeForm({
                   className="w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover flex-shrink-0"
                   onError={(e) => {
                     e.currentTarget.src =
-                      "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                      "/images/tether.svg";
                   }}
                 />
                 <div className="flex-1 min-w-0 pr-2">

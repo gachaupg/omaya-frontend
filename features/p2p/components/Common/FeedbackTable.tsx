@@ -6,7 +6,7 @@ const COIN_ICONS: Record<string, string> = {
   USDT: "https://cryptologos.cc/logos/tether-usdt-logo.png",
   TRON: "https://cryptologos.cc/logos/tron-trx-logo.png",
   TRC20:
-    "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png",
+    "/images/tether.svg",
 };
 
 const BANK_ICONS: Record<string, string> = {
@@ -124,7 +124,7 @@ const FeedbackTable: React.FC<FeedbackTableProps> = ({ data, loading }) => {
                   {/* Coin */}
                   <td className="px-4 py-2 flex items-center gap-2">
                     <img
-                      src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                      src="/images/tether.svg"
                       alt={item.coin}
                       className="w-6 h-6 rounded-full"
                     />
@@ -223,7 +223,7 @@ const FeedbackTable: React.FC<FeedbackTableProps> = ({ data, loading }) => {
             <div className="flex items-center justify-between pb-2 border-b border-[#E8EFF5] dark:border-[#35354a]">
               <div className="flex items-center gap-2">
                 <img
-                  src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                  src="/images/tether.svg"
                   alt={item.coin}
                   className="w-6 h-6 rounded-full"
                 />

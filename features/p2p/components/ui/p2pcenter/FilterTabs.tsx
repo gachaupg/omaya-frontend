@@ -57,13 +57,13 @@ const FilterTabs: React.FC<FilterTabsProps> = ({
   const adStatusIndicators = useMemo(() => {
     // Ensure myOrders is an array before filtering
     const safeMyOrders = Array.isArray(myOrders) ? myOrders : [];
-    const liveAds = safeMyOrders.filter((order: any) => 
+    const liveAds = safeMyOrders.filter((order: any) =>
       order && typeof order === 'object' && (order.status === 'published' || order.status === 'pending')
     );
-    const offlineAds = safeMyOrders.filter((order: any) => 
+    const offlineAds = safeMyOrders.filter((order: any) =>
       order && typeof order === 'object' && order.status === 'offline'
     );
-    
+
     return {
       hasLiveAds: liveAds.length > 0,
       hasOfflineAds: offlineAds.length > 0,
@@ -73,7 +73,7 @@ const FilterTabs: React.FC<FilterTabsProps> = ({
   /** Tabs */
   const tabList = [
     { label: "Payment Methods" },
-    { 
+    {
       label: (
         <>
           Feedback <span className="text-[#F79330] font-bold">({feedbackStats.total})</span>
@@ -101,7 +101,7 @@ const FilterTabs: React.FC<FilterTabsProps> = ({
     return safeMyOrders.filter((trade: any) => {
       // Skip invalid trades
       if (!trade || typeof trade !== 'object') return false;
-      
+
       if (filters.token !== "Tether" && trade.currency !== filters.token)
         return false;
       if (
@@ -124,7 +124,7 @@ const FilterTabs: React.FC<FilterTabsProps> = ({
         try {
           const tradeDate = new Date(trade.created_on);
           if (isNaN(tradeDate.getTime())) return false; // Invalid date
-          
+
           const today = new Date();
           today.setHours(0, 0, 0, 0);
           switch (filters.date) {
@@ -182,7 +182,7 @@ const FilterTabs: React.FC<FilterTabsProps> = ({
       {/* Token */}
       <div className="flex items-center bg-gray-100 dark:bg-[var(--card-color)] rounded-full px-5 py-2.5 w-full sm:w-auto">
         <img
-          src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+          src="/images/tether.svg"
           alt="Tether"
           className="w-7 h-7 mr-2.5"
         />
@@ -256,62 +256,61 @@ const FilterTabs: React.FC<FilterTabsProps> = ({
               height={44}
               borderRadius={24}
               borderColor={activeTab === idx ? undefined : "#1D8751"}
-              className={`${
-                activeTab === idx ? "" : "text-[#1D8751]"
-              } cursor-pointer min-w-[120px] sm:min-w-[172px]`}
+              className={`${activeTab === idx ? "" : "text-[#1D8751]"
+                } cursor-pointer min-w-[120px] sm:min-w-[172px]`}
               onClick={() => handleTabClick(idx)}
             >
               {tab.label} {tab.extra}
             </Button>
           ))}
         </div>
-    <div className="flex flex-col gap-3 w-full sm:w-auto">
-      {activeTab === 1 ? (
-        <>
-          {/* Positive Feedback Status - Only show when Feedback tab is active */}
-          <div className="flex items-center gap-3">
-            <ThumbsUp className="w-5 h-5 text-[#1D8751]" />
-            <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 min-w-[120px]">
-              <div 
-                className="bg-[#1D8751] h-2.5 rounded-full transition-all duration-300" 
-                style={{ width: `${feedbackStats.positivePercentage}%` }}
-              ></div>
-            </div>
-            <span className="text-[#1D8751] text-base font-bold">({feedbackStats.positive})</span>
-          </div>
-          
-          {/* Negative Feedback Status - Only show when Feedback tab is active */}
-          <div className="flex items-center gap-3">
-            <ThumbsDown className="w-5 h-5 text-[#FA615F]" />
-            <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 min-w-[120px]">
-              <div 
-                className="bg-[#FA615F] h-2.5 rounded-full transition-all duration-300" 
-                style={{ width: `${feedbackStats.negativePercentage}%` }}
-              ></div>
-            </div>
-            <span className="text-[#FA615F] text-base font-bold">({feedbackStats.negative})</span>
-          </div>
-        </>
-      ) : (
-        <>
-          {/* Live Ads Exist Legend - Show when other tabs are active */}
-          {adStatusIndicators.hasLiveAds && (
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-[#1D8751] rounded"></div>
-              <span className="text-gray-900 dark:text-white text-sm font-medium">Live Ads Exist</span>
-            </div>
+        <div className="flex flex-col gap-3 w-full sm:w-auto">
+          {activeTab === 1 ? (
+            <>
+              {/* Positive Feedback Status - Only show when Feedback tab is active */}
+              <div className="flex items-center gap-3">
+                <ThumbsUp className="w-5 h-5 text-[#1D8751]" />
+                <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 min-w-[120px]">
+                  <div
+                    className="bg-[#1D8751] h-2.5 rounded-full transition-all duration-300"
+                    style={{ width: `${feedbackStats.positivePercentage}%` }}
+                  ></div>
+                </div>
+                <span className="text-[#1D8751] text-base font-bold">({feedbackStats.positive})</span>
+              </div>
+
+              {/* Negative Feedback Status - Only show when Feedback tab is active */}
+              <div className="flex items-center gap-3">
+                <ThumbsDown className="w-5 h-5 text-[#FA615F]" />
+                <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 min-w-[120px]">
+                  <div
+                    className="bg-[#FA615F] h-2.5 rounded-full transition-all duration-300"
+                    style={{ width: `${feedbackStats.negativePercentage}%` }}
+                  ></div>
+                </div>
+                <span className="text-[#FA615F] text-base font-bold">({feedbackStats.negative})</span>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Live Ads Exist Legend - Show when other tabs are active */}
+              {adStatusIndicators.hasLiveAds && (
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-[#1D8751] rounded"></div>
+                  <span className="text-gray-900 dark:text-white text-sm font-medium">Live Ads Exist</span>
+                </div>
+              )}
+
+              {/* Offline Ads Exist Legend - Show when other tabs are active */}
+              {adStatusIndicators.hasOfflineAds && (
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-[#E23D3A] rounded"></div>
+                  <span className="text-gray-900 dark:text-white text-sm font-medium">Offline Ads Exist</span>
+                </div>
+              )}
+            </>
           )}
-          
-          {/* Offline Ads Exist Legend - Show when other tabs are active */}
-          {adStatusIndicators.hasOfflineAds && (
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-[#E23D3A] rounded"></div>
-              <span className="text-gray-900 dark:text-white text-sm font-medium">Offline Ads Exist</span>
-            </div>
-          )}
-        </>
-      )}
-    </div>
+        </div>
       </div>
 
       <div className="w-full overflow-x-auto">

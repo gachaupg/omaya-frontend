@@ -564,19 +564,19 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
 
         const params = isWithdrawal
           ? {
-              fromCurrency: selectedAsset.ticker,
-              fromNetwork: getAssetNetwork(selectedAsset),
-              toCurrency: "USDT",
-              toNetwork: "BSC",
-              amount: parseFloat(amount),
-            }
+            fromCurrency: selectedAsset.ticker,
+            fromNetwork: getAssetNetwork(selectedAsset),
+            toCurrency: "USDT",
+            toNetwork: "BSC",
+            amount: parseFloat(amount),
+          }
           : {
-              fromCurrency: "USDT",
-              fromNetwork: "BSC",
-              toCurrency: selectedAsset.ticker,
-              toNetwork: getAssetNetwork(selectedAsset),
-              amount: parseFloat(amount),
-            };
+            fromCurrency: "USDT",
+            fromNetwork: "BSC",
+            toCurrency: selectedAsset.ticker,
+            toNetwork: getAssetNetwork(selectedAsset),
+            amount: parseFloat(amount),
+          };
 
         Promise.race([dispatch(fetchSwapEstimate(params)), timeoutPromise])
           .then((result: any) => {
@@ -598,11 +598,11 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
             const commissionRate = selectedAsset && isCommissionApiAsset(selectedAsset)
               ? (apiCommission ?? 2)
               : (() => {
-                  const rate = selectedAsset?.range_commissions?.[0]?.commission
-                    ? parseFloat(selectedAsset.range_commissions[0].commission)
-                    : 2;
-                  return rate;
-                })();
+                const rate = selectedAsset?.range_commissions?.[0]?.commission
+                  ? parseFloat(selectedAsset.range_commissions[0].commission)
+                  : 2;
+                return rate;
+              })();
             const commissionAmount = (parseFloat(amount) * commissionRate) / 100;
             setReceiveAmount((parseFloat(amount) - commissionAmount).toFixed(2));
             setIsCalculating(false);
@@ -656,14 +656,14 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
       estimateTimeoutRef.current = setTimeout(() => {
         estimateTimeoutRef.current = null;
         const reverseParams = isWithdrawal
-        ? {
+          ? {
             fromCurrency: "USDT",
             fromNetwork: "BSC",
             toCurrency: selectedAsset.ticker,
             toNetwork: getAssetNetwork(selectedAsset),
             amount: parseFloat(receiveAmount),
           }
-        : {
+          : {
             fromCurrency: selectedAsset.ticker,
             fromNetwork: getAssetNetwork(selectedAsset),
             toCurrency: "USDT",
@@ -703,18 +703,18 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
             const fallbackAmount = selectedAsset && isCommissionApiAsset(selectedAsset)
               ? recv / (1 - (apiCommission ?? 2) / 100)
               : (() => {
-                  let commissionRate = 2;
-                  if (selectedAsset?.range_commissions?.length) {
-                    commissionRate = parseFloat(selectedAsset.range_commissions[0]?.commission || "2");
-                  } else if (selectedAsset?.commission) {
-                    commissionRate = parseFloat(selectedAsset.commission);
-                  } else if (selectedAsset?.fee_rate) {
-                    commissionRate = parseFloat(selectedAsset.fee_rate);
-                  }
-                  return isDepositMode
-                    ? recv * (1 + commissionRate / 100)
-                    : recv / (1 - commissionRate / 100);
-                })();
+                let commissionRate = 2;
+                if (selectedAsset?.range_commissions?.length) {
+                  commissionRate = parseFloat(selectedAsset.range_commissions[0]?.commission || "2");
+                } else if (selectedAsset?.commission) {
+                  commissionRate = parseFloat(selectedAsset.commission);
+                } else if (selectedAsset?.fee_rate) {
+                  commissionRate = parseFloat(selectedAsset.fee_rate);
+                }
+                return isDepositMode
+                  ? recv * (1 + commissionRate / 100)
+                  : recv / (1 - commissionRate / 100);
+              })();
             setAmount(fallbackAmount.toString());
             setIsCalculating(false);
             setIsCalculatingReceive(false);
@@ -1342,14 +1342,14 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
               asset?.image_url ||
               asset?.asset_image ||
               (asset as any)?.image ||
-              "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+              "/images/tether.svg"
             }
             alt={asset?.name || asset?.ticker || asset?.symbol || "Asset"}
             className="w-8 h-8 rounded-full object-cover flex-shrink-0"
             onError={(e) => {
               logger.debug('general', "Image failed to load for asset:", asset);
               e.currentTarget.src =
-                "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                "/images/tether.svg";
             }}
           />
           <div className="flex-1 min-w-0">
@@ -2019,14 +2019,14 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                         paymentMethodOptions = publicMethodsData.data.providers.map((provider: any) => {
                           const providerName = provider.provider_name || provider.payment_provider_name || "Unknown";
                           const methodName = provider.method?.method_name || provider.method?.method_display || provider.method_name || null;
-                          
+
                           // Extract account details (account_name and account_number)
                           const details = provider.payment_details?.[0];
                           const accountInfo = details ? `${details.account_name || ''} - ${details.account_number || ''}` : null;
-                          
+
                           // Use account details as subtitle if available, otherwise fall back to method name
                           const subtitle = accountInfo || (methodName ? `${providerName} - ${methodName}` : null);
-                          
+
                           return {
                             value: providerName,
                             label: providerName,
@@ -2219,7 +2219,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                                 selectedAsset?.image_url ||
                                 selectedAsset?.asset_image ||
                                 (selectedAsset as any)?.image ||
-                                "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                                "/images/tether.svg"
                               }
                               alt={
                                 selectedAsset?.name ||
@@ -2263,7 +2263,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                         ) : (
                           <>
                             <img
-                              src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                              src="/images/tether.svg"
                               alt="asset icon"
                               className="w-8 h-8 flex-shrink-0"
                             />
@@ -2409,7 +2409,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                                 selectedAsset?.image_url ||
                                 selectedAsset?.asset_image ||
                                 (selectedAsset as any)?.image ||
-                                "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                                "/images/tether.svg"
                               }
                               alt={
                                 selectedAsset?.name ||
@@ -2453,7 +2453,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                         ) : (
                           <>
                             <img
-                              src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                              src="/images/tether.svg"
                               alt="asset icon"
                               className="w-8 h-8 flex-shrink-0"
                             />
@@ -2509,14 +2509,14 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                         paymentMethodOptions = publicMethodsData.data.providers.map((provider: any) => {
                           const providerName = provider.provider_name || provider.payment_provider_name || "Unknown";
                           const methodName = provider.method?.method_name || provider.method?.method_display || provider.method_name || null;
-                          
+
                           // Extract account details (account_name and account_number)
                           const details = provider.payment_details?.[0];
                           const accountInfo = details ? `${details.account_name || ''} - ${details.account_number || ''}` : null;
-                          
+
                           // Use account details as subtitle if available, otherwise fall back to method name
                           const subtitle = accountInfo || (methodName ? `${providerName} - ${methodName}` : null);
-                          
+
                           return {
                             value: providerName,
                             label: providerName,

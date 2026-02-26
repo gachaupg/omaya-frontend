@@ -551,7 +551,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                 </div>
                 <div className="flex items-center h-[46px] rounded-2xl border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] px-2">
                   <span className="text-[#1D8751] text-2xl mr-2">
-                    <img src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png" alt="USDT" className="w-6 h-6" />
+                    <img src="/images/tether.svg" alt="USDT" className="w-6 h-6" />
                   </span>
                   <span className="text-[#1D8751] text-xl font-semibold">
                     {formatAmount(sendAmount)}
