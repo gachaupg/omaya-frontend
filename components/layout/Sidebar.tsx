@@ -127,7 +127,7 @@ export default function Sidebar() {
                       <>
                         <img
                           className="ml-2 w-5 h-5 md:w-6 md:h-6 object-contain flex-shrink-0"
-                          src="https://res.cloudinary.com/pitz/image/upload/v1764568507/uil_exchange_1_okxkvb.png"
+                          src="/images/exchange1.png"
                           alt=""
                         />
                       </>
@@ -156,7 +156,7 @@ export default function Sidebar() {
                           <span className="relative mt-2">
                             {/* Light-mode image (always shown in light mode, and in dark mode when inactive) */}
                             <img
-                              src="https://res.cloudinary.com/pitz/image/upload/v1764661972/Group_6_ohph9q.png"
+                              src="/images/x.png"
                               className={isActive ? "block dark:hidden" : "block"}
                               alt=""
                             />
@@ -164,7 +164,7 @@ export default function Sidebar() {
                             {/* Dark-mode active image (shown only when active + dark mode) */}
                             {isActive && (
                               <img
-                                src="https://res.cloudinary.com/pitz/image/upload/v1764663236/Group_7_ichuyz.png"
+                                src="/images/xwhite.png"
                                 className="hidden dark:block"
                                 alt=""
                               />

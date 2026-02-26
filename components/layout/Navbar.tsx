@@ -178,8 +178,8 @@ const LanguageSelector = ({ isMobile = false }: { isMobile?: boolean }) => {
         <Image
           src={
             selectedLanguage === "English"
-              ? "https://res.cloudinary.com/dam1sxczj/image/upload/v1746538734/united_kingdom_zud79x.png"
-              : "https://res.cloudinary.com/dam1sxczj/image/upload/v1747216099/somali_jq5e97.png"
+              ? "/images/united_kingdom_zud79x.webp"
+              : "/images/somali_jq5e97.webp"
           }
           alt={selectedLanguage}
           width={24}
