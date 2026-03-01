@@ -1761,7 +1761,7 @@ export default function DepositForm({
                               asset?.image_url ||
                               asset?.asset_image ||
                               (asset as any)?.image ||
-                              "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                              "/images/tether.svg"
                             }
                             alt={
                               asset?.name ||
@@ -1772,7 +1772,7 @@ export default function DepositForm({
                             className="w-10 h-10 rounded-full object-cover"
                             onError={(e) => {
                               e.currentTarget.src =
-                                "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                                "/images/tether.svg";
                             }}
                           />
                           <div className="flex-1">
@@ -1840,7 +1840,7 @@ export default function DepositForm({
                         asset?.image_url ||
                         asset?.asset_image ||
                         (asset as any)?.image ||
-                        "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                        "/images/tether.svg"
                       }
                       alt={
                         asset?.name ||
@@ -1851,7 +1851,7 @@ export default function DepositForm({
                       className="w-10 h-10 rounded-full object-cover"
                       onError={(e) => {
                         e.currentTarget.src =
-                          "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                          "/images/tether.svg";
                       }}
                     />
                     <div className="flex-1">
@@ -3332,13 +3332,13 @@ export default function DepositForm({
                             selectedAsset?.image_url ||
                             selectedAsset?.asset_image ||
                             (selectedAsset as any)?.image ||
-                            "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                            "/images/tether.svg"
                           }
                           alt={selectedAsset?.name || selectedAsset?.ticker || selectedAsset?.symbol || "Asset"}
                           className="w-6 h-6 rounded-full object-cover"
                           onError={(e) => {
                             e.currentTarget.src =
-                              "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                              "/images/tether.svg";
                           }}
                         />
                         <div className="flex flex-col">
@@ -3358,7 +3358,7 @@ export default function DepositForm({
                     ) : (
                       <>
                         <img
-                          src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                          src="/images/tether.svg"
                           alt="asset icon"
                           className="w-6 h-6"
                         />
@@ -3966,7 +3966,7 @@ export default function DepositForm({
               <div className="flex items-start gap-2 sm:gap-3">
                 <span className="text-yellow-600 dark:text-yellow-500 mt-0.5 flex-shrink-0">
                   <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
-                    <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </span>
                 <p className="text-xs sm:text-sm text-yellow-800 dark:text-yellow-200 font-medium">

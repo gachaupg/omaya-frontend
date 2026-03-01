@@ -178,8 +178,8 @@ const LanguageSelector = ({ isMobile = false }: { isMobile?: boolean }) => {
         <Image
           src={
             selectedLanguage === "English"
-              ? "https://res.cloudinary.com/dam1sxczj/image/upload/v1746538734/united_kingdom_zud79x.png"
-              : "https://res.cloudinary.com/dam1sxczj/image/upload/v1747216099/somali_jq5e97.png"
+              ? "/images/united_kingdom_zud79x.webp"
+              : "/images/somali_jq5e97.webp"
           }
           alt={selectedLanguage}
           width={24}
@@ -500,12 +500,12 @@ export default function Navbar() {
           <span>E</span>
           <img
             className="mt-2 block dark:hidden"
-            src="https://res.cloudinary.com/pitz/image/upload/v1764698096/Group_9_momvgo.png"
+            src="/images/Group_9_momvgo.png"
             alt=""
           />
           <img
             className="mt-2 hidden dark:block"
-            src="https://res.cloudinary.com/pitz/image/upload/v1764698106/Group_8_hjhlxe.png"
+            src="/images/Group_5_gkxzdz.png"
             alt=""
           />
         </span>
@@ -998,7 +998,7 @@ export default function Navbar() {
       >
         <div className="flex items-center min-w-0 flex-1">
           <div
-            onClick={() => (window.location.href='/')}
+            onClick={() => (window.location.href = '/')}
             className="mr-4 sm:mr-8 md:mr-6 lg:mr-12 xl:mr-20 shrink-0 flex items-center h-full"
           >
             {/* Optimized logo selection using memoized config */}

@@ -126,7 +126,7 @@ export default function Footer() {
       ref={footerRef}
       className={`relative z-40 pt-6 sm:pt-8 md:pt-10 pb-4 text-gray-700 dark:text-[#788099] transition-colors duration-300 w-full max-w-full overflow-x-hidden ${isVisible
         ? "bg-white dark:bg-[#1D1D23]"
-        : "bg-[var(--bg-color)]"
+        : "bg-(--bg-color)"
         }`}
     >
       <div className="w-full max-w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-20 pt-8 sm:pt-12 pb-6 overflow-x-hidden">
@@ -136,7 +136,7 @@ export default function Footer() {
           <div className="space-y-5 col-span-2 md:col-span-1 lg:col-span-1">
             <Link href="/">
               <Image
-                src="https://res.cloudinary.com/pitz/image/upload/v1764572384/bad9edd9da5201cb8f8f9cea35bf46f4fb541bd6_lplbyc.png"
+                src="/images/logo.webp"
                 alt="OMAYA Exchange"
                 width={150}
                 height={40}
@@ -463,7 +463,7 @@ export default function Footer() {
               </div>
               <div className="flex items-center gap-2">
                 <Image
-                  src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746539313/googleplay_1_w8djf0.png"
+                  src="/images/playstore.webp"
                   alt="Google Play"
                   width={60}
                   height={60}
@@ -521,7 +521,7 @@ export default function Footer() {
                   <tr>
                     <td style={{ padding: 0, width: '70px', height: '70px' }} className="lg:w-[84px] lg:h-[84px]">
                       <Image
-                        src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746539313/googleplay_1_w8djf0.png"
+                        src="/images/playstore.webp"
                         alt="Google Play QR Code"
                         width={84}
                         height={84}

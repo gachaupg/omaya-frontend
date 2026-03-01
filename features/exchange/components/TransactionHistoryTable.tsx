@@ -72,7 +72,7 @@ const ReceiptModal = ({
         <div className="relative z-10 p-6 pb-4">
           <div className="flex items-center justify-center mb-4">
             <img
-              src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+              src="/images/tether.svg"
               alt=""
             />
             <button
@@ -141,11 +141,10 @@ const ReceiptModal = ({
                 <div>
                   <p className="text-[#9CA3AF] text-sm mb-1">Total Amount</p>
                   <p
-                    className={`${
-                      transaction.transaction_type === "deposit"
+                    className={`${transaction.transaction_type === "deposit"
                         ? "text-[#10B981]"
                         : "text-[#EF4444]"
-                    } text-md font-medium`}
+                      } text-md font-medium`}
                   >
                     {transaction.transaction_type === "deposit" ? "+" : "-"}
                     {transaction.total_amount.toFixed(2)} {transaction.currency}
@@ -224,13 +223,12 @@ const ReceiptModal = ({
               <div className="flex justify-between items-center border-b border-dotted border-[#35353E]">
                 <span className="text-white text-sm">Status:</span>
                 <span
-                  className={`text-sm font-medium ${
-                    transaction.status === "completed"
+                  className={`text-sm font-medium ${transaction.status === "completed"
                       ? "text-[#10B981]"
                       : transaction.status === "pending"
                         ? "text-[#F59E0B]"
                         : "text-[#EF4444]"
-                  }`}
+                    }`}
                 >
                   {transaction.status.charAt(0).toUpperCase() +
                     transaction.status.slice(1)}
@@ -460,11 +458,10 @@ const TransactionHistoryTable: React.FC<TransactionHistoryTableProps> = () => {
                       {/* ID with Bitcoin Icon and colored left border */}
                       <div className="col-span-2 flex items-center gap-3 relative">
                         <div
-                          className={`absolute left-[-16px] sm:left-[-24px] top-0 bottom-0 w-1 rounded-r ${
-                            tx.transaction_type === "deposit"
+                          className={`absolute left-[-16px] sm:left-[-24px] top-0 bottom-0 w-1 rounded-r ${tx.transaction_type === "deposit"
                               ? "bg-[#10B981]"
                               : "bg-[#EF4444]"
-                          }`}
+                            }`}
                         ></div>
                         <BitcoinIcon />
                         <span className="text-[#788099] text-sm font-medium truncate">
@@ -495,11 +492,10 @@ const TransactionHistoryTable: React.FC<TransactionHistoryTableProps> = () => {
                       {/* Amount */}
                       <div className="col-span-2">
                         <span
-                          className={`text-sm font-medium truncate ${
-                            tx.transaction_type === "deposit"
+                          className={`text-sm font-medium truncate ${tx.transaction_type === "deposit"
                               ? "text-[#10B981]"
                               : "text-[#EF4444]"
-                          }`}
+                            }`}
                         >
                           {tx.transaction_type === "deposit" ? "+" : "-"}
                           {tx.amount.toFixed(2)}{" "}
@@ -561,11 +557,10 @@ const TransactionHistoryTable: React.FC<TransactionHistoryTableProps> = () => {
             <button
               key={i + 1}
               onClick={() => setCurrentPage(i + 1)}
-              className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg text-sm font-medium transition-colors ${
-                currentPage === i + 1
+              className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg text-sm font-medium transition-colors ${currentPage === i + 1
                   ? "bg-[#10B981] text-white"
                   : "text-[#9CA3AF] hover:text-white hover:bg-[#232430]"
-              }`}
+                }`}
             >
               {i + 1}
             </button>

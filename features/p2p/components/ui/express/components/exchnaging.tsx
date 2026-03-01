@@ -454,7 +454,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                 if (!result?.status) return;
                 const s = result.status;
                 setCurrentStatus(s === "completed" ? "completed" : s === "pending_blockchain" ? "confirming" : s);
-              }).catch(() => {});
+              }).catch(() => { });
             }
           } else if (data.status && typeof data.status === "string") {
             // ChangeNow format
@@ -672,7 +672,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
     if (!txId || effectiveTransactionData?.type !== "deposit") return;
     fetchDepositStatus(txId).then((result) => {
       if (result?.status) setCurrentStatus(result.status);
-    }).catch(() => {});
+    }).catch(() => { });
   }, [isConnected, effectiveTransactionData?.transactionId, effectiveTransactionData?.type]);
 
   // Debug logging (and print socket URL + data for debugging)
@@ -867,12 +867,12 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                       effectiveTransactionData?.asset?.icon_url ||
                       effectiveTransactionData?.asset?.image_url ||
                       effectiveTransactionData?.asset?.image ||
-                      "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                      "/images/tether.svg"
                     }
                     alt={effectiveTransactionData?.asset?.ticker || effectiveTransactionData?.asset?.symbol || effectiveTransactionData?.asset?.name || "Asset"}
                     className="w-6 h-6 rounded-full mr-2"
                     onError={(e) => {
-                      e.currentTarget.src = "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                      e.currentTarget.src = "/images/tether.svg";
                     }}
                   />
                   <span
@@ -1464,12 +1464,12 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                     effectiveTransactionData?.asset?.icon_url ||
                     effectiveTransactionData?.asset?.image_url ||
                     effectiveTransactionData?.asset?.image ||
-                    "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                    "/images/tether.svg"
                   }
                   alt={effectiveTransactionData?.asset?.symbol || "USDT"}
                   className="w-8 h-8 rounded-full flex-shrink-0 mt-0.5"
                   onError={(e) => {
-                    e.currentTarget.src = "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                    e.currentTarget.src = "/images/tether.svg";
                   }}
                 />
                 <div className="min-w-0 flex-1 space-y-0.5">
@@ -1499,12 +1499,12 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                     effectiveTransactionData?.asset?.icon_url ||
                     effectiveTransactionData?.asset?.image_url ||
                     effectiveTransactionData?.asset?.image ||
-                    "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                    "/images/tether.svg"
                   }
                   alt={effectiveTransactionData?.asset?.symbol || "USDT"}
                   className="w-8 h-8 rounded-full flex-shrink-0 mt-0.5"
                   onError={(e) => {
-                    e.currentTarget.src = "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                    e.currentTarget.src = "/images/tether.svg";
                   }}
                 />
                 <div className="min-w-0 flex-1 space-y-0.5">

@@ -216,7 +216,7 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
 
             return;
           }
-        } catch (error) {}
+        } catch (error) { }
       }
 
       // If no persisted data found, create a basic transaction data object
@@ -256,7 +256,7 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
       const remaining = Math.max(0, TIMER_DURATION - elapsed);
       const remainingSeconds = Math.floor(remaining / 1000);
       setTimeRemaining(remainingSeconds);
-      
+
       // If timer has already expired, set to 0 and disable timer
       if (remainingSeconds <= 0) {
         setTimerActive(false);
@@ -396,11 +396,11 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
               setLiveAmount(parseFloat(wsData.amount_to));
               setLiveCurrency(
                 wsData.to_currency?.toUpperCase() ||
-                  (effectiveTransactionData?.type === "deposit"
+                (effectiveTransactionData?.type === "deposit"
+                  ? "USD"
+                  : effectiveTransactionData?.type === "withdrawal"
                     ? "USD"
-                    : effectiveTransactionData?.type === "withdrawal"
-                      ? "USD"
-                      : "USDT")
+                    : "USDT")
               );
             }
 
@@ -451,11 +451,11 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                 setLiveAmount(estimatedAmount);
                 setLiveCurrency(
                   wsData.to_currency?.toUpperCase() ||
-                    (effectiveTransactionData?.type === "deposit"
+                  (effectiveTransactionData?.type === "deposit"
+                    ? "USD"
+                    : effectiveTransactionData?.type === "withdrawal"
                       ? "USD"
-                      : effectiveTransactionData?.type === "withdrawal"
-                        ? "USD"
-                        : "USDT")
+                      : "USDT")
                 );
               }
             }
@@ -693,9 +693,8 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
           // Only show error in UI after multiple attempts
           // This prevents showing errors for initial connection attempts
           if (!isConnected && connectionAttempts > 2) {
-            const userFriendlyError = `Connection issue (attempt ${connectionAttempts}). ${
-              finalWebsocketUrl ? "Retrying..." : "No WebSocket URL available"
-            }`;
+            const userFriendlyError = `Connection issue (attempt ${connectionAttempts}). ${finalWebsocketUrl ? "Retrying..." : "No WebSocket URL available"
+              }`;
 
             setWsError(userFriendlyError);
 
@@ -750,9 +749,8 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
   if (!effectiveTransactionData) {
     return (
       <div
-        className={`w-full min-h-screen flex flex-col items-center justify-center pt-2 ${
-          isDark ? "bg-[#0A0A0A]" : "bg-gray-50"
-        }`}
+        className={`w-full min-h-screen flex flex-col items-center justify-center pt-2 ${isDark ? "bg-[#0A0A0A]" : "bg-gray-50"
+          }`}
       >
         <div className={`${isDark ? "text-white" : "text-gray-900"} text-lg`}>
           Loading transaction data...
@@ -766,23 +764,21 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
       {/* Timer Banner */}
       {timerActive && timeRemaining > 0 && (
         <div
-          className={`w-full ${isHomePage ? 'mb-2 sm:mb-3' : 'max-w-4xl mb-4'} ${
-            timeRemaining <= 60
+          className={`w-full ${isHomePage ? 'mb-2 sm:mb-3' : 'max-w-4xl mb-4'} ${timeRemaining <= 60
               ? "bg-red-500/20 border-red-500"
               : timeRemaining <= 300
                 ? "bg-orange-500/20 border-orange-500"
                 : "bg-[#1D8751]/20 border-[#1D8751]"
-          } border-2 rounded-2xl ${isHomePage ? 'p-2 sm:p-3' : 'p-4'} flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2`}
+            } border-2 rounded-2xl ${isHomePage ? 'p-2 sm:p-3' : 'p-4'} flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2`}
         >
           <div className="flex items-center gap-3">
             <svg
-              className={`w-6 h-6 ${
-                timeRemaining <= 60
+              className={`w-6 h-6 ${timeRemaining <= 60
                   ? "text-red-500"
                   : timeRemaining <= 300
                     ? "text-orange-500"
                     : "text-[#1D8751]"
-              }`}
+                }`}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -796,16 +792,14 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
             </svg>
             <div>
               <div
-                className={`text-sm font-semibold ${
-                  isDark ? "text-white" : "text-gray-900"
-                }`}
+                className={`text-sm font-semibold ${isDark ? "text-white" : "text-gray-900"
+                  }`}
               >
                 Transaction Timeout
               </div>
               <div
-                className={`text-xs ${
-                  isDark ? "text-gray-300" : "text-gray-600"
-                }`}
+                className={`text-xs ${isDark ? "text-gray-300" : "text-gray-600"
+                  }`}
               >
                 {timeRemaining <= 60
                   ? "Transaction will be cancelled soon!"
@@ -814,13 +808,12 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
             </div>
           </div>
           <div
-            className={`${isHomePage ? 'text-lg sm:text-xl' : 'text-2xl'} font-bold ${
-              timeRemaining <= 60
+            className={`${isHomePage ? 'text-lg sm:text-xl' : 'text-2xl'} font-bold ${timeRemaining <= 60
                 ? "text-red-500"
                 : timeRemaining <= 300
                   ? "text-orange-500"
                   : "text-[#1D8751]"
-            } self-start sm:self-auto`}
+              } self-start sm:self-auto`}
           >
             {formatTime(timeRemaining)}
           </div>
@@ -829,25 +822,22 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
 
       {/* Top Card */}
       <div
-        className={`flex flex-col md:flex-row justify-between items-stretch bg-[#FFFFFF] dark:${
-          isDark
+        className={`flex flex-col md:flex-row justify-between items-stretch bg-[#FFFFFF] dark:${isDark
             ? "bg-[#23232B]  border:[#E8EFF5] dark:border-[#35353E]"
             : "bg-white border-gray-200"
-        } border-2 rounded-2xl ${isHomePage ? 'p-2 sm:p-3' : 'p-4'} shadow-lg w-full ${isHomePage ? '' : 'max-w-4xl'} ${isHomePage ? 'mb-2 sm:mb-3' : 'mb-4'} ${isHomePage ? 'min-h-[120px] sm:min-h-[140px]' : 'min-h-[180px]'} overflow-hidden`}
+          } border-2 rounded-2xl ${isHomePage ? 'p-2 sm:p-3' : 'p-4'} shadow-lg w-full ${isHomePage ? '' : 'max-w-4xl'} ${isHomePage ? 'mb-2 sm:mb-3' : 'mb-4'} ${isHomePage ? 'min-h-[120px] sm:min-h-[140px]' : 'min-h-[180px]'} overflow-hidden`}
       >
         <div className={`flex-1 flex flex-col justify-between ${isHomePage ? 'py-1 sm:py-2 pr-0 sm:pr-2' : 'py-2 pr-2'} min-w-0`}>
           <div>
             <div
-              className={`${
-                isDark ? "text-[#7B7B7B]" : "text-gray-600"
-              } text-xs font-semibold mb-0.5`}
+              className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                } text-xs font-semibold mb-0.5`}
             >
               Amount:
             </div>
             <div
-              className={`${
-                isDark ? "text-white" : "text-gray-900"
-              } text-base font-semibold mb-1 flex items-center gap-2`}
+              className={`${isDark ? "text-white" : "text-gray-900"
+                } text-base font-semibold mb-1 flex items-center gap-2`}
             >
               <span>
                 {liveAmount !== null
@@ -886,23 +876,20 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
               liveAmount !== null &&
               previousAmount !== liveAmount && (
                 <div
-                  className={`mt-2 p-2 ${
-                    isDark
+                  className={`mt-2 p-2 ${isDark
                       ? "bg-[#1A1A1A] border-[#35353E]"
                       : "bg-gray-100 border-gray-300"
-                  } rounded border`}
+                    } rounded border`}
                 >
                   <div
-                    className={`${
-                      isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                    } text-xs font-semibold mb-1`}
+                    className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                      } text-xs font-semibold mb-1`}
                   >
                     Amount Change:
                   </div>
                   <div
-                    className={`${
-                      isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                    } text-xs mb-0.5`}
+                    className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                      } text-xs mb-0.5`}
                   >
                     Previous: {previousAmount.toFixed(8)}{" "}
                     {liveCurrency ||
@@ -936,9 +923,8 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
 
                 {/* Asset and Network Information */}
                 <div
-                  className={`${
-                    isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                  } text-xs font-semibold mb-0.5 mt-3`}
+                  className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                    } text-xs font-semibold mb-0.5 mt-3`}
                 >
                   Asset & Network:
                 </div>
@@ -949,7 +935,7 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                       effectiveTransactionData?.asset?.icon_url ||
                       effectiveTransactionData?.asset?.image_url ||
                       effectiveTransactionData?.asset?.image ||
-                      "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                      "/images/tether.svg"
                     }
                     alt={
                       effectiveTransactionData?.asset?.ticker ||
@@ -960,13 +946,12 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                     className="w-6 h-6 rounded-full mr-2"
                     onError={(e) => {
                       e.currentTarget.src =
-                        "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                        "/images/tether.svg";
                     }}
                   />
                   <span
-                    className={`${
-                      isDark ? "text-white" : "text-gray-900"
-                    } text-sm font-semibold`}
+                    className={`${isDark ? "text-white" : "text-gray-900"
+                      } text-sm font-semibold`}
                   >
                     {effectiveTransactionData?.asset?.ticker ||
                       effectiveTransactionData?.asset?.symbol ||
@@ -988,17 +973,15 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                 {effectiveTransactionData?.walletAddress && (
                   <>
                     <div
-                      className={`${
-                        isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                      } text-xs font-semibold mb-0.5 mt-3`}
+                      className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                        } text-xs font-semibold mb-0.5 mt-3`}
                     >
                       Wallet Address:
                     </div>
                     <div className="flex items-center mb-2">
                       <span
-                        className={`${
-                          isDark ? "text-white" : "text-gray-900"
-                        } text-sm font-mono bg-gray-500/10 px-2 py-1 rounded text-xs break-all`}
+                        className={`${isDark ? "text-white" : "text-gray-900"
+                          } text-sm font-mono bg-gray-500/10 px-2 py-1 rounded text-xs break-all`}
                       >
                         {effectiveTransactionData.walletAddress}
                       </span>
@@ -1018,12 +1001,11 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
             {effectiveTransactionData?.type === "deposit" &&
               effectiveTransactionData?.paymentDetail &&
               effectiveTransactionData.paymentDetail.provider_name !==
-                "direct" && (
+              "direct" && (
                 <>
                   <div
-                    className={`${
-                      isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                    } text-xs font-semibold mb-0.5 mt-3`}
+                    className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                      } text-xs font-semibold mb-0.5 mt-3`}
                   >
                     Bank:
                   </div>
@@ -1034,38 +1016,33 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                       className="w-6 h-6 rounded-full mr-2"
                     />
                     <span
-                      className={`${
-                        isDark ? "text-white" : "text-gray-900"
-                      } text-sm font-semibold`}
+                      className={`${isDark ? "text-white" : "text-gray-900"
+                        } text-sm font-semibold`}
                     >
                       {effectiveTransactionData.paymentDetail.provider_name}
                     </span>
                   </div>
                   <div
-                    className={`${
-                      isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                    } text-xs font-semibold mb-0.5`}
+                    className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                      } text-xs font-semibold mb-0.5`}
                   >
                     Account Name:
                   </div>
                   <div
-                    className={`${
-                      isDark ? "text-white" : "text-gray-900"
-                    } text-sm mb-1`}
+                    className={`${isDark ? "text-white" : "text-gray-900"
+                      } text-sm mb-1`}
                   >
                     {effectiveTransactionData.paymentDetail.account_name}
                   </div>
                   <div
-                    className={`${
-                      isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                    } text-xs font-semibold mb-0.5`}
+                    className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                      } text-xs font-semibold mb-0.5`}
                   >
                     Account Number:
                   </div>
                   <div
-                    className={`${
-                      isDark ? "text-white" : "text-gray-900"
-                    } text-sm font-mono`}
+                    className={`${isDark ? "text-white" : "text-gray-900"
+                      } text-sm font-mono`}
                   >
                     {effectiveTransactionData.paymentDetail.account_number}
                   </div>
@@ -1074,16 +1051,14 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
             {effectiveTransactionData?.type === "withdrawal" && (
               <>
                 <div
-                  className={`${
-                    isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                  } text-xs font-semibold mb-0.5`}
+                  className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                    } text-xs font-semibold mb-0.5`}
                 >
                   Wallet Address:
                 </div>
                 <div
-                  className={`${
-                    isDark ? "text-white" : "text-gray-900"
-                  } text-sm font-mono break-all`}
+                  className={`${isDark ? "text-white" : "text-gray-900"
+                    } text-sm font-mono break-all`}
                 >
                   {effectiveTransactionData.walletAddress}
                 </div>
@@ -1096,7 +1071,7 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
           {(() => {
             // For deposits, use account number; for withdrawals, use wallet address
             let qrData = "";
-            
+
             if (effectiveTransactionData?.type === "deposit" && effectiveTransactionData?.paymentDetail?.account_number) {
               // For deposits, show account number in QR code
               qrData = effectiveTransactionData.paymentDetail.account_number;
@@ -1110,7 +1085,7 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                 qrData = firstDetail.account_number || firstDetail.mobile_number;
               }
             }
-            
+
             if (!qrData) {
               return (
                 <div className={`${isHomePage ? 'w-24 h-24 sm:w-28 sm:h-28' : 'w-36 h-36'} bg-white rounded-lg flex items-center justify-center flex-shrink-0`}>
@@ -1145,8 +1120,7 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
         {/* Connecting Lines */}
         <div className={`absolute ${isHomePage ? 'top-3 sm:top-4' : 'top-5'} left-[12.5%] right-[12.5%] h-0.5 z-0 hidden sm:block`}>
           <div
-            className={`h-0.5 transition-all duration-500 ${
-              currentStatus === "completed" || currentStatus === "finished"
+            className={`h-0.5 transition-all duration-500 ${currentStatus === "completed" || currentStatus === "finished"
                 ? "bg-[#1D8751] w-full"
                 : currentStatus === "sending"
                   ? "bg-[#1D8751] w-full"
@@ -1155,29 +1129,28 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                     : currentStatus === "confirming"
                       ? "bg-[#FF9500] w-1/2"
                       : currentStatus === "pending" ||
-                          currentStatus === "waiting"
+                        currentStatus === "waiting"
                         ? "bg-[#FF9500] w-1/4"
                         : "bg-[#7B7B7B] w-0"
-            }`}
+              }`}
           ></div>
         </div>
 
         {/* Step 1: Awaiting Deposit */}
         <div className={`flex flex-col items-center ${isHomePage ? 'flex-shrink-0 min-w-[70px] sm:min-w-[80px]' : 'flex-1'} relative z-10`}>
           <div
-            className={`${isHomePage ? 'w-7 h-7 sm:w-8 sm:h-8' : 'w-10 h-10'} rounded-full flex items-center justify-center ${isHomePage ? 'mb-0.5 sm:mb-1' : 'mb-1'} border-4 ${
-              currentStatus === "pending" ||
-              currentStatus === "waiting" ||
-              !shouldUseWebSocket
+            className={`${isHomePage ? 'w-7 h-7 sm:w-8 sm:h-8' : 'w-10 h-10'} rounded-full flex items-center justify-center ${isHomePage ? 'mb-0.5 sm:mb-1' : 'mb-1'} border-4 ${currentStatus === "pending" ||
+                currentStatus === "waiting" ||
+                !shouldUseWebSocket
                 ? "bg-[#FF9500] border-[#FF95001A]"
                 : currentStatus === "confirming" ||
-                    currentStatus === "exchanging" ||
-                    currentStatus === "sending" ||
-                    currentStatus === "completed" ||
-                    currentStatus === "finished"
+                  currentStatus === "exchanging" ||
+                  currentStatus === "sending" ||
+                  currentStatus === "completed" ||
+                  currentStatus === "finished"
                   ? "bg-[#1D8751] border-[#1D87511A]"
                   : "bg-[#23232B] border-[#35353E]"
-            }`}
+              }`}
           >
             <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
               <circle
@@ -1186,14 +1159,14 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                 r="10"
                 stroke={
                   currentStatus === "pending" ||
-                  currentStatus === "waiting" ||
-                  !shouldUseWebSocket
+                    currentStatus === "waiting" ||
+                    !shouldUseWebSocket
                     ? "#fff"
                     : currentStatus === "confirming" ||
-                        currentStatus === "exchanging" ||
-                        currentStatus === "sending" ||
-                        currentStatus === "completed" ||
-                        currentStatus === "finished"
+                      currentStatus === "exchanging" ||
+                      currentStatus === "sending" ||
+                      currentStatus === "completed" ||
+                      currentStatus === "finished"
                       ? "#fff"
                       : "#7B7B7B"
                 }
@@ -1203,13 +1176,13 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                 d="M12 8v4l2 2"
                 stroke={
                   currentStatus === "pending" ||
-                  currentStatus === "waiting" ||
-                  !shouldUseWebSocket
+                    currentStatus === "waiting" ||
+                    !shouldUseWebSocket
                     ? "#fff"
                     : currentStatus === "exchanging" ||
-                        currentStatus === "sending" ||
-                        currentStatus === "completed" ||
-                        currentStatus === "finished"
+                      currentStatus === "sending" ||
+                      currentStatus === "completed" ||
+                      currentStatus === "finished"
                       ? "#fff"
                       : "#7B7B7B"
                 }
@@ -1221,72 +1194,70 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
           </div>
           <div className="flex items-center gap-1">
             <span
-              className={`font-semibold text-base ${
-                currentStatus === "pending" ||
-                currentStatus === "waiting" ||
-                !shouldUseWebSocket
+              className={`font-semibold text-base ${currentStatus === "pending" ||
+                  currentStatus === "waiting" ||
+                  !shouldUseWebSocket
                   ? "text-[#FF9500]"
                   : currentStatus === "confirming" ||
-                      currentStatus === "exchanging" ||
-                      currentStatus === "sending" ||
-                      currentStatus === "completed" ||
-                      currentStatus === "finished"
+                    currentStatus === "exchanging" ||
+                    currentStatus === "sending" ||
+                    currentStatus === "completed" ||
+                    currentStatus === "finished"
                     ? "text-[#1D8751]"
                     : "text-[#7B7B7B]"
-              }`}
+                }`}
             >
               Awaiting Deposit
             </span>
             {(currentStatus === "pending" ||
               currentStatus === "waiting" ||
               !shouldUseWebSocket) && (
-              <div className="flex gap-1">
-                <span
-                  className="w-2 h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
-                  style={{ animationDelay: "0ms" }}
-                ></span>
-                <span
-                  className="w-2 h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
-                  style={{ animationDelay: "150ms" }}
-                ></span>
-                <span
-                  className="w-2 h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
-                  style={{ animationDelay: "300ms" }}
-                ></span>
-              </div>
-            )}
+                <div className="flex gap-1">
+                  <span
+                    className="w-2 h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
+                    style={{ animationDelay: "0ms" }}
+                  ></span>
+                  <span
+                    className="w-2 h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
+                    style={{ animationDelay: "150ms" }}
+                  ></span>
+                  <span
+                    className="w-2 h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
+                    style={{ animationDelay: "300ms" }}
+                  ></span>
+                </div>
+              )}
             {(currentStatus === "confirming" ||
               currentStatus === "exchanging" ||
               currentStatus === "sending" ||
               currentStatus === "completed" ||
               currentStatus === "finished") && (
-              <div className="flex items-center gap-1">
-                <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
-                  <path
-                    d="M9 12l2 2 4-4"
-                    stroke="#1D8751"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
-            )}
+                <div className="flex items-center gap-1">
+                  <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
+                    <path
+                      d="M9 12l2 2 4-4"
+                      stroke="#1D8751"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
+              )}
           </div>
         </div>
         {/* Step 2: Confirming */}
         <div className={`flex flex-col items-center ${isHomePage ? 'flex-shrink-0 min-w-[70px] sm:min-w-[80px]' : 'flex-1'} relative z-10`}>
           <div
-            className={`${isHomePage ? 'w-7 h-7 sm:w-8 sm:h-8' : 'w-10 h-10'} rounded-full flex items-center justify-center ${isHomePage ? 'mb-0.5 sm:mb-1' : 'mb-1'} border-4 ${
-              currentStatus === "confirming"
+            className={`${isHomePage ? 'w-7 h-7 sm:w-8 sm:h-8' : 'w-10 h-10'} rounded-full flex items-center justify-center ${isHomePage ? 'mb-0.5 sm:mb-1' : 'mb-1'} border-4 ${currentStatus === "confirming"
                 ? "bg-[#FF9500] border-[#FF95001A]"
                 : currentStatus === "exchanging" ||
-                    currentStatus === "sending" ||
-                    currentStatus === "completed" ||
-                    currentStatus === "finished"
+                  currentStatus === "sending" ||
+                  currentStatus === "completed" ||
+                  currentStatus === "finished"
                   ? "bg-[#1D8751] border-[#1D87511A]"
                   : `${isDark ? "bg-[#23232B] border-[#35353E]" : "bg-gray-200 border-gray-300"}`
-            }`}
+              }`}
           >
             <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
               <circle
@@ -1295,10 +1266,10 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                 r="10"
                 stroke={
                   currentStatus === "confirming" ||
-                  currentStatus === "exchanging" ||
-                  currentStatus === "sending" ||
-                  currentStatus === "completed" ||
-                  currentStatus === "finished"
+                    currentStatus === "exchanging" ||
+                    currentStatus === "sending" ||
+                    currentStatus === "completed" ||
+                    currentStatus === "finished"
                     ? "#fff"
                     : "#7B7B7B"
                 }
@@ -1308,10 +1279,10 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                 d="M9 12l2 2 4-4"
                 stroke={
                   currentStatus === "confirming" ||
-                  currentStatus === "exchanging" ||
-                  currentStatus === "sending" ||
-                  currentStatus === "completed" ||
-                  currentStatus === "finished"
+                    currentStatus === "exchanging" ||
+                    currentStatus === "sending" ||
+                    currentStatus === "completed" ||
+                    currentStatus === "finished"
                     ? "#fff"
                     : "#7B7B7B"
                 }
@@ -1323,16 +1294,15 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
           </div>
           <div className={`flex items-center gap-1 ${isHomePage ? 'flex-wrap justify-center' : ''}`}>
             <span
-              className={`font-semibold ${isHomePage ? 'text-xs sm:text-sm' : 'text-base'} ${
-                currentStatus === "confirming"
+              className={`font-semibold ${isHomePage ? 'text-xs sm:text-sm' : 'text-base'} ${currentStatus === "confirming"
                   ? "text-[#FF9500]"
                   : currentStatus === "exchanging" ||
-                      currentStatus === "sending" ||
-                      currentStatus === "completed" ||
-                      currentStatus === "finished"
+                    currentStatus === "sending" ||
+                    currentStatus === "completed" ||
+                    currentStatus === "finished"
                     ? "text-[#1D8751]"
                     : "text-[#7B7B7B]"
-              }`}
+                }`}
             >
               Confirming
             </span>
@@ -1356,32 +1326,31 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
               currentStatus === "sending" ||
               currentStatus === "completed" ||
               currentStatus === "finished") && (
-              <div className="flex items-center gap-1">
-                <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
-                  <path
-                    d="M9 12l2 2 4-4"
-                    stroke="#1D8751"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
-            )}
+                <div className="flex items-center gap-1">
+                  <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
+                    <path
+                      d="M9 12l2 2 4-4"
+                      stroke="#1D8751"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
+              )}
           </div>
         </div>
         {/* Step 3: Exchanging */}
         <div className={`flex flex-col items-center ${isHomePage ? 'flex-shrink-0 min-w-[70px] sm:min-w-[80px]' : 'flex-1'} relative z-10`}>
           <div
-            className={`${isHomePage ? 'w-7 h-7 sm:w-8 sm:h-8' : 'w-10 h-10'} rounded-full flex items-center justify-center ${isHomePage ? 'mb-0.5 sm:mb-1' : 'mb-1'} border-4 ${
-              currentStatus === "exchanging"
+            className={`${isHomePage ? 'w-7 h-7 sm:w-8 sm:h-8' : 'w-10 h-10'} rounded-full flex items-center justify-center ${isHomePage ? 'mb-0.5 sm:mb-1' : 'mb-1'} border-4 ${currentStatus === "exchanging"
                 ? "bg-[#FF9500] border-[#FF95001A]"
                 : currentStatus === "sending" ||
-                    currentStatus === "completed" ||
-                    currentStatus === "finished"
+                  currentStatus === "completed" ||
+                  currentStatus === "finished"
                   ? "bg-[#1D8751] border-[#1D87511A]"
                   : "bg-[#23232B] border-[#35353E]"
-            }`}
+              }`}
           >
             <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
               <circle
@@ -1390,9 +1359,9 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                 r="10"
                 stroke={
                   currentStatus === "exchanging" ||
-                  currentStatus === "sending" ||
-                  currentStatus === "completed" ||
-                  currentStatus === "finished"
+                    currentStatus === "sending" ||
+                    currentStatus === "completed" ||
+                    currentStatus === "finished"
                     ? "#fff"
                     : "#7B7B7B"
                 }
@@ -1402,9 +1371,9 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                 d="M8 12h8M12 8v8"
                 stroke={
                   currentStatus === "exchanging" ||
-                  currentStatus === "sending" ||
-                  currentStatus === "completed" ||
-                  currentStatus === "finished"
+                    currentStatus === "sending" ||
+                    currentStatus === "completed" ||
+                    currentStatus === "finished"
                     ? "#fff"
                     : "#7B7B7B"
                 }
@@ -1415,15 +1384,14 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
           </div>
           <div className="flex items-center gap-1">
             <span
-              className={`font-semibold text-base ${
-                currentStatus === "exchanging"
+              className={`font-semibold text-base ${currentStatus === "exchanging"
                   ? "text-[#FF9500]"
                   : currentStatus === "sending" ||
-                      currentStatus === "completed" ||
-                      currentStatus === "finished"
+                    currentStatus === "completed" ||
+                    currentStatus === "finished"
                     ? "text-[#1D8751]"
                     : "text-[#7B7B7B]"
-              }`}
+                }`}
             >
               Exchanging
             </span>
@@ -1446,30 +1414,29 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
             {(currentStatus === "sending" ||
               currentStatus === "completed" ||
               currentStatus === "finished") && (
-              <div className="flex items-center gap-1">
-                <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
-                  <path
-                    d="M9 12l2 2 4-4"
-                    stroke="#1D8751"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
-            )}
+                <div className="flex items-center gap-1">
+                  <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
+                    <path
+                      d="M9 12l2 2 4-4"
+                      stroke="#1D8751"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
+              )}
           </div>
         </div>
         {/* Step 4: Sending to you */}
         <div className={`flex flex-col items-center ${isHomePage ? 'flex-shrink-0 min-w-[70px] sm:min-w-[80px]' : 'flex-1'} relative z-10`}>
           <div
-            className={`${isHomePage ? 'w-7 h-7 sm:w-8 sm:h-8' : 'w-10 h-10'} rounded-full flex items-center justify-center ${isHomePage ? 'mb-0.5 sm:mb-1' : 'mb-1'} border-4 ${
-              currentStatus === "sending"
+            className={`${isHomePage ? 'w-7 h-7 sm:w-8 sm:h-8' : 'w-10 h-10'} rounded-full flex items-center justify-center ${isHomePage ? 'mb-0.5 sm:mb-1' : 'mb-1'} border-4 ${currentStatus === "sending"
                 ? "bg-[#FF9500] border-[#FF95001A]"
                 : currentStatus === "completed" || currentStatus === "finished"
                   ? "bg-[#1D8751] border-[#1D87511A]"
                   : "bg-[#23232B] border-[#35353E]"
-            }`}
+              }`}
           >
             <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
               <circle
@@ -1480,7 +1447,7 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                   currentStatus === "sending"
                     ? "#fff"
                     : currentStatus === "completed" ||
-                        currentStatus === "finished"
+                      currentStatus === "finished"
                       ? "#fff"
                       : "#7B7B7B"
                 }
@@ -1492,7 +1459,7 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                   currentStatus === "sending"
                     ? "#fff"
                     : currentStatus === "completed" ||
-                        currentStatus === "finished"
+                      currentStatus === "finished"
                       ? "#fff"
                       : "#7B7B7B"
                 }
@@ -1503,14 +1470,13 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
           </div>
           <div className="flex items-center gap-1">
             <span
-              className={`font-semibold text-base ${
-                currentStatus === "sending"
+              className={`font-semibold text-base ${currentStatus === "sending"
                   ? "text-[#FF9500]"
                   : currentStatus === "completed" ||
-                      currentStatus === "finished"
+                    currentStatus === "finished"
                     ? "text-[#1D8751]"
                     : "text-[#7B7B7B]"
-              }`}
+                }`}
             >
               {currentStatus === "completed"
                 ? "Transaction Completed"
@@ -1550,18 +1516,18 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
             )}
             {(currentStatus === "completed" ||
               currentStatus === "finished") && (
-              <div className="flex items-center gap-1">
-                <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
-                  <path
-                    d="M9 12l2 2 4-4"
-                    stroke="#1D8751"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
-            )}
+                <div className="flex items-center gap-1">
+                  <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
+                    <path
+                      d="M9 12l2 2 4-4"
+                      stroke="#1D8751"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
+              )}
           </div>
         </div>
       </div>
@@ -1569,32 +1535,28 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
 
       {/* Transaction Details Card */}
       <div
-        className={`${
-          isDark ? "bg-[#23232B] border-[#35353E]" : "bg-white border-gray-200"
-        } border-2 rounded-2xl ${isHomePage ? 'p-3 sm:p-4' : 'p-6'} shadow-lg w-full ${isHomePage ? '' : 'max-w-4xl'} ${isHomePage ? 'mb-2 sm:mb-3' : 'mb-4'} overflow-hidden`}
+        className={`${isDark ? "bg-[#23232B] border-[#35353E]" : "bg-white border-gray-200"
+          } border-2 rounded-2xl ${isHomePage ? 'p-3 sm:p-4' : 'p-6'} shadow-lg w-full ${isHomePage ? '' : 'max-w-4xl'} ${isHomePage ? 'mb-2 sm:mb-3' : 'mb-4'} overflow-hidden`}
       >
         {/* Title */}
         <div
-          className={`${
-            isDark ? "text-white" : "text-gray-900"
-          } ${isHomePage ? 'text-lg sm:text-xl' : 'text-2xl'} font-semibold ${isHomePage ? 'mb-2 sm:mb-3' : 'mb-4'}`}
+          className={`${isDark ? "text-white" : "text-gray-900"
+            } ${isHomePage ? 'text-lg sm:text-xl' : 'text-2xl'} font-semibold ${isHomePage ? 'mb-2 sm:mb-3' : 'mb-4'}`}
         >
           Transaction Details
         </div>
         {/* Transaction ID Row */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mb-1 min-w-0">
           <div
-            className={`${
-              isDark ? "text-[#7B7B7B]" : "text-gray-600"
-            } text-sm sm:text-base font-medium flex-shrink-0`}
+            className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+              } text-sm sm:text-base font-medium flex-shrink-0`}
           >
             Transaction ID
           </div>
           <div className="flex items-center gap-2 min-w-0 flex-1 sm:flex-initial sm:justify-end">
             <span
-              className={`${
-                isDark ? "text-white" : "text-gray-900"
-              } text-xs sm:text-sm md:text-base font-mono font-semibold truncate min-w-0`}
+              className={`${isDark ? "text-white" : "text-gray-900"
+                } text-xs sm:text-sm md:text-base font-mono font-semibold truncate min-w-0`}
             >
               {liveTransactionId || effectiveTransactionData?.transactionId}
             </span>
@@ -1611,23 +1573,20 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
         </div>
         {/* Dashed Divider */}
         <div
-          className={`border-t border-dashed ${
-            isDark ? "border-[#7B7B7B]" : "border-gray-400"
-          } mb-4`}
+          className={`border-t border-dashed ${isDark ? "border-[#7B7B7B]" : "border-gray-400"
+            } mb-4`}
         ></div>
         {/* From (left) | To (start of second part) — aligned UI */}
         <div className="flex mb-2">
           <div
-            className={`flex-shrink-0 w-1/2 ${
-              isDark ? "text-[#7B7B7B]" : "text-gray-600"
-            } text-sm sm:text-base font-medium`}
+            className={`flex-shrink-0 w-1/2 ${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+              } text-sm sm:text-base font-medium`}
           >
             From
           </div>
           <div
-            className={`flex-1 min-w-0 text-left pl-2 sm:pl-4 ${
-              isDark ? "text-[#7B7B7B]" : "text-gray-600"
-            } text-sm sm:text-base font-medium`}
+            className={`flex-1 min-w-0 text-left pl-2 sm:pl-4 ${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+              } text-sm sm:text-base font-medium`}
           >
             To
           </div>
@@ -1636,7 +1595,7 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
           {/* Left: From */}
           <div className="flex items-start gap-3 min-w-0 w-1/2 flex-shrink-0 pr-2 sm:pr-4">
             {effectiveTransactionData?.type === "deposit" &&
-            effectiveTransactionData?.paymentDetail ? (
+              effectiveTransactionData?.paymentDetail ? (
               <>
                 <img
                   src="https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
@@ -1645,16 +1604,14 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                 />
                 <div className="min-w-0 flex-1 space-y-0.5">
                   <div
-                    className={`${
-                      isDark ? "text-white" : "text-gray-900"
-                    } text-sm sm:text-base font-semibold truncate`}
+                    className={`${isDark ? "text-white" : "text-gray-900"
+                      } text-sm sm:text-base font-semibold truncate`}
                   >
                     {effectiveTransactionData.paymentDetail.provider_name}
                   </div>
                   <div
-                    className={`${
-                      isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                    } text-xs sm:text-sm font-mono truncate`}
+                    className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                      } text-xs sm:text-sm font-mono truncate`}
                   >
                     {effectiveTransactionData.paymentDetail.account_number}
                   </div>
@@ -1668,7 +1625,7 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                     effectiveTransactionData?.asset?.icon_url ||
                     effectiveTransactionData?.asset?.image_url ||
                     effectiveTransactionData?.asset?.image ||
-                    "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                    "/images/tether.svg"
                   }
                   alt={
                     effectiveTransactionData?.asset?.symbol ||
@@ -1681,14 +1638,13 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                   className="w-8 h-8 rounded-full flex-shrink-0 mt-0.5"
                   onError={(e) => {
                     e.currentTarget.src =
-                      "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                      "/images/tether.svg";
                   }}
                 />
                 <div className="min-w-0 flex-1 space-y-0.5">
                   <div
-                    className={`${
-                      isDark ? "text-white" : "text-gray-900"
-                    } text-sm sm:text-base font-semibold truncate`}
+                    className={`${isDark ? "text-white" : "text-gray-900"
+                      } text-sm sm:text-base font-semibold truncate`}
                   >
                     {effectiveTransactionData?.asset?.ticker ||
                       effectiveTransactionData?.asset?.symbol ||
@@ -1700,9 +1656,8 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                           : "USDT")}
                   </div>
                   <div
-                    className={`${
-                      isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                    } text-xs sm:text-sm font-mono break-all`}
+                    className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                      } text-xs sm:text-sm font-mono break-all`}
                   >
                     {effectiveTransactionData?.walletAddress ||
                       "TQn9Y2khEsLJW1ChVWFM...RDow5oRP7bX"}
@@ -1721,7 +1676,7 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                     effectiveTransactionData?.asset?.icon_url ||
                     effectiveTransactionData?.asset?.image_url ||
                     effectiveTransactionData?.asset?.image ||
-                    "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                    "/images/tether.svg"
                   }
                   alt={
                     effectiveTransactionData?.asset?.symbol ||
@@ -1734,14 +1689,13 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                   className="w-8 h-8 rounded-full flex-shrink-0 mt-0.5"
                   onError={(e) => {
                     e.currentTarget.src =
-                      "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                      "/images/tether.svg";
                   }}
                 />
                 <div className="min-w-0 flex-1 space-y-0.5">
                   <div
-                    className={`${
-                      isDark ? "text-white" : "text-gray-900"
-                    } text-sm sm:text-base font-semibold truncate`}
+                    className={`${isDark ? "text-white" : "text-gray-900"
+                      } text-sm sm:text-base font-semibold truncate`}
                   >
                     {effectiveTransactionData?.asset?.ticker ||
                       effectiveTransactionData?.asset?.symbol ||
@@ -1754,17 +1708,15 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                   </div>
                   {effectiveTransactionData?.asset?.description && (
                     <span
-                      className={`${
-                        isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                      } text-xs sm:text-sm font-normal block truncate`}
+                      className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                        } text-xs sm:text-sm font-normal block truncate`}
                     >
                       {effectiveTransactionData?.asset?.description}
                     </span>
                   )}
                   <div
-                    className={`${
-                      isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                    } text-xs sm:text-sm font-mono break-all mt-1`}
+                    className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                      } text-xs sm:text-sm font-mono break-all mt-1`}
                   >
                     {effectiveTransactionData?.walletAddress ||
                       "TQn9Y2khEsLJW1ChVWFM...RDow5oRP7bX"}
@@ -1780,23 +1732,20 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                 />
                 <div className="min-w-0 flex-1 space-y-0.5">
                   <div
-                    className={`${
-                      isDark ? "text-white" : "text-gray-900"
-                    } text-sm sm:text-base font-semibold truncate`}
+                    className={`${isDark ? "text-white" : "text-gray-900"
+                      } text-sm sm:text-base font-semibold truncate`}
                   >
                     Bank Transfer
                   </div>
                   <span
-                    className={`${
-                      isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                    } text-xs sm:text-sm font-normal block truncate`}
+                    className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                      } text-xs sm:text-sm font-normal block truncate`}
                   >
                     To your account
                   </span>
                   <div
-                    className={`${
-                      isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                    } text-xs sm:text-sm font-mono break-all mt-1`}
+                    className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                      } text-xs sm:text-sm font-mono break-all mt-1`}
                   >
                     {effectiveTransactionData?.paymentDetails?.[0]
                       ?.account_number || "Account Number"}

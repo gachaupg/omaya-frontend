@@ -655,13 +655,13 @@ const PaymentMethods = () => {
 
       {/* Selected Provider Details - shown when user picks a provider from the dropdown */}
       {selectedProvider && (
-        <div className="w-full border border-gray-200 dark:border-[#35353E] rounded-2xl p-4 sm:p-5 mb-6 bg-gray-50 dark:bg-[var(--card-color)]">
+        <div className="w-full border border-gray-200 dark:border-accent rounded-2xl p-4 sm:p-5 mb-6 bg-gray-50 dark:bg-(--card-color)">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
             <div className="flex items-center gap-3">
               <img
                 src={selectedProviderObj ? getHighResPaymentLogo(selectedProviderObj.logo, selectedProviderObj.provider_logo, PAYMENT_LOGO_SIZE * 2) : "/default-provider-logo.svg"}
                 alt={selectedProvider}
-                className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-contain flex-shrink-0"
+                className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-contain shrink-0"
                 loading="lazy"
                 onError={(e) => {
                   e.currentTarget.src = "/default-provider-logo.svg";

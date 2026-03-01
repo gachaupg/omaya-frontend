@@ -649,9 +649,9 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                 <div className="text-[#788099] text-sm py-4">No payment methods available</div>
               )}
               {/* Seller's name (advertiser - who receives payment) */}
-              <div className="border border-[#F79330] rounded-2xl px-3 sm:px-4 min-[900px]:px-8 py-4 sm:py-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mt-2 bg-white dark:bg-[var(--card-color)]">
-                <p className="text-[#F79330] font-semibold text-sm sm:text-lg sm:mr-6">
-                  Owner Name
+              <div className="border border-warning rounded-2xl px-3 sm:px-4 min-[900px]:px-8 py-4 sm:py-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mt-2 bg-white dark:bg-[var(--card-color)]">
+                <p className="text-warning font-semibold text-sm sm:text-lg sm:mr-6 truancate">
+                  {confirmOrder?.buyer}
                 </p>
                 <div className="flex items-center flex-wrap gap-2">
                   <span className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-[#051015] dark:bg-white flex-shrink-0"></span>

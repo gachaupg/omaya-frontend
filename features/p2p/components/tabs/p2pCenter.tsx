@@ -99,9 +99,9 @@ const P2PCenter: React.FC = () => {
   // Transform the trades data to include commission, payment, and last update
   const transformedTrades = useMemo(() => {
     try {
-    const buyOrders = (orders as any)?.buy_orders?.results || [];
-    const sellOrders = (orders as any)?.sell_orders?.results || [];
-    const allOrders = [...buyOrders, ...sellOrders];
+      const buyOrders = (orders as any)?.buy_orders?.results || [];
+      const sellOrders = (orders as any)?.sell_orders?.results || [];
+      const allOrders = [...buyOrders, ...sellOrders];
 
       return allOrders
         .filter((trade: any) => trade && typeof trade === 'object') // Filter out null/undefined
@@ -109,25 +109,25 @@ const P2PCenter: React.FC = () => {
           try {
             // Safely extract payment_details with extra defensive checks
             const safePaymentDetails = Array.isArray(trade.payment_details)
-              ? trade.payment_details.filter((detail: any) => 
-                  detail && 
-                  typeof detail === 'object' && 
-                  detail !== null &&
-                  !Array.isArray(detail)
-                )
+              ? trade.payment_details.filter((detail: any) =>
+                detail &&
+                typeof detail === 'object' &&
+                detail !== null &&
+                !Array.isArray(detail)
+              )
               : [];
 
             return {
-      ...trade,
-      commission_rate: `${trade.commission_rate || 0}%`,
+              ...trade,
+              commission_rate: `${trade.commission_rate || 0}%`,
               payment: safePaymentDetails
                 .filter((detail: any) => {
                   // Extra defensive check - ensure detail exists and is a valid object
-                  return detail && 
-                         detail !== null && 
-                         detail !== undefined &&
-                         typeof detail === 'object' && 
-                         !Array.isArray(detail);
+                  return detail &&
+                    detail !== null &&
+                    detail !== undefined &&
+                    typeof detail === 'object' &&
+                    !Array.isArray(detail);
                 })
                 .map((detail: any) => {
                   try {
@@ -138,16 +138,16 @@ const P2PCenter: React.FC = () => {
                         logo: "https://res.cloudinary.com/pitz/image/upload/v1764667057/salam_vizvxy.svg",
                       };
                     }
-                    
+
                     const provider = detail?.provider;
                     const providerString = typeof provider === 'string' ? provider : '';
-                    
+
                     return {
                       bank: providerString || "",
                       logo: providerString
                         ? `/banks/${providerString
-                            .toLowerCase()
-                            .replace(/\s+/g, "")}.png`
+                          .toLowerCase()
+                          .replace(/\s+/g, "")}.png`
                         : "https://res.cloudinary.com/pitz/image/upload/v1764667057/salam_vizvxy.svg",
                     };
                   } catch (e) {
@@ -183,43 +183,43 @@ const P2PCenter: React.FC = () => {
   // Transform the "My Orders" data
   const transformedMyOrders = useMemo(() => {
     try {
-    // My orders come in the structure: { buy_orders: [], sell_orders: [], buy_pagination: {}, sell_pagination: {} }
-    // Handle both array and paginated response structures
-    if (!myOrders || typeof myOrders !== 'object') {
-      return [];
-    }
+      // My orders come in the structure: { buy_orders: [], sell_orders: [], buy_pagination: {}, sell_pagination: {} }
+      // Handle both array and paginated response structures
+      if (!myOrders || typeof myOrders !== 'object') {
+        return [];
+      }
 
-    // Extract buy_orders - handle both array and paginated { results: [] } structure
-    let buyOrders: any[] = [];
-    if (Array.isArray((myOrders as any)?.buy_orders)) {
-      buyOrders = (myOrders as any).buy_orders;
-    } else if ((myOrders as any)?.buy_orders?.results && Array.isArray((myOrders as any).buy_orders.results)) {
-      buyOrders = (myOrders as any).buy_orders.results;
-    }
+      // Extract buy_orders - handle both array and paginated { results: [] } structure
+      let buyOrders: any[] = [];
+      if (Array.isArray((myOrders as any)?.buy_orders)) {
+        buyOrders = (myOrders as any).buy_orders;
+      } else if ((myOrders as any)?.buy_orders?.results && Array.isArray((myOrders as any).buy_orders.results)) {
+        buyOrders = (myOrders as any).buy_orders.results;
+      }
 
-    // Extract sell_orders - handle both array and paginated { results: [] } structure
-    let sellOrders: any[] = [];
-    if (Array.isArray((myOrders as any)?.sell_orders)) {
-      sellOrders = (myOrders as any).sell_orders;
-    } else if ((myOrders as any)?.sell_orders?.results && Array.isArray((myOrders as any).sell_orders.results)) {
-      sellOrders = (myOrders as any).sell_orders.results;
-    }
+      // Extract sell_orders - handle both array and paginated { results: [] } structure
+      let sellOrders: any[] = [];
+      if (Array.isArray((myOrders as any)?.sell_orders)) {
+        sellOrders = (myOrders as any).sell_orders;
+      } else if ((myOrders as any)?.sell_orders?.results && Array.isArray((myOrders as any).sell_orders.results)) {
+        sellOrders = (myOrders as any).sell_orders.results;
+      }
 
-    const allOrders = [...buyOrders, ...sellOrders];
+      const allOrders = [...buyOrders, ...sellOrders];
 
-    const transformed = allOrders
+      const transformed = allOrders
         .filter((trade: any) => trade && typeof trade === 'object' && !Array.isArray(trade)) // Filter out null/undefined/arrays
-      .map((trade: any) => {
+        .map((trade: any) => {
           try {
             // Safely extract payment_details, filtering out null/undefined items with extra checks
-        const safePaymentDetails = Array.isArray(trade.payment_details)
-              ? trade.payment_details.filter((detail: any) => 
-                  detail && 
-                  typeof detail === 'object' && 
-                  detail !== null &&
-                  !Array.isArray(detail)
-                )
-          : [];
+            const safePaymentDetails = Array.isArray(trade.payment_details)
+              ? trade.payment_details.filter((detail: any) =>
+                detail &&
+                typeof detail === 'object' &&
+                detail !== null &&
+                !Array.isArray(detail)
+              )
+              : [];
 
             // Safely get first payment detail for provider_logo with extra validation
             let firstPaymentDetail: any = null;
@@ -234,11 +234,11 @@ const P2PCenter: React.FC = () => {
             let providerLogo: string | null = null;
             if (firstPaymentDetail) {
               try {
-                if (typeof firstPaymentDetail === 'object' && 
-                    firstPaymentDetail !== null && 
-                    'provider_logo' in firstPaymentDetail &&
-                    typeof firstPaymentDetail.provider_logo === 'string' &&
-                    firstPaymentDetail.provider_logo.trim()) {
+                if (typeof firstPaymentDetail === 'object' &&
+                  firstPaymentDetail !== null &&
+                  'provider_logo' in firstPaymentDetail &&
+                  typeof firstPaymentDetail.provider_logo === 'string' &&
+                  firstPaymentDetail.provider_logo.trim()) {
                   providerLogo = firstPaymentDetail.provider_logo.trim();
                 }
               } catch (e) {
@@ -247,30 +247,30 @@ const P2PCenter: React.FC = () => {
               }
             }
 
-        return {
-          ...trade,
+            return {
+              ...trade,
               assetSymbol: typeof trade?.currency === 'string' ? trade.currency : '',
-          assetImage:
+              assetImage:
                 (typeof trade?.asset_image === 'string' && trade.asset_image) ||
-            "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png",
+                "/images/tether.svg",
               commission_rate: (() => {
-              const cr = trade?.commission_rate;
-              if (typeof cr === 'number' && !Number.isNaN(cr)) return cr;
-              if (typeof cr === 'string') {
-                const parsed = parseFloat(cr);
-                return Number.isNaN(parsed) ? 0 : parsed;
-              }
-              return 0;
-            })(),
+                const cr = trade?.commission_rate;
+                if (typeof cr === 'number' && !Number.isNaN(cr)) return cr;
+                if (typeof cr === 'string') {
+                  const parsed = parseFloat(cr);
+                  return Number.isNaN(parsed) ? 0 : parsed;
+                }
+                return 0;
+              })(),
               payment: safePaymentDetails
                 .filter((detail: any) => {
                   // Extra defensive check - ensure detail exists and is a valid object
-                  return detail && 
-                         detail !== null && 
-                         detail !== undefined &&
-                         typeof detail === 'object' && 
-                         !Array.isArray(detail) &&
-                         Object.keys(detail).length > 0;
+                  return detail &&
+                    detail !== null &&
+                    detail !== undefined &&
+                    typeof detail === 'object' &&
+                    !Array.isArray(detail) &&
+                    Object.keys(detail).length > 0;
                 })
                 .map((detail: any) => {
                   try {
@@ -281,16 +281,16 @@ const P2PCenter: React.FC = () => {
                         logo: "https://res.cloudinary.com/dam1sxczj/image/upload/v1748884335/image_7_dqkxkj.png",
                       };
                     }
-                    
+
                     const provider = typeof detail?.provider === 'string' ? detail.provider : '';
-                    const detailLogo = detail && 
-                                      typeof detail === 'object' && 
-                                      'provider_logo' in detail &&
-                                      typeof detail.provider_logo === 'string' && 
-                                      detail.provider_logo.trim()
+                    const detailLogo = detail &&
+                      typeof detail === 'object' &&
+                      'provider_logo' in detail &&
+                      typeof detail.provider_logo === 'string' &&
+                      detail.provider_logo.trim()
                       ? detail.provider_logo.trim()
                       : "https://res.cloudinary.com/dam1sxczj/image/upload/v1748884335/image_7_dqkxkj.png";
-                    
+
                     return {
                       bank: provider || '',
                       logo: detailLogo,
@@ -305,17 +305,17 @@ const P2PCenter: React.FC = () => {
                   }
                 })
                 .filter((item: any) => item && typeof item === 'object'), // Final safety filter
-          payment_details: safePaymentDetails, // Preserve original structure for MyAdsTable
+              payment_details: safePaymentDetails, // Preserve original structure for MyAdsTable
               provider_logo: providerLogo,
               lastUpdate: trade?.created_on ? new Date(trade.created_on).toLocaleString() : '',
-        };
+            };
           } catch (error) {
             // If transformation fails for a single order, return a safe default
             console.warn('Error transforming my order:', error, trade);
             return {
               ...trade,
               assetSymbol: trade?.currency || '',
-              assetImage: "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png",
+              assetImage: "/images/tether.svg",
               commission_rate: 0,
               payment: [],
               payment_details: [],
@@ -323,9 +323,9 @@ const P2PCenter: React.FC = () => {
               lastUpdate: '',
             };
           }
-      });
-    
-    return transformed;
+        });
+
+      return transformed;
     } catch (error) {
       // If entire transformation fails, return empty array
       console.error('Error transforming my orders:', error);
@@ -335,10 +335,10 @@ const P2PCenter: React.FC = () => {
 
   // Handle wallet error gracefully - provide fallback empty object
   // Add extra safety checks for production
-  const safeWallets = (wallets && typeof wallets === 'object' && !Array.isArray(wallets)) 
-    ? wallets 
+  const safeWallets = (wallets && typeof wallets === 'object' && !Array.isArray(wallets))
+    ? wallets
     : ({} as any);
-  
+
   // Safely handle summary data with extra checks
   const safeSummary = (summary && typeof summary === 'object') ? summary : null;
 

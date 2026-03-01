@@ -330,14 +330,14 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
                         option.image ||
                         option.image_url ||
                         option.asset_image ||
-                        "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                        "/images/tether.svg"
                       }
                       alt={option.name || "Asset"}
                       className="w-6 h-6 rounded-full object-cover"
                       loading="lazy"
                       onError={(e) => {
                         e.currentTarget.src =
-                          "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                          "/images/tether.svg";
                       }}
                     />
                     <div className="flex-1 min-w-0">
@@ -395,14 +395,14 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
                 asset?.image ||
                 asset?.image_url ||
                 asset?.asset_image ||
-                "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                "/images/tether.svg"
               }
               alt={asset?.name || "asset icon"}
               className="w-5 h-5 sm:w-6 sm:h-6 rounded-full object-cover flex-shrink-0"
               loading="lazy"
               onError={(e) => {
                 e.currentTarget.src =
-                  "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                  "/images/tether.svg";
               }}
             />
             <p className="text-base sm:text-lg dark:text-white text-gray-900 font-semibold truncate">
