@@ -189,8 +189,12 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
     const triggerRect = triggerEl.getBoundingClientRect();
     const desiredWidth = Math.min(maxWidth, Math.max(minWidth, triggerRect.width));
 
-    // Position directly below the trigger button
-    let top = triggerRect.bottom + 4;
+    // Find the parent card container to start the dropdown from its top
+    const cardEl = triggerEl.closest("[data-swap-card='true']") as HTMLElement | null;
+    const cardRect = cardEl?.getBoundingClientRect();
+
+    // Start from the top of the card container (like MoneyX/Exchange dropdowns)
+    let top = cardRect ? cardRect.top : triggerRect.top;
     let left = triggerRect.left;
 
     // Clamp so it doesn't overflow the right edge
