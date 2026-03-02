@@ -47,6 +47,7 @@ import { useTheme } from "@/context/theme";
 import {
   buildExpressRedirectPath,
   setAuthRedirectPath,
+  setExpressPrefillState,
 } from "@/lib/utils/authRedirect";
 import { openKYCModal, checkKYCStatus } from "@/features/auth/slices/authSlice";
 
@@ -4569,9 +4570,8 @@ export default function WithdrawalForm({
                         // Keep currently selected provider/bank (even if user hasn't selected an account yet)
                         payBank,
                       };
-                      setAuthRedirectPath(
-                        buildExpressRedirectPath(mode, state)
-                      );
+                      setAuthRedirectPath(buildExpressRedirectPath(mode, state));
+                      setExpressPrefillState(state); // Fallback if URL params are lost
                       router.push("/auth/login");
                       return;
                     }

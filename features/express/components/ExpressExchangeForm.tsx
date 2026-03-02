@@ -1,7 +1,9 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import WithdrawalForm from "./forms/withdrwal";
 import DepositForm from "./forms/deposit";
+import { consumeExpressPrefillState } from "@/lib/utils/authRedirect";
 
 interface ExpressExchangeFormProps {
   onExchange: (transactionData: {
@@ -43,6 +45,7 @@ const ExpressExchangeForm: React.FC<ExpressExchangeFormProps> = ({
   initialMode = "deposit",
   isHomePage = false,
 }) => {
+  const searchParams = useSearchParams();
   const [mode, setMode] = useState<"deposit" | "withdrawal">(initialMode);
   const [prefillState, setPrefillState] = useState<any>(null);
   // Preserve state when switching modes
@@ -61,18 +64,21 @@ const ExpressExchangeForm: React.FC<ExpressExchangeFormProps> = ({
     setMode(initialMode);
   }, [initialMode]);
 
+  // Parse prefill from URL or sessionStorage (for login redirect from home page)
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const prefill = params.get("prefill");
-    if (prefill) {
+    if (prefillState) return;
+    const prefillParam = searchParams?.get("prefill");
+    if (prefillParam) {
       try {
-        const parsed = JSON.parse(decodeURIComponent(prefill));
-        setPrefillState(parsed);
+        setPrefillState(JSON.parse(decodeURIComponent(prefillParam)));
       } catch (error) {
         console.warn("Failed to parse prefill state", error);
       }
+    } else {
+      const fromStorage = consumeExpressPrefillState();
+      if (fromStorage) setPrefillState(fromStorage);
     }
-  }, [initialMode]);
+  }, [searchParams, prefillState]);
 
   return (
     <div className="w-full mt-0">

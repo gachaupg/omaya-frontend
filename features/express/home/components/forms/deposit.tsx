@@ -36,6 +36,7 @@ import Select from "@/features/p2p/components/Common/Select";
 import {
   buildExpressRedirectPath,
   setAuthRedirectPath,
+  setExpressPrefillState,
 } from "@/lib/utils/authRedirect";
 import { useValidateAddress } from "@/hooks/useValidateAddress";
 import { openKYCModal, checkKYCStatus } from "@/features/auth/slices/authSlice";
@@ -3460,9 +3461,8 @@ export default function DepositForm({
                     payBank: payBank,
                     walletAddress,
                   };
-                  setAuthRedirectPath(
-                    buildExpressRedirectPath(mode, state)
-                  );
+                  setAuthRedirectPath(buildExpressRedirectPath(mode, state));
+                  setExpressPrefillState(state); // Fallback if URL params are lost
                   router.push("/auth/login");
                   return;
                 }

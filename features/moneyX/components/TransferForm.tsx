@@ -30,9 +30,10 @@ interface TransferFormProps {
     moneyxTransactionId?: string;
     moneyXTransaction?: any;
   }) => void;
+  initialState?: Record<string, any>;
 }
 
-export default function TransferForm({ onTransfer }: TransferFormProps) {
+export default function TransferForm({ onTransfer, initialState }: TransferFormProps) {
   const dispatch = useDispatch<AppDispatch>();
   const { isDark } = useTheme();
   const { t } = useExpressI18n();
@@ -304,57 +305,44 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
   const hasRestoredState = useRef(false);
   const paymentMethodRestoreAttempted = useRef(false);
 
-  // Restore state on mount and when authentication changes
+  // Restore state on mount - from initialState (URL/sessionStorage) or localStorage
   useEffect(() => {
-    // Only restore if user is authenticated and we haven't restored yet
-    if (hasRestoredState.current) {
-      return;
-    }
+    if (hasRestoredState.current) return;
+    if (isAuthenticated === undefined) return;
+    if (!isAuthenticated) return;
 
-    // Wait for authentication status to be available
-    if (isAuthenticated === undefined) {
-      return;
-    }
+    const state = initialState || (() => {
+      try {
+        const saved = localStorage.getItem("moneyx_form_state");
+        return saved ? JSON.parse(saved) : null;
+      } catch {
+        return null;
+      }
+    })();
 
-    // Only restore if authenticated (user has logged in)
-    if (!isAuthenticated) {
-      return;
-    }
-
-    try {
-      const savedState = localStorage.getItem("moneyx_form_state");
-      if (savedState) {
-        const state = JSON.parse(savedState);
-
+    if (state) {
+      try {
         console.log("🔄 [Dashboard] Restoring moneyx form state:", state);
 
-        // Prevent minimise effect from collapsing the form when we restore amounts
         isRestoringRef.current = true;
 
-        // Restore amounts immediately
         if (state.amountInput !== undefined && state.amountInput !== null && state.amountInput !== "") {
           const sendAmount = state.amountValue || parseFloat(state.amountInput) || 0;
           setPayAmountInput(state.amountInput);
           setPayAmount(sendAmount);
-          console.log("✅ [Dashboard] Restored send amount:", state.amountInput, "=", sendAmount);
         }
         if (state.receiveAmountInput !== undefined && state.receiveAmountInput !== null && state.receiveAmountInput !== "") {
           const receiveAmount = state.receiveAmountValue || parseFloat(state.receiveAmountInput) || 0;
           setGetAmountInput(state.receiveAmountInput);
           setGetAmount(receiveAmount);
-          console.log("✅ [Dashboard] Restored receive amount:", state.receiveAmountInput, "=", receiveAmount);
         }
 
-        // Restore bank account address and expand form
         if (state.bankAccountAddress) {
           setBankAccountAddress(state.bankAccountAddress);
           setIsFirstCardSubmitted(true);
-          console.log("✅ [Dashboard] Restored bank account and expanded form");
         }
 
-        // Store payment method data for later restoration (after payment methods are loaded)
         if (state.fromPaymentMethod || state.toPaymentMethod) {
-          // Use base provider name if available (from home page API), otherwise use cleaned name
           const fromName = state.fromProviderBase || state.fromPaymentMethod || "";
           const toName = state.toProviderBase || state.toPaymentMethod || "";
 
@@ -369,21 +357,15 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
           if (state.toPaymentDetail) {
             localStorage.setItem("moneyx_restore_to_detail", JSON.stringify(state.toPaymentDetail));
           }
-          console.log("💾 [Dashboard] Stored payment methods for restoration");
-          console.log("💾 [Dashboard] From (base):", fromName, "From (cleaned):", state.fromPaymentMethod);
-          console.log("💾 [Dashboard] To (base):", toName, "To (cleaned):", state.toPaymentMethod);
         }
 
-        // Clear the saved state
         localStorage.removeItem("moneyx_form_state");
         hasRestoredState.current = true;
-      } else {
-        console.log("ℹ️ [Dashboard] No saved moneyx form state found");
+      } catch (error) {
+        console.error("❌ [Dashboard] Failed to restore moneyx form state:", error);
       }
-    } catch (error) {
-      console.error("❌ [Dashboard] Failed to restore moneyx form state:", error);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, initialState]);
 
   // Restore payment methods after they're loaded
   useEffect(() => {
