@@ -10,6 +10,7 @@ import { tokens } from "@/styles/tokens";
 import { Play, MessageCircle, BarChart, Globe, Lock, DollarSign, Users, TrendingUp, Shield, Zap, UserPlus, ArrowRight, Calendar, Clock, MapPin, Phone, Mail, ChevronDown, ChevronUp, ArrowLeftRight, HelpCircle } from "lucide-react";
 import ExchangeForm from "@/components/ExchangeForm";
 import { useBlog } from "@/features/blogs/hooks/blog";
+import { decodeHtml, stripLeadingImagesFromHtml } from "@/lib/utils/html";
 import { BlogPost } from "@/features/blogs/types";
 import { useFAQ } from "@/features/faq/hooks/useFAQ";
 import { ContactForm } from "@/features/contact/components";
@@ -108,6 +109,7 @@ interface ArticleTag {
 
 interface Article {
   id: number;
+  postId: string; // Sanity _id for stable blog URLs
   title: string;
   excerpt: string;
   image: string;
@@ -242,18 +244,25 @@ export default function MarketingPage() {
         .replace(/(^-|-$)/g, "");
     };
 
-    // Truncate description to 300 characters with ellipses
+    // Strip HTML tags for excerpt
+    const stripHtmlTags = (html: string) => {
+      if (!html) return '';
+      return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
+    };
+    // Decode, strip leading images, get text, truncate to 300 chars
     const truncateDescription = (description: string) => {
-      if (description.length <= 300) {
-        return description;
-      }
-      return description.substring(0, 300).trim() + "...";
+      const decoded = decodeHtml(description);
+      const withoutLeadingImages = stripLeadingImagesFromHtml(decoded);
+      const textOnly = stripHtmlTags(withoutLeadingImages);
+      if (textOnly.length <= 300) return textOnly;
+      return textOnly.substring(0, 300).trim() + "...";
     };
 
     return {
       id: index + 1,
+      postId: blog._id || String(blog.id ?? index + 1),
       title: blog.title,
-      excerpt: truncateDescription(blog.description),
+      excerpt: truncateDescription(blog.description || ''),
       image: getImageUrl(blog),
       category: blog.category === "news" ? "News" : ("Blog" as Category),
       tags: [tags[0], tags[1]], // Default tags
@@ -1482,7 +1491,7 @@ export default function MarketingPage() {
 
                 return (
                 <div
-                  key={article.id}
+                  key={article.postId}
                     className="bg-gray-50 dark:bg-[#1D1D23] rounded-xl overflow-hidden flex flex-col h-full border border-gray-200 dark:border-[#2A2A2A] hover:border-[#1D8751]/40 transition-colors"
                 >
                     {/* Article Image */}
@@ -1524,7 +1533,7 @@ export default function MarketingPage() {
 
                       {/* Read More Link */}
                     <Link
-                      href={`/blog/${article.id}`}
+                      href={`/blog/${article.postId}`}
                         className="inline-flex items-center gap-2 text-[#1D8751] text-sm font-medium hover:text-[#167a47] transition-colors group mt-auto"
                     >
                         Read More

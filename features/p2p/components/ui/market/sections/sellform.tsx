@@ -486,9 +486,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                 {singleOrder?.user_total_buy_orders || 120} Orders |{" "}
                 {singleOrder?.completion_rate || "99.20"}% Completion
               </div>
-              <div className="text-xs text-[#1D8751]">
-                Rating: 99% | Commission: {singleOrder?.commission_rate || "0.5"}%
-              </div>
+              Rating: 99% | Commission: {singleOrder?.commission_rate || "0.5"}
             </div>
             <div className="w-full md:w-auto flex flex-wrap md:flex-nowrap gap-4 md:gap-8 text-xs md:ml-auto flex-shrink-0 pt-3 md:pt-0 border-t md:border-t-0 border-gray-200 dark:border-[#35353E]">
               <div>
@@ -553,7 +551,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                 </div>
                 <div className="flex items-center h-[46px] rounded-2xl border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] px-2">
                   <span className="text-[#1D8751] text-2xl mr-2">
-                    <img src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png" alt="USDT" className="w-6 h-6" />
+                    <img src="/images/tether.svg" alt="USDT" className="w-6 h-6" />
                   </span>
                   <span className="text-[#1D8751] text-xl font-semibold">
                     {formatAmount(sendAmount)}
@@ -585,9 +583,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                 </div>
                 <div className="flex items-center h-[46px] rounded-2xl border border-gray-200 dark:border-[#35353E] bg-gray-100 dark:bg-[#35353E] px-2">
                   <span className="text-[#1D8751] text-2xl mr-2">{rangeSymbol}</span>
-                  <span className="text-[#1D8751] text-xl font-semibold">
-                    {commissionRate}%
-                  </span>
+                  {commissionRate}
                   <span className="ml-auto text-gray-900 dark:text-white text-base font-medium">
                     {rangeSuffix}
                   </span>
@@ -896,9 +892,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                     <span className="text-gray-600 dark:text-[#A3A3C2]">
                       Commission:
                     </span>
-                    <span className="text-[#1D8751] font-semibold">
-                      {formatCommissionRate(commissionRate)}%
-                    </span>
+                    {formatCommissionRate(commissionRate)}
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600 dark:text-[#A3A3C2]">

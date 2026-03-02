@@ -66,7 +66,7 @@ const ForgetPassword = () => {
         <div className="w-[438px] h-[403px] bg-[#1D8751] blur-[60px]  absolute left-16 2xl:left-54 opacity-60"></div>
         <div className="relative">
           <Image
-            src="https://res.cloudinary.com/dam1sxczj/image/upload/v1747220053/iphone_vn7ejc.png"
+            src="/images/iphone_vn7ejc.webp"
             alt="OMAYA Exchange Mobile App"
             width={350}
             height={650}

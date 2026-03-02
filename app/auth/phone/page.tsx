@@ -63,7 +63,7 @@ export default function PhoneCapturePage() {
         <div className="w-[438px] h-[403px] bg-[#1D8751] blur-[60px] absolute left-16 2xl:left-54 opacity-60"></div>
         <div className="relative">
           <Image
-            src="https://res.cloudinary.com/dam1sxczj/image/upload/v1747220053/iphone_vn7ejc.png"
+            src="/images/iphone_vn7ejc.webp"
             alt="OMAYA Exchange Mobile App"
             width={350}
             height={650}
@@ -96,9 +96,8 @@ export default function PhoneCapturePage() {
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder={t("auth.phone.placeholder", "e.g. +252712345678")}
-                  className={`w-full py-3 px-4 pl-10 rounded-full dark:bg-[#1D1D23] bg-white border ${
-                    error ? "border-[#FDA29B]" : "dark:border-gray-700 border-gray-300"
-                  } dark:text-white text-gray-900 focus:outline-none focus:border-[#13B562]`}
+                  className={`w-full py-3 px-4 pl-10 rounded-full dark:bg-[#1D1D23] bg-white border ${error ? "border-[#FDA29B]" : "dark:border-gray-700 border-gray-300"
+                    } dark:text-white text-gray-900 focus:outline-none focus:border-[#13B562]`}
                   required
                 />
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -136,9 +135,8 @@ export default function PhoneCapturePage() {
             <button
               type="submit"
               disabled={loading}
-              className={`w-full bg-[#1D8751] text-white py-3 px-4 rounded-full hover:bg-[#0E5531] transition-colors duration-300 ${
-                loading ? "opacity-70 cursor-not-allowed" : ""
-              }`}
+              className={`w-full bg-[#1D8751] text-white py-3 px-4 rounded-full hover:bg-[#0E5531] transition-colors duration-300 ${loading ? "opacity-70 cursor-not-allowed" : ""
+                }`}
             >
               {loading ? t("auth.phone.saving", "Saving...") : t("auth.phone.continue", "Continue")}
             </button>

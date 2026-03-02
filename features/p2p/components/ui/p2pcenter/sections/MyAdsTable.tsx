@@ -85,15 +85,15 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
       setOpenMenuIdx(null);
       setMenuPosition(null);
     };
-    
+
     const handleScroll = () => {
       setOpenMenuIdx(null);
       setMenuPosition(null);
     };
-    
+
     document.addEventListener("mousedown", handleClickOutside);
     window.addEventListener("scroll", handleScroll, true);
-    
+
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
       window.removeEventListener("scroll", handleScroll, true);
@@ -109,22 +109,22 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
     }
     const target = event.currentTarget as HTMLElement;
     const rect = target.getBoundingClientRect();
-    
+
     // Calculate position ensuring it doesn't overflow viewport
     const menuWidth = 140;
     const viewportWidth = window.innerWidth;
     let left = rect.right - menuWidth;
-    
+
     // Adjust if menu would overflow left edge
     if (left < 10) {
       left = Math.max(10, rect.left);
     }
-    
+
     // Adjust if menu would overflow right edge
     if (left + menuWidth > viewportWidth - 10) {
       left = viewportWidth - menuWidth - 10;
     }
-    
+
     setMenuPosition({ top: rect.bottom + 4, left });
     setOpenMenuIdx(idx);
   };
@@ -270,7 +270,7 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
                   <img
                     src={
                       trade.asset_image ||
-                      "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                      "/images/tether.svg"
                     }
                     alt={trade.asset || "Asset"}
                     className="w-7 h-7"
@@ -280,11 +280,10 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
                 {/* Type */}
                 <td className="px-4 py-4">
                   <span
-                    className={`text-base font-semibold ${
-                      trade.order_type === "buy"
+                    className={`text-base font-semibold ${trade.order_type === "buy"
                         ? "text-[#1D8751]"
                         : "text-[#FF4D4D]"
-                    }`}
+                      }`}
                   >
                     {trade.order_type}
                   </span>
@@ -314,9 +313,9 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
                       if (validDetails.length > 0) {
                         return validDetails.map((p: any, i: number) => (
                           <div key={i} className="flex items-center gap-2">
-                            <img 
-                              src={p?.provider_logo || "https://res.cloudinary.com/dam1sxczj/image/upload/v1748884335/image_7_dqkxkj.png"} 
-                              alt="" 
+                            <img
+                              src={p?.provider_logo || "https://res.cloudinary.com/dam1sxczj/image/upload/v1748884335/image_7_dqkxkj.png"}
+                              alt=""
                               className="w-5 h-5 rounded"
                               onError={(e) => {
                                 (e.target as HTMLImageElement).src = "https://res.cloudinary.com/dam1sxczj/image/upload/v1748884335/image_7_dqkxkj.png";
@@ -333,9 +332,9 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
                       if (provider) {
                         return (
                           <div className="flex items-center gap-2">
-                            <img 
-                              src={(details as any)?.provider_logo || "https://res.cloudinary.com/dam1sxczj/image/upload/v1748884335/image_7_dqkxkj.png"} 
-                              alt="" 
+                            <img
+                              src={(details as any)?.provider_logo || "https://res.cloudinary.com/dam1sxczj/image/upload/v1748884335/image_7_dqkxkj.png"}
+                              alt=""
                               className="w-5 h-5 rounded"
                               onError={(e) => {
                                 (e.target as HTMLImageElement).src = "https://res.cloudinary.com/dam1sxczj/image/upload/v1748884335/image_7_dqkxkj.png";
@@ -357,17 +356,16 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
                 {/* Status */}
                 <td className="px-4 py-4">
                   <span
-                  className={`text-base font-semibold ${
-                    trade.status === "published"
-                    ? "text-[#1D8751]": 
-                    trade.status === "pending"
-                    ? "text-[#FFB800]":
-                    trade.status === "completed"
-                    ? "text-[#1D8751]"
-                    : "text-[#FF4D4D]"
-                  }`}
+                    className={`text-base font-semibold ${trade.status === "published"
+                        ? "text-[#1D8751]" :
+                        trade.status === "pending"
+                          ? "text-[#FFB800]" :
+                          trade.status === "completed"
+                            ? "text-[#1D8751]"
+                            : "text-[#FF4D4D]"
+                      }`}
                   >
-                  {trade.status}
+                    {trade.status}
                   </span>
                 </td>
                 {/* Action */}
@@ -403,7 +401,7 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
                 <img
                   src={
                     trade.asset_image ||
-                    "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                    "/images/tether.svg"
                   }
                   alt={trade.asset || "Asset"}
                   className="w-7 h-7"
@@ -412,11 +410,10 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
               </div>
               <div className="flex items-center gap-2">
                 <span
-                  className={`font-bold text-base ${
-                    trade.order_type === "buy"
+                  className={`font-bold text-base ${trade.order_type === "buy"
                       ? "text-[#1D8751]"
                       : "text-[#FF4D4D]"
-                  }`}
+                    }`}
                 >
                   {trade.order_type}
                 </span>
@@ -467,9 +464,9 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
                         <>
                           {validDetails.slice(0, 2).map((p: any, i: number) => (
                             <div key={i} className="flex items-center gap-1.5">
-                              <img 
-                                src={p?.provider_logo || "https://res.cloudinary.com/dam1sxczj/image/upload/v1748884335/image_7_dqkxkj.png"} 
-                                alt="" 
+                              <img
+                                src={p?.provider_logo || "https://res.cloudinary.com/dam1sxczj/image/upload/v1748884335/image_7_dqkxkj.png"}
+                                alt=""
                                 className="w-5 h-5 rounded"
                                 onError={(e) => {
                                   (e.target as HTMLImageElement).src = "https://res.cloudinary.com/dam1sxczj/image/upload/v1748884335/image_7_dqkxkj.png";
@@ -492,9 +489,9 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
                     if (provider) {
                       return (
                         <div className="flex items-center gap-1.5">
-                          <img 
-                            src={(details as any)?.provider_logo || "https://res.cloudinary.com/dam1sxczj/image/upload/v1748884335/image_7_dqkxkj.png"} 
-                            alt="" 
+                          <img
+                            src={(details as any)?.provider_logo || "https://res.cloudinary.com/dam1sxczj/image/upload/v1748884335/image_7_dqkxkj.png"}
+                            alt=""
                             className="w-5 h-5 rounded"
                             onError={(e) => {
                               (e.target as HTMLImageElement).src = "https://res.cloudinary.com/dam1sxczj/image/upload/v1748884335/image_7_dqkxkj.png";
@@ -515,15 +512,14 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
               <div className="flex flex-col">
                 <span className="text-sm font-medium text-gray-500 dark:text-[#8C8CA1] mb-1">Status</span>
                 <span
-                  className={`text-base font-bold ${
-                    trade.status === "published"
+                  className={`text-base font-bold ${trade.status === "published"
                       ? "text-[#1D8751]"
                       : trade.status === "pending"
-                      ? "text-[#FFB800]"
-                      : trade.status === "completed"
-                      ? "text-[#1D8751]"
-                      : "text-[#FF4D4D]"
-                  }`}
+                        ? "text-[#FFB800]"
+                        : trade.status === "completed"
+                          ? "text-[#1D8751]"
+                          : "text-[#FF4D4D]"
+                    }`}
                 >
                   {trade.status}
                 </span>
@@ -551,11 +547,10 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
             <button
               key={i}
               onClick={() => setCurrentPage(i + 1)}
-              className={`px-4 py-2 rounded-md text-base font-semibold border border-gray-200 dark:border-[#35353E] ${
-                currentPage === i + 1
+              className={`px-4 py-2 rounded-md text-base font-semibold border border-gray-200 dark:border-[#35353E] ${currentPage === i + 1
                   ? "bg-[#1D8751] text-white"
                   : "bg-gray-100 dark:bg-[var(--card-color)] text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-[#35353E]"
-              } transition-colors`}
+                } transition-colors`}
             >
               {i + 1}
             </button>

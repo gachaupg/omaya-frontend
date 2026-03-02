@@ -75,11 +75,11 @@ const Filters: React.FC<FiltersProps> = ({
 
   const handleCustomDateApply = () => {
     if (customDateFrom && customDateTo) {
-      onFilterChange({ 
-        ...filters, 
-        date: "custom", 
+      onFilterChange({
+        ...filters,
+        date: "custom",
         customDateFrom: customDateFrom,
-        customDateTo: customDateTo 
+        customDateTo: customDateTo
       });
       setShowCustomDatePicker(false);
     }
@@ -114,7 +114,7 @@ const Filters: React.FC<FiltersProps> = ({
     usdt: {
       name: "Tether",
       code: "USDT",
-      logo: "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png",
+      logo: "/images/tether.svg",
     },
   };
 
@@ -134,8 +134,8 @@ const Filters: React.FC<FiltersProps> = ({
       logo:
         selectedCurrencyOption && "logo" in selectedCurrencyOption
           ? // @ts-ignore (upstream data gradually adopting logos)
-            (selectedCurrencyOption as { logo?: string }).logo ||
-            currencyMeta.usdt.logo
+          (selectedCurrencyOption as { logo?: string }).logo ||
+          currencyMeta.usdt.logo
           : currencyMeta.usdt.logo,
     };
 
@@ -172,11 +172,10 @@ const Filters: React.FC<FiltersProps> = ({
               size="md"
               borderRadius={10}
               disabled={loading}
-              className={`px-4 py-2 font-semibold text-[13px] md:text-sm transition-all flex items-center gap-1 shadow-none border-none min-w-[120px] snap-start shrink-0 ${
-                filters.status === tab.id
+              className={`px-4 py-2 font-semibold text-[13px] md:text-sm transition-all flex items-center gap-1 shadow-none border-none min-w-[120px] snap-start shrink-0 ${filters.status === tab.id
                   ? "bg-[#1D8751] text-white"
                   : "bg-transparent text-gray-700 dark:text-[#9AA3BC] hover:bg-[#1D8751]/10"
-              } ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
+                } ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
               onClick={() => handleStatusChange(tab.id)}
             >
               {tab.label}
@@ -224,9 +223,8 @@ const Filters: React.FC<FiltersProps> = ({
         {/* Coin selector */}
         <div className="relative group">
           <div
-            className={`${filterCardBase} ${
-              isCurrencyActive ? activeCardClasses : inactiveCardClasses
-            } ${loading ? "opacity-60" : ""} pointer-events-none`}
+            className={`${filterCardBase} ${isCurrencyActive ? activeCardClasses : inactiveCardClasses
+              } ${loading ? "opacity-60" : ""} pointer-events-none`}
           >
             <div className="flex items-center gap-2 sm:gap-4 w-full">
               <div className={iconWrapper}>
@@ -273,9 +271,8 @@ const Filters: React.FC<FiltersProps> = ({
               value={filters.currency}
               onChange={handleCurrencyChange}
               className="w-full h-full"
-              triggerClassName={`${selectOverlayTrigger} ${
-                loading ? "cursor-not-allowed" : "cursor-pointer"
-              }`}
+              triggerClassName={`${selectOverlayTrigger} ${loading ? "cursor-not-allowed" : "cursor-pointer"
+                }`}
               optionClassName="text-sm"
               disabled={loading}
             />
@@ -285,9 +282,8 @@ const Filters: React.FC<FiltersProps> = ({
         {/* Type selector */}
         <div className="relative group">
           <div
-            className={`${filterCardBase} ${
-              isTypeActive ? activeCardClasses : inactiveCardClasses
-            } ${loading ? "opacity-60" : ""} pointer-events-none`}
+            className={`${filterCardBase} ${isTypeActive ? activeCardClasses : inactiveCardClasses
+              } ${loading ? "opacity-60" : ""} pointer-events-none`}
           >
             <div className="flex items-center gap-4 w-full">
               <div className={iconWrapper}>
@@ -301,9 +297,8 @@ const Filters: React.FC<FiltersProps> = ({
               </div>
               <div className="flex min-w-0 flex-1 items-center justify-between gap-2">
                 <span
-                  className={`truncate ${
-                    isTypeActive ? valueStyleActive : valueStyleInactive
-                  }`}
+                  className={`truncate ${isTypeActive ? valueStyleActive : valueStyleInactive
+                    }`}
                 >
                   {typeValueDisplay || typeOptionLabel}
                 </span>
@@ -330,9 +325,8 @@ const Filters: React.FC<FiltersProps> = ({
               value={filters.type}
               onChange={handleTypeChange}
               className="w-full h-full"
-              triggerClassName={`${selectOverlayTrigger} ${
-                loading ? "cursor-not-allowed" : "cursor-pointer"
-              }`}
+              triggerClassName={`${selectOverlayTrigger} ${loading ? "cursor-not-allowed" : "cursor-pointer"
+                }`}
               optionClassName="text-sm"
               disabled={loading}
             />
@@ -342,9 +336,8 @@ const Filters: React.FC<FiltersProps> = ({
         {/* Status selector */}
         <div className="relative group">
           <div
-            className={`${filterCardBase} ${
-              isStatusActive ? activeCardClasses : inactiveCardClasses
-            } ${loading ? "opacity-60" : ""} pointer-events-none`}
+            className={`${filterCardBase} ${isStatusActive ? activeCardClasses : inactiveCardClasses
+              } ${loading ? "opacity-60" : ""} pointer-events-none`}
           >
             <div className="flex items-center gap-4 w-full">
               <div className={iconWrapper}>
@@ -358,9 +351,8 @@ const Filters: React.FC<FiltersProps> = ({
               </div>
               <div className="flex min-w-0 flex-1 items-center justify-between gap-2">
                 <span
-                  className={`truncate ${
-                    isStatusActive ? valueStyleActive : valueStyleInactive
-                  }`}
+                  className={`truncate ${isStatusActive ? valueStyleActive : valueStyleInactive
+                    }`}
                 >
                   {statusValueDisplay || statusOptionLabel}
                 </span>
@@ -387,9 +379,8 @@ const Filters: React.FC<FiltersProps> = ({
               value={filters.status}
               onChange={handleStatusChange}
               className="w-full h-full"
-              triggerClassName={`${selectOverlayTrigger} ${
-                loading ? "cursor-not-allowed" : "cursor-pointer"
-              }`}
+              triggerClassName={`${selectOverlayTrigger} ${loading ? "cursor-not-allowed" : "cursor-pointer"
+                }`}
               optionClassName="text-sm"
               disabled={loading}
             />
@@ -399,9 +390,8 @@ const Filters: React.FC<FiltersProps> = ({
         {/* Date selector */}
         <div className="relative group">
           <div
-            className={`${filterCardBase} ${
-              isDateActive ? activeCardClasses : inactiveCardClasses
-            } ${loading ? "opacity-60" : ""} pointer-events-none`}
+            className={`${filterCardBase} ${isDateActive ? activeCardClasses : inactiveCardClasses
+              } ${loading ? "opacity-60" : ""} pointer-events-none`}
           >
             <div className="flex items-center gap-4 w-full">
               <div className={iconWrapper}>
@@ -415,9 +405,8 @@ const Filters: React.FC<FiltersProps> = ({
               </div>
               <div className="flex min-w-0 flex-1 items-center justify-between gap-2">
                 <span
-                  className={`truncate ${
-                    isDateActive ? valueStyleActive : valueStyleInactive
-                  }`}
+                  className={`truncate ${isDateActive ? valueStyleActive : valueStyleInactive
+                    }`}
                 >
                   {dateValueDisplay || dateOptionLabel}
                 </span>
@@ -444,16 +433,15 @@ const Filters: React.FC<FiltersProps> = ({
               value={filters.date}
               onChange={handleDateChange}
               className="w-full h-full"
-              triggerClassName={`${selectOverlayTrigger} ${
-                loading ? "cursor-not-allowed" : "cursor-pointer"
-              }`}
+              triggerClassName={`${selectOverlayTrigger} ${loading ? "cursor-not-allowed" : "cursor-pointer"
+                }`}
               optionClassName="text-sm"
               disabled={loading}
             />
           </div>
         </div>
       </div>
-      
+
       {/* Custom Date Range Picker */}
       {showCustomDatePicker && (
         <div className="mt-3 p-4 rounded-xl bg-white dark:bg-[var(--card-color)] border border-gray-200 dark:border-[#35353E] shadow-lg">

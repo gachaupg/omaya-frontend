@@ -316,7 +316,7 @@ export default function WithdrawalForm({
       network_type: "BSC",
       network: "BSC",
       name: "Binance Smart Chain BEP20",
-      icon: "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png",
+      icon: "/images/tether.svg",
       isDefault: true,
     };
   });
@@ -332,7 +332,7 @@ export default function WithdrawalForm({
       network_type: "BSC",
       network: "BSC",
       name: "Binance Smart Chain BEP20",
-      icon: "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png",
+      icon: "/images/tether.svg",
       isDefault: true,
     },
   ];
@@ -1625,7 +1625,7 @@ export default function WithdrawalForm({
       commission: "2",
       fee_rate: "2",
       image_url:
-        "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png",
+        "/images/tether.svg",
       asset_id: "usdt-tether-bsc",
     },
   ];
@@ -2407,7 +2407,7 @@ export default function WithdrawalForm({
                             selectedAsset.asset_image ||
                             selectedAsset.icon_url ||
                             selectedAsset.image ||
-                            "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                            "/images/tether.svg"
                           }
                           alt={
                             selectedAsset.name ||
@@ -2421,7 +2421,7 @@ export default function WithdrawalForm({
                               selectedAsset
                             );
                             e.currentTarget.src =
-                              "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                              "/images/tether.svg";
                           }}
                         />
                         <span className="text-[#35353e] dark:text-[#788099]">
@@ -2439,7 +2439,7 @@ export default function WithdrawalForm({
                     ) : (
                       <>
                         <img
-                          src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                          src="/images/tether.svg"
                           alt="asset icon"
                           className="w-6 h-6"
                         />
@@ -2529,13 +2529,13 @@ export default function WithdrawalForm({
                               src={
                                 asset.image_url ||
                                 asset.asset_image ||
-                                "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                                "/images/tether.svg"
                               }
                               alt={asset.name}
                               className="w-6 h-6 rounded-full"
                               onError={(e) => {
                                 e.currentTarget.src =
-                                  "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                                  "/images/tether.svg";
                               }}
                             />
                             <div className="flex-1">

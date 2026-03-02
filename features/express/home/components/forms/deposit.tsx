@@ -1597,27 +1597,14 @@ export default function DepositForm({
       // Check if this is "You Send" section (has data-select-card) or "You Receive" section
       const isYouSend = currentCard.hasAttribute('data-select-card');
 
-      // Calculate reduced width so dropdowns don't cover amount inputs (40% of card width)
-      let desiredWidth = Math.min(maxWidth, Math.max(minWidth, cardRect.width * 0.4));
+      // Width: match only the asset selector element (right column), not the full card
+      let desiredWidth = dropdownRect.width;
 
-      // Position at the top of the card, moved up a little more, then pushed down by 18px for both dropdowns
-      let top = cardRect.top - 15 + 15.7; // 15px above card top, then push down by 18px
+      // Position dropdown starting at the top of the card container
+      let top = cardRect.top;
 
-      let left: number;
-
-      // Both "You Send" and "You Receive" - position from right side of card, pushed more right
-      // Position it very close to the right edge
-      left = cardRect.right - desiredWidth - 3; // 3px from right edge of card
-
-      // Push the "You Receive" dropdown a bit further right to match requested layout
-      if (!isYouSend) {
-        left += 18;
-      }
-
-      // Ensure it doesn't go off the left edge
-      if (left < cardRect.left) {
-        left = cardRect.left;
-      }
+      // Left-align with the asset selector element's left edge
+      let left = dropdownRect.left;
 
       // Ensure it doesn't go off screen on the right
       if (left + desiredWidth > viewportWidth - minMargin) {
@@ -1627,16 +1614,6 @@ export default function DepositForm({
       // Ensure it doesn't go off the left edge
       if (left < minMargin) {
         left = minMargin;
-      }
-
-      // If card is too narrow, center it
-      if (cardRect.width < desiredWidth + 16) {
-        left = cardRect.left + (cardRect.width - desiredWidth) / 2;
-      }
-
-      // Final boundary check to ensure it doesn't go off screen
-      if (left + desiredWidth > viewportWidth - minMargin) {
-        left = viewportWidth - desiredWidth - minMargin;
       }
 
       dropdownStyle = {
@@ -1769,7 +1746,7 @@ export default function DepositForm({
                               asset?.image_url ||
                               asset?.asset_image ||
                               (asset as any)?.image ||
-                              "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                              "/images/tether.svg"
                             }
                             alt={
                               asset?.name ||
@@ -1780,7 +1757,7 @@ export default function DepositForm({
                             className="w-10 h-10 rounded-full object-cover"
                             onError={(e) => {
                               e.currentTarget.src =
-                                "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                                "/images/tether.svg";
                             }}
                           />
                           <div className="flex-1">
@@ -1848,7 +1825,7 @@ export default function DepositForm({
                         asset?.image_url ||
                         asset?.asset_image ||
                         (asset as any)?.image ||
-                        "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                        "/images/tether.svg"
                       }
                       alt={
                         asset?.name ||
@@ -1859,7 +1836,7 @@ export default function DepositForm({
                       className="w-10 h-10 rounded-full object-cover"
                       onError={(e) => {
                         e.currentTarget.src =
-                          "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                          "/images/tether.svg";
                       }}
                     />
                     <div className="flex-1">
@@ -3340,13 +3317,13 @@ export default function DepositForm({
                             selectedAsset?.image_url ||
                             selectedAsset?.asset_image ||
                             (selectedAsset as any)?.image ||
-                            "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                            "/images/tether.svg"
                           }
                           alt={selectedAsset?.name || selectedAsset?.ticker || selectedAsset?.symbol || "Asset"}
                           className="w-6 h-6 rounded-full object-cover"
                           onError={(e) => {
                             e.currentTarget.src =
-                              "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                              "/images/tether.svg";
                           }}
                         />
                         <div className="flex flex-col">
@@ -3366,7 +3343,7 @@ export default function DepositForm({
                     ) : (
                       <>
                         <img
-                          src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                          src="/images/tether.svg"
                           alt="asset icon"
                           className="w-6 h-6"
                         />
@@ -3974,7 +3951,7 @@ export default function DepositForm({
               <div className="flex items-start gap-2 sm:gap-3">
                 <span className="text-yellow-600 dark:text-yellow-500 mt-0.5 flex-shrink-0">
                   <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
-                    <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </span>
                 <p className="text-xs sm:text-sm text-yellow-800 dark:text-yellow-200 font-medium">
