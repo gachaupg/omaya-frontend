@@ -2495,16 +2495,18 @@ export default function DepositForm({
                       else setWalletError(null);
                     }}
                     onSaveCurrent={async () => {
-                      if (!walletAddress.trim() || !currentCurrency || !currentNetwork) {
-                        showToast.error("Enter address and select asset/network first");
-                        return;
-                      }
-                      await saveBookmark({
-                        address: walletAddress.trim(),
-                        label: `My ${currentCurrency} wallet`,
-                        network: currentNetwork,
-                        asset: currentCurrency,
-                      });
+                      try {
+                        if (!walletAddress.trim() || !currentCurrency || !currentNetwork) {
+                          showToast.error("Enter address and select asset/network first");
+                          return;
+                        }
+                        await saveBookmark({
+                          address: walletAddress.trim(),
+                          label: `My ${currentCurrency} wallet`,
+                          network: currentNetwork,
+                          asset: currentCurrency,
+                        });
+                      } catch { /* handled by hook */ }
                     }}
                     anchorRef={bookmarkAnchorRef}
                     isDark={isDark}

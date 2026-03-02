@@ -33,7 +33,7 @@ export function useBookmarkedAddresses(asset?: string, network?: string) {
       return created;
     } catch (err: any) {
       showToast.error(err?.response?.data?.message || err?.message || "Failed to save bookmark");
-      throw err;
+      return null;
     } finally {
       setSaving(false);
     }
