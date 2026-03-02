@@ -1283,7 +1283,7 @@ export default function TransferForm({ onTransfer, initialState }: TransferFormP
                 : `${getProviderName(selectedToPaymentDetail)} Account Number`}
             </label>
             {/* Input group */}
-            <div className="flex items-center bg-white dark:bg-[#18181D] border border-border dark:border-[#35353E] rounded-2xl px-2 sm:px-4 py-2 mb-0 overflow-hidden gap-1 sm:gap-2">
+            <div className="flex items-center bg-white dark:bg-[#18181D] border border-border dark:border-[#35353E] rounded-2xl px-2 sm:px-4 py-2 mb-0 gap-1 sm:gap-2">
               {/* Left icon */}
               <span className="text-[#1D8751] flex-shrink-0">
                 <svg width="22" height="22" fill="none" viewBox="0 0 24 24" className="w-5 h-5 sm:w-[22px] sm:h-[22px]">
