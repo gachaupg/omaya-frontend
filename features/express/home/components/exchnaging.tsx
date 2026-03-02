@@ -16,6 +16,7 @@ import {
   cancelDepositTransaction,
   cancelWithdrawalTransaction,
 } from "../../slices/transactionSlice";
+import FailureStatusModal from "../../components/FailureStatusModal";
 
 interface ExchangingProps {
   transactionData?: {
@@ -54,6 +55,7 @@ interface ExchangingProps {
       estimated_amount?: number;
       changenow_id?: string;
     };
+    receiveAmount?: number; // Net amount user will receive (form's "You Receive")
     createdAt?: number;
   };
   isHomePage?: boolean;
@@ -81,6 +83,8 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
   const [snapshotWebsocketData, setSnapshotWebsocketData] = useState<any>(null);
   const [liveAmount, setLiveAmount] = useState<number | null>(null);
   const [liveCurrency, setLiveCurrency] = useState<string | null>(null);
+  const [liveNetAmount, setLiveNetAmount] = useState<number | null>(null);
+  const [liveNetCurrency, setLiveNetCurrency] = useState<string | null>(null);
   const [liveTransactionId, setLiveTransactionId] = useState<string | null>(
     null
   );
@@ -93,6 +97,11 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
     null
   );
   const [expandedTerms, setExpandedTerms] = useState(false);
+  const [failureModal, setFailureModal] = useState<{
+    isOpen: boolean;
+    status: string;
+    message?: string;
+  }>({ isOpen: false, status: "", message: undefined });
 
   // Fallback polling function
   const startFallbackPolling = () => {
@@ -292,6 +301,24 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
     }
   }, [showSuccess]);
 
+  // Net amount from props (form's "You Receive")
+  useEffect(() => {
+    const recv = (effectiveTransactionData as any)?.receiveAmount;
+    if (recv != null) {
+      const parsed = parseFloat(String(recv));
+      if (!isNaN(parsed)) {
+        setLiveNetAmount(parsed);
+        setLiveNetCurrency(
+          effectiveTransactionData?.type === "deposit"
+            ? (effectiveTransactionData?.asset?.ticker ||
+                effectiveTransactionData?.asset?.symbol ||
+                "USDT")
+            : "USD"
+        );
+      }
+    }
+  }, [effectiveTransactionData]);
+
   // Use WebSocket for both deposit and withdrawal transactions
   const shouldUseWebSocket =
     effectiveTransactionData?.transactionId &&
@@ -390,18 +417,27 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
               }
             }
 
-            // Handle amount_to (what user receives) - for display purposes
+            // Handle amount_to (what user receives) - for display
             if (wsData.amount_to !== null && wsData.amount_to !== undefined) {
-              // Store the received amount for success page
-              setLiveAmount(parseFloat(wsData.amount_to));
-              setLiveCurrency(
-                wsData.to_currency?.toUpperCase() ||
+              const amountTo = parseFloat(wsData.amount_to);
+              if (!isNaN(amountTo)) {
+                setLiveNetAmount(amountTo);
+                setLiveNetCurrency(
+                  wsData.to_currency?.toUpperCase() ||
+                  (effectiveTransactionData?.type === "deposit"
+                    ? effectiveTransactionData?.asset?.ticker || "USDT"
+                    : "USD")
+                );
+                setLiveAmount(amountTo);
+                setLiveCurrency(
+                  wsData.to_currency?.toUpperCase() ||
                   (effectiveTransactionData?.type === "deposit"
                     ? "USD"
                     : effectiveTransactionData?.type === "withdrawal"
                       ? "USD"
                       : "USDT")
-              );
+                );
+              }
             }
 
             // Handle expected amounts if actual amounts are not available
@@ -539,6 +575,8 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
             "processing",
             "completed",
             "failed",
+            "rejected",
+            "stopped",
             "awaiting_payment",
             "exchanging",
             "sending",
@@ -552,7 +590,16 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
             "waiting", // ChangeNow status
           ];
 
-          if (status && validStatuses.includes(status)) {
+          // Show failure modal for failed, rejected, or stopped statuses
+          if (status && ["failed", "rejected", "stopped"].includes(status)) {
+            setFailureModal({
+              isOpen: true,
+              status,
+              message: message || undefined,
+            });
+            setCurrentStatus(status);
+            setTimerActive(false);
+          } else if (status && validStatuses.includes(status)) {
             // Map backend statuses to UI statuses for better user experience
             let uiStatus = status;
 
@@ -734,6 +781,12 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
     isConnected,
   ]);
 
+  const handleFailureModalClose = () => {
+    setFailureModal({ isOpen: false, status: "", message: undefined });
+    localStorage.removeItem("express_transaction_data");
+    window.location.reload();
+  };
+
   // If showing success page, render it with real transaction data and snapshot websocket data
   if (showSuccess) {
     return (
@@ -836,19 +889,20 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
         } border-2 rounded-2xl ${isHomePage ? 'p-2 sm:p-3' : 'p-4'} shadow-lg w-full ${isHomePage ? '' : 'max-w-4xl'} ${isHomePage ? 'mb-2 sm:mb-3' : 'mb-4'} ${isHomePage ? 'min-h-[120px] sm:min-h-[140px]' : 'min-h-[180px]'} overflow-hidden`}
       >
         <div className={`flex-1 flex flex-col justify-between ${isHomePage ? 'py-1 sm:py-2 pr-0 sm:pr-2' : 'py-2 pr-2'} min-w-0`}>
-          <div>
-            <div
-              className={`${
-                isDark ? "text-[#7B7B7B]" : "text-gray-600"
-              } text-xs font-semibold mb-0.5`}
-            >
-              Amount:
-            </div>
-            <div
-              className={`${
-                isDark ? "text-white" : "text-gray-900"
-              } text-base font-semibold mb-1 flex items-center gap-2`}
-            >
+          <div className="flex flex-row flex-wrap gap-x-6 gap-y-2 items-baseline">
+            <div>
+              <div
+                className={`${
+                  isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                } text-xs font-semibold mb-0.5`}
+              >
+                Amount:
+              </div>
+              <div
+                className={`${
+                  isDark ? "text-white" : "text-gray-900"
+                } text-base font-semibold mb-1 flex items-center gap-2`}
+              >
               <span>
                 {liveAmount !== null
                   ? liveAmount
@@ -871,6 +925,41 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                 )}
               </span>
             </div>
+            {(effectiveTransactionData as any)?.receiveAmount != null && (
+              <div>
+                <div
+                  className={`${
+                    isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                  } text-xs font-semibold mb-0.5`}
+                >
+                  Net amount you&apos;ll receive:
+                </div>
+                <div
+                  className={`${
+                    isDark ? "text-[#1D8751]" : "text-[#15803D]"
+                  } text-base font-semibold flex items-center gap-2`}
+                >
+                  <span>
+                    {(
+                      (effectiveTransactionData as any)?.receiveAmount ??
+                      liveNetAmount ??
+                      0
+                    )
+                      .toFixed(8)
+                      .replace(/\.?0+$/, "")}{" "}
+                    <span className="uppercase">
+                      {liveNetCurrency ||
+                        (effectiveTransactionData?.type === "deposit"
+                          ? effectiveTransactionData?.asset?.ticker ||
+                            effectiveTransactionData?.asset?.symbol ||
+                            "USDT"
+                          : "USD")}
+                    </span>
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
             {/* {liveAmount !== null &&
               liveAmount !== effectiveTransactionData?.amount && (
                 <div className={`${
@@ -1863,6 +1952,16 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
           </div>
         </div>
       </div>
+
+      {/* Failure Status Modal */}
+      <FailureStatusModal
+        isOpen={failureModal.isOpen}
+        status={failureModal.status}
+        message={failureModal.message}
+        onClose={() => setFailureModal({ isOpen: false, status: "", message: undefined })}
+        onBackToForm={handleFailureModalClose}
+        isDark={isDark}
+      />
     </div>
   );
 }

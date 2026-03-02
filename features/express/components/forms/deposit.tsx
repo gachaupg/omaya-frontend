@@ -2206,47 +2206,30 @@ export default function DepositForm({
       setIsSubmitting(true);
 
       try {
-        // Create FormData for API submission
-        const depositPayload = new FormData();
-        // Validate and append required fields
-        if (!payAmount || payAmount <= 0) {
-          throw new Error("Invalid amount");
+        // Validate required fields
+        const safeAmount = parseFloat(String(payAmount));
+        if (!safeAmount || isNaN(safeAmount) || safeAmount <= 0) {
+          throw new Error("Invalid amount. Please enter a valid number greater than 0.");
         }
-        depositPayload.append("requested_amount", payAmount.toString());
 
-        // Use the selected payment method details
         if (!selectedPaymentDetail) {
           throw new Error("Please select a payment method");
         }
-
         if (!selectedPaymentDetail.provider_name) {
           throw new Error("Payment provider is missing");
         }
-        depositPayload.append(
-          "payment_provider",
-          selectedPaymentDetail.provider_name
-        );
-
         if (!selectedPaymentDetail.payment_method_type) {
           throw new Error("Payment method is missing");
         }
-        depositPayload.append(
-          "payment_method",
-          selectedPaymentDetail.payment_method_type
-        );
-        // Handle currency field - try multiple properties to get the currency value
-        let currencyValue = "";
-
-        // Ensure selectedAsset exists
         if (!selectedAsset) {
           throw new Error("No asset selected");
         }
 
-        // Try different properties in order of preference
+        // Resolve currency value
+        let currencyValue = "";
         if (selectedAsset.ticker) {
           currencyValue = selectedAsset.ticker;
         } else if (selectedAsset.symbol) {
-          // Handle special case for USDT Tether
           currencyValue =
             selectedAsset.symbol === "USDT Tether"
               ? "USDT"
@@ -2254,13 +2237,8 @@ export default function DepositForm({
         } else if (selectedAsset.name) {
           currencyValue = selectedAsset.name;
         }
-
-        // Clean up the currency value (remove any extra spaces, etc.)
         currencyValue = currencyValue?.trim();
-
-        // Fallback: if still no currency value, try to extract from any available property
         if (!currencyValue) {
-          // Try to get any string value from the asset object
           const assetKeys = Object.keys(selectedAsset);
           for (const key of assetKeys) {
             const value = selectedAsset[key];
@@ -2270,28 +2248,22 @@ export default function DepositForm({
             }
           }
         }
-
         if (!currencyValue) {
           throw new Error("Currency information is missing");
         }
-        depositPayload.append("currency", currencyValue);
 
-        // Handle network field more carefully
+        // Resolve network value
         const networkValue =
           selectedNetwork?.network_id || selectedNetwork?.network_type || "";
         if (!networkValue) {
           throw new Error("Network information is missing");
         }
-        depositPayload.append("network", networkValue);
 
-        // Handle asset field - use the asset ticker/symbol/name from the selected asset
+        // Resolve asset value
         let assetValue = "";
-
-        // Try different properties in order of preference
         if (selectedAsset.ticker) {
           assetValue = selectedAsset.ticker;
         } else if (selectedAsset.symbol) {
-          // Handle special case for USDT Tether
           assetValue =
             selectedAsset.symbol === "USDT Tether"
               ? "USDT"
@@ -2299,13 +2271,8 @@ export default function DepositForm({
         } else if (selectedAsset.name) {
           assetValue = selectedAsset.name;
         }
-
-        // Clean up the asset value (remove any extra spaces, etc.)
         assetValue = assetValue?.trim();
-
-        // Fallback: if still no asset value, try to extract from any available property
         if (!assetValue) {
-          // Try to get any string value from the asset object
           const assetKeys = Object.keys(selectedAsset);
           for (const key of assetKeys) {
             const value = selectedAsset[key];
@@ -2315,20 +2282,27 @@ export default function DepositForm({
             }
           }
         }
-
         if (!assetValue) {
           throw new Error("Asset information is missing");
         }
-        depositPayload.append("asset", assetValue);
-        // For direct crypto deposits, set minimal additional info
-        depositPayload.append("additional_info", "Direct crypto deposit");
 
-        // Submit to API - let axios set the correct Content-Type for FormData
+        // Build JSON payload — requested_amount sent as a number
+        const depositPayload = {
+          requested_amount: safeAmount,
+          payment_provider: selectedPaymentDetail.provider_name,
+          payment_method: selectedPaymentDetail.payment_method_type,
+          currency: currencyValue,
+          network: networkValue,
+          asset: assetValue,
+          additional_info: "Direct crypto deposit",
+        };
+
+        // Submit to API
         const depositResponse = (await dispatch(
           createDeposit({
             payload: depositPayload,
             config: {
-              // Don't set Content-Type manually for FormData - let axios handle it
+              headers: { "Content-Type": "application/json" },
             },
           })
         ).unwrap()) as unknown as DepositResponse;
@@ -2750,47 +2724,23 @@ export default function DepositForm({
     setIsSubmitting(true);
 
     try {
-      // Create FormData for API submission
-      const depositPayload = new FormData();
-
-      // Validate and append required fields
-      if (!payAmount || payAmount <= 0) {
-        throw new Error("Invalid amount");
+      // Validate required fields
+      const safeAmount = parseFloat(String(payAmount));
+      if (!safeAmount || isNaN(safeAmount) || safeAmount <= 0) {
+        throw new Error("Invalid amount. Please enter a valid number greater than 0.");
       }
-      depositPayload.append("requested_amount", payAmount.toString());
-
-      // Wallet address is optional for initial submission
-      if (walletAddress.trim()) {
-        depositPayload.append("deposit_address", walletAddress);
-      } else {
-        // Set empty value when wallet address is not provided
-        depositPayload.append("deposit_address", "");
-      }
-
       if (!selectedPaymentDetail.provider_name) {
         throw new Error("Payment provider is missing");
       }
-      depositPayload.append(
-        "payment_provider",
-        selectedPaymentDetail.provider_name
-      );
-
       if (!selectedPaymentDetail.payment_method_type) {
         throw new Error("Payment method is missing");
       }
-      depositPayload.append(
-        "payment_method",
-        selectedPaymentDetail.payment_method_type
-      );
 
-      // Handle currency field - use the asset ticker/symbol/name from the selected asset
+      // Resolve currency value
       let currencyValue = "";
-
-      // Try different properties in order of preference
       if (selectedAsset.ticker) {
         currencyValue = selectedAsset.ticker;
       } else if (selectedAsset.symbol) {
-        // Handle special case for USDT Tether
         currencyValue =
           selectedAsset.symbol === "USDT Tether"
             ? "USDT"
@@ -2798,13 +2748,8 @@ export default function DepositForm({
       } else if (selectedAsset.name) {
         currencyValue = selectedAsset.name;
       }
-
-      // Clean up the currency value (remove any extra spaces, etc.)
       currencyValue = currencyValue?.trim();
-
-      // Fallback: if still no currency value, try to extract from any available property
       if (!currencyValue) {
-        // Try to get any string value from the asset object
         const assetKeys = Object.keys(selectedAsset);
         for (const key of assetKeys) {
           const value = selectedAsset[key];
@@ -2814,56 +2759,39 @@ export default function DepositForm({
           }
         }
       }
-
       if (!currencyValue) {
         throw new Error("Currency information is missing");
       }
-      depositPayload.append("currency", currencyValue);
 
-      // Handle network field - use the network from selected asset or network
+      // Resolve network value
       let networkValue = "";
-
-      // Try to get network from selected network first
       if (selectedNetwork?.network_id) {
         networkValue = selectedNetwork.network_id;
       } else if (selectedNetwork?.network_type) {
         networkValue = selectedNetwork.network_type;
       } else if (selectedAsset) {
-        // Fallback to asset network
         networkValue = getAssetNetwork(selectedAsset);
       }
-
-      // Clean up the network value
       networkValue = networkValue?.trim();
-
-      // Fallback: if still no network value, try to extract from any available property
-      if (!networkValue) {
-        // Try to get any string value from the network object
-        if (selectedNetwork) {
-          const networkKeys = Object.keys(selectedNetwork);
-          for (const key of networkKeys) {
-            const value = selectedNetwork[key];
-            if (typeof value === "string" && value.trim()) {
-              networkValue = value.trim();
-              break;
-            }
+      if (!networkValue && selectedNetwork) {
+        const networkKeys = Object.keys(selectedNetwork);
+        for (const key of networkKeys) {
+          const value = selectedNetwork[key];
+          if (typeof value === "string" && value.trim()) {
+            networkValue = value.trim();
+            break;
           }
         }
       }
-
       if (!networkValue) {
         throw new Error("Network information is missing");
       }
-      depositPayload.append("network", networkValue);
 
-      // Handle asset field - use the asset ticker/symbol/name from the selected asset
+      // Resolve asset value
       let assetValue = "";
-
-      // Try different properties in order of preference
       if (selectedAsset.ticker) {
         assetValue = selectedAsset.ticker;
       } else if (selectedAsset.symbol) {
-        // Handle special case for USDT Tether
         assetValue =
           selectedAsset.symbol === "USDT Tether"
             ? "USDT"
@@ -2871,13 +2799,8 @@ export default function DepositForm({
       } else if (selectedAsset.name) {
         assetValue = selectedAsset.name;
       }
-
-      // Clean up the asset value (remove any extra spaces, etc.)
       assetValue = assetValue?.trim();
-
-      // Fallback: if still no asset value, try to extract from any available property
       if (!assetValue) {
-        // Try to get any string value from the asset object
         const assetKeys = Object.keys(selectedAsset);
         for (const key of assetKeys) {
           const value = selectedAsset[key];
@@ -2887,24 +2810,28 @@ export default function DepositForm({
           }
         }
       }
-
       if (!assetValue) {
         throw new Error("Asset information is missing");
       }
-      depositPayload.append("asset", assetValue);
 
-      // Add additional info
-      depositPayload.append(
-        "additional_info",
-        `Account: ${selectedPaymentDetail.account_name}, Account Number: ${selectedPaymentDetail.account_number}`
-      );
+      // Build JSON payload — requested_amount sent as a number
+      const depositPayload: Record<string, any> = {
+        requested_amount: safeAmount,
+        deposit_address: walletAddress.trim() || "",
+        payment_provider: selectedPaymentDetail.provider_name,
+        payment_method: selectedPaymentDetail.payment_method_type,
+        currency: currencyValue,
+        network: networkValue,
+        asset: assetValue,
+        additional_info: `Account: ${selectedPaymentDetail.account_name}, Account Number: ${selectedPaymentDetail.account_number}`,
+      };
 
-      // Submit to API - let axios set the correct Content-Type for FormData
+      // Submit to API
       const depositResponse = (await dispatch(
         createDeposit({
           payload: depositPayload,
           config: {
-            // Don't set Content-Type manually for FormData - let axios handle it
+            headers: { "Content-Type": "application/json" },
           },
         })
       ).unwrap()) as unknown as DepositResponse;
@@ -3709,7 +3636,7 @@ export default function DepositForm({
             {/* Asset Section */}
             <div className="flex-1 w-full sm:min-w-0 sm:pl-4 border-t sm:border-t-0 sm:border-l border-[#35353E] dark:border-[#35353E] pt-3 sm:pt-0 sm:border-none">
               <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
-                {t("express.youGet", "You Get")}
+                {t("express.asset", "Asset")}
               </label>
               <div className="relative" ref={assetDropdownRef}>
                 <div
@@ -4394,7 +4321,7 @@ export default function DepositForm({
                   </svg>
                 </span>
                 <p className="text-xs sm:text-sm text-yellow-800 dark:text-yellow-200 font-medium">
-                  <span className="font-bold">Important:</span> Please send only <span className="font-bold text-yellow-900 dark:text-yellow-100">{selectedAsset?.symbol || selectedAsset?.ticker || 'crypto'}</span> on <span className="font-bold text-yellow-900 dark:text-yellow-100">{currentNetwork || selectedAsset?.network || 'the selected network'}</span>. Any other Crypto or Network will be <span className="font-bold">lost Permanently</span>.
+                  <span className="font-bold">Important:</span> Ensure your wallet address is for <span className="font-bold text-yellow-900 dark:text-yellow-100">{selectedAsset?.symbol || selectedAsset?.ticker || 'the selected asset'}</span> on the <span className="font-bold text-yellow-900 dark:text-yellow-100">{currentNetwork || selectedAsset?.network || 'selected network'}</span> network. Providing an incorrect address or network may result in <span className="font-bold">permanent loss of funds</span>.
                 </p>
               </div>
             </div>

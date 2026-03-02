@@ -179,12 +179,9 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
   const commissionFetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const paymentDetailsRef = useRef<HTMLDivElement>(null);
 
-  // Amount for commission API - use pay when from pay, else approx send from receive (getAmount/0.98)
-  const commissionFetchAmount = isCalculatingFromPay ? payAmount : (getAmount > 0 ? getAmount / 0.98 : 0);
-
-  // Fetch commission from API when amount changes (API returns fixed amount e.g. {"commission":"120.00"})
+  // Fetch commission percentage from range-commissions API (no auth, returns percentage e.g. 3%)
   useEffect(() => {
-    const amount = commissionFetchAmount || payAmount || getAmount;
+    const amount = isCalculatingFromPay ? payAmount : getAmount;
     if (!amount || amount <= 0) {
       setApiCommission(null);
       return;
@@ -193,9 +190,8 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
     commissionFetchTimeoutRef.current = setTimeout(() => {
       dispatch(fetchMoneyXCommission(amount))
         .unwrap()
-        .then((commissionStr) => {
-          const val = parseFloat(commissionStr) || 0;
-          setApiCommission(val);
+        .then((result) => {
+          setApiCommission(result.commission);
         })
         .catch(() => setApiCommission(null));
     }, 150);
@@ -204,15 +200,16 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
     };
   }, [payAmount, getAmount, isCalculatingFromPay, dispatch]);
 
-  // Recalculate the other field when apiCommission updates (commission = fixed amount: receive = send - commission, send = receive + commission)
+  // Recalculate the other field when apiCommission updates (commission is a percentage: receive = send - send*rate/100)
   useEffect(() => {
-    const commissionAmount = apiCommission ?? 0;
+    const rate = apiCommission ?? 0;
     if (isCalculatingFromPay && payAmount > 0) {
+      const commissionAmount = (payAmount * rate) / 100;
       const calculatedGetAmount = Math.max(0, payAmount - commissionAmount);
       setGetAmount(calculatedGetAmount);
       setGetAmountInput(calculatedGetAmount.toString());
     } else if (!isCalculatingFromPay && getAmount > 0) {
-      const calculatedPayAmount = getAmount + commissionAmount;
+      const calculatedPayAmount = rate >= 100 ? getAmount : getAmount / (1 - rate / 100);
       setPayAmount(calculatedPayAmount);
       setPayAmountInput(calculatedPayAmount.toString());
     }
@@ -854,7 +851,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
     };
   });
 
-  // Calculate receive/send using commission from API (commission = fixed amount: receive = send - commission, send = receive + commission)
+  // Calculate receive/send using commission percentage from API (receive = send - send*rate/100)
   const handleAmountChange = (value: string, isFromPay: boolean) => {
     if (value === "" || /^\d*\.?\d*$/.test(value)) {
       if (value.includes(".")) {
@@ -866,12 +863,13 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
       }
 
       const newAmount = parseFloat(value) || 0;
-      const commissionAmount = apiCommission ?? 0;
+      const rate = apiCommission ?? 0;
 
       if (isFromPay) {
         setPayAmountInput(value);
         setPayAmount(newAmount);
         setIsCalculatingFromPay(true);
+        const commissionAmount = (newAmount * rate) / 100;
         const calculatedGetAmount = Math.max(0, newAmount - commissionAmount);
         setGetAmount(calculatedGetAmount);
         setGetAmountInput(calculatedGetAmount.toString());
@@ -879,7 +877,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
         setGetAmountInput(value);
         setGetAmount(newAmount);
         setIsCalculatingFromPay(false);
-        const calculatedPayAmount = newAmount + commissionAmount;
+        const calculatedPayAmount = rate >= 100 ? newAmount : newAmount / (1 - rate / 100);
         setPayAmount(calculatedPayAmount);
         setPayAmountInput(calculatedPayAmount.toString());
       }

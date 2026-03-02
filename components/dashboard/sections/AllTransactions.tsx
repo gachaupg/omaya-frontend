@@ -251,11 +251,6 @@ const AllTransactions = () => {
           </div>
         </td>
         <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E]">
-          <span className="text-[10px] sm:text-xs px-2 py-0.5 rounded-full bg-[#1D8751]/10 text-[#1D8751] font-medium">
-            {getTypeLabel(tx.type, tx.sub_type)}
-          </span>
-        </td>
-        <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E]">
           <span className="font-medium text-sm text-gray-900 dark:text-white truncate block">
             {fromDisplay}
           </span>
@@ -410,7 +405,6 @@ const AllTransactions = () => {
             <tr className="border-b border-gray-200 dark:border-[#35353E]">
               {[
                 t("transactions.asset", "Asset"),
-                t("transactions.type", "Type"),
                 t("transactions.from", "From"),
                 t("transactions.to", "To"),
                 t("transactions.amount", "Amount"),

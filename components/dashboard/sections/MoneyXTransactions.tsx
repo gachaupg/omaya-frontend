@@ -84,13 +84,12 @@ const MoneyXTransactions = () => {
         <table className="w-full">
           <thead>
             <tr className="border-b border-gray-200 dark:border-accent">
-              <th className="py-3 px-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099] text-left"><span className="inline-flex items-center gap-1">Transaction ID<SortArrowsIcon /></span></th>
+              <th className="py-3 px-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099] text-left"><span className="inline-flex items-center gap-1">Id<SortArrowsIcon /></span></th>
               <th className="py-3 px-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099] text-left"><span className="inline-flex items-center gap-1">From<SortArrowsIcon /></span></th>
               <th className="py-3 px-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099] text-left"><span className="inline-flex items-center gap-1">To<SortArrowsIcon /></span></th>
               <th className="py-3 px-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099] text-right"><span className="inline-flex items-center gap-1 justify-end">Amount Sent<SortArrowsIcon /></span></th>
               <th className="py-3 px-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099] text-right"><span className="inline-flex items-center gap-1 justify-end">Amount Received<SortArrowsIcon /></span></th>
-              <th className="py-3 px-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099] text-center"><span className="inline-flex items-center gap-1 justify-center">Status<SortArrowsIcon /></span></th>
-              <th className="py-3 px-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099] text-right"><span className="inline-flex items-center gap-1 justify-end">Date<SortArrowsIcon /></span></th>
+              <th className="py-3 px-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099] text-right"><span className="inline-flex items-center gap-1 justify-end">When<SortArrowsIcon /></span></th>
             </tr>
           </thead>
           <tbody>
@@ -142,15 +141,6 @@ const MoneyXTransactions = () => {
                     {formatCurrency(tx.receive_amount || tx.net_amount || 0, tx.to_currency || tx.currency || "USDT")}
                   </span>
                 </td>
-                <td className="py-4 px-4 text-center">
-                  <span
-                    className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                      tx.status
-                    )}`}
-                  >
-                    {tx.status || "Pending"}
-                  </span>
-                </td>
                 <td className="py-4 px-4 text-right">
                   <span className="text-xs sm:text-sm md:text-base text-gray-500 dark:text-[#A0A3BC]">
                     {tx.created_at
@@ -175,18 +165,11 @@ const MoneyXTransactions = () => {
           >
             <div className="flex justify-between items-start mb-3">
               <div>
-                <p className="text-xs dark:text-[#788099] text-gray-500">Transaction ID</p>
+                <p className="text-xs dark:text-[#788099] text-gray-500">Id</p>
                 <p className="text-sm font-medium dark:text-white text-gray-900">
                   {tx.moneyx_transaction_id?.slice(0, 12) || "-"}...
                 </p>
               </div>
-              <span
-                className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                  tx.status
-                )}`}
-              >
-                {tx.status || "Pending"}
-              </span>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>

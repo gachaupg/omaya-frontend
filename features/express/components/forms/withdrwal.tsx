@@ -149,6 +149,7 @@ interface DepositFormProps {
   onExchange?: (transactionData: {
     type: "deposit" | "withdrawal";
     amount: number;
+    receiveAmount?: number; // "You Receive" from form – shown as net amount on exchanging page
     asset: any;
     paymentDetail: any;
     walletAddress: string;
@@ -3543,17 +3544,14 @@ export default function WithdrawalForm({
               >
                 {/* You Send Section */}
                 <div className="flex-1 min-w-0">
-                  <label className="block text-[15px] text-[#475569] dark:text-[#9CA3AF] mb-2 font-semibold flex items-center gap-2">
+                  <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
                     You Send
+                    <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
                     {isCalculatingFromPay &&
                       (isCalculating || isCalculatingReceive) && (
-                        <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
+                        <span className="text-xs text-[#1D8751] font-medium hidden sm:inline">(Active)</span>
                       )}
                   </label>
-                  <div className={`text-xs mb-1 ${isDark ? "text-[#788099]" : "text-[#64748B]"
-                    }`}>
-                    Amount
-                  </div>
                   <div className="relative">
                     <input
                       type="text"
@@ -3767,12 +3765,11 @@ export default function WithdrawalForm({
                   )}
                 </div>
 
-                {/* You Get Section */}
+                {/* Asset Section */}
                 <div className="flex-1 min-w-0 sm:pl-4 border-t sm:border-t-0 sm:border-l border-[#35353E] dark:border-[#35353E] pt-2 sm:pt-0 sm:border-none">
-                  <div className="hidden sm:block text-sm sm:text-[17px] mb-2 font-semibold">
-                    <span className="opacity-0">Placeholder</span>
-                  </div>
-                  <div className="text-xs text-[#788099] dark:text-[#788099] mb-1">Asset</div>
+                  <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
+                    Asset
+                  </label>
                   <div className="relative" ref={assetDropdownRef}>
                     <div
                       className={`w-full rounded-2xl px-4 py-2 text-lg focus:outline-none border flex items-center justify-between cursor-pointer bg-transparent border-[#A2A4A9FF] dark:border-[#35353E] text-[#35353e] dark:text-[#ffffff]`}
@@ -3899,12 +3896,12 @@ export default function WithdrawalForm({
                 <div className="flex-1 min-w-0">
                   <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
                     You Receive
+                    <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
                     {!isCalculatingFromPay &&
                       (isCalculating || isCalculatingReceive) && (
-                        <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
+                        <span className="text-xs text-[#1D8751] font-medium hidden sm:inline">(Active)</span>
                       )}
                   </label>
-                  <div className="text-xs text-[#788099] dark:text-[#788099] mb-1">Amount</div>
                   <div className="relative">
                     <input
                       type="text"
@@ -4176,10 +4173,9 @@ export default function WithdrawalForm({
 
                 {/* Payment Method Section */}
                 <div className="flex-1 sm:pl-4 border-t sm:border-t-0 sm:border-l border-[#35353E] dark:border-[#35353E] pt-2 sm:pt-0 sm:border-none relative z-0">
-                  <div className="hidden sm:block text-sm sm:text-[17px] mb-2 font-semibold">
-                    <span className="opacity-0">Placeholder</span>
-                  </div>
-                  <div className="text-xs text-[#788099] dark:text-[#788099] mb-1">Payment Method</div>
+                  <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
+                    Payment Method
+                  </label>
                   <div className="relative z-0">
                     {(() => {
                       // Use public payment methods if available (they have logos)
@@ -4473,6 +4469,23 @@ export default function WithdrawalForm({
                 <p className={`text-sm ${isDark ? "text-white" : "text-gray-900"}`}>
                   This is only an estimated price based on current market rates. The final price will be confirmed when we receive the funds.
                 </p>
+              </div>
+            )}
+
+            {/* Pending Account Warning */}
+            {!isTransactionSubmitted && !showForexWithdrawalForm && isSelectedPaymentPending && selectedPaymentDetails.length > 0 && (
+              <div className="mb-3 flex items-start gap-3 p-4 rounded-2xl bg-[#F79330]/10 border border-[#F79330]/40">
+                <svg className="w-5 h-5 text-[#F79330] flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-[#F79330]">Account Pending Approval</p>
+                  <p className="text-xs text-[#F79330]/80 mt-1">
+                    Your account{selectedPaymentDetails[0]?.account_name ? ` "${selectedPaymentDetails[0].account_name}"` : ""}{selectedPaymentDetails[0]?.account_number ? ` (${selectedPaymentDetails[0].account_number})` : ""} is pending approval. Please{" "}
+                    <a href="/contactUs" className="text-[#1D8751] underline font-semibold hover:text-[#17693f] transition-colors">contact support</a>{" "}
+                    to get your account approved.
+                  </p>
+                </div>
               </div>
             )}
 
@@ -4840,6 +4853,23 @@ export default function WithdrawalForm({
                     The final price will be confirmed when we receive the funds.
                   </span>
                 </div>
+
+                {/* Pending Account Warning */}
+                {isSelectedPaymentPending && selectedPaymentDetails.length > 0 && (
+                  <div className="flex items-start gap-3 p-4 rounded-2xl bg-[#F79330]/10 border border-[#F79330]/40">
+                    <svg className="w-5 h-5 text-[#F79330] flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-[#F79330]">Account Pending Approval</p>
+                      <p className="text-xs text-[#F79330]/80 mt-1">
+                        Your account{selectedPaymentDetails[0]?.account_name ? ` "${selectedPaymentDetails[0].account_name}"` : ""}{selectedPaymentDetails[0]?.account_number ? ` (${selectedPaymentDetails[0].account_number})` : ""} is pending approval. Please{" "}
+                        <a href="/contactUs" className="text-[#1D8751] underline font-semibold hover:text-[#17693f] transition-colors">contact support</a>{" "}
+                        to get your account approved.
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 {/* Warning message for amounts over $15,000 */}
                 {getAmount > 15000 && (

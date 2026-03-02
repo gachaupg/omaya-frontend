@@ -16,6 +16,7 @@ import {
   cancelDepositTransaction,
   cancelWithdrawalTransaction,
 } from "../slices/transactionSlice";
+import FailureStatusModal from "./FailureStatusModal";
 
 interface ExchangingProps {
   transactionData?: {
@@ -94,6 +95,11 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
   const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(
     null
   );
+  const [failureModal, setFailureModal] = useState<{
+    isOpen: boolean;
+    status: string;
+    message?: string;
+  }>({ isOpen: false, status: "", message: undefined });
 
   // Fallback polling function
   const startFallbackPolling = () => {
@@ -382,34 +388,29 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               }
             }
 
-            // Don't overwrite net amount when we have receiveAmount from props (form)
-            const hasReceiveAmountFromProps = (effectiveTransactionData as any)?.receiveAmount != null;
-            if (!hasReceiveAmountFromProps) {
-              // Handle amount_to (what user receives) - net amount for display
-              if (wsData.amount_to !== null && wsData.amount_to !== undefined) {
-                const amountTo = parseFloat(wsData.amount_to);
-                if (!isNaN(amountTo)) {
-                  setLiveNetAmount(amountTo);
-                  setLiveNetCurrency(
-                    wsData.to_currency?.toUpperCase() ||
-                    (effectiveTransactionData?.type === "deposit"
-                      ? effectiveTransactionData?.asset?.ticker || "USDT"
-                      : "USD")
-                  );
-                }
+            // Websocket can override net amount (before websocket, form's receiveAmount is shown)
+            if (wsData.amount_to !== null && wsData.amount_to !== undefined) {
+              const amountTo = parseFloat(wsData.amount_to);
+              if (!isNaN(amountTo)) {
+                setLiveNetAmount(amountTo);
+                setLiveNetCurrency(
+                  wsData.to_currency?.toUpperCase() ||
+                  (effectiveTransactionData?.type === "deposit"
+                    ? effectiveTransactionData?.asset?.ticker || "USDT"
+                    : "USD")
+                );
               }
-              // Also handle net_amount from websocket
-              if (wsData.net_amount !== null && wsData.net_amount !== undefined) {
-                const netAmt = parseFloat(wsData.net_amount);
-                if (!isNaN(netAmt)) {
-                  setLiveNetAmount(netAmt);
-                  setLiveNetCurrency(
-                    wsData.to_currency?.toUpperCase() ||
-                    (effectiveTransactionData?.type === "deposit"
-                      ? effectiveTransactionData?.asset?.ticker || "USDT"
-                      : "USD")
-                  );
-                }
+            }
+            if (wsData.net_amount !== null && wsData.net_amount !== undefined) {
+              const netAmt = parseFloat(wsData.net_amount);
+              if (!isNaN(netAmt)) {
+                setLiveNetAmount(netAmt);
+                setLiveNetCurrency(
+                  wsData.to_currency?.toUpperCase() ||
+                  (effectiveTransactionData?.type === "deposit"
+                    ? effectiveTransactionData?.asset?.ticker || "USDT"
+                    : "USD")
+                );
               }
             }
 
@@ -450,9 +451,8 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               }
             }
 
-            // Handle estimated_amount - only when we don't have receiveAmount from props
+            // Handle estimated_amount - websocket can override
             if (
-              !hasReceiveAmountFromProps &&
               wsData.estimated_amount !== null &&
               wsData.estimated_amount !== undefined
             ) {
@@ -547,6 +547,8 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
             "processing",
             "completed",
             "failed",
+            "rejected",
+            "stopped",
             "awaiting_payment",
             "exchanging",
             "sending",
@@ -560,7 +562,16 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
             "waiting", // ChangeNow status
           ];
 
-          if (status && validStatuses.includes(status)) {
+          // Show failure modal for failed, rejected, or stopped statuses
+          if (status && ["failed", "rejected", "stopped"].includes(status)) {
+            setFailureModal({
+              isOpen: true,
+              status,
+              message: message || undefined,
+            });
+            setCurrentStatus(status);
+            setTimerActive(false);
+          } else if (status && validStatuses.includes(status)) {
             // Map backend statuses to UI statuses for better user experience
             let uiStatus = status;
 
@@ -741,6 +752,12 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
     isConnected,
   ]);
 
+  const handleFailureModalClose = () => {
+    setFailureModal({ isOpen: false, status: "", message: undefined });
+    localStorage.removeItem("express_transaction_data");
+    window.location.reload();
+  };
+
   // If showing success page, render it with real transaction data and snapshot websocket data
   if (showSuccess) {
     return (
@@ -884,7 +901,11 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                     } text-base font-semibold flex items-center gap-2`}
                 >
                   <span>
-                    {(liveNetAmount ?? (effectiveTransactionData as any).receiveAmount)
+                    {(
+                      (effectiveTransactionData as any)?.receiveAmount ??
+                      liveNetAmount ??
+                      0
+                    )
                       .toFixed(8)
                       .replace(/\.?0+$/, "")}{" "}
                     <span className="uppercase">
@@ -1903,7 +1924,16 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
           </div>
         </div>
       </div>
-     
+
+      {/* Failure Status Modal */}
+      <FailureStatusModal
+        isOpen={failureModal.isOpen}
+        status={failureModal.status}
+        message={failureModal.message}
+        onClose={() => setFailureModal({ isOpen: false, status: "", message: undefined })}
+        onBackToForm={handleFailureModalClose}
+        isDark={isDark}
+      />
     </div>
   );
 }
