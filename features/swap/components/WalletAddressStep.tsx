@@ -15,6 +15,9 @@ interface WalletAddressStepProps {
   fromAsset: any;
   toAsset: any;
   isLoading?: boolean;
+  hasAcceptedTerms?: boolean;
+  onHasAcceptedTermsChange?: (checked: boolean) => void;
+  onBeforeLegalNavigate?: () => void;
 }
 
 const strongBorder =
@@ -28,9 +31,17 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
   fromAsset,
   toAsset,
   isLoading = false,
+  hasAcceptedTerms: hasAcceptedTermsProp,
+  onHasAcceptedTermsChange,
+  onBeforeLegalNavigate,
 }) => {
   const { isDark } = useTheme();
-  const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
+  const [internalHasAcceptedTerms, setInternalHasAcceptedTerms] = useState(false);
+  const hasAcceptedTerms = hasAcceptedTermsProp ?? internalHasAcceptedTerms;
+  const setHasAcceptedTerms = (checked: boolean) => {
+    setInternalHasAcceptedTerms(checked);
+    onHasAcceptedTermsChange?.(checked);
+  };
   const [walletError, setWalletError] = useState<string | null>(null);
   const [expandedTerms, setExpandedTerms] = useState(false);
   const [bookmarkOpen, setBookmarkOpen] = useState(false);
@@ -460,7 +471,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                         </p>
                         <ul className="text-xs sm:text-sm text-gray-900 dark:text-white space-y-1.5 ml-3 mt-2">
                           <li>• all the terms and conditions listed above, and</li>
-                          <li>• our full <Link href="/legal/terms-of-service" target="_blank" rel="noopener noreferrer" className="text-[#1D8751] underline font-medium hover:text-[#166b3e]">Terms of Service</Link></li>
+                          <li>• our full <Link href="/legal/terms-of-service" rel="noopener noreferrer" className="text-[#1D8751] underline font-medium hover:text-[#166b3e]" onClick={onBeforeLegalNavigate}>Terms of Service</Link></li>
                         </ul>
                       </div>
                     </div>
@@ -510,44 +521,44 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                   </span>
                   <Link
                     href="/legal/terms-of-service"
-                    target="_blank"
                     rel="noopener noreferrer"
                     className="text-[#1D8751] underline font-medium hover:text-[#166b3e]"
+                    onClick={onBeforeLegalNavigate}
                   >
                     Terms of Use
                   </Link>{" "}
                   <Link
                     href="/legal/privacy-policy"
-                    target="_blank"
                     rel="noopener noreferrer"
                     className="text-[#1D8751] underline font-medium hover:text-[#166b3e]"
+                    onClick={onBeforeLegalNavigate}
                   >
                     Privacy Policy
                   </Link>
                   ,{" "}
                   <Link
                     href="/legal/payment-policy"
-                    target="_blank"
                     rel="noopener noreferrer"
                     className="text-[#1D8751] underline font-medium hover:text-[#166b3e]"
+                    onClick={onBeforeLegalNavigate}
                   >
                     Payment Policies
                   </Link>
                   ,{" "}
                   <Link
                     href="/legal/aml-policy"
-                    target="_blank"
                     rel="noopener noreferrer"
                     className="text-[#1D8751] font-medium underline hover:text-[#166b3e]"
+                    onClick={onBeforeLegalNavigate}
                   >
                     AML
                   </Link>
                   ,{" "}
                   <Link
                     href="/legal/risk-disclosure-statement"
-                    target="_blank"
                     rel="noopener noreferrer"
                     className="text-[#1D8751] font-medium underline hover:text-[#166b3e]"
+                    onClick={onBeforeLegalNavigate}
                   >
                     Risk Disclosure Statement
                   </Link>

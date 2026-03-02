@@ -53,7 +53,7 @@ export function BookmarkDropdown({
   return (
     <div
       ref={dropdownRef}
-      className={`absolute right-0 top-full mt-1 z-50 min-w-[240px] max-w-[320px] rounded-xl shadow-lg border ${
+      className={`absolute right-0 top-full mt-1 z-[9999] min-w-[240px] max-w-[320px] rounded-xl shadow-lg border ${
         isDark ? "bg-[#1D1D23] border-[#35353E]" : "bg-white border-gray-200"
       }`}
     >

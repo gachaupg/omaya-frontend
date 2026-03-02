@@ -805,33 +805,45 @@ export default function DepositForm({
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [hasAutoExpanded, setHasAutoExpanded] = useState(false);
   const [isRestoringFromInitialState, setIsRestoringFromInitialState] = useState(false);
-  // Auto-select the first payment method exactly like home page form
+  // Auto-select payment method - respect initialState from login redirect
   useEffect(() => {
     if (finalPaymentMethods.length === 0) {
       return;
     }
 
-    const hasSelected = finalPaymentMethods.some(
-      (method: any) => method?.provider_name === payBank
-    );
+    // When we have initialState.payment from login redirect, use it - don't overwrite with first method
+    if (initialState?.payment && selectedPaymentDetail) {
+      const savedProvider = initialState.payment.provider_name || initialState.payment.payment_provider_name || initialState.payBank;
+      const matchInList = finalPaymentMethods.some(
+        (m: any) =>
+          (m?.provider_name && savedProvider && String(m.provider_name).toLowerCase() === String(savedProvider).toLowerCase()) ||
+          (m?.payment_provider_name && savedProvider && String(m.payment_provider_name).toLowerCase() === String(savedProvider).toLowerCase()) ||
+          (m?.provider_id && initialState.payment?.provider_id && String(m.provider_id) === String(initialState.payment.provider_id))
+      );
+      if (matchInList) return; // Already matched, keep current
+      // No match in list but we have saved payment - keep it (already in selectedPaymentDetail)
+      return;
+    }
+
+    const matchProvider = (method: any, name: string) =>
+      (method?.provider_name && name && String(method.provider_name).toLowerCase().trim() === String(name).toLowerCase().trim()) ||
+      (method?.payment_provider_name && name && String(method.payment_provider_name).toLowerCase().trim() === String(name).toLowerCase().trim());
+
+    const hasSelected = finalPaymentMethods.some((method: any) => matchProvider(method, payBank));
 
     if (!payBank || !hasSelected) {
       const defaultMethod = finalPaymentMethods[0];
       setPayBank(defaultMethod.provider_name);
-      // Normalize payment details before setting
       const normalized = normalizePaymentDetails(defaultMethod);
       setSelectedPaymentDetail(normalized);
     } else if (!selectedPaymentDetail) {
-      const matchedMethod = finalPaymentMethods.find(
-        (method: any) => method?.provider_name === payBank
-      );
+      const matchedMethod = finalPaymentMethods.find((method: any) => matchProvider(method, payBank));
       if (matchedMethod) {
-        // Normalize payment details before setting
         const normalized = normalizePaymentDetails(matchedMethod);
         setSelectedPaymentDetail(normalized);
       }
     }
-  }, [finalPaymentMethods, payBank, selectedPaymentDetail]);
+  }, [finalPaymentMethods, payBank, selectedPaymentDetail, initialState]);
 
   // Add transaction code state
   const [transactionCode, setTransactionCode] = useState<string>("");
@@ -1074,13 +1086,17 @@ export default function DepositForm({
     const assetFromInitialState = initialState?.asset || initialState?.selectedAsset;
     if (assetFromInitialState && !selectedAsset) {
       const initialStateAsset = assetFromInitialState;
+      const savedTicker = (initialStateAsset.ticker || initialStateAsset.symbol || initialStateAsset.name || "").toString().toLowerCase().trim();
+      const savedNetwork = (initialStateAsset.network || getAssetNetwork(initialStateAsset) || "").toString().toLowerCase().trim();
 
-      // Try to find the exact asset in available assets by asset_id
+      // Try to find the exact asset: first by asset_id, then by ticker+network
       const matchingAsset = assetsDisplay.displayData.find((asset: any) => {
         if (initialStateAsset.asset_id && asset.asset_id) {
-          return String(initialStateAsset.asset_id).toLowerCase().trim() === String(asset.asset_id).toLowerCase().trim();
+          if (String(initialStateAsset.asset_id).toLowerCase().trim() === String(asset.asset_id).toLowerCase().trim()) return true;
         }
-        return false;
+        const assetTicker = (asset.ticker || asset.symbol || asset.name || "").toString().toLowerCase().trim();
+        const assetNetwork = (asset.network || getAssetNetwork(asset) || "").toString().toLowerCase().trim();
+        return savedTicker && assetTicker === savedTicker && (!savedNetwork || assetNetwork === savedNetwork);
       });
 
       // Use matched asset if found, otherwise use initialState asset directly

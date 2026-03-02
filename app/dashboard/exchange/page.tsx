@@ -1,14 +1,32 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import MoneyX from "@/features/moneyX/components/MoneyX";
 import Exchanging from "@/features/moneyX/components/Exchanging";
 import { useRouteProtection } from "@/features/auth/hooks/useRouteProtection";
 import Loader from "@/features/p2p/components/Common/Loader";
+import { consumeMoneyXPrefillState } from "@/lib/utils/authRedirect";
 
 const ExchangePage = () => {
   const { isChecking, isVerified } = useRouteProtection();
+  const searchParams = useSearchParams();
   const [showExchanging, setShowExchanging] = useState(false);
   const [transactionData, setTransactionData] = useState<any>(null);
+  const [moneyxPrefill, setMoneyxPrefill] = useState<Record<string, any> | null>(null);
+
+  useEffect(() => {
+    const prefillParam = searchParams?.get("prefill");
+    if (prefillParam) {
+      try {
+        setMoneyxPrefill(JSON.parse(decodeURIComponent(prefillParam)) as Record<string, any>);
+      } catch {
+        // Ignore
+      }
+    } else {
+      const fromStorage = consumeMoneyXPrefillState();
+      if (fromStorage) setMoneyxPrefill(fromStorage);
+    }
+  }, [searchParams]);
 
   const handleTransferComplete = (data: any) => {
     // Create transaction data for exchanging page
@@ -63,7 +81,7 @@ const ExchangePage = () => {
           }}
         />
       ) : (
-        <MoneyX onTransferComplete={handleTransferComplete} />
+        <MoneyX onTransferComplete={handleTransferComplete} initialState={moneyxPrefill ?? undefined} />
       )}
     </div>
   );
