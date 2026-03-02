@@ -2499,7 +2499,7 @@ export default function WithdrawalForm({
                                 asset?.image_url ||
                                 asset?.asset_image ||
                                 (asset as any)?.image ||
-                                "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                                "/images/tether.svg"
                               }
                               alt={
                                 asset?.name ||
@@ -2510,7 +2510,7 @@ export default function WithdrawalForm({
                               className="w-10 h-10 rounded-full object-cover"
                               onError={(e) => {
                                 e.currentTarget.src =
-                                  "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                                  "/images/tether.svg";
                               }}
                             />
                             <div className="flex-1">
@@ -2622,7 +2622,7 @@ export default function WithdrawalForm({
                           asset?.image_url ||
                           asset?.asset_image ||
                           (asset as any)?.image ||
-                          "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                          "/images/tether.svg"
                         }
                         alt={
                           asset?.name || asset?.ticker || asset?.symbol || "Asset"
@@ -2630,7 +2630,7 @@ export default function WithdrawalForm({
                         className="w-10 h-10 rounded-full object-cover"
                         onError={(e) => {
                           e.currentTarget.src =
-                            "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                            "/images/tether.svg";
                         }}
                       />
                       <div className="flex-1">
@@ -3603,7 +3603,7 @@ export default function WithdrawalForm({
                                 setGetAmount(calculatedGetAmount);
                                 setGetAmountInput(calculatedGetAmount.toString());
                                 setPreviousValidAmount(calculatedGetAmount.toString());
-                                
+
                                 // Clear loading states for simple assets - calculation is instant
                                 setIsCalculating(false);
                                 setIsCalculatingReceive(false);
@@ -3613,7 +3613,7 @@ export default function WithdrawalForm({
                                 setGetAmount(calculatedGetAmount);
                                 setGetAmountInput(calculatedGetAmount.toFixed(2));
                                 setPreviousValidAmount(calculatedGetAmount.toFixed(2));
-                                
+
                                 // Clear loading states for FXP - calculation is instant
                                 setIsCalculating(false);
                                 setIsCalculatingReceive(false);
@@ -3788,7 +3788,7 @@ export default function WithdrawalForm({
                                 selectedAsset?.image_url ||
                                 selectedAsset?.asset_image ||
                                 (selectedAsset as any)?.image ||
-                                "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                                "/images/tether.svg"
                               }
                               alt={
                                 selectedAsset?.name ||
@@ -3803,7 +3803,7 @@ export default function WithdrawalForm({
                                   selectedAsset
                                 );
                                 e.currentTarget.src =
-                                  "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                                  "/images/tether.svg";
                               }}
                             />
                             <div className="flex flex-col">
@@ -3826,7 +3826,7 @@ export default function WithdrawalForm({
                         ) : (
                           <>
                             <img
-                              src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                              src="/images/tether.svg"
                               alt="asset icon"
                               className="w-6 h-6"
                             />
@@ -4311,7 +4311,7 @@ export default function WithdrawalForm({
                                 <span className="text-sm text-gray-600 dark:text-gray-400">
                                   {enhancedFilteredUserPaymentDetails.length} account(s) found
                                 </span>
-                               
+
                               </div>
                               <div className="w-full min-w-0 relative z-[100] isolate">
                                 <CustomSelect

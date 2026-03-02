@@ -24,7 +24,7 @@ import { ShieldCheck, CircleCheckBig, Sparkles, Earth } from "lucide-react";
 
 import { GoDotFill } from "react-icons/go";
 import FloatingParticles from "@/components/ui/floating-particles";
-import { decodeHtml } from "@/lib/utils/html";
+import { decodeHtml, stripLeadingImagesFromHtml } from "@/lib/utils/html";
 
 // Strip HTML tags for excerpt preview
 const stripHtmlTags = (html: string): string => {
@@ -155,6 +155,7 @@ interface FAQItem {
 
 interface Article {
   id: number;
+  postId: string; // Sanity _id for stable blog URLs
   title: string;
   excerpt: string;
   description?: string; // Full decoded HTML description
@@ -310,10 +311,11 @@ export default function MarketingPage() {
         .replace(/(^-|-$)/g, "");
     };
 
-    // Decode and strip HTML, then truncate description to 300 characters with ellipses
+    // Decode, strip leading images (for card preview), then get text and truncate to 300 chars
     const truncateDescription = (description: string) => {
       const decoded = decodeHtml(description);
-      const textOnly = stripHtmlTags(decoded);
+      const withoutLeadingImages = stripLeadingImagesFromHtml(decoded);
+      const textOnly = stripHtmlTags(withoutLeadingImages);
       if (textOnly.length <= 300) {
         return textOnly;
       }
@@ -322,6 +324,7 @@ export default function MarketingPage() {
 
     return {
       id: typeof blog.id === 'number' ? blog.id : (typeof blog._id === 'number' ? blog._id : index + 1),
+      postId: blog._id || String(blog.id ?? index + 1),
       title: blog.title,
       excerpt: truncateDescription(blog.description),
       description: decodeHtml(blog.description || ''), // Full decoded HTML description
@@ -1879,13 +1882,16 @@ export default function MarketingPage() {
                   'security': 'bg-gradient-to-r from-red-500 to-orange-500',
                   'defi': 'bg-gradient-to-r from-green-400 to-green-600',
                   'market_analysis': 'bg-gradient-to-r from-blue-500 to-purple-500',
+                  'technology': 'bg-gradient-to-r from-cyan-500 to-blue-500',
+                  'regulation': 'bg-gradient-to-r from-amber-500 to-orange-500',
                   'blog': 'bg-gradient-to-r from-purple-500 to-pink-500',
                   'news': 'bg-gradient-to-r from-blue-500 to-indigo-500',
-                  // Fallback for formatted names (if any exist)
                   'Trading': 'bg-gradient-to-r from-yellow-400 to-orange-500',
                   'Security': 'bg-gradient-to-r from-red-500 to-orange-500',
                   'DeFi': 'bg-gradient-to-r from-green-400 to-green-600',
                   'Market Analysis': 'bg-gradient-to-r from-blue-500 to-purple-500',
+                  'Technology': 'bg-gradient-to-r from-cyan-500 to-blue-500',
+                  'Regulation': 'bg-gradient-to-r from-amber-500 to-orange-500',
                   'Blog': 'bg-gradient-to-r from-purple-500 to-pink-500',
                   'News': 'bg-gradient-to-r from-blue-500 to-indigo-500',
                 };
@@ -1901,7 +1907,7 @@ export default function MarketingPage() {
 
                 return (
                   <div
-                    key={article.id}
+                    key={article.postId}
                     className="bg-gray-50 dark:bg-[#1D1D23] rounded-xl overflow-hidden flex flex-col h-full border border-gray-200 dark:border-[#2A2A2A] hover:border-[#1D8751]/40 transition-colors"
                   >
                     {/* Article Image */}
@@ -1945,7 +1951,7 @@ export default function MarketingPage() {
 
                       {/* Read More Link */}
                       <Link
-                        href={`/blog/${article.id}`}
+                        href={`/blog/${article.postId}`}
                         className="inline-flex items-center gap-2 text-[#1D8751] text-sm font-medium hover:text-[#167a47] transition-colors group mt-auto"
                       >
                         Read More

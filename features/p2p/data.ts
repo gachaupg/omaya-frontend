@@ -641,21 +641,21 @@ export const ASSETS = [
   {
     label: "USDT Tether USDT",
     value: "usdt",
-    icon: "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png",
+    icon: "/images/tether.svg",
   },
 ];
 export const NETWORKS = [
   {
     label: "TRC 20 Tron",
     value: "trc20",
-    icon: "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png",
+    icon: "/images/tether.svg",
   },
 ];
 export const WALLET_TYPES = [
   {
     label: "USDT Wallet Address",
     value: "usdt_wallet",
-    icon: "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png",
+    icon: "/images/tether.svg",
   },
 ];
 

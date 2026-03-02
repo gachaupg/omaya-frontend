@@ -416,7 +416,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                 <div className="text-[10px] sm:text-xs text-[#1D8751] mt-0.5 sm:mt-0">
                   <span className="whitespace-nowrap">Rating: 99%</span>{" "}
                   <span className="hidden sm:inline">|</span>{" "}
-                  <span className="whitespace-nowrap">Commission: {tradeDataJson?.commission_rate || "0.5"}%</span>
+                  <span className="whitespace-nowrap">Commission: {tradeDataJson?.commission_rate || "0.5"}</span>
                 </div>
               </div>
             </div>
@@ -474,7 +474,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                 </div>
                 <div className="flex items-center h-[46px] rounded-2xl border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] px-2">
                   <span className="text-[#1D8751] text-2xl mr-2">
-                    <img src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png" alt="USDT" className="w-6 h-6" />
+                    <img src="/images/tether.svg" alt="USDT" className="w-6 h-6" />
                   </span>
                   <span className="text-[#1D8751] text-xl font-semibold">
                     {formatAmount(sendAmount)}
@@ -507,7 +507,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                 <div className="flex items-center h-[46px] rounded-2xl border border-gray-200 dark:border-[#35353E] bg-gray-100 dark:bg-[#35353E] px-2">
                   <span className="text-[#1D8751] text-2xl mr-2">{rangeSymbol}</span>
                   <span className="text-[#1D8751] text-xl font-semibold">
-                    {commissionRate}%
+                    {commissionRate}
                   </span>
                   <span className="ml-auto text-gray-900 dark:text-white text-base font-medium">
                     {rangeSuffix}

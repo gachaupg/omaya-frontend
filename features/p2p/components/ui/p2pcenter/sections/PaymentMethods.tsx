@@ -229,6 +229,7 @@ const PaymentMethods = () => {
     if (postSuccess) {
       showToast.success("Payment method added!");
       setShowAddDropdown(false);
+      setInlineError(null);
       // Reset all form fields
       setSelectedMethod("");
       setSelectedProvider("");
@@ -239,10 +240,17 @@ const PaymentMethods = () => {
     }
   }, [postSuccess, dispatch]);
 
-  // Handle errors
+  // Handle errors - show inline instead of toast
+  const [inlineError, setInlineError] = React.useState<string | null>(null);
   useEffect(() => {
     if (postError) {
-      showToast.error(postError);
+      // Rewrite backend message to be user-friendly
+      const friendlyMsg = postError.toLowerCase().includes('already registered')
+        ? 'Account number already exists'
+        : postError;
+      setInlineError(friendlyMsg);
+    } else {
+      setInlineError(null);
     }
   }, [postError]);
 
@@ -647,13 +655,13 @@ const PaymentMethods = () => {
 
       {/* Selected Provider Details - shown when user picks a provider from the dropdown */}
       {selectedProvider && (
-        <div className="w-full border border-gray-200 dark:border-[#35353E] rounded-2xl p-4 sm:p-5 mb-6 bg-gray-50 dark:bg-[var(--card-color)]">
+        <div className="w-full border border-gray-200 dark:border-accent rounded-2xl p-4 sm:p-5 mb-6 bg-gray-50 dark:bg-(--card-color)">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
             <div className="flex items-center gap-3">
               <img
                 src={selectedProviderObj ? getHighResPaymentLogo(selectedProviderObj.logo, selectedProviderObj.provider_logo, PAYMENT_LOGO_SIZE * 2) : "/default-provider-logo.svg"}
                 alt={selectedProvider}
-                className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-contain flex-shrink-0"
+                className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-contain shrink-0"
                 loading="lazy"
                 onError={(e) => {
                   e.currentTarget.src = "/default-provider-logo.svg";
@@ -693,9 +701,21 @@ const PaymentMethods = () => {
               />
             </div>
 
+            {inlineError && (
+              <div className="flex items-center gap-2 text-red-600 dark:text-red-400 text-sm">
+                <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                {inlineError}
+              </div>
+            )}
+
             <Button
               className="bg-[#1D8751] text-white w-full sm:w-auto px-8"
-              onClick={handleAdd}
+              onClick={() => {
+                setInlineError(null);
+                handleAdd();
+              }}
               disabled={
                 !accountName || !accountNumber || postLoading
               }

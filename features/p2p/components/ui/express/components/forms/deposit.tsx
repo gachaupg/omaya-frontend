@@ -113,7 +113,7 @@ export default function DepositForm({
       range_commissions: [{ commission: "2" }],
       commission: "2",
       fee_rate: "2",
-      image_url: "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png",
+      image_url: "/images/tether.svg",
       asset_id: "usdt-bsc-initial"
     };
   });
@@ -124,7 +124,7 @@ export default function DepositForm({
       network_type: "BSC",
       network: "BSC",
       name: "Binance Smart Chain BEP20",
-      icon: "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png",
+      icon: "/images/tether.svg",
       isDefault: true
     };
   });
@@ -142,7 +142,7 @@ export default function DepositForm({
       network_type: "BSC",
       network: "BSC",
       name: "Binance Smart Chain BEP20",
-      icon: "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png",
+      icon: "/images/tether.svg",
       isDefault: true
     }
   ];
@@ -775,7 +775,7 @@ export default function DepositForm({
                 range_commissions: [{ commission: "2" }],
                 commission: "2",
                 fee_rate: "2",
-                image_url: "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png",
+                image_url: "/images/tether.svg",
                 asset_id: "usdt-tether-bsc"
               }
             ];
@@ -826,7 +826,7 @@ export default function DepositForm({
         range_commissions: [{ commission: "2" }],
         commission: "2",
         fee_rate: "2",
-        image_url: "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png",
+        image_url: "/images/tether.svg",
         asset_id: "usdt-tether-bsc"
       };
 
@@ -837,7 +837,7 @@ export default function DepositForm({
         network_type: "BSC",
         network: "BSC",
         name: "Binance Smart Chain BEP20",
-        icon: "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png",
+        icon: "/images/tether.svg",
         isDefault: true
       });
     }
@@ -1159,7 +1159,7 @@ export default function DepositForm({
         range_commissions: [{ commission: "2" }],
         commission: "2",
         fee_rate: "2",
-        image_url: "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png",
+        image_url: "/images/tether.svg",
         asset_id: "usdt-tether-bsc"
       }
     ];
@@ -2088,11 +2088,11 @@ export default function DepositForm({
                       {selectedAsset ? (
                         <>
                           <img
-                            src={selectedAsset.image_url || selectedAsset.asset_image || "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"}
+                            src={selectedAsset.image_url || selectedAsset.asset_image || "/images/tether.svg"}
                             alt={selectedAsset.name || selectedAsset.ticker || "Asset"}
                             className="w-6 h-6 rounded-full object-cover"
                             onError={(e) => {
-                              e.currentTarget.src = "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                              e.currentTarget.src = "/images/tether.svg";
                             }}
                           />
                           <span className="text-[#35353e] dark:text-[#788099]">
@@ -2147,7 +2147,7 @@ export default function DepositForm({
                                   network_type: isUsdt ? "BSC" : asset.network,
                                   network: isUsdt ? "BSC" : asset.network,
                                   name: isUsdt ? "Binance Smart Chain BEP20" : asset.network,
-                                  icon: isUsdt ? "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png" : "https://cryptologos.cc/logos/ethereum-eth-logo.png",
+                                  icon: isUsdt ? "/images/tether.svg" : "https://cryptologos.cc/logos/ethereum-eth-logo.png",
                                   isDefault: isUsdt
                                 });
                                 setIsAssetDropdownOpen(false);
@@ -2155,11 +2155,11 @@ export default function DepositForm({
                               }}
                             >
                               <img
-                                src={asset.image_url || asset.asset_image || "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"}
+                                src={asset.image_url || asset.asset_image || "/images/tether.svg"}
                                 alt={asset.name || asset.ticker || "Asset"}
                                 className="w-6 h-6 rounded-full object-cover"
                                 onError={(e) => {
-                                  e.currentTarget.src = "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                                  e.currentTarget.src = "/images/tether.svg";
                                 }}
                               />
                               <div className="flex-1">
@@ -2381,10 +2381,10 @@ export default function DepositForm({
               <h2 className="text-lg sm:text-xl font-bold mb-2 text-[#788099]">
                 <span className="text-[#7e7e8f]">3-</span> Wallet Address
               </h2>
-              
+
               {/* Dynamic Crypto Warning Banner */}
-             
-              
+
+
               <div className="flex flex-col dark:bg-[var(--card-color)] border-2 border-[#35353E] rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-5 shadow-lg w-full mx-auto text-[#35353e] dark:text-[#788099] mb-4 sm:mb-6">
                 {/* Wallet/Account Address Label */}
                 <label className="block text-sm sm:text-[17px] text-[#7e7e8f] mb-2 font-semibold">
@@ -2519,7 +2519,7 @@ export default function DepositForm({
                       setTimeout(() => setIsAddressCopied(false), 1500);
                     }}
                     className="flex items-center gap-1 dark:bg-[var(--card-color)] border border-[#1D8751] text-[#1D8751] rounded-full px-3 sm:px-4 py-2 sm:py-1 ml-1 sm:ml-2 font-semibold text-sm sm:text-base hover:bg-[#1D8751] hover:text-white transition-colors min-h-[44px] sm:min-h-0 touch-manipulation shrink-0 disabled:cursor-not-allowed disabled:opacity-70                    "
-                  disabled={isAddressCopied}
+                    disabled={isAddressCopied}
                   >
                     <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
                       <rect
@@ -2783,7 +2783,7 @@ export default function DepositForm({
         )}
 
         {/* Submit Button for First Card - only show when user has checked "I confirm I sent payment" */}
-        {!isFirstCardSubmitted  && (
+        {!isFirstCardSubmitted && (
           <div className="mx-auto w-full px-2 mt-4 sm:mt-6">
             <div className="flex flex-col sm:flex-row gap-3">
               {onCancel && (

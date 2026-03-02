@@ -524,7 +524,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                   <div className="flex items-center gap-1.5 min-w-0">
                     <span className="text-[#1D8751] text-lg sm:text-xl font-bold shrink-0">{rangeSymbol}</span>
                     <span className="text-[#1D8751] text-lg sm:text-xl font-bold ">
-                      {commissionRate}%
+                      {commissionRate}
                     </span>
                   </div>
                   <span className="text-xs sm:text-sm text-[#051015] dark:text-warning font-medium ml-2 flex-shrink-0">
@@ -564,7 +564,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
             </div>
             <span className="text-gray-900 dark:text-white font-semibold text-base sm:text-lg block pr-2">
               Your Payments Will Be Sent To:{" "}
-            
+
             </span>
             <div className="bg-white dark:bg-[var(--card-color)] rounded-2xl p-4 sm:p-6 mt-4 flex flex-col gap-4 sm:gap-6 border border-gray-200 dark:border-[#35353E]">
               {/* Payment methods from API - display all from payment_details */}
@@ -649,9 +649,9 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                 <div className="text-[#788099] text-sm py-4">No payment methods available</div>
               )}
               {/* Seller's name (advertiser - who receives payment) */}
-              <div className="border border-[#F79330] rounded-2xl px-3 sm:px-4 min-[900px]:px-8 py-4 sm:py-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mt-2 bg-white dark:bg-[var(--card-color)]">
-                <p className="text-[#F79330] font-semibold text-sm sm:text-lg sm:mr-6">
-                  Owner Name
+              <div className="border border-warning rounded-2xl px-3 sm:px-4 min-[900px]:px-8 py-4 sm:py-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mt-2 bg-white dark:bg-[var(--card-color)]">
+                <p className="text-warning font-semibold text-sm sm:text-lg sm:mr-6 truancate">
+                  {confirmOrder?.buyer}
                 </p>
                 <div className="flex items-center flex-wrap gap-2">
                   <span className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-[#051015] dark:bg-white flex-shrink-0"></span>

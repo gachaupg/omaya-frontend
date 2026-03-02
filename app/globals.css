@@ -350,3 +350,14 @@ textarea:active {
   background-color: rgba(29, 135, 81, 0.1) !important;
   /* Light green on hover */
 }
+
+/* Blog content links - green, underlined, distinct from body text */
+.blog-content a {
+  color: #1D8751 !important;
+  text-decoration: underline !important;
+  cursor: pointer;
+  word-break: break-word;
+}
+.blog-content a:hover {
+  color: #167a47 !important;
+}

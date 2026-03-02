@@ -18,7 +18,7 @@ function ForexStatusContent() {
   const dispatch = useDispatch<AppDispatch>();
   const { isDark } = useTheme();
   const transactionId = searchParams?.get("transactionId") || null;
-  
+
   const { currentExchange, loading, error } = useSelector(
     (state: any) => state.forex
   );
@@ -55,7 +55,7 @@ function ForexStatusContent() {
 
     // Check localStorage for cached data first
     const cachedExchange = localStorage.getItem('currentForexExchange');
-    
+
     if (cachedExchange) {
       try {
         const exchangeData = JSON.parse(cachedExchange);
@@ -76,7 +76,7 @@ function ForexStatusContent() {
         localStorage.removeItem('currentForexExchange');
       }
     }
-    
+
     // Only fetch from API if not in Redux or cache
     console.log('🌐 No cached data found, fetching from API');
     dispatch(fetchForexExchangeThunk(transactionId)).unwrap().then((data) => {
@@ -109,9 +109,9 @@ function ForexStatusContent() {
       return;
     }
 
-    console.log("🚀 Setting up WebSocket connection", { 
+    console.log("🚀 Setting up WebSocket connection", {
       transactionId,
-      tokenLength: accessToken.length 
+      tokenLength: accessToken.length
     });
 
     // Connect to WebSocket
@@ -120,7 +120,7 @@ function ForexStatusContent() {
     // Set up event handlers
     const unsubscribeMessage = forexStatusWebSocket.onMessage((message) => {
       console.log("📨 WebSocket message received", message);
-      
+
       if (message.type === "initial_status" && message.data) {
         // Initial status received on connection - use this data directly
         console.log("🎯 Initial status received from WebSocket", message.data);
@@ -233,8 +233,8 @@ function ForexStatusContent() {
           <div className="flex flex-col items-center gap-4">
             <div className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center">
               <svg width="32" height="32" fill="none" viewBox="0 0 24 24">
-                <path d="M12 8v4m0 4h.01" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2"/>
+                <path d="M12 8v4m0 4h.01" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2" />
               </svg>
             </div>
             <h2 className="text-2xl font-bold text-[#788099]">Error Loading Exchange</h2>
@@ -259,11 +259,10 @@ function ForexStatusContent() {
         <div className="flex gap-2">
           {lastUpdateTime && (
             <div
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${
-                isDark
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${isDark
                   ? "bg-blue-900/30 text-blue-400 border border-blue-700/50"
                   : "bg-blue-100 text-blue-700 border border-blue-300"
-              }`}
+                }`}
             >
               <svg width="12" height="12" fill="none" viewBox="0 0 24 24">
                 <path
@@ -278,21 +277,19 @@ function ForexStatusContent() {
             </div>
           )}
           <div
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${
-              wsConnected
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${wsConnected
                 ? isDark
                   ? "bg-green-900/30 text-green-400 border border-green-700/50"
                   : "bg-green-100 text-green-700 border border-green-300"
                 : isDark
                   ? "bg-gray-800/50 text-gray-400 border border-gray-700/50"
                   : "bg-gray-100 text-gray-600 border border-gray-300"
-            }`}
+              }`}
           >
             <div className="relative">
               <div
-                className={`w-2 h-2 rounded-full ${
-                  wsConnected ? "bg-green-500" : "bg-gray-400"
-                }`}
+                className={`w-2 h-2 rounded-full ${wsConnected ? "bg-green-500" : "bg-gray-400"
+                  }`}
               />
               {wsConnected && (
                 <div className="absolute inset-0 w-2 h-2 rounded-full bg-green-500 animate-ping opacity-75" />
@@ -307,25 +304,22 @@ function ForexStatusContent() {
 
       {/* Top Card - Transaction Summary */}
       <div
-        className={`flex flex-col md:flex-row justify-between items-stretch ${
-          isDark
+        className={`flex flex-col md:flex-row justify-between items-stretch ${isDark
             ? "bg-[#23232B] border-[#35353E]"
             : "bg-white border-gray-200"
-        } border-2 rounded-2xl p-4 shadow-lg w-full max-w-4xl mb-4 min-h-[180px]`}
+          } border-2 rounded-2xl p-4 shadow-lg w-full max-w-4xl mb-4 min-h-[180px]`}
       >
         <div className="flex-1 flex flex-col justify-between py-2 pr-2">
           <div>
             <div
-              className={`${
-                isDark ? "text-[#7B7B7B]" : "text-gray-600"
-              } text-xs font-semibold mb-0.5`}
+              className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                } text-xs font-semibold mb-0.5`}
             >
               Exchange Summary:
             </div>
             <div
-              className={`${
-                isDark ? "text-white" : "text-gray-900"
-              } text-base font-semibold mb-1 flex items-center gap-2`}
+              className={`${isDark ? "text-white" : "text-gray-900"
+                } text-base font-semibold mb-1 flex items-center gap-2`}
             >
               <span>
                 {currentExchange.from_amount} {currentExchange.from_currency} → {currentExchange.to_amount} {currentExchange.to_currency}
@@ -334,17 +328,15 @@ function ForexStatusContent() {
 
             {/* Reference Number */}
             <div
-              className={`${
-                isDark ? "text-[#7B7B7B]" : "text-gray-600"
-              } text-xs font-semibold mb-0.5 mt-3`}
+              className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                } text-xs font-semibold mb-0.5 mt-3`}
             >
               Reference Number:
             </div>
             <div className="flex items-center mb-2">
               <span
-                className={`${
-                  isDark ? "text-white" : "text-gray-900"
-                } text-sm font-mono bg-gray-500/10 px-2 py-1 rounded text-xs`}
+                className={`${isDark ? "text-white" : "text-gray-900"
+                  } text-sm font-mono bg-gray-500/10 px-2 py-1 rounded text-xs`}
               >
                 {currentExchange.transaction_reference || currentExchange.transaction_id}
               </span>
@@ -356,16 +348,14 @@ function ForexStatusContent() {
 
             {/* Exchange Rate */}
             <div
-              className={`${
-                isDark ? "text-[#7B7B7B]" : "text-gray-600"
-              } text-xs font-semibold mb-0.5 mt-3`}
+              className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                } text-xs font-semibold mb-0.5 mt-3`}
             >
               Exchange Rate:
             </div>
             <div
-              className={`${
-                isDark ? "text-white" : "text-gray-900"
-              } text-sm`}
+              className={`${isDark ? "text-white" : "text-gray-900"
+                } text-sm`}
             >
               1 {currentExchange.from_currency} = {currentExchange.exchange_rate} {currentExchange.to_currency}
             </div>
@@ -374,9 +364,8 @@ function ForexStatusContent() {
             {currentExchange.admin_payment_info && (
               <>
                 <div
-                  className={`${
-                    isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                  } text-xs font-semibold mb-0.5 mt-3`}
+                  className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                    } text-xs font-semibold mb-0.5 mt-3`}
                 >
                   Bank:
                 </div>
@@ -387,9 +376,8 @@ function ForexStatusContent() {
                     className="w-6 h-6 rounded-full mr-2"
                   />
                   <span
-                    className={`${
-                      isDark ? "text-white" : "text-gray-900"
-                    } text-sm font-semibold`}
+                    className={`${isDark ? "text-white" : "text-gray-900"
+                      } text-sm font-semibold`}
                   >
                     {currentExchange.admin_payment_info.provider_name}
                   </span>
@@ -401,16 +389,14 @@ function ForexStatusContent() {
             {currentExchange.user_forex_account && (
               <>
                 <div
-                  className={`${
-                    isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                  } text-xs font-semibold mb-0.5 mt-3`}
+                  className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                    } text-xs font-semibold mb-0.5 mt-3`}
                 >
                   Your Forex Account:
                 </div>
                 <div
-                  className={`${
-                    isDark ? "text-white" : "text-gray-900"
-                  } text-sm font-mono`}
+                  className={`${isDark ? "text-white" : "text-gray-900"
+                    } text-sm font-mono`}
                 >
                   {currentExchange.user_forex_account}
                 </div>
@@ -422,9 +408,8 @@ function ForexStatusContent() {
           {/* QR code */}
           <div className="w-36 h-36 bg-white rounded-lg flex items-center justify-center">
             <img
-              src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${
-                currentExchange.transaction_reference || currentExchange.transaction_id
-              }`}
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${currentExchange.transaction_reference || currentExchange.transaction_id
+                }`}
               alt="QR Code"
               className="w-32 h-32"
             />
@@ -436,32 +421,30 @@ function ForexStatusContent() {
       <div className="flex items-center justify-between w-full max-w-4xl mb-4 relative">
         {/* Connecting Line Background (gray) */}
         <div className="absolute top-5 left-[16.66%] right-[16.66%] h-0.5 bg-[#7B7B7B] z-0"></div>
-        
+
         {/* Connecting Line Progress (colored) */}
         <div className="absolute top-5 left-[16.66%] right-[16.66%] h-0.5 z-0">
           <div
-            className={`h-0.5 transition-all duration-500 ${
-              currentStatus === "completed"
+            className={`h-0.5 transition-all duration-500 ${currentStatus === "completed"
                 ? "bg-[#1D8751] w-full"
                 : currentStatus === "processing"
                   ? "bg-[#FF9500] w-1/2"
                   : currentStatus === "pending"
                     ? "bg-[#FF9500] w-0"
                     : "bg-[#7B7B7B] w-0"
-            }`}
+              }`}
           ></div>
         </div>
 
         {/* Step 1: Pending Review */}
         <div className="flex flex-col items-center flex-1 relative z-10">
           <div
-            className={`w-10 h-10 rounded-full flex items-center justify-center mb-1 border-4 ${
-              currentStatus === "pending"
+            className={`w-10 h-10 rounded-full flex items-center justify-center mb-1 border-4 ${currentStatus === "pending"
                 ? "bg-[#FF9500] border-[#FF95001A]"
                 : currentStatus === "processing" || currentStatus === "completed"
                   ? "bg-[#1D8751] border-[#1D87511A]"
                   : "bg-[#23232B] border-[#35353E]"
-            }`}
+              }`}
           >
             <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
               <circle
@@ -482,13 +465,12 @@ function ForexStatusContent() {
           </div>
           <div className="flex items-center gap-1">
             <span
-              className={`font-semibold text-base ${
-                currentStatus === "pending"
+              className={`font-semibold text-base ${currentStatus === "pending"
                   ? "text-[#FF9500]"
                   : currentStatus === "processing" || currentStatus === "completed"
                     ? "text-[#1D8751]"
                     : "text-[#7B7B7B]"
-              }`}
+                }`}
             >
               Pending Review
             </span>
@@ -527,13 +509,12 @@ function ForexStatusContent() {
         {/* Step 2: Processing */}
         <div className="flex flex-col items-center flex-1 relative z-10">
           <div
-            className={`w-10 h-10 rounded-full flex items-center justify-center mb-1 border-4 ${
-              currentStatus === "processing"
+            className={`w-10 h-10 rounded-full flex items-center justify-center mb-1 border-4 ${currentStatus === "processing"
                 ? "bg-[#FF9500] border-[#FF95001A]"
                 : currentStatus === "completed"
                   ? "bg-[#1D8751] border-[#1D87511A]"
                   : "bg-[#23232B] border-[#35353E]"
-            }`}
+              }`}
           >
             <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
               <circle
@@ -553,13 +534,12 @@ function ForexStatusContent() {
           </div>
           <div className="flex items-center gap-1">
             <span
-              className={`font-semibold text-base ${
-                currentStatus === "processing"
+              className={`font-semibold text-base ${currentStatus === "processing"
                   ? "text-[#FF9500]"
                   : currentStatus === "completed"
                     ? "text-[#1D8751]"
                     : "text-[#7B7B7B]"
-              }`}
+                }`}
             >
               Processing
             </span>
@@ -598,11 +578,10 @@ function ForexStatusContent() {
         {/* Step 3: Completed */}
         <div className="flex flex-col items-center flex-1 relative z-10">
           <div
-            className={`w-10 h-10 rounded-full flex items-center justify-center mb-1 border-4 ${
-              currentStatus === "completed"
+            className={`w-10 h-10 rounded-full flex items-center justify-center mb-1 border-4 ${currentStatus === "completed"
                 ? "bg-[#1D8751] border-[#1D87511A]"
                 : "bg-[#23232B] border-[#35353E]"
-            }`}
+              }`}
           >
             <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
               <circle
@@ -623,11 +602,10 @@ function ForexStatusContent() {
           </div>
           <div className="flex items-center gap-1">
             <span
-              className={`font-semibold text-base ${
-                currentStatus === "completed"
+              className={`font-semibold text-base ${currentStatus === "completed"
                   ? "text-[#1D8751]"
                   : "text-[#7B7B7B]"
-              }`}
+                }`}
             >
               Completed
             </span>
@@ -653,15 +631,13 @@ function ForexStatusContent() {
 
       {/* Transaction Details Card */}
       <div
-        className={`${
-          isDark ? "bg-[#23232B] border-[#35353E]" : "bg-white border-gray-200"
-        } border-2 rounded-2xl p-6 shadow-lg w-full max-w-4xl mb-4`}
+        className={`${isDark ? "bg-[#23232B] border-[#35353E]" : "bg-white border-gray-200"
+          } border-2 rounded-2xl p-6 shadow-lg w-full max-w-4xl mb-4`}
       >
         {/* Title */}
         <div
-          className={`${
-            isDark ? "text-white" : "text-gray-900"
-          } text-2xl font-semibold mb-4`}
+          className={`${isDark ? "text-white" : "text-gray-900"
+            } text-2xl font-semibold mb-4`}
         >
           Transaction Details
         </div>
@@ -669,17 +645,15 @@ function ForexStatusContent() {
         {/* Transaction ID Row */}
         <div className="flex items-center justify-between mb-1">
           <div
-            className={`${
-              isDark ? "text-[#7B7B7B]" : "text-gray-600"
-            } text-base font-medium`}
+            className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+              } text-base font-medium`}
           >
             Transaction ID
           </div>
           <div className="flex items-center gap-2">
             <span
-              className={`${
-                isDark ? "text-white" : "text-gray-900"
-              } text-base font-mono font-semibold`}
+              className={`${isDark ? "text-white" : "text-gray-900"
+                } text-base font-mono font-semibold`}
             >
               {currentExchange.forex_transaction_id || currentExchange.transaction_id}
             </span>
@@ -693,24 +667,21 @@ function ForexStatusContent() {
 
         {/* Dashed Divider */}
         <div
-          className={`border-t border-dashed ${
-            isDark ? "border-[#7B7B7B]" : "border-gray-400"
-          } mb-4`}
+          className={`border-t border-dashed ${isDark ? "border-[#7B7B7B]" : "border-gray-400"
+            } mb-4`}
         ></div>
 
         {/* From/To Labels Row */}
         <div className="flex items-center justify-between mb-2">
           <div
-            className={`${
-              isDark ? "text-[#7B7B7B]" : "text-gray-600"
-            } text-base font-medium`}
+            className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+              } text-base font-medium`}
           >
             From
           </div>
           <div
-            className={`${
-              isDark ? "text-[#7B7B7B]" : "text-gray-600"
-            } text-base font-medium`}
+            className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+              } text-base font-medium`}
           >
             To
           </div>
@@ -727,16 +698,14 @@ function ForexStatusContent() {
             />
             <div>
               <div
-                className={`${
-                  isDark ? "text-white" : "text-gray-900"
-                } text-base font-semibold`}
+                className={`${isDark ? "text-white" : "text-gray-900"
+                  } text-base font-semibold`}
               >
                 {currentExchange.from_amount} {currentExchange.from_currency}
               </div>
               <div
-                className={`${
-                  isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                } text-sm`}
+                className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                  } text-sm`}
               >
                 {currentExchange.admin_payment_info?.provider_name || "Bank Transfer"}
               </div>
@@ -747,16 +716,14 @@ function ForexStatusContent() {
           <div className="flex items-center gap-2">
             <div className="text-right">
               <div
-                className={`${
-                  isDark ? "text-white" : "text-gray-900"
-                } text-base font-semibold`}
+                className={`${isDark ? "text-white" : "text-gray-900"
+                  } text-base font-semibold`}
               >
                 {currentExchange.to_amount} {currentExchange.to_currency}
               </div>
               <div
-                className={`${
-                  isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                } text-sm`}
+                className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                  } text-sm`}
               >
                 FXPRIMUS Account
               </div>
@@ -766,7 +733,7 @@ function ForexStatusContent() {
               alt="FXPRIMUS"
               className="w-8 h-8 rounded-full"
               onError={(e) => {
-                e.currentTarget.src = "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                e.currentTarget.src = "/images/tether.svg";
               }}
             />
           </div>
@@ -776,22 +743,19 @@ function ForexStatusContent() {
         {currentExchange.user_notes && (
           <>
             <div
-              className={`border-t border-dashed ${
-                isDark ? "border-[#7B7B7B]" : "border-gray-400"
-              } my-4`}
+              className={`border-t border-dashed ${isDark ? "border-[#7B7B7B]" : "border-gray-400"
+                } my-4`}
             ></div>
             <div className="flex items-center justify-between">
               <div
-                className={`${
-                  isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                } text-base font-medium`}
+                className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                  } text-base font-medium`}
               >
                 Notes
               </div>
               <div
-                className={`${
-                  isDark ? "text-white" : "text-gray-900"
-                } text-base`}
+                className={`${isDark ? "text-white" : "text-gray-900"
+                  } text-base`}
               >
                 {currentExchange.user_notes}
               </div>
@@ -801,39 +765,34 @@ function ForexStatusContent() {
 
         {/* Timestamps */}
         <div
-          className={`border-t border-dashed ${
-            isDark ? "border-[#7B7B7B]" : "border-gray-400"
-          } my-4`}
+          className={`border-t border-dashed ${isDark ? "border-[#7B7B7B]" : "border-gray-400"
+            } my-4`}
         ></div>
         <div className="grid grid-cols-2 gap-4">
           <div>
             <div
-              className={`${
-                isDark ? "text-[#7B7B7B]" : "text-gray-600"
-              } text-sm font-medium mb-1`}
+              className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                } text-sm font-medium mb-1`}
             >
               Created At
             </div>
             <div
-              className={`${
-                isDark ? "text-white" : "text-gray-900"
-              } text-sm`}
+              className={`${isDark ? "text-white" : "text-gray-900"
+                } text-sm`}
             >
               {new Date(currentExchange.timestamp || currentExchange.created_at).toLocaleString()}
             </div>
           </div>
           <div>
             <div
-              className={`${
-                isDark ? "text-[#7B7B7B]" : "text-gray-600"
-              } text-sm font-medium mb-1`}
+              className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                } text-sm font-medium mb-1`}
             >
               Updated At
             </div>
             <div
-              className={`${
-                isDark ? "text-white" : "text-gray-900"
-              } text-sm`}
+              className={`${isDark ? "text-white" : "text-gray-900"
+                } text-sm`}
             >
               {new Date(currentExchange.updated_at).toLocaleString()}
             </div>
@@ -841,7 +800,7 @@ function ForexStatusContent() {
         </div>
       </div>
 
-     
+
     </div>
   );
 }

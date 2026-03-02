@@ -68,7 +68,7 @@ const Rates = () => {
             src={
               activeTab === 'moneyx'
                 ? "https://res.cloudinary.com/pitz/image/upload/v1764663236/Group_7_ichuyz.png"
-                : "https://res.cloudinary.com/pitz/image/upload/v1764661972/Group_6_ohph9q.png"
+                : "/images/x.png"
             }
             alt="X"
             className="h-5 -mb-1 w-auto"

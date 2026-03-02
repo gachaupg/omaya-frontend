@@ -6,7 +6,7 @@ const COIN_ICONS: Record<string, string> = {
   USDT: "https://cryptologos.cc/logos/tether-usdt-logo.png",
   TRON: "https://cryptologos.cc/logos/tron-trx-logo.png",
   TRC20:
-    "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png",
+    "/images/tether.svg",
 };
 
 const BANK_ICONS: Record<string, string> = {
@@ -124,7 +124,7 @@ const FeedbackTable: React.FC<FeedbackTableProps> = ({ data, loading }) => {
                   {/* Coin */}
                   <td className="px-4 py-2 flex items-center gap-2">
                     <img
-                      src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                      src="/images/tether.svg"
                       alt={item.coin}
                       className="w-6 h-6 rounded-full"
                     />
@@ -190,15 +190,15 @@ const FeedbackTable: React.FC<FeedbackTableProps> = ({ data, loading }) => {
                 </tr>
                 {/* Expandable Comment Row */}
                 {expandedRows.has(item.trade_id) && (
-                  <tr className="border-b border-[#35354a] bg-[#1a1a1f]">
+                  <tr className="border-b border-border bg-white dark:bg-[#23232b]">
                     <td colSpan={9} className="px-4 py-3">
                       <div className="flex items-start gap-3">
-                        <div className="w-2 h-2 bg-[#1D8751] rounded-full mt-2 flex-shrink-0"></div>
+                        <div className="w-2 h-2 bg-[#1D8751] rounded-full mt-2 shrink-0"></div>
                         <div className="flex-1">
-                          <div className="text-sm text-[#A0A3BC] mb-1">
+                          <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">
                             Comment:
                           </div>
-                          <div className="text-sm dark:text-white text-gray-900 bg-[#23232b] rounded-lg p-3 border border-[#35354a]">
+                          <div className="text-sm dark:text-white text-gray-900 dark:bg-[#23232b] bg-white rounded-lg p-3 border border-border">
                             {item.comment || "No comment provided"}
                           </div>
                         </div>
@@ -223,7 +223,7 @@ const FeedbackTable: React.FC<FeedbackTableProps> = ({ data, loading }) => {
             <div className="flex items-center justify-between pb-2 border-b border-[#E8EFF5] dark:border-[#35354a]">
               <div className="flex items-center gap-2">
                 <img
-                  src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                  src="/images/tether.svg"
                   alt={item.coin}
                   className="w-6 h-6 rounded-full"
                 />
@@ -320,7 +320,7 @@ const FeedbackTable: React.FC<FeedbackTableProps> = ({ data, loading }) => {
       </div>
 
       {/* Pagination Controls */}
-      <div className="flex items-center justify-between px-4 py-3 bg-[#23232b] rounded-lg">
+      <div className="flex items-center justify-between px-4 py-3 dark:bg-[#23232b] bg-white rounded-lg">
         <div className="dark:text-white text-gray-900">
           Showing {startIndex + 1} to {Math.min(endIndex, data.length)} of{" "}
           {data.length} entries
@@ -329,11 +329,11 @@ const FeedbackTable: React.FC<FeedbackTableProps> = ({ data, loading }) => {
           <button
             onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
             disabled={currentPage === 1}
-            className="px-3 py-1 rounded bg-[#35354a] text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#28293d]"
+            className="px-3 py-1 rounded bg-gray-200 dark:bg-[#35354a] text-gray-700 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-300 dark:hover:bg-[#28293d]"
           >
             Previous
           </button>
-          <span className="px-3 py-1 dark:text-white text-gray-900">
+          <span className="px-3 py-1 text-gray-900 dark:text-white">
             Page {currentPage} of {totalPages}
           </span>
           <button
@@ -341,7 +341,7 @@ const FeedbackTable: React.FC<FeedbackTableProps> = ({ data, loading }) => {
               setCurrentPage((prev) => Math.min(prev + 1, totalPages))
             }
             disabled={currentPage === totalPages}
-            className="px-3 py-1 rounded bg-[#35354a] text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#28293d]"
+            className="px-3 py-1 rounded bg-gray-200 dark:bg-[#35354a] text-gray-700 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-300 dark:hover:bg-[#28293d]"
           >
             Next
           </button>

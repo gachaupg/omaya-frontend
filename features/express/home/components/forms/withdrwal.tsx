@@ -2342,36 +2342,14 @@ export default function WithdrawalForm({
       // "You Receive" has only data-select-card
       const isYouSend = currentCard.hasAttribute('data-asset-card');
 
-      // Calculate reduced width so dropdowns don't cover amount inputs (40% of card width)
-      let desiredWidth = Math.min(maxWidth, Math.max(minWidth, cardRect.width * 0.4));
+      // Width: match only the asset selector element (right column), not the full card
+      let desiredWidth = dropdownRect.width;
 
-      // Position dropdown vertically based on section
-      let top = cardRect.top - 45; // default: above the card
-      if (isYouSend) {
-        top = cardRect.top + 1; // push "You Send" asset dropdown down a little more
-      } else {
-        // "You Receive" section - pushed down significantly below the card bottom
-        top = cardRect.bottom + 20; // Push "You Receive" dropdown down by 20px below card bottom
-      }
+      // Position dropdown starting at the top of the card container
+      let top = cardRect.top;
 
-      let left: number;
-
-      // Both "You Send" and "You Receive" - position from right side of card, pushed more right
-      // Position it very close to the right edge
-      left = cardRect.right - desiredWidth - 3; // 3px from right edge of card
-
-      // Push "You Send" dropdown further to the right
-      if (isYouSend) {
-        left += 18; // additional right offset for "You Send"
-      } else {
-        // Push "You Receive" dropdown to the right a little more
-        left += 40; // additional right offset for "You Receive"
-      }
-
-      // Ensure it doesn't go off the left edge
-      if (left < cardRect.left) {
-        left = cardRect.left;
-      }
+      // Left-align with the asset selector element's left edge
+      let left = dropdownRect.left;
 
       // Ensure it doesn't go off screen on the right
       if (left + desiredWidth > viewportWidth - minMargin) {
@@ -2381,16 +2359,6 @@ export default function WithdrawalForm({
       // Ensure it doesn't go off the left edge
       if (left < minMargin) {
         left = minMargin;
-      }
-
-      // If card is too narrow, center it
-      if (cardRect.width < desiredWidth + 16) {
-        left = cardRect.left + (cardRect.width - desiredWidth) / 2;
-      }
-
-      // Final boundary check to ensure it doesn't go off screen
-      if (left + desiredWidth > viewportWidth - minMargin) {
-        left = viewportWidth - desiredWidth - minMargin;
       }
 
       dropdownStyle = {
@@ -2571,7 +2539,7 @@ export default function WithdrawalForm({
                                 asset?.image_url ||
                                 asset?.asset_image ||
                                 (asset as any)?.image ||
-                                "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                                "/images/tether.svg"
                               }
                               alt={
                                 asset?.name ||
@@ -2582,7 +2550,7 @@ export default function WithdrawalForm({
                               className="w-10 h-10 rounded-full object-cover"
                               onError={(e) => {
                                 e.currentTarget.src =
-                                  "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                                  "/images/tether.svg";
                               }}
                             />
                             <div className="flex-1">
@@ -2684,7 +2652,7 @@ export default function WithdrawalForm({
                         asset?.image_url ||
                         asset?.asset_image ||
                         (asset as any)?.image ||
-                        "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                        "/images/tether.svg"
                       }
                       alt={
                         asset?.name || asset?.ticker || asset?.symbol || "Asset"
@@ -2692,7 +2660,7 @@ export default function WithdrawalForm({
                       className="w-10 h-10 rounded-full object-cover"
                       onError={(e) => {
                         e.currentTarget.src =
-                          "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                          "/images/tether.svg";
                       }}
                     />
                     <div className="flex-1">
@@ -3670,7 +3638,7 @@ export default function WithdrawalForm({
                                 setGetAmount(calculatedGetAmount);
                                 setGetAmountInput(calculatedGetAmount.toString());
                                 setPreviousValidAmount(calculatedGetAmount.toString());
-                                
+
                                 // Clear loading states for simple assets - calculation is instant
                                 setIsCalculating(false);
                                 setIsCalculatingReceive(false);
@@ -3680,7 +3648,7 @@ export default function WithdrawalForm({
                                 setGetAmount(calculatedGetAmount);
                                 setGetAmountInput(calculatedGetAmount.toFixed(2));
                                 setPreviousValidAmount(calculatedGetAmount.toFixed(2));
-                                
+
                                 // Clear loading states for FXP - calculation is instant
                                 setIsCalculating(false);
                                 setIsCalculatingReceive(false);
@@ -3857,7 +3825,7 @@ export default function WithdrawalForm({
                                 selectedAsset?.image_url ||
                                 selectedAsset?.asset_image ||
                                 (selectedAsset as any)?.image ||
-                                "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                                "/images/tether.svg"
                               }
                               alt={
                                 selectedAsset?.name ||
@@ -3872,7 +3840,7 @@ export default function WithdrawalForm({
                                   selectedAsset
                                 );
                                 e.currentTarget.src =
-                                  "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                                  "/images/tether.svg";
                               }}
                             />
                             <div className="flex flex-col">
@@ -3895,7 +3863,7 @@ export default function WithdrawalForm({
                         ) : (
                           <>
                             <img
-                              src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                              src="/images/tether.svg"
                               alt="asset icon"
                               className="w-6 h-6"
                             />
