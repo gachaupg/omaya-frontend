@@ -988,11 +988,11 @@ const PrivacySecurity = () => {
           )} */}
             </div>
 
-            {displaySessionError && !logoutLoading && (
+            {/* {displaySessionError && !logoutLoading && (
               <div className="text-red-500 text-sm mb-3">
                 Error: {displaySessionError}
               </div>
-            )}
+            )} */}
 
             {deviceSessionsLoading ? (
               <div className="flex items-center justify-center py-6">

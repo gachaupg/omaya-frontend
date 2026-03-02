@@ -16,6 +16,7 @@ import {
   cancelDepositTransaction,
   cancelWithdrawalTransaction,
 } from "../slices/transactionSlice";
+import FailureStatusModal from "./FailureStatusModal";
 
 interface ExchangingProps {
   transactionData?: {
@@ -94,6 +95,11 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
   const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(
     null
   );
+  const [failureModal, setFailureModal] = useState<{
+    isOpen: boolean;
+    status: string;
+    message?: string;
+  }>({ isOpen: false, status: "", message: undefined });
 
   // Fallback polling function
   const startFallbackPolling = () => {
@@ -269,8 +275,8 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
         setLiveNetCurrency(
           effectiveTransactionData?.type === "deposit"
             ? (effectiveTransactionData?.asset?.ticker ||
-              effectiveTransactionData?.asset?.symbol ||
-              "USDT")
+                effectiveTransactionData?.asset?.symbol ||
+                "USDT")
             : "USD"
         );
       }
@@ -382,34 +388,29 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               }
             }
 
-            // Don't overwrite net amount when we have receiveAmount from props (form)
-            const hasReceiveAmountFromProps = (effectiveTransactionData as any)?.receiveAmount != null;
-            if (!hasReceiveAmountFromProps) {
-              // Handle amount_to (what user receives) - net amount for display
-              if (wsData.amount_to !== null && wsData.amount_to !== undefined) {
-                const amountTo = parseFloat(wsData.amount_to);
-                if (!isNaN(amountTo)) {
-                  setLiveNetAmount(amountTo);
-                  setLiveNetCurrency(
-                    wsData.to_currency?.toUpperCase() ||
-                    (effectiveTransactionData?.type === "deposit"
-                      ? effectiveTransactionData?.asset?.ticker || "USDT"
-                      : "USD")
-                  );
-                }
+            // Websocket can override net amount (before websocket, form's receiveAmount is shown)
+            if (wsData.amount_to !== null && wsData.amount_to !== undefined) {
+              const amountTo = parseFloat(wsData.amount_to);
+              if (!isNaN(amountTo)) {
+                setLiveNetAmount(amountTo);
+                setLiveNetCurrency(
+                  wsData.to_currency?.toUpperCase() ||
+                  (effectiveTransactionData?.type === "deposit"
+                    ? effectiveTransactionData?.asset?.ticker || "USDT"
+                    : "USD")
+                );
               }
-              // Also handle net_amount from websocket
-              if (wsData.net_amount !== null && wsData.net_amount !== undefined) {
-                const netAmt = parseFloat(wsData.net_amount);
-                if (!isNaN(netAmt)) {
-                  setLiveNetAmount(netAmt);
-                  setLiveNetCurrency(
-                    wsData.to_currency?.toUpperCase() ||
-                    (effectiveTransactionData?.type === "deposit"
-                      ? effectiveTransactionData?.asset?.ticker || "USDT"
-                      : "USD")
-                  );
-                }
+            }
+            if (wsData.net_amount !== null && wsData.net_amount !== undefined) {
+              const netAmt = parseFloat(wsData.net_amount);
+              if (!isNaN(netAmt)) {
+                setLiveNetAmount(netAmt);
+                setLiveNetCurrency(
+                  wsData.to_currency?.toUpperCase() ||
+                  (effectiveTransactionData?.type === "deposit"
+                    ? effectiveTransactionData?.asset?.ticker || "USDT"
+                    : "USD")
+                );
               }
             }
 
@@ -450,9 +451,8 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               }
             }
 
-            // Handle estimated_amount - only when we don't have receiveAmount from props
+            // Handle estimated_amount - websocket can override
             if (
-              !hasReceiveAmountFromProps &&
               wsData.estimated_amount !== null &&
               wsData.estimated_amount !== undefined
             ) {
@@ -547,6 +547,8 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
             "processing",
             "completed",
             "failed",
+            "rejected",
+            "stopped",
             "awaiting_payment",
             "exchanging",
             "sending",
@@ -560,7 +562,16 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
             "waiting", // ChangeNow status
           ];
 
-          if (status && validStatuses.includes(status)) {
+          // Show failure modal for failed, rejected, or stopped statuses
+          if (status && ["failed", "rejected", "stopped"].includes(status)) {
+            setFailureModal({
+              isOpen: true,
+              status,
+              message: message || undefined,
+            });
+            setCurrentStatus(status);
+            setTimerActive(false);
+          } else if (status && validStatuses.includes(status)) {
             // Map backend statuses to UI statuses for better user experience
             let uiStatus = status;
 
@@ -741,6 +752,12 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
     isConnected,
   ]);
 
+  const handleFailureModalClose = () => {
+    setFailureModal({ isOpen: false, status: "", message: undefined });
+    localStorage.removeItem("express_transaction_data");
+    window.location.reload();
+  };
+
   // If showing success page, render it with real transaction data and snapshot websocket data
   if (showSuccess) {
     return (
@@ -884,15 +901,19 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                     } text-base font-semibold flex items-center gap-2`}
                 >
                   <span>
-                    {(liveNetAmount ?? (effectiveTransactionData as any).receiveAmount)
+                    {(
+                      (effectiveTransactionData as any)?.receiveAmount ??
+                      liveNetAmount ??
+                      0
+                    )
                       .toFixed(8)
                       .replace(/\.?0+$/, "")}{" "}
                     <span className="uppercase">
                       {liveNetCurrency ||
                         (effectiveTransactionData?.type === "deposit"
                           ? effectiveTransactionData?.asset?.ticker ||
-                          effectiveTransactionData?.asset?.symbol ||
-                          "USDT"
+                            effectiveTransactionData?.asset?.symbol ||
+                            "USDT"
                           : "USD")}
                     </span>
                   </span>
@@ -900,7 +921,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               </div>
             )}
           </div>
-          {/* {liveAmount !== null &&
+            {/* {liveAmount !== null &&
               liveAmount !== effectiveTransactionData?.amount && (
                 <div className={`${
                   isDark ? 'text-[#7B7B7B]' : 'text-gray-600'
@@ -910,208 +931,208 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                 </div>
               )} */}
 
-          {/* Display previous amount if it changed */}
-          {previousAmount !== null &&
-            liveAmount !== null &&
-            previousAmount !== liveAmount && (
-              <div
-                className={`mt-2 p-2 ${isDark
-                  ? "bg-[var(--card-color)] border-[#35353E]"
-                  : "bg-gray-100 border-gray-300"
-                  } rounded border`}
-              >
+            {/* Display previous amount if it changed */}
+            {previousAmount !== null &&
+              liveAmount !== null &&
+              previousAmount !== liveAmount && (
                 <div
-                  className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                    } text-xs font-semibold mb-1`}
+                  className={`mt-2 p-2 ${isDark
+                    ? "bg-[var(--card-color)] border-[#35353E]"
+                    : "bg-gray-100 border-gray-300"
+                    } rounded border`}
                 >
-                  Amount Change:
-                </div>
-                <div
-                  className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                    } text-xs mb-0.5`}
-                >
-                  Previous: {previousAmount.toFixed(8)}{" "}
-                  {liveCurrency ||
-                    effectiveTransactionData?.asset?.ticker ||
-                    effectiveTransactionData?.asset?.symbol ||
-                    effectiveTransactionData?.asset?.name ||
-                    (effectiveTransactionData?.type === "deposit"
-                      ? "USD"
-                      : effectiveTransactionData?.type === "withdrawal"
-                        ? "USD"
-                        : "USDT")}
-                </div>
-                <div className="text-green-400 text-xs">
-                  Current: {liveAmount.toFixed(8)}{" "}
-                  {liveCurrency ||
-                    effectiveTransactionData?.asset?.ticker ||
-                    effectiveTransactionData?.asset?.symbol ||
-                    effectiveTransactionData?.asset?.name ||
-                    (effectiveTransactionData?.type === "deposit"
-                      ? "USD"
-                      : effectiveTransactionData?.type === "withdrawal"
-                        ? "USD"
-                        : "USDT")}
-                </div>
-              </div>
-            )}
-          {/* Deposit-specific information display */}
-          {effectiveTransactionData?.type === "deposit" && (
-            <>
-              {/* Deposit Code - Most important for deposits */}
-
-              {/* Asset and Network Information */}
-              <div
-                className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                  } text-xs font-semibold mb-0.5 mt-3`}
-              >
-                Asset & Network:
-              </div>
-              <div className="flex items-center mb-2">
-                <img
-                  src={
-                    effectiveTransactionData?.asset?.icon ||
-                    effectiveTransactionData?.asset?.icon_url ||
-                    effectiveTransactionData?.asset?.image_url ||
-                    effectiveTransactionData?.asset?.image ||
-                    "/images/tether.svg"
-                  }
-                  alt={
-                    effectiveTransactionData?.asset?.ticker ||
-                    effectiveTransactionData?.asset?.symbol ||
-                    effectiveTransactionData?.asset?.name ||
-                    "Asset"
-                  }
-                  className="w-6 h-6 rounded-full mr-2"
-                  onError={(e) => {
-                    e.currentTarget.src =
-                      "/images/tether.svg";
-                  }}
-                />
-                <span
-                  className={`${isDark ? "text-white" : "text-gray-900"
-                    } text-sm font-semibold uppercase`}
-                >
-                  {effectiveTransactionData?.asset?.ticker ||
-                    effectiveTransactionData?.asset?.symbol ||
-                    effectiveTransactionData?.asset?.name ||
-                    (effectiveTransactionData?.type === "deposit"
-                      ? "USD"
-                      : effectiveTransactionData?.type === "withdrawal"
-                        ? "USD"
-                        : "USDT")}
-                </span>
-                <span className="ml-2 bg-[#1D8751] text-white text-xs font-semibold px-2 py-0.5 rounded-full">
-                  {effectiveTransactionData?.asset?.network ||
-                    effectiveTransactionData?.network?.network_type ||
-                    "BSC"}
-                </span>
-              </div>
-
-              {/* Wallet Address (if provided) */}
-              {effectiveTransactionData?.walletAddress && (
-                <>
                   <div
-                    className={`${isDark ? "text-[#1D8751]" : "text-[#1D8751]"
-                      } text-sm font-semibold mb-1 mt-3`}
+                    className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                      } text-xs font-semibold mb-1`}
                   >
-                    USDT Wallet Address:
+                    Amount Change:
                   </div>
-                  <div className="flex items-center mb-2 p-2 rounded-lg border border-[#1D8751]/30 bg-[#1D8751]/5">
-                    <span
-                      className={`${isDark ? "text-white" : "text-gray-900"
-                        } text-sm font-mono break-all flex-1 leading-relaxed`}
-                      style={{ wordBreak: 'break-all', lineHeight: '1.5' }}
-                    >
-                      {effectiveTransactionData.walletAddress}
-                    </span>
-                    <CopyButton
-                      value={effectiveTransactionData.walletAddress}
-                      className="ml-2 shrink-0"
-                    />
+                  <div
+                    className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                      } text-xs mb-0.5`}
+                  >
+                    Previous: {previousAmount.toFixed(8)}{" "}
+                    {liveCurrency ||
+                      effectiveTransactionData?.asset?.ticker ||
+                      effectiveTransactionData?.asset?.symbol ||
+                      effectiveTransactionData?.asset?.name ||
+                      (effectiveTransactionData?.type === "deposit"
+                        ? "USD"
+                        : effectiveTransactionData?.type === "withdrawal"
+                          ? "USD"
+                          : "USDT")}
                   </div>
-                </>
+                  <div className="text-green-400 text-xs">
+                    Current: {liveAmount.toFixed(8)}{" "}
+                    {liveCurrency ||
+                      effectiveTransactionData?.asset?.ticker ||
+                      effectiveTransactionData?.asset?.symbol ||
+                      effectiveTransactionData?.asset?.name ||
+                      (effectiveTransactionData?.type === "deposit"
+                        ? "USD"
+                        : effectiveTransactionData?.type === "withdrawal"
+                          ? "USD"
+                          : "USDT")}
+                  </div>
+                </div>
               )}
-
-              {/* Status from WebSocket */}
-            </>
-          )}
-
-          {/* Bank Information (for non-direct deposits) */}
-          {effectiveTransactionData?.type === "deposit" &&
-            effectiveTransactionData?.paymentDetail &&
-            effectiveTransactionData.paymentDetail.provider_name !==
-            "direct" && (
+            {/* Deposit-specific information display */}
+            {effectiveTransactionData?.type === "deposit" && (
               <>
+                {/* Deposit Code - Most important for deposits */}
+
+                {/* Asset and Network Information */}
                 <div
                   className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
                     } text-xs font-semibold mb-0.5 mt-3`}
                 >
-                  Bank:
+                  Asset & Network:
                 </div>
-                <div className="flex items-center mb-1">
+                <div className="flex items-center mb-2">
                   <img
-                    src={effectiveTransactionData.paymentDetail.logo_url || effectiveTransactionData.paymentDetail.logo || effectiveTransactionData.paymentDetail.provider_logo || "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"}
-                    alt={effectiveTransactionData.paymentDetail.provider_name}
+                    src={
+                      effectiveTransactionData?.asset?.icon ||
+                      effectiveTransactionData?.asset?.icon_url ||
+                      effectiveTransactionData?.asset?.image_url ||
+                      effectiveTransactionData?.asset?.image ||
+                      "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                    }
+                    alt={
+                      effectiveTransactionData?.asset?.ticker ||
+                      effectiveTransactionData?.asset?.symbol ||
+                      effectiveTransactionData?.asset?.name ||
+                      "Asset"
+                    }
                     className="w-6 h-6 rounded-full mr-2"
+                    onError={(e) => {
+                      e.currentTarget.src =
+                        "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                    }}
                   />
                   <span
                     className={`${isDark ? "text-white" : "text-gray-900"
-                      } text-sm font-semibold`}
+                      } text-sm font-semibold uppercase`}
                   >
-                    {effectiveTransactionData.paymentDetail.provider_name}
+                    {effectiveTransactionData?.asset?.ticker ||
+                      effectiveTransactionData?.asset?.symbol ||
+                      effectiveTransactionData?.asset?.name ||
+                      (effectiveTransactionData?.type === "deposit"
+                        ? "USD"
+                        : effectiveTransactionData?.type === "withdrawal"
+                          ? "USD"
+                          : "USDT")}
+                  </span>
+                  <span className="ml-2 bg-[#1D8751] text-white text-xs font-semibold px-2 py-0.5 rounded-full">
+                    {effectiveTransactionData?.asset?.network ||
+                      effectiveTransactionData?.network?.network_type ||
+                      "BSC"}
                   </span>
                 </div>
+
+                {/* Wallet Address (if provided) */}
+                {effectiveTransactionData?.walletAddress && (
+                  <>
+                    <div
+                      className={`${isDark ? "text-[#1D8751]" : "text-[#1D8751]"
+                        } text-sm font-semibold mb-1 mt-3`}
+                    >
+                      USDT Wallet Address:
+                    </div>
+                    <div className="flex items-center mb-2 p-2 rounded-lg border border-[#1D8751]/30 bg-[#1D8751]/5">
+                      <span
+                        className={`${isDark ? "text-white" : "text-gray-900"
+                          } text-sm font-mono break-all flex-1 leading-relaxed`}
+                        style={{ wordBreak: 'break-all', lineHeight: '1.5' }}
+                      >
+                        {effectiveTransactionData.walletAddress}
+                      </span>
+                      <CopyButton
+                        value={effectiveTransactionData.walletAddress}
+                        className="ml-2 shrink-0"
+                      />
+                    </div>
+                  </>
+                )}
+
+                {/* Status from WebSocket */}
+              </>
+            )}
+
+            {/* Bank Information (for non-direct deposits) */}
+            {effectiveTransactionData?.type === "deposit" &&
+              effectiveTransactionData?.paymentDetail &&
+              effectiveTransactionData.paymentDetail.provider_name !==
+              "direct" && (
+                <>
+                  <div
+                    className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                      } text-xs font-semibold mb-0.5 mt-3`}
+                  >
+                    Bank:
+                  </div>
+                  <div className="flex items-center mb-1">
+                    <img
+                      src={effectiveTransactionData.paymentDetail.logo_url || effectiveTransactionData.paymentDetail.logo || effectiveTransactionData.paymentDetail.provider_logo || "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"}
+                      alt={effectiveTransactionData.paymentDetail.provider_name}
+                      className="w-6 h-6 rounded-full mr-2"
+                    />
+                    <span
+                      className={`${isDark ? "text-white" : "text-gray-900"
+                        } text-sm font-semibold`}
+                    >
+                      {effectiveTransactionData.paymentDetail.provider_name}
+                    </span>
+                  </div>
+                  <div
+                    className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                      } text-xs font-semibold mb-0.5`}
+                  >
+                    Account Name:
+                  </div>
+                  <div
+                    className={`${isDark ? "text-white" : "text-gray-900"
+                      } text-sm mb-1`}
+                  >
+                    {effectiveTransactionData.paymentDetail.account_name}
+                  </div>
+                  <div
+                    className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                      } text-xs font-semibold mb-0.5`}
+                  >
+                    Account Number:
+                  </div>
+                  <div
+                    className={`${isDark ? "text-white" : "text-gray-900"
+                      } text-sm font-mono`}
+                  >
+                    {effectiveTransactionData.paymentDetail.account_number}
+                  </div>
+                </>
+              )}
+            {effectiveTransactionData?.type === "withdrawal" && (
+              <>
                 <div
                   className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
                     } text-xs font-semibold mb-0.5`}
                 >
-                  Account Name:
+                  Wallet Address:
                 </div>
-                <div
-                  className={`${isDark ? "text-white" : "text-gray-900"
-                    } text-sm mb-1`}
-                >
-                  {effectiveTransactionData.paymentDetail.account_name}
-                </div>
-                <div
-                  className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                    } text-xs font-semibold mb-0.5`}
-                >
-                  Account Number:
-                </div>
-                <div
-                  className={`${isDark ? "text-white" : "text-gray-900"
-                    } text-sm font-mono`}
-                >
-                  {effectiveTransactionData.paymentDetail.account_number}
+                <div className="flex items-center mb-2 p-2 rounded-lg border border-[#1D8751]/30 bg-[#1D8751]/5">
+                  <span
+                    className={`${isDark ? "text-white" : "text-gray-900"
+                      } text-sm font-mono break-all flex-1 leading-relaxed`}
+                    style={{ wordBreak: 'break-all', lineHeight: '1.5' }}
+                  >
+                    {effectiveTransactionData.walletAddress}
+                  </span>
+                  <CopyButton
+                    value={effectiveTransactionData.walletAddress}
+                    className="ml-2 shrink-0"
+                  />
                 </div>
               </>
             )}
-          {effectiveTransactionData?.type === "withdrawal" && (
-            <>
-              <div
-                className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                  } text-xs font-semibold mb-0.5`}
-              >
-                Wallet Address:
-              </div>
-              <div className="flex items-center mb-2 p-2 rounded-lg border border-[#1D8751]/30 bg-[#1D8751]/5">
-                <span
-                  className={`${isDark ? "text-white" : "text-gray-900"
-                    } text-sm font-mono break-all flex-1 leading-relaxed`}
-                  style={{ wordBreak: 'break-all', lineHeight: '1.5' }}
-                >
-                  {effectiveTransactionData.walletAddress}
-                </span>
-                <CopyButton
-                  value={effectiveTransactionData.walletAddress}
-                  className="ml-2 shrink-0"
-                />
-              </div>
-            </>
-          )}
-        </div>
+          </div>
         <div className="flex-shrink-0 ml-0 md:ml-6 flex items-center justify-center py-2">
           {/* QR code */}
           {(() => {
@@ -1693,7 +1714,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                     effectiveTransactionData?.asset?.icon_url ||
                     effectiveTransactionData?.asset?.image_url ||
                     effectiveTransactionData?.asset?.image ||
-                    "/images/tether.svg"
+                    "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
                   }
                   alt={
                     effectiveTransactionData?.asset?.symbol ||
@@ -1706,7 +1727,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                   className="w-8 h-8 rounded-full flex-shrink-0 mt-0.5"
                   onError={(e) => {
                     e.currentTarget.src =
-                      "/images/tether.svg";
+                      "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
                   }}
                 />
                 <div className="min-w-0 flex-1 space-y-0.5">
@@ -1755,7 +1776,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                     effectiveTransactionData?.asset?.icon_url ||
                     effectiveTransactionData?.asset?.image_url ||
                     effectiveTransactionData?.asset?.image ||
-                    "/images/tether.svg"
+                    "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
                   }
                   alt={
                     effectiveTransactionData?.asset?.symbol ||
@@ -1768,7 +1789,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                   className="w-8 h-8 rounded-full flex-shrink-0 mt-0.5"
                   onError={(e) => {
                     e.currentTarget.src =
-                      "/images/tether.svg";
+                      "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
                   }}
                 />
                 <div className="min-w-0 flex-1 space-y-0.5">
@@ -1904,6 +1925,15 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
         </div>
       </div>
 
+      {/* Failure Status Modal */}
+      <FailureStatusModal
+        isOpen={failureModal.isOpen}
+        status={failureModal.status}
+        message={failureModal.message}
+        onClose={() => setFailureModal({ isOpen: false, status: "", message: undefined })}
+        onBackToForm={handleFailureModalClose}
+        isDark={isDark}
+      />
     </div>
   );
 }

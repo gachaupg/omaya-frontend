@@ -1,5 +1,7 @@
 import { post, get } from "@/lib/apiClient";
 import { API_CONFIG } from "@/lib/appConfig";
+import { API_BASE_URL } from "@/config/api";
+import axios from "axios";
 import { ForexExchangePayload, ForexExchangeResponse, ExpressWithdrawalPayload } from "./types";
 
 // Map asset ticker to commission API asset name (usdt, usdc, fxprimus)
@@ -11,17 +13,24 @@ export const getCommissionApiAsset = (ticker: string): string | null => {
   return null;
 };
 
-// Commission API for USDT, USDC, FX Primus
+interface CommissionLookupResponse {
+  commission_rate: string;
+  is_percentage: boolean;
+  calculated_fee: string;
+  range_min: string;
+  range_max: string;
+}
+
+// Commission lookup API (no auth required) — returns percentage rate
 export const fetchCommission = async (
-  asset: string,
+  _asset: string,
   amount: number,
   type: "deposit" | "withdrawal"
 ): Promise<number> => {
-  const response = await get<{ commission?: number; commission_amount?: number }>(
-    API_CONFIG.TRADING_ENGINE.COMMISSION(asset, amount, type)
-  );
-  const commission = response.data?.commission ?? response.data?.commission_amount ?? 0;
-  return typeof commission === "number" ? commission : parseFloat(String(commission)) || 0;
+  const url = `${API_BASE_URL}${API_CONFIG.COMMISSION_LOOKUP(amount, type)}`;
+  const response = await axios.get<CommissionLookupResponse>(url);
+  const rate = response.data?.commission_rate;
+  return typeof rate === "number" ? rate : parseFloat(String(rate)) || 0;
 };
 
 // Express withdrawal API

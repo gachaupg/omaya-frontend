@@ -253,7 +253,7 @@ export const getDeposits = createAsyncThunk<TransactionsResponse, void>(
 export const createDeposit = createAsyncThunk<
   Transaction,
   {
-    payload: FormData;
+    payload: FormData | Record<string, any>;
     config?: AxiosRequestConfig;
   }
 >(
