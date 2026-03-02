@@ -24,6 +24,62 @@ import PaymentMethodsModal from "@/features/p2p/components/ui/p2pdashboard/secti
 import AddWalletAddressModal from "./AddWalletAddressModal";
 import { showToast } from "@/lib/utils/toast";
 import CopyButton from "@/components/ui/CopyButton";
+import QRCode from "qrcode";
+
+const AddressQrImage: React.FC<{ value: string }> = ({ value }) => {
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const generate = async () => {
+      try {
+        setHasError(false);
+        const val = String(value || "").trim();
+        if (!val) {
+          setQrDataUrl(null);
+          return;
+        }
+
+        const dataUrl = await QRCode.toDataURL(val, {
+          width: 180,
+          margin: 1,
+          color: {
+            dark: "#000000",
+            light: "#FFFFFF",
+          },
+        });
+
+        if (!cancelled) {
+          setQrDataUrl(dataUrl);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          console.error("Failed to generate wallet QR:", err);
+          setHasError(true);
+          setQrDataUrl(null);
+        }
+      }
+    };
+
+    generate();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [value]);
+
+  if (!qrDataUrl || hasError) return null;
+
+  return (
+    <img
+      src={qrDataUrl}
+      alt="Wallet QR"
+      className="w-12 h-12 rounded-lg border border-[#E3E6F0] dark:border-[#2A2A35] bg-white object-contain"
+    />
+  );
+};
 
 const WalletAddressCard = ({
   addr,
@@ -50,7 +106,7 @@ const WalletAddressCard = ({
           <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-[#FF4D55] border-2 border-white dark:border-[#13131A]" />
         )}
       </div>
-      <div className="flex-1 flex items-center justify-between">
+      <div className="flex-1 flex items-center justify-between gap-3">
         <div>
           <p className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
             {addr.account_name || addr.label}
@@ -59,23 +115,26 @@ const WalletAddressCard = ({
             {addr.network} • {addr.asset} • {addr.status}
           </p>
         </div>
-        <button
-          className="text-[#1D8751] hover:text-red-500 transition-colors"
-          title="Delete"
-          disabled={isDeleting}
-          onClick={onDelete}
-        >
-          {isDeleting ? (
-            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="#1D8751" strokeWidth="4" fill="none" />
-              <path className="opacity-75" fill="#1D8751" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-            </svg>
-          ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 cursor-pointer" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2" />
-            </svg>
-          )}
-        </button>
+        <div className="flex items-center gap-2">
+          {!!addr.address && <AddressQrImage value={addr.address} />}
+          <button
+            className="text-[#1D8751] hover:text-red-500 transition-colors"
+            title="Delete"
+            disabled={isDeleting}
+            onClick={onDelete}
+          >
+            {isDeleting ? (
+              <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="#1D8751" strokeWidth="4" fill="none" />
+                <path className="opacity-75" fill="#1D8751" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 cursor-pointer" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2" />
+              </svg>
+            )}
+          </button>
+        </div>
       </div>
     </div>
     <div>
@@ -132,6 +191,7 @@ const PaymentMethods = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ type: 'payment' | 'wallet', id: string } | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [walletSearchQuery, setWalletSearchQuery] = useState("");
 
   const isCryptoWallet = (p: UserPaymentDetail) =>
     p?.payment_method_name?.toLowerCase() === "crypto" ||
@@ -266,7 +326,7 @@ const PaymentMethods = () => {
               Pending
             </button>
             <button className={`px-3 py-1.5 rounded-full border border-[#1D8751] text-[#1D8751] text-xs sm:text-sm font-semibold focus:outline-none ${activeButton === "OMAYA Wallets" ? "bg-[#1D8751] text-white" : "bg-transparent"}`} onClick={() => setActiveButton("OMAYA Wallets")}>
-              OMAYA Wallets
+             My OMAYA Wallets
             </button>
           </div>
         </div>
@@ -309,26 +369,31 @@ const PaymentMethods = () => {
                             key={addr.id}
                             className="flex flex-col gap-3 rounded-[28px] border border-[#E3E6F0] dark:border-[#2A2A35] bg-gray-50 dark:bg-[var(--card-color)] px-4 py-4"
                           >
-                            <div className="flex items-start gap-4">
-                              <div className="relative">
-                                <img
-                                  src="/images/tether.svg"
-                                  alt="USDT"
-                                  className="w-12 h-12 object-contain flex-shrink-0"
-                                  style={{ display: "block" }}
-                                  onError={(e) => {
-                                    e.currentTarget.src = "/default-provider-logo.svg";
-                                  }}
-                                />
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="flex items-start gap-4">
+                                <div className="relative">
+                                  <img
+                                    src="/images/tether.svg"
+                                    alt="USDT"
+                                    className="w-12 h-12 object-contain flex-shrink-0"
+                                    style={{ display: "block" }}
+                                    onError={(e) => {
+                                      e.currentTarget.src = "/default-provider-logo.svg";
+                                    }}
+                                  />
+                                </div>
+                                <div className="flex-1">
+                                  <p className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
+                                    OMAYA Wallet
+                                  </p>
+                                  <p className="text-xs text-gray-500 dark:text-[#8B90A5] mt-0.5">
+                                    {addr.network_name || addr.chain} • {addr.is_default ? "Default" : ""}
+                                  </p>
+                                </div>
                               </div>
-                              <div className="flex-1">
-                                <p className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
-                                  OMAYA Wallet
-                                </p>
-                                <p className="text-xs text-gray-500 dark:text-[#8B90A5] mt-0.5">
-                                  {addr.network_name || addr.chain} • {addr.is_default ? "Default" : ""}
-                                </p>
-                              </div>
+                              {!!addr.address && (
+                                <AddressQrImage value={addr.address} />
+                              )}
                             </div>
                             <div>
                               <label className="text-xs font-medium text-gray-500 dark:text-[#8B90A5] mb-2 block">
@@ -364,8 +429,30 @@ const PaymentMethods = () => {
                         {userWalletCreateLoading ? "Adding..." : "+ Add New Address"}
                       </button>
                     </div>
+                    <div className="mt-1">
+                      <input
+                        type="text"
+                        value={walletSearchQuery}
+                        onChange={(e) => setWalletSearchQuery(e.target.value)}
+                        placeholder="Search address or label in your OMAYA wallets"
+                        className="w-full rounded-full border border-[#E3E6F0] dark:border-[#2A2A35] bg-white dark:bg-[var(--card-color)] px-4 py-2 text-xs sm:text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-[#5C6175] focus:outline-none"
+                      />
+                    </div>
                     {userWalletAddresses.length > 0 &&
-                      userWalletAddresses.map((addr: UserWalletAddress) => (
+                      userWalletAddresses
+                        .filter((addr: UserWalletAddress) => {
+                          if (!walletSearchQuery.trim()) return true;
+                          const q = walletSearchQuery.toLowerCase();
+                          const label =
+                            addr.account_name ||
+                            addr.label ||
+                            "";
+                          return (
+                            addr.address.toLowerCase().includes(q) ||
+                            label.toLowerCase().includes(q)
+                          );
+                        })
+                        .map((addr: UserWalletAddress) => (
                         <WalletAddressCard
                           key={addr.user_wallet_address_id}
                           addr={addr}

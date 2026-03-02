@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useRouter } from "next/navigation";
 import { AppDispatch } from "@/store";
 import { RootState } from "@/store/rootReducer";
 import { logger } from '@/lib/utils/logger';
@@ -27,6 +28,7 @@ const AppealModal: React.FC<AppealModalProps> = ({
   tradeId,
 }) => {
   const dispatch = useDispatch<AppDispatch>();
+  const router = useRouter();
   const { loading, error, success } = useSelector(
     (state: RootState) => state.appeal
   );
@@ -47,14 +49,16 @@ const AppealModal: React.FC<AppealModalProps> = ({
     });
   }, [open, tradeId, selectedReason, customReason, loading, success]);
 
-  useEffect(() => {
-    if (success) {
-      setTimeout(() => {
-        dispatch(resetAppealState());
-        onClose();
-      }, 1200);
-    }
-  }, [success, dispatch, onClose]);
+  const handleGoToSupport = () => {
+    dispatch(resetAppealState());
+    onClose();
+    router.push("/contactUs");
+  };
+
+  const handleCloseAfterSuccess = () => {
+    dispatch(resetAppealState());
+    onClose();
+  };
 
   // Reset form when modal opens/closes
   useEffect(() => {
@@ -300,8 +304,35 @@ const AppealModal: React.FC<AppealModalProps> = ({
             </div>
           )}
           {success && (
-            <div className="text-green-500 text-[13px] text-center">
-              Appeal submitted!
+            <div className="flex flex-col items-center gap-4 mt-2">
+              <div className="flex items-center gap-2 text-green-500 text-[13px]">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Appeal submitted successfully!
+              </div>
+              <p className="text-[12px] text-gray-500 dark:text-[#8B90A5] text-center">
+                Our team will review your appeal. You can also chat with support for faster assistance.
+              </p>
+              <div className="flex gap-3 w-full">
+                <button
+                  type="button"
+                  onClick={handleCloseAfterSuccess}
+                  className="flex-1 rounded-xl border border-[#1D8751] bg-transparent text-[#1D8751] py-3 font-semibold hover:bg-[#1D8751]/10 transition text-[13px]"
+                >
+                  Close
+                </button>
+                <button
+                  type="button"
+                  onClick={handleGoToSupport}
+                  className="flex-1 rounded-xl bg-[#1D8751] text-white py-3 font-semibold hover:bg-[#17693f] transition flex items-center justify-center gap-2 text-[13px]"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                  Chat with Support
+                </button>
+              </div>
             </div>
           )}
         </form>

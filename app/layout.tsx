@@ -8,6 +8,7 @@ import Footer from "@/components/layout/Footer";
 import Providers from "./providers";
 import { Toaster } from "@/components/ui/Toast";
 import GlobalSessionManager from "@/components/GlobalSessionManager";
+import FloatingChatButton from "@/components/ui/FloatingChatButton";
 
 // Load all three fonts from local assets for offline-friendly builds
 const geistSans = localFont({
@@ -111,6 +112,7 @@ export default function RootLayout({
           <Navbar />
           {children}
           <Footer />
+          <FloatingChatButton />
           <Toaster />
         </Providers>
       </body>

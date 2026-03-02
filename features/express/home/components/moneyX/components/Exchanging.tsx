@@ -19,6 +19,7 @@ import {
   cancelDepositTransaction,
   cancelWithdrawalTransaction,
 } from "@/features/express/slices/transactionSlice";
+import FailureStatusModal from "@/features/express/components/FailureStatusModal";
 
 interface ExchangingProps {
   transactionData?: {
@@ -108,6 +109,8 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
   const [snapshotWebsocketData, setSnapshotWebsocketData] = useState<any>(null);
   const [liveAmount, setLiveAmount] = useState<number | null>(null);
   const [liveCurrency, setLiveCurrency] = useState<string | null>(null);
+  const [liveNetAmount, setLiveNetAmount] = useState<number | null>(null);
+  const [liveNetCurrency, setLiveNetCurrency] = useState<string | null>(null);
   const [liveTransactionId, setLiveTransactionId] = useState<string | null>(
     null
   );
@@ -119,6 +122,11 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
   const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(
     null
   );
+  const [failureModal, setFailureModal] = useState<{
+    isOpen: boolean;
+    status: string;
+    message?: string;
+  }>({ isOpen: false, status: "", message: undefined });
 
   // Fallback polling function
   const startFallbackPolling = () => {
@@ -339,6 +347,24 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
     }
   }, [showSuccess]);
 
+  // Net amount from props (form's "You Receive") – display before websockets, then sockets can override
+  useEffect(() => {
+    const recv = (effectiveTransactionData as any)?.receiveAmount;
+    if (recv != null) {
+      const parsed = parseFloat(String(recv));
+      if (!isNaN(parsed)) {
+        setLiveNetAmount(parsed);
+        setLiveNetCurrency(
+          effectiveTransactionData?.type === "deposit"
+            ? (effectiveTransactionData?.asset?.ticker ||
+                effectiveTransactionData?.asset?.symbol ||
+                "USDT")
+            : "USD"
+        );
+      }
+    }
+  }, [effectiveTransactionData]);
+
   // Check if this is a MoneyX transaction
   const isMoneyXTransaction = effectiveTransactionData?.isMoneyX || 
     effectiveTransactionData?.moneyxTransactionId || 
@@ -417,6 +443,8 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
           "processing",
           "completed",
           "failed",
+          "rejected",
+          "stopped",
           "awaiting_payment",
           "exchanging",
           "sending",
@@ -430,6 +458,17 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
           "waiting",
           "approved",
         ];
+
+        // Show failure modal for failed, rejected, or stopped statuses
+        if (["failed", "rejected", "stopped"].includes(wsData.status)) {
+          setFailureModal({
+            isOpen: true,
+            status: wsData.status,
+            message: wsData.message,
+          });
+          setCurrentStatus(wsData.status);
+          return;
+        }
 
         if (validStatuses.includes(wsData.status)) {
           let uiStatus = wsData.status;
@@ -526,10 +565,12 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
             }
 
             if (wsData.amount_to !== null && wsData.amount_to !== undefined) {
-              setLiveAmount(parseFloat(wsData.amount_to));
-              setLiveCurrency(
-                wsData.to_currency?.toUpperCase() || "USD"
-              );
+              const amountTo = parseFloat(wsData.amount_to);
+              setLiveAmount(amountTo);
+              setLiveCurrency(wsData.to_currency?.toUpperCase() || "USD");
+              // Let websocket override net amount
+              setLiveNetAmount(amountTo);
+              setLiveNetCurrency(wsData.to_currency?.toUpperCase() || "USD");
             }
           }
 
@@ -585,6 +626,8 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
             "processing",
             "completed",
             "failed",
+            "rejected",
+            "stopped",
             "awaiting_payment",
             "exchanging",
             "sending",
@@ -599,7 +642,15 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
             "approved",
           ];
 
-          if (status && validStatuses.includes(status)) {
+          // Show failure modal for failed, rejected, or stopped statuses
+          if (status && ["failed", "rejected", "stopped"].includes(status)) {
+            setFailureModal({
+              isOpen: true,
+              status,
+              message: message || undefined,
+            });
+            setCurrentStatus(status);
+          } else if (status && validStatuses.includes(status)) {
             let uiStatus = status;
 
             if (status === "pending_blockchain") {
@@ -724,6 +775,13 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
       }
     }
   }, [isLoadingData, effectiveTransactionData, router, onBackToTransfer]);
+
+  const handleFailureModalClose = () => {
+    setFailureModal({ isOpen: false, status: "", message: undefined });
+    localStorage.removeItem("moneyx_transaction_data");
+    localStorage.removeItem("express_transaction_data");
+    window.location.reload();
+  };
 
   // If showing success page, render it
   if (showSuccess) {
@@ -862,6 +920,38 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
                 USD
               </span>
             </div>
+            {(effectiveTransactionData as any)?.receiveAmount != null && (
+              <div>
+                <div
+                  className={`${
+                    isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                  } text-xs font-semibold mb-0.5`}
+                >
+                  Net amount you&apos;ll receive:
+                </div>
+                <div
+                  className={`${
+                    isDark ? "text-[#1D8751]" : "text-[#15803D]"
+                  } text-base font-semibold flex items-center gap-2`}
+                >
+                  <span>
+                    {(
+                      liveNetAmount ??
+                      (effectiveTransactionData as any)?.receiveAmount ??
+                      0
+                    )
+                      .toFixed(8)
+                      .replace(/\.?0+$/, "")}{" "}
+                    {liveNetCurrency ??
+                      (effectiveTransactionData?.type === "deposit"
+                        ? effectiveTransactionData?.asset?.ticker ||
+                          effectiveTransactionData?.asset?.symbol ||
+                          "USDT"
+                        : "USD")}
+                  </span>
+                </div>
+              </div>
+            )}
 
             {/* MoneyX specific: Show From and To payment methods */}
             {effectiveTransactionData?.fromPaymentMethod && (
@@ -1613,6 +1703,16 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
           </div>
         </div>
       </div>
+
+      {/* Failure Status Modal */}
+      <FailureStatusModal
+        isOpen={failureModal.isOpen}
+        status={failureModal.status}
+        message={failureModal.message}
+        onClose={() => setFailureModal({ isOpen: false, status: "", message: undefined })}
+        onBackToForm={handleFailureModalClose}
+        isDark={isDark}
+      />
     </div>
   );
 }

@@ -42,6 +42,8 @@ export const API_CONFIG = {
     COMMISSION: (asset: string, amount: number, type: "deposit" | "withdrawal") =>
       `/trading_engine/commission/?asset=${encodeURIComponent(asset)}&amount=${amount}&type=${type}`,
   },
+  COMMISSION_LOOKUP: (amount: number, type: "deposit" | "withdrawal", feature: string = "exchange") =>
+    `/administration/commission-lookup/?feature=${feature}&commission_type=${type}&amount=${amount}`,
   P2P: {
     BASE: "/trading_engine/p2p/",
     WALLETS: "api/wallet/wallets/",
@@ -214,6 +216,8 @@ export const API_CONFIG = {
     TRANSACTIONS: "/api/moneyx/transactions/",
     UPDATE_TRANSACTION: (transactionId: string) => `/api/moneyx/transactions/${transactionId}/`,
     COMMISSION: (amount: number) => `/api/moneyx/commission/?amount=${amount}`,
+    RANGE_COMMISSION: (amount: number, commissionType: string = "deposit") =>
+      `/administration/admin/range-commissions/?feature=moneyx&commission_type=${commissionType}&amount=${amount}`,
     SOCKETS: {
       STATUS: (transactionId: string) =>
         `${getWebSocketBaseUrl()}/ws/moneyx/status/${transactionId}/`,

@@ -33,6 +33,7 @@ interface CreatePayload {
   account_name: string;
   label: string;
   asset: string;
+  network?: string;
 }
 
 interface CreateResponse {
