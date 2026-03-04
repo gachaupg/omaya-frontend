@@ -48,6 +48,8 @@ import {
   buildExpressRedirectPath,
   setAuthRedirectPath,
   setExpressPrefillState,
+  buildPaymentMethodsRedirectPath,
+  setPaymentModalPrefill,
 } from "@/lib/utils/authRedirect";
 import { openKYCModal, checkKYCStatus } from "@/features/auth/slices/authSlice";
 
@@ -909,9 +911,22 @@ export default function WithdrawalForm({
     payBank &&
     selectedPaymentDetails.length > 0 &&
     selectedPaymentDetails[0].status &&
-    selectedPaymentDetails[0].status !== "approved" &&
-    selectedPaymentDetails[0].status !== "verified"
+    selectedPaymentDetails[0].status.toLowerCase() !== "approved" &&
+    selectedPaymentDetails[0].status.toLowerCase() !== "verified"
   );
+
+  // Sync selectedPaymentDetails when WebSocket refetches and status changes (e.g. Pending → APPROVED)
+  useEffect(() => {
+    if (selectedPaymentDetails.length === 0 || enhancedFilteredUserPaymentDetails.length === 0) return;
+    const selectedId = selectedPaymentDetails[0].id;
+    const freshDetail = enhancedFilteredUserPaymentDetails.find(
+      (d: any) => d.id === selectedId || String(d.id) === String(selectedId)
+    );
+    if (freshDetail) {
+      setSelectedPaymentDetails([freshDetail]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only sync when source data changes
+  }, [enhancedFilteredUserPaymentDetails]);
 
   useEffect(() => {
     // Skip API calls on home page - buttons will redirect to login
@@ -4466,7 +4481,22 @@ export default function WithdrawalForm({
                               No account found for this payment method.{" "}
                               <button
                                 type="button"
-                                onClick={() => setIsPaymentModalOpen(true)}
+                                onClick={() => {
+                                  if (isHomePage && !isAuthenticated) {
+                                    const method =
+                                      selectedProviderData?.payment_method_type ||
+                                      selectedPaymentDetail?.payment_method_type ||
+                                      "";
+                                    const prefill = { method, provider: payBank };
+                                    setPaymentModalPrefill(prefill);
+                                    setAuthRedirectPath(
+                                      buildPaymentMethodsRedirectPath(prefill)
+                                    );
+                                    router.push("/auth/login");
+                                  } else {
+                                    setIsPaymentModalOpen(true);
+                                  }
+                                }}
                                 className="hover:underline cursor-pointer font-medium"
                               >
                                 Add Account
@@ -4479,7 +4509,22 @@ export default function WithdrawalForm({
                             <p className="text-[#F79330] text-sm">
                               <button
                                 type="button"
-                                onClick={() => setIsPaymentModalOpen(true)}
+                                onClick={() => {
+                                  if (isHomePage && !isAuthenticated) {
+                                    const method =
+                                      selectedProviderData?.payment_method_type ||
+                                      selectedPaymentDetail?.payment_method_type ||
+                                      "";
+                                    const prefill = { method, provider: payBank };
+                                    setPaymentModalPrefill(prefill);
+                                    setAuthRedirectPath(
+                                      buildPaymentMethodsRedirectPath(prefill)
+                                    );
+                                    router.push("/auth/login");
+                                  } else {
+                                    setIsPaymentModalOpen(true);
+                                  }
+                                }}
                                 className="hover:underline cursor-pointer"
                               >
                                 Don't have an account? Register Now
@@ -4975,24 +5020,27 @@ export default function WithdrawalForm({
             </div>
           )}
 
-          {/* PaymentMethodsModal */}
-          <PaymentMethodsModal
-            open={isPaymentModalOpen}
-            onClose={() => setIsPaymentModalOpen(false)}
-            onAdd={async () => {
-              try {
-                // Refresh both user and admin payment details after adding (force refresh)
-                await Promise.all([
-                  dispatch(fetchUserPaymentDetails(true)).unwrap(),
-                  dispatch(fetchAdminWalletList(true)).unwrap(),
-                ]);
-                showToast.success("Payment method added successfully!");
-              } catch (error) {
-                console.error("Failed to refresh payment details:", error);
-                showToast.error("Payment method added, but failed to refresh. Please reload the page.");
-              }
-            }}
-          />
+          {/* PaymentMethodsModal - only mount when open so it reliably reopens after cancel */}
+          {isPaymentModalOpen && (
+            <PaymentMethodsModal
+              key="withdrawal-add-payment-modal"
+              open={true}
+              onClose={() => setIsPaymentModalOpen(false)}
+              onAdd={async () => {
+                try {
+                  // Refresh both user and admin payment details after adding (force refresh)
+                  await Promise.all([
+                    dispatch(fetchUserPaymentDetails(true)).unwrap(),
+                    dispatch(fetchAdminWalletList(true)).unwrap(),
+                  ]);
+                  showToast.success("Payment method added successfully!");
+                } catch (error) {
+                  console.error("Failed to refresh payment details:", error);
+                  showToast.error("Payment method added, but failed to refresh. Please reload the page.");
+                }
+              }}
+            />
+          )}
 
           {/* InfoModal */}
           <InfoModal

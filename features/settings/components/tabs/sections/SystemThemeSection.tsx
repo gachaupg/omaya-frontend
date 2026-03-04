@@ -45,7 +45,7 @@ const SystemThemeSection: React.FC = () => {
             className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-2xl font-semibold text-sm transition-all ${
               isDeem
                 ? "bg-[#1D8751] text-white"
-                : "border border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751] hover:text-white"
+                : "border border-gray-400 bg-[#35353E] text-gray-300 hover:bg-[#35353E]/80"
             }`}
             onClick={() => handleThemeChange("deem")}
             aria-pressed={isDeem}
@@ -71,7 +71,7 @@ const SystemThemeSection: React.FC = () => {
             className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-2xl font-semibold text-sm transition-all ${
               currentTheme === "dark"
                 ? "bg-[#1D8751] text-white"
-                : "border border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751] hover:text-white"
+                : "border border-gray-400 bg-[#35353E] text-gray-300 hover:bg-[#35353E]/80"
             }`}
             onClick={() => handleThemeChange("dark")}
             aria-pressed={currentTheme === "dark"}

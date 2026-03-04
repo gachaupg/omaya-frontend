@@ -1,9 +1,21 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import WithdrawalForm from "./forms/withdrwal";
 import DepositForm from "./forms/deposit";
 import { consumeExpressPrefillState } from "@/lib/utils/authRedirect";
+
+/** Parse prefill from URL synchronously so form gets correct initial state on first render */
+function parsePrefillFromUrl(searchParams: URLSearchParams | null): Record<string, any> | null {
+  if (!searchParams) return null;
+  const prefillParam = searchParams.get("prefill");
+  if (!prefillParam) return null;
+  try {
+    return JSON.parse(decodeURIComponent(prefillParam)) as Record<string, any>;
+  } catch {
+    return null;
+  }
+}
 
 interface ExpressExchangeFormProps {
   onExchange: (transactionData: {
@@ -46,8 +58,14 @@ const ExpressExchangeForm: React.FC<ExpressExchangeFormProps> = ({
   isHomePage = false,
 }) => {
   const searchParams = useSearchParams();
+  const prefillFromUrl = useMemo(
+    () => parsePrefillFromUrl(searchParams),
+    [searchParams]
+  );
   const [mode, setMode] = useState<"deposit" | "withdrawal">(initialMode);
-  const [prefillState, setPrefillState] = useState<any>(null);
+  const [prefillState, setPrefillState] = useState<Record<string, any> | null>(
+    () => prefillFromUrl
+  );
   // Preserve state when switching modes
   const [preservedState, setPreservedState] = useState<any>(null);
 
@@ -64,21 +82,12 @@ const ExpressExchangeForm: React.FC<ExpressExchangeFormProps> = ({
     setMode(initialMode);
   }, [initialMode]);
 
-  // Parse prefill from URL or sessionStorage (for login redirect from home page)
+  // Fallback: consume prefill from sessionStorage when URL has no prefill (e.g. truncated)
   useEffect(() => {
     if (prefillState) return;
-    const prefillParam = searchParams?.get("prefill");
-    if (prefillParam) {
-      try {
-        setPrefillState(JSON.parse(decodeURIComponent(prefillParam)));
-      } catch (error) {
-        console.warn("Failed to parse prefill state", error);
-      }
-    } else {
-      const fromStorage = consumeExpressPrefillState();
-      if (fromStorage) setPrefillState(fromStorage);
-    }
-  }, [searchParams, prefillState]);
+    const fromStorage = consumeExpressPrefillState();
+    if (fromStorage) setPrefillState(fromStorage);
+  }, [prefillState]);
 
   return (
     <div className="w-full mt-0">

@@ -94,8 +94,12 @@ const EmailPhoneChangeModal: React.FC<EmailPhoneChangeModalProps> = ({
       setStep("otp");
       setOtp("");
     } catch (err: any) {
-      setError(err || "Failed to send OTP");
-      showToast.error(err || "Failed to send OTP");
+      const message =
+        typeof err === "string"
+          ? err
+          : err?.error ?? err?.message ?? err?.detail ?? "Failed to send OTP";
+      setError(message);
+      showToast.error(message);
     } finally {
       setLoading(false);
     }
@@ -140,8 +144,12 @@ const EmailPhoneChangeModal: React.FC<EmailPhoneChangeModalProps> = ({
       );
       onClose();
     } catch (err: any) {
-      setError(err || "Verification failed");
-      showToast.error(err || "Verification failed");
+      const message =
+        typeof err === "string"
+          ? err
+          : err?.error ?? err?.message ?? err?.detail ?? "Verification failed";
+      setError(message);
+      showToast.error(message);
     } finally {
       setLoading(false);
     }

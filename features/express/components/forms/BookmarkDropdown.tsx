@@ -16,6 +16,8 @@ interface BookmarkDropdownProps {
   onSaveCurrent: () => void;
   anchorRef: React.RefObject<HTMLElement | null>;
   isDark?: boolean;
+  /** When true, disables the "Whitelist address" button (e.g. address failed validation) */
+  saveDisabled?: boolean;
 }
 
 export function BookmarkDropdown({
@@ -29,6 +31,7 @@ export function BookmarkDropdown({
   onSaveCurrent,
   anchorRef,
   isDark = false,
+  saveDisabled = false,
 }: BookmarkDropdownProps) {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -58,7 +61,7 @@ export function BookmarkDropdown({
       }`}
     >
       <div className="p-2 max-h-[280px] overflow-y-auto">
-        {currentAddress.trim() && (
+        {currentAddress.trim() && !saveDisabled && (
           <button
             type="button"
             onClick={() => {
@@ -78,7 +81,7 @@ export function BookmarkDropdown({
                 <path d="M12 4v16m8-8H4" strokeLinecap="round" />
               </svg>
             )}
-            Save current address
+            Whitelist address
           </button>
         )}
         <div className={`border-t my-1 ${isDark ? "border-[#35353E]" : "border-gray-200"}`} />

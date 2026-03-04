@@ -24,8 +24,8 @@ export interface PaymentDetailUpdatedData {
 }
 
 export interface WebSocketMessage extends BaseWebSocketMessage {
-  type: "payment_detail_updated" | "connection_established" | "error";
-  data: PaymentDetailUpdatedData | { message?: string; connection_id?: string };
+  type: "payment_detail_updated" | "payment_detail_added" | "payment_details_list" | "connection_established" | "error";
+  data: PaymentDetailUpdatedData | PaymentDetailUpdatedData[] | { message?: string; connection_id?: string };
 }
 
 type MessageHandler = (message: WebSocketMessage) => void;
