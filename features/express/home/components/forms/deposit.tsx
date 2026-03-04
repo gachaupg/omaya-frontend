@@ -64,6 +64,16 @@ interface DepositFormProps {
   mode: "deposit" | "withdrawal";
   onModeChange?: (mode: "deposit" | "withdrawal") => void;
   isHomePage?: boolean;
+  initialState?: {
+    amountValue?: number;
+    amountInput?: string;
+    receiveAmountValue?: number;
+    receiveAmountInput?: string;
+    asset?: any;
+    payment?: any;
+    payBank?: string;
+    walletAddress?: string;
+  };
 }
 
 // Network mapping function
@@ -3971,7 +3981,7 @@ export default function DepositForm({
               Wallet/Account Address
             </label>
             {/* Input group */}
-            <div className="relative flex items-center bg-transparent dark:bg-transparent border border-[#39394a] dark:border-[#39394A] rounded-2xl px-2 sm:px-4 py-2 mb-4 gap-1 sm:gap-2 overflow-hidden">
+            <div className="relative flex items-center bg-transparent dark:bg-transparent border border-[#39394a] dark:border-[#39394A] rounded-2xl px-2 sm:px-4 py-2 mb-4 gap-1 sm:gap-2">
               {/* Left icon */}
               <span className="mr-2 text-[#1D8751]">
                 <svg width="22" height="22" fill="none" viewBox="0 0 24 24">
@@ -4026,7 +4036,7 @@ export default function DepositForm({
               {/* Bookmark icon - clickable to load from bookmarks */}
               <span
                 ref={bookmarkAnchorRef}
-                className="mx-1 sm:mx-2 text-[#1D8751] cursor-pointer shrink-0 hover:opacity-80 transition-opacity"
+                className="relative mx-1 sm:mx-2 text-[#1D8751] cursor-pointer shrink-0 hover:opacity-80 transition-opacity"
                 onClick={async () => {
                   if (bookmarkOpen) {
                     setBookmarkOpen(false);
@@ -4040,36 +4050,37 @@ export default function DepositForm({
                 <svg width="18" height="18" className="sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
                 </svg>
+                <BookmarkDropdown
+                  isOpen={bookmarkOpen}
+                  onClose={() => setBookmarkOpen(false)}
+                  bookmarks={bookmarks}
+                  loading={bookmarksLoading}
+                  saving={bookmarkSaving}
+                  currentAddress={walletAddress}
+                  asset={currentCurrency}
+                  network={currentNetwork || undefined}
+                  onSelect={(addr) => {
+                    setWalletAddress(addr);
+                    if (addr.trim()) validateAddress(addr, currentCurrency, currentNetwork);
+                    else resetAddressValidation();
+                  }}
+                  onSaveCurrent={async () => {
+                    if (!walletAddress.trim() || !currentCurrency || !currentNetwork) {
+                      showToast.error("Enter address and select asset/network first");
+                      return;
+                    }
+                    await saveBookmark({
+                      address: walletAddress.trim(),
+                      label: `My ${currentCurrency} wallet`,
+                      network: currentNetwork,
+                      asset: currentCurrency,
+                    });
+                  }}
+                  anchorRef={bookmarkAnchorRef}
+                  isDark={isDark}
+                  saveDisabled={isAddressValidating || !(addressValidationResult?.isValid)}
+                />
               </span>
-              <BookmarkDropdown
-                isOpen={bookmarkOpen}
-                onClose={() => setBookmarkOpen(false)}
-                bookmarks={bookmarks}
-                loading={bookmarksLoading}
-                saving={bookmarkSaving}
-                currentAddress={walletAddress}
-                asset={currentCurrency}
-                network={currentNetwork || undefined}
-                onSelect={(addr) => {
-                  setWalletAddress(addr);
-                  if (addr.trim()) validateAddress(addr, currentCurrency, currentNetwork);
-                  else resetAddressValidation();
-                }}
-                onSaveCurrent={async () => {
-                  if (!walletAddress.trim() || !currentCurrency || !currentNetwork) {
-                    showToast.error("Enter address and select asset/network first");
-                    return;
-                  }
-                  await saveBookmark({
-                    address: walletAddress.trim(),
-                    label: `My ${currentCurrency} wallet`,
-                    network: currentNetwork,
-                    asset: currentCurrency,
-                  });
-                }}
-                anchorRef={bookmarkAnchorRef}
-                isDark={isDark}
-              />
               {/* Paste button */}
               <button
                 title="Paste"

@@ -52,6 +52,7 @@ export const useLiveChatWebSocket = ({
   autoReconnect = true,
 }: UseLiveChatWebSocketOptions) => {
   const [isConnected, setIsConnected] = useState(false);
+  const [connectionFailed, setConnectionFailed] = useState(false);
   const [lastMessage, setLastMessage] = useState<LiveChatWebSocketMessage | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isTyping, setIsTyping] = useState<{ userName: string; isTyping: boolean } | null>(null);
@@ -78,25 +79,17 @@ export const useLiveChatWebSocket = ({
   }, [onMessage, onError, onClose, onChatHistory]);
 
   const getAccessToken = useCallback((): string | null => {
-    // Try to get token from cookie first
-    let token = cookieUtils.getCookie("access_token");
-    
+    // Use same token source as apiClient (storage profile)
+    let token = storage.getToken();
     if (!token && typeof window !== "undefined") {
-      // Fallback to localStorage
-      token = localStorage.getItem("access_token");
+      token = cookieUtils.getCookie("access_token") || localStorage.getItem("access_token") || null;
     }
-
-    if (!token) {
-      // Try from storage
-      const profile = storage.getProfile();
-      token = profile?.tokens?.access || null;
-    }
-
     return token;
   }, []);
 
   const connect = useCallback(() => {
     if (!enabled || !sessionId) return;
+    setConnectionFailed(false);
 
     // Prevent multiple connections
     if (wsRef.current && wsRef.current.readyState === WebSocket.CONNECTING) {
@@ -122,6 +115,7 @@ export const useLiveChatWebSocket = ({
     const token = getAccessToken();
     if (!token) {
       logger.warn("live-chat", "No access token available for WebSocket connection");
+      setConnectionFailed(true);
       return;
     }
 
@@ -137,6 +131,7 @@ export const useLiveChatWebSocket = ({
       ws.onopen = () => {
         logger.debug("live-chat", "WebSocket connected");
         setIsConnected(true);
+        setConnectionFailed(false);
         reconnectAttemptsRef.current = 0;
         
         // Reset history loaded flag when reconnecting
@@ -277,14 +272,27 @@ export const useLiveChatWebSocket = ({
               connect();
             }
           }, reconnectDelay * reconnectAttemptsRef.current);
+        } else if (enabled && sessionId) {
+          setConnectionFailed(true);
         }
       };
     } catch (error) {
       logger.error("live-chat", "Failed to create WebSocket:", error);
       setIsConnected(false);
+      setConnectionFailed(true);
       wsRef.current = null;
     }
   }, [sessionId, enabled, autoReconnect, getAccessToken]);
+
+  const retryConnection = useCallback(() => {
+    setConnectionFailed(false);
+    reconnectAttemptsRef.current = 0;
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
+    connect();
+  }, [connect]);
 
   useEffect(() => {
     if (!enabled || !sessionId) {
@@ -372,6 +380,8 @@ export const useLiveChatWebSocket = ({
 
   return {
     isConnected,
+    connectionFailed,
+    retryConnection,
     lastMessage,
     messages,
     isTyping,

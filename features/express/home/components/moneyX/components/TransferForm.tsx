@@ -1173,6 +1173,7 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
                   }}
                   anchorRef={bookmarkAnchorRef}
                   isDark={isDark}
+                  saveDisabled={!!bankAddressError}
                 />
               </span>
               {/* Paste button */}
@@ -1315,7 +1316,11 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
             />
             <label htmlFor="moneyx-terms-accept" className={`text-sm cursor-pointer ${isDark ? "text-[#788099]" : "text-gray-700"}`}>
               I agree to the{" "}
-              <Link href="/legal/terms-of-service" target="_blank" className="text-[#1D8751] cursor-pointer hover:underline">
+              <Link
+                href="/legal/terms-of-service"
+                onClick={() => setIsTermsAccepted(true)}
+                className="text-[#1D8751] cursor-pointer hover:underline"
+              >
                 Terms of Use
               </Link>
             </label>

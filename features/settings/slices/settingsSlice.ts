@@ -30,6 +30,16 @@ function normalizeApiErrorMessage(error: any, fallback: string): string {
   return msg;
 }
 
+/** Extract user-facing error from API response (supports error, message, detail). */
+function getApiErrorPayload(error: any): string | undefined {
+  const data = error?.response?.data;
+  if (!data || typeof data !== "object") return undefined;
+  const msg = data.error ?? data.message ?? data.detail;
+  if (typeof msg === "string") return msg;
+  if (Array.isArray(msg) && msg.length > 0 && typeof msg[0] === "string") return msg[0];
+  return undefined;
+}
+
 const initialState: SettingsState = {
   profile: null,
   theme: {
@@ -105,9 +115,8 @@ export const requestProfileChange = createAsyncThunk(
       );
       return { ...response, type: payload.type, value: payload.value };
     } catch (error: any) {
-      return rejectWithValue(
-        error?.response?.data?.message || error?.message || "Failed to send OTP"
-      );
+      const payload = getApiErrorPayload(error) || error?.message || "Failed to send OTP";
+      return rejectWithValue(payload);
     }
   }
 );
@@ -125,11 +134,11 @@ export const verifyProfileChange = createAsyncThunk(
       );
       return { ...response, field: payload.field, value: payload.value };
     } catch (error: any) {
-      return rejectWithValue(
-        error?.response?.data?.message ||
-          error?.message ||
-          "Failed to verify and apply change"
-      );
+      const payload =
+        getApiErrorPayload(error) ||
+        error?.message ||
+        "Failed to verify and apply change";
+      return rejectWithValue(payload);
     }
   }
 );

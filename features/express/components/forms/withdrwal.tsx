@@ -178,6 +178,8 @@ interface DepositFormProps {
   initialState?: {
     amountValue?: number;
     amountInput?: string;
+    receiveAmountValue?: number;
+    receiveAmountInput?: string;
     asset?: any;
     paymentDetails?: UserPaymentDetail[];
   };
@@ -561,6 +563,35 @@ export default function WithdrawalForm({
   const [getAmountInput, setGetAmountInput] = useState(
     initialState?.amountInput ?? "0"
   );
+  const hasAppliedPrefillRef = useRef(false);
+
+  // Restore amounts when initialState arrives async (e.g. prefill parsed after first render from login redirect)
+  useEffect(() => {
+    if (
+      !hasAppliedPrefillRef.current &&
+      initialState?.amountValue !== undefined &&
+      initialState?.amountValue !== null
+    ) {
+      hasAppliedPrefillRef.current = true;
+      setPayAmount(initialState.amountValue);
+      setPayAmountInput(
+        initialState.amountInput || String(initialState.amountValue)
+      );
+      if (initialState.receiveAmountValue !== undefined) {
+        setGetAmount(initialState.receiveAmountValue);
+        setGetAmountInput(
+          initialState.receiveAmountInput ||
+            String(initialState.receiveAmountValue)
+        );
+      } else {
+        setGetAmount(initialState.amountValue);
+        setGetAmountInput(
+          initialState.amountInput || String(initialState.amountValue)
+        );
+      }
+    }
+  }, [initialState?.amountValue, initialState?.amountInput, initialState?.receiveAmountValue, initialState?.receiveAmountInput]);
+
   const [selectedAsset, setSelectedAsset] = useState<any>(
     initialState?.asset || null
   );
@@ -911,9 +942,22 @@ export default function WithdrawalForm({
     payBank &&
     selectedPaymentDetails.length > 0 &&
     selectedPaymentDetails[0].status &&
-    selectedPaymentDetails[0].status !== "approved" &&
-    selectedPaymentDetails[0].status !== "verified"
+    selectedPaymentDetails[0].status.toLowerCase() !== "approved" &&
+    selectedPaymentDetails[0].status.toLowerCase() !== "verified"
   );
+
+  // Sync selectedPaymentDetails when WebSocket refetches and status changes (e.g. Pending → APPROVED)
+  useEffect(() => {
+    if (selectedPaymentDetails.length === 0 || enhancedFilteredUserPaymentDetails.length === 0) return;
+    const selectedId = selectedPaymentDetails[0].id;
+    const freshDetail = enhancedFilteredUserPaymentDetails.find(
+      (d: any) => d.id === selectedId || String(d.id) === String(selectedId)
+    );
+    if (freshDetail) {
+      setSelectedPaymentDetails([freshDetail]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only sync when source data changes
+  }, [enhancedFilteredUserPaymentDetails]);
 
   useEffect(() => {
     // Skip API calls on home page - buttons will redirect to login

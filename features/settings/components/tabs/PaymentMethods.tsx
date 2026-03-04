@@ -1,5 +1,7 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
+import { consumePaymentModalPrefill } from "@/lib/utils/authRedirect";
 import { AppDispatch } from "@/store";
 import { RootState } from "@/store/rootReducer";
 import {
@@ -157,8 +159,12 @@ const WalletAddressCard = ({
 const ITEMS_PER_PAGE = 5;
 
 const PaymentMethods = () => {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const dispatch = useDispatch<AppDispatch>();
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const hasAppliedRedirectPrefill = useRef(false);
   const {
     userPaymentDetails,
     userDetailsLoading,
@@ -184,6 +190,7 @@ const PaymentMethods = () => {
     deleteLoading: userWalletDeleteLoading,
   } = useSelector((state: RootState) => state.userWalletAddresses);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [modalFilterProvider, setModalFilterProvider] = useState<string | undefined>();
   const [showAddWalletModal, setShowAddWalletModal] = useState(false);
   const [deletingMethodId, setDeletingMethodId] = useState<string | null>(null);
   const [activeButton, setActiveButton] = useState("Approved");
@@ -234,6 +241,24 @@ const PaymentMethods = () => {
       dispatch(fetchAdminPaymentMethods() as any);
     }
   }, [dispatch, isAuthenticated]);
+
+  // Open add payment modal when returning from login redirect (from home withdrawal "Register Now")
+  useEffect(() => {
+    if (!isAuthenticated || hasAppliedRedirectPrefill.current) return;
+    const openAdd = searchParams?.get("openAddModal") === "1";
+    if (!openAdd) return;
+    const prefillFromUrl = {
+      method: searchParams?.get("method") || undefined,
+      provider: searchParams?.get("provider") || undefined,
+    };
+    const prefill = (prefillFromUrl.method || prefillFromUrl.provider)
+      ? prefillFromUrl
+      : consumePaymentModalPrefill();
+    if (!prefill?.method && !prefill?.provider) return;
+    hasAppliedRedirectPrefill.current = true;
+    if (prefill.provider) setModalFilterProvider(prefill.provider);
+    setShowPaymentModal(true);
+  }, [isAuthenticated, searchParams]);
 
   useEffect(() => {
     if (isAuthenticated && activeButton === "OMAYA Wallets") {
@@ -619,11 +644,27 @@ const PaymentMethods = () => {
           )}
         </div>
       </div>
-      <PaymentMethodsModal
-        open={showPaymentModal}
-        onClose={() => setShowPaymentModal(false)}
-        onAdd={() => dispatch(fetchUserPaymentDetails() as any)}
-      />
+      {showPaymentModal && (
+        <PaymentMethodsModal
+          key="add-payment-modal"
+          open={true}
+          onClose={() => {
+            setShowPaymentModal(false);
+            setModalFilterProvider(undefined);
+            // Clear openAddModal from URL so modal can be opened again from the button
+            const params = new URLSearchParams(searchParams?.toString() || "");
+            if (params.has("openAddModal") || params.has("method") || params.has("provider")) {
+              params.delete("openAddModal");
+              params.delete("method");
+              params.delete("provider");
+              const qs = params.toString();
+              router.replace(window.location.pathname + (qs ? `?${qs}` : ""));
+            }
+          }}
+          onAdd={() => dispatch(fetchUserPaymentDetails() as any)}
+          filterByProviderName={modalFilterProvider}
+        />
+      )}
       <AddWalletAddressModal
         open={showAddWalletModal}
         onClose={() => setShowAddWalletModal(false)}

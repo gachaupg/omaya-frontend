@@ -1369,6 +1369,7 @@ export default function TransferForm({ onTransfer, initialState }: TransferFormP
                   }}
                   anchorRef={bookmarkAnchorRef}
                   isDark={isDark}
+                  saveDisabled={!!bankAddressError}
                 />
               </span>
               {/* Paste button */}

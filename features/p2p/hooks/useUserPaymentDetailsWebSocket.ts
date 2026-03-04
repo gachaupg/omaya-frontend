@@ -57,13 +57,16 @@ export const useUserPaymentDetailsWebSocket = (
       if (!mountedRef.current) return;
 
       try {
-        if (message.type === "payment_detail_updated") {
+        const shouldRefetch =
+          message.type === "payment_detail_updated" ||
+          message.type === "payment_detail_added" ||
+          message.type === "payment_details_list";
+        if (shouldRefetch) {
           logger.debug(
             "user-payment-details",
-            "Payment detail updated, refetching user payment details",
-            message.data
+            `Payment detail ${message.type}, refetching user payment details`
           );
-          // Refetch P2P payment methods (used by UserPaymentSelector, Adds, etc.)
+          // Refetch P2P payment methods (used by UserPaymentSelector, Adds, withdrawal form, etc.)
           dispatch(fetchP2PPaymentDetails() as any);
           // Refetch exchange payment details (with cache invalidation)
           dispatch(fetchExchangePaymentDetails(true));
