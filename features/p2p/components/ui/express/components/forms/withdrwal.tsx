@@ -232,6 +232,7 @@ interface DepositFormProps {
   balance?: number;
   isHomePage?: boolean;
   onCancel?: () => void;
+  onBeforeLegalNavigate?: () => void;
 }
 
 export default function WithdrawalForm({
@@ -241,6 +242,7 @@ export default function WithdrawalForm({
   balance,
   isHomePage = false,
   onCancel,
+  onBeforeLegalNavigate,
 }: DepositFormProps) {
   // Use available amount from transaction summary (same common source as Available.tsx / P2PDashboard)
   const summary = useSelector(selectTransactionSummary);
@@ -3148,6 +3150,7 @@ export default function WithdrawalForm({
             {/* Terms and Conditions Summary - same layout as swap */}
             <TermsAndConditionsSummary
               asset={selectedAsset?.ticker || selectedAsset?.symbol || "USDT"}
+              onBeforeLegalNavigate={onBeforeLegalNavigate}
             />
 
             {/* Terms Checkbox */}

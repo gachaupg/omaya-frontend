@@ -71,6 +71,7 @@ interface DepositFormProps {
   balance?: number;
   skipAmountValidation?: boolean; // New prop to skip amount validation when posting ads
   onCancel?: () => void;
+  onBeforeLegalNavigate?: () => void;
 }
 
 export default function DepositForm({
@@ -80,6 +81,7 @@ export default function DepositForm({
   balance,
   skipAmountValidation = false,
   onCancel,
+  onBeforeLegalNavigate,
 }: DepositFormProps) {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
@@ -2614,6 +2616,7 @@ export default function DepositForm({
                 {/* Terms and Conditions Summary - same layout as swap */}
                 <TermsAndConditionsSummary
                   asset={selectedAsset?.ticker || selectedAsset?.symbol || "USDT"}
+                  onBeforeLegalNavigate={onBeforeLegalNavigate}
                 />
 
 
