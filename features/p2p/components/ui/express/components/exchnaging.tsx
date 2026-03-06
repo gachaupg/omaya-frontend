@@ -1428,17 +1428,16 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               <>
                 <img
                   src={
-                    effectiveTransactionData.paymentDetail.logo_url ||
-                    effectiveTransactionData.paymentDetail.logo ||
-                    effectiveTransactionData.paymentDetail.provider_logo ||
-                    "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
+                    effectiveTransactionData?.asset?.icon ||
+                    effectiveTransactionData?.asset?.icon_url ||
+                    effectiveTransactionData?.asset?.image_url ||
+                    effectiveTransactionData?.asset?.image ||
+                    "/images/tether.svg"
                   }
-                  alt={effectiveTransactionData.paymentDetail.provider_name}
-                  className="w-7 h-7 rounded-full flex-shrink-0 mt-0.5"
+                  alt={effectiveTransactionData?.asset?.symbol || "USDT"}
+                  className="w-8 h-8 rounded-full flex-shrink-0 mt-0.5"
                   onError={(e) => {
-                    if (e.currentTarget.src !== "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png") {
-                      e.currentTarget.src = "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
-                    }
+                    e.currentTarget.src = "/images/tether.svg";
                   }}
                 />
                 <div className="min-w-0 flex-1 space-y-0.5">
@@ -1570,9 +1569,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
             <li className="text-white text-sm">
               Do not send from exchange accounts
             </li>
-            <li className="text-white text-sm">
-              Minimum confirmations required: 1
-            </li>
+           
           </ul>
         </div>
       </div>

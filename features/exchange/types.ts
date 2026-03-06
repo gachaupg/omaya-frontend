@@ -42,10 +42,28 @@ export interface AssetsResponse {
 export interface FavoriteAsset {
   favorite_asset_id: string;
   asset_symbol: string;
+  asset_name?: string;
   asset_image: string;
-  added_on: string; 
+  network?: string;
+  percentage?: string;
+  price?: string;
+  added_on: string;
 }
 
+export interface AddFavoritePayload {
+  asset_symbol: string;
+  asset_name: string;
+  asset_image: string;
+  network: string;
+  percentage: string;
+  price: string;
+}
+
+export interface RemoveFavoritePayload {
+  favorite_asset_id: string;
+}
+
+/** @deprecated Use AddFavoritePayload / RemoveFavoritePayload */
 export interface ManageFavoritePayload {
   asset_id: string;
 }

@@ -6,6 +6,8 @@ import { RootState } from "@/store/rootReducer";
 import {
   fetchPublicPaymentMethods,
   postUserPaymentDetail,
+  sendPaymentDetailAddOtp,
+  verifyPaymentDetailAddOtp,
   clearPostStatus,
 } from "../../../../slices/paymentMethodsSlice";
 import { showToast } from "../../../../../../lib/utils/toast";
@@ -27,6 +29,8 @@ interface PaymentMethodsModalProps {
   onAdd?: () => void;
   /** When set (e.g. from trade preview "Add new X payment method"), only show payment methods/providers matching this name */
   filterByProviderName?: string;
+  /** When provided, called on success instead of onClose - allows parent to show OTP modal etc. */
+  onAddSuccess?: () => void;
 }
 
 const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
@@ -34,6 +38,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
   onClose,
   onAdd,
   filterByProviderName,
+  onAddSuccess,
 }) => {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
@@ -57,6 +62,11 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
   const [account, setAccount] = useState("");
   const [allowAutoSend, setAllowAutoSend] = useState(false);
   const [isClient, setIsClient] = useState(false);
+  const [step, setStep] = useState<"form" | "otp">("form");
+  const [otpCode, setOtpCode] = useState("");
+  const [pendingPayload, setPendingPayload] = useState<PaymentDetailPayload | null>(null);
+  const [sendOtpLoading, setSendOtpLoading] = useState(false);
+  const [verifyOtpLoading, setVerifyOtpLoading] = useState(false);
 
   // Set isClient to true after mount
   useEffect(() => {
@@ -94,6 +104,9 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
        setName(fullName);
        setAccount("");
        setAllowAutoSend(false);
+       setStep("form");
+       setOtpCode("");
+       setPendingPayload(null);
        dispatch(clearPostStatus());
      }
    }, [open, dispatch, isClient, user]);
@@ -190,8 +203,8 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
    logger.debug('p2p', "DEBUG: selected method:", method);
    logger.debug('p2p', "DEBUG: providers for method:", providers);
 
-     // Handle Add
-   const handleAdd = () => {
+     // Handle Add - first send OTP, then show OTP step
+   const handleAdd = async () => {
      logger.debug('p2p', "handleAdd called", { method, provider, name, account });
      if (!isAuthenticated) {
        logger.debug('p2p', "User not authenticated");
@@ -209,37 +222,71 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
    );
     logger.debug('p2p', "Selected provider", selectedProvider);
     
-    // Use the provider field (e.g., "Cooperative Bank") instead of provider_name (e.g., "Cooperative Bank - Bank")
+    // Use the provider field (e.g., "Cooperative Bank") instead of provider_name
     const providerField = selectedProvider?.provider || provider;
     
     const payload: PaymentDetailPayload = {
       account_name: name,
       account_number: account,
       payment_method_name: method,
-      payment_provider_name: providerField, // Use provider field, not provider_name
-      provider_name: providerField, // Use provider field, not provider_name
+      payment_provider_name: providerField,
+      provider_name: providerField,
       wallet_address: shouldUseWalletAddressField
         ? account
         : selectedProvider?.wallet_address || null,
     };
-
     payload.allow_auto_send = allowAutoSend;
-    logger.debug('p2p', "Dispatching payload", payload);
-    dispatch(postUserPaymentDetail(payload));
+
+    setSendOtpLoading(true);
+    try {
+      const result = await dispatch(sendPaymentDetailAddOtp() as any);
+      if (sendPaymentDetailAddOtp.fulfilled.match(result)) {
+        showToast.success("OTP sent to your email address");
+        setPendingPayload(payload);
+        setStep("otp");
+      } else if (sendPaymentDetailAddOtp.rejected.match(result)) {
+        showToast.error((result.payload as string) || "Failed to send OTP");
+      }
+    } finally {
+      setSendOtpLoading(false);
+    }
    };
 
-  // Close modal on success
+   // Handle OTP verify - then add payment detail
+   const handleVerifyOtp = async () => {
+     if (!pendingPayload || !otpCode.trim() || otpCode.length < 6) {
+       showToast.error("Please enter a valid 6-digit OTP");
+       return;
+     }
+     setVerifyOtpLoading(true);
+     try {
+       const verifyResult = await dispatch(verifyPaymentDetailAddOtp(otpCode) as any);
+       if (verifyPaymentDetailAddOtp.fulfilled.match(verifyResult)) {
+         showToast.success("OTP verified successfully. You can now add your payment method.");
+         dispatch(postUserPaymentDetail(pendingPayload));
+       } else if (verifyPaymentDetailAddOtp.rejected.match(verifyResult)) {
+         showToast.error((verifyResult.payload as string) || "Invalid OTP");
+       }
+     } finally {
+       setVerifyOtpLoading(false);
+     }
+   };
+
+  // Close modal on success (or hand off to onAddSuccess for OTP flow)
   useEffect(() => {
     logger.debug('p2p', "postSuccess effect triggered", postSuccess);
     if (postSuccess) {
       logger.debug('p2p', "Payment method added successfully!");
       showToast.success("Payment method added!");
       if (onAdd) onAdd();
-      onClose();
-      // Clear the success state to prevent multiple toasts
+      if (onAddSuccess) {
+        onAddSuccess();
+      } else {
+        onClose();
+      }
       dispatch(clearPostStatus());
     }
-  }, [postSuccess, onAdd, onClose, dispatch]);
+  }, [postSuccess, onAdd, onClose, onAddSuccess, dispatch]);
 
   // Handle errors
   useEffect(() => {
@@ -293,6 +340,45 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
              </svg>
            </button>
         </div>
+        {step === "otp" ? (
+          <div className="flex flex-col gap-3">
+            <p className="text-sm text-gray-600 dark:text-[#788099]">
+              We&apos;ve sent a verification code to your email address. Enter it below to continue.
+            </p>
+            <input
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              placeholder="Enter 6-digit OTP"
+              value={otpCode}
+              onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              className="w-full p-2.5 sm:p-3 rounded-[24px] bg-white dark:bg-[#18181D] border border-gray-200 dark:border-[#35353E] text-gray-900 dark:text-white text-center text-lg tracking-[0.4em] focus:outline-none focus:ring-2 focus:ring-[#1D8751] placeholder:text-gray-400 dark:placeholder:text-[#788099]"
+              maxLength={6}
+            />
+            <div className="flex flex-col sm:flex-row gap-3 mt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setStep("form");
+                  setOtpCode("");
+                  setPendingPayload(null);
+                }}
+                className="flex-1 rounded-xl border border-gray-200 dark:border-[#35353E] bg-transparent text-gray-700 dark:text-white py-2.5 sm:py-3 font-medium hover:bg-gray-50 dark:hover:bg-[#23232B] transition-colors text-sm sm:text-base"
+                disabled={verifyOtpLoading}
+              >
+                Back
+              </button>
+              <button
+                type="button"
+                onClick={handleVerifyOtp}
+                disabled={verifyOtpLoading || otpCode.length !== 6}
+                className="flex-1 rounded-xl bg-[#1D8751] text-white py-2.5 sm:py-3 font-medium hover:bg-[#17693f] transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+              >
+                {verifyOtpLoading ? "Verifying..." : "Verify OTP"}
+              </button>
+            </div>
+          </div>
+        ) : (
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -445,9 +531,9 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
           {/* Error/Loading */}
           {publicMethodsError && <div className="text-red-500 text-sm">{publicMethodsError}</div>}
           {postError && <div className="text-red-500 text-sm">{postError}</div>}
-          {postLoading && (
+          {(sendOtpLoading || postLoading) && (
             <div className="text-blue-500 text-sm">
-              Adding payment method...
+              {sendOtpLoading ? "Sending OTP..." : "Adding payment method..."}
             </div>
           )}
 
@@ -470,7 +556,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                 onClose();
               }}
               type="button"
-              disabled={publicMethodsLoading || postLoading}
+              disabled={publicMethodsLoading || postLoading || sendOtpLoading}
             >
               Cancel
             </button>
@@ -481,13 +567,14 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                 disabled={
                   publicMethodsLoading ||
                   postLoading ||
+                  sendOtpLoading ||
                   !method ||
                   !provider ||
                   !name ||
                   !account
                 }
               >
-                {postLoading ? "Adding..." : "Add"}
+                {sendOtpLoading ? "Sending OTP..." : postLoading ? "Adding..." : "Add"}
               </button>
             ) : (
               <button
@@ -505,6 +592,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
             )}
           </div>
         </form>
+        )}
       </div>
     </div>
   );

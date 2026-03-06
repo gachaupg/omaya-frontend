@@ -42,6 +42,7 @@ import { useValidateAddress } from "@/hooks/useValidateAddress";
 import { openKYCModal, checkKYCStatus } from "@/features/auth/slices/authSlice";
 import { useBookmarkedAddresses } from "@/features/express/hooks/useBookmarkedAddresses";
 import { BookmarkDropdown } from "@/features/express/components/forms/BookmarkDropdown";
+import { bookmarkedAddressesApi } from "@/features/express/services/bookmarkedAddressesApi";
 import { fetchCommission, getCommissionApiAsset } from "@/features/express/api";
 
 interface DepositFormProps {
@@ -75,6 +76,23 @@ interface DepositFormProps {
     walletAddress?: string;
   };
 }
+
+// Network aliases for whitelist matching
+const NETWORK_ALIASES: Record<string, string[]> = {
+  trc20: ["trx", "trc20"],
+  trx: ["trx", "trc20"],
+  erc20: ["eth", "erc20"],
+  eth: ["eth", "erc20"],
+  bep20: ["bsc", "bep20"],
+  bep2: ["bsc", "bep2"],
+  bsc: ["bsc", "bep20", "bep2"],
+  matic: ["matic", "polygon"],
+  polygon: ["matic", "polygon"],
+};
+const getNetworkMatchKeys = (network: string): string[] => {
+  const n = (network || "").toLowerCase();
+  return NETWORK_ALIASES[n] ? [...NETWORK_ALIASES[n], n] : [n];
+};
 
 // Network mapping function
 const getNetworkDisplayName = (network: string) => {
@@ -575,6 +593,7 @@ export default function DepositForm({
   const [isAssetDropdownOpen, setIsAssetDropdownOpen] = useState(false);
   const [assetSearchTerm, setAssetSearchTerm] = useState("");
   const [assetFilterTab, setAssetFilterTab] = useState<"all" | "new" | "gainers" | "losers">("all");
+  const [whitelistBookmarks, setWhitelistBookmarks] = useState<Array<{ asset: string; network: string }>>([]);
   const assetDropdownRef = useRef<HTMLDivElement>(null);
   const assetDropdownContentRef = useRef<HTMLDivElement | null>(null);
   const [assetDropdownPosition, setAssetDropdownPosition] = useState({
@@ -623,6 +642,19 @@ export default function DepositForm({
       window.removeEventListener("scroll", handleReposition, true);
     };
   }, [isAssetDropdownOpen, updateAssetDropdownPosition]);
+
+  useEffect(() => {
+    if (!isAssetDropdownOpen) return;
+    bookmarkedAddressesApi
+      .list()
+      .then((list) => {
+        const pairs = Array.from(
+          new Map(list.map((b) => [`${b.asset.toLowerCase()}|${b.network.toLowerCase()}`, { asset: b.asset, network: b.network }])).values()
+        );
+        setWhitelistBookmarks(pairs);
+      })
+      .catch(() => setWhitelistBookmarks([]));
+  }, [isAssetDropdownOpen]);
 
   // Estimate calculation state
   const [estimate, setEstimate] = useState<any>(null);
@@ -1562,6 +1594,42 @@ export default function DepositForm({
     return 0;
   });
 
+  const whitelistKeys = useMemo(() => {
+    const keys = new Set<string>();
+    whitelistBookmarks.forEach((b) => {
+      const assetKey = b.asset.toLowerCase();
+      getNetworkMatchKeys(b.network).forEach((net) => keys.add(`${assetKey}|${net}`));
+    });
+    return keys;
+  }, [whitelistBookmarks]);
+
+  const whitelistAssets = useMemo(() => {
+    if (whitelistKeys.size === 0) return [];
+    const popularSlice = sortedSwapAssets.slice(0, 3);
+    const popularSet = new Set(
+      popularSlice.map((a) => `${(a?.ticker || a?.symbol || a?.name || "").toString().toLowerCase()}|${(a?.network || getAssetNetwork(a) || "").toString().toLowerCase()}`)
+    );
+    return sortedSwapAssets.filter((a) => {
+      const key = `${(a?.ticker || a?.symbol || a?.name || "").toString().toLowerCase()}|${(a?.network || getAssetNetwork(a) || "").toString().toLowerCase()}`;
+      return whitelistKeys.has(key) && !popularSet.has(key);
+    });
+  }, [sortedSwapAssets, whitelistKeys]);
+
+  const whitelistKeySet = useMemo(
+    () => new Set(whitelistAssets.map((a) => `${(a?.ticker || a?.symbol || a?.name || "").toString().toLowerCase()}|${(a?.network || getAssetNetwork(a) || "").toString().toLowerCase()}`)),
+    [whitelistAssets]
+  );
+
+  const allAssetsList = useMemo(() => {
+    if (assetSearchTerm) return sortedSwapAssets;
+    if (sortedSwapAssets.length <= 3) return sortedSwapAssets;
+    const excludePopular = sortedSwapAssets.slice(3);
+    return excludePopular.filter((a) => {
+      const key = `${(a?.ticker || a?.symbol || a?.name || "").toString().toLowerCase()}|${(a?.network || getAssetNetwork(a) || "").toString().toLowerCase()}`;
+      return !whitelistKeySet.has(key);
+    });
+  }, [assetSearchTerm, sortedSwapAssets, whitelistKeySet]);
+
   const renderAssetDropdown = () => {
     if (!isComponentMounted || !isAssetDropdownOpen) {
       return null;
@@ -1813,14 +1881,54 @@ export default function DepositForm({
                         </div>
                       ))}
 
+                    {whitelistAssets.length > 0 && (
+                      <>
+                        <div className="px-3 sm:px-4 py-2 bg-[#F5F6F7] dark:bg-[#23232B]">
+                          <span className="text-xs font-semibold text-[#788099] uppercase tracking-wider">
+                            Whitelist
+                          </span>
+                        </div>
+                        {whitelistAssets.map((asset: SupportedAsset, index: number) => (
+                          <div
+                            key={`whitelist-${asset.asset_id || "asset"}-${asset.symbol || asset.ticker || asset.name}-${asset.network || "unknown"}-${index}`}
+                            className="flex items-center gap-4 p-4 sm:p-5 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer transition-colors duration-150"
+                            onClick={() => {
+                              handleAssetSelection(asset);
+                              setIsAssetDropdownOpen(false);
+                              setAssetSearchTerm("");
+                              if (isHomePage) setAssetFilterTab("all");
+                            }}
+                          >
+                            <img
+                              src={asset?.image_url || asset?.asset_image || (asset as any)?.image || "/images/tether.svg"}
+                              alt={asset?.name || asset?.ticker || asset?.symbol || "Asset"}
+                              className="w-10 h-10 rounded-full object-cover"
+                              onError={(e) => { e.currentTarget.src = "/images/tether.svg"; }}
+                            />
+                            <div className="flex-1">
+                              <div className={`font-medium text-base flex items-center gap-2 ${isDark ? "text-white" : "text-[#1F2937]"}`}>
+                                {(asset.ticker || asset.symbol || asset.name || "Unknown").toUpperCase()}
+                                <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-normal px-2 py-0.5 rounded-full">
+                                  {getNetworkDisplayName(getAssetNetwork(asset))}
+                                </span>
+                              </div>
+                              <div className={`text-sm text-gray-500 dark:text-gray-400`}>
+                                {asset.name || asset.ticker || asset.symbol || "Unknown Asset"}
+                              </div>
+                            </div>
+                            {selectedAsset?.asset_id === asset.asset_id && (
+                              <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
+                            )}
+                          </div>
+                        ))}
+                      </>
+                    )}
+
                     <div className="border-t-2 border-gray-200 dark:border-gray-600"></div>
                   </>
                 )}
 
-                {(assetSearchTerm
-                  ? sortedSwapAssets
-                  : sortedSwapAssets.slice(3)
-                ).map((asset: SupportedAsset, index: number) => (
+                {(assetSearchTerm ? sortedSwapAssets : allAssetsList).map((asset: SupportedAsset, index: number) => (
                   <div
                     key={`${asset.asset_id || "asset"}-${asset.symbol || asset.ticker || asset.name}-${asset.network || "unknown"}-${index}`}
                     className="flex items-center gap-4 p-4 sm:p-5 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer transition-colors duration-150"

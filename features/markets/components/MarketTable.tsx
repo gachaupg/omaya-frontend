@@ -96,6 +96,10 @@ const formatPercentage = (percentage: number | null | undefined): string => {
   return `${sign}${percentage.toFixed(2)}%`;
 };
 
+// Format percentage for API (max 2 decimal places)
+const formatPercentageForApi = (val: number | null | undefined): string =>
+  (val != null && !isNaN(val) ? Number(val) : 0).toFixed(2);
+
 // Dynamic coin icon component
 const CoinIcon = ({
   image,
@@ -221,22 +225,8 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
     direction: "asc" | "desc" | null;
   } | null>(null);
   const [favoritesUpdateTrigger, setFavoritesUpdateTrigger] = useState(0);
-  const [localFavorites, setLocalFavorites] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const favScrollRef = useRef<HTMLDivElement>(null);
-
-  const getStoredFavorites = useCallback((): string[] => {
-    if (typeof window === "undefined") return [];
-    try {
-      const localFavoritesValue = localStorage.getItem("market_favorites");
-      if (!localFavoritesValue) return [];
-      const parsed = JSON.parse(localFavoritesValue);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch (error) {
-      console.warn("Error reading favorites from localStorage:", error);
-      return [];
-    }
-  }, []);
 
   useEffect(() => {
     if (!allAvailableAssets) {
@@ -252,49 +242,6 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
     dispatch(getFavoriteAssets());
     // eslint-disable-next-line
   }, [isAuthenticated]);
-
-  useEffect(() => {
-    setLocalFavorites(getStoredFavorites());
-  }, [getStoredFavorites]);
-
-  // Sync localStorage favorites when assets are loaded
-  useEffect(() => {
-    if (allAvailableAssets?.assets && favoriteAssets) {
-      if (typeof window !== "undefined") {
-        try {
-          const localFavorites = localStorage.getItem("market_favorites");
-          if (localFavorites) {
-            const favorites = JSON.parse(localFavorites);
-            // Try to add any localStorage favorites that aren't in Redux
-            favorites.forEach((symbol: string) => {
-              const asset = allAvailableAssets.assets?.find(
-                (a: Asset) =>
-                  a.symbol.toLowerCase() === symbol.toLowerCase() ||
-                  a.name.toLowerCase() === symbol.toLowerCase()
-              );
-              if (asset?.asset_id) {
-                const isFavorited = favoriteAssets.some(
-                  (fav: FavoriteAsset) =>
-                    fav.asset_symbol.toLowerCase() === symbol.toLowerCase()
-                );
-                if (!isFavorited) {
-                  // Silently try to sync, don't show toast
-                  dispatch(addFavoriteAsset({ asset_id: asset.asset_id })).catch(
-                    () => {
-                      // Ignore errors during sync
-                    }
-                  );
-                }
-              }
-            });
-          }
-        } catch (error) {
-          console.warn("Error syncing favorites from localStorage:", error);
-        }
-      }
-    }
-    // eslint-disable-next-line
-  }, [allAvailableAssets, favoriteAssets, favoritesUpdateTrigger]);
 
   // Make debug functions available globally for testing
   useEffect(() => {
@@ -435,55 +382,16 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
   const indexOfFirstItem = indexOfLastItem - ITEMS_PER_PAGE;
   const paginatedMarkets = filteredMarkets.slice(indexOfFirstItem, indexOfLastItem);
 
-  const localFavoriteMarkets = useMemo(() => {
-    if (!localFavorites.length || !markets.length) return [];
-
-    const seen = new Set<string>();
-
-    return localFavorites
-      .map((favoriteSymbol) => {
-        const normalizedFavorite = favoriteSymbol.toLowerCase();
-        const matchingMarket = markets.find(
-          (market) =>
-            market.symbol.toLowerCase() === normalizedFavorite ||
-            market.name.toLowerCase() === normalizedFavorite
-        );
-
-        if (matchingMarket && !seen.has(matchingMarket.id)) {
-          seen.add(matchingMarket.id);
-          return matchingMarket;
-        }
-
-        return null;
-      })
-      .filter(
-        (market): market is (typeof markets)[number] => market !== null
-      );
-  }, [localFavorites, markets, favoritesUpdateTrigger]);
-
-  const hasRemoteFavoriteAssets = Boolean(favoriteAssets?.length);
-  // Combine remote and local favorites - show local favorites even if remote favorites exist
-  const allFavoriteMarketsToShow = useMemo(() => {
-    const remoteSymbols = new Set(
-      (favoriteAssets ?? []).map((fav: FavoriteAsset) => fav.asset_symbol.toLowerCase())
-    );
-    // Only include local favorites that aren't already in remote favorites
-    const uniqueLocalFavorites = localFavoriteMarkets.filter(
-      (market) => !remoteSymbols.has(market.symbol.toLowerCase()) && !remoteSymbols.has(market.name.toLowerCase())
-    );
-    return uniqueLocalFavorites;
-  }, [favoriteAssets, localFavoriteMarkets]);
-
-  const showLocalFavoriteFallback = allFavoriteMarketsToShow.length > 0;
+  const hasFavoriteAssets = Boolean(favoriteAssets?.length);
 
   // Get top 3 markets for favorite assets - memoized
   // const favoriteAssets = useMemo(() => {
   //   return markets.slice(0, 3);
   // }, [markets]);
 
-  const handleRemoveFromFavorites = async (assetId: string) => {
+  const handleRemoveFromFavorites = async (favoriteAssetId: string) => {
     try {
-      await dispatch(removeFavoriteAsset({ asset_id: assetId })).unwrap();
+      await dispatch(removeFavoriteAsset({ favorite_asset_id: favoriteAssetId })).unwrap();
       toast.success("Asset removed from favorites!");
       dispatch(getFavoriteAssets()); // Refresh the favorites list
     } catch (error: any) {
@@ -530,131 +438,75 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
     return asset?.asset_id || null;
   };
 
-  // Helper function to check if market is favorited
+  // Helper function to check if market is favorited (API only)
   const isMarketFavorited = (
     marketSymbol: string,
     marketName: string
-  ): boolean => {
-    const normalizedSymbol = marketSymbol.toUpperCase();
-    const normalizedName = marketName.toUpperCase();
-    if (
-      localFavorites.some(
-        (fav) =>
-          fav.toUpperCase() === normalizedSymbol || fav.toUpperCase() === normalizedName
+  ): boolean =>
+    Boolean(
+      favoriteAssets?.some(
+        (fav: FavoriteAsset) =>
+          fav.asset_symbol?.toLowerCase() === marketSymbol.toLowerCase() ||
+          fav.asset_symbol?.toLowerCase() === marketName.toLowerCase() ||
+          fav.asset_name?.toLowerCase() === marketSymbol.toLowerCase() ||
+          fav.asset_name?.toLowerCase() === marketName.toLowerCase()
       )
-    ) {
-      return true;
-    }
-    // Check Redux state first
-    const isInRedux = favoriteAssets?.some(
-      (fav: FavoriteAsset) =>
-        fav.asset_symbol.toLowerCase() === marketSymbol.toLowerCase() ||
-        fav.asset_symbol.toLowerCase() === marketName.toLowerCase()
     );
-
-    if (isInRedux) return true;
-
-    // Check localStorage as fallback
-    if (typeof window !== "undefined") {
-      try {
-        const localFavorites = localStorage.getItem("market_favorites");
-        if (localFavorites) {
-          const favorites = JSON.parse(localFavorites);
-          return favorites.some(
-            (fav: string) =>
-              fav.toLowerCase() === marketSymbol.toLowerCase() ||
-              fav.toLowerCase() === marketName.toLowerCase()
-          );
-        }
-      } catch (error) {
-        console.warn("Error reading favorites from localStorage:", error);
-      }
-    }
-
-    return false;
-  };
-
-  // LocalStorage utilities
-  const updateLocalStorageFavorites = (symbol: string, add: boolean) => {
-    if (typeof window !== "undefined") {
-      try {
-        const normalizedSymbol = symbol.toUpperCase();
-        let favorites = getStoredFavorites();
-
-        if (add) {
-          const hasSymbol = favorites
-            .map((fav) => fav.toUpperCase())
-            .includes(normalizedSymbol);
-          if (!hasSymbol) {
-            favorites.push(normalizedSymbol);
-          }
-        } else {
-          favorites = favorites.filter(
-            (fav) => fav.toUpperCase() !== normalizedSymbol
-          );
-        }
-
-        localStorage.setItem("market_favorites", JSON.stringify(favorites));
-        setLocalFavorites(favorites);
-      } catch (error) {
-        console.warn("Error updating favorites in localStorage:", error);
-      }
-    }
-  };
 
   // Toggle favorite function
   const handleToggleFavorite = async (
     e: React.MouseEvent,
     marketSymbol: string,
-    marketName: string
+    marketName: string,
+    market?: MarketData
   ) => {
     e.stopPropagation(); // Prevent row click
 
-    const assetId = getAssetIdFromMarket(marketSymbol, marketName);
     const isFavorited = isMarketFavorited(marketSymbol, marketName);
+    const favoriteAsset = favoriteAssets?.find(
+      (fav) =>
+        fav.asset_symbol?.toLowerCase() === marketSymbol.toLowerCase() ||
+        fav.asset_name?.toLowerCase() === marketName.toLowerCase()
+    );
 
-    if (!assetId) {
-      // If asset not found in exchange assets, use localStorage only
-      updateLocalStorageFavorites(marketSymbol, !isFavorited);
-      toast.success(
-        !isFavorited
-          ? `${marketSymbol.toUpperCase()} added to favorites!`
-          : `${marketSymbol.toUpperCase()} removed from favorites!`
-      );
-      // Force re-render by updating state
-      await dispatch(getFavoriteAssets());
-      // Force component re-render
-      setFavoritesUpdateTrigger((prev) => prev + 1);
-      handleReloadFavorites();
+    if (isFavorited && favoriteAsset) {
+      try {
+        await dispatch(removeFavoriteAsset({ favorite_asset_id: favoriteAsset.favorite_asset_id })).unwrap();
+        toast.success(`${marketSymbol.toUpperCase()} removed from favorites!`);
+        await dispatch(getFavoriteAssets());
+        setFavoritesUpdateTrigger((prev) => prev + 1);
+        handleReloadFavorites();
+      } catch (error: any) {
+        toast.error(`Failed to remove favorite: ${error?.message || "Unknown error"}`);
+        await dispatch(getFavoriteAssets());
+        setFavoritesUpdateTrigger((prev) => prev + 1);
+        handleReloadFavorites();
+      }
       return;
     }
 
-    try {
-      if (isFavorited) {
-        await dispatch(removeFavoriteAsset({ asset_id: assetId })).unwrap();
-        updateLocalStorageFavorites(marketSymbol, false);
-        toast.success(`${marketSymbol.toUpperCase()} removed from favorites!`);
-      } else {
-        const result = await dispatch(addFavoriteAsset({ asset_id: assetId })).unwrap();
-        updateLocalStorageFavorites(marketSymbol, true);
+    if (!isFavorited && market) {
+      try {
+        await dispatch(
+          addFavoriteAsset({
+            asset_symbol: market.symbol,
+            asset_name: market.name,
+            asset_image: market.image || "",
+            network: market.symbol.toLowerCase(),
+            percentage: formatPercentageForApi(market.price_change_percentage_24h),
+            price: String(market.current_price ?? 0),
+          })
+        ).unwrap();
         toast.success(`${marketSymbol.toUpperCase()} added to favorites!`);
+        await dispatch(getFavoriteAssets());
+        setFavoritesUpdateTrigger((prev) => prev + 1);
+        handleReloadFavorites();
+      } catch (error: any) {
+        toast.error(`Failed to add favorite: ${error?.message || "Unknown error"}`);
+        await dispatch(getFavoriteAssets());
+        setFavoritesUpdateTrigger((prev) => prev + 1);
+        handleReloadFavorites();
       }
-      // Refresh favorites list immediately
-      await dispatch(getFavoriteAssets());
-      // Force component re-render
-      setFavoritesUpdateTrigger((prev) => prev + 1);
-      // Also reload to ensure UI updates
-      handleReloadFavorites();
-    } catch (error: any) {
-      // Fallback to localStorage if API fails
-      updateLocalStorageFavorites(marketSymbol, !isFavorited);
-      const errorMessage = error?.message || error?.toString() || "Unknown error";
-      toast.error(
-        `Failed to ${isFavorited ? "remove" : "add"} favorite: ${errorMessage}. Using local storage.`
-      );
-      await dispatch(getFavoriteAssets());
-      setFavoritesUpdateTrigger((prev) => prev + 1);
-      handleReloadFavorites();
     }
   };
 
@@ -683,8 +535,7 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
   const handleReloadFavorites = useCallback(() => {
     dispatch(fetchAssets());
     dispatch(getFavoriteAssets());
-    setLocalFavorites(getStoredFavorites());
-  }, [dispatch, getStoredFavorites]);
+  }, [dispatch]);
 
   // Handle row click to fetch and show details
   const handleRowClick = async (id: string) => {
@@ -811,7 +662,7 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-2 gap-3 sm:gap-0">
               <div className="flex items-center gap-2 font-semibold text-gray-900 dark:text-[#fff] text-base sm:text-lg lg:text-lg">
                 Favourite Assets
-                {((favoriteAssets && favoriteAssets.length > 0) || (allFavoriteMarketsToShow && allFavoriteMarketsToShow.length > 0)) && (
+                {favoriteAssets && favoriteAssets.length > 0 && (
                   <>
                     <button
                       type="button"
@@ -869,15 +720,13 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
                 <div className="flex items-center justify-center min-w-[250px]">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#13B562]"></div>
                 </div>
-              ) : hasRemoteFavoriteAssets || showLocalFavoriteFallback ? (
+              ) : hasFavoriteAssets ? (
                 <>
                   {/* Render remote favorites first */}
                   {(favoriteAssets ?? []).map((asset: FavoriteAsset) => {
-                    const dummyData = DUMMY_ASSET_DATA[asset.asset_symbol] || {
-                      symbol: (asset.asset_symbol ?? "").split(" ")[0],
-                      price: 0,
-                      change: "+0.00%",
-                    };
+                    const priceNum = asset.price != null ? parseFloat(asset.price) : 0;
+                    const percentageNum = asset.percentage != null ? parseFloat(asset.percentage) : 0;
+                    const changeStr = percentageNum >= 0 ? `+${percentageNum.toFixed(2)}%` : `${percentageNum.toFixed(2)}%`;
 
                     return (
                       <div
@@ -907,62 +756,26 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="font-medium text-[#051015] dark:text-white truncate text-sm sm:text-base lg:text-base">
-                            {dummyData.symbol}
+                            {(asset.asset_symbol ?? "").toUpperCase()}
                           </div>
                           <div className="text-xs text-[#788099] dark:text-[#788099] truncate">
-                            {asset.asset_symbol}
+                            {asset.asset_name ?? asset.asset_symbol}
                           </div>
                         </div>
                         <div className="text-right flex-shrink-0">
                           <div className="font-bold text:[#051015] dark:text-white whitespace-nowrap text-sm sm:text-base lg:text-base">
                             $
-                            {dummyData.price.toLocaleString(undefined, {
+                            {priceNum.toLocaleString(undefined, {
                               minimumFractionDigits: 2,
                               maximumFractionDigits: 8,
                             })}
                           </div>
                           <div
-                            className={`text-xs whitespace-nowrap ${dummyData.change.startsWith("+")
-                              ? "text-[#1D8751]"
-                              : "text-[#1D8751]"
-                              }`}
+                            className={`text-xs whitespace-nowrap ${
+                              percentageNum >= 0 ? "text-[#1D8751]" : "text-[#FF6B6B]"
+                            }`}
                           >
-                            {dummyData.change}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                  {/* Then render local favorites that aren't in remote favorites */}
-                  {allFavoriteMarketsToShow.map((market) => {
-                    const priceChange = market.price_change_percentage_24h ?? 0;
-                    const isPositive = priceChange >= 0;
-
-                    return (
-                      <div
-                        key={`local-${market.id}`}
-                        className="bg-white dark:bg-[#1D1D23] rounded-xl sm:rounded-2xl lg:rounded-2xl p-3 sm:p-4 lg:p-4 flex items-center gap-2 sm:gap-3 lg:gap-3 border border-[#E8EFF5] dark:border-[#35353E] relative flex-shrink-0 min-w-[200px] sm:min-w-[220px] lg:min-w-[250px]"
-                      >
-                        <div className="w-8 h-8 sm:w-8 sm:h-8 lg:w-8 lg:h-8 rounded-full flex-shrink-0">
-                          <CoinIcon image={market.image} symbol={market.symbol} size={32} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-[#051015] dark:text-white truncate text-sm sm:text-base lg:text-base">
-                            {market.symbol.toUpperCase()}
-                          </div>
-                          <div className="text-xs text-[#788099] dark:text-[#788099] truncate">
-                            {market.name}
-                          </div>
-                        </div>
-                        <div className="text-right flex-shrink-0">
-                          <div className="font-bold text:[#051015] dark:text-white whitespace-nowrap text-sm sm:text-base lg:text-base">
-                            {formatPrice(market.current_price)}
-                          </div>
-                          <div
-                            className={`text-xs whitespace-nowrap ${isPositive ? "text-[#1D8751]" : "text-[#FF6B6B]"
-                              }`}
-                          >
-                            {formatPercentage(priceChange)}
+                            {changeStr}
                           </div>
                         </div>
                       </div>
@@ -1028,7 +841,7 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
                         <span
                           className="cursor-pointer hover:opacity-70 transition-opacity"
                           onClick={(e) =>
-                            handleToggleFavorite(e, market.symbol, market.name)
+                            handleToggleFavorite(e, market.symbol, market.name, market)
                           }
                           title={
                             isMarketFavorited(market.symbol, market.name)
@@ -1236,7 +1049,7 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
                               <span
                                 className="cursor-pointer"
                                 onClick={(e) =>
-                                  handleToggleFavorite(e, market.symbol, market.name)
+                                  handleToggleFavorite(e, market.symbol, market.name, market)
                                 }
                               >
                                 <StarIcon
@@ -1412,14 +1225,7 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
                 <button
                   className="px-4 py-2.5 sm:py-2 lg:py-2 rounded bg-[#1D8751] text-white hover:bg-[#166c3a] text-sm sm:text-base lg:text-base min-h-[44px] sm:min-h-0 lg:min-h-0"
                   onClick={() => {
-                    const assetId = getAssetIdFromName(
-                      pendingRemoveAsset.asset_symbol
-                    );
-                    if (assetId) {
-                      handleRemoveFromFavorites(assetId);
-                    } else {
-                      toast.error("Could not find asset ID for removal");
-                    }
+                    handleRemoveFromFavorites(pendingRemoveAsset.favorite_asset_id);
                     setShowConfirmModal(false);
                     setPendingRemoveAsset(null);
                   }}
