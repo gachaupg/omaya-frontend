@@ -667,7 +667,6 @@ export default function DepositForm({
     initialState?.amountInput ?? "100"
   );
   const hasAppliedPrefillRef = useRef(false);
-  const hasRestoredFromLegalRef = useRef(!!initialState?.isFirstCardSubmitted);
 
   const [payBank, setPayBank] = useState(
     initialState?.payBank ||
@@ -720,13 +719,9 @@ export default function DepositForm({
     }
   }, [initialState?.amountValue, initialState?.amountInput, initialState?.receiveAmountValue, initialState?.receiveAmountInput]);
 
-  // Don't set asset directly from initialState - let matching logic handle it (except legal return)
-  const [selectedAsset, setSelectedAsset] = useState<any>(
-    () => initialState?.asset || initialState?.selectedAsset || null
-  );
-  const [selectedNetwork, setSelectedNetwork] = useState<any>(
-    () => initialState?.selectedNetwork || null
-  );
+  // Don't set asset directly from initialState - let matching logic handle it
+  const [selectedAsset, setSelectedAsset] = useState<any>(null);
+  const [selectedNetwork, setSelectedNetwork] = useState<any>(null);
   const [isCalculatingFromPay, setIsCalculatingFromPay] = useState(true);
   const [walletAddress, setWalletAddress] = useState(
     initialState?.walletAddress || ""
@@ -893,10 +888,8 @@ export default function DepositForm({
     }
   }, [finalPaymentMethods, payBank, selectedPaymentDetail, initialState]);
 
-  // Add transaction code state (restore from legal return initialState)
-  const [transactionCode, setTransactionCode] = useState<string>(
-    () => initialState?.transactionCode || ""
-  );
+  // Add transaction code state
+  const [transactionCode, setTransactionCode] = useState<string>("");
   const paymentDetailsRef = useRef<HTMLDivElement>(null);
   
   // Inline copy feedback state
@@ -959,10 +952,8 @@ export default function DepositForm({
   const [estimateLoading, setEstimateLoading] = useState(false);
   const [estimateError, setEstimateError] = useState<string | null>(null);
 
-  // First card submission state (restore from legal return initialState)
-  const [isFirstCardSubmitted, setIsFirstCardSubmitted] = useState(
-    () => !!initialState?.isFirstCardSubmitted
-  );
+  // First card submission state
+  const [isFirstCardSubmitted, setIsFirstCardSubmitted] = useState(false);
 
   // Add loading state for "You Receive" calculation
   const [isCalculatingReceive, setIsCalculatingReceive] = useState(false);
@@ -976,10 +967,8 @@ export default function DepositForm({
     null
   );
 
-  // Add state to store API response (restore from legal return initialState)
-  const [apiResponse, setApiResponse] = useState<any>(
-    () => initialState?.apiResponse || null
-  );
+  // Add state to store API response
+  const [apiResponse, setApiResponse] = useState<any>(null);
   const [isUserModifiedAmount, setIsUserModifiedAmount] = useState(false);
 
   // Add InfoModal state
@@ -1035,10 +1024,6 @@ export default function DepositForm({
 
   // Close expanded section when user changes payment method or asset (user must post again)
   useEffect(() => {
-    if (hasRestoredFromLegalRef.current) {
-      hasRestoredFromLegalRef.current = false;
-      return;
-    }
     if (isFirstCardSubmitted) {
       setIsFirstCardSubmitted(false);
       setApiResponse(null);
@@ -2327,104 +2312,9 @@ export default function DepositForm({
     };
   }, []);
 
-  // Terms & Conditions acceptance (restore from legal return initialState)
-  const [termsAccepted, setTermsAccepted] = useState(
-    () => !!initialState?.termsAccepted
-  );
+  // Terms & Conditions acceptance
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [expandedTerms, setExpandedTerms] = useState(false);
-
-  const EXPRESS_LEGAL_RETURN_STATE_KEY = "omaya_express_legal_return_state";
-  const RETURNING_FROM_LEGAL_KEY = "omaya_returning_from_legal";
-
-  const handleBeforeLegalNavigate = useCallback(() => {
-    try {
-      // Sanitize objects to avoid circular refs / non-serializable data
-      const sanitizedApiResponse = apiResponse
-        ? {
-            deposit_code: apiResponse.deposit_code,
-            deposit_address: apiResponse.deposit_address,
-            transaction_id: apiResponse.transaction_id,
-            account_name: apiResponse.account_name,
-            account_number: apiResponse.account_number,
-            currency: apiResponse.currency,
-            total_amount_due: apiResponse.total_amount_due,
-            commission: apiResponse.commission,
-            network_fee: apiResponse.network_fee,
-            websocket_url: apiResponse.websocket_url,
-          }
-        : null;
-
-      const sanitizedAsset = selectedAsset
-        ? {
-            ticker: selectedAsset.ticker,
-            symbol: selectedAsset.symbol,
-            name: selectedAsset.name,
-            network: selectedAsset.network,
-            asset_id: selectedAsset.asset_id,
-            image_url: selectedAsset.image_url,
-            networks: selectedAsset.networks,
-            range_commissions: selectedAsset.range_commissions,
-          }
-        : null;
-
-      const sanitizedNetwork = selectedNetwork
-        ? {
-            network_id: selectedNetwork.network_id,
-            network_type: selectedNetwork.network_type,
-            network: selectedNetwork.network,
-            name: selectedNetwork.name,
-          }
-        : null;
-
-      const sanitizedPayment = selectedPaymentDetail
-        ? {
-            provider_name: selectedPaymentDetail.provider_name,
-            provider_id: selectedPaymentDetail.provider_id,
-            id: selectedPaymentDetail.id,
-            payment_method_type: selectedPaymentDetail.payment_method_type,
-            account_name: selectedPaymentDetail.account_name,
-            account_number: selectedPaymentDetail.account_number,
-            logo: selectedPaymentDetail.logo,
-            provider_logo: selectedPaymentDetail.provider_logo,
-            payment_details: selectedPaymentDetail.payment_details,
-          }
-        : null;
-
-      const state = {
-        isFirstCardSubmitted: true,
-        payAmount,
-        payAmountInput,
-        getAmount,
-        getAmountInput,
-        payBank,
-        walletAddress,
-        termsAccepted,
-        selectedAsset: sanitizedAsset,
-        selectedNetwork: sanitizedNetwork,
-        selectedPaymentDetail: sanitizedPayment,
-        apiResponse: sanitizedApiResponse,
-        transactionCode,
-      };
-
-      sessionStorage.setItem(EXPRESS_LEGAL_RETURN_STATE_KEY, JSON.stringify(state));
-      sessionStorage.setItem(RETURNING_FROM_LEGAL_KEY, "1");
-    } catch {
-      // Ignore storage errors
-    }
-  }, [
-    payAmount,
-    payAmountInput,
-    getAmount,
-    getAmountInput,
-    payBank,
-    walletAddress,
-    termsAccepted,
-    selectedAsset,
-    selectedNetwork,
-    selectedPaymentDetail,
-    apiResponse,
-    transactionCode,
-  ]);
 
   const isProceedDisabled =
     isSubmitting ||
@@ -2433,8 +2323,6 @@ export default function DepositForm({
     !termsAccepted ||
     payAmount >= 15000 ||
     getAmount >= 15000;
-
-  // Legal return state is now consumed by ExpressExchangeForm and passed as initialState
 
   // Auto-validate receive amount whenever it changes
   useEffect(() => {
@@ -4852,45 +4740,40 @@ export default function DepositForm({
                 I've read and agree to the OMAYA EXCHANGE{" "}
                 <Link
                   href="/legal/terms-of-service"
-                  rel="noopener noreferrer"
+                  target="_blank"
                   className="underline text-[#1D8751]"
-                  onClick={(e) => { e.stopPropagation(); handleBeforeLegalNavigate(); }}
                 >
                   Terms of Use
                 </Link>
                 ,{" "}
                 <Link
                   href="/legal/privacy-policy"
-                  rel="noopener noreferrer"
+                  target="_blank"
                   className="underline text-[#1D8751]"
-                  onClick={(e) => { e.stopPropagation(); handleBeforeLegalNavigate(); }}
                 >
                   Privacy Policy
                 </Link>
                 ,{" "}
                 <Link
                   href="/legal/payment-policy"
-                  rel="noopener noreferrer"
+                  target="_blank"
                   className="underline text-[#1D8751]"
-                  onClick={(e) => { e.stopPropagation(); handleBeforeLegalNavigate(); }}
                 >
                   Payment Policies
                 </Link>
                 ,{" "}
                 <Link
                   href="/legal/aml-policy"
-                  rel="noopener noreferrer"
+                  target="_blank"
                   className="underline text-[#1D8751]"
-                  onClick={(e) => { e.stopPropagation(); handleBeforeLegalNavigate(); }}
                 >
                   AML
                 </Link>
                 ,{" "}
                 <Link
                   href="/legal/risk-disclosure-statement"
-                  rel="noopener noreferrer"
+                  target="_blank"
                   className="underline text-[#1D8751]"
-                  onClick={(e) => { e.stopPropagation(); handleBeforeLegalNavigate(); }}
                 >
                   Risk Disclosure Statements
                 </Link>

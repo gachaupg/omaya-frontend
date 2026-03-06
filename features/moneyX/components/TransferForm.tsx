@@ -1460,13 +1460,15 @@ export default function TransferForm({ onTransfer, initialState }: TransferFormP
                     setBankAddressError(null);
                   }}
                   onSaveCurrent={async () => {
-                    if (!bankAccountAddress.trim() || !currentBankAsset) return;
-                    await saveBookmark({
-                      address: bankAccountAddress.trim(),
-                      label: `My ${currentBankAsset} account`,
-                      network: "BANK",
-                      asset: currentBankAsset,
-                    });
+                    try {
+                      if (!bankAccountAddress.trim() || !currentBankAsset) return;
+                      await saveBookmark({
+                        address: bankAccountAddress.trim(),
+                        label: `My ${currentBankAsset} account`,
+                        network: "BANK",
+                        asset: currentBankAsset,
+                      });
+                    } catch { /* handled by hook */ }
                   }}
                   anchorRef={bookmarkAnchorRef}
                   isDark={isDark}
