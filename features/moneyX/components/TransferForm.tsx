@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useMemo, useRef, useCallback } from "react";
+import Link from "next/link";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "@/store";
 import {
@@ -180,6 +181,9 @@ export default function TransferForm({ onTransfer, initialState }: TransferFormP
   const commissionFetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const paymentDetailsRef = useRef<HTMLDivElement>(null);
 
+  const MONEYX_LEGAL_RETURN_STATE_KEY = "omaya_moneyx_legal_return_state";
+  const RETURNING_FROM_LEGAL_KEY = "omaya_returning_from_legal";
+
   // Fetch commission percentage from range-commissions API (no auth, returns percentage e.g. 3%)
   useEffect(() => {
     const amount = isCalculatingFromPay ? payAmount : getAmount;
@@ -251,6 +255,46 @@ export default function TransferForm({ onTransfer, initialState }: TransferFormP
 
     return providerName;
   }, []);
+
+  const handleBeforeLegalNavigate = useCallback(() => {
+    try {
+      const fromName = selectedFromPaymentDetail ? getProviderName(selectedFromPaymentDetail) : fromPaymentMethod;
+      const toName = selectedToPaymentDetail ? getProviderName(selectedToPaymentDetail) : toPaymentMethod;
+      sessionStorage.setItem(
+        MONEYX_LEGAL_RETURN_STATE_KEY,
+        JSON.stringify({
+          isFirstCardSubmitted: true,
+          payAmount,
+          payAmountInput,
+          getAmount,
+          getAmountInput,
+          bankAccountAddress,
+          isAddressConfirmed,
+          fromPaymentMethod: fromName,
+          toPaymentMethod: toName,
+          fromProviderBase: fromName,
+          toProviderBase: toName,
+          fromPaymentDetail: selectedFromPaymentDetail,
+          toPaymentDetail: selectedToPaymentDetail,
+        })
+      );
+      sessionStorage.setItem(RETURNING_FROM_LEGAL_KEY, "1");
+    } catch {
+      // Ignore storage errors
+    }
+  }, [
+    payAmount,
+    payAmountInput,
+    getAmount,
+    getAmountInput,
+    bankAccountAddress,
+    isAddressConfirmed,
+    fromPaymentMethod,
+    toPaymentMethod,
+    selectedFromPaymentDetail,
+    selectedToPaymentDetail,
+    getProviderName,
+  ]);
 
   const currentBankAsset = selectedToPaymentDetail ? getProviderName(selectedToPaymentDetail) : "";
   const {
@@ -363,6 +407,63 @@ export default function TransferForm({ onTransfer, initialState }: TransferFormP
       }
     }
   }, [isAuthenticated, initialState]);
+
+  // Restore state when returning from legal pages (Terms, Privacy, etc.)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (isAuthenticated === undefined || !isAuthenticated) return;
+    try {
+      const returning = sessionStorage.getItem(RETURNING_FROM_LEGAL_KEY);
+      if (!returning) return;
+
+      const saved = sessionStorage.getItem(MONEYX_LEGAL_RETURN_STATE_KEY);
+      if (!saved) {
+        sessionStorage.removeItem(RETURNING_FROM_LEGAL_KEY);
+        return;
+      }
+
+      const state = JSON.parse(saved);
+      isRestoringRef.current = true;
+
+      if (state.payAmountInput !== undefined && state.payAmountInput !== null) {
+        setPayAmountInput(state.payAmountInput);
+        setPayAmount(state.payAmount ?? (parseFloat(state.payAmountInput) || 0));
+      }
+      if (state.getAmountInput !== undefined && state.getAmountInput !== null) {
+        setGetAmountInput(state.getAmountInput);
+        setGetAmount(state.getAmount ?? (parseFloat(state.getAmountInput) || 0));
+      }
+      if (state.bankAccountAddress !== undefined) {
+        setBankAccountAddress(state.bankAccountAddress || "");
+      }
+      if (state.isAddressConfirmed !== undefined) {
+        setIsAddressConfirmed(state.isAddressConfirmed);
+      }
+      setIsFirstCardSubmitted(true);
+
+      if (state.fromPaymentMethod || state.toPaymentMethod) {
+        const fromName = state.fromProviderBase || state.fromPaymentMethod || "";
+        const toName = state.toProviderBase || state.toPaymentMethod || "";
+        localStorage.setItem("moneyx_restore_from", fromName);
+        localStorage.setItem("moneyx_restore_to", toName);
+        localStorage.setItem("moneyx_restore_from_cleaned", state.fromPaymentMethod || "");
+        localStorage.setItem("moneyx_restore_to_cleaned", state.toPaymentMethod || "");
+        if (state.fromPaymentDetail) {
+          localStorage.setItem("moneyx_restore_from_detail", JSON.stringify(state.fromPaymentDetail));
+        }
+        if (state.toPaymentDetail) {
+          localStorage.setItem("moneyx_restore_to_detail", JSON.stringify(state.toPaymentDetail));
+        }
+      }
+
+      sessionStorage.removeItem(RETURNING_FROM_LEGAL_KEY);
+      sessionStorage.removeItem(MONEYX_LEGAL_RETURN_STATE_KEY);
+      hasRestoredState.current = true;
+    } catch {
+      sessionStorage.removeItem(RETURNING_FROM_LEGAL_KEY);
+      sessionStorage.removeItem(MONEYX_LEGAL_RETURN_STATE_KEY);
+    }
+  }, [isAuthenticated]);
 
   // Restore payment methods after they're loaded
   useEffect(() => {
@@ -1502,7 +1603,7 @@ export default function TransferForm({ onTransfer, initialState }: TransferFormP
                 }
                 className="w-4 h-4 mt-0.5 rounded border-[#1D8751] text-[#1D8751] accent-[#1D8751]"
               />
-              <span>I have read and agreed to Omaya Exchange <a href="/legal/terms-of-service" target="_blank" rel="noopener noreferrer" className="text-[#1D8751] underline">Terms of Use</a>, <a href="/legal/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-[#1D8751] underline">Privacy Policy</a></span>
+              <span>I have read and agreed to Omaya Exchange <Link href="/legal/terms-of-service" rel="noopener noreferrer" className="text-[#1D8751] underline" onClick={(e) => { e.stopPropagation(); handleBeforeLegalNavigate(); }}>Terms of Use</Link>, <Link href="/legal/privacy-policy" rel="noopener noreferrer" className="text-[#1D8751] underline" onClick={(e) => { e.stopPropagation(); handleBeforeLegalNavigate(); }}>Privacy Policy</Link></span>
             </label>
           </div>
 

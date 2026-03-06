@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { tokens } from "@/styles/tokens";
 import Card from "../Common/Card";
 import Available from "../ui/p2pdashboard/Available";
@@ -19,9 +19,49 @@ import { fetchTransactionSummary } from "../../slices/transactionSummarySlice";
 import { selectP2PWalletAmounts, selectTransactionSummary } from "../../selectors";
 import { AppDispatch } from "../../../../store";
 
+const P2P_EXPRESS_STATE_KEY = "omaya_p2p_express_state";
+const RETURNING_FROM_LEGAL_KEY = "omaya_returning_from_legal";
+
 const P2PDashboard = () => {
   const [isOpenForm, setIsOpenForm] = useState("");
   const dispatch = useDispatch<AppDispatch>();
+
+  const handleBeforeLegalNavigate = useCallback(() => {
+    try {
+      sessionStorage.setItem(
+        P2P_EXPRESS_STATE_KEY,
+        JSON.stringify({ isOpenForm })
+      );
+      sessionStorage.setItem(RETURNING_FROM_LEGAL_KEY, "1");
+    } catch {
+      // Ignore storage errors
+    }
+  }, [isOpenForm]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const returning = sessionStorage.getItem(RETURNING_FROM_LEGAL_KEY);
+      if (!returning) return;
+
+      const saved = sessionStorage.getItem(P2P_EXPRESS_STATE_KEY);
+      if (!saved) {
+        sessionStorage.removeItem(RETURNING_FROM_LEGAL_KEY);
+        return;
+      }
+
+      const { isOpenForm: savedForm } = JSON.parse(saved);
+      if (savedForm === "deposit" || savedForm === "withdraw") {
+        setIsOpenForm(savedForm);
+      }
+
+      sessionStorage.removeItem(RETURNING_FROM_LEGAL_KEY);
+      sessionStorage.removeItem(P2P_EXPRESS_STATE_KEY);
+    } catch {
+      sessionStorage.removeItem(RETURNING_FROM_LEGAL_KEY);
+      sessionStorage.removeItem(P2P_EXPRESS_STATE_KEY);
+    }
+  }, []);
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
   useEffect(() => {
     if (isAuthenticated) {
@@ -56,6 +96,7 @@ const P2PDashboard = () => {
                 balance={availableBalance}
                 skipAmountValidation={true}
                 onCancel={() => setIsOpenForm("")}
+                onBeforeLegalNavigate={handleBeforeLegalNavigate}
               />
             )}
             {isOpenForm === "withdraw" && (
@@ -63,6 +104,7 @@ const P2PDashboard = () => {
                 balance={availableBalance}
                 mode="withdrawal"
                 onCancel={() => setIsOpenForm("")}
+                onBeforeLegalNavigate={handleBeforeLegalNavigate}
               />
             )}
           </div>

@@ -18,6 +18,8 @@ interface TermsAndConditionsSummaryProps {
   /** Account number for withdrawal */
   accountNumber?: string;
   className?: string;
+  /** Called before navigating to legal pages - use to save form state for restore on back */
+  onBeforeLegalNavigate?: () => void;
 }
 
 /**
@@ -31,6 +33,7 @@ export const TermsAndConditionsSummary = ({
   providerName,
   accountNumber,
   className = "",
+  onBeforeLegalNavigate,
 }: TermsAndConditionsSummaryProps) => {
   const [expandedTerms, setExpandedTerms] = useState(false);
 
@@ -186,9 +189,12 @@ export const TermsAndConditionsSummary = ({
                   Before sending any funds, you must confirm that you have read and accepted all the terms and conditions listed above, and our full{" "}
                   <Link
                     href="/legal/terms-of-service"
-                    target="_blank"
                     rel="noopener noreferrer"
                     className="text-[#1D8751] underline font-medium hover:text-[#166b3e]"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onBeforeLegalNavigate?.();
+                    }}
                   >
                     Terms of Service
                   </Link>

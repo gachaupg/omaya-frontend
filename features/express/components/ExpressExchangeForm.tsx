@@ -3,7 +3,10 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import WithdrawalForm from "./forms/withdrwal";
 import DepositForm from "./forms/deposit";
-import { consumeExpressPrefillState } from "@/lib/utils/authRedirect";
+import {
+  consumeExpressPrefillState,
+  consumeExpressLegalReturnState,
+} from "@/lib/utils/authRedirect";
 
 /** Parse prefill from URL synchronously so form gets correct initial state on first render */
 function parsePrefillFromUrl(searchParams: URLSearchParams | null): Record<string, any> | null {
@@ -66,6 +69,10 @@ const ExpressExchangeForm: React.FC<ExpressExchangeFormProps> = ({
   const [prefillState, setPrefillState] = useState<Record<string, any> | null>(
     () => prefillFromUrl
   );
+  // Legal return state takes precedence - user returning from Terms/Privacy/etc.
+  const [legalReturnState] = useState<Record<string, any> | null>(
+    () => consumeExpressLegalReturnState()
+  );
   // Preserve state when switching modes
   const [preservedState, setPreservedState] = useState<any>(null);
 
@@ -101,7 +108,7 @@ const ExpressExchangeForm: React.FC<ExpressExchangeFormProps> = ({
           mode={mode}
           onModeChange={handleModeChange}
           isHomePage={isHomePage}
-          initialState={preservedState || prefillState}
+          initialState={legalReturnState || preservedState || prefillState}
         />
       ) : (
         <WithdrawalForm
@@ -109,7 +116,7 @@ const ExpressExchangeForm: React.FC<ExpressExchangeFormProps> = ({
           mode={mode}
           onModeChange={handleModeChange}
           isHomePage={isHomePage}
-          initialState={preservedState || prefillState}
+          initialState={legalReturnState || preservedState || prefillState}
         />
       )}
     </div>
