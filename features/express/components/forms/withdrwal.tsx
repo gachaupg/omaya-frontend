@@ -51,6 +51,7 @@ import { useTheme } from "@/context/theme";
 import {
   buildExpressRedirectPath,
   setAuthRedirectPath,
+  setExpressLegalReturnState,
 } from "@/lib/utils/authRedirect";
 import { openKYCModal, checkKYCStatus } from "@/features/auth/slices/authSlice";
 import { bookmarkedAddressesApi } from "@/features/express/services/bookmarkedAddressesApi";
@@ -614,7 +615,7 @@ export default function WithdrawalForm({
   );
   const [selectedNetwork, setSelectedNetwork] = useState<any>(null);
   const [isCalculatingFromPay, setIsCalculatingFromPay] = useState(true);
-  const [walletAddress, setWalletAddress] = useState("");
+  const [walletAddress, setWalletAddress] = useState(initialState?.walletAddress ?? "");
   const [walletError, setWalletError] = useState<string | null>(null);
   const [forceUpdate, setForceUpdate] = useState(0);
   const [selectedPaymentDetail, setSelectedPaymentDetail] = useState<any>(null);
@@ -632,7 +633,7 @@ export default function WithdrawalForm({
   const [responseMessage, setResponseMessage] = useState<string>("");
   const [websocketUrl, setWebsocketUrl] = useState<string>("");
   const [transactionId, setTransactionId] = useState<string>("");
-  const [isTermsAccepted, setIsTermsAccepted] = useState(false);
+  const [isTermsAccepted, setIsTermsAccepted] = useState(!!initialState?.termsAccepted);
   const [expandedTerms, setExpandedTerms] = useState(false);
 
   // Forex-specific state for withdrawal
@@ -727,7 +728,36 @@ export default function WithdrawalForm({
   // Add payment selection state
   const [selectedPaymentDetails, setSelectedPaymentDetails] = useState<
     UserPaymentDetail[]
-  >([]);
+  >(initialState?.paymentDetails ?? []);
+
+  // Save form state before navigating to legal pages so back button restores it
+  const handleBeforeLegalNavigate = useCallback(() => {
+    setExpressLegalReturnState({
+      payAmount,
+      payAmountInput,
+      getAmount,
+      getAmountInput,
+      payBank,
+      selectedPaymentDetail,
+      selectedPaymentDetails,
+      selectedAsset,
+      selectedNetwork,
+      walletAddress,
+      isTermsAccepted,
+    });
+  }, [
+    payAmount,
+    payAmountInput,
+    getAmount,
+    getAmountInput,
+    payBank,
+    selectedPaymentDetail,
+    selectedPaymentDetails,
+    selectedAsset,
+    selectedNetwork,
+    walletAddress,
+    isTermsAccepted,
+  ]);
 
   // Add calculation stability state
   const [isCalculating, setIsCalculating] = useState(false);
@@ -4561,8 +4591,8 @@ export default function WithdrawalForm({
                                     }
                                   )}
                                   value={
-                                    selectedPaymentDetails.length > 0
-                                      ? selectedPaymentDetails[0].id.toString()
+                                    selectedPaymentDetails.length > 0 && selectedPaymentDetails[0]
+                                      ? String(selectedPaymentDetails[0].id ?? selectedPaymentDetails[0].user_payment_detail_id ?? "")
                                       : ""
                                   }
                                   onChange={(value) => {
@@ -5015,23 +5045,23 @@ export default function WithdrawalForm({
                     />
                     <span className="text-[#35353e] dark:text-[#788099] text-sm">
                       I've read and agree to the{" "}
-                      <Link href="/legal/terms-of-service" target="_blank" className="text-[#1D8751] cursor-pointer hover:underline">
+                      <Link href="/legal/terms-of-service" className="text-[#1D8751] cursor-pointer hover:underline" onClick={handleBeforeLegalNavigate}>
                         Terms of Use
                       </Link>
                       ,{" "}
-                      <Link href="/legal/privacy-policy" target="_blank" className="text-[#1D8751] cursor-pointer hover:underline">
+                      <Link href="/legal/privacy-policy" className="text-[#1D8751] cursor-pointer hover:underline" onClick={handleBeforeLegalNavigate}>
                         Privacy Policy
                       </Link>
                       ,{" "}
-                      <Link href="/legal/payment-policy" target="_blank" className="text-[#1D8751] cursor-pointer hover:underline">
+                      <Link href="/legal/payment-policy" className="text-[#1D8751] cursor-pointer hover:underline" onClick={handleBeforeLegalNavigate}>
                         Payment Policies
                       </Link>
                       ,{" "}
-                      <Link href="/legal/aml-policy" target="_blank" className="text-[#1D8751] cursor-pointer hover:underline">
+                      <Link href="/legal/aml-policy" className="text-[#1D8751] cursor-pointer hover:underline" onClick={handleBeforeLegalNavigate}>
                         AML
                       </Link>
                       ,{" "}
-                      <Link href="/legal/risk-disclosure-statement" target="_blank" className="text-[#1D8751] cursor-pointer hover:underline">
+                      <Link href="/legal/risk-disclosure-statement" className="text-[#1D8751] cursor-pointer hover:underline" onClick={handleBeforeLegalNavigate}>
                         Risk Disclosure Statements
                       </Link>
                     </span>
