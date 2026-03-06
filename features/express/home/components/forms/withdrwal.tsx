@@ -47,8 +47,12 @@ import { useTheme } from "@/context/theme";
 import {
   buildExpressRedirectPath,
   setAuthRedirectPath,
+  setExpressPrefillState,
+  buildPaymentMethodsRedirectPath,
+  setPaymentModalPrefill,
 } from "@/lib/utils/authRedirect";
 import { openKYCModal, checkKYCStatus } from "@/features/auth/slices/authSlice";
+import { bookmarkedAddressesApi } from "@/features/express/services/bookmarkedAddressesApi";
 
 // Add UserPaymentDetail interface
 interface UserPaymentDetail {
@@ -177,6 +181,28 @@ interface DepositFormProps {
     paymentDetails?: UserPaymentDetail[];
   };
 }
+
+// Network aliases for whitelist matching
+const NETWORK_ALIASES: Record<string, string[]> = {
+  trc20: ["trx", "trc20"],
+  trx: ["trx", "trc20"],
+  erc20: ["eth", "erc20"],
+  eth: ["eth", "erc20"],
+  bep20: ["bsc", "bep20"],
+  bep2: ["bsc", "bep2"],
+  bsc: ["bsc", "bep20", "bep2"],
+  matic: ["matic", "polygon"],
+  polygon: ["matic", "polygon"],
+};
+const getNetworkMatchKeys = (network: string): string[] => {
+  const n = (network || "").toLowerCase();
+  return NETWORK_ALIASES[n] ? [...NETWORK_ALIASES[n], n] : [n];
+};
+const getAssetNetwork = (asset: any): string => {
+  if (asset?.network) return asset.network;
+  if (asset?.networks?.length) return asset.networks[0]?.network_type || asset.networks[0]?.network_id || "";
+  return "";
+};
 
 // Network mapping function
 const getNetworkDisplayName = (network: string) => {
@@ -590,6 +616,7 @@ export default function WithdrawalForm({
   const [isAssetDropdownOpen, setIsAssetDropdownOpen] = useState(false);
   const [assetSearchTerm, setAssetSearchTerm] = useState("");
   const [assetFilterTab, setAssetFilterTab] = useState<"all" | "new" | "gainers" | "losers">("all");
+  const [whitelistBookmarks, setWhitelistBookmarks] = useState<Array<{ asset: string; network: string }>>([]);
   const [assetDropdownPosition, setAssetDropdownPosition] = useState({
     top: 0,
     left: 0,
@@ -643,6 +670,19 @@ export default function WithdrawalForm({
       window.removeEventListener("scroll", handleReposition, true);
     };
   }, [isAssetDropdownOpen, updateAssetDropdownPosition]);
+
+  useEffect(() => {
+    if (!isAssetDropdownOpen) return;
+    bookmarkedAddressesApi
+      .list()
+      .then((list) => {
+        const pairs = Array.from(
+          new Map(list.map((b) => [`${b.asset.toLowerCase()}|${b.network.toLowerCase()}`, { asset: b.asset, network: b.network }])).values()
+        );
+        setWhitelistBookmarks(pairs);
+      })
+      .catch(() => setWhitelistBookmarks([]));
+  }, [isAssetDropdownOpen]);
 
   // Estimate calculation state
   const [estimate, setEstimate] = useState<any>(null);
@@ -908,9 +948,22 @@ export default function WithdrawalForm({
     payBank &&
     selectedPaymentDetails.length > 0 &&
     selectedPaymentDetails[0].status &&
-    selectedPaymentDetails[0].status !== "approved" &&
-    selectedPaymentDetails[0].status !== "verified"
+    selectedPaymentDetails[0].status.toLowerCase() !== "approved" &&
+    selectedPaymentDetails[0].status.toLowerCase() !== "verified"
   );
+
+  // Sync selectedPaymentDetails when WebSocket refetches and status changes (e.g. Pending → APPROVED)
+  useEffect(() => {
+    if (selectedPaymentDetails.length === 0 || enhancedFilteredUserPaymentDetails.length === 0) return;
+    const selectedId = selectedPaymentDetails[0].id;
+    const freshDetail = enhancedFilteredUserPaymentDetails.find(
+      (d: any) => d.id === selectedId || String(d.id) === String(selectedId)
+    );
+    if (freshDetail) {
+      setSelectedPaymentDetails([freshDetail]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only sync when source data changes
+  }, [enhancedFilteredUserPaymentDetails]);
 
   useEffect(() => {
     // Skip API calls on home page - buttons will redirect to login
@@ -2294,6 +2347,42 @@ export default function WithdrawalForm({
     return 0;
   });
 
+  const whitelistKeys = useMemo(() => {
+    const keys = new Set<string>();
+    whitelistBookmarks.forEach((b) => {
+      const assetKey = b.asset.toLowerCase();
+      getNetworkMatchKeys(b.network).forEach((net) => keys.add(`${assetKey}|${net}`));
+    });
+    return keys;
+  }, [whitelistBookmarks]);
+
+  const whitelistAssets = useMemo(() => {
+    if (whitelistKeys.size === 0) return [];
+    const popularSlice = sortedSwapAssets.slice(0, 3);
+    const popularSet = new Set(
+      popularSlice.map((a) => `${(a?.ticker || a?.symbol || a?.name || "").toString().toLowerCase()}|${(getAssetNetwork(a) || "").toString().toLowerCase()}`)
+    );
+    return sortedSwapAssets.filter((a) => {
+      const key = `${(a?.ticker || a?.symbol || a?.name || "").toString().toLowerCase()}|${(getAssetNetwork(a) || "").toString().toLowerCase()}`;
+      return whitelistKeys.has(key) && !popularSet.has(key);
+    });
+  }, [sortedSwapAssets, whitelistKeys]);
+
+  const whitelistKeySet = useMemo(
+    () => new Set(whitelistAssets.map((a) => `${(a?.ticker || a?.symbol || a?.name || "").toString().toLowerCase()}|${(getAssetNetwork(a) || "").toString().toLowerCase()}`)),
+    [whitelistAssets]
+  );
+
+  const allAssetsList = useMemo(() => {
+    if (assetSearchTerm) return sortedSwapAssets;
+    if (sortedSwapAssets.length <= 3) return sortedSwapAssets;
+    const excludePopular = sortedSwapAssets.slice(3);
+    return excludePopular.filter((a) => {
+      const key = `${(a?.ticker || a?.symbol || a?.name || "").toString().toLowerCase()}|${(getAssetNetwork(a) || "").toString().toLowerCase()}`;
+      return !whitelistKeySet.has(key);
+    });
+  }, [assetSearchTerm, sortedSwapAssets, whitelistKeySet]);
+
   const renderAssetDropdown = () => {
     if (!isComponentMounted || !isAssetDropdownOpen) {
       return null;
@@ -2583,14 +2672,92 @@ export default function WithdrawalForm({
                         );
                       })}
 
+                    {whitelistAssets.length > 0 && (
+                      <>
+                        <div className="px-3 sm:px-4 py-2 bg-[#F5F6F7] dark:bg-[#23232B]">
+                          <span className="text-xs font-semibold text-[#788099] uppercase tracking-wider">
+                            Whitelist
+                          </span>
+                        </div>
+                        {whitelistAssets.map((asset: SupportedAsset, index: number) => {
+                          const handleWhitelistAssetClick = () => {
+                            if (calculationTimeout) clearTimeout(calculationTimeout);
+                            if (estimateTimeout) clearTimeout(estimateTimeout);
+                            setEstimate(null);
+                            setEstimateError(null);
+                            setEstimateLoading(false);
+                            setCalculationError(null);
+                            setReceiveAmountError(null);
+                            setApiValidationError(null);
+                            setSelectedAsset(asset);
+                            setIsAssetDropdownOpen(false);
+                            setAssetSearchTerm("");
+                            if (isHomePage) setAssetFilterTab("all");
+                            if (isSimpleCalculationAsset(asset)) {
+                              setIsCalculatingFromPay(true);
+                              const defaultAmount = !isUserModifiedAmount ? getDefaultAmount(asset) : payAmount;
+                              if (!isUserModifiedAmount) {
+                                setPayAmount(defaultAmount);
+                                setPayAmountInput(defaultAmount.toString());
+                              }
+                              calculateAmounts(defaultAmount, true);
+                            } else if (isForexAsset(asset)) {
+                              setIsCalculatingFromPay(true);
+                              const defaultAmount = !isUserModifiedAmount ? 1000 : payAmount;
+                              if (!isUserModifiedAmount) {
+                                setPayAmount(defaultAmount);
+                                setPayAmountInput(defaultAmount.toString());
+                              }
+                              calculateAmounts(defaultAmount, true);
+                            } else {
+                              setIsCalculatingFromPay(true);
+                              setIsCalculating(true);
+                              setIsCalculatingReceive(true);
+                              setEstimateLoading(true);
+                              if (!isUserModifiedAmount) {
+                                const defaultAmount = getDefaultAmount(asset);
+                                setPayAmount(defaultAmount);
+                                setPayAmountInput(defaultAmount.toString());
+                              }
+                            }
+                          };
+                          return (
+                            <div
+                              key={`whitelist-${asset.asset_id}-${asset.ticker}-${asset.network}-${index}`}
+                              className="flex items-center gap-4 p-4 sm:p-5 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-b border-gray-200 dark:border-gray-600 transition-colors duration-150"
+                              onClick={handleWhitelistAssetClick}
+                            >
+                              <img
+                                src={asset?.image_url || asset?.asset_image || (asset as any)?.image || "/images/tether.svg"}
+                                alt={asset?.name || asset?.ticker || asset?.symbol || "Asset"}
+                                className="w-10 h-10 rounded-full object-cover"
+                                onError={(e) => { e.currentTarget.src = "/images/tether.svg"; }}
+                              />
+                              <div className="flex-1">
+                                <div className="text-[#1F2937] dark:text-[#ffffff] font-medium text-base flex items-center gap-2">
+                                  {(asset.ticker || asset.symbol || asset.name || "Unknown").toUpperCase()}
+                                  <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-normal px-2 py-0.5 rounded-full">
+                                    {getNetworkDisplayName(getAssetNetwork(asset))}
+                                  </span>
+                                </div>
+                                <div className="text-sm text-gray-500 dark:text-gray-400">
+                                  {asset.name || (asset.ticker || "").toUpperCase() || (asset.symbol || "").toUpperCase() || "Unknown Asset"}
+                                </div>
+                              </div>
+                              {selectedAsset?.asset_id === asset.asset_id && (
+                                <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </>
+                    )}
+
                     <div className="border-t-2 border-gray-200 dark:border-gray-600"></div>
                   </>
                 )}
 
-                {(assetSearchTerm
-                  ? sortedSwapAssets
-                  : sortedSwapAssets.slice(3)
-                ).map((asset: SupportedAsset, index: number) => (
+                {(assetSearchTerm ? sortedSwapAssets : allAssetsList).map((asset: SupportedAsset, index: number) => (
                   <div
                     key={`${asset.asset_id}-${asset.ticker}-${asset.network}-${index}`}
                     className="flex items-center gap-4 p-4 sm:p-5 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-b border-gray-200 dark:border-gray-600 last:border-b-0 transition-colors duration-150"
@@ -4465,7 +4632,22 @@ export default function WithdrawalForm({
                               No account found for this payment method.{" "}
                               <button
                                 type="button"
-                                onClick={() => setIsPaymentModalOpen(true)}
+                                onClick={() => {
+                                  if (isHomePage && !isAuthenticated) {
+                                    const method =
+                                      selectedProviderData?.payment_method_type ||
+                                      selectedPaymentDetail?.payment_method_type ||
+                                      "";
+                                    const prefill = { method, provider: payBank };
+                                    setPaymentModalPrefill(prefill);
+                                    setAuthRedirectPath(
+                                      buildPaymentMethodsRedirectPath(prefill)
+                                    );
+                                    router.push("/auth/login");
+                                  } else {
+                                    setIsPaymentModalOpen(true);
+                                  }
+                                }}
                                 className="hover:underline cursor-pointer font-medium"
                               >
                                 Add Account
@@ -4478,7 +4660,22 @@ export default function WithdrawalForm({
                             <p className="text-[#F79330] text-sm">
                               <button
                                 type="button"
-                                onClick={() => setIsPaymentModalOpen(true)}
+                                onClick={() => {
+                                  if (isHomePage && !isAuthenticated) {
+                                    const method =
+                                      selectedProviderData?.payment_method_type ||
+                                      selectedPaymentDetail?.payment_method_type ||
+                                      "";
+                                    const prefill = { method, provider: payBank };
+                                    setPaymentModalPrefill(prefill);
+                                    setAuthRedirectPath(
+                                      buildPaymentMethodsRedirectPath(prefill)
+                                    );
+                                    router.push("/auth/login");
+                                  } else {
+                                    setIsPaymentModalOpen(true);
+                                  }
+                                }}
                                 className="hover:underline cursor-pointer"
                               >
                                 Don't have an account? Register Now
@@ -4569,9 +4766,8 @@ export default function WithdrawalForm({
                         // Keep currently selected provider/bank (even if user hasn't selected an account yet)
                         payBank,
                       };
-                      setAuthRedirectPath(
-                        buildExpressRedirectPath(mode, state)
-                      );
+                      setAuthRedirectPath(buildExpressRedirectPath(mode, state));
+                      setExpressPrefillState(state); // Fallback if URL params are lost
                       router.push("/auth/login");
                       return;
                     }
@@ -4975,24 +5171,27 @@ export default function WithdrawalForm({
             </div>
           )}
 
-          {/* PaymentMethodsModal */}
-          <PaymentMethodsModal
-            open={isPaymentModalOpen}
-            onClose={() => setIsPaymentModalOpen(false)}
-            onAdd={async () => {
-              try {
-                // Refresh both user and admin payment details after adding (force refresh)
-                await Promise.all([
-                  dispatch(fetchUserPaymentDetails(true)).unwrap(),
-                  dispatch(fetchAdminWalletList(true)).unwrap(),
-                ]);
-                showToast.success("Payment method added successfully!");
-              } catch (error) {
-                console.error("Failed to refresh payment details:", error);
-                showToast.error("Payment method added, but failed to refresh. Please reload the page.");
-              }
-            }}
-          />
+          {/* PaymentMethodsModal - only mount when open so it reliably reopens after cancel */}
+          {isPaymentModalOpen && (
+            <PaymentMethodsModal
+              key="withdrawal-add-payment-modal"
+              open={true}
+              onClose={() => setIsPaymentModalOpen(false)}
+              onAdd={async () => {
+                try {
+                  // Refresh both user and admin payment details after adding (force refresh)
+                  await Promise.all([
+                    dispatch(fetchUserPaymentDetails(true)).unwrap(),
+                    dispatch(fetchAdminWalletList(true)).unwrap(),
+                  ]);
+                  showToast.success("Payment method added successfully!");
+                } catch (error) {
+                  console.error("Failed to refresh payment details:", error);
+                  showToast.error("Payment method added, but failed to refresh. Please reload the page.");
+                }
+              }}
+            />
+          )}
 
           {/* InfoModal */}
           <InfoModal

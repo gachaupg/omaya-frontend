@@ -889,77 +889,30 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
         } border-2 rounded-2xl ${isHomePage ? 'p-2 sm:p-3' : 'p-4'} shadow-lg w-full ${isHomePage ? '' : 'max-w-4xl'} ${isHomePage ? 'mb-2 sm:mb-3' : 'mb-4'} ${isHomePage ? 'min-h-[120px] sm:min-h-[140px]' : 'min-h-[180px]'} overflow-hidden`}
       >
         <div className={`flex-1 flex flex-col justify-between ${isHomePage ? 'py-1 sm:py-2 pr-0 sm:pr-2' : 'py-2 pr-2'} min-w-0`}>
-          <div className="flex flex-row flex-wrap gap-x-6 gap-y-2 items-baseline">
-            <div>
-              <div
-                className={`${
-                  isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                } text-xs font-semibold mb-0.5`}
-              >
-                Amount:
+          <div className="space-y-3 sm:space-y-4">
+            {/* Amount row */}
+            <div className="flex flex-wrap gap-4 sm:gap-6">
+              <div className="min-w-0">
+                <p className={`text-xs font-medium mb-0.5 ${isDark ? "text-[#7B7B7B]" : "text-gray-500"}`}>Amount</p>
+                <p className={`text-base font-semibold truncate ${isDark ? "text-white" : "text-gray-900"}`}>
+                  {liveAmount !== null ? liveAmount : effectiveTransactionData?.amount || 0}{" "}
+                  {effectiveTransactionData?.type === "deposit"
+                    ? "USD"
+                    : (liveCurrency || effectiveTransactionData?.asset?.ticker || effectiveTransactionData?.asset?.symbol || effectiveTransactionData?.asset?.name || transactionData?.details?.to_currency || "USD").toUpperCase()}
+                </p>
               </div>
-              <div
-                className={`${
-                  isDark ? "text-white" : "text-gray-900"
-                } text-base font-semibold mb-1 flex items-center gap-2`}
-              >
-              <span>
-                {liveAmount !== null
-                  ? liveAmount
-                  : effectiveTransactionData?.amount || 0}{" "}
-                {effectiveTransactionData?.type === "deposit" ? (
-                  "USD"
-                ) : (
-                  <span className="uppercase">
-                    {liveCurrency ||
-                      effectiveTransactionData?.asset?.ticker ||
-                      effectiveTransactionData?.asset?.symbol ||
-                      effectiveTransactionData?.asset?.name ||
-                      transactionData?.details?.to_currency ||
-                      (effectiveTransactionData?.type === "deposit"
-                        ? "USD"
-                        : effectiveTransactionData?.type === "withdrawal"
-                          ? "USD"
-                          : "USD")}
-                  </span>
-                )}
-              </span>
-            </div>
-            {(effectiveTransactionData as any)?.receiveAmount != null && (
-              <div>
-                <div
-                  className={`${
-                    isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                  } text-xs font-semibold mb-0.5`}
-                >
-                  Net amount you&apos;ll receive:
-                </div>
-                <div
-                  className={`${
-                    isDark ? "text-[#1D8751]" : "text-[#15803D]"
-                  } text-base font-semibold flex items-center gap-2`}
-                >
-                  <span>
-                    {(
-                      (effectiveTransactionData as any)?.receiveAmount ??
-                      liveNetAmount ??
-                      0
-                    )
-                      .toFixed(8)
-                      .replace(/\.?0+$/, "")}{" "}
+              {(effectiveTransactionData as any)?.receiveAmount != null && (
+                <div className="min-w-0">
+                  <p className={`text-xs font-medium mb-0.5 ${isDark ? "text-[#7B7B7B]" : "text-gray-500"}`}>Net amount you&apos;ll receive</p>
+                  <p className="text-base font-semibold text-[#1D8751]">
+                    {((effectiveTransactionData as any)?.receiveAmount ?? liveNetAmount ?? 0).toFixed(8).replace(/\.?0+$/, "")}{" "}
                     <span className="uppercase">
-                      {liveNetCurrency ||
-                        (effectiveTransactionData?.type === "deposit"
-                          ? effectiveTransactionData?.asset?.ticker ||
-                            effectiveTransactionData?.asset?.symbol ||
-                            "USDT"
-                          : "USD")}
+                      {liveNetCurrency || (effectiveTransactionData?.type === "deposit" ? effectiveTransactionData?.asset?.ticker || effectiveTransactionData?.asset?.symbol || "USDT" : "USD")}
                     </span>
-                  </span>
+                  </p>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
             {/* {liveAmount !== null &&
               liveAmount !== effectiveTransactionData?.amount && (
                 <div className={`${
@@ -1021,162 +974,77 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
             {/* Deposit-specific information display */}
             {effectiveTransactionData?.type === "deposit" && (
               <>
-                {/* Deposit Code - Most important for deposits */}
-
-                {/* Asset and Network Information */}
-                <div
-                  className={`${
-                    isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                  } text-xs font-semibold mb-0.5 mt-3`}
-                >
-                  Asset & Network:
-                </div>
-                <div className="flex items-center mb-2">
-                  <img
-                    src={
-                      effectiveTransactionData?.asset?.icon ||
-                      effectiveTransactionData?.asset?.icon_url ||
-                      effectiveTransactionData?.asset?.image_url ||
-                      effectiveTransactionData?.asset?.image ||
-                      "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
-                    }
-                    alt={
-                      effectiveTransactionData?.asset?.ticker ||
-                      effectiveTransactionData?.asset?.symbol ||
-                      effectiveTransactionData?.asset?.name ||
-                      "Asset"
-                    }
-                    className="w-6 h-6 rounded-full mr-2"
-                    onError={(e) => {
-                      e.currentTarget.src =
-                        "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
-                    }}
-                  />
-                  <span
-                    className={`${
-                      isDark ? "text-white" : "text-gray-900"
-                    } text-sm font-semibold`}
-                  >
-                    {effectiveTransactionData?.asset?.ticker ||
-                      effectiveTransactionData?.asset?.symbol ||
-                      effectiveTransactionData?.asset?.name ||
-                      (effectiveTransactionData?.type === "deposit"
-                        ? "USD"
-                        : effectiveTransactionData?.type === "withdrawal"
-                          ? "USD"
-                          : "USDT")}
-                  </span>
-                  <span className="ml-2 bg-[#1D8751] text-white text-xs font-semibold px-2 py-0.5 rounded-full">
-                    {effectiveTransactionData?.asset?.network ||
-                      effectiveTransactionData?.network?.network_type ||
-                      "BSC"}
-                  </span>
+                {/* Asset and Network */}
+                <div className="pt-2 border-t border-gray-200 dark:border-[#35353E]">
+                  <p className={`text-xs font-medium mb-1.5 ${isDark ? "text-[#7B7B7B]" : "text-gray-500"}`}>Asset & Network</p>
+                  <div className="flex items-center gap-2">
+                    <img
+                      src={
+                        effectiveTransactionData?.asset?.icon ||
+                        effectiveTransactionData?.asset?.icon_url ||
+                        effectiveTransactionData?.asset?.image_url ||
+                        effectiveTransactionData?.asset?.image ||
+                        "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                      }
+                      alt={effectiveTransactionData?.asset?.ticker || effectiveTransactionData?.asset?.symbol || effectiveTransactionData?.asset?.name || "Asset"}
+                      className="w-5 h-5 rounded-full shrink-0"
+                      onError={(e) => {
+                        e.currentTarget.src = "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                      }}
+                    />
+                    <span className={`text-sm font-medium ${isDark ? "text-white" : "text-gray-900"}`}>
+                      {effectiveTransactionData?.asset?.ticker || effectiveTransactionData?.asset?.symbol || effectiveTransactionData?.asset?.name || "USDT"}
+                    </span>
+                    <span className="bg-[#1D8751] text-white text-xs font-medium px-2 py-0.5 rounded-full">{effectiveTransactionData?.asset?.network || effectiveTransactionData?.network?.network_type || "BSC"}</span>
+                  </div>
                 </div>
 
-                {/* Wallet Address (if provided) */}
+                {/* Wallet Address */}
                 {effectiveTransactionData?.walletAddress && (
-                  <>
-                    <div
-                      className={`${
-                        isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                      } text-xs font-semibold mb-0.5 mt-3`}
-                    >
-                      Wallet Address:
-                    </div>
-                    <div className="flex items-center mb-2">
-                      <span
-                        className={`${
-                          isDark ? "text-white" : "text-gray-900"
-                        } text-sm font-mono bg-gray-500/10 px-2 py-1 rounded text-xs break-all`}
-                      >
+                  <div className="pt-2 border-t border-gray-200 dark:border-[#35353E]">
+                    <p className={`text-xs font-medium mb-1.5 ${isDark ? "text-[#7B7B7B]" : "text-gray-500"}`}>Wallet Address</p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <code className={`text-sm font-mono break-all px-2 py-1 rounded-lg ${isDark ? "bg-[#2A2A30] text-white" : "bg-gray-100 text-gray-900"}`}>
                         {effectiveTransactionData.walletAddress}
-                      </span>
-                      <CopyButton
-                        value={effectiveTransactionData.walletAddress}
-                        className="ml-2"
-                      />
+                      </code>
+                      <CopyButton value={effectiveTransactionData.walletAddress} className="shrink-0" />
                     </div>
-                  </>
+                  </div>
                 )}
 
-                {/* Status from WebSocket */}
+                {/* Bank Information */}
+                {effectiveTransactionData?.paymentDetail && effectiveTransactionData.paymentDetail.provider_name !== "direct" && (
+                  <div className="pt-2 border-t border-gray-200 dark:border-[#35353E]">
+                    <p className={`text-xs font-medium mb-1.5 ${isDark ? "text-[#7B7B7B]" : "text-gray-500"}`}>Bank</p>
+                    <div className="flex items-center gap-2 mb-2">
+                      <img
+                        src="https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
+                        alt={effectiveTransactionData.paymentDetail.provider_name}
+                        className="w-5 h-5 rounded-full shrink-0"
+                      />
+                      <span className={`text-sm font-medium ${isDark ? "text-white" : "text-gray-900"}`}>{effectiveTransactionData.paymentDetail.provider_name}</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <p className={`text-xs font-medium mb-0.5 ${isDark ? "text-[#7B7B7B]" : "text-gray-500"}`}>Account Name</p>
+                        <p className={`text-sm font-medium ${isDark ? "text-white" : "text-gray-900"}`}>{effectiveTransactionData.paymentDetail.account_name}</p>
+                      </div>
+                      <div>
+                        <p className={`text-xs font-medium mb-0.5 ${isDark ? "text-[#7B7B7B]" : "text-gray-500"}`}>Account Number</p>
+                        <p className={`text-sm font-mono font-medium ${isDark ? "text-white" : "text-gray-900"}`}>{effectiveTransactionData.paymentDetail.account_number}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </>
             )}
-
-            {/* Bank Information (for non-direct deposits) */}
-            {effectiveTransactionData?.type === "deposit" &&
-              effectiveTransactionData?.paymentDetail &&
-              effectiveTransactionData.paymentDetail.provider_name !==
-                "direct" && (
-                <>
-                  <div
-                    className={`${
-                      isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                    } text-xs font-semibold mb-0.5 mt-3`}
-                  >
-                    Bank:
-                  </div>
-                  <div className="flex items-center mb-1">
-                    <img
-                      src="https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
-                      alt={effectiveTransactionData.paymentDetail.provider_name}
-                      className="w-6 h-6 rounded-full mr-2"
-                    />
-                    <span
-                      className={`${
-                        isDark ? "text-white" : "text-gray-900"
-                      } text-sm font-semibold`}
-                    >
-                      {effectiveTransactionData.paymentDetail.provider_name}
-                    </span>
-                  </div>
-                  <div
-                    className={`${
-                      isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                    } text-xs font-semibold mb-0.5`}
-                  >
-                    Account Name:
-                  </div>
-                  <div
-                    className={`${
-                      isDark ? "text-white" : "text-gray-900"
-                    } text-sm mb-1`}
-                  >
-                    {effectiveTransactionData.paymentDetail.account_name}
-                  </div>
-                  <div
-                    className={`${
-                      isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                    } text-xs font-semibold mb-0.5`}
-                  >
-                    Account Number:
-                  </div>
-                  <div
-                    className={`${
-                      isDark ? "text-white" : "text-gray-900"
-                    } text-sm font-mono`}
-                  >
-                    {effectiveTransactionData.paymentDetail.account_number}
-                  </div>
-                </>
-              )}
-            {effectiveTransactionData?.type === "withdrawal" && (
-              <>
-                <div
-                  className={`${
-                    isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                  } text-xs font-semibold mb-0.5`}
-                >
-                  Wallet Address:
-                </div>
-                <div
-                  className={`${
-                    isDark ? "text-white" : "text-gray-900"
-                  } text-sm font-mono break-all`}
-                >
+            {effectiveTransactionData?.type === "withdrawal" && effectiveTransactionData?.walletAddress && (
+              <div className="pt-2 border-t border-gray-200 dark:border-[#35353E]">
+                <p className={`text-xs font-medium mb-1.5 ${isDark ? "text-[#7B7B7B]" : "text-gray-500"}`}>Wallet Address</p>
+                <code className={`text-sm font-mono break-all block px-2 py-1 rounded-lg ${isDark ? "bg-[#2A2A30] text-white" : "bg-gray-100 text-gray-900"}`}>
                   {effectiveTransactionData.walletAddress}
-                </div>
-              </>
+                </code>
+              </div>
             )}
           </div>
         </div>

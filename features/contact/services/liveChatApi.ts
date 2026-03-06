@@ -36,7 +36,7 @@ export interface QueueStatusResponse {
 }
 
 /**
- * Create a new chat session
+ * Create a new chat session, or reuse existing session if backend returns "already have session"
  */
 export const createChatSession = async (): Promise<CreateSessionResponse> => {
   try {
@@ -47,6 +47,21 @@ export const createChatSession = async (): Promise<CreateSessionResponse> => {
     logger.debug("live-chat", "Chat session created:", response.data);
     return response.data;
   } catch (error: any) {
+    // Backend may return 409/400 "You already have an active chat session" with session in body
+    const data = error?.response?.data;
+    if (data?.session?.session_id) {
+      logger.debug("live-chat", "Using existing session:", data.session);
+      return {
+        message: data.message || "Existing session",
+        session: {
+          session_id: data.session.session_id,
+          status: data.session.status,
+          queue_position: data.session.queue_position,
+          created_at: data.session.created_at,
+          agent_name: data.session.agent_name,
+        },
+      };
+    }
     logger.error("live-chat", "Failed to create chat session:", error);
     throw error;
   }

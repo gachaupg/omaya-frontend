@@ -156,6 +156,12 @@ export const Chats: React.FC = () => {
   const [isSending, setIsSending] = useState(false);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [uploadedImages, setUploadedImages] = useState<File[]>([]);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const [audioPreview, setAudioPreview] = useState<{ file: File; duration: number; url: string } | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const recordingStartRef = useRef<number>(0);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
@@ -464,6 +470,152 @@ export const Chats: React.FC = () => {
     setUploadedImages((prev) => prev.filter((_, i) => i !== index));
   };
 
+  // Update recording seconds display while recording
+  useEffect(() => {
+    if (!isRecording) {
+      setRecordingSeconds(0);
+      return;
+    }
+    setRecordingSeconds(0);
+    const interval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - recordingStartRef.current) / 1000);
+      setRecordingSeconds(elapsed);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isRecording]);
+
+  const startRecording = async () => {
+    if (!selectedUser || !termsAccepted || isSending) return;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      recordingStartRef.current = Date.now();
+
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : MediaRecorder.isTypeSupported('audio/webm')
+          ? 'audio/webm'
+          : 'audio/mp4';
+
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+      mediaRecorder.onstop = () => {
+        stream.getTracks().forEach((t) => t.stop());
+        const durationSeconds = Math.round((Date.now() - recordingStartRef.current) / 1000);
+        const blob = new Blob(audioChunksRef.current, { type: mimeType });
+        const ext = mimeType.includes('webm') ? 'webm' : 'm4a';
+        const file = new File([blob], `voice-${Date.now()}.${ext}`, { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        mediaRecorderRef.current = null;
+        setIsRecording(false);
+        setAudioPreview({ file, duration: durationSeconds, url });
+      };
+      mediaRecorder.start();
+      setIsRecording(true);
+      setRecordingSeconds(0);
+    } catch (err) {
+      console.error('Failed to start recording:', err);
+      setIsRecording(false);
+      setRecordingSeconds(0);
+    }
+  };
+
+  // Live seconds counter while recording
+  useEffect(() => {
+    if (!isRecording) {
+      setRecordingSeconds(0);
+      return;
+    }
+    const interval = setInterval(() => {
+      setRecordingSeconds(Math.floor((Date.now() - recordingStartRef.current) / 1000));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isRecording]);
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+      mediaRecorderRef.current = null;
+      setIsRecording(false);
+    }
+  };
+
+  const handleSendAudioPreview = () => {
+    if (!audioPreview) return;
+    handleSendAudioMessage(audioPreview.file, audioPreview.duration);
+    URL.revokeObjectURL(audioPreview.url);
+    setAudioPreview(null);
+  };
+
+  const handleDiscardAudioPreview = () => {
+    if (!audioPreview) return;
+    URL.revokeObjectURL(audioPreview.url);
+    setAudioPreview(null);
+  };
+
+  const handleSendAudioMessage = async (audioFile: File, durationSeconds: number = 0) => {
+    if (!selectedUser?.entity_id) return;
+    const tempId = `temp-${Date.now()}-${Math.random()}`;
+    const optimisticMessage = {
+      id: tempId,
+      content: '',
+      message: '',
+      audios: [{ id: tempId, audio_url: URL.createObjectURL(audioFile), duration: durationSeconds }],
+      sender_id: user?.id || 0,
+      sender_email: user?.email || '',
+      sender_name: user?.email || '',
+      timestamp: new Date().toISOString(),
+      isOptimistic: true,
+    };
+    setOptimisticMessages((prev) => {
+      const newMap = new Map(prev);
+      const entityId = selectedUser.entity_id;
+      const existing = newMap.get(entityId) || [];
+      newMap.set(entityId, [...existing, optimisticMessage]);
+      return newMap;
+    });
+    justAddedOptimisticRef.current = true;
+    setTimeout(() => { justAddedOptimisticRef.current = false; }, 500);
+    setIsSending(true);
+    try {
+      await postTradeMessage(selectedUser.entity_id, {
+        message: '',
+        uploaded_images: [],
+        uploaded_audios: [audioFile],
+        duration: durationSeconds,
+        sender_name: user?.email || '',
+      });
+      refetch();
+      setTimeout(() => {
+        setOptimisticMessages((prev) => {
+          const newMap = new Map(prev);
+          const entityId = selectedUser.entity_id;
+          const existing = newMap.get(entityId) || [];
+          const filtered = existing.filter((m) => m.id !== tempId);
+          if (filtered.length === 0) newMap.delete(entityId);
+          else newMap.set(entityId, filtered);
+          return newMap;
+        });
+      }, 1000);
+    } catch (error) {
+      console.error('Failed to send voice message:', error);
+      setOptimisticMessages((prev) => {
+        const newMap = new Map(prev);
+        const entityId = selectedUser.entity_id;
+        const existing = newMap.get(entityId) || [];
+        const filtered = existing.filter((m) => m.id !== tempId);
+        if (filtered.length === 0) newMap.delete(entityId);
+        else newMap.set(entityId, filtered);
+        return newMap;
+      });
+    } finally {
+      setIsSending(false);
+    }
+  };
+
   const handleTermsAccept = () => {
     setTermsAccepted(true);
     localStorage.setItem("p2p_terms_accepted", "true");
@@ -671,6 +823,35 @@ export const Chats: React.FC = () => {
                       })}
                     </div>
                   )}
+
+                  {/* Voice/audio messages - API: audios: [{ id, audio_url, duration }], or legacy audio_url/audio */}
+                  {(() => {
+                    const audioList = Array.isArray(msg.audios) && msg.audios.length > 0
+                      ? msg.audios
+                      : (msg.audio_url || msg.audio)
+                        ? [{ id: msg.id, audio_url: msg.audio_url || msg.audio, duration: 0 }]
+                        : [];
+                    if (audioList.length === 0) return null;
+                    return (
+                      <div className="mt-1 flex flex-col gap-2">
+                        {audioList.map((a: { id?: string; audio_url: string; duration?: number }, idx: number) => (
+                          <div key={a.id || `audio-${idx}`} className="flex items-center gap-2">
+                            <audio
+                              controls
+                              className="max-w-full h-8 min-w-[180px]"
+                              src={a.audio_url}
+                              preload="metadata"
+                            >
+                              Your browser does not support audio playback.
+                            </audio>
+                            {typeof a.duration === 'number' && a.duration > 0 && (
+                              <span className="text-[10px] opacity-75">{a.duration}s</span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
 
                   <div className="text-[10px] opacity-75 text-right mt-0">
                     {msg.timestamp ? formatTimestamp(msg.timestamp) : ""}
@@ -956,6 +1137,38 @@ export const Chats: React.FC = () => {
 
           {/* Input bar */}
           <div className="flex-shrink-0 px-4 py-3 border-t border-gray-200 dark:border-[#1F2937] bg-gray-50 dark:bg-[var(--bg-color)]">
+            {/* Audio preview - listen before sending */}
+            {audioPreview && (
+              <div className="flex items-center gap-3 p-3 mb-2 rounded-lg bg-gray-100 dark:bg-[#1F2937] border border-gray-200 dark:border-[#374151]">
+                <audio
+                  src={audioPreview.url}
+                  controls
+                  className="h-9 max-w-[180px]"
+                />
+                <span className="text-xs text-gray-600 dark:text-gray-400">
+                  {audioPreview.duration}s
+                </span>
+                <div className="flex gap-2 ml-auto">
+                  <button
+                    type="button"
+                    onClick={handleSendAudioPreview}
+                    disabled={isSending}
+                    className="px-3 py-1.5 rounded-md bg-[#1D8751] text-white text-sm font-medium hover:bg-[#176b40] disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Send
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDiscardAudioPreview}
+                    disabled={isSending}
+                    className="px-3 py-1.5 rounded-md bg-gray-300 dark:bg-[#4B5563] text-gray-700 dark:text-gray-200 text-sm font-medium hover:bg-gray-400 dark:hover:bg-[#6B7280] disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Discard
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Selected image previews */}
             {uploadedImages.length > 0 && (
               <div className="mb-2 flex flex-wrap gap-2">
@@ -985,7 +1198,7 @@ export const Chats: React.FC = () => {
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                disabled={!selectedUser || !termsAccepted || isSending}
+                disabled={!selectedUser || !termsAccepted || isSending || isRecording}
                 className="w-8 h-8 flex-shrink-0 rounded-md bg-gray-300 dark:bg-[#374151] text-gray-600 dark:text-gray-400 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-400 dark:hover:bg-[#4B5563] transition-colors"
                 title={!selectedUser ? "Select a conversation to attach images" : "Attach image"}
                 aria-label="Attach image"
@@ -998,6 +1211,49 @@ export const Chats: React.FC = () => {
                   />
                 </svg>
               </button>
+
+              {/* Audio recording - record voice message with seconds count */}
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                {isRecording && (
+                  <span className="text-xs font-medium text-red-500 tabular-nums min-w-[2ch]">
+                    {recordingSeconds}s
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={isRecording ? stopRecording : startRecording}
+                  disabled={!selectedUser || !termsAccepted || isSending || !!audioPreview}
+                  className={`w-8 h-8 flex-shrink-0 rounded-md flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${
+                    isRecording
+                      ? "bg-red-500 text-white hover:bg-red-600 animate-pulse"
+                      : "bg-gray-300 dark:bg-[#374151] text-gray-600 dark:text-gray-400 hover:bg-gray-400 dark:hover:bg-[#4B5563]"
+                  }`}
+                  title={
+                    !selectedUser
+                      ? "Select a conversation to record"
+                      : audioPreview
+                        ? "Send or discard recording first"
+                        : isRecording
+                          ? "Click to stop recording"
+                          : "Record voice message"
+                  }
+                  aria-label={isRecording ? "Stop recording" : "Record voice message"}
+                >
+                  {isRecording ? (
+                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                      <rect x="6" y="6" width="12" height="12" rx="2" />
+                    </svg>
+                  ) : (
+                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-4a4 4 0 01-8 0V9a4 4 0 118 0v2z"
+                      />
+                    </svg>
+                  )}
+                </button>
+              </div>
 
               {/* Input field */}
               <div className="flex-1 relative">
@@ -1022,6 +1278,7 @@ export const Chats: React.FC = () => {
                     !selectedUser ||
                     !termsAccepted ||
                     isSending ||
+                    isRecording ||
                     (() => {
                       const status = selectedUser ? (selectedUser as any).status : null;
                       const normalizedStatus = status ? String(status).toLowerCase() : null;
@@ -1046,7 +1303,7 @@ export const Chats: React.FC = () => {
               <div className="relative" ref={emojiPickerRef}>
                 <button
                   type="button"
-                  disabled={!selectedUser || !termsAccepted || isSending}
+                  disabled={!selectedUser || !termsAccepted || isSending || isRecording}
                   className="w-8 h-8 flex-shrink-0 rounded-full bg-gray-300 dark:bg-[#374151] text-gray-600 dark:text-gray-400 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-400 dark:hover:bg-[#4B5563] transition-colors"
                   title={!selectedUser ? "Select a conversation to use emojis" : "Pick emoji"}
                   aria-label="Pick emoji"

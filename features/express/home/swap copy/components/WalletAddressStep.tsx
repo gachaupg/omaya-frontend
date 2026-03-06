@@ -269,6 +269,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                       }}
                       anchorRef={bookmarkAnchorRef}
                       isDark={isDark}
+                      saveDisabled={isAddressValidating || !(addressValidationResult?.isValid)}
                     />
                   </span>
                 </div>

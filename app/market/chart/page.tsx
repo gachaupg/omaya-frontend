@@ -104,29 +104,13 @@ const MarketChartContent = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [timeRange, setTimeRange] = useState<string>("1");
-  const [localFavorites, setLocalFavorites] = useState<string[]>([]);
-
-  // Load favorites from localStorage
-  const getStoredFavorites = useCallback((): string[] => {
-    if (typeof window === "undefined") return [];
-    try {
-      const localFavoritesValue = localStorage.getItem("market_favorites");
-      if (!localFavoritesValue) return [];
-      const parsed = JSON.parse(localFavoritesValue);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch (error) {
-      console.warn("Error reading favorites from localStorage:", error);
-      return [];
-    }
-  }, []);
 
   useEffect(() => {
     if (!allAvailableAssets) {
       dispatch(fetchAssets());
     }
     dispatch(getFavoriteAssets());
-    setLocalFavorites(getStoredFavorites());
-  }, [dispatch, getStoredFavorites, allAvailableAssets]);
+  }, [dispatch, allAvailableAssets]);
 
   useEffect(() => {
     if (!coinId) return;
@@ -168,99 +152,17 @@ const MarketChartContent = () => {
     loadData();
   }, [coinId, timeRange]);
 
-  // Check if asset is favorited
-  const isFavorited = (symbol: string, name: string): boolean => {
-    const normalizedSymbol = symbol.toUpperCase();
-    const normalizedName = name.toUpperCase();
-
-    if (
-      localFavorites.some(
-        (fav) =>
-          fav.toUpperCase() === normalizedSymbol || fav.toUpperCase() === normalizedName
+  // Check if asset is favorited (API only)
+  const isFavorited = (symbol: string, name: string): boolean =>
+    Boolean(
+      favoriteAssets?.some(
+        (fav: any) =>
+          fav.asset_symbol?.toLowerCase() === symbol.toLowerCase() ||
+          fav.asset_symbol?.toLowerCase() === name.toLowerCase() ||
+          fav.asset_name?.toLowerCase() === symbol.toLowerCase() ||
+          fav.asset_name?.toLowerCase() === name.toLowerCase()
       )
-    ) {
-      return true;
-    }
-
-    const isInRedux = favoriteAssets?.some(
-      (fav: any) =>
-        fav.asset_symbol?.toLowerCase() === symbol.toLowerCase() ||
-        fav.asset_symbol?.toLowerCase() === name.toLowerCase()
     );
-
-    if (isInRedux) return true;
-
-    if (typeof window !== "undefined") {
-      try {
-        const storedFavorites = localStorage.getItem("market_favorites");
-        if (storedFavorites) {
-          const favorites = JSON.parse(storedFavorites);
-          return favorites.some(
-            (fav: string) =>
-              fav.toLowerCase() === symbol.toLowerCase() ||
-              fav.toLowerCase() === name.toLowerCase()
-          );
-        }
-      } catch (error) {
-        console.warn("Error reading favorites from localStorage:", error);
-      }
-    }
-
-    return false;
-  };
-
-  // Get asset ID from symbol/name
-  const getAssetIdFromCoin = (symbol: string, name: string): string | null => {
-    if (!allAvailableAssets?.assets) return null;
-
-    let asset = allAvailableAssets.assets.find(
-      (asset: Asset) => asset.symbol.toLowerCase() === symbol.toLowerCase()
-    );
-
-    if (!asset) {
-      asset = allAvailableAssets.assets.find(
-        (asset: Asset) => asset.name.toLowerCase() === name.toLowerCase()
-      );
-    }
-
-    if (!asset) {
-      asset = allAvailableAssets.assets.find(
-        (asset: Asset) =>
-          asset.symbol.toLowerCase().includes(symbol.toLowerCase()) ||
-          symbol.toLowerCase().includes(asset.symbol.toLowerCase())
-      );
-    }
-
-    return asset?.asset_id || null;
-  };
-
-  // Update localStorage favorites
-  const updateLocalStorageFavorites = (symbol: string, add: boolean) => {
-    if (typeof window !== "undefined") {
-      try {
-        const normalizedSymbol = symbol.toUpperCase();
-        let favorites = getStoredFavorites();
-
-        if (add) {
-          const hasSymbol = favorites
-            .map((fav) => fav.toUpperCase())
-            .includes(normalizedSymbol);
-          if (!hasSymbol) {
-            favorites.push(normalizedSymbol);
-          }
-        } else {
-          favorites = favorites.filter(
-            (fav) => fav.toUpperCase() !== normalizedSymbol
-          );
-        }
-
-        localStorage.setItem("market_favorites", JSON.stringify(favorites));
-        setLocalFavorites(favorites);
-      } catch (error) {
-        console.warn("Error updating favorites in localStorage:", error);
-      }
-    }
-  };
 
   // Toggle favorite
   const handleToggleFavorite = async (e: React.MouseEvent) => {
@@ -270,38 +172,45 @@ const MarketChartContent = () => {
 
     const symbol = coinDetails.symbol;
     const name = coinDetails.name;
-    const assetId = getAssetIdFromCoin(symbol, name);
     const favorited = isFavorited(symbol, name);
+    const favoriteAsset = favoriteAssets?.find(
+      (fav: any) =>
+        fav.asset_symbol?.toLowerCase() === symbol.toLowerCase() ||
+        fav.asset_name?.toLowerCase() === name.toLowerCase()
+    );
 
-    if (!assetId) {
-      updateLocalStorageFavorites(symbol, !favorited);
-      toast.success(
-        !favorited
-          ? `${symbol.toUpperCase()} added to favorites!`
-          : `${symbol.toUpperCase()} removed from favorites!`
-      );
-      await dispatch(getFavoriteAssets());
+    if (favorited && favoriteAsset) {
+      try {
+        await dispatch(removeFavoriteAsset({ favorite_asset_id: favoriteAsset.favorite_asset_id })).unwrap();
+        toast.success(`${symbol.toUpperCase()} removed from favorites!`);
+        await dispatch(getFavoriteAssets());
+      } catch (error: any) {
+        toast.error(`Failed to remove favorite: ${error?.message || "Unknown error"}`);
+        await dispatch(getFavoriteAssets());
+      }
       return;
     }
 
-    try {
-      if (favorited) {
-        await dispatch(removeFavoriteAsset({ asset_id: assetId })).unwrap();
-        updateLocalStorageFavorites(symbol, false);
-        toast.success(`${symbol.toUpperCase()} removed from favorites!`);
-      } else {
-        await dispatch(addFavoriteAsset({ asset_id: assetId })).unwrap();
-        updateLocalStorageFavorites(symbol, true);
+    if (!favorited) {
+      try {
+        const price = coinDetails.market_data?.current_price?.usd ?? 0;
+        const percentage = coinDetails.market_data?.price_change_percentage_24h ?? 0;
+        await dispatch(
+          addFavoriteAsset({
+            asset_symbol: symbol,
+            asset_name: name,
+            asset_image: coinDetails.image?.large || coinDetails.image?.small || "",
+            network: symbol.toLowerCase(),
+            percentage: (percentage != null && !isNaN(percentage) ? Number(percentage) : 0).toFixed(2),
+            price: String(price),
+          })
+        ).unwrap();
         toast.success(`${symbol.toUpperCase()} added to favorites!`);
+        await dispatch(getFavoriteAssets());
+      } catch (error: any) {
+        toast.error(`Failed to add favorite: ${error?.message || "Unknown error"}`);
+        await dispatch(getFavoriteAssets());
       }
-      await dispatch(getFavoriteAssets());
-    } catch (error: any) {
-      updateLocalStorageFavorites(symbol, !favorited);
-      const errorMessage = error?.message || error?.toString() || "Unknown error";
-      toast.error(
-        `Failed to ${favorited ? "remove" : "add"} favorite: ${errorMessage}. Using local storage.`
-      );
-      await dispatch(getFavoriteAssets());
     }
   };
 

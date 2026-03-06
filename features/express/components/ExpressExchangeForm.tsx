@@ -1,7 +1,24 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import WithdrawalForm from "./forms/withdrwal";
 import DepositForm from "./forms/deposit";
+import {
+  consumeExpressPrefillState,
+  consumeExpressLegalReturnState,
+} from "@/lib/utils/authRedirect";
+
+/** Parse prefill from URL synchronously so form gets correct initial state on first render */
+function parsePrefillFromUrl(searchParams: URLSearchParams | null): Record<string, any> | null {
+  if (!searchParams) return null;
+  const prefillParam = searchParams.get("prefill");
+  if (!prefillParam) return null;
+  try {
+    return JSON.parse(decodeURIComponent(prefillParam)) as Record<string, any>;
+  } catch {
+    return null;
+  }
+}
 
 interface ExpressExchangeFormProps {
   onExchange: (transactionData: {
@@ -43,8 +60,19 @@ const ExpressExchangeForm: React.FC<ExpressExchangeFormProps> = ({
   initialMode = "deposit",
   isHomePage = false,
 }) => {
+  const searchParams = useSearchParams();
+  const prefillFromUrl = useMemo(
+    () => parsePrefillFromUrl(searchParams),
+    [searchParams]
+  );
   const [mode, setMode] = useState<"deposit" | "withdrawal">(initialMode);
-  const [prefillState, setPrefillState] = useState<any>(null);
+  const [prefillState, setPrefillState] = useState<Record<string, any> | null>(
+    () => prefillFromUrl
+  );
+  // Legal return state takes precedence - user returning from Terms/Privacy/etc.
+  const [legalReturnState] = useState<Record<string, any> | null>(
+    () => consumeExpressLegalReturnState()
+  );
   // Preserve state when switching modes
   const [preservedState, setPreservedState] = useState<any>(null);
 
@@ -61,18 +89,12 @@ const ExpressExchangeForm: React.FC<ExpressExchangeFormProps> = ({
     setMode(initialMode);
   }, [initialMode]);
 
+  // Fallback: consume prefill from sessionStorage when URL has no prefill (e.g. truncated)
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const prefill = params.get("prefill");
-    if (prefill) {
-      try {
-        const parsed = JSON.parse(decodeURIComponent(prefill));
-        setPrefillState(parsed);
-      } catch (error) {
-        console.warn("Failed to parse prefill state", error);
-      }
-    }
-  }, [initialMode]);
+    if (prefillState) return;
+    const fromStorage = consumeExpressPrefillState();
+    if (fromStorage) setPrefillState(fromStorage);
+  }, [prefillState]);
 
   return (
     <div className="w-full mt-0">
@@ -86,7 +108,7 @@ const ExpressExchangeForm: React.FC<ExpressExchangeFormProps> = ({
           mode={mode}
           onModeChange={handleModeChange}
           isHomePage={isHomePage}
-          initialState={preservedState || prefillState}
+          initialState={legalReturnState || preservedState || prefillState}
         />
       ) : (
         <WithdrawalForm
@@ -94,7 +116,7 @@ const ExpressExchangeForm: React.FC<ExpressExchangeFormProps> = ({
           mode={mode}
           onModeChange={handleModeChange}
           isHomePage={isHomePage}
-          initialState={preservedState || prefillState}
+          initialState={legalReturnState || preservedState || prefillState}
         />
       )}
     </div>

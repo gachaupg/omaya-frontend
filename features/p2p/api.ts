@@ -565,7 +565,13 @@ export const getTradeMessages = async (tradeId: string) => {
 
 export const postTradeMessage = async (
   tradeId: string,
-  payload: { message: string; uploaded_images: File[]; sender_name?: string }
+  payload: {
+    message: string;
+    uploaded_images: File[];
+    uploaded_audios?: File[];
+    duration?: number;
+    sender_name?: string;
+  }
 ) => {
   if (!tradeId || tradeId.trim() === '') {
     throw new Error('Trade ID is required');
@@ -579,19 +585,41 @@ export const postTradeMessage = async (
       formData.append('sender_name', payload.sender_name);
     }
 
-    // Append each file to FormData
-    payload.uploaded_images.forEach((file, index) => {
-      formData.append(`uploaded_images`, file);
+    // Append each image file to FormData
+    payload.uploaded_images.forEach((file) => {
+      formData.append('uploaded_images', file);
     });
 
+    // Append each audio file to FormData (voice messages). Use the same field name
+    // so the server receives: message, sender_name, duration, uploaded_audios (file).
+    if (payload.uploaded_audios?.length) {
+      payload.uploaded_audios.forEach((file) => {
+        formData.append('uploaded_audios', file, file.name);
+      });
+    }
+
+    // Append duration in seconds (optional, for voice messages)
+    if (payload.duration !== undefined && payload.duration >= 0) {
+      formData.append('duration', String(Math.round(payload.duration)));
+    }
+
+    // DevTools Network tab will show the raw multipart body (boundaries + parts).
+    // This log is a readable summary of what we're sending.
+    if (payload.uploaded_audios?.length) {
+      const f = payload.uploaded_audios[0];
+      logger.debug('p2p', '[P2P Audio] Payload summary: message, sender_name, duration, uploaded_audios:', {
+        message: payload.message || '(empty)',
+        sender_name: payload.sender_name,
+        duration: payload.duration,
+        uploaded_audios: `<audio file: ${f.name}, ${(f.size / 1024).toFixed(1)} KB>`,
+      });
+    }
+
+    // Do not set Content-Type manually for FormData – axios sets
+    // multipart/form-data with the correct boundary automatically.
     const response = await post(
       `${API_CONFIG.P2P.TRADE_MESSAGES(tradeId)}`,
-      formData,
-      {
-        headers: {
-          "Content-Type": "multipart/form-data"
-        }
-      }
+      formData
     );
     return response.data;
   });
@@ -754,6 +782,28 @@ export const updateUserPaymentDetail = async (
       data
     );
     logger.debug('p2p', "API: Update response received:", response);
+    return response.data;
+  });
+};
+
+/** Send OTP for adding payment detail. OTP is sent to user's email. No body required. */
+export const sendPaymentDetailAddOtp = async (): Promise<{ message: string }> => {
+  return withRetry(async () => {
+    const response = await post<{ message: string }>(
+      API_CONFIG.PAYMENTS.SEND_ADD_OTP,
+      {}
+    );
+    return response.data;
+  });
+};
+
+/** Verify OTP for adding payment detail. Required before addUserPaymentDetail. */
+export const verifyPaymentDetailAddOtp = async (otp: string): Promise<{ message: string }> => {
+  return withRetry(async () => {
+    const response = await post<{ message: string }>(
+      API_CONFIG.PAYMENTS.VERIFY_ADD_OTP,
+      { otp }
+    );
     return response.data;
   });
 };

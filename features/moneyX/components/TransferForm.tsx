@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useMemo, useRef, useCallback } from "react";
+import Link from "next/link";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "@/store";
 import {
@@ -30,9 +31,10 @@ interface TransferFormProps {
     moneyxTransactionId?: string;
     moneyXTransaction?: any;
   }) => void;
+  initialState?: Record<string, any>;
 }
 
-export default function TransferForm({ onTransfer }: TransferFormProps) {
+export default function TransferForm({ onTransfer, initialState }: TransferFormProps) {
   const dispatch = useDispatch<AppDispatch>();
   const { isDark } = useTheme();
   const { t } = useExpressI18n();
@@ -179,6 +181,9 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
   const commissionFetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const paymentDetailsRef = useRef<HTMLDivElement>(null);
 
+  const MONEYX_LEGAL_RETURN_STATE_KEY = "omaya_moneyx_legal_return_state";
+  const RETURNING_FROM_LEGAL_KEY = "omaya_returning_from_legal";
+
   // Fetch commission percentage from range-commissions API (no auth, returns percentage e.g. 3%)
   useEffect(() => {
     const amount = isCalculatingFromPay ? payAmount : getAmount;
@@ -251,6 +256,46 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
     return providerName;
   }, []);
 
+  const handleBeforeLegalNavigate = useCallback(() => {
+    try {
+      const fromName = selectedFromPaymentDetail ? getProviderName(selectedFromPaymentDetail) : fromPaymentMethod;
+      const toName = selectedToPaymentDetail ? getProviderName(selectedToPaymentDetail) : toPaymentMethod;
+      sessionStorage.setItem(
+        MONEYX_LEGAL_RETURN_STATE_KEY,
+        JSON.stringify({
+          isFirstCardSubmitted: true,
+          payAmount,
+          payAmountInput,
+          getAmount,
+          getAmountInput,
+          bankAccountAddress,
+          isAddressConfirmed,
+          fromPaymentMethod: fromName,
+          toPaymentMethod: toName,
+          fromProviderBase: fromName,
+          toProviderBase: toName,
+          fromPaymentDetail: selectedFromPaymentDetail,
+          toPaymentDetail: selectedToPaymentDetail,
+        })
+      );
+      sessionStorage.setItem(RETURNING_FROM_LEGAL_KEY, "1");
+    } catch {
+      // Ignore storage errors
+    }
+  }, [
+    payAmount,
+    payAmountInput,
+    getAmount,
+    getAmountInput,
+    bankAccountAddress,
+    isAddressConfirmed,
+    fromPaymentMethod,
+    toPaymentMethod,
+    selectedFromPaymentDetail,
+    selectedToPaymentDetail,
+    getProviderName,
+  ]);
+
   const currentBankAsset = selectedToPaymentDetail ? getProviderName(selectedToPaymentDetail) : "";
   const {
     bookmarks,
@@ -301,57 +346,44 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
   const hasRestoredState = useRef(false);
   const paymentMethodRestoreAttempted = useRef(false);
 
-  // Restore state on mount and when authentication changes
+  // Restore state on mount - from initialState (URL/sessionStorage) or localStorage
   useEffect(() => {
-    // Only restore if user is authenticated and we haven't restored yet
-    if (hasRestoredState.current) {
-      return;
-    }
+    if (hasRestoredState.current) return;
+    if (isAuthenticated === undefined) return;
+    if (!isAuthenticated) return;
 
-    // Wait for authentication status to be available
-    if (isAuthenticated === undefined) {
-      return;
-    }
+    const state = initialState || (() => {
+      try {
+        const saved = localStorage.getItem("moneyx_form_state");
+        return saved ? JSON.parse(saved) : null;
+      } catch {
+        return null;
+      }
+    })();
 
-    // Only restore if authenticated (user has logged in)
-    if (!isAuthenticated) {
-      return;
-    }
-
-    try {
-      const savedState = localStorage.getItem("moneyx_form_state");
-      if (savedState) {
-        const state = JSON.parse(savedState);
-
+    if (state) {
+      try {
         console.log("🔄 [Dashboard] Restoring moneyx form state:", state);
 
-        // Prevent minimise effect from collapsing the form when we restore amounts
         isRestoringRef.current = true;
 
-        // Restore amounts immediately
         if (state.amountInput !== undefined && state.amountInput !== null && state.amountInput !== "") {
           const sendAmount = state.amountValue || parseFloat(state.amountInput) || 0;
           setPayAmountInput(state.amountInput);
           setPayAmount(sendAmount);
-          console.log("✅ [Dashboard] Restored send amount:", state.amountInput, "=", sendAmount);
         }
         if (state.receiveAmountInput !== undefined && state.receiveAmountInput !== null && state.receiveAmountInput !== "") {
           const receiveAmount = state.receiveAmountValue || parseFloat(state.receiveAmountInput) || 0;
           setGetAmountInput(state.receiveAmountInput);
           setGetAmount(receiveAmount);
-          console.log("✅ [Dashboard] Restored receive amount:", state.receiveAmountInput, "=", receiveAmount);
         }
 
-        // Restore bank account address and expand form
         if (state.bankAccountAddress) {
           setBankAccountAddress(state.bankAccountAddress);
           setIsFirstCardSubmitted(true);
-          console.log("✅ [Dashboard] Restored bank account and expanded form");
         }
 
-        // Store payment method data for later restoration (after payment methods are loaded)
         if (state.fromPaymentMethod || state.toPaymentMethod) {
-          // Use base provider name if available (from home page API), otherwise use cleaned name
           const fromName = state.fromProviderBase || state.fromPaymentMethod || "";
           const toName = state.toProviderBase || state.toPaymentMethod || "";
 
@@ -366,19 +398,70 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
           if (state.toPaymentDetail) {
             localStorage.setItem("moneyx_restore_to_detail", JSON.stringify(state.toPaymentDetail));
           }
-          console.log("💾 [Dashboard] Stored payment methods for restoration");
-          console.log("💾 [Dashboard] From (base):", fromName, "From (cleaned):", state.fromPaymentMethod);
-          console.log("💾 [Dashboard] To (base):", toName, "To (cleaned):", state.toPaymentMethod);
         }
 
-        // Clear the saved state
         localStorage.removeItem("moneyx_form_state");
         hasRestoredState.current = true;
-      } else {
-        console.log("ℹ️ [Dashboard] No saved moneyx form state found");
+      } catch (error) {
+        console.error("❌ [Dashboard] Failed to restore moneyx form state:", error);
       }
-    } catch (error) {
-      console.error("❌ [Dashboard] Failed to restore moneyx form state:", error);
+    }
+  }, [isAuthenticated, initialState]);
+
+  // Restore state when returning from legal pages (Terms, Privacy, etc.)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (isAuthenticated === undefined || !isAuthenticated) return;
+    try {
+      const returning = sessionStorage.getItem(RETURNING_FROM_LEGAL_KEY);
+      if (!returning) return;
+
+      const saved = sessionStorage.getItem(MONEYX_LEGAL_RETURN_STATE_KEY);
+      if (!saved) {
+        sessionStorage.removeItem(RETURNING_FROM_LEGAL_KEY);
+        return;
+      }
+
+      const state = JSON.parse(saved);
+      isRestoringRef.current = true;
+
+      if (state.payAmountInput !== undefined && state.payAmountInput !== null) {
+        setPayAmountInput(state.payAmountInput);
+        setPayAmount(state.payAmount ?? (parseFloat(state.payAmountInput) || 0));
+      }
+      if (state.getAmountInput !== undefined && state.getAmountInput !== null) {
+        setGetAmountInput(state.getAmountInput);
+        setGetAmount(state.getAmount ?? (parseFloat(state.getAmountInput) || 0));
+      }
+      if (state.bankAccountAddress !== undefined) {
+        setBankAccountAddress(state.bankAccountAddress || "");
+      }
+      if (state.isAddressConfirmed !== undefined) {
+        setIsAddressConfirmed(state.isAddressConfirmed);
+      }
+      setIsFirstCardSubmitted(true);
+
+      if (state.fromPaymentMethod || state.toPaymentMethod) {
+        const fromName = state.fromProviderBase || state.fromPaymentMethod || "";
+        const toName = state.toProviderBase || state.toPaymentMethod || "";
+        localStorage.setItem("moneyx_restore_from", fromName);
+        localStorage.setItem("moneyx_restore_to", toName);
+        localStorage.setItem("moneyx_restore_from_cleaned", state.fromPaymentMethod || "");
+        localStorage.setItem("moneyx_restore_to_cleaned", state.toPaymentMethod || "");
+        if (state.fromPaymentDetail) {
+          localStorage.setItem("moneyx_restore_from_detail", JSON.stringify(state.fromPaymentDetail));
+        }
+        if (state.toPaymentDetail) {
+          localStorage.setItem("moneyx_restore_to_detail", JSON.stringify(state.toPaymentDetail));
+        }
+      }
+
+      sessionStorage.removeItem(RETURNING_FROM_LEGAL_KEY);
+      sessionStorage.removeItem(MONEYX_LEGAL_RETURN_STATE_KEY);
+      hasRestoredState.current = true;
+    } catch {
+      sessionStorage.removeItem(RETURNING_FROM_LEGAL_KEY);
+      sessionStorage.removeItem(MONEYX_LEGAL_RETURN_STATE_KEY);
     }
   }, [isAuthenticated]);
 
@@ -1299,7 +1382,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
                 : `${getProviderName(selectedToPaymentDetail)} Account Number`}
             </label>
             {/* Input group */}
-            <div className="flex items-center bg-white dark:bg-[#18181D] border border-border dark:border-[#35353E] rounded-2xl px-2 sm:px-4 py-2 mb-0 overflow-hidden gap-1 sm:gap-2">
+            <div className="flex items-center bg-white dark:bg-[#18181D] border border-border dark:border-[#35353E] rounded-2xl px-2 sm:px-4 py-2 mb-0 gap-1 sm:gap-2">
               {/* Left icon */}
               <span className="text-[#1D8751] flex-shrink-0">
                 <svg width="22" height="22" fill="none" viewBox="0 0 24 24" className="w-5 h-5 sm:w-[22px] sm:h-[22px]">
@@ -1389,6 +1472,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
                   }}
                   anchorRef={bookmarkAnchorRef}
                   isDark={isDark}
+                  saveDisabled={!!bankAddressError}
                 />
               </span>
               {/* Paste button */}
@@ -1521,7 +1605,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
                 }
                 className="w-4 h-4 mt-0.5 rounded border-[#1D8751] text-[#1D8751] accent-[#1D8751]"
               />
-              <span>I have read and agreed to Omaya Exchange <a href="/legal/terms-of-service" target="_blank" rel="noopener noreferrer" className="text-[#1D8751] underline">Terms of Use</a>, <a href="/legal/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-[#1D8751] underline">Privacy Policy</a></span>
+              <span>I have read and agreed to Omaya Exchange <Link href="/legal/terms-of-service" rel="noopener noreferrer" className="text-[#1D8751] underline" onClick={(e) => { e.stopPropagation(); handleBeforeLegalNavigate(); }}>Terms of Use</Link>, <Link href="/legal/privacy-policy" rel="noopener noreferrer" className="text-[#1D8751] underline" onClick={(e) => { e.stopPropagation(); handleBeforeLegalNavigate(); }}>Privacy Policy</Link></span>
             </label>
           </div>
 

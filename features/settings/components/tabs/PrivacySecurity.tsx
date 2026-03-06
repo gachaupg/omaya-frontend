@@ -128,6 +128,7 @@ const PrivacySecurity = () => {
   const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null);
   const [sessionToDelete, setSessionToDelete] = useState<DeviceSession | null>(null);
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+  const isRedirectingAfterLogoutAllRef = useRef(false);
 
   // Track session creation to prevent premature auto-logout
   const [isCreatingSession, setIsCreatingSession] = useState(false);
@@ -318,12 +319,14 @@ const PrivacySecurity = () => {
   };
 
   const handleLogoutAllDevices = async () => {
+    isRedirectingAfterLogoutAllRef.current = true;
     setLogoutLoading(true);
     setLogoutMode("all");
     setLogoutProgress(0);
     dispatch(clearDeviceSessionsError());
 
     const clearAndRedirect = () => {
+      dispatch(clearDeviceSessionsError());
       dispatch(logout());
       if (typeof window !== "undefined") {
         const p2pAct = localStorage.getItem("p2p_act");
@@ -360,11 +363,13 @@ const PrivacySecurity = () => {
       }
       setLogoutProgress(100);
       showToast.success("All devices logged out successfully");
+      isRedirectingAfterLogoutAllRef.current = true;
       clearAndRedirect();
     } catch (_) {
       // Server may return 400 (e.g. already logged out); still clear local state and redirect
       setLogoutProgress(100);
       showToast.success("Signed out");
+      isRedirectingAfterLogoutAllRef.current = true;
       clearAndRedirect();
     } finally {
       setLogoutLoading(false);
@@ -573,11 +578,15 @@ const PrivacySecurity = () => {
     }
   }, [allSessions.length, currentPage, paginatedSessions.length, totalPages]);
 
-  // Never show raw "Request failed with status 400" etc. on the UI
+  // Never show raw "Request failed with status 400" etc. on the UI.
+  // Don't show when redirecting after sign-out-all (avoids red error flash before login).
   const displaySessionError =
-    deviceSessionsError && !/request failed with status code \d+/i.test(deviceSessionsError) && !/status code \d+/i.test(deviceSessionsError)
+    !isRedirectingAfterLogoutAllRef.current &&
+    deviceSessionsError &&
+    !/request failed with status code \d+/i.test(deviceSessionsError) &&
+    !/status code \d+/i.test(deviceSessionsError)
       ? deviceSessionsError
-      : deviceSessionsError
+      : deviceSessionsError && !isRedirectingAfterLogoutAllRef.current
         ? "Unable to load device sessions"
         : null;
 
@@ -1004,7 +1013,7 @@ const PrivacySecurity = () => {
             ) : paginatedSessions.length === 0 ? (
               <div className="text-center py-6 dark:text-[#808080] text-gray-600 text-sm">
                 No active device sessions found
-                {displaySessionError && !logoutLoading && (
+                {displaySessionError && !logoutLoading && !isRedirectingAfterLogoutAllRef.current && (
                   <div className="mt-2 text-xs text-red-400">
                     API Error: {displaySessionError}
                   </div>

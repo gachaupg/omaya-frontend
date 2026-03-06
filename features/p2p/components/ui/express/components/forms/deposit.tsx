@@ -28,6 +28,7 @@ import { useTheme } from "@/context/theme";
 import QRCode from "qrcode";
 import { useBookmarkedAddresses } from "@/features/express/hooks/useBookmarkedAddresses";
 import { BookmarkDropdown } from "@/features/express/components/forms/BookmarkDropdown";
+import { useValidateAddress } from "@/hooks/useValidateAddress";
 import { showToast } from "@/lib/utils/toast";
 import { createExpressDeposit, fetchCommission, getCommissionApiAsset } from "../../api";
 import { ExpressDepositResponse } from "../../types";
@@ -70,6 +71,7 @@ interface DepositFormProps {
   balance?: number;
   skipAmountValidation?: boolean; // New prop to skip amount validation when posting ads
   onCancel?: () => void;
+  onBeforeLegalNavigate?: () => void;
 }
 
 export default function DepositForm({
@@ -79,6 +81,7 @@ export default function DepositForm({
   balance,
   skipAmountValidation = false,
   onCancel,
+  onBeforeLegalNavigate,
 }: DepositFormProps) {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
@@ -157,6 +160,21 @@ export default function DepositForm({
     fetchBookmarks,
     saveBookmark,
   } = useBookmarkedAddresses(currentCurrency, currentNetwork);
+
+  const {
+    result: addressValidationResult,
+    isValidating: isAddressValidating,
+    validate: validateAddress,
+    reset: resetAddressValidation,
+  } = useValidateAddress({ currency: currentCurrency, network: currentNetwork, debounceMs: 500 });
+
+  useEffect(() => {
+    if (walletAddress.trim() && currentCurrency) {
+      validateAddress(walletAddress.trim(), currentCurrency, currentNetwork);
+    } else {
+      resetAddressValidation();
+    }
+  }, [walletAddress, currentCurrency, currentNetwork, validateAddress, resetAddressValidation]);
 
   const [forceUpdate, setForceUpdate] = useState(0);
   const [selectedPaymentDetail, setSelectedPaymentDetail] = useState<any>(null);
@@ -2510,6 +2528,7 @@ export default function DepositForm({
                     }}
                     anchorRef={bookmarkAnchorRef}
                     isDark={isDark}
+                    saveDisabled={isAddressValidating || !(addressValidationResult?.isValid)}
                   />
                   {/* Copy button */}
                   <button
@@ -2599,6 +2618,7 @@ export default function DepositForm({
                 {/* Terms and Conditions Summary - same layout as swap */}
                 <TermsAndConditionsSummary
                   asset={selectedAsset?.ticker || selectedAsset?.symbol || "USDT"}
+                  onBeforeLegalNavigate={onBeforeLegalNavigate}
                 />
 
 

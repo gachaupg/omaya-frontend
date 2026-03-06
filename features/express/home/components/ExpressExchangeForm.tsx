@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import DepositForm from "./forms/deposit";
 import WithdrawalForm from "./forms/withdrwal";
+import { getExpressHomeFormState } from "@/lib/utils/authRedirect";
 
 interface ExpressExchangeFormProps {
   onExchange: (transactionData: {
@@ -43,10 +44,19 @@ const ExpressExchangeForm: React.FC<ExpressExchangeFormProps> = ({
   isHomePage = false,
 }) => {
   const [mode, setMode] = useState<"deposit" | "withdrawal">(initialMode);
+  const [initialState, setInitialState] = useState<Record<string, any> | null>(null);
 
   const handleModeChange = (newMode: "deposit" | "withdrawal") => {
     setMode(newMode);
   };
+
+  // Restore amount/asset from localStorage when on home (logged-out form state)
+  useEffect(() => {
+    if (isHomePage && typeof window !== "undefined") {
+      const saved = getExpressHomeFormState();
+      if (saved) setInitialState(saved);
+    }
+  }, [isHomePage]);
 
   // Update mode when initialMode prop changes
   useEffect(() => {
@@ -65,6 +75,7 @@ const ExpressExchangeForm: React.FC<ExpressExchangeFormProps> = ({
           mode={mode}
           onModeChange={handleModeChange}
           isHomePage={isHomePage}
+          initialState={initialState ?? undefined}
         />
       ) : (
         <WithdrawalForm
@@ -72,6 +83,7 @@ const ExpressExchangeForm: React.FC<ExpressExchangeFormProps> = ({
           mode={mode}
           onModeChange={handleModeChange}
           isHomePage={isHomePage}
+          initialState={initialState ?? undefined}
         />
       )}
     </div>

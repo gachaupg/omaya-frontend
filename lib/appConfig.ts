@@ -202,6 +202,8 @@ export const API_CONFIG = {
     BOOKMARKED_ADDRESS: (id: string) => `/api/wallet/bookmarked-addresses/${id}/`,
   },
   PAYMENTS: {
+    SEND_ADD_OTP: "/payments/user-payment-details/send-add-otp/",
+    VERIFY_ADD_OTP: "/payments/user-payment-details/verify-add-otp/",
     SEND_EDIT_OTP: "/payments/user-payment-details/send-edit-otp/",
     USER_PAYMENT_DETAIL: (id: string) => `/payments/user-payment-details/${id}/`,
     USER_WALLET_ADDRESSES: "/payments/user-wallet-addresses/",

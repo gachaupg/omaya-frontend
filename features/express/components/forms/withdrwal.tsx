@@ -53,6 +53,7 @@ import {
   setAuthRedirectPath,
 } from "@/lib/utils/authRedirect";
 import { openKYCModal, checkKYCStatus } from "@/features/auth/slices/authSlice";
+import { bookmarkedAddressesApi } from "@/features/express/services/bookmarkedAddressesApi";
 
 // Add UserPaymentDetail interface
 interface UserPaymentDetail {
@@ -178,12 +179,30 @@ interface DepositFormProps {
   initialState?: {
     amountValue?: number;
     amountInput?: string;
+    receiveAmountValue?: number;
+    receiveAmountInput?: string;
     asset?: any;
     paymentDetails?: UserPaymentDetail[];
   };
 }
 
-// Network mapping function
+// Network aliases for whitelist matching
+const NETWORK_ALIASES: Record<string, string[]> = {
+  trc20: ["trx", "trc20"],
+  trx: ["trx", "trc20"],
+  erc20: ["eth", "erc20"],
+  eth: ["eth", "erc20"],
+  bep20: ["bsc", "bep20"],
+  bep2: ["bsc", "bep2"],
+  bsc: ["bsc", "bep20", "bep2"],
+  matic: ["matic", "polygon"],
+  polygon: ["matic", "polygon"],
+};
+const getNetworkMatchKeys = (network: string): string[] => {
+  const n = (network || "").toLowerCase();
+  return NETWORK_ALIASES[n] ? [...NETWORK_ALIASES[n], n] : [n];
+};
+
 const getNetworkDisplayName = (network: string) => {
   const networkMap: { [key: string]: string } = {
     'bsc': 'BSC',
@@ -561,6 +580,35 @@ export default function WithdrawalForm({
   const [getAmountInput, setGetAmountInput] = useState(
     initialState?.amountInput ?? "0"
   );
+  const hasAppliedPrefillRef = useRef(false);
+
+  // Restore amounts when initialState arrives async (e.g. prefill parsed after first render from login redirect)
+  useEffect(() => {
+    if (
+      !hasAppliedPrefillRef.current &&
+      initialState?.amountValue !== undefined &&
+      initialState?.amountValue !== null
+    ) {
+      hasAppliedPrefillRef.current = true;
+      setPayAmount(initialState.amountValue);
+      setPayAmountInput(
+        initialState.amountInput || String(initialState.amountValue)
+      );
+      if (initialState.receiveAmountValue !== undefined) {
+        setGetAmount(initialState.receiveAmountValue);
+        setGetAmountInput(
+          initialState.receiveAmountInput ||
+            String(initialState.receiveAmountValue)
+        );
+      } else {
+        setGetAmount(initialState.amountValue);
+        setGetAmountInput(
+          initialState.amountInput || String(initialState.amountValue)
+        );
+      }
+    }
+  }, [initialState?.amountValue, initialState?.amountInput, initialState?.receiveAmountValue, initialState?.receiveAmountInput]);
+
   const [selectedAsset, setSelectedAsset] = useState<any>(
     initialState?.asset || null
   );
@@ -593,6 +641,7 @@ export default function WithdrawalForm({
   // Asset selection state for search functionality
   const [isAssetDropdownOpen, setIsAssetDropdownOpen] = useState(false);
   const [assetSearchTerm, setAssetSearchTerm] = useState("");
+  const [whitelistBookmarks, setWhitelistBookmarks] = useState<Array<{ asset: string; network: string }>>([]);
   const [assetDropdownPosition, setAssetDropdownPosition] = useState({
     top: 0,
     left: 0,
@@ -650,6 +699,19 @@ export default function WithdrawalForm({
       window.removeEventListener("scroll", handleReposition, true);
     };
   }, [isAssetDropdownOpen, updateAssetDropdownPosition]);
+
+  useEffect(() => {
+    if (!isAssetDropdownOpen) return;
+    bookmarkedAddressesApi
+      .list()
+      .then((list) => {
+        const pairs = Array.from(
+          new Map(list.map((b) => [`${b.asset.toLowerCase()}|${b.network.toLowerCase()}`, { asset: b.asset, network: b.network }])).values()
+        );
+        setWhitelistBookmarks(pairs);
+      })
+      .catch(() => setWhitelistBookmarks([]));
+  }, [isAssetDropdownOpen]);
 
   // Estimate calculation state
   const [estimate, setEstimate] = useState<any>(null);
@@ -911,9 +973,22 @@ export default function WithdrawalForm({
     payBank &&
     selectedPaymentDetails.length > 0 &&
     selectedPaymentDetails[0].status &&
-    selectedPaymentDetails[0].status !== "approved" &&
-    selectedPaymentDetails[0].status !== "verified"
+    selectedPaymentDetails[0].status.toLowerCase() !== "approved" &&
+    selectedPaymentDetails[0].status.toLowerCase() !== "verified"
   );
+
+  // Sync selectedPaymentDetails when WebSocket refetches and status changes (e.g. Pending → APPROVED)
+  useEffect(() => {
+    if (selectedPaymentDetails.length === 0 || enhancedFilteredUserPaymentDetails.length === 0) return;
+    const selectedId = selectedPaymentDetails[0].id;
+    const freshDetail = enhancedFilteredUserPaymentDetails.find(
+      (d: any) => d.id === selectedId || String(d.id) === String(selectedId)
+    );
+    if (freshDetail) {
+      setSelectedPaymentDetails([freshDetail]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only sync when source data changes
+  }, [enhancedFilteredUserPaymentDetails]);
 
   useEffect(() => {
     // Skip API calls on home page - buttons will redirect to login
@@ -2279,6 +2354,41 @@ export default function WithdrawalForm({
     return 0;
   });
 
+  const whitelistKeys = useMemo(() => {
+    const keys = new Set<string>();
+    whitelistBookmarks.forEach((b) => {
+      const assetKey = b.asset.toLowerCase();
+      getNetworkMatchKeys(b.network).forEach((net) => keys.add(`${assetKey}|${net}`));
+    });
+    return keys;
+  }, [whitelistBookmarks]);
+
+  const whitelistAssets = useMemo(() => {
+    if (whitelistKeys.size === 0) return [];
+    const popularSlice = sortedSwapAssets.slice(0, 3);
+    const popularSet = new Set(
+      popularSlice.map((a) => `${(a?.ticker || a?.symbol || a?.name || "").toString().toLowerCase()}|${(a?.network || "").toString().toLowerCase()}`)
+    );
+    return sortedSwapAssets.filter((a) => {
+      const key = `${(a?.ticker || a?.symbol || a?.name || "").toString().toLowerCase()}|${(a?.network || "").toString().toLowerCase()}`;
+      return whitelistKeys.has(key) && !popularSet.has(key);
+    });
+  }, [sortedSwapAssets, whitelistKeys]);
+
+  const whitelistKeySet = useMemo(
+    () => new Set(whitelistAssets.map((a) => `${(a?.ticker || a?.symbol || a?.name || "").toString().toLowerCase()}|${(a?.network || "").toString().toLowerCase()}`)),
+    [whitelistAssets]
+  );
+
+  const allAssetsList = useMemo(() => {
+    if (assetSearchTerm) return sortedSwapAssets;
+    const excludePopular = sortedSwapAssets.slice(3);
+    return excludePopular.filter((a) => {
+      const key = `${(a?.ticker || a?.symbol || a?.name || "").toString().toLowerCase()}|${(a?.network || "").toString().toLowerCase()}`;
+      return !whitelistKeySet.has(key);
+    });
+  }, [assetSearchTerm, sortedSwapAssets, whitelistKeySet]);
+
   const renderAssetDropdown = () => {
     if (!isComponentMounted || !isAssetDropdownOpen) {
       return null;
@@ -2543,6 +2653,95 @@ export default function WithdrawalForm({
                         );
                       })}
 
+                    {whitelistAssets.length > 0 && (
+                      <>
+                        <div className="px-3 py-2 bg-[#F5F6F7] dark:bg-[#23232B] border-b border-[#A2A4A9FF] dark:border-[#35353E]">
+                          <span className="text-xs font-semibold text-[#788099] uppercase tracking-wider">
+                            Whitelist
+                          </span>
+                        </div>
+                        {whitelistAssets.map((asset: SupportedAsset, index: number) => {
+                          const handleAssetClick = () => {
+                            if (calculationTimeout) clearTimeout(calculationTimeout);
+                            if (estimateTimeout) clearTimeout(estimateTimeout);
+                            setEstimate(null);
+                            setEstimateError(null);
+                            setEstimateLoading(false);
+                            setCalculationError(null);
+                            setReceiveAmountError(null);
+                            setApiValidationError(null);
+                            setSelectedAsset(asset);
+                            setIsAssetDropdownOpen(false);
+                            setAssetSearchTerm("");
+                            if (isSimpleCalculationAsset(asset)) {
+                              setIsCalculatingFromPay(true);
+                              if (!isUserModifiedAmount) {
+                                const defaultAmount = getDefaultAmount(asset);
+                                setPayAmount(defaultAmount);
+                                setPayAmountInput(defaultAmount.toString());
+                                calculateAmounts(defaultAmount, true);
+                              } else {
+                                calculateAmounts(payAmount, true);
+                              }
+                            } else if (isForexAsset(asset)) {
+                              setIsCalculatingFromPay(true);
+                              if (!isUserModifiedAmount) {
+                                const defaultAmount = 1000;
+                                setPayAmount(defaultAmount);
+                                setPayAmountInput(defaultAmount.toString());
+                                calculateAmounts(defaultAmount, true);
+                              } else {
+                                calculateAmounts(payAmount, true);
+                              }
+                            } else {
+                              setIsCalculatingFromPay(true);
+                              setIsCalculating(true);
+                              setIsCalculatingReceive(true);
+                              setEstimateLoading(true);
+                              if (!isUserModifiedAmount) {
+                                const defaultAmount = getDefaultAmount(asset);
+                                setPayAmount(defaultAmount);
+                                setPayAmountInput(defaultAmount.toString());
+                              }
+                            }
+                          };
+                          return (
+                            <div
+                              key={`whitelist-${asset.asset_id}-${asset.ticker}-${asset.network}-${index}`}
+                              className={`flex items-center gap-3 p-3 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E] transition-colors duration-150 ${selectedAsset?.asset_id === asset.asset_id ? "bg-blue-50 dark:bg-blue-900/20" : ""}`}
+                              onClick={handleAssetClick}
+                            >
+                              <img
+                                src={asset?.image_url || asset?.asset_image || (asset as any)?.image || "/images/tether.svg"}
+                                alt={asset?.name || asset?.ticker || asset?.symbol || "Asset"}
+                                className="w-10 h-10 rounded-full object-cover"
+                                onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/images/tether.svg"; }}
+                              />
+                              <div className="flex-1">
+                                <div className="text-[#1F2937] dark:text-[#ffffff] font-medium text-base flex items-center gap-2">
+                                  {(asset.ticker || asset.symbol || asset.name || "Unknown").toUpperCase()}
+                                  <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-normal px-2 py-0.5 rounded-full">
+                                    {getNetworkDisplayName(asset.network)}
+                                  </span>
+                                </div>
+                                <div className="text-sm text-gray-500 dark:text-gray-400">
+                                  {asset.name || (asset.ticker || "").toUpperCase() || (asset.symbol || "").toUpperCase() || "Unknown Asset"}
+                                  {asset.legacy_ticker && (
+                                    <span className="text-xs text-[#f7c624] dark:text-[#f7c624] bg-[#f7c6241a] px-1 py-0.5 rounded-full">
+                                      {asset.legacy_ticker}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              {selectedAsset?.asset_id === asset.asset_id && (
+                                <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </>
+                    )}
+
                     <div className="border-t-2 border-[#D1D2D4FF] dark:border-[#35353E]"></div>
 
                     <div className="px-3 py-2 bg-[#F5F6F7] dark:bg-[#23232B] border-b border-[#A2A4A9FF] dark:border-[#35353E]">
@@ -2553,10 +2752,7 @@ export default function WithdrawalForm({
                   </>
                 )}
 
-                {(assetSearchTerm
-                  ? sortedSwapAssets
-                  : sortedSwapAssets.slice(3)
-                ).map((asset: SupportedAsset, index: number) => {
+                {allAssetsList.map((asset: SupportedAsset, index: number) => {
                   const isCurrentlySelected =
                     selectedAsset?.ticker === asset.ticker &&
                     selectedAsset?.network === asset.network;

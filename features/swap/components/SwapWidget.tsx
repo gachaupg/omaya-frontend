@@ -76,7 +76,11 @@ const SwapWidget = () => {
     swapError,
   } = useSelector((state: RootState) => state.swap);
 
+  const SWAP_STATE_KEY = "omaya_swap_wallet_step_state";
+  const RETURNING_FROM_LEGAL_KEY = "omaya_returning_from_legal";
+
   const [walletAddress, setWalletAddress] = React.useState("");
+  const [hasAcceptedTerms, setHasAcceptedTerms] = React.useState(false);
   const [isFromAssetOpen, setIsFromAssetOpen] = React.useState(false);
   const [isToAssetOpen, setIsToAssetOpen] = React.useState(false);
   const [searchTerm, setSearchTerm] = React.useState("");
@@ -127,6 +131,33 @@ const SwapWidget = () => {
     //   handleApiError(error);
     // });
   }, [dispatch]);
+
+  // Restore state when returning from legal pages (Terms, Privacy, etc.)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const returning = sessionStorage.getItem(RETURNING_FROM_LEGAL_KEY);
+      if (!returning) return;
+
+      const saved = sessionStorage.getItem(SWAP_STATE_KEY);
+      if (!saved) {
+        sessionStorage.removeItem(RETURNING_FROM_LEGAL_KEY);
+        return;
+      }
+
+      const state = JSON.parse(saved);
+      if (state.walletAddress !== undefined) setWalletAddress(state.walletAddress);
+      if (state.hasAcceptedTerms !== undefined) setHasAcceptedTerms(state.hasAcceptedTerms);
+      if (state.showWalletAddress) setShowWalletAddress(true);
+      if (state.currentStep) setCurrentStep(state.currentStep);
+
+      sessionStorage.removeItem(RETURNING_FROM_LEGAL_KEY);
+      sessionStorage.removeItem(SWAP_STATE_KEY);
+    } catch {
+      sessionStorage.removeItem(RETURNING_FROM_LEGAL_KEY);
+      sessionStorage.removeItem(SWAP_STATE_KEY);
+    }
+  }, []);
 
   // Restore state from URL prefill parameter (after login redirect)
   useEffect(() => {
@@ -580,6 +611,23 @@ const SwapWidget = () => {
     setWalletValidationError(""); // Clear error when user types
   };
 
+  const handleBeforeLegalNavigate = () => {
+    try {
+      sessionStorage.setItem(
+        SWAP_STATE_KEY,
+        JSON.stringify({
+          walletAddress,
+          hasAcceptedTerms,
+          showWalletAddress,
+          currentStep,
+        })
+      );
+      sessionStorage.setItem(RETURNING_FROM_LEGAL_KEY, "1");
+    } catch {
+      // Ignore storage errors
+    }
+  };
+
   const handleSubmit = async () => {
     logger.debug("swap", "handleSubmit called");
     if (!fromAsset || !toAsset || !walletAddress || !estimate) {
@@ -822,8 +870,10 @@ const SwapWidget = () => {
               onNext={handleWalletAddressNext}
               fromAsset={fromAsset}
               toAsset={toAsset}
-              // Pass loading state to disable button
               isLoading={swapLoading}
+              hasAcceptedTerms={hasAcceptedTerms}
+              onHasAcceptedTermsChange={setHasAcceptedTerms}
+              onBeforeLegalNavigate={handleBeforeLegalNavigate}
             />
           )}
         </>

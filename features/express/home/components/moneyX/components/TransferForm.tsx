@@ -20,7 +20,7 @@ import { showToast } from "@/lib/utils/toast";
 import { useBookmarkedAddresses } from "@/features/express/hooks/useBookmarkedAddresses";
 import { BookmarkDropdown } from "@/features/express/components/forms/BookmarkDropdown";
 import { usePaymentMethodsDisplay } from "@/features/express/hooks/useDataDisplay";
-import { setAuthRedirectPath } from "@/lib/utils/authRedirect";
+import { setAuthRedirectPath, buildMoneyXRedirectPath, setMoneyXPrefillState } from "@/lib/utils/authRedirect";
 import { openKYCModal, checkKYCStatus } from "@/features/auth/slices/authSlice";
 
 interface TransferFormProps {
@@ -1175,6 +1175,7 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
                   }}
                   anchorRef={bookmarkAnchorRef}
                   isDark={isDark}
+                  saveDisabled={!!bankAddressError}
                 />
               </span>
               {/* Paste button */}
@@ -1317,7 +1318,11 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
             />
             <label htmlFor="moneyx-terms-accept" className={`text-sm cursor-pointer ${isDark ? "text-[#788099]" : "text-gray-700"}`}>
               I agree to the{" "}
-              <Link href="/legal/terms-of-service" target="_blank" className="text-[#1D8751] cursor-pointer hover:underline">
+              <Link
+                href="/legal/terms-of-service"
+                onClick={() => setIsTermsAccepted(true)}
+                className="text-[#1D8751] cursor-pointer hover:underline"
+              >
                 Terms of Use
               </Link>
             </label>
@@ -1379,7 +1384,8 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
                     bankAccountAddress: bankAccountAddress.trim(),
                   };
                   localStorage.setItem("moneyx_form_state", JSON.stringify(state));
-                  setAuthRedirectPath("/dashboard/exchange?mode=moneyx&source=public-express");
+                  setAuthRedirectPath(buildMoneyXRedirectPath(state));
+                  setMoneyXPrefillState(state);
                   router.push("/auth/login");
                   return;
                 }

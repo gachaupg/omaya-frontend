@@ -48,6 +48,7 @@ import {
 import { useValidateAddress } from "@/hooks/useValidateAddress";
 import { useBookmarkedAddresses } from "../../hooks/useBookmarkedAddresses";
 import { BookmarkDropdown } from "./BookmarkDropdown";
+import { bookmarkedAddressesApi } from "../../services/bookmarkedAddressesApi";
 import { fetchCommission, getCommissionApiAsset } from "../../api";
 
 interface DepositFormProps {
@@ -93,6 +94,23 @@ const getNetworkDisplayName = (network: string) => {
   };
 
   return networkMap[network?.toLowerCase()] || network || "Unknown";
+};
+
+// Network aliases for whitelist matching (bookmark may use trc20, swap uses trx, etc.)
+const NETWORK_ALIASES: Record<string, string[]> = {
+  trc20: ["trx", "trc20"],
+  trx: ["trx", "trc20"],
+  erc20: ["eth", "erc20"],
+  eth: ["eth", "erc20"],
+  bep20: ["bsc", "bep20"],
+  bep2: ["bsc", "bep2"],
+  bsc: ["bsc", "bep20", "bep2"],
+  matic: ["matic", "polygon"],
+  polygon: ["matic", "polygon"],
+};
+const getNetworkMatchKeys = (network: string): string[] => {
+  const n = (network || "").toLowerCase();
+  return NETWORK_ALIASES[n] ? [...NETWORK_ALIASES[n], n] : [n];
 };
 
 // Helper function to get network value from asset (handles both Asset and SupportedAsset types)
@@ -648,6 +666,8 @@ export default function DepositForm({
   const [payAmountInput, setPayAmountInput] = useState(
     initialState?.amountInput ?? "100"
   );
+  const hasAppliedPrefillRef = useRef(false);
+
   const [payBank, setPayBank] = useState(
     initialState?.payBank ||
     initialState?.payment?.provider_name ||
@@ -676,6 +696,29 @@ export default function DepositForm({
     }
     return "98";
   });
+
+  // Restore amounts when initialState arrives async (e.g. prefill parsed after first render from login redirect)
+  useEffect(() => {
+    if (
+      !hasAppliedPrefillRef.current &&
+      initialState?.amountValue !== undefined &&
+      initialState?.amountValue !== null
+    ) {
+      hasAppliedPrefillRef.current = true;
+      setPayAmount(initialState.amountValue);
+      setPayAmountInput(
+        initialState.amountInput || String(initialState.amountValue)
+      );
+      if (initialState.receiveAmountValue !== undefined) {
+        setGetAmount(initialState.receiveAmountValue);
+        setGetAmountInput(
+          initialState.receiveAmountInput ||
+            String(initialState.receiveAmountValue)
+        );
+      }
+    }
+  }, [initialState?.amountValue, initialState?.amountInput, initialState?.receiveAmountValue, initialState?.receiveAmountInput]);
+
   // Don't set asset directly from initialState - let matching logic handle it
   const [selectedAsset, setSelectedAsset] = useState<any>(null);
   const [selectedNetwork, setSelectedNetwork] = useState<any>(null);
@@ -805,33 +848,45 @@ export default function DepositForm({
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [hasAutoExpanded, setHasAutoExpanded] = useState(false);
   const [isRestoringFromInitialState, setIsRestoringFromInitialState] = useState(false);
-  // Auto-select the first payment method exactly like home page form
+  // Auto-select payment method - respect initialState from login redirect
   useEffect(() => {
     if (finalPaymentMethods.length === 0) {
       return;
     }
 
-    const hasSelected = finalPaymentMethods.some(
-      (method: any) => method?.provider_name === payBank
-    );
+    // When we have initialState.payment from login redirect, use it - don't overwrite with first method
+    if (initialState?.payment && selectedPaymentDetail) {
+      const savedProvider = initialState.payment.provider_name || initialState.payment.payment_provider_name || initialState.payBank;
+      const matchInList = finalPaymentMethods.some(
+        (m: any) =>
+          (m?.provider_name && savedProvider && String(m.provider_name).toLowerCase() === String(savedProvider).toLowerCase()) ||
+          (m?.payment_provider_name && savedProvider && String(m.payment_provider_name).toLowerCase() === String(savedProvider).toLowerCase()) ||
+          (m?.provider_id && initialState.payment?.provider_id && String(m.provider_id) === String(initialState.payment.provider_id))
+      );
+      if (matchInList) return; // Already matched, keep current
+      // No match in list but we have saved payment - keep it (already in selectedPaymentDetail)
+      return;
+    }
+
+    const matchProvider = (method: any, name: string) =>
+      (method?.provider_name && name && String(method.provider_name).toLowerCase().trim() === String(name).toLowerCase().trim()) ||
+      (method?.payment_provider_name && name && String(method.payment_provider_name).toLowerCase().trim() === String(name).toLowerCase().trim());
+
+    const hasSelected = finalPaymentMethods.some((method: any) => matchProvider(method, payBank));
 
     if (!payBank || !hasSelected) {
       const defaultMethod = finalPaymentMethods[0];
       setPayBank(defaultMethod.provider_name);
-      // Normalize payment details before setting
       const normalized = normalizePaymentDetails(defaultMethod);
       setSelectedPaymentDetail(normalized);
     } else if (!selectedPaymentDetail) {
-      const matchedMethod = finalPaymentMethods.find(
-        (method: any) => method?.provider_name === payBank
-      );
+      const matchedMethod = finalPaymentMethods.find((method: any) => matchProvider(method, payBank));
       if (matchedMethod) {
-        // Normalize payment details before setting
         const normalized = normalizePaymentDetails(matchedMethod);
         setSelectedPaymentDetail(normalized);
       }
     }
-  }, [finalPaymentMethods, payBank, selectedPaymentDetail]);
+  }, [finalPaymentMethods, payBank, selectedPaymentDetail, initialState]);
 
   // Add transaction code state
   const [transactionCode, setTransactionCode] = useState<string>("");
@@ -843,6 +898,7 @@ export default function DepositForm({
   // Asset selection state for search functionality
   const [isAssetDropdownOpen, setIsAssetDropdownOpen] = useState(false);
   const [assetSearchTerm, setAssetSearchTerm] = useState("");
+  const [whitelistBookmarks, setWhitelistBookmarks] = useState<Array<{ asset: string; network: string }>>([]);
   const assetDropdownRef = useRef<HTMLDivElement>(null);
   const assetDropdownContentRef = useRef<HTMLDivElement | null>(null);
   const [assetDropdownPosition, setAssetDropdownPosition] = useState({
@@ -877,6 +933,19 @@ export default function DepositForm({
       window.removeEventListener("scroll", handleReposition, true);
     };
   }, [isAssetDropdownOpen, updateAssetDropdownPosition]);
+
+  useEffect(() => {
+    if (!isAssetDropdownOpen) return;
+    bookmarkedAddressesApi
+      .list()
+      .then((list) => {
+        const pairs = Array.from(
+          new Map(list.map((b) => [`${b.asset.toLowerCase()}|${b.network.toLowerCase()}`, { asset: b.asset, network: b.network }])).values()
+        );
+        setWhitelistBookmarks(pairs);
+      })
+      .catch(() => setWhitelistBookmarks([]));
+  }, [isAssetDropdownOpen]);
 
   // Estimate calculation state
   const [estimate, setEstimate] = useState<any>(null);
@@ -1074,13 +1143,17 @@ export default function DepositForm({
     const assetFromInitialState = initialState?.asset || initialState?.selectedAsset;
     if (assetFromInitialState && !selectedAsset) {
       const initialStateAsset = assetFromInitialState;
+      const savedTicker = (initialStateAsset.ticker || initialStateAsset.symbol || initialStateAsset.name || "").toString().toLowerCase().trim();
+      const savedNetwork = (initialStateAsset.network || getAssetNetwork(initialStateAsset) || "").toString().toLowerCase().trim();
 
-      // Try to find the exact asset in available assets by asset_id
+      // Try to find the exact asset: first by asset_id, then by ticker+network
       const matchingAsset = assetsDisplay.displayData.find((asset: any) => {
         if (initialStateAsset.asset_id && asset.asset_id) {
-          return String(initialStateAsset.asset_id).toLowerCase().trim() === String(asset.asset_id).toLowerCase().trim();
+          if (String(initialStateAsset.asset_id).toLowerCase().trim() === String(asset.asset_id).toLowerCase().trim()) return true;
         }
-        return false;
+        const assetTicker = (asset.ticker || asset.symbol || asset.name || "").toString().toLowerCase().trim();
+        const assetNetwork = (asset.network || getAssetNetwork(asset) || "").toString().toLowerCase().trim();
+        return savedTicker && assetTicker === savedTicker && (!savedNetwork || assetNetwork === savedNetwork);
       });
 
       // Use matched asset if found, otherwise use initialState asset directly
@@ -1722,6 +1795,41 @@ export default function DepositForm({
     return 0;
   });
 
+  const whitelistKeys = useMemo(() => {
+    const keys = new Set<string>();
+    whitelistBookmarks.forEach((b) => {
+      const assetKey = b.asset.toLowerCase();
+      getNetworkMatchKeys(b.network).forEach((net) => keys.add(`${assetKey}|${net}`));
+    });
+    return keys;
+  }, [whitelistBookmarks]);
+
+  const whitelistAssets = useMemo(() => {
+    if (whitelistKeys.size === 0) return [];
+    const popularSlice = sortedSwapAssets.slice(0, 3);
+    const popularSet = new Set(
+      popularSlice.map((a) => `${(a?.ticker || a?.symbol || a?.name || "").toString().toLowerCase()}|${(a?.network || getAssetNetwork(a) || "").toString().toLowerCase()}`)
+    );
+    return sortedSwapAssets.filter((a) => {
+      const key = `${(a?.ticker || a?.symbol || a?.name || "").toString().toLowerCase()}|${(a?.network || getAssetNetwork(a) || "").toString().toLowerCase()}`;
+      return whitelistKeys.has(key) && !popularSet.has(key);
+    });
+  }, [sortedSwapAssets, whitelistKeys]);
+
+  const whitelistKeySet = useMemo(
+    () => new Set(whitelistAssets.map((a) => `${(a?.ticker || a?.symbol || a?.name || "").toString().toLowerCase()}|${(a?.network || getAssetNetwork(a) || "").toString().toLowerCase()}`)),
+    [whitelistAssets]
+  );
+
+  const allAssetsList = useMemo(() => {
+    if (assetSearchTerm) return sortedSwapAssets;
+    const excludePopular = sortedSwapAssets.slice(3);
+    return excludePopular.filter((a) => {
+      const key = `${(a?.ticker || a?.symbol || a?.name || "").toString().toLowerCase()}|${(a?.network || getAssetNetwork(a) || "").toString().toLowerCase()}`;
+      return !whitelistKeySet.has(key);
+    });
+  }, [assetSearchTerm, sortedSwapAssets, whitelistKeySet]);
+
   const renderAssetDropdown = () => {
     if (!isComponentMounted || !isAssetDropdownOpen) {
       return null;
@@ -1827,6 +1935,56 @@ export default function DepositForm({
                         );
                       })}
 
+                    {whitelistAssets.length > 0 && (
+                      <>
+                        <div className="px-3 py-2 bg-[#F5F6F7] dark:bg-[#23232B] border-b border-[#A2A4A9FF] dark:border-[#35353E]">
+                          <span className="text-xs font-semibold text-[#788099] uppercase tracking-wider">
+                            Whitelist
+                          </span>
+                        </div>
+                        {whitelistAssets.map((asset: SupportedAsset, index: number) => {
+                          const isCurrentlySelected =
+                            selectedAsset?.ticker === asset.ticker &&
+                            selectedAsset?.network === asset.network;
+                          return (
+                            <div
+                              key={`whitelist-${asset.asset_id || "asset"}-${asset.symbol || asset.ticker || asset.name}-${asset.network || "unknown"}-${index}`}
+                              className={`flex items-center gap-3 p-3 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E] transition-colors duration-150 ${isCurrentlySelected ? "bg-blue-50 dark:bg-blue-900/20" : ""}`}
+                              onClick={() => {
+                                handleAssetSelection(asset);
+                                setIsAssetDropdownOpen(false);
+                                setAssetSearchTerm("");
+                              }}
+                            >
+                              <img
+                                src={getHighResAssetIcon(asset, ASSET_ICON_SIZE)}
+                                alt={asset?.name || asset?.ticker || asset?.symbol || "Asset"}
+                                className={`${ASSET_ICON_BASE_CLASS} w-9 h-9`}
+                                loading="lazy"
+                                onError={(e) => {
+                                  e.currentTarget.src = getHighResAssetIcon(null, ASSET_ICON_SIZE);
+                                }}
+                              />
+                              <div className="flex-1">
+                                <div className="text-[#35353e] dark:text-[#ffffff] font-medium flex items-center gap-2">
+                                  {(asset.ticker || asset.symbol || asset.name || "Unknown").toUpperCase()}
+                                  <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
+                                    {getNetworkDisplayName(getAssetNetwork(asset))}
+                                  </span>
+                                </div>
+                                <div className="text-[#35353e] dark:text-[#788099] text-sm">
+                                  {asset.name || asset.ticker || asset.symbol || "Unknown Asset"}
+                                </div>
+                              </div>
+                              {selectedAsset?.asset_id === asset.asset_id && (
+                                <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </>
+                    )}
+
                     <div className="border-t-2 border-[#D1D2D4FF] dark:border-[#35353E]"></div>
 
                     <div className="px-3 py-2 bg-[#F5F6F7] dark:bg-[#23232B] border-b border-[#A2A4A9FF] dark:border-[#35353E]">
@@ -1837,7 +1995,7 @@ export default function DepositForm({
                   </>
                 )}
 
-                {(assetSearchTerm ? sortedSwapAssets : sortedSwapAssets.slice(3)).map(
+                {allAssetsList.map(
                   (asset: SupportedAsset, index: number) => {
                     const isCurrentlySelected =
                       selectedAsset?.ticker === asset.ticker &&
@@ -4401,23 +4559,21 @@ export default function DepositForm({
                   <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
                   </svg>
-                </span>
-                <BookmarkDropdown
-                  isOpen={bookmarkOpen}
-                  onClose={() => setBookmarkOpen(false)}
-                  bookmarks={bookmarks}
-                  loading={bookmarksLoading}
-                  saving={bookmarkSaving}
-                  currentAddress={walletAddress}
-                  asset={currentCurrency}
-                  network={currentNetwork || undefined}
-                  onSelect={(addr) => {
-                    setWalletAddress(addr);
-                    if (addr.trim()) validateAddress(addr, currentCurrency, currentNetwork);
-                    else resetAddressValidation();
-                  }}
-                  onSaveCurrent={async () => {
-                    try {
+                  <BookmarkDropdown
+                    isOpen={bookmarkOpen}
+                    onClose={() => setBookmarkOpen(false)}
+                    bookmarks={bookmarks}
+                    loading={bookmarksLoading}
+                    saving={bookmarkSaving}
+                    currentAddress={walletAddress}
+                    asset={currentCurrency}
+                    network={currentNetwork || undefined}
+                    onSelect={(addr) => {
+                      setWalletAddress(addr);
+                      if (addr.trim()) validateAddress(addr, currentCurrency, currentNetwork);
+                      else resetAddressValidation();
+                    }}
+                    onSaveCurrent={async () => {
                       if (!walletAddress.trim() || !currentCurrency || !currentNetwork) {
                         showToast.error("Enter address and select asset/network first");
                         return;
@@ -4428,11 +4584,12 @@ export default function DepositForm({
                         network: currentNetwork,
                         asset: currentCurrency,
                       });
-                    } catch { /* handled by hook */ }
-                  }}
-                  anchorRef={bookmarkAnchorRef}
-                  isDark={isDark}
-                />
+                    }}
+                    anchorRef={bookmarkAnchorRef}
+                    isDark={isDark}
+                    saveDisabled={isAddressValidating || !(addressValidationResult?.isValid)}
+                  />
+                </span>
               </div>
               <button
                 title="Paste"

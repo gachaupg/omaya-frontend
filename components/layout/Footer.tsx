@@ -335,6 +335,15 @@ export default function Footer() {
               </li>
               <li>
                 <Link
+                  href="/legal/data-use-policy"
+                  className={`hover:text-[#1D8751] text-xs md:text-sm transition-colors ${isActive("/legal/data-use-policy") ? "text-[#1D8751]" : "text-gray-700 dark:text-white/80"
+                    }`}
+                >
+                  Data Use Policy
+                </Link>
+              </li>
+              <li>
+                <Link
                   href="/legal/disclaimer-policy"
                   className={`hover:text-[#1D8751] text-xs md:text-sm transition-colors ${isActive("/legal/disclaimer-policy") ? "text-[#1D8751]" : "text-gray-700 dark:text-white/80"
                     }`}

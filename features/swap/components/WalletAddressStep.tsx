@@ -15,6 +15,9 @@ interface WalletAddressStepProps {
   fromAsset: any;
   toAsset: any;
   isLoading?: boolean;
+  hasAcceptedTerms?: boolean;
+  onHasAcceptedTermsChange?: (checked: boolean) => void;
+  onBeforeLegalNavigate?: () => void;
 }
 
 const strongBorder =
@@ -28,13 +31,22 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
   fromAsset,
   toAsset,
   isLoading = false,
+  hasAcceptedTerms: hasAcceptedTermsProp,
+  onHasAcceptedTermsChange,
+  onBeforeLegalNavigate,
 }) => {
   const { isDark } = useTheme();
-  const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
+  const [internalHasAcceptedTerms, setInternalHasAcceptedTerms] = useState(false);
+  const hasAcceptedTerms = hasAcceptedTermsProp ?? internalHasAcceptedTerms;
+  const setHasAcceptedTerms = (checked: boolean) => {
+    setInternalHasAcceptedTerms(checked);
+    onHasAcceptedTermsChange?.(checked);
+  };
   const [walletError, setWalletError] = useState<string | null>(null);
   const [expandedTerms, setExpandedTerms] = useState(false);
   const [bookmarkOpen, setBookmarkOpen] = useState(false);
   const bookmarkAnchorRef = useRef<HTMLSpanElement>(null);
+  const errorBannerRef = useRef<HTMLParagraphElement>(null);
 
   // Helpers to derive currency/network from the target asset (needed before hooks below)
   const getCurrencyFromAsset = useCallback((asset: any): string | undefined => {
@@ -115,6 +127,13 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
     walletAddress,
   ]);
 
+  // Scroll error into view when it appears
+  useEffect(() => {
+    if (walletError && errorBannerRef.current) {
+      errorBannerRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [walletError]);
+
   // Reset validation when asset changes
   useEffect(() => {
     if (walletAddress.trim() && currentCurrency) {
@@ -188,7 +207,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
         <div className={`bg-white dark:bg-[var(--card-color)] ${strongBorder} rounded-2xl p-3 sm:p-4 md:p-6 lg:p-8 w-full text-gray-900 dark:text-white`}>
           <div className="flex flex-col gap-3 sm:gap-4 md:gap-6">
             {/* Wallet Address Input Section */}
-            <div className="flex flex-col gap-3 sm:gap-4">
+            <div className="flex flex-col gap-2 sm:gap-3">
               {/* Wallet/Account Address Label */}
               <div className="text-xs sm:text-sm font-medium text-[#788099]  dark:text-[#788099]">
                 Wallet/Account Address
@@ -219,7 +238,6 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                       value={walletAddress}
                       onChange={(e) => {
                         onWalletAddressChange(e);
-                        setWalletError(null);
                         if (e.target.value.trim() === "") {
                           resetAddressValidation();
                           setWalletError(null);
@@ -293,24 +311,10 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                         }}
                         anchorRef={bookmarkAnchorRef}
                         isDark={isDark}
+                        saveDisabled={isAddressValidating || !(addressValidationResult?.isValid)}
                       />
                     </span>
                   </div>
-
-                  {/* Error Message with Word Break Fix */}
-                  {walletError && (
-                    <p className="mt-2 text-red-500 text-xs sm:text-sm lg:text-md font-medium  flex items-center gap-2 break-all">
-                      <svg
-                        className="w-4 h-4 shrink-0"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <span>{walletError}</span>
-                    </p>
-                  )}
                 </div>
 
                 {/* Paste Button */}
@@ -336,17 +340,29 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                 </button>
               </div>
 
+              {/* Error - just below Wallet/Account Address input */}
+              {walletError && (
+                <p ref={errorBannerRef} className="mt-1 mb-0 text-red-500 text-xs sm:text-sm font-medium flex items-center gap-2 break-all">
+                  <svg
+                    className="w-4 h-4 shrink-0"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>{walletError}</span>
+                </p>
+              )}
+
               {/* Validation messages - based on API validation only */}
               {walletAddress.trim() && (
-                <div className="mt-2">
+                <div className="mt-1">
                   {isAddressValidating && (
                     <p className="text-[#1D8751] text-sm font-medium flex items-center gap-2">
                       <div className="w-4 h-4 border-2 border-[#1D8751] border-t-transparent rounded-full animate-spin"></div>
                       Validating address...
                     </p>
-                  )}
-                  {!isAddressValidating && walletError && (
-                   ''
                   )}
                   {!isAddressValidating && !walletError && addressValidationResult?.isValid && (
                     <p className="text-[#1D8751] text-sm font-medium flex items-center gap-2">
@@ -462,7 +478,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                         </p>
                         <ul className="text-xs sm:text-sm text-gray-900 dark:text-white space-y-1.5 ml-3 mt-2">
                           <li>• all the terms and conditions listed above, and</li>
-                          <li>• our full <Link href="/legal/terms-of-service" target="_blank" rel="noopener noreferrer" className="text-[#1D8751] underline font-medium hover:text-[#166b3e]">Terms of Service</Link></li>
+                          <li>• our full <Link href="/legal/terms-of-service" rel="noopener noreferrer" className="text-[#1D8751] underline font-medium hover:text-[#166b3e]" onClick={onBeforeLegalNavigate}>Terms of Service</Link></li>
                         </ul>
                       </div>
                     </div>
@@ -512,44 +528,59 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                   </span>
                   <Link
                     href="/legal/terms-of-service"
-                    target="_blank"
                     rel="noopener noreferrer"
                     className="text-[#1D8751] underline font-medium hover:text-[#166b3e]"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onBeforeLegalNavigate?.();
+                    }}
                   >
                     Terms of Use
                   </Link>{" "}
                   <Link
                     href="/legal/privacy-policy"
-                    target="_blank"
                     rel="noopener noreferrer"
                     className="text-[#1D8751] underline font-medium hover:text-[#166b3e]"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onBeforeLegalNavigate?.();
+                    }}
                   >
                     Privacy Policy
                   </Link>
                   ,{" "}
                   <Link
                     href="/legal/payment-policy"
-                    target="_blank"
                     rel="noopener noreferrer"
                     className="text-[#1D8751] underline font-medium hover:text-[#166b3e]"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onBeforeLegalNavigate?.();
+                    }}
                   >
                     Payment Policies
                   </Link>
                   ,{" "}
                   <Link
                     href="/legal/aml-policy"
-                    target="_blank"
                     rel="noopener noreferrer"
                     className="text-[#1D8751] font-medium underline hover:text-[#166b3e]"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onBeforeLegalNavigate?.();
+                    }}
                   >
                     AML
                   </Link>
                   ,{" "}
                   <Link
                     href="/legal/risk-disclosure-statement"
-                    target="_blank"
                     rel="noopener noreferrer"
                     className="text-[#1D8751] font-medium underline hover:text-[#166b3e]"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onBeforeLegalNavigate?.();
+                    }}
                   >
                     Risk Disclosure Statement
                   </Link>

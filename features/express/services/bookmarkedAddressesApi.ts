@@ -19,24 +19,21 @@ export interface CreateBookmarkPayload {
 
 export const bookmarkedAddressesApi = {
   list: async (params?: { asset?: string; network?: string }): Promise<BookmarkedAddress[]> => {
-    try {
-      const searchParams = new URLSearchParams();
-      if (params?.asset) searchParams.append("asset", params.asset);
-      if (params?.network) searchParams.append("network", params.network);
-      const query = searchParams.toString();
-      const url = API_CONFIG.WALLET.BOOKMARKED_ADDRESSES + (query ? `?${query}` : "");
-      const res = await get<{ results?: BookmarkedAddress[]; data?: BookmarkedAddress[] }>(url);
-      const data = res?.data;
-      if (!data) return [];
-      return Array.isArray(data) ? data : (data?.results || data?.data || []);
-    } catch {
-      return [];
-    }
+    const searchParams = new URLSearchParams();
+    if (params?.asset) searchParams.append("asset", params.asset);
+    if (params?.network) searchParams.append("network", params.network);
+    const query = searchParams.toString();
+    const url = API_CONFIG.WALLET.BOOKMARKED_ADDRESSES + (query ? `?${query}` : "");
+    const res = await get<unknown>(url);
+    const data = res.data as unknown;
+    if (Array.isArray(data)) return data;
+    const obj = data as Record<string, unknown>;
+    const arr = (obj?.results ?? obj?.data) as BookmarkedAddress[] | undefined;
+    return Array.isArray(arr) ? arr : [];
   },
 
   create: async (payload: CreateBookmarkPayload): Promise<BookmarkedAddress> => {
     const res = await post<BookmarkedAddress>(API_CONFIG.WALLET.BOOKMARKED_ADDRESSES, payload);
-    if (!res?.data) throw new Error("Failed to save bookmark — no data returned");
     return res.data;
   },
 
