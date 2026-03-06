@@ -124,12 +124,29 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
     return () => clearInterval(interval);
   }, [timerActive]);
 
-  // Auto-cancel when timer expires
+  // Auto-cancel when timer expires, then redirect to dashboard
+  const hasRedirectedOnExpiry = React.useRef(false);
+  const effectiveData = transactionData || persistedTransactionData;
   useEffect(() => {
-    if (timeRemaining === 0 && effectiveTransactionData?.transactionId) {
-      handleCancelTransaction();
-    }
-  }, [timeRemaining]);
+    if (timeRemaining !== 0 || hasRedirectedOnExpiry.current) return;
+
+    hasRedirectedOnExpiry.current = true;
+
+    const onTimeExpired = async () => {
+      const txId = effectiveData?.transactionId;
+      if (txId) {
+        try {
+          await dispatch(cancelP2PDepositTransaction(txId)).unwrap();
+        } catch (error) {
+          logger.error('p2p', "Failed to cancel transaction:", error);
+        }
+        localStorage.removeItem("express_transaction_data");
+      }
+      router.push("/dashboard");
+    };
+
+    onTimeExpired();
+  }, [timeRemaining, effectiveData?.transactionId, dispatch, router]);
 
   // Format time as MM:SS
   const formatTime = (seconds: number) => {

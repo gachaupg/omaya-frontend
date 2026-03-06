@@ -53,24 +53,24 @@ const Withdraw = () => {
   // Debounce amount to avoid too many API calls
   const debouncedAmount = useDebounce(amount, 500);
 
-  // Address validation (USDT TRC20)
+  // Address validation (USDT BSC/BEP20)
   const {
     result: addressValidationResult,
     isValidating: isAddressValidating,
     validate: validateAddress,
     reset: resetAddressValidation,
-  } = useValidateAddress({ currency: "usdt", network: "trx", debounceMs: 500 });
+  } = useValidateAddress({ currency: "usdt", network: "bsc", debounceMs: 500 });
 
   // Bookmarked addresses
   const [bookmarkOpen, setBookmarkOpen] = useState(false);
   const bookmarkAnchorRef = useRef<HTMLSpanElement>(null);
   const { bookmarks, loading: bookmarksLoading, saving: bookmarkSaving, fetchBookmarks, saveBookmark } =
-    useBookmarkedAddresses("usdt", "trx");
+    useBookmarkedAddresses("usdt", "bsc");
 
   // Validate address when wallet address changes
   useEffect(() => {
     if (walletAddress.trim()) {
-      validateAddress(walletAddress.trim(), "usdt", "trx");
+      validateAddress(walletAddress.trim(), "usdt", "bsc");
     } else {
       resetAddressValidation();
     }
@@ -638,7 +638,7 @@ const Withdraw = () => {
                         currentAddress={walletAddress}
                         onSelect={(addr) => {
                           setWalletAddress(addr);
-                          if (addr.trim()) validateAddress(addr.trim(), "usdt", "trx");
+                          if (addr.trim()) validateAddress(addr.trim(), "usdt", "bsc");
                           else resetAddressValidation();
                         }}
                         onSaveCurrent={async () => {
@@ -647,7 +647,7 @@ const Withdraw = () => {
                             await saveBookmark({
                               address: walletAddress.trim(),
                               label: "My USDT wallet",
-                              network: "trx",
+                              network: "bsc",
                               asset: "usdt",
                             });
                           } catch { /* handled by hook */ }

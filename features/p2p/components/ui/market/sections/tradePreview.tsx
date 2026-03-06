@@ -262,6 +262,8 @@ const TradePreview: React.FC<TradePreviewProps> = ({
 
     // Only validate balance for sell orders
     if (tradeType === "sell") {
+      const availableAmount = advertiserData.availableAmount || 0;
+
       // Calculate receive amount first (always show it)
       const calculatedReceive = (numericAmount * commissionRate).toFixed(2);
       setReceiveAmount(calculatedReceive);
@@ -273,25 +275,35 @@ const TradePreview: React.FC<TradePreviewProps> = ({
         return;
       }
 
-      // Check min/max amounts (USDT)
-      if (numericAmount < minAmount) {
+      // When available < min, allow selling full available (range min cannot be met)
+      const effectiveMin = availableAmount < minAmount ? 0.01 : minAmount;
+      const effectiveMax = Math.min(maxAmount, availableAmount);
+
+      if (numericAmount < effectiveMin) {
         setIsAmountValid(false);
-        setErrorMessage(`Minimum amount is ${minAmount} USDT`);
+        setErrorMessage(`Minimum amount is ${effectiveMin.toFixed(2)} USDT`);
         return;
       }
 
-      if (numericAmount > maxAmount) {
+      if (numericAmount > effectiveMax) {
         setIsAmountValid(false);
-        setErrorMessage(`Maximum amount is ${maxAmount} USDT`);
+        setErrorMessage(`Maximum available is ${effectiveMax.toFixed(2)} USDT`);
         return;
       }
 
-      // Check available amount (though usually maxAmount covers this, double check against ad availability)
-      const availableAmount = advertiserData.availableAmount || 0;
-      if (numericAmount > availableAmount) {
-        setIsAmountValid(false);
-        setErrorMessage(`Maximum available is ${availableAmount.toFixed(2)} USDT`);
-        return;
+      // Ensure amount remaining (availableAmount - sendAmount) >= minAmount when available >= min
+      if (availableAmount >= minAmount) {
+        const amountRemaining = availableAmount - numericAmount;
+        if (amountRemaining < minAmount && amountRemaining >= 0) {
+          const maxAllowed = availableAmount - minAmount;
+          setIsAmountValid(false);
+          setErrorMessage(
+            maxAllowed >= minAmount
+              ? `Maximum allowed is ${maxAllowed.toFixed(2)} USDT (min ${minAmount} USDT must remain available)`
+              : `Only ${availableAmount.toFixed(2)} USDT available. Minimum order is ${minAmount} USDT.`
+          );
+          return;
+        }
       }
 
       // Validation passed
@@ -299,7 +311,8 @@ const TradePreview: React.FC<TradePreviewProps> = ({
       setErrorMessage("");
       return;
     } else {
-      // For buy orders, calculate receive amount first to validate against available amount
+      // For buy orders: send is in range currency (KES/USD), receive is USDT
+      // minAmount and maxAmount are in range currency (KES/USD) - same as send field
       if (isNaN(numericAmount)) {
         setReceiveAmount("");
         setIsAmountValid(true);
@@ -307,32 +320,23 @@ const TradePreview: React.FC<TradePreviewProps> = ({
         return;
       }
 
-      const calculatedReceive = numericAmount / commissionRate;
       const availableAmount = advertiserData.availableAmount || 0;
+      const calculatedReceive = numericAmount / commissionRate;
       const maxSendAmount = availableAmount * commissionRate;
 
-      // Validate against available amount (show error but don't cap input)
-      if (calculatedReceive > availableAmount) {
+      // When available < range min, allow buying full available (range min cannot be met)
+      const effectiveMin = maxSendAmount < minAmount ? 0.01 : minAmount;
+      const effectiveMax = Math.min(maxAmount, maxSendAmount);
+
+      if (numericAmount < effectiveMin) {
         setIsAmountValid(false);
-        setErrorMessage(`Maximum available is ${availableAmount.toFixed(2)} USDT (${maxSendAmount.toFixed(2)} USD)`);
-        setReceiveAmount("");
+        setErrorMessage(`Minimum amount is ${effectiveMin.toFixed(2)} ${rangeLimitSuffix}`);
         return;
       }
 
-      // Check minimum amount (convert minAmount USD to USDT for comparison)
-      // For buy: send is USD, receive is USDT, minAmount and maxAmount are in USDT
-      // So we need to check if calculatedReceive (USDT) is within min/max
-      if (calculatedReceive < minAmount) {
+      if (numericAmount > effectiveMax) {
         setIsAmountValid(false);
-        setErrorMessage(`Minimum amount is ${minAmount} USDT (${(minAmount * commissionRate).toFixed(2)} USD)`);
-        setReceiveAmount("");
-        return;
-      }
-
-      if (calculatedReceive > maxAmount) {
-        setIsAmountValid(false);
-        setErrorMessage(`Maximum amount is ${maxAmount} USDT (${(maxAmount * commissionRate).toFixed(2)} USD)`);
-        setReceiveAmount("");
+        setErrorMessage(`Maximum available is ${availableAmount.toFixed(2)} USDT (${effectiveMax.toFixed(2)} ${rangeLimitSuffix})`);
         return;
       }
 
@@ -379,7 +383,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
 
     if (tradeType === "sell") {
       // For sell: receiveAmount is USD, sendAmount is USDT.
-      // numericAmount is USD (what user typed)
+      // numericAmount is USD (what user typed), min/max are USDT
       const calculatedSendUsdt = numericAmount / commissionRate;
 
       // Always show the calculated amount
@@ -392,58 +396,76 @@ const TradePreview: React.FC<TradePreviewProps> = ({
         return;
       }
 
-      // Check min/max amounts in USD terms
-      const minUsd = minAmount * commissionRate;
-      const maxUsd = maxAmount * commissionRate;
+      // When available < min, allow selling full available
+      const effectiveMinUsdt = availableAmount < minAmount ? 0.01 : minAmount;
+      const effectiveMaxUsdt = Math.min(maxAmount, availableAmount);
+      const minUsd = effectiveMinUsdt * commissionRate;
+      const maxUsd = effectiveMaxUsdt * commissionRate;
 
       if (numericAmount < minUsd) {
         setIsAmountValid(false);
-        setErrorMessage(`Minimum receive amount is ${minUsd.toFixed(2)} USD`);
+        setErrorMessage(`Minimum receive amount is ${minUsd.toFixed(2)} ${rangeLimitSuffix}`);
         return;
       }
 
       if (numericAmount > maxUsd) {
         setIsAmountValid(false);
-        setErrorMessage(`Maximum receive amount is ${maxUsd.toFixed(2)} USD`);
+        setErrorMessage(`Maximum available is ${availableAmount.toFixed(2)} USDT (${maxUsd.toFixed(2)} ${rangeLimitSuffix})`);
         return;
       }
 
-      // Check available amount
-      if (calculatedSendUsdt > availableAmount) {
-        setIsAmountValid(false);
-        setErrorMessage(`Maximum available is ${availableAmount.toFixed(2)} USDT (${(availableAmount * commissionRate).toFixed(2)} USD)`);
-        return;
+      // Ensure amount remaining >= minAmount when available >= min
+      if (availableAmount >= minAmount) {
+        const amountRemaining = availableAmount - calculatedSendUsdt;
+        if (amountRemaining < minAmount && amountRemaining >= 0) {
+          const maxAllowedUsdt = availableAmount - minAmount;
+          const maxAllowedUsd = maxAllowedUsdt * commissionRate;
+          setIsAmountValid(false);
+          setErrorMessage(
+            maxAllowedUsdt >= minAmount
+              ? `Maximum allowed is ${maxAllowedUsdt.toFixed(2)} USDT (${maxAllowedUsd.toFixed(2)} ${rangeLimitSuffix}) - min ${minAmount} USDT must remain`
+              : `Only ${availableAmount.toFixed(2)} USDT available. Minimum order is ${minAmount} USDT.`
+          );
+          return;
+        }
       }
 
       setIsAmountValid(true);
       setErrorMessage("");
     } else {
-      // For buy: receiveAmount is USDT, sendAmount is USD
-      // numericAmount is USDT (what user typed)
+      // For buy: receiveAmount is USDT, sendAmount is in range currency (KES/USD)
+      // numericAmount is USDT (what user typed), minAmount/maxAmount are in KES/USD
+      const calculatedSendKes = numericAmount * commissionRate;
+      const maxSendAmount = availableAmount * commissionRate;
+
       if (numericAmount > availableAmount) {
         setIsAmountValid(false);
-        setErrorMessage(`Amount cannot exceed available balance (${availableAmount.toFixed(2)} USDT)`);
+        setErrorMessage(`Amount cannot exceed available (${availableAmount.toFixed(2)} USDT)`);
         setSendAmount("");
         return;
       }
 
-      if (numericAmount < minAmount) {
+      // When available < range min, allow buying full available
+      const effectiveMin = maxSendAmount < minAmount ? 0.01 : minAmount;
+      const effectiveMax = Math.min(maxAmount, maxSendAmount);
+
+      if (calculatedSendKes < effectiveMin) {
         setIsAmountValid(false);
-        setErrorMessage(`Minimum amount is ${minAmount} USDT`);
+        setErrorMessage(`Minimum amount is ${effectiveMin.toFixed(2)} ${rangeLimitSuffix}`);
         setSendAmount("");
         return;
       }
 
-      if (numericAmount > maxAmount) {
+      if (calculatedSendKes > effectiveMax) {
         setIsAmountValid(false);
-        setErrorMessage(`Maximum amount is ${maxAmount} USDT`);
+        setErrorMessage(`Maximum available is ${availableAmount.toFixed(2)} USDT (${effectiveMax.toFixed(2)} ${rangeLimitSuffix})`);
         setSendAmount("");
         return;
       }
 
       setIsAmountValid(true);
       setErrorMessage("");
-      setSendAmount((numericAmount * commissionRate).toFixed(2));
+      setSendAmount(calculatedSendKes.toFixed(2));
     }
   };
 
