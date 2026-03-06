@@ -48,6 +48,7 @@ import {
 import { useValidateAddress } from "@/hooks/useValidateAddress";
 import { useBookmarkedAddresses } from "../../hooks/useBookmarkedAddresses";
 import { BookmarkDropdown } from "./BookmarkDropdown";
+import { bookmarkedAddressesApi } from "../../services/bookmarkedAddressesApi";
 import { fetchCommission, getCommissionApiAsset } from "../../api";
 
 interface DepositFormProps {
@@ -93,6 +94,23 @@ const getNetworkDisplayName = (network: string) => {
   };
 
   return networkMap[network?.toLowerCase()] || network || "Unknown";
+};
+
+// Network aliases for whitelist matching (bookmark may use trc20, swap uses trx, etc.)
+const NETWORK_ALIASES: Record<string, string[]> = {
+  trc20: ["trx", "trc20"],
+  trx: ["trx", "trc20"],
+  erc20: ["eth", "erc20"],
+  eth: ["eth", "erc20"],
+  bep20: ["bsc", "bep20"],
+  bep2: ["bsc", "bep2"],
+  bsc: ["bsc", "bep20", "bep2"],
+  matic: ["matic", "polygon"],
+  polygon: ["matic", "polygon"],
+};
+const getNetworkMatchKeys = (network: string): string[] => {
+  const n = (network || "").toLowerCase();
+  return NETWORK_ALIASES[n] ? [...NETWORK_ALIASES[n], n] : [n];
 };
 
 // Helper function to get network value from asset (handles both Asset and SupportedAsset types)
@@ -880,6 +898,7 @@ export default function DepositForm({
   // Asset selection state for search functionality
   const [isAssetDropdownOpen, setIsAssetDropdownOpen] = useState(false);
   const [assetSearchTerm, setAssetSearchTerm] = useState("");
+  const [whitelistBookmarks, setWhitelistBookmarks] = useState<Array<{ asset: string; network: string }>>([]);
   const assetDropdownRef = useRef<HTMLDivElement>(null);
   const assetDropdownContentRef = useRef<HTMLDivElement | null>(null);
   const [assetDropdownPosition, setAssetDropdownPosition] = useState({
@@ -914,6 +933,19 @@ export default function DepositForm({
       window.removeEventListener("scroll", handleReposition, true);
     };
   }, [isAssetDropdownOpen, updateAssetDropdownPosition]);
+
+  useEffect(() => {
+    if (!isAssetDropdownOpen) return;
+    bookmarkedAddressesApi
+      .list()
+      .then((list) => {
+        const pairs = Array.from(
+          new Map(list.map((b) => [`${b.asset.toLowerCase()}|${b.network.toLowerCase()}`, { asset: b.asset, network: b.network }])).values()
+        );
+        setWhitelistBookmarks(pairs);
+      })
+      .catch(() => setWhitelistBookmarks([]));
+  }, [isAssetDropdownOpen]);
 
   // Estimate calculation state
   const [estimate, setEstimate] = useState<any>(null);
@@ -1763,6 +1795,41 @@ export default function DepositForm({
     return 0;
   });
 
+  const whitelistKeys = useMemo(() => {
+    const keys = new Set<string>();
+    whitelistBookmarks.forEach((b) => {
+      const assetKey = b.asset.toLowerCase();
+      getNetworkMatchKeys(b.network).forEach((net) => keys.add(`${assetKey}|${net}`));
+    });
+    return keys;
+  }, [whitelistBookmarks]);
+
+  const whitelistAssets = useMemo(() => {
+    if (whitelistKeys.size === 0) return [];
+    const popularSlice = sortedSwapAssets.slice(0, 3);
+    const popularSet = new Set(
+      popularSlice.map((a) => `${(a?.ticker || a?.symbol || a?.name || "").toString().toLowerCase()}|${(a?.network || getAssetNetwork(a) || "").toString().toLowerCase()}`)
+    );
+    return sortedSwapAssets.filter((a) => {
+      const key = `${(a?.ticker || a?.symbol || a?.name || "").toString().toLowerCase()}|${(a?.network || getAssetNetwork(a) || "").toString().toLowerCase()}`;
+      return whitelistKeys.has(key) && !popularSet.has(key);
+    });
+  }, [sortedSwapAssets, whitelistKeys]);
+
+  const whitelistKeySet = useMemo(
+    () => new Set(whitelistAssets.map((a) => `${(a?.ticker || a?.symbol || a?.name || "").toString().toLowerCase()}|${(a?.network || getAssetNetwork(a) || "").toString().toLowerCase()}`)),
+    [whitelistAssets]
+  );
+
+  const allAssetsList = useMemo(() => {
+    if (assetSearchTerm) return sortedSwapAssets;
+    const excludePopular = sortedSwapAssets.slice(3);
+    return excludePopular.filter((a) => {
+      const key = `${(a?.ticker || a?.symbol || a?.name || "").toString().toLowerCase()}|${(a?.network || getAssetNetwork(a) || "").toString().toLowerCase()}`;
+      return !whitelistKeySet.has(key);
+    });
+  }, [assetSearchTerm, sortedSwapAssets, whitelistKeySet]);
+
   const renderAssetDropdown = () => {
     if (!isComponentMounted || !isAssetDropdownOpen) {
       return null;
@@ -1868,6 +1935,56 @@ export default function DepositForm({
                         );
                       })}
 
+                    {whitelistAssets.length > 0 && (
+                      <>
+                        <div className="px-3 py-2 bg-[#F5F6F7] dark:bg-[#23232B] border-b border-[#A2A4A9FF] dark:border-[#35353E]">
+                          <span className="text-xs font-semibold text-[#788099] uppercase tracking-wider">
+                            Whitelist
+                          </span>
+                        </div>
+                        {whitelistAssets.map((asset: SupportedAsset, index: number) => {
+                          const isCurrentlySelected =
+                            selectedAsset?.ticker === asset.ticker &&
+                            selectedAsset?.network === asset.network;
+                          return (
+                            <div
+                              key={`whitelist-${asset.asset_id || "asset"}-${asset.symbol || asset.ticker || asset.name}-${asset.network || "unknown"}-${index}`}
+                              className={`flex items-center gap-3 p-3 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E] transition-colors duration-150 ${isCurrentlySelected ? "bg-blue-50 dark:bg-blue-900/20" : ""}`}
+                              onClick={() => {
+                                handleAssetSelection(asset);
+                                setIsAssetDropdownOpen(false);
+                                setAssetSearchTerm("");
+                              }}
+                            >
+                              <img
+                                src={getHighResAssetIcon(asset, ASSET_ICON_SIZE)}
+                                alt={asset?.name || asset?.ticker || asset?.symbol || "Asset"}
+                                className={`${ASSET_ICON_BASE_CLASS} w-9 h-9`}
+                                loading="lazy"
+                                onError={(e) => {
+                                  e.currentTarget.src = getHighResAssetIcon(null, ASSET_ICON_SIZE);
+                                }}
+                              />
+                              <div className="flex-1">
+                                <div className="text-[#35353e] dark:text-[#ffffff] font-medium flex items-center gap-2">
+                                  {(asset.ticker || asset.symbol || asset.name || "Unknown").toUpperCase()}
+                                  <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
+                                    {getNetworkDisplayName(getAssetNetwork(asset))}
+                                  </span>
+                                </div>
+                                <div className="text-[#35353e] dark:text-[#788099] text-sm">
+                                  {asset.name || asset.ticker || asset.symbol || "Unknown Asset"}
+                                </div>
+                              </div>
+                              {selectedAsset?.asset_id === asset.asset_id && (
+                                <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </>
+                    )}
+
                     <div className="border-t-2 border-[#D1D2D4FF] dark:border-[#35353E]"></div>
 
                     <div className="px-3 py-2 bg-[#F5F6F7] dark:bg-[#23232B] border-b border-[#A2A4A9FF] dark:border-[#35353E]">
@@ -1878,7 +1995,7 @@ export default function DepositForm({
                   </>
                 )}
 
-                {(assetSearchTerm ? sortedSwapAssets : sortedSwapAssets.slice(3)).map(
+                {allAssetsList.map(
                   (asset: SupportedAsset, index: number) => {
                     const isCurrentlySelected =
                       selectedAsset?.ticker === asset.ticker &&

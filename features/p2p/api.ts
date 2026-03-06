@@ -786,6 +786,28 @@ export const updateUserPaymentDetail = async (
   });
 };
 
+/** Send OTP for adding payment detail. OTP is sent to user's email. No body required. */
+export const sendPaymentDetailAddOtp = async (): Promise<{ message: string }> => {
+  return withRetry(async () => {
+    const response = await post<{ message: string }>(
+      API_CONFIG.PAYMENTS.SEND_ADD_OTP,
+      {}
+    );
+    return response.data;
+  });
+};
+
+/** Verify OTP for adding payment detail. Required before addUserPaymentDetail. */
+export const verifyPaymentDetailAddOtp = async (otp: string): Promise<{ message: string }> => {
+  return withRetry(async () => {
+    const response = await post<{ message: string }>(
+      API_CONFIG.PAYMENTS.VERIFY_ADD_OTP,
+      { otp }
+    );
+    return response.data;
+  });
+};
+
 /** Send OTP for editing payment detail. Required before PUT/PATCH with OTP. */
 export const sendPaymentDetailEditOtp = async (
   paymentDetailId: string

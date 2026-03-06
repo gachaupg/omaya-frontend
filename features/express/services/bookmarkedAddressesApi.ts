@@ -24,9 +24,12 @@ export const bookmarkedAddressesApi = {
     if (params?.network) searchParams.append("network", params.network);
     const query = searchParams.toString();
     const url = API_CONFIG.WALLET.BOOKMARKED_ADDRESSES + (query ? `?${query}` : "");
-    const res = await get<{ results?: BookmarkedAddress[]; data?: BookmarkedAddress[] }>(url);
-    const data = res.data;
-    return Array.isArray(data) ? data : (data?.results || data?.data || []);
+    const res = await get<unknown>(url);
+    const data = res.data as unknown;
+    if (Array.isArray(data)) return data;
+    const obj = data as Record<string, unknown>;
+    const arr = (obj?.results ?? obj?.data) as BookmarkedAddress[] | undefined;
+    return Array.isArray(arr) ? arr : [];
   },
 
   create: async (payload: CreateBookmarkPayload): Promise<BookmarkedAddress> => {

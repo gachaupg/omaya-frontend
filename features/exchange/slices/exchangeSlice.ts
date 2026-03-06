@@ -21,13 +21,14 @@ import {
   Transaction,
   TransactionsResponse,
   DepositTransactionPayload,
-  ManageFavoritePayload,
   ManageFavoriteResponse,
   AssetsResponse,
   Asset,
   ExchangeStatistics,
   TransactionSearchParams,
   FavoriteAsset,
+  AddFavoritePayload,
+  RemoveFavoritePayload,
 } from "../types";
 
 interface ExchangeState {
@@ -351,11 +352,11 @@ export const getFavoriteAssets = createAsyncThunk<FavoriteAsset[], void>(
 
 export const addFavoriteAsset = createAsyncThunk<
   ManageFavoriteResponse,
-  ManageFavoritePayload
+  AddFavoritePayload
 >("exchange/addFavoriteAsset", async (payload, { rejectWithValue }) => {
   try {
     const response = await post<ManageFavoriteResponse>(
-      EXCHANGE_ENDPOINTS.FAVORITES,
+      EXCHANGE_ENDPOINTS.ADDFAVORITE,
       payload
     );
     return response.data;
@@ -366,11 +367,11 @@ export const addFavoriteAsset = createAsyncThunk<
 
 export const removeFavoriteAsset = createAsyncThunk<
   ManageFavoriteResponse,
-  ManageFavoritePayload
+  RemoveFavoritePayload
 >("exchange/removeFavoriteAsset", async (payload, { rejectWithValue }) => {
   try {
     const response = await del<ManageFavoriteResponse>(
-      EXCHANGE_ENDPOINTS.FAVORITES,
+      EXCHANGE_ENDPOINTS.REMOVEFAVORITE,
       { data: payload }
     );
     return response.data;

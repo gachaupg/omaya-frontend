@@ -6,6 +6,8 @@ import {
   deleteUserPaymentDetail,
   fetchAdminPaymentMethods,
   postUserPaymentDetail,
+  sendPaymentDetailAddOtp,
+  verifyPaymentDetailAddOtp,
   clearPostStatus,
 } from "@/features/p2p/slices/paymentMethodsSlice";
 import EditPaymentMethodModal from "./EditPaymentMethodModal";
@@ -52,6 +54,18 @@ const PaymentMethods = () => {
   const [accountName, setAccountName] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
   const [isClient, setIsClient] = useState(false);
+  const [addStep, setAddStep] = useState<"form" | "otp">("form");
+  const [otpCode, setOtpCode] = useState("");
+  const [pendingPayload, setPendingPayload] = useState<{
+    account_name: string;
+    account_number: string;
+    payment_method_name: string;
+    payment_provider_name: string;
+    provider_name: string;
+    wallet_address: string | null;
+  } | null>(null);
+  const [sendOtpLoading, setSendOtpLoading] = useState(false);
+  const [verifyOtpLoading, setVerifyOtpLoading] = useState(false);
 
   // Edit modal states
   const [editingPaymentMethod, setEditingPaymentMethod] = useState<PaymentMethod | null>(null);
@@ -88,6 +102,9 @@ const PaymentMethods = () => {
       setSelectedProvider("");
       setAccountName(user ? `${user.first_name || ""} ${user.last_name || ""}`.trim() : "");
       setAccountNumber("");
+      setAddStep("form");
+      setOtpCode("");
+      setPendingPayload(null);
       dispatch(clearPostStatus());
     }
   }, [showAddDropdown, user, dispatch]);
@@ -185,8 +202,8 @@ const PaymentMethods = () => {
     logger.debug('p2p', "Input change:", methodId, field, value);
   };
 
-  // Handle Add
-  const handleAdd = () => {
+  // Handle Add - first send OTP, then show OTP step
+  const handleAdd = async () => {
     if (!isAuthenticated) {
       showToast.error("Please log in to add payment methods");
       return;
@@ -203,7 +220,39 @@ const PaymentMethods = () => {
       provider_name: selectedProvider,
       wallet_address: selectedProviderObj?.wallet_address || null,
     };
-    dispatch(postUserPaymentDetail(payload));
+    setSendOtpLoading(true);
+    try {
+      const result = await dispatch(sendPaymentDetailAddOtp() as any);
+      if (sendPaymentDetailAddOtp.fulfilled.match(result)) {
+        showToast.success("OTP sent to your email address");
+        setPendingPayload(payload);
+        setAddStep("otp");
+      } else if (sendPaymentDetailAddOtp.rejected.match(result)) {
+        showToast.error((result.payload as string) || "Failed to send OTP");
+      }
+    } finally {
+      setSendOtpLoading(false);
+    }
+  };
+
+  // Handle OTP verify - then add payment detail
+  const handleVerifyOtp = async () => {
+    if (!pendingPayload || !otpCode.trim() || otpCode.length < 6) {
+      showToast.error("Please enter a valid 6-digit OTP");
+      return;
+    }
+    setVerifyOtpLoading(true);
+    try {
+      const verifyResult = await dispatch(verifyPaymentDetailAddOtp(otpCode) as any);
+      if (verifyPaymentDetailAddOtp.fulfilled.match(verifyResult)) {
+        showToast.success("OTP verified successfully. You can now add your payment method.");
+        dispatch(postUserPaymentDetail(pendingPayload));
+      } else if (verifyPaymentDetailAddOtp.rejected.match(verifyResult)) {
+        showToast.error((verifyResult.payload as string) || "Invalid OTP");
+      }
+    } finally {
+      setVerifyOtpLoading(false);
+    }
   };
 
   const getDefaultAccountName = () =>
@@ -222,6 +271,9 @@ const PaymentMethods = () => {
     setProviderSearch("");
     setAccountNumber("");
     setAccountName(getDefaultAccountName());
+    setAddStep("form");
+    setOtpCode("");
+    setPendingPayload(null);
   };
 
   // Close dropdown and reset form on success
@@ -230,6 +282,9 @@ const PaymentMethods = () => {
       showToast.success("Payment method added!");
       setShowAddDropdown(false);
       setInlineError(null);
+      setAddStep("form");
+      setOtpCode("");
+      setPendingPayload(null);
       // Reset all form fields
       setSelectedMethod("");
       setSelectedProvider("");
@@ -685,45 +740,90 @@ const PaymentMethods = () => {
           </div>
 
           <div className="grid grid-cols-1 gap-4">
-            <div className="flex flex-col sm:flex-row gap-3 text-sm">
-              <Input
-                placeholder="Account Name"
-                value={accountName}
-                onChange={(e) => setAccountName(e.target.value)}
-                className="w-full text-sm text-gray-900 dark:text-white disabled:opacity-50"
-                disabled
-              />
-              <Input
-                placeholder={selectedMethod?.toLowerCase().includes('mobile') || selectedMethod?.toLowerCase().includes('money') ? 'Phone Number' : 'Account Number'}
-                value={accountNumber}
-                onChange={(e) => setAccountNumber(e.target.value)}
-                className="w-full text-sm text-gray-900 dark:text-white"
-              />
-            </div>
+            {addStep === "otp" ? (
+              <>
+                <p className="text-sm text-gray-600 dark:text-[#788099]">
+                  We&apos;ve sent a verification code to your email address. Enter it below to continue.
+                </p>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  placeholder="Enter 6-digit OTP"
+                  value={otpCode}
+                  onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  className="w-full px-4 py-3 rounded-xl bg-white dark:bg-[#1D1D23] border border-gray-200 dark:border-[#35353E] text-gray-900 dark:text-white text-center text-lg tracking-[0.4em] focus:outline-none focus:ring-2 focus:ring-[#1D8751] placeholder:text-gray-400 dark:placeholder:text-[#788099]"
+                  maxLength={6}
+                />
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Button
+                    variant="outline"
+                    className="flex-1 border border-gray-200 dark:border-[#35353E] text-gray-700 dark:text-white"
+                    onClick={() => {
+                      setAddStep("form");
+                      setOtpCode("");
+                      setPendingPayload(null);
+                    }}
+                    disabled={verifyOtpLoading}
+                    height={44}
+                    borderRadius={24}
+                  >
+                    Back
+                  </Button>
+                  <Button
+                    className="flex-1 bg-[#1D8751] text-white px-8 disabled:opacity-50"
+                    onClick={handleVerifyOtp}
+                    disabled={verifyOtpLoading || otpCode.length !== 6}
+                    height={44}
+                    borderRadius={24}
+                  >
+                    {verifyOtpLoading ? "Verifying..." : "Verify OTP"}
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex flex-col sm:flex-row gap-3 text-sm">
+                  <Input
+                    placeholder="Account Name"
+                    value={accountName}
+                    onChange={(e) => setAccountName(e.target.value)}
+                    className="w-full text-sm text-gray-900 dark:text-white disabled:opacity-50"
+                    disabled
+                  />
+                  <Input
+                    placeholder={selectedMethod?.toLowerCase().includes('mobile') || selectedMethod?.toLowerCase().includes('money') ? 'Phone Number' : 'Account Number'}
+                    value={accountNumber}
+                    onChange={(e) => setAccountNumber(e.target.value)}
+                    className="w-full text-sm text-gray-900 dark:text-white"
+                  />
+                </div>
 
-            {inlineError && (
-              <div className="flex items-center gap-2 text-red-600 dark:text-red-400 text-sm">
-                <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
-                {inlineError}
-              </div>
+                {inlineError && (
+                  <div className="flex items-center gap-2 text-red-600 dark:text-red-400 text-sm">
+                    <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    {inlineError}
+                  </div>
+                )}
+
+                <Button
+                  className="bg-[#1D8751] text-white w-full sm:w-auto px-8"
+                  onClick={() => {
+                    setInlineError(null);
+                    handleAdd();
+                  }}
+                  disabled={
+                    !accountName || !accountNumber || postLoading || sendOtpLoading
+                  }
+                  height={44}
+                  borderRadius={24}
+                >
+                  {sendOtpLoading ? "Sending OTP..." : postLoading ? "Adding..." : "Add Payment Method"}
+                </Button>
+              </>
             )}
-
-            <Button
-              className="bg-[#1D8751] text-white w-full sm:w-auto px-8"
-              onClick={() => {
-                setInlineError(null);
-                handleAdd();
-              }}
-              disabled={
-                !accountName || !accountNumber || postLoading
-              }
-              height={44}
-              borderRadius={24}
-            >
-              {postLoading ? "Adding..." : "Add Payment Method"}
-            </Button>
           </div>
         </div>
       )}
