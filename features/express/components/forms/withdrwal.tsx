@@ -184,6 +184,8 @@ interface DepositFormProps {
     receiveAmountInput?: string;
     asset?: any;
     paymentDetails?: UserPaymentDetail[];
+    walletAddress?: string;
+    termsAccepted?: boolean;
   };
 }
 
@@ -4032,7 +4034,7 @@ export default function WithdrawalForm({
                                   "/images/tether.svg";
                               }}
                             />
-                            <div className="flex flex-col">
+                            <div className="flex flex-col text-left">
                               <div className="flex items-center gap-2">
                                 <span className={`font-normal text-sm ${isDark ? "text-white" : "text-[#1F2937]"
                                   }`}>
@@ -4047,6 +4049,15 @@ export default function WithdrawalForm({
                                   {getNetworkDisplayName(selectedAsset.network)}
                                 </span>
                               </div>
+                              <span className="text-[#788099] text-xs">
+                                {selectedAsset.name ||
+                                  selectedAsset.ticker ||
+                                  selectedAsset.symbol ||
+                                  "Unknown"}{" "}
+                                (
+                                {getNetworkDisplayName(selectedAsset.network)}
+                                )
+                              </span>
                             </div>
                           </>
                         ) : (
