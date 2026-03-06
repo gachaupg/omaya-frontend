@@ -40,6 +40,17 @@ export const consumeExpressPrefillState = (): Record<string, any> | null => {
   }
 };
 
+/** Save express form state before navigating to legal pages (Terms, Privacy, etc.) so back button restores it */
+export const setExpressLegalReturnState = (state: Record<string, any>) => {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.setItem(EXPRESS_LEGAL_RETURN_STATE_KEY, JSON.stringify(state));
+    sessionStorage.setItem(RETURNING_FROM_LEGAL_KEY, "1");
+  } catch {
+    // Ignore storage errors
+  }
+};
+
 /** Consume express legal return state when user returns from Terms/Privacy/etc. */
 export const consumeExpressLegalReturnState = (): Record<string, any> | null => {
   if (typeof window === "undefined") return null;
@@ -54,21 +65,24 @@ export const consumeExpressLegalReturnState = (): Record<string, any> | null => 
     sessionStorage.removeItem(RETURNING_FROM_LEGAL_KEY);
     sessionStorage.removeItem(EXPRESS_LEGAL_RETURN_STATE_KEY);
     const state = JSON.parse(raw) as Record<string, any>;
+    const paymentDetail = state.selectedPaymentDetail;
+    const paymentDetails = state.selectedPaymentDetails ?? (paymentDetail ? [paymentDetail] : undefined);
     return {
       amountValue: state.payAmount,
       amountInput: state.payAmountInput,
       receiveAmountValue: state.getAmount,
       receiveAmountInput: state.getAmountInput,
       payBank: state.payBank,
-      payment: state.selectedPaymentDetail,
+      payment: paymentDetail,
+      paymentDetails,
       asset: state.selectedAsset,
       selectedAsset: state.selectedAsset,
       selectedNetwork: state.selectedNetwork,
       walletAddress: state.walletAddress,
-      termsAccepted: state.termsAccepted,
+      termsAccepted: state.termsAccepted ?? state.isTermsAccepted,
       apiResponse: state.apiResponse,
       transactionCode: state.transactionCode,
-      isFirstCardSubmitted: true,
+      isFirstCardSubmitted: state.isFirstCardSubmitted ?? true,
     };
   } catch {
     sessionStorage.removeItem(RETURNING_FROM_LEGAL_KEY);

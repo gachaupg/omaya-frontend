@@ -35,6 +35,7 @@ import CustomSelect from "@/components/ui/CustomSelect";
 import {
   buildExpressRedirectPath,
   setAuthRedirectPath,
+  setExpressLegalReturnState,
 } from "@/lib/utils/authRedirect";
 import { useExpressI18n } from "@/lib/useExpressI18n";
 import {
@@ -889,7 +890,7 @@ export default function DepositForm({
   }, [finalPaymentMethods, payBank, selectedPaymentDetail, initialState]);
 
   // Add transaction code state
-  const [transactionCode, setTransactionCode] = useState<string>("");
+  const [transactionCode, setTransactionCode] = useState<string>(initialState?.transactionCode ?? "");
   const paymentDetailsRef = useRef<HTMLDivElement>(null);
   
   // Inline copy feedback state
@@ -953,7 +954,7 @@ export default function DepositForm({
   const [estimateError, setEstimateError] = useState<string | null>(null);
 
   // First card submission state
-  const [isFirstCardSubmitted, setIsFirstCardSubmitted] = useState(false);
+  const [isFirstCardSubmitted, setIsFirstCardSubmitted] = useState(!!initialState?.isFirstCardSubmitted);
 
   // Add loading state for "You Receive" calculation
   const [isCalculatingReceive, setIsCalculatingReceive] = useState(false);
@@ -968,7 +969,7 @@ export default function DepositForm({
   );
 
   // Add state to store API response
-  const [apiResponse, setApiResponse] = useState<any>(null);
+  const [apiResponse, setApiResponse] = useState<any>(initialState?.apiResponse ?? null);
   const [isUserModifiedAmount, setIsUserModifiedAmount] = useState(false);
 
   // Add InfoModal state
@@ -1022,8 +1023,16 @@ export default function DepositForm({
     dispatch(fetchAdminPaymentMethods());
   }, [dispatch, isHomePage]);
 
+  // Skip reset when restoring from legal pages (user was on second step)
+  const hasRestoredFromLegalRef = useRef(!!initialState?.isFirstCardSubmitted);
   // Close expanded section when user changes payment method or asset (user must post again)
   useEffect(() => {
+    if (hasRestoredFromLegalRef.current) {
+      const t = setTimeout(() => {
+        hasRestoredFromLegalRef.current = false;
+      }, 600);
+      return () => clearTimeout(t);
+    }
     if (isFirstCardSubmitted) {
       setIsFirstCardSubmitted(false);
       setApiResponse(null);
@@ -2313,7 +2322,7 @@ export default function DepositForm({
   }, []);
 
   // Terms & Conditions acceptance
-  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(!!initialState?.termsAccepted);
   const [expandedTerms, setExpandedTerms] = useState(false);
 
   const isProceedDisabled =
@@ -2323,6 +2332,39 @@ export default function DepositForm({
     !termsAccepted ||
     payAmount >= 15000 ||
     getAmount >= 15000;
+
+  // Save form state before navigating to legal pages so back button restores it
+  const handleBeforeLegalNavigate = useCallback(() => {
+    setExpressLegalReturnState({
+      payAmount,
+      payAmountInput,
+      getAmount,
+      getAmountInput,
+      payBank,
+      selectedPaymentDetail,
+      selectedAsset,
+      selectedNetwork,
+      walletAddress,
+      termsAccepted,
+      apiResponse,
+      transactionCode,
+      isFirstCardSubmitted,
+    });
+  }, [
+    payAmount,
+    payAmountInput,
+    getAmount,
+    getAmountInput,
+    payBank,
+    selectedPaymentDetail,
+    selectedAsset,
+    selectedNetwork,
+    walletAddress,
+    termsAccepted,
+    apiResponse,
+    transactionCode,
+    isFirstCardSubmitted,
+  ]);
 
   // Auto-validate receive amount whenever it changes
   useEffect(() => {
@@ -4740,40 +4782,40 @@ export default function DepositForm({
                 I've read and agree to the OMAYA EXCHANGE{" "}
                 <Link
                   href="/legal/terms-of-service"
-                  target="_blank"
                   className="underline text-[#1D8751]"
+                  onClick={handleBeforeLegalNavigate}
                 >
                   Terms of Use
                 </Link>
                 ,{" "}
                 <Link
                   href="/legal/privacy-policy"
-                  target="_blank"
                   className="underline text-[#1D8751]"
+                  onClick={handleBeforeLegalNavigate}
                 >
                   Privacy Policy
                 </Link>
                 ,{" "}
                 <Link
                   href="/legal/payment-policy"
-                  target="_blank"
                   className="underline text-[#1D8751]"
+                  onClick={handleBeforeLegalNavigate}
                 >
                   Payment Policies
                 </Link>
                 ,{" "}
                 <Link
                   href="/legal/aml-policy"
-                  target="_blank"
                   className="underline text-[#1D8751]"
+                  onClick={handleBeforeLegalNavigate}
                 >
                   AML
                 </Link>
                 ,{" "}
                 <Link
                   href="/legal/risk-disclosure-statement"
-                  target="_blank"
                   className="underline text-[#1D8751]"
+                  onClick={handleBeforeLegalNavigate}
                 >
                   Risk Disclosure Statements
                 </Link>
