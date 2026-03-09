@@ -1,5 +1,6 @@
 import { logger } from "@/lib/utils/logger";
 import { API_CONFIG } from "@/lib/appConfig";
+import { appendTokenToWebSocketUrl } from "@/lib/utils/websocketUtils";
 
 type TransactionMessage = {
   type: string;
@@ -28,9 +29,10 @@ export class AllSystemTransactionsWebSocket {
   private hasPermanentFailure: boolean = false;
 
   constructor(
-    private wsUrl: string = API_CONFIG.RATES.SOCKETS.ALL_SYSTEM_TRANSACTIONS()
+    wsUrl: string = API_CONFIG.RATES.SOCKETS.ALL_SYSTEM_TRANSACTIONS(),
+    private token?: string | null
   ) {
-    this.url = wsUrl;
+    this.url = appendTokenToWebSocketUrl(wsUrl, token);
   }
 
   connect(): void {

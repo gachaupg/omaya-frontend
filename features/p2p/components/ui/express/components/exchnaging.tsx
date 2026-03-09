@@ -5,9 +5,10 @@ import {
   TransactionStatusMessage,
 } from "../websockets";
 import { API_CONFIG } from "@/lib/appConfig";
+import { cookieUtils } from "@/lib/utils/cookieUtils";
 import { useTheme } from "@/context/theme";
 import CopyButton from "@/components/ui/CopyButton";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "@/store/rootReducer";
 import { logger } from '@/lib/utils/logger';
 
@@ -62,6 +63,8 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const { isDark } = useTheme();
+  const { tokens } = useSelector((state: any) => state.auth);
+  const token = tokens?.access ?? cookieUtils.getCookie("access_token") ?? (typeof window !== "undefined" ? localStorage.getItem("access_token") : null);
   const [currentStatus, setCurrentStatus] = useState<string>(() =>
     transactionData?.status || "pending"
   );
@@ -355,6 +358,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
       effectiveTransactionData?.type || "withdrawal",
       finalWebsocketUrl,
       {
+        token: token ?? undefined,
         onMessage: (data: TransactionStatusMessage) => {
           console.log("[P2P Exchanging] WebSocket message:", data);
 

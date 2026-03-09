@@ -9,9 +9,10 @@ import {
   useMoneyXStatusWebSocket,
 } from "../websockets/moneyXStatusWebSocket";
 import { API_CONFIG } from "@/lib/appConfig";
+import { cookieUtils } from "@/lib/utils/cookieUtils";
 import { useTheme } from "@/context/theme";
 import CopyButton from "@/components/ui/CopyButton";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "@/store/rootReducer";
 import { logger } from '@/lib/utils/logger';
 
@@ -73,6 +74,8 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const { isDark } = useTheme();
+  const { tokens } = useSelector((state: any) => state.auth);
+  const token = tokens?.access ?? cookieUtils.getCookie("access_token") ?? (typeof window !== "undefined" ? localStorage.getItem("access_token") : null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [currentStatus, setCurrentStatus] = useState<string>("pending");
 
@@ -454,6 +457,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
     isMoneyXTransaction && moneyXTransactionId ? moneyXTransactionId : "",
     isMoneyXTransaction ? finalWebsocketUrl : undefined,
     {
+      token: token ?? undefined,
       onMessage: handleWebSocketMessage,
       onError: (error) => {
         setConnectionAttempts((prev) => prev + 1);
@@ -472,6 +476,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
     effectiveTransactionData?.type || "deposit",
     !isMoneyXTransaction ? finalWebsocketUrl : undefined,
     {
+      token: token ?? undefined,
       onMessage: (data: TransactionStatusMessage) => {
         setWsError(null);
         setConnectionAttempts(0);

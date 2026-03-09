@@ -235,9 +235,7 @@ const calculateAmounts = (
           }
           setIsCalculating(false);
         })
-        .catch((error) => {
-          console.error("Failed to fetch swap estimate:", error);
-
+        .catch(() => {
           // Handle errors gracefully - fallback to percentage calculation
           const commissionRate = selectedAsset?.range_commissions?.[0]
             ?.commission
@@ -291,8 +289,7 @@ const calculateAmounts = (
         setPayAmountInput(calculatedAmount.toString());
       }
     }
-  } catch (error) {
-    console.error("Calculation error:", error);
+  } catch {
     setCalculationError("Calculation failed. Please try again.");
   } finally {
     setIsCalculating(false);
@@ -489,7 +486,6 @@ export default function ExchangeForm({
     }
 
     // Otherwise, use fallback methods
-    console.log("🔍 Using fallback payment methods:", fallbackPaymentMethods);
     return fallbackPaymentMethods;
   }, [validPaymentMethods]);
 
@@ -500,21 +496,7 @@ export default function ExchangeForm({
   const paymentMethodsError = isHomePage ? publicMethodsError : null;
 
   // Debug logging for data display
-  console.log("🔍 ExchangeForm Debug:", {
-    isHomePage,
-    isAuthenticated,
-    publicPaymentMethods: publicPaymentMethods,
-    processedPaymentMethods: processedPaymentMethods,
-    uniquePaymentMethods: uniquePaymentMethods,
-    validPaymentMethods: validPaymentMethods,
-    finalPaymentMethods: finalPaymentMethods,
-    publicMethodsLoading: publicMethodsLoading,
-    publicMethodsError: publicMethodsError,
-    paymentMethodsLoading: paymentMethodsLoading,
-    paymentMethodsError: paymentMethodsError,
-    finalPaymentMethodsLength: finalPaymentMethods.length,
-  });
-
+ 
   const presets: Record<Tab, Preset> = {
     express: {
       pay: { label: "Salam Bank", icon: "/images/salam.svg" },
@@ -537,30 +519,11 @@ export default function ExchangeForm({
   useEffect(() => {
     // Skip API calls on home page if user is not authenticated
     if (isHomePage && !isAuthenticated) {
-      console.log(
-        "Skipping asset fetch: isHomePage =",
-        isHomePage,
-        "isAuthenticated =",
-        isAuthenticated
-      );
       return;
     }
 
-    console.log(
-      "Fetching exchange assets: isHomePage =",
-      isHomePage,
-      "isAuthenticated =",
-      isAuthenticated
-    );
     // Fetch assets
-    dispatch(fetchAssets(false))
-      .unwrap()
-      .then((result) => {
-        console.log("Exchange assets fetched successfully:", result);
-      })
-      .catch((error: unknown) => {
-        console.error("Failed to fetch exchange assets:", error);
-      });
+    dispatch(fetchAssets(false)).unwrap();
   }, [dispatch, isHomePage, isAuthenticated]);
 
   useEffect(() => {
@@ -569,55 +532,21 @@ export default function ExchangeForm({
       return;
     }
 
-    console.log(
-      "Fetching swap assets: isHomePage =",
-      isHomePage,
-      "isAuthenticated =",
-      isAuthenticated
-    );
     // Fetch swap assets
-    dispatch(fetchSupportedAssets(false))
-      .unwrap()
-      .then((result) => {
-        console.log("Swap assets fetched successfully:", result);
-      })
-      .catch((error: unknown) => {
-        console.error("Failed to fetch swap assets:", error);
-      });
+    dispatch(fetchSupportedAssets(false)).unwrap();
   }, [dispatch, isHomePage, isAuthenticated]);
 
   useEffect(() => {
-    console.log(
-      "Fetching payment methods: isHomePage =",
-      isHomePage,
-      "isAuthenticated =",
-      isAuthenticated
-    );
-
     if (isHomePage) {
       // For home page, use public payment methods (no authentication required)
-      dispatch(fetchPublicPaymentMethods())
-        .unwrap()
-        .then((result) => {
-          console.log("Public payment methods fetched successfully:", result);
-        })
-        .catch((error: unknown) => {
-          console.error("Failed to fetch public payment methods:", error);
-        });
+      dispatch(fetchPublicPaymentMethods()).unwrap();
     } else {
       // For authenticated pages, use admin payment methods
       if (!isAuthenticated) {
         return;
       }
 
-      dispatch(fetchAdminPaymentDetails(false))
-        .unwrap()
-        .then((result) => {
-          console.log("Payment methods fetched successfully:", result);
-        })
-        .catch((error: unknown) => {
-          console.error("Failed to fetch payment details:", error);
-        });
+      dispatch(fetchAdminPaymentDetails(false)).unwrap();
     }
   }, [dispatch, isHomePage, isAuthenticated]);
 
@@ -1032,15 +961,6 @@ export default function ExchangeForm({
         {/* Payment Providers List */}
         <div className="max-h-60 overflow-y-auto">
           {(() => {
-            console.log("🔍 Dropdown Render Debug:", {
-              isLoading: paymentMethodsLoading,
-              filteredLength: filteredPaymentProviders.length,
-              filteredProviders: filteredPaymentProviders,
-              paymentProviders: paymentProviders,
-              paymentProvidersLength: paymentProviders.length,
-              paymentSearchTerm: paymentSearchTerm,
-            });
-
             if (paymentMethodsLoading && paymentProviders.length === 0) {
               return (
                 <div className="p-4 text-center text-gray-500 dark:text-gray-400">
@@ -1050,9 +970,6 @@ export default function ExchangeForm({
             }
 
             if (filteredPaymentProviders.length === 0) {
-              console.log(
-                "🔍 No filtered payment providers - showing empty state"
-              );
               return (
                 <div className="p-4 text-center text-gray-500 dark:text-gray-400">
                   {paymentProviders.length === 0
@@ -1061,11 +978,6 @@ export default function ExchangeForm({
                 </div>
               );
             }
-
-            console.log(
-              "🔍 Rendering payment providers:",
-              filteredPaymentProviders
-            );
 
             return filteredPaymentProviders.map(
               (provider: any, index: number) => {

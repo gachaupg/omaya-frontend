@@ -3,6 +3,7 @@
  */
 import React from "react";
 import { API_CONFIG } from "@/lib/appConfig";
+import { appendTokenToWebSocketUrl } from "@/lib/utils/websocketUtils";
 import {
   BaseTransactionStatusWebSocket,
   TransactionStatusMessage,
@@ -41,6 +42,7 @@ export const useMoneyXStatusWebSocket = (
     onError?: (error: Event) => void;
     onClose?: () => void;
     autoReconnect?: boolean;
+    token?: string;
   } = {}
 ) => {
   const [isConnected, setIsConnected] = React.useState(false);
@@ -51,8 +53,9 @@ export const useMoneyXStatusWebSocket = (
   React.useEffect(() => {
     if (!transactionId) return;
 
-    // Build WebSocket URL if not provided
-    const finalWsUrl = wsUrl || API_CONFIG.MONEYX.SOCKETS.STATUS(transactionId);
+    // Build WebSocket URL if not provided, then append token
+    let finalWsUrl = wsUrl || API_CONFIG.MONEYX.SOCKETS.STATUS(transactionId);
+    finalWsUrl = appendTokenToWebSocketUrl(finalWsUrl, options.token);
 
     const ws = new MoneyXStatusWebSocket(transactionId, finalWsUrl, {
       ...options,

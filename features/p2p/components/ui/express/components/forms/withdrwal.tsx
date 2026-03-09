@@ -478,9 +478,14 @@ export default function WithdrawalForm({
       setOtpLoading(false);
       showToast.success("Withdrawal verified successfully!");
     } catch (error: any) {
-      setOtpError(error.message || "Failed to verify OTP. Please try again.");
+      const responseData = error?.response?.data;
+      const errorMessage =
+        (typeof responseData === "object" && (responseData?.error ?? responseData?.message ?? responseData?.detail)) ||
+        (typeof responseData === "string" ? responseData : null) ||
+        error?.message ||
+        "Failed to verify OTP. Please try again.";
+      setOtpError(errorMessage);
       setOtpLoading(false);
-      showToast.error("OTP verification failed");
     }
   };
 
@@ -501,7 +506,13 @@ export default function WithdrawalForm({
 
       showToast.success("New OTP sent successfully");
     } catch (error: any) {
-      setOtpError("Failed to resend OTP. Please try again.");
+      const responseData = error?.response?.data;
+      const errorMessage =
+        (typeof responseData === "object" && (responseData?.error ?? responseData?.message ?? responseData?.detail)) ||
+        (typeof responseData === "string" ? responseData : null) ||
+        error?.message ||
+        "Failed to resend OTP. Please try again.";
+      setOtpError(errorMessage);
       showToast.error("Failed to resend OTP");
     }
   };

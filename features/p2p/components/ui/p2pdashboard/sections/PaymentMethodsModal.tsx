@@ -67,6 +67,8 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
   const [pendingPayload, setPendingPayload] = useState<PaymentDetailPayload | null>(null);
   const [sendOtpLoading, setSendOtpLoading] = useState(false);
   const [verifyOtpLoading, setVerifyOtpLoading] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const RESEND_COOLDOWN_SECONDS = 60;
 
   // Set isClient to true after mount
   useEffect(() => {
@@ -85,6 +87,22 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
       document.body.style.overflow = 'unset';
     };
   }, [open]);
+
+  // Start resend cooldown when OTP step is shown
+  useEffect(() => {
+    if (step === "otp") {
+      setResendCooldown(RESEND_COOLDOWN_SECONDS);
+    } else {
+      setResendCooldown(0);
+    }
+  }, [step]);
+
+  // Countdown timer for resend button
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setInterval(() => setResendCooldown((c) => Math.max(0, c - 1)), 1000);
+    return () => clearInterval(t);
+  }, [resendCooldown]);
 
      // Fetch public payment methods when modal opens
    useEffect(() => {
@@ -252,6 +270,24 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
     }
    };
 
+   // Handle resend OTP
+   const handleResendOtp = async () => {
+     if (resendCooldown > 0 || sendOtpLoading) return;
+     setSendOtpLoading(true);
+     try {
+       const result = await dispatch(sendPaymentDetailAddOtp() as any);
+       if (sendPaymentDetailAddOtp.fulfilled.match(result)) {
+         showToast.success("OTP resent to your email address");
+         setResendCooldown(RESEND_COOLDOWN_SECONDS);
+         setOtpCode("");
+       } else if (sendPaymentDetailAddOtp.rejected.match(result)) {
+         showToast.error((result.payload as string) || "Failed to resend OTP");
+       }
+     } finally {
+       setSendOtpLoading(false);
+     }
+   };
+
    // Handle OTP verify - then add payment detail
    const handleVerifyOtp = async () => {
      if (!pendingPayload || !otpCode.trim() || otpCode.length < 6) {
@@ -355,6 +391,20 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
               className="w-full p-2.5 sm:p-3 rounded-[24px] bg-white dark:bg-[#18181D] border border-gray-200 dark:border-[#35353E] text-gray-900 dark:text-white text-center text-lg tracking-[0.4em] focus:outline-none focus:ring-2 focus:ring-[#1D8751] placeholder:text-gray-400 dark:placeholder:text-[#788099]"
               maxLength={6}
             />
+            <div className="flex justify-center">
+              <button
+                type="button"
+                onClick={handleResendOtp}
+                disabled={resendCooldown > 0 || sendOtpLoading}
+                className="text-sm text-[#1D8751] hover:text-[#156b3f] font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:text-gray-400 dark:disabled:text-gray-500"
+              >
+                {resendCooldown > 0
+                  ? `Resend OTP in ${resendCooldown}s`
+                  : sendOtpLoading
+                    ? "Sending..."
+                    : "Resend OTP"}
+              </button>
+            </div>
             <div className="flex flex-col sm:flex-row gap-3 mt-2">
               <button
                 type="button"

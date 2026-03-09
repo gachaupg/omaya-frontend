@@ -9,6 +9,7 @@ import {
   setTransactionsFromWebSocket,
 } from "../slices/transactionSlice";
 import { AllSystemTransactionsWebSocket } from "@/features/markets/services/allSystemTransactionsWebSocket";
+import { cookieUtils } from "@/lib/utils/cookieUtils";
 import { Transaction } from "../types";
 import {
   formatTransactionType,
@@ -181,6 +182,8 @@ const RatesTransactionHistory = () => {
   const { transactions, loading, error, count } = useSelector(
     (state: RootState) => state.transaction
   );
+  const { tokens } = useSelector((state: RootState) => state.auth);
+  const token = tokens?.access ?? cookieUtils.getCookie("access_token") ?? (typeof window !== "undefined" ? localStorage.getItem("access_token") : null);
   const [isConnected, setIsConnected] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const wsRef = useRef<AllSystemTransactionsWebSocket | null>(null);
@@ -207,7 +210,7 @@ const RatesTransactionHistory = () => {
   }, [dispatch]);
 
   useEffect(() => {
-    wsRef.current = new AllSystemTransactionsWebSocket();
+    wsRef.current = new AllSystemTransactionsWebSocket(undefined, token);
 
     const unsubMessage = wsRef.current.onMessage((message) => {
       try {
