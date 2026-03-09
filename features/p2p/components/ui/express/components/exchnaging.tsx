@@ -73,7 +73,9 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
   const [wsError, setWsError] = useState<string | null>(null);
   const [connectionAttempts, setConnectionAttempts] = useState<number>(0);
 
-  // Timer state - 15 minutes in seconds
+  // Timer state - 15 minutes, based on wall-clock to avoid tab throttling
+  const TIMER_DURATION_SEC = 15 * 60;
+  const expiryTimestampRef = React.useRef<number | null>(null);
   const [timeRemaining, setTimeRemaining] = useState<number>(15 * 60);
   const [timerActive, setTimerActive] = useState<boolean>(true);
 
@@ -110,22 +112,75 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
     };
   }, []);
 
-  // Timer countdown effect
+  // Compute remaining time from wall-clock (immune to tab throttling)
+  const computeTimeRemaining = React.useCallback(() => {
+    const expiry = expiryTimestampRef.current;
+    if (!expiry) return TIMER_DURATION_SEC;
+    const remaining = Math.max(0, Math.ceil((expiry - Date.now()) / 1000));
+    return remaining;
+  }, []);
+
+  // Initialize expiry timestamp when we have transaction data
+  const effectiveDataForTimer = transactionData || persistedTransactionData;
+  useEffect(() => {
+    if (!effectiveDataForTimer?.transactionId || !timerActive) return;
+
+    const storageKey = "express_transaction_expiry";
+    const txId = effectiveDataForTimer.transactionId;
+
+    if (!expiryTimestampRef.current) {
+      try {
+        const stored = localStorage.getItem(storageKey);
+        if (stored) {
+          const { transactionId, expiry } = JSON.parse(stored);
+          if (transactionId === txId) {
+            expiryTimestampRef.current = expiry;
+            if (expiry <= Date.now()) {
+              // Already expired - trigger expiry flow
+              setTimeRemaining(0);
+              setTimerActive(false);
+              return;
+            }
+            setTimeRemaining(computeTimeRemaining());
+            return;
+          }
+        }
+      } catch {
+        // Invalid stored data, use fresh expiry
+      }
+      const expiry = Date.now() + TIMER_DURATION_SEC * 1000;
+      expiryTimestampRef.current = expiry;
+      localStorage.setItem(
+        storageKey,
+        JSON.stringify({ transactionId: txId, expiry })
+      );
+    }
+    setTimeRemaining(computeTimeRemaining());
+  }, [effectiveDataForTimer?.transactionId, timerActive, computeTimeRemaining]);
+
+  // Timer: update from wall-clock every second + Page Visibility recalc when tab becomes active
   useEffect(() => {
     if (!timerActive) return;
 
-    const interval = setInterval(() => {
-      setTimeRemaining((prev) => {
-        if (prev <= 1) {
-          setTimerActive(false);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+    const tick = () => {
+      const remaining = computeTimeRemaining();
+      setTimeRemaining(remaining);
+      if (remaining <= 0) setTimerActive(false);
+    };
 
-    return () => clearInterval(interval);
-  }, [timerActive]);
+    const interval = setInterval(tick, 1000);
+    tick(); // initial tick
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") tick();
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, [timerActive, computeTimeRemaining]);
 
   // Auto-cancel when timer expires, then redirect to dashboard
   const hasRedirectedOnExpiry = React.useRef(false);
@@ -144,6 +199,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
           logger.error('p2p', "Failed to cancel transaction:", error);
         }
         localStorage.removeItem("express_transaction_data");
+        localStorage.removeItem("express_transaction_expiry");
       }
       router.push("/dashboard");
     };
@@ -167,6 +223,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
 
       // Clear localStorage
       localStorage.removeItem("express_transaction_data");
+      localStorage.removeItem("express_transaction_expiry");
 
       // Redirect to home page
       router.push("/");
@@ -181,6 +238,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
   useEffect(() => {
     if (currentStatus === "completed") {
       setTimerActive(false);
+      localStorage.removeItem("express_transaction_expiry");
     }
   }, [currentStatus]);
 

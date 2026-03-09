@@ -149,47 +149,53 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
          transactionData.details?.payout_address ||
          network);
     
-    // Get amounts - receiveAmount from props is highest priority (no API/websocket override)
+    // Get amounts - prefer websocket/socket data (actual processed amounts) over user-typed values
     let amount = transactionData.amount || 0;
-    const receiveAmountFromProps = transactionData.receiveAmount != null
-      ? parseFloat(String(transactionData.receiveAmount))
-      : null;
-    const hasReceiveAmountFromProps = receiveAmountFromProps != null && !isNaN(receiveAmountFromProps);
+    let estimatedAmount = transactionData.details?.estimated_amount ||
+      transactionData.totalAmountDue ||
+      amount;
 
-    let estimatedAmount = hasReceiveAmountFromProps
-      ? receiveAmountFromProps
-      : transactionData.details?.estimated_amount ||
-        transactionData.totalAmountDue ||
-        amount;
-
-    // Use websocket data for amounts only when we don't have receiveAmount from props
-    if (websocketData?.data && !hasReceiveAmountFromProps) {
+    // Use websocket data for amounts when available (actual processed amounts, not what user typed)
+    let netAmountFromSocket: number | string | null = null;
+    if (websocketData?.data) {
         const wsData = websocketData.data;
         
-        // Use amountFrom for paid amount (what user sent)
-        if (wsData.amountFrom !== null && wsData.amountFrom !== undefined) {
+        // Use amount_from / amountFrom for paid amount (what user sent)
+        if (wsData.amount_from != null) {
+          amount = parseFloat(wsData.amount_from);
+        } else if (wsData.amountFrom != null) {
           amount = wsData.amountFrom;
-        } else if (wsData.expectedAmountFrom !== null && wsData.expectedAmountFrom !== undefined) {
+        } else if (wsData.expectedAmountFrom != null) {
           amount = wsData.expectedAmountFrom;
         }
         
-        // Use amountTo for received amount (what user gets)
-        if (wsData.amountTo !== null && wsData.amountTo !== undefined) {
+        // Use amount_to / amountTo for received amount (actual processed, what user gets)
+        if (wsData.amount_to != null) {
+          estimatedAmount = parseFloat(wsData.amount_to);
+        } else if (wsData.amountTo != null) {
           estimatedAmount = wsData.amountTo;
-        } else if (wsData.expectedAmountTo !== null && wsData.expectedAmountTo !== undefined) {
+        } else if (wsData.expectedAmountTo != null) {
           estimatedAmount = wsData.expectedAmountTo;
         }
         
+        // net_amount for "Net Amount Processed" (actual processed amount)
+        if (wsData.net_amount != null) {
+          netAmountFromSocket = wsData.net_amount;
+        }
+        
         // Check for deposit amount from new format
-        if (wsData.amount && wsData.transaction_type === "deposit") {
+        if (wsData.amount != null && wsData.transaction_type === "deposit") {
           amount = parseFloat(wsData.amount);
           estimatedAmount = parseFloat(wsData.amount);
         }
         
-        // Check for withdrawal amount from completion status
-        if (wsData.amount && wsData.status === "completed") {
-          amount = parseFloat(wsData.amount);
-          estimatedAmount = parseFloat(wsData.amount);
+        // Check for withdrawal completion - use amount as actual processed
+        if (wsData.amount != null && wsData.status === "completed") {
+          const parsed = parseFloat(wsData.amount);
+          if (!isNaN(parsed)) {
+            estimatedAmount = parsed;
+            if (!wsData.amount_from && !wsData.amount_to) netAmountFromSocket = parsed;
+          }
         }
       }
     
@@ -228,6 +234,11 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
       const num = typeof amt === 'string' ? parseFloat(amt) : amt;
       return isNaN(num) ? "0" : num.toFixed(8).replace(/\.?0+$/, '');
     };
+
+    // Net amount: prefer socket net_amount, else received/estimated amount
+    const displayNetAmount = netAmountFromSocket != null
+      ? formatAmount(netAmountFromSocket)
+      : formatAmount(estimatedAmount);
     
     return {
       transactionId: txId,
@@ -243,7 +254,7 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
       payinMethod: isDeposit ? paymentMethod : `${currency} Wallet`,
       payoutMethod: isWithdrawal ? paymentMethod : `${currency} Wallet`,
       transactionHash: txHash,
-      netAmount: formatAmount(estimatedAmount),
+      netAmount: displayNetAmount,
     };
   };
 
