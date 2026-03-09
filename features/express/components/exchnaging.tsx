@@ -355,7 +355,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
           // Store websocket data for potential success page use
           setFinalWebsocketData(data);
 
-          // Check regular amount format
+          // Check regular amount format (amount + net_amount from socket)
           if (data.data?.amount) {
             const amount = parseFloat(data.data.amount);
             if (!isNaN(amount)) {
@@ -367,6 +367,19 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                   : effectiveTransactionData?.type === "withdrawal"
                     ? "USD"
                     : "USDT");
+            }
+          }
+          if (data.data?.net_amount != null && data.data?.net_amount !== undefined) {
+            const netAmt = parseFloat(String(data.data.net_amount));
+            const d = data.data as Record<string, unknown>;
+            if (!isNaN(netAmt)) {
+              setLiveNetAmount(netAmt);
+              setLiveNetCurrency(
+                (d.to_currency || d.currency || "")?.toString().toUpperCase() ||
+                (effectiveTransactionData?.type === "deposit"
+                  ? effectiveTransactionData?.asset?.ticker || "USDT"
+                  : "USD")
+              );
             }
           }
 
@@ -906,8 +919,8 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                 >
                   <span>
                     {(
-                      (effectiveTransactionData as any)?.receiveAmount ??
                       liveNetAmount ??
+                      (effectiveTransactionData as any)?.receiveAmount ??
                       0
                     )
                       .toFixed(8)
