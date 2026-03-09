@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
+import { useSelector } from "react-redux";
 import { CreateSwapResponse } from "../types";
 import { connectSwapStatusWebSocket } from "./websocket";
+import { cookieUtils } from "@/lib/utils/cookieUtils";
 import { API_CONFIG } from "@/lib/appConfig";
 import SuccessPage from "./success";
 import { Copy } from "lucide-react";
@@ -97,6 +99,8 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
   onBack,
   onNext,
 }) => {
+  const { tokens } = useSelector((state: any) => state.auth);
+  const token = tokens?.access ?? cookieUtils.getCookie("access_token") ?? (typeof window !== "undefined" ? localStorage.getItem("access_token") : null);
   const [status, setStatus] = useState<string>("pending");
   const [statusObj, setStatusObj] = useState<any>(null);
   const [wsConnected, setWsConnected] = useState<boolean>(false);
@@ -128,6 +132,7 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
     function connect() {
       if (!swapResponse?.id) return; // Ensure swapResponse is not null
       ws = connectSwapStatusWebSocket(swapResponse.id, {
+        token: token ?? undefined,
         onOpen: (event: Event) => {
           logger.debug('swap', "WebSocket connection opened", event);
           setWsConnected(true);

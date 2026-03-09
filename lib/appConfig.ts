@@ -119,8 +119,10 @@ export const API_CONFIG = {
     SWAP_STATUS: "/api/changenow/status/",
     SWAP_HISTORY: "/api/changenow/user/history/",
     VALIDATE_ADDRESS: "/api/changenow/validate-address/",
-    SWAP_STATUS_WS: (swapId: string) =>
-      `${getWebSocketBaseUrl()}/ws/changenow/status/${swapId}/`,
+    SWAP_STATUS_WS: (swapId: string, token?: string) => {
+      const base = `${getWebSocketBaseUrl()}/ws/changenow/status/${swapId}/`;
+      return token ? `${base}?token=${encodeURIComponent(token)}` : base;
+    },
   },
   RATES: {
     TRANSACTIONS: "/trading_engine/all-system-transactions/",

@@ -6,6 +6,7 @@
  */
 
 import { showToast } from "@/lib/utils/toast";
+import { appendTokenToWebSocketUrl } from "@/lib/utils/websocketUtils";
 
 export interface WebSocketCallbacks {
   onStatusUpdate: (status: string) => void;
@@ -33,7 +34,7 @@ export interface WebSocketConfig {
 export const connectDepositWebSocket = (
   websocketUrl: string,
   callbacks: WebSocketCallbacks,
-  config: WebSocketConfig,
+  config: WebSocketConfig & { token?: string | null },
   isRetry: boolean = false
 ): WebSocket | null => {
   try {
@@ -79,6 +80,8 @@ export const connectDepositWebSocket = (
       
       finalUrl = `${useWss ? 'wss://' : 'ws://'}${websocketUrl}`;
     }
+
+    finalUrl = appendTokenToWebSocketUrl(finalUrl, config.token);
 
     // Validate the constructed URL
     try {

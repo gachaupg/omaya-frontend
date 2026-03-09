@@ -34,6 +34,8 @@ import { createExpressDeposit, fetchCommission, getCommissionApiAsset } from "..
 import { ExpressDepositResponse } from "../../types";
 
 import { logger } from '@/lib/utils/logger';
+import { appendTokenToWebSocketUrl } from "@/lib/utils/websocketUtils";
+import { cookieUtils } from "@/lib/utils/cookieUtils";
 
 // Add UserPaymentDetail interface
 interface UserPaymentDetail {
@@ -83,7 +85,8 @@ export default function DepositForm({
 }: DepositFormProps) {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
-  const { user } = useSelector((state: any) => state.auth);
+  const { user, tokens } = useSelector((state: any) => state.auth);
+  const token = tokens?.access ?? cookieUtils.getCookie("access_token") ?? (typeof window !== "undefined" ? localStorage.getItem("access_token") : null);
   const { adminPaymentDetails, userPaymentDetails, loading, error } = useSelector(
     (state: any) => state.payment
   );
@@ -365,8 +368,9 @@ export default function DepositForm({
         return null;
       }
 
+      finalUrl = appendTokenToWebSocketUrl(finalUrl, token);
       logger.debug('p2p', `Attempting WebSocket connection to: ${finalUrl}${isRetry ? ' (retry attempt)' : ''}`);
-      console.log("[P2P Deposit] WebSocket URL:", finalUrl);
+      console.log("[P2P Deposit] Connecting WebSocket URL:", finalUrl);
 
       // Pre-connection validation and logging
       logger.debug('p2p', "WebSocket connection attempt details:", {

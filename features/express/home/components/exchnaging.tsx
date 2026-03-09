@@ -6,9 +6,10 @@ import {
   TransactionStatusMessage,
 } from "../../websockets";
 import { API_CONFIG } from "@/lib/appConfig";
+import { cookieUtils } from "@/lib/utils/cookieUtils";
 import { useTheme } from "@/context/theme";
 import CopyButton from "@/components/ui/CopyButton";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "@/store/rootReducer";
 import { logger } from '@/lib/utils/logger';
 
@@ -66,6 +67,8 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const { isDark } = useTheme();
+  const { tokens } = useSelector((state: any) => state.auth);
+  const token = tokens?.access ?? cookieUtils.getCookie("access_token") ?? (typeof window !== "undefined" ? localStorage.getItem("access_token") : null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [currentStatus, setCurrentStatus] = useState<string>("pending");
   const [persistedTransactionData, setPersistedTransactionData] =
@@ -362,6 +365,7 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
       effectiveTransactionData?.type || "withdrawal",
       finalWebsocketUrl,
       {
+        token: token ?? undefined,
         onMessage: (data: TransactionStatusMessage) => {
           // Clear any WebSocket errors when we receive a message
           setWsError(null);

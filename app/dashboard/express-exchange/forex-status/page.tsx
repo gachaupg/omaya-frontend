@@ -33,12 +33,12 @@ function ForexStatusContent() {
 
   // Debug auth state on mount
   useEffect(() => {
-    console.log("🔐 Auth State Debug:", {
-      authState,
-      accessToken: accessToken ? "Present" : "Missing",
-      tokenLength: accessToken?.length,
-      transactionId
-    });
+    // console.log("🔐 Auth State Debug:", {
+    //   authState,
+    //   accessToken: accessToken ? "Present" : "Missing",
+    //   tokenLength: accessToken?.length,
+    //   transactionId
+    // });
   }, [authState, accessToken, transactionId]);
 
   // Fetch exchange details when page loads with a transactionId
@@ -48,7 +48,6 @@ function ForexStatusContent() {
     // Check if we already have the correct exchange in Redux (from recent creation)
     if (currentExchange?.forex_transaction_id === transactionId) {
       // Keep data in localStorage for future reloads
-      console.log('💾 Saving current exchange to localStorage');
       localStorage.setItem('currentForexExchange', JSON.stringify(currentExchange));
       return;
     }
@@ -62,13 +61,11 @@ function ForexStatusContent() {
         // Verify it's the same transaction
         if (exchangeData.forex_transaction_id === transactionId) {
           // Load from localStorage and DON'T fetch from API
-          console.log('📦 Loading exchange from localStorage (skipping API)', exchangeData);
           dispatch(setForexExchangeFromCache(exchangeData));
           // WebSocket will handle real-time updates, no need to fetch from API
           return;
         } else {
           // Different transaction, clear old data
-          console.log('🗑️ Clearing old transaction data from localStorage');
           localStorage.removeItem('currentForexExchange');
         }
       } catch (e) {
@@ -78,9 +75,7 @@ function ForexStatusContent() {
     }
 
     // Only fetch from API if not in Redux or cache
-    console.log('🌐 No cached data found, fetching from API');
     dispatch(fetchForexExchangeThunk(transactionId)).unwrap().then((data) => {
-      console.log('✅ Forex exchange loaded from API');
       // Save to localStorage for future reloads
       localStorage.setItem('currentForexExchange', JSON.stringify(data));
     }).catch((error) => {
@@ -90,65 +85,47 @@ function ForexStatusContent() {
 
   // WebSocket connection for real-time status updates
   useEffect(() => {
-    console.log("🔍 WebSocket Effect Triggered", {
-      transactionId,
-      hasAccessToken: !!accessToken,
-      accessTokenLength: accessToken?.length,
-      accessTokenPreview: accessToken ? `${accessToken.substring(0, 20)}...` : "null"
-    });
+   
 
     if (!transactionId) {
-      console.log("❌ Cannot connect to WebSocket: missing transactionId");
       setWsConnectionState("Missing transaction ID");
       return;
     }
 
     if (!accessToken) {
-      console.log("❌ Cannot connect to WebSocket: missing accessToken");
       setWsConnectionState("Missing access token");
       return;
     }
 
-    console.log("🚀 Setting up WebSocket connection", {
-      transactionId,
-      tokenLength: accessToken.length
-    });
+    
 
     // Connect to WebSocket
     forexStatusWebSocket.connect(transactionId, accessToken);
 
     // Set up event handlers
     const unsubscribeMessage = forexStatusWebSocket.onMessage((message) => {
-      console.log("📨 WebSocket message received", message);
 
       if (message.type === "initial_status" && message.data) {
         // Initial status received on connection - use this data directly
-        console.log("🎯 Initial status received from WebSocket", message.data);
         dispatch(setForexExchangeFromCache(message.data));
         localStorage.setItem('currentForexExchange', JSON.stringify(message.data));
         setLastUpdateTime(new Date().toLocaleTimeString());
       } else if (message.type === "status_update" && message.data) {
         // Status update received - update with new data
-        console.log("🔄 Status update received from WebSocket", message.data);
-        console.log("📊 Status changed to:", message.status, "Stage:", message.stages);
         dispatch(setForexExchangeFromCache(message.data));
         localStorage.setItem('currentForexExchange', JSON.stringify(message.data));
         setLastUpdateTime(new Date().toLocaleTimeString());
       } else if (message.type === "connection_established") {
-        console.log("✅ WebSocket connection established");
       } else {
-        console.log("ℹ️ Unknown WebSocket message type:", message.type);
       }
     });
 
     const unsubscribeOpen = forexStatusWebSocket.onOpen(() => {
-      console.log("✅ WebSocket opened");
       setWsConnected(true);
       setWsConnectionState(forexStatusWebSocket.getConnectionStateString());
     });
 
     const unsubscribeClose = forexStatusWebSocket.onClose(() => {
-      console.log("🔌 WebSocket closed");
       setWsConnected(false);
       setWsConnectionState(forexStatusWebSocket.getConnectionStateString());
     });
@@ -165,7 +142,6 @@ function ForexStatusContent() {
 
     // Cleanup on unmount
     return () => {
-      console.log("🧹 Cleaning up WebSocket connection");
       clearInterval(stateInterval);
       unsubscribeMessage();
       unsubscribeOpen();

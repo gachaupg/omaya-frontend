@@ -172,7 +172,7 @@ const OTPModal: React.FC<OTPModalProps> = ({
           {/* Error Message */}
           {error && (
             <div className="mb-4 p-3 dark:bg-red-500/10 bg-red-50 border dark:border-red-500/30 border-red-200 rounded-xl">
-              <p className="dark:text-red-400 text-red-600 text-sm">{error}</p>
+              <p className="dark:text-red-400 text-red-600 text-sm">Invalid OTP. Please try again.</p>
             </div>
           )}
         </div>

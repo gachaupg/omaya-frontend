@@ -1,6 +1,6 @@
 import React from "react";
 import { API_CONFIG } from "@/lib/appConfig";
-
+import { appendTokenToWebSocketUrl } from "@/lib/utils/websocketUtils";
 import { logger } from '@/lib/utils/logger';
 
 export interface TransactionStatusMessage {
@@ -92,6 +92,7 @@ export class BaseTransactionStatusWebSocket {
       onError?: (error: Event) => void;
       onClose?: () => void;
       autoReconnect?: boolean;
+      token?: string;
     } = {}
   ) {
     this.onMessageCallback = options.onMessage;
@@ -118,16 +119,11 @@ export class BaseTransactionStatusWebSocket {
           return;
         }
 
-                 console.log("[P2P Status] WebSocket URL:", this.wsUrl, "transactionId:", this.transactionId);
-         logger.debug('p2p', 
-           "DEBUG: WebSocket connecting with transactionId:",
-           this.transactionId
-         );
-         logger.debug('p2p', "DEBUG: WebSocket URL:", this.wsUrl);
-         logger.debug('p2p', "DEBUG: WebSocket URL type:", this.wsUrl.includes("changenow.io") ? "ChangeNow" : "Backend");
-         logger.debug('p2p', "DEBUG: WebSocket protocol:", this.wsUrl.startsWith('ws://') ? 'ws://' : this.wsUrl.startsWith('wss://') ? 'wss://' : 'unknown');
+        const finalUrl = appendTokenToWebSocketUrl(this.wsUrl, this.options.token);
+        console.log("[Exchange] Connecting WebSocket URL:", finalUrl);
+        logger.debug('p2p', "WebSocket connecting:", { transactionId: this.transactionId, url: finalUrl });
         
-         this.ws = new WebSocket(this.wsUrl);
+        this.ws = new WebSocket(finalUrl);
 
         // Add connection timeout
         const connectionTimeout = setTimeout(() => {
@@ -379,6 +375,7 @@ export const useTransactionStatusWebSocket = (
     onError?: (error: Event) => void;
     onClose?: () => void;
     autoReconnect?: boolean;
+    token?: string;
   } = {}
 ) => {
   const [isConnected, setIsConnected] = React.useState(false);
