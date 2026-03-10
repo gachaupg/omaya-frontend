@@ -20,7 +20,15 @@ import {
   BrowserSession,
 } from "../../../../lib/utils/browserUtils";
 import { enable2FA, verify2FASetup } from "../../../auth/slices/authSlice";
-import { getCurrentIPAddress, getLocationFromIP } from "../../utils/sessionUtils";
+import {
+  getCurrentIPAddress,
+  getLocationFromIP,
+  getDeviceData,
+  getNetworkData,
+  getFingerprintData,
+  getBrowserCapabilities,
+  getFailedLoginAttempts,
+} from "../../utils/sessionUtils";
 
 import { logger } from '@/lib/utils/logger';
 
@@ -280,6 +288,9 @@ const PrivacySecurity = () => {
       setVerifyCode("");
       update2FA(true, JSON.stringify(result)); // Store the success response
       showToast.success("2FA enabled successfully!");
+      if (typeof window !== "undefined") {
+        window.location.reload();
+      }
     } catch (error) {
       setVerifyError("Invalid code or failed to verify: " + error);
     } finally {
@@ -862,8 +873,57 @@ const PrivacySecurity = () => {
           Privacy & Security
         </div>
         <div className="w-full rounded-2xl px-3 sm:px-4 md:px-5 py-4 sm:py-5 flex flex-col gap-4 max-w-none mx-auto bg-white dark:bg-[var(--card-color)] border border-[#E4E6F0] dark:border-[#35353E] shadow-sm">
-          <div className="text-base font-semibold mb-2 dark:text-white text-gray-900">
-            2 Factor Authentication
+          <div className="flex items-center justify-between gap-3 mb-2">
+            <div className="text-base font-semibold dark:text-white text-gray-900">
+              2 Factor Authentication
+            </div>
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  setIsCreatingSession(true);
+                  const ipAddress = await getCurrentIPAddress();
+                  const location = await getLocationFromIP(ipAddress);
+                  const existingSessionWithSameIP = allSessions.find((session: DeviceSession) =>
+                    session.ip_address === ipAddress && session.is_active
+                  );
+                  if (existingSessionWithSameIP) {
+                    showToast.info("Session with this IP address already exists");
+                    return;
+                  }
+                  const userAgent = navigator.userAgent;
+                  const payload: CreateDeviceSessionPayload = {
+                    ip_address: ipAddress,
+                    location,
+                    browser: getBrowserInfo(userAgent),
+                    sign_in_time: new Date().toISOString(),
+                    user_agent: userAgent,
+                    device_type: getDeviceType(),
+                    description: `${getDeviceType()} - ${getBrowserInfo(userAgent)}`,
+                    device_data: getDeviceData(),
+                    network_data: getNetworkData(),
+                    fingerprint_data: getFingerprintData(),
+                    browser_capabilities: getBrowserCapabilities(),
+                    login_patterns: {},
+                    session_duration: 0,
+                    failed_login_attempts: getFailedLoginAttempts(),
+                    suspicious_behavior_detected: false,
+                  };
+                  await dispatch(createDeviceSession(payload)).unwrap();
+                  dispatch(fetchDeviceSessions(undefined));
+                  showToast.success("Device session created successfully!");
+                } catch (error) {
+                  console.error("Failed to create device session:", error);
+                  showToast.error("Failed to create device session");
+                } finally {
+                  setIsCreatingSession(false);
+                }
+              }}
+              disabled={isCreatingSession}
+              className="px-4 py-2 rounded-xl text-sm font-semibold bg-[#1D8751] text-white border border-[#1D8751] hover:bg-[#17693f] hover:border-[#17693f] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isCreatingSession ? "Posting..." : "Post"}
+            </button>
           </div>
           <div className="flex gap-3 mb-2">
             <button
@@ -1044,14 +1104,23 @@ const PrivacySecurity = () => {
                           return;
                         }
 
+                        const userAgent = navigator.userAgent;
                         const payload: CreateDeviceSessionPayload = {
                           ip_address: ipAddress,
                           location: location,
-                          browser: getBrowserInfo(navigator.userAgent),
+                          browser: getBrowserInfo(userAgent),
                           sign_in_time: new Date().toISOString(),
-                          user_agent: navigator.userAgent,
+                          user_agent: userAgent,
                           device_type: getDeviceType(),
-                          description: `${getDeviceType()} - ${getBrowserInfo(navigator.userAgent)}`,
+                          description: `${getDeviceType()} - ${getBrowserInfo(userAgent)}`,
+                          device_data: getDeviceData(),
+                          network_data: getNetworkData(),
+                          fingerprint_data: getFingerprintData(),
+                          browser_capabilities: getBrowserCapabilities(),
+                          login_patterns: {},
+                          session_duration: 0,
+                          failed_login_attempts: getFailedLoginAttempts(),
+                          suspicious_behavior_detected: false,
                         };
 
                         await dispatch(createDeviceSession(payload)).unwrap();

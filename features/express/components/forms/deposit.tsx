@@ -3441,44 +3441,9 @@ export default function DepositForm({
                           fallbackLogo
                         );
 
-                        if (index < 3) {
-                          console.log(`🔍 Payment Method Option ${index}:`, {
-                            isHomePage,
-                            provider_name: payment.provider_name,
-                            provider_logo: payment.provider_logo,
-                            logo: payment.logo,
-                            logo_url: payment.logo_url,
-                            detailLogo,
-                            logoUrl: logoUrl,
-                            rawLogo,
-                            logoUrlType: typeof logoUrl,
-                            rawLogoIsValid: !!rawLogo,
-                            payment_method: payment.payment_method,
-                            admin_payment_detail_id:
-                              payment.admin_payment_detail_id,
-                            allKeys: Object.keys(payment),
-                          });
-                        }
+                       
 
-                        if (!rawLogo && index < 3) {
-                          console.warn(
-                            `⚠️ No logo found for payment method ${index}: ${payment.provider_name}`,
-                            {
-                              paymentKeys: Object.keys(payment),
-                              hasProviderLogo: !!payment.provider_logo,
-                              hasLogo: !!payment.logo,
-                              hasLogoUrl: !!payment.logo_url,
-                              hasDetailLogo: !!detailLogo,
-                              providerLogoValue: payment.provider_logo,
-                              logoValue: payment.logo,
-                              logoUrlValue: payment.logo_url,
-                              detailLogo,
-                              providerLogoType: typeof payment.provider_logo,
-                              logoType: typeof payment.logo,
-                              logoUrlType: typeof payment.logo_url,
-                            }
-                          );
-                        }
+                       
 
                         return {
                           value: payment.provider_name,

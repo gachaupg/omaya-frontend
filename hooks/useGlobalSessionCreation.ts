@@ -13,6 +13,11 @@ import { DeviceSession } from "../features/settings/types";
 import {
   getCurrentIPAddress,
   getLocationFromIP,
+  getDeviceData,
+  getNetworkData,
+  getFingerprintData,
+  getBrowserCapabilities,
+  getFailedLoginAttempts,
 } from "../features/settings/utils/sessionUtils";
 import { showToast } from "../lib/utils/toast";
 import { useTokenRefresh } from "@/hooks/useTokenRefresh";
@@ -161,13 +166,23 @@ export const useGlobalSessionCreation = () => {
         return; // Don't create a new session if one with the same IP already exists
       }
 
+      const userAgent = navigator.userAgent;
       const payload: CreateDeviceSessionPayload = {
         ip_address: ipAddress,
         location: location,
-        browser: getBrowserInfo(navigator.userAgent),
+        browser: getBrowserInfo(userAgent),
+        description: `${getDeviceType()} - ${getBrowserInfo(userAgent)}`,
         sign_in_time: new Date().toISOString(),
-        user_agent: navigator.userAgent,
+        user_agent: userAgent,
         device_type: getDeviceType(),
+        device_data: getDeviceData(),
+        network_data: getNetworkData(),
+        fingerprint_data: getFingerprintData(),
+        browser_capabilities: getBrowserCapabilities(),
+        login_patterns: {},
+        session_duration: 0,
+        failed_login_attempts: getFailedLoginAttempts(),
+        suspicious_behavior_detected: false,
       };
 
       console.log("Creating new global device session with payload:", payload);

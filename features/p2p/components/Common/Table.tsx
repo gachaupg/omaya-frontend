@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useImperativeHandle, forwardRef } from "react";
 import { tokens } from "@/styles/tokens";
 import { TransactionType } from "@/features/p2p/types";
 import Button from "./Button";
@@ -29,9 +29,18 @@ type TableProps = {
   onDateFilterChange?: (filter: string) => void;
   dateFilter?: string;
   showExportButton?: boolean;
+  /** When true, hide the title + ALL + Search + Export row (for parent-provided toolbar) */
+  hideToolbar?: boolean;
+  /** When hideToolbar is true, use this for export search filter */
+  externalSearchQuery?: string;
 };
 
-export const Table: React.FC<TableProps> = ({
+export interface TableExportRef {
+  exportCsv: () => Promise<void>;
+  exportPdf: () => Promise<void>;
+}
+
+export const Table = forwardRef<TableExportRef, TableProps>(({
   title = "P2P History",
   data = [],
   allDataForExport,
@@ -48,7 +57,9 @@ export const Table: React.FC<TableProps> = ({
   onDateFilterChange,
   dateFilter: externalDateFilter,
   showExportButton = true,
-}) => {
+  hideToolbar = false,
+  externalSearchQuery,
+}, ref) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showExportOptions, setShowExportOptions] = useState(false);
   const [selectedTransaction, setSelectedTransaction] =
@@ -245,8 +256,9 @@ export const Table: React.FC<TableProps> = ({
     logger.debug('p2p', `Export - After date filter (${dateFilter}): ${dataToExport.length} items`);
 
     // Apply search filter if search query exists
-    if (searchQuery && searchQuery.trim()) {
-      const searchLower = searchQuery.toLowerCase().trim();
+    const activeSearchQuery = hideToolbar && externalSearchQuery !== undefined ? externalSearchQuery : searchQuery;
+    if (activeSearchQuery && activeSearchQuery.trim()) {
+      const searchLower = activeSearchQuery.toLowerCase().trim();
       const beforeSearch = dataToExport.length;
       dataToExport = dataToExport.filter((item) => {
         // Search across multiple fields
@@ -262,7 +274,7 @@ export const Table: React.FC<TableProps> = ({
           .toLowerCase();
         return searchableText.includes(searchLower);
       });
-      logger.debug('p2p', `Export - After search filter ("${searchQuery}"): ${dataToExport.length} items (was ${beforeSearch})`);
+      logger.debug('p2p', `Export - After search filter ("${activeSearchQuery}"): ${dataToExport.length} items (was ${beforeSearch})`);
     }
 
     logger.debug('p2p', `Export - Final data to export: ${dataToExport.length} items`);
@@ -453,6 +465,11 @@ export const Table: React.FC<TableProps> = ({
     }
   };
 
+  useImperativeHandle(ref, () => ({
+    exportCsv: () => handleExport("csv"),
+    exportPdf: () => handleExport("pdf"),
+  }));
+
   // Add effect to monitor selectedTransaction changes
   React.useEffect(() => {
     logger.debug('p2p', "Selected transaction updated:", selectedTransaction);
@@ -585,6 +602,7 @@ export const Table: React.FC<TableProps> = ({
   return (
     <>
       <div className="mt-1">
+        {!hideToolbar && (
         <div className="flex flex-col gap-2 sm:gap-3 md:flex-row md:items-center md:justify-between mb-1">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
             <h3
@@ -737,8 +755,9 @@ export const Table: React.FC<TableProps> = ({
             )}
           </div>
         </div>
+        )}
 
-        <div ref={tableContainerRef} className="mt-3 w-full pb-4 scroll-smooth">
+        <div ref={tableContainerRef} className={`w-full pb-4 scroll-smooth ${hideToolbar ? "" : "mt-3"}`}>
           <div className="overflow-x-auto md:overflow-visible">
             <div
               className={`w-full md:min-w-0 border-2 bg-white dark:bg-[var(--card-color)] border-gray-200 dark:border-[#35353E] shadow-lg rounded-[24px] overflow-hidden`}
@@ -1409,5 +1428,7 @@ export const Table: React.FC<TableProps> = ({
       )}
     </>
   );
-};
+});
+
+Table.displayName = "Table";
 
