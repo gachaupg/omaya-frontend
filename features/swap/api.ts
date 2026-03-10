@@ -227,9 +227,20 @@ export const createSwap = async (
           "Server Error: Unable to create swap. Please try again later."
         );
       } else if (error.response?.status === 400) {
-        const errorMessage =
+        const rawError =
+          error.response?.data?.error ||
           error.response?.data?.message ||
-          "Invalid swap request. Please check your input.";
+          error.response?.data?.detail ||
+          "";
+        const rawStr = typeof rawError === "string" ? rawError : JSON.stringify(error.response?.data || "");
+        // ChangeNow 400 Bad Request typically means amount too small
+        const isChangeNow400 =
+          (rawStr.toLowerCase().includes("changenow") || rawStr.toLowerCase().includes("changenow.io")) &&
+          (rawStr.includes("400") || rawStr.toLowerCase().includes("bad request"));
+        if (isChangeNow400) {
+          throw new Error("Amount you entered is too small");
+        }
+        const errorMessage = typeof rawError === "string" ? rawError : rawStr || "Invalid swap request. Please check your input.";
         throw new Error(`Bad Request: ${errorMessage}`);
       } else if (error.response?.status === 401) {
         throw new Error("Authentication required. Please log in to continue.");

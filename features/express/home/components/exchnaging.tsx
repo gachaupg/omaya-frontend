@@ -205,12 +205,16 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
     };
   }, [timerActive, showSuccess, computeTimeRemaining]);
 
-  // Auto-cancel when timer expires
+  // Auto-cancel when timer expires (guard to prevent double redirect on tab switch/reload)
+  const hasRedirectedOnExpiry = React.useRef(false);
+  const effectiveDataForExpiry = transactionData || persistedTransactionData;
   useEffect(() => {
-    if (timeRemaining === 0 && effectiveTransactionData?.transactionId) {
-      handleCancelTransaction();
-    }
-  }, [timeRemaining]);
+    if (timeRemaining !== 0 || hasRedirectedOnExpiry.current) return;
+    const txId = effectiveDataForExpiry?.transactionId;
+    if (!txId) return;
+    hasRedirectedOnExpiry.current = true;
+    handleCancelTransaction();
+  }, [timeRemaining, effectiveDataForExpiry?.transactionId]);
 
   // Format time as MM:SS
   const formatTime = (seconds: number) => {

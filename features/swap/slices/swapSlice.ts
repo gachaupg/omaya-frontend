@@ -244,6 +244,10 @@ export const createSwapTransaction = createAsyncThunk(
               "The server encountered an error. Please try again later."
             );
           } else if (
+            error.message === "Amount you entered is too small"
+          ) {
+            // Show inline above button, no toast
+          } else if (
             error.message.includes("400") ||
             error.message.includes("Bad Request")
           ) {
@@ -304,9 +308,11 @@ const swapSlice = createSlice({
     },
     setFromAmount: (state, action) => {
       state.fromAmount = action.payload;
+      state.swapError = null; // Clear create error when amount changes
     },
     setToAmount: (state, action) => {
       state.toAmount = action.payload;
+      state.swapError = null; // Clear create error when amount changes
     },
     swapAssets: (state) => {
       const temp = state.fromAsset;
@@ -398,8 +404,9 @@ const swapSlice = createSlice({
       })
       .addCase(createSwapTransaction.rejected, (state, action) => {
         state.swapLoading = false;
+        // rejectWithValue puts the error in payload, not action.error.message
         state.swapError =
-          action.error.message || "Failed to create swap transaction";
+          (action.payload as string) || action.error?.message || "Failed to create swap transaction";
         state.hasShownErrorToast = true; // Mark that error toast has been shown
       });
   },
