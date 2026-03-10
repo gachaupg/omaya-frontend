@@ -82,6 +82,10 @@ const KYCVerificationModal: React.FC = () => {
             dispatch(closeKYCModal());
             return;
           }
+
+          if (status?.status === "under_review" || status?.status === "pending") {
+            setShowPendingModal(true);
+          }
           if (status.phone_verified === true) {
             setPhoneVerified(true);
           }
@@ -121,7 +125,8 @@ const KYCVerificationModal: React.FC = () => {
           if (parsed.user_id === user.user_id && parsed.status === 'pending') {
             // Fetch current KYC status from API
             dispatch(checkKYCStatus()).then((result: any) => {
-              const isVerified = (result.payload as any)?.is_verified;
+              const payload = result.payload as any;
+              const isVerified = payload?.is_verified || payload?.status === 'approved';
               if (isVerified) {
                 // Verified! Clear localStorage
                 localStorage.removeItem('kyc_verification_status');
@@ -474,8 +479,8 @@ const KYCVerificationModal: React.FC = () => {
       if ((kycResult.payload as any)?.is_verified) {
         // Clear localStorage when verified
         localStorage.removeItem('kyc_verification_status');
-      showToast.success("Account Verified", "Your account verification is complete");
-      setShowSuccessModal(false);
+        showToast.success("Account Verified", "Your account verification is complete");
+        setShowSuccessModal(false);
         setShowPendingModal(false);
       dispatch(closeKYCModal());
       } else {

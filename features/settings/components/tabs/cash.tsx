@@ -101,6 +101,24 @@ function Cash({ sharedFeesError }: CashProps) {
     }
 
     setErrors(newErrors)
+
+    const firstErrorField = ["amount", "paymentMethod"].find(
+      (field) => newErrors[field as keyof typeof newErrors]
+    );
+
+    if (firstErrorField) {
+      setTimeout(() => {
+        const element = document.getElementById(`cash-${firstErrorField}-section`);
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth", block: "center" });
+          const input = element.querySelector("input");
+          if (input) {
+            input.focus({ preventScroll: true });
+          }
+        }
+      }, 100);
+    }
+
     return isValid
   }
 
@@ -238,7 +256,7 @@ function Cash({ sharedFeesError }: CashProps) {
 
           <div className="mb-3 p-3 border border-[#E8EFF5] dark:border-[#35353F] bg-white dark:bg-[var(--card-color)] rounded-lg">
             <div className="flex flex-col md:flex-row gap-4 mb-2">
-              <div className="flex-1">
+              <div className="flex-1" id="cash-amount-section">
                 <label className="block text-sm text-[#788099] dark:text-[#A3A3A3] mb-1">Amount</label>
                 <input
                   className={`w-full bg-white dark:bg-[var(--bg-color)] border border-[#E8EFF5] dark:border-[#35353F] rounded-[18px] px-1 py-1 text-[#788099] dark:text-white text-lg focus:outline-none ${
@@ -409,7 +427,7 @@ function Cash({ sharedFeesError }: CashProps) {
             <div className="text-md font-bold mb-2 text-[#788099] dark:text-[#788099]">
               2- Your Bank / Mobile Payment Details
             </div>
-            <div className="mb-2 border border-[#E8EFF5] dark:border-[#35353F] text_highbg-dark bg-[white] dark:bg-[var(--card-color)] p-3 rounded-[18px]">
+            <div className="mb-2 border border-[#E8EFF5] dark:border-[#35353F] text_highbg-dark bg-[white] dark:bg-[var(--card-color)] p-3 rounded-[18px]" id="cash-paymentMethod-section">
               
               {/* User Payment Selector - Same as Adds.tsx */}
               <UserPaymentSelector
