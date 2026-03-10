@@ -45,6 +45,17 @@ const VolumeChart: React.FC<VolumeChartProps> = ({ transactionSummary }) => {
     return "0.00";
   };
 
+  const summary = transactionSummary as Record<string, any>;
+  const byStatus = summary?.total_moneyx_by_status;
+  const moneyXVolume =
+    (typeof byStatus === "object" && byStatus !== null
+      ? (Number(byStatus.approved) || 0) + (Number(byStatus.completed) || 0)
+      : 0) ||
+    summary?.total_approved_moneyx_volume ||
+    summary?.total_moneyx_volume ||
+    summary?.total_completed_moneyx ||
+    0;
+
   const volumeData = [
     {
       title: "Total Value",
@@ -55,12 +66,20 @@ const VolumeChart: React.FC<VolumeChartProps> = ({ transactionSummary }) => {
       value: formatValue(transactionSummary.total_approved_exchange_volume || transactionSummary.total_approved_exchange_combined || 0),
     },
     {
+      title: "Money X",
+      value: formatValue(moneyXVolume),
+    },
+    {
       title: "P2P",
       value: formatValue(transactionSummary.total_approved_p2p_volume || transactionSummary.total_approved_p2p_combined || 0),
     },
     {
       title: "Swap",
-      value: formatValue(transactionSummary.total_completed_changenow_swaps || 0),
+      value: formatValue(
+        transactionSummary.total_changenow_swaps ??
+        transactionSummary.total_completed_changenow_swaps ??
+        0
+      ),
     },
   ];
 
@@ -69,7 +88,7 @@ const VolumeChart: React.FC<VolumeChartProps> = ({ transactionSummary }) => {
       <h2 className="dark:text-white text-gray-900 text-sm sm:text-base mb-3 sm:mb-4">
         Transaction Volume
       </h2>
-      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 overflow-x-auto pb-2 sm:pb-4">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 overflow-x-auto pb-2 sm:pb-4">
         {volumeData.map((item, idx) => (
           <div
             key={idx}

@@ -18,6 +18,7 @@ interface WalletAddressStepProps {
   hasAcceptedTerms?: boolean;
   onHasAcceptedTermsChange?: (checked: boolean) => void;
   onBeforeLegalNavigate?: () => void;
+  createSwapError?: string | null;
 }
 
 const strongBorder =
@@ -34,6 +35,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
   hasAcceptedTerms: hasAcceptedTermsProp,
   onHasAcceptedTermsChange,
   onBeforeLegalNavigate,
+  createSwapError,
 }) => {
   const { isDark } = useTheme();
   const [internalHasAcceptedTerms, setInternalHasAcceptedTerms] = useState(false);
@@ -590,6 +592,16 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
             </div>
           </div>
         </div>
+
+        {/* Create swap error - amount too small */}
+        {createSwapError === "Amount you entered is too small" && (
+          <div className="mt-4 mb-2 bg-red-500/10 border border-red-500/30 rounded-xl p-3 flex items-start gap-2">
+            <span className="text-red-500 text-xs font-bold flex-shrink-0">!</span>
+            <p className="text-red-600 dark:text-red-400 text-xs sm:text-sm">
+              Amount you entered is too small
+            </p>
+          </div>
+        )}
 
         {/* Navigation Buttons */}
         <div className="flex mt-4 sm:mt-6">

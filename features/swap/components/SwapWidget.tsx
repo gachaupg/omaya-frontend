@@ -503,7 +503,7 @@ const SwapWidget = () => {
 
   // Handle swap errors
   useEffect(() => {
-    if (swapError) {
+    if (swapError && swapError !== "Amount you entered is too small") {
       console.error("Swap error:", swapError);
       showToast.error("Swap Error", swapError);
     }
@@ -569,25 +569,27 @@ const SwapWidget = () => {
     }
   };
 
-  // Validate amount: max 12 digits before decimal point
-  const validateAmount = (value: string): boolean => {
-    if (value === "" || value === ".") return true;
+  const [amountError, setAmountError] = React.useState("");
+
+  const validateAmount = (value: string): string | null => {
+    if (value === "" || value === ".") return null;
     const parts = value.split(".");
     const integerPart = parts[0] || "";
-    // Check if integer part has more than 12 digits
-    if (integerPart.length > 12) {
-      showToast.error("Invalid Amount", "Maximum 12 digits allowed before the decimal point.");
-      return false;
-    }
-    return true;
+    const decimalPart = parts[1] || "";
+    if (integerPart.length > 12) return "Maximum 12 digits allowed before the decimal point.";
+    if (decimalPart.length > 4) return "Maximum 4 decimal places allowed.";
+    return null;
   };
 
   const handleFromAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    // Only allow numbers and decimals
     if (value === "" || /^\d*\.?\d*$/.test(value)) {
-      // Validate max 12 digits before decimal
-      if (!validateAmount(value)) return;
+      const err = validateAmount(value);
+      if (err) {
+        setAmountError(err);
+        return;
+      }
+      setAmountError("");
       setActiveInputField("from");
       dispatch(setFromAmount(value));
     }
@@ -595,10 +597,13 @@ const SwapWidget = () => {
 
   const handleToAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    // Only allow numbers and decimals
     if (value === "" || /^\d*\.?\d*$/.test(value)) {
-      // Validate max 12 digits before decimal
-      if (!validateAmount(value)) return;
+      const err = validateAmount(value);
+      if (err) {
+        setAmountError(err);
+        return;
+      }
+      setAmountError("");
       setActiveInputField("to");
       dispatch(setToAmount(value));
     }
@@ -657,29 +662,33 @@ const SwapWidget = () => {
       setCurrentStep("copy-address");
     } catch (error: any) {
       console.error("Failed to create swap:", error);
-      console.error("Error response:", error.response?.data);
-      console.error("Error status:", error.response?.status);
+      const errMsg = typeof error === "string" ? error : error?.message || "";
+      // Amount too small: shown inline above button, no toast
+      if (errMsg === "Amount you entered is too small") return;
+
+      console.error("Error response:", error?.response?.data);
+      console.error("Error status:", error?.response?.status);
 
       // Handle specific error cases
-      if (error.response?.status === 500) {
+      if (error?.response?.status === 500) {
         showToast.error(
           "Server Error",
           "The server encountered an error. Please try again later."
         );
-      } else if (error.response?.status === 400) {
+      } else if (error?.response?.status === 400) {
         showToast.error(
           "Invalid Request",
           error.response?.data?.message ||
             "Please check your input and try again"
         );
-      } else if (error.response?.status === 401) {
+      } else if (error?.response?.status === 401) {
         showToast.error("Authentication Required", "Please log in to continue");
-      } else if (error.response?.status === 403) {
+      } else if (error?.response?.status === 403) {
         showToast.error(
           "Access Denied",
           "You don't have permission to perform this action"
         );
-      } else if (error.response?.status === 429) {
+      } else if (error?.response?.status === 429) {
         showToast.error(
           "Too Many Requests",
           "Please wait a moment before trying again"
@@ -861,6 +870,7 @@ const SwapWidget = () => {
             activeInputField={activeInputField}
             meetsMinimumAmount={meetsMinimumSwap(fromAsset, toAsset, fromAmount, toAmount)}
             minSwapUsd={MIN_SWAP_USD}
+            amountError={amountError}
           />
           {showWalletAddress && (
             <WalletAddressStep
@@ -874,6 +884,7 @@ const SwapWidget = () => {
               hasAcceptedTerms={hasAcceptedTerms}
               onHasAcceptedTermsChange={setHasAcceptedTerms}
               onBeforeLegalNavigate={handleBeforeLegalNavigate}
+              createSwapError={swapError}
             />
           )}
         </>

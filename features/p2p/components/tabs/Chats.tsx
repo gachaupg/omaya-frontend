@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState, useRef } from "react";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/rootReducer";
 import { useGroupedMessages } from "@/features/p2p/hooks/useGroupedMessages";
-import { GroupedUser, postTradeMessage } from "@/features/p2p/api";
+import { GroupedUser, postTradeMessage, getTermsAccepted, acceptTerms } from "@/features/p2p/api";
 import { getTradeMessagesWebSocket, cleanupTradeMessagesWebSocket } from "@/features/p2p/services/tradeMessagesWebSocket";
 import { cookieUtils } from "@/lib/utils/cookieUtils";
 import Link from "next/link";
@@ -132,25 +132,31 @@ export const Chats: React.FC = () => {
 
   const [selectedUser, setSelectedUser] = useState<GroupedUser | null>(null);
 
-  // State for terms acceptance - computed from localStorage
+  // State for terms acceptance - from API (not localStorage)
   const [termsAccepted, setTermsAccepted] = useState(false);
-  
-  // Check terms acceptance - this persists across logouts
-  // Support both p2p_terms_accepted and p2p_act for backward compatibility
+  const [termsLoading, setTermsLoading] = useState(true);
+
   useEffect(() => {
-    if (typeof window === "undefined") {
+    if (!isAuthenticated) {
+      setTermsAccepted(false);
+      setTermsLoading(false);
       return;
     }
-    
-    const accepted = localStorage.getItem("p2p_terms_accepted");
-    const actAccepted = localStorage.getItem("p2p_act");
-    
-    if (accepted === "true" || actAccepted === "true") {
-      setTermsAccepted(true);
-    } else {
-      setTermsAccepted(false);
-    }
-  }, [isAuthenticated]); // Re-check when auth state changes
+    let cancelled = false;
+    const load = async () => {
+      setTermsLoading(true);
+      try {
+        const res = await getTermsAccepted();
+        if (!cancelled) setTermsAccepted(res.terms_accepted === true);
+      } catch {
+        if (!cancelled) setTermsAccepted(false);
+      } finally {
+        if (!cancelled) setTermsLoading(false);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [isAuthenticated]);
   
   const [messageInput, setMessageInput] = useState("");
   const [isSending, setIsSending] = useState(false);
@@ -616,10 +622,13 @@ export const Chats: React.FC = () => {
     }
   };
 
-  const handleTermsAccept = () => {
-    setTermsAccepted(true);
-    localStorage.setItem("p2p_terms_accepted", "true");
-    localStorage.setItem("p2p_act", "true"); // backward compatibility
+  const handleTermsAccept = async () => {
+    try {
+      await acceptTerms();
+      setTermsAccepted(true);
+    } catch (err) {
+      console.error("Failed to accept terms:", err);
+    }
   };
   const handleSendMessage = async () => {
     if (
@@ -759,15 +768,14 @@ export const Chats: React.FC = () => {
       );
     }
 
+    const reversedMessages = allMessages.slice().reverse();
+
     return (
       <div
         ref={messagesContainerRef}
         className="flex flex-col gap-1 px-4 py-4 overflow-y-scroll flex-1 min-h-0 scrollbar-thin"
       >
-        {allMessages
-          .slice()
-          .reverse()
-          .map((msg: any, index: number) => {
+        {reversedMessages.map((msg: any, index: number) => {
             // Determine if this message is from the logged-in user
             // Compare by sender_id first (most reliable), then by email as fallback
             const isSender =
@@ -780,10 +788,18 @@ export const Chats: React.FC = () => {
               (msg.sender_email ? msg.sender_email.split('@')[0] : "Unknown User");
 
             return (
-              <div
-                key={msg.id || index}
-                className={`flex w-full ${isSender ? "justify-end" : "justify-start"}`}
-              >
+              <React.Fragment key={msg.id || index}>
+                {/* Trade ID separator between messages (like WhatsApp "Yesterday") - show between 2nd and 3rd message, not at top */}
+                {index === 2 && selectedUser?.entity_id && (
+                  <div className="flex justify-center py-2">
+                    <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-[#2C2C34] px-3 py-1 rounded-full">
+                      Trade ID: {selectedUser.entity_id}
+                    </span>
+                  </div>
+                )}
+                <div
+                  className={`flex w-full ${isSender ? "justify-end" : "justify-start"}`}
+                >
                 <div
                   className={
                     isSender
@@ -858,6 +874,7 @@ export const Chats: React.FC = () => {
                   </div>
                 </div>
               </div>
+              </React.Fragment>
             );
           })}
 
@@ -1401,14 +1418,13 @@ export const Chats: React.FC = () => {
       <TermsAndConditionsModal
         isOpen={showTermsModal}
         onClose={() => setShowTermsModal(false)}
-        onAccept={() => {
-          if (user?.user_id) {
-            const userSpecificKey = `p2p_terms_accepted_${user.user_id}`;
-            localStorage.setItem(userSpecificKey, "true");
-            localStorage.setItem("p2p_terms_accepted", "true");
-            localStorage.setItem("p2p_act", "true"); // backward compatibility
+        onAccept={async () => {
+          try {
+            await acceptTerms();
             setTermsAccepted(true);
             setShowTermsModal(false);
+          } catch (err) {
+            console.error("Failed to accept terms:", err);
           }
         }}
       />

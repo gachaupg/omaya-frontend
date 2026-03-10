@@ -87,6 +87,7 @@ export const API_CONFIG = {
     DELETE_PAYMENT_METHOD: "/payments/user-payment-details/",
     TRADE_MESSAGES: (tradeId: string) =>
       `/trading_engine/trades/${tradeId}/messages/`,
+    TERMS_ACCEPTED: "/api/terms-accepted/",
     REFERRAL_USERS: (code: string) => `/api/referred-users/${code}/`,
     REFERRAL_WALLET: "/api/wallet/referral-wallet/",
     REFERRAL_WITHDRAW: "/trading_engine/referral/withdraw/",
@@ -109,6 +110,8 @@ export const API_CONFIG = {
         `${getWebSocketBaseUrl()}/ws/p2p-orders/?token=${token}`,
       RECENT_MESSAGES: (token: string) =>
         `${getWebSocketBaseUrl()}/ws/messages/?token=${token}`,
+      P2P_WITHDRAWAL_STATUS: (token: string) =>
+        `${getWebSocketBaseUrl()}/ws/p2p-withdrawal-status/?token=${token}`,
     },
   },
   SWAP: {

@@ -352,9 +352,9 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
     dispatch,
   ]);
 
-  // Handle swap errors
+  // Handle swap errors (amount too small shown inline, no toast)
   useEffect(() => {
-    if (swapError) {
+    if (swapError && swapError !== "Amount you entered is too small") {
       console.error("Swap error:", swapError);
       showToast.error("Swap Error", swapError);
     }
@@ -440,10 +440,27 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
     }
   };
 
+  const [amountError, setAmountError] = useState("");
+
+  const validateAmount = (value: string): string | null => {
+    if (value === "" || value === ".") return null;
+    const parts = value.split(".");
+    const integerPart = parts[0] || "";
+    const decimalPart = parts[1] || "";
+    if (integerPart.length > 12) return "Maximum 12 digits allowed before the decimal point.";
+    if (decimalPart.length > 4) return "Maximum 4 decimal places allowed.";
+    return null;
+  };
+
   const handleFromAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    // Only allow numbers and decimals
     if (value === "" || /^\d*\.?\d*$/.test(value)) {
+      const err = validateAmount(value);
+      if (err) {
+        setAmountError(err);
+        return;
+      }
+      setAmountError("");
       setActiveInputField("from");
       setHasUserInteracted(true);
       dispatch(setFromAmount(value));
@@ -452,8 +469,13 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
 
   const handleToAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    // Only allow numbers and decimals
     if (value === "" || /^\d*\.?\d*$/.test(value)) {
+      const err = validateAmount(value);
+      if (err) {
+        setAmountError(err);
+        return;
+      }
+      setAmountError("");
       setActiveInputField("to");
       setHasUserInteracted(true);
       dispatch(setToAmount(value));
@@ -545,29 +567,32 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
       setCurrentStep("copy-address");
     } catch (error: any) {
       console.error("Failed to create swap:", error);
-      console.error("Error response:", error.response?.data);
-      console.error("Error status:", error.response?.status);
+      const errMsg = typeof error === "string" ? error : error?.message || "";
+      if (errMsg === "Amount you entered is too small") return;
+
+      console.error("Error response:", error?.response?.data);
+      console.error("Error status:", error?.response?.status);
 
       // Handle specific error cases
-      if (error.response?.status === 500) {
+      if (error?.response?.status === 500) {
         showToast.error(
           "Server Error",
           "The server encountered an error. Please try again later."
         );
-      } else if (error.response?.status === 400) {
+      } else if (error?.response?.status === 400) {
         showToast.error(
           "Invalid Request",
           error.response?.data?.message ||
             "Please check your input and try again"
         );
-      } else if (error.response?.status === 401) {
+      } else if (error?.response?.status === 401) {
         showToast.error("Authentication Required", "Please log in to continue");
-      } else if (error.response?.status === 403) {
+      } else if (error?.response?.status === 403) {
         showToast.error(
           "Access Denied",
           "You don't have permission to perform this action"
         );
-      } else if (error.response?.status === 429) {
+      } else if (error?.response?.status === 429) {
         showToast.error(
           "Too Many Requests",
           "Please wait a moment before trying again"
@@ -750,6 +775,7 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
           }}
             onFromAmountChange={handleFromAmountChange}
             onToAmountChange={handleToAmountChange}
+            amountError={amountError}
             onFromAssetToggle={() => setIsFromAssetOpen(!isFromAssetOpen)}
             onToAssetToggle={() => setIsToAssetOpen(!isToAssetOpen)}
             onSearchTermChange={setSearchTerm}
@@ -768,8 +794,8 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
               onNext={handleWalletAddressNext}
               fromAsset={fromAsset}
               toAsset={toAsset}
-              // Pass loading state to disable button
               isLoading={swapLoading}
+              createSwapError={swapError}
             />
           )}
         </>

@@ -1063,3 +1063,21 @@ export const getGroupedMessages = async (
     return response.data;
   });
 };
+
+/** P2P Trading Terms & Conditions – API (not localStorage) */
+export interface TermsAcceptedResponse {
+  terms_accepted: boolean;
+}
+
+export const getTermsAccepted = async (): Promise<TermsAcceptedResponse> => {
+  const response = await get<TermsAcceptedResponse>(API_CONFIG.P2P.TERMS_ACCEPTED);
+  return response.data;
+};
+
+export const acceptTerms = async (): Promise<TermsAcceptedResponse> => {
+  const response = await post<TermsAcceptedResponse>(
+    API_CONFIG.P2P.TERMS_ACCEPTED,
+    { terms_accepted: true }
+  );
+  return response.data;
+};

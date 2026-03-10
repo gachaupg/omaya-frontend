@@ -34,6 +34,7 @@ interface TransactionInfoStepProps {
   activeInputField?: "from" | "to";
   meetsMinimumAmount?: boolean;
   minSwapUsd?: number;
+  amountError?: string;
 }
 
 const strongBorder =
@@ -76,6 +77,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
     activeInputField,
     meetsMinimumAmount = true,
     minSwapUsd = 30,
+    amountError,
   } = props;
 
   const fromAssetDropdownRef = useRef<HTMLDivElement>(null);
@@ -434,7 +436,8 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
     onChange: (e: React.ChangeEvent<HTMLInputElement>) => void,
     asset: SupportedAsset | null,
     isActive: boolean,
-    isYouSend: boolean = false
+    isYouSend: boolean = false,
+    error?: string
   ) => {
     const inputClassName = isYouSend
       ? inputBase
@@ -472,6 +475,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
             </span>
           )}
         </div>
+        {error && <p className="text-red-600 dark:text-red-400 text-xs sm:text-sm mt-1">{error}</p>}
       </div>
     );
   };
@@ -501,7 +505,8 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
                 onFromAmountChange,
                 fromAsset,
                 activeInputField === "from",
-                true
+                true,
+                amountError
               )}
             </div>
             <div className="flex-1 min-w-0">
@@ -555,7 +560,9 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
                 toAmount,
                 onToAmountChange,
                 toAsset,
-                activeInputField === "to"
+                activeInputField === "to",
+                false,
+                amountError
               )}
             </div>
             <div className="flex-1 min-w-0">

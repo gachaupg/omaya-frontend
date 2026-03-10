@@ -34,6 +34,7 @@ interface TransactionInfoStepProps {
   hideContinueButton?: boolean;
   onSwapAssets?: () => void;
   activeInputField?: "from" | "to";
+  amountError?: string;
 }
 
 const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
@@ -63,6 +64,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
   hideContinueButton,
   onSwapAssets,
   activeInputField,
+  amountError,
 }) => {
   const { isDark } = useTheme();
   const fromAssetDropdownRef = useRef<HTMLDivElement>(null);
@@ -392,6 +394,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                   </span>
                 </div>
               </div>
+              {amountError && <p className="text-red-600 dark:text-red-400 text-xs sm:text-sm mt-1">{amountError}</p>}
             </div>
 
             {/* You Get Section */}
@@ -542,6 +545,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                   </div>
                 )}
               </div>
+              {amountError && <p className="text-red-600 dark:text-red-400 text-xs sm:text-sm mt-1">{amountError}</p>}
             </div>
 
             {/* Asset Section */}

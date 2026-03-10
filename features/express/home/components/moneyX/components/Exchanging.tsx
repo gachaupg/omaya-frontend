@@ -183,15 +183,16 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
   // Initialize expiry timestamp when we have transaction data
   const effectiveDataForTimer = transactionData || persistedTransactionData;
   useEffect(() => {
-    if (!effectiveDataForTimer?.transactionId || !timerActive || showSuccess) return;
+    const txId = effectiveDataForTimer?.transactionId || effectiveDataForTimer?.moneyxTransactionId;
+    if (!txId || !timerActive || showSuccess) return;
     const storageKey = "moneyx_transaction_expiry";
-    const txId = effectiveDataForTimer.transactionId || effectiveDataForTimer.moneyxTransactionId;
     if (!expiryTimestampRef.current) {
       try {
         const stored = localStorage.getItem(storageKey);
         if (stored) {
-          const { transactionId, expiry } = JSON.parse(stored);
-          if (transactionId === txId) {
+          const { transactionId: storedTxId, expiry } = JSON.parse(stored);
+          const isMatch = storedTxId === txId || storedTxId === effectiveDataForTimer?.transactionId || storedTxId === effectiveDataForTimer?.moneyxTransactionId;
+          if (isMatch) {
             expiryTimestampRef.current = expiry;
             if (expiry <= Date.now()) {
               setTimeRemaining(0);
@@ -233,12 +234,16 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
     };
   }, [timerActive, showSuccess, computeTimeRemaining]);
 
-  // Auto-cancel when timer expires
+  // Auto-cancel when timer expires (guard to prevent double redirect on tab switch/reload)
+  const hasRedirectedOnExpiry = React.useRef(false);
+  const effectiveDataForExpiry = transactionData || persistedTransactionData;
   useEffect(() => {
-    if (timeRemaining === 0 && effectiveTransactionData?.transactionId) {
-      handleCancelTransaction();
-    }
-  }, [timeRemaining]);
+    if (timeRemaining !== 0 || hasRedirectedOnExpiry.current) return;
+    const txId = effectiveDataForExpiry?.transactionId || effectiveDataForExpiry?.moneyxTransactionId;
+    if (!txId) return;
+    hasRedirectedOnExpiry.current = true;
+    handleCancelTransaction();
+  }, [timeRemaining, effectiveDataForExpiry?.transactionId, effectiveDataForExpiry?.moneyxTransactionId]);
 
   // Format time as MM:SS
   const formatTime = (seconds: number) => {
