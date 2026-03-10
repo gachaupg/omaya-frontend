@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import Charts from "../../Common/charts";
 import { Table } from "../../Common/Table";
@@ -11,6 +11,8 @@ import {
 import { TransactionType, UserTrade } from "@/features/p2p/types";
 import { getUserTrades } from "@/features/p2p/api";
 import { NoDataFound } from "@/components/dashboard/ui/Transactions";
+import P2PWithdrawalDepositTransactions from "@/components/dashboard/sections/P2PWithdrawalDepositTransactions";
+import type { TableExportRef } from "../../Common/Table";
 
 type TimeFilter =
   | "Today"
@@ -66,6 +68,11 @@ const P2PCharts = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("Last Month");
   const [dataKey, setDataKey] = useState(0);
+  const [mainTab, setMainTab] = useState<"p2p-buy-sell" | "p2p-withdrawal-deposit">("p2p-buy-sell");
+  const [depositWithdrawTab, setDepositWithdrawTab] = useState<"deposit" | "withdrawal">("deposit");
+  const [tableDateFilter, setTableDateFilter] = useState("ALL");
+  const [showExportOptions, setShowExportOptions] = useState(false);
+  const tableExportRef = useRef<TableExportRef>(null);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -238,57 +245,183 @@ const P2PCharts = () => {
         showTimeFilter={true}
       />
 
-      {/* Orders Table */}
+      {/* P2P History - section title */}
       <div className="mt-8 w-full pb-4">
-        {!displayData || displayData.length === 0 ? (
-          <div className="text-center py-12 px-4">
-            <NoDataFound
-              title="No Orders Found"
-              message={
-                searchQuery.trim()
-                  ? `No orders match your search "${searchQuery}" for the selected time period.`
-                  : `There are currently no orders to display for the selected time period.`
-              }
+        {/* P2P History | ALL | Search | Export Transactions (only for P2P Buy and Sell) */}
+        {mainTab === "p2p-buy-sell" && (
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 mb-4">
+          <h3 className="text-base font-semibold dark:text-white text-gray-900 sm:mr-2">
+            P2P History
+          </h3>
+          <div className="relative">
+            <select
+              value={tableDateFilter}
+              onChange={(e) => setTableDateFilter(e.target.value)}
+              className="px-3 py-2 rounded-xl text-sm font-medium bg-[#E6E7EC] dark:bg-[var(--bg-color)] text-gray-900 dark:text-white border-none outline-none focus:ring-0"
+            >
+              {["ALL", "Today", "Week", "Month", "Year"].map((opt) => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
+          </div>
+          <div className="relative w-full sm:w-56">
+            <input
+              type="text"
+              placeholder="Search"
+              value={searchQuery}
+              onChange={(e) => handleSearch(e.target.value)}
+              className="w-full py-2 pl-9 pr-4 rounded-xl text-sm border bg-gray-100 dark:bg-[#35353E] text-gray-900 dark:text-gray-300 placeholder:text-gray-400 dark:placeholder:text-gray-500 border-gray-200 dark:border-[#35353E] focus:outline-none focus:ring-2 focus:ring-[#1D8751]/50"
             />
-            {/* Action buttons */}
-            {searchQuery.trim() && (
-              <div className="flex justify-center mt-4">
+            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1D8751]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setShowExportOptions(!showExportOptions)}
+              className="flex items-center gap-1 px-3 py-2 text-sm font-semibold text-[#1D8751] hover:bg-[#1D8751]/10 rounded-xl transition-colors"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              Export Transactions
+            </button>
+            {showExportOptions && (
+              <div className="absolute left-0 top-full mt-1 w-40 rounded-md shadow-lg bg-white dark:bg-[#23232B] border border-gray-200 dark:border-[#35353E] z-10 py-1">
                 <button
-                  onClick={() => setSearchQuery("")}
-                  className="inline-flex items-center px-4 py-2 border dark:border-[#35353E] border-gray-300 rounded-md shadow-sm text-sm font-medium dark:text-white text-gray-900 dark:bg-[#18181D] bg-gray-100 dark:hover:bg-[#35353E] hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1D8751] transition-colors"
+                  onClick={() => { tableExportRef.current?.exportCsv(); setShowExportOptions(false); }}
+                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-[#8C8CA1] hover:bg-gray-100 dark:hover:bg-[#35353E]"
                 >
-                  <svg
-                    className="w-4 h-4 mr-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                  Clear Search
+                  Export as CSV
+                </button>
+                <button
+                  onClick={() => { tableExportRef.current?.exportPdf(); setShowExportOptions(false); }}
+                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-[#8C8CA1] hover:bg-gray-100 dark:hover:bg-[#35353E]"
+                >
+                  Export as PDF
                 </button>
               </div>
             )}
           </div>
+        </div>
+        )}
+
+        {/* Tabs: P2P Buy and Sell | P2P Withdrawal/Deposit - below toolbar */}
+        <div className="flex rounded-lg border border-[#E3E6F0] dark:border-[#2A2A35] p-1 bg-gray-100 dark:bg-[#1D1D23] mb-6 max-w-fit">
+          <button
+            type="button"
+            onClick={() => setMainTab("p2p-buy-sell")}
+            className={`px-4 py-2 rounded-md text-sm font-semibold transition-colors ${
+              mainTab === "p2p-buy-sell"
+                ? "bg-white dark:bg-[#35353E] text-[#1D8751] shadow-sm"
+                : "text-gray-600 dark:text-[#8B90A5] hover:text-gray-900 dark:hover:text-white"
+            }`}
+          >
+            P2P Buy and Sell
+          </button>
+          <button
+            type="button"
+            onClick={() => setMainTab("p2p-withdrawal-deposit")}
+            className={`px-4 py-2 rounded-md text-sm font-semibold transition-colors ${
+              mainTab === "p2p-withdrawal-deposit"
+                ? "bg-white dark:bg-[#35353E] text-[#1D8751] shadow-sm"
+                : "text-gray-600 dark:text-[#8B90A5] hover:text-gray-900 dark:hover:text-white"
+            }`}
+          >
+            P2P Withdrawal/Deposit
+          </button>
+        </div>
+
+        {mainTab === "p2p-buy-sell" ? (
+          /* P2P Buy and Sell - orders table */
+          !displayData || displayData.length === 0 ? (
+            <div className="text-center py-12 px-4">
+              <NoDataFound
+                title="No Orders Found"
+                message={
+                  searchQuery.trim()
+                    ? `No orders match your search "${searchQuery}" for the selected time period.`
+                    : `There are currently no orders to display for the selected time period.`
+                }
+              />
+              {searchQuery.trim() && (
+                <div className="flex justify-center mt-4">
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="inline-flex items-center px-4 py-2 border dark:border-[#35353E] border-gray-300 rounded-md shadow-sm text-sm font-medium dark:text-white text-gray-900 dark:bg-[#18181D] bg-gray-100 dark:hover:bg-[#35353E] hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1D8751] transition-colors"
+                  >
+                    <svg
+                      className="w-4 h-4 mr-2"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                    Clear Search
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <Table
+              ref={tableExportRef}
+              key={`p2p-table-${currentPage}-${dataKey}`}
+              type="p2p"
+              title="P2P History"
+              data={displayData}
+              loading={loading}
+              error={error}
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+              onFetchAllDataForExport={fetchAllDataForExport}
+              onSearch={handleSearch}
+              dateFilter={tableDateFilter}
+              onDateFilterChange={(f) => setTableDateFilter(f)}
+              hideToolbar={true}
+              externalSearchQuery={searchQuery}
+            />
+          )
         ) : (
-          <Table
-            key={`p2p-table-${currentPage}-${dataKey}`}
-            type="p2p"
-            title="P2P History"
-            data={displayData}
-            loading={loading}
-            error={error}
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={handlePageChange}
-            onFetchAllDataForExport={fetchAllDataForExport}
-            onSearch={handleSearch}
-          />
+          /* P2P Withdrawal/Deposit - tabs above card, table inside card */
+          <div>
+            <div className="flex rounded-lg border border-[#E3E6F0] dark:border-[#2A2A35] p-1 bg-gray-100 dark:bg-[#23232B] mb-4 max-w-fit">
+              <button
+                type="button"
+                onClick={() => setDepositWithdrawTab("deposit")}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                  depositWithdrawTab === "deposit"
+                    ? "bg-white dark:bg-[#35353E] text-[#1D8751] shadow-sm"
+                    : "text-gray-600 dark:text-[#8B90A5] hover:text-gray-900 dark:hover:text-white"
+                }`}
+              >
+                Deposits
+              </button>
+              <button
+                type="button"
+                onClick={() => setDepositWithdrawTab("withdrawal")}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                  depositWithdrawTab === "withdrawal"
+                    ? "bg-white dark:bg-[#35353E] text-[#1D8751] shadow-sm"
+                    : "text-gray-600 dark:text-[#8B90A5] hover:text-gray-900 dark:hover:text-white"
+                }`}
+              >
+                Withdrawals
+              </button>
+            </div>
+            <div className="w-full border-2 border-gray-200 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] shadow-lg rounded-[24px] overflow-hidden">
+              <P2PWithdrawalDepositTransactions filterByType={depositWithdrawTab} />
+            </div>
+          </div>
         )}
       </div>
     </div>

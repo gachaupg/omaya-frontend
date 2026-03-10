@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "@/store";
 import { RootState } from "@/store/rootReducer";
@@ -37,7 +38,15 @@ const AddWalletAddressModal = ({
   const [networkDropdownOpen, setNetworkDropdownOpen] = useState(false);
 
   const assetDropdownRef = useRef<HTMLDivElement>(null);
+  const assetTriggerRef = useRef<HTMLButtonElement>(null);
+  const assetPortalRef = useRef<HTMLDivElement>(null);
   const networkDropdownRef = useRef<HTMLDivElement>(null);
+  const networkTriggerRef = useRef<HTMLButtonElement>(null);
+  const networkPortalRef = useRef<HTMLDivElement>(null);
+
+  const [assetDropdownRect, setAssetDropdownRect] = useState<{ top: number; left: number; width: number } | null>(null);
+  const [networkDropdownRect, setNetworkDropdownRect] = useState<{ top: number; left: number; width: number } | null>(null);
+  const [assetLoadTimedOut, setAssetLoadTimedOut] = useState(false);
 
   const allAssets: SupportedAsset[] = supportedAssets ?? [];
 
@@ -83,15 +92,26 @@ const AddWalletAddressModal = ({
   } = useValidateAddress({
     currency: currencyForValidation,
     network: networkForValidation,
-    debounceMs: 600,
+    debounceMs: 400,
     minLength: 10,
   });
 
   useEffect(() => {
     if (open && allAssets.length === 0 && !swapLoading) {
+      setAssetLoadTimedOut(false);
       dispatch(fetchSupportedAssets(false) as any);
     }
   }, [open, allAssets.length, swapLoading, dispatch]);
+
+  // Timeout: if loading for 8+ seconds with no assets, show retry
+  useEffect(() => {
+    if (!open || !swapLoading || allAssets.length > 0) {
+      setAssetLoadTimedOut(false);
+      return;
+    }
+    const timer = setTimeout(() => setAssetLoadTimedOut(true), 5000);
+    return () => clearTimeout(timer);
+  }, [open, swapLoading, allAssets.length]);
 
   useEffect(() => {
     setSelectedNetwork("");
@@ -108,27 +128,42 @@ const AddWalletAddressModal = ({
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (
-        assetDropdownRef.current &&
-        !assetDropdownRef.current.contains(e.target as Node)
-      ) {
-        setAssetDropdownOpen(false);
-      }
-      if (
-        networkDropdownRef.current &&
-        !networkDropdownRef.current.contains(e.target as Node)
-      ) {
-        setNetworkDropdownOpen(false);
-      }
+      const target = e.target as Node;
+      const inAsset =
+        assetDropdownRef.current?.contains(target) ||
+        assetPortalRef.current?.contains(target);
+      if (!inAsset) setAssetDropdownOpen(false);
+      const inNetwork =
+        networkDropdownRef.current?.contains(target) ||
+        networkPortalRef.current?.contains(target);
+      if (!inNetwork) setNetworkDropdownOpen(false);
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    if (assetDropdownOpen && assetTriggerRef.current) {
+      const rect = assetTriggerRef.current.getBoundingClientRect();
+      setAssetDropdownRect({ top: rect.bottom + 4, left: rect.left, width: rect.width });
+    } else {
+      setAssetDropdownRect(null);
+    }
+  }, [assetDropdownOpen]);
+
+  useEffect(() => {
+    if (networkDropdownOpen && networkTriggerRef.current) {
+      const rect = networkTriggerRef.current.getBoundingClientRect();
+      setNetworkDropdownRect({ top: rect.bottom + 4, left: rect.left, width: rect.width });
+    } else {
+      setNetworkDropdownRect(null);
+    }
+  }, [networkDropdownOpen]);
+
   const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setAddress(value);
-    if (value.trim().length >= 10 && currencyForValidation) {
+    if (value.trim() && currencyForValidation) {
       validate(value, currencyForValidation, networkForValidation);
     } else {
       resetValidation();
@@ -152,6 +187,10 @@ const AddWalletAddressModal = ({
     }
     if (!address.trim()) {
       showToast.error("Wallet address is required");
+      return;
+    }
+    if (address.trim().length >= 10 && !addressIsValid && !isValidating) {
+      showToast.error("Please wait for address validation to complete");
       return;
     }
     if (addressIsInvalid) {
@@ -239,6 +278,7 @@ const AddWalletAddressModal = ({
             </label>
             <div className="relative" ref={assetDropdownRef}>
               <button
+                ref={assetTriggerRef}
                 type="button"
                 onClick={() => {
                   setAssetDropdownOpen(!assetDropdownOpen);
@@ -297,72 +337,101 @@ const AddWalletAddressModal = ({
                 </svg>
               </button>
 
-              {assetDropdownOpen && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[var(--card-color)] border border-[#E3E6F0] dark:border-[#2A2A35] rounded-xl z-50 shadow-lg">
-                  <div className="p-2 border-b border-[#E3E6F0] dark:border-[#2A2A35]">
-                    <input
-                      type="text"
-                      placeholder="Search assets..."
-                      value={assetSearch}
-                      onChange={(e) => setAssetSearch(e.target.value)}
-                      onClick={(e) => e.stopPropagation()}
-                      className="w-full bg-gray-50 dark:bg-[#23232B] border border-[#E3E6F0] dark:border-[#2A2A35] rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-[#5C6175] outline-none"
-                      autoFocus
-                    />
-                  </div>
-                  <div className="max-h-60 overflow-y-auto py-1">
-                    {swapLoading ? (
-                      <div className="px-4 py-3 text-sm text-gray-400 text-center">
-                        Loading tokens...
-                      </div>
-                    ) : filteredAssets.length === 0 ? (
-                      <div className="px-4 py-3 text-sm text-gray-400 text-center">
-                        {assetSearch.trim() ? "No matching assets" : "No assets available"}
-                      </div>
-                    ) : (
-                      filteredAssets.map((a, idx) => (
-                        <div
-                          key={`${a.ticker}-${idx}`}
-                          onClick={() => {
-                            setSelectedAssetTicker(a.ticker);
-                            setAssetDropdownOpen(false);
-                            setAssetSearch("");
-                          }}
-                          className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-gray-50 dark:hover:bg-[#23232B] transition-colors ${
-                            selectedAssetTicker?.toUpperCase() ===
-                            a.ticker?.toUpperCase()
-                              ? "bg-[#1D8751]/5"
-                              : ""
-                          }`}
-                        >
-                          <img
-                            src={getAssetImage(a)}
-                            alt={a.ticker}
-                            className="w-6 h-6 rounded-full object-contain"
-                            onError={(e) => {
-                              e.currentTarget.src = "/default-provider-logo.svg";
+              {assetDropdownOpen &&
+                assetDropdownRect &&
+                typeof document !== "undefined" &&
+                createPortal(
+                  <div
+                    ref={assetPortalRef}
+                    className="fixed z-[9999] bg-white dark:bg-[var(--card-color)] border border-[#E3E6F0] dark:border-[#2A2A35] rounded-xl shadow-xl"
+                    style={{
+                      top: assetDropdownRect.top,
+                      left: assetDropdownRect.left,
+                      width: assetDropdownRect.width,
+                      minWidth: 280,
+                    }}
+                  >
+                    <div className="p-2 border-b border-[#E3E6F0] dark:border-[#2A2A35]">
+                      <input
+                        type="text"
+                        placeholder="Search assets..."
+                        value={assetSearch}
+                        onChange={(e) => setAssetSearch(e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-full bg-gray-50 dark:bg-[#23232B] border border-[#E3E6F0] dark:border-[#2A2A35] rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-[#5C6175] outline-none"
+                        autoFocus
+                      />
+                    </div>
+                    <div className="max-h-60 overflow-y-auto py-1">
+                      {swapLoading && filteredAssets.length === 0 && !assetLoadTimedOut ? (
+                        <div className="px-4 py-3 text-sm text-gray-400 text-center">
+                          Loading tokens...
+                        </div>
+                      ) : assetLoadTimedOut && filteredAssets.length === 0 ? (
+                        <div className="px-4 py-3 text-center">
+                          <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                            Failed to load assets.
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAssetLoadTimedOut(false);
+                              dispatch(fetchSupportedAssets(true) as any);
                             }}
-                          />
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-medium text-gray-900 dark:text-white">
-                                {a.ticker?.toUpperCase()}
+                            className="text-sm font-medium text-[#1D8751] hover:underline"
+                          >
+                            Retry
+                          </button>
+                        </div>
+                      ) : filteredAssets.length === 0 ? (
+                        <div className="px-4 py-3 text-sm text-gray-400 text-center">
+                          {assetSearch.trim() ? "No matching assets" : "No assets available"}
+                        </div>
+                      ) : (
+                        filteredAssets.map((a, idx) => (
+                          <div
+                            key={`${a.ticker}-${idx}`}
+                            onClick={() => {
+                              setSelectedAssetTicker(a.ticker);
+                              setAssetDropdownOpen(false);
+                              setAssetSearch("");
+                            }}
+                            className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-gray-50 dark:hover:bg-[#23232B] transition-colors ${
+                              selectedAssetTicker?.toUpperCase() ===
+                              a.ticker?.toUpperCase()
+                                ? "bg-[#1D8751]/5"
+                                : ""
+                            }`}
+                          >
+                            <img
+                              src={getAssetImage(a)}
+                              alt={a.ticker}
+                              className="w-6 h-6 rounded-full object-contain"
+                              onError={(e) => {
+                                e.currentTarget.src = "/default-provider-logo.svg";
+                              }}
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                  {a.ticker?.toUpperCase()}
+                                </span>
+                              </div>
+                              <span className="text-xs text-gray-500 dark:text-[#8C8CA1] truncate block">
+                                {a.name}
                               </span>
                             </div>
-                            <span className="text-xs text-gray-500 dark:text-[#8C8CA1] truncate block">
-                              {a.name}
-                            </span>
+                            {selectedAssetTicker?.toUpperCase() ===
+                              a.ticker?.toUpperCase() && (
+                              <div className="w-2 h-2 rounded-full bg-[#1D8751] flex-shrink-0" />
+                            )}
                           </div>
-                          {selectedAssetTicker?.toUpperCase() ===
-                            a.ticker?.toUpperCase() && (
-                            <div className="w-2 h-2 rounded-full bg-[#1D8751] flex-shrink-0" />
-                          )}
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              )}
+                        ))
+                      )}
+                    </div>
+                  </div>,
+                  document.body
+                )}
             </div>
           </div>
 
@@ -374,6 +443,7 @@ const AddWalletAddressModal = ({
               </label>
               <div className="relative" ref={networkDropdownRef}>
                 <button
+                  ref={networkTriggerRef}
                   type="button"
                   onClick={() => {
                     setNetworkDropdownOpen(!networkDropdownOpen);
@@ -404,9 +474,21 @@ const AddWalletAddressModal = ({
                   </svg>
                 </button>
 
-                {networkDropdownOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[var(--card-color)] border border-[#E3E6F0] dark:border-[#2A2A35] rounded-xl z-50 shadow-lg max-h-60 overflow-y-auto py-1">
-                    {networksForAsset.map((n, idx) => (
+                {networkDropdownOpen &&
+                  networkDropdownRect &&
+                  typeof document !== "undefined" &&
+                  createPortal(
+                    <div
+                      ref={networkPortalRef}
+                      className="fixed z-[9999] bg-white dark:bg-[var(--card-color)] border border-[#E3E6F0] dark:border-[#2A2A35] rounded-xl shadow-xl max-h-60 overflow-y-auto py-1"
+                      style={{
+                        top: networkDropdownRect.top,
+                        left: networkDropdownRect.left,
+                        width: networkDropdownRect.width,
+                        minWidth: 280,
+                      }}
+                    >
+                      {networksForAsset.map((n, idx) => (
                       <div
                         key={`${n.network}-${idx}`}
                         onClick={() => {
@@ -442,8 +524,9 @@ const AddWalletAddressModal = ({
                         )}
                       </div>
                     ))}
-                  </div>
-                )}
+                    </div>,
+                    document.body
+                  )}
               </div>
             </div>
           )}
@@ -533,7 +616,8 @@ const AddWalletAddressModal = ({
                 !selectedNetwork ||
                 !address.trim() ||
                 addressIsInvalid ||
-                isValidating
+                isValidating ||
+                (address.trim().length >= 10 && !addressIsValid)
               }
               className="flex-1 px-4 py-3 rounded-xl bg-[#1D8751] text-white font-medium hover:bg-[#0f8f4d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >

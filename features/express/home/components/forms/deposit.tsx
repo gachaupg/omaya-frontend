@@ -3125,32 +3125,9 @@ export default function DepositForm({
                         logoUrl = payment.logo.trim();
                       }
 
-                      if (index < 3) {
-                        console.log(`🔍 Payment Method Option ${index}:`, {
-                          isHomePage,
-                          provider_name: payment.provider_name,
-                          provider_logo: payment.provider_logo,
-                          logo: payment.logo,
-                          logoUrl: logoUrl,
-                          logoUrlType: typeof logoUrl,
-                          logoUrlIsValid: !!logoUrl && logoUrl.length > 0,
-                          payment_method: payment.payment_method,
-                          admin_payment_detail_id: payment.admin_payment_detail_id,
-                          allKeys: Object.keys(payment)
-                        });
-                      }
+                     
 
-                      if (!logoUrl && index < 3) {
-                        console.warn(`⚠️ No logo found for payment method ${index}: ${payment.provider_name}`, {
-                          paymentKeys: Object.keys(payment),
-                          hasProviderLogo: !!payment.provider_logo,
-                          hasLogo: !!payment.logo,
-                          providerLogoValue: payment.provider_logo,
-                          logoValue: payment.logo,
-                          providerLogoType: typeof payment.provider_logo,
-                          logoType: typeof payment.logo
-                        });
-                      }
+                     
 
                       const providerName = formatPaymentProviderLabel(payment);
                       const methodName = getPaymentMethodNameToStrip(payment);
