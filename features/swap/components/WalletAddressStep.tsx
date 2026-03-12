@@ -206,10 +206,10 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
 
       <div className="w-full">
         {/* Combined Wallet Address and Terms Card */}
-        <div className={`bg-white dark:bg-[var(--card-color)] ${strongBorder} rounded-2xl p-3 sm:p-4 md:p-6 lg:p-8 w-full text-gray-900 dark:text-white`}>
-          <div className="flex flex-col gap-3 sm:gap-4 md:gap-6">
+        <div className={`bg-white dark:bg-[var(--card-color)] ${strongBorder} rounded-2xl p-3 sm:p-3 md:p-4 lg:p-5 w-full text-gray-900 dark:text-white`}>
+          <div className="flex flex-col gap-2 sm:gap-3 md:gap-4">
             {/* Wallet Address Input Section */}
-            <div className="flex flex-col gap-2 sm:gap-3">
+            <div className="flex flex-col gap-2">
               {/* Wallet/Account Address Label */}
               <div className="text-xs sm:text-sm font-medium text-[#788099]  dark:text-[#788099]">
                 Wallet/Account Address
@@ -377,9 +377,38 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
               )}
             </div>
 
+            {/* Save to bookmarks - visible under wallet input */}
+            {walletAddress.trim() &&
+              !isAddressValidating &&
+              addressValidationResult?.isValid && (
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!walletAddress.trim() || !currentCurrency) return;
+                  await saveBookmark({
+                    address: walletAddress.trim(),
+                    label: `My ${currentCurrency} wallet`,
+                    network: currentNetwork || "",
+                    asset: currentCurrency,
+                  });
+                }}
+                disabled={bookmarkSaving}
+                className="flex items-center gap-2 text-[#1D8751] hover:text-[#166b3e] font-medium text-xs sm:text-sm transition-colors disabled:opacity-70"
+              >
+                {bookmarkSaving ? (
+                  <span className="w-4 h-4 border-2 border-[#1D8751] border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )}
+                {bookmarkSaving ? "Saving to bookmarks..." : "Save to bookmarks"}
+              </button>
+            )}
+
             {/* Important Crypto Warning Banner */}
-            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800/50 rounded-xl p-3 sm:p-4">
-              <div className="flex items-start gap-2 sm:gap-3">
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800/50 rounded-xl p-2 sm:p-3">
+              <div className="flex items-start gap-2">
                 <span className="text-yellow-600 dark:text-yellow-500 mt-0.5 flex-shrink-0">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -392,7 +421,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
             </div>
 
             {/* Terms and Conditions Section */}
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-3">
               {/* Terms Header */}
               <div className="flex items-center gap-2">
                 <svg
@@ -416,7 +445,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
               {/* Terms Box - Collapsible */}
               <div className={`bg-gray-50 dark:bg-[var(--card-color)] ${strongBorder} rounded-xl overflow-hidden transition-all duration-300`}>
                 {/* Terms Section - All Visible */}
-                <div className="p-4 sm:p-5">
+                <div className="p-3 sm:p-4">
                   <div className="space-y-2 sm:space-y-3">
                     <div className="flex items-start gap-2 sm:gap-3">
                       <span className="text-[#1D8751] font-bold text-sm sm:text-base flex-shrink-0">1.</span>
@@ -444,7 +473,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
 
                 {/* Additional Terms - Collapsible */}
                 {expandedTerms && (
-                  <div className="px-4 sm:px-5 py-2 sm:py-3 space-y-4 sm:space-y-5 border-t border-gray-200 dark:border-[#35353E]">
+                  <div className="px-3 sm:px-4 py-2 sm:py-3 space-y-3 sm:space-y-4 border-t border-gray-200 dark:border-[#35353E]">
                     {/* Term 4 */}
                     <div className="flex items-start gap-2 sm:gap-3">
                       <span className="text-[#1D8751] font-bold text-sm sm:text-base flex-shrink-0">4.</span>
@@ -490,7 +519,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
               <button
                 type="button"
                 onClick={() => setExpandedTerms(!expandedTerms)}
-                className="mt-3 sm:mt-4 text-[#1D8751] hover:text-[#166b3e] font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition-colors"
+                className="mt-2 sm:mt-3 text-[#1D8751] hover:text-[#166b3e] font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition-colors"
               >
                 {expandedTerms ? (
                   <>
@@ -510,7 +539,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
               </button>
 
               {/* Terms Acceptance Checkbox */}
-              <div className="flex items-start gap-2 sm:gap-3">
+              <div className="flex items-start gap-2">
                 <input
                   type="checkbox"
                   id="accept-terms"
@@ -576,18 +605,21 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
           </div>
         </div>
 
-        {/* Create swap error - amount too small */}
-        {createSwapError === "Amount you entered is too small" && (
-          <div className="mt-4 mb-2 bg-red-500/10 border border-red-500/30 rounded-xl p-3 flex items-start gap-2">
+        {/* Create swap error - amount too small (ChangeNOW 400 / Failed to create transaction) */}
+        {createSwapError &&
+          (createSwapError === "Amount you entered is too small" ||
+            (createSwapError.toLowerCase().includes("failed to create transaction") &&
+              (createSwapError.includes("400") || createSwapError.toLowerCase().includes("changenow")))) && (
+          <div className="mt-3 mb-2 bg-red-500/10 border border-red-500/30 rounded-xl p-2 sm:p-3 flex items-start gap-2">
             <span className="text-red-500 text-xs font-bold flex-shrink-0">!</span>
             <p className="text-red-600 dark:text-red-400 text-xs sm:text-sm">
-              Amount you entered is too small
+              Amount is too small
             </p>
           </div>
         )}
 
         {/* Navigation Buttons */}
-        <div className="flex mt-4 sm:mt-6">
+        <div className="flex mt-3 sm:mt-4">
           <button
             onClick={handleNext}
             disabled={isSubmitDisabled}

@@ -51,6 +51,8 @@ const ENDPOINT_SPECIFIC_CONFIG: Record<string, Partial<ApiClientConfig>> = {
   // Device session endpoints – keep under 15s overall to align with GlobalSession creation window
   "/api/devices/create/": { timeout: 12000, retries: 0 },
   "/api/device-sessions/": { timeout: 12000, retries: 0 },
+  // ChangeNOW create - no retries (400 = amount too small, fail fast)
+  "/api/changenow/create/": { timeout: 30000, retries: 0 },
 };
 
 const generateRequestId = (): string => {
@@ -266,7 +268,11 @@ const addRetryInterceptor = (
         ApiHealthChecker.recordFailure(originalRequest.url, error);
       }
 
-      if (!originalRequest || originalRequest._retryCount >= config.retries) {
+      const endpoint = originalRequest?.url || "";
+      const endpointConfig = ENDPOINT_SPECIFIC_CONFIG[endpoint];
+      const maxRetries = endpointConfig?.retries ?? config.retries;
+
+      if (!originalRequest || originalRequest._retryCount >= maxRetries) {
         return Promise.reject(error);
       }
 

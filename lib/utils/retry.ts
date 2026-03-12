@@ -17,9 +17,12 @@ const defaultConfig: RetryConfig = {
 export const sleep = (ms: number) =>
   new Promise((resolve) => setTimeout(resolve, ms));
 
-export const shouldRetry = (error: AxiosError): boolean => {
+export const shouldRetry = (error: any): boolean => {
+  // Do not retry for "amount too small" - ChangeNOW 400 Bad Request
+  if (error?.message === "Amount you entered is too small") return false;
+  if (error?.skipRetry === true) return false;
   return (
-    !error.response || // Network error
+    !error?.response || // Network error
     (error.response.status >= 500 && error.response.status < 600) // Server error
   );
 };

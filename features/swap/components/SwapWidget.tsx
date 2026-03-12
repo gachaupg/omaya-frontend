@@ -501,13 +501,17 @@ const SwapWidget = () => {
     dispatch,
   ]);
 
-  // Handle swap errors
+  // Handle swap errors (no toast for amount too small - shown inline above button)
+  const isAmountTooSmallError =
+    swapError === "Amount you entered is too small" ||
+    (swapError?.toLowerCase().includes("failed to create transaction") &&
+      (swapError?.includes("400") || swapError?.toLowerCase().includes("changenow")));
   useEffect(() => {
-    if (swapError && swapError !== "Amount you entered is too small") {
+    if (swapError && !isAmountTooSmallError) {
       console.error("Swap error:", swapError);
       showToast.error("Swap Error", swapError);
     }
-  }, [swapError]);
+  }, [swapError, isAmountTooSmallError]);
 
   // Handle next step validation
   const handleNextStep = () => {
@@ -664,7 +668,11 @@ const SwapWidget = () => {
       console.error("Failed to create swap:", error);
       const errMsg = typeof error === "string" ? error : error?.message || "";
       // Amount too small: shown inline above button, no toast
-      if (errMsg === "Amount you entered is too small") return;
+      const isAmountTooSmall =
+        errMsg === "Amount you entered is too small" ||
+        (errMsg.toLowerCase().includes("failed to create transaction") &&
+          (errMsg.includes("400") || errMsg.toLowerCase().includes("changenow")));
+      if (isAmountTooSmall) return;
 
       console.error("Error response:", error?.response?.data);
       console.error("Error status:", error?.response?.status);
