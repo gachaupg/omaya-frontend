@@ -1032,7 +1032,8 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
                   </div>
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 border border-border dark:border-[#35353E] rounded-xl">
                     <span className="text-[#788099] text-sm">Account number</span>
-                    <div className="flex items-center gap-2 min-w-0">
+                    <div className="flex items-center justify-between gap-4 min-w-0 w-full">
+                      
                       <span className="text-[#35353e] dark:text-white font-medium text-sm truncate">
                         {accountNumber}
                       </span>

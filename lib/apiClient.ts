@@ -97,6 +97,20 @@ const createAxiosInstance = (config: ApiClientConfig = DEFAULT_CONFIG): AxiosIns
     const endpoint = requestConfig.url || "";
     const endpointConfig = ENDPOINT_SPECIFIC_CONFIG[endpoint];
     
+    // For FormData, remove Content-Type so browser sets multipart/form-data with boundary
+    // (otherwise default application/json causes file uploads to fail - server receives {} for files)
+    if (requestConfig.data instanceof FormData) {
+      requestConfig.headers = requestConfig.headers || {};
+      const h = requestConfig.headers as Record<string, unknown>;
+      if (typeof (h as any).delete === 'function') {
+        (h as any).delete('Content-Type');
+        (h as any).delete('content-type');
+      } else {
+        delete h['Content-Type'];
+        delete h['content-type'];
+      }
+    }
+    
     // Add CSRF token to all non-GET requests
     if (requestConfig.method && requestConfig.method.toLowerCase() !== 'get') {
       requestConfig.headers = requestConfig.headers || {};
