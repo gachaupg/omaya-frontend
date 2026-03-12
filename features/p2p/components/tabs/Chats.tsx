@@ -132,26 +132,38 @@ export const Chats: React.FC = () => {
 
   const [selectedUser, setSelectedUser] = useState<GroupedUser | null>(null);
 
-  // State for terms acceptance - from API (not localStorage)
-  const [termsAccepted, setTermsAccepted] = useState(false);
-  const [termsLoading, setTermsLoading] = useState(true);
+  // State for terms acceptance - use localStorage for instant display, API for source of truth
+  const P2P_TERMS_KEY = "p2p_terms_accepted";
+  const getCachedTermsAccepted = () => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem(P2P_TERMS_KEY) === "true";
+  };
+  const [termsAccepted, setTermsAccepted] = useState(getCachedTermsAccepted); // Instant from cache
 
   useEffect(() => {
     if (!isAuthenticated) {
       setTermsAccepted(false);
-      setTermsLoading(false);
       return;
     }
+    // Hydrate from localStorage immediately (no API wait)
+    setTermsAccepted(getCachedTermsAccepted());
+
     let cancelled = false;
     const load = async () => {
-      setTermsLoading(true);
       try {
         const res = await getTermsAccepted();
-        if (!cancelled) setTermsAccepted(res.terms_accepted === true);
+        if (!cancelled) {
+          const apiAccepted = res.terms_accepted === true;
+          setTermsAccepted(apiAccepted);
+          if (apiAccepted) {
+            localStorage.setItem(P2P_TERMS_KEY, "true");
+          }
+        }
       } catch {
-        if (!cancelled) setTermsAccepted(false);
-      } finally {
-        if (!cancelled) setTermsLoading(false);
+        if (!cancelled) {
+          // On API error, keep cached value (if any) - don't force banner
+          setTermsAccepted((prev) => prev || getCachedTermsAccepted());
+        }
       }
     };
     load();
@@ -393,6 +405,20 @@ export const Chats: React.FC = () => {
     return `${diffInDays}d ago`;
   };
 
+  const getDateSeparatorLabel = (timestamp: string) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const msgDate = date.toDateString();
+    const today = now.toDateString();
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toDateString();
+
+    if (msgDate === today) return "Today";
+    if (msgDate === yesterdayStr) return "Yesterday";
+    return date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+  };
+
   const getInitials = (name: string | undefined | null) => {
     if (!name) return "?";
     const parts = name.split(" ").filter(Boolean);
@@ -626,6 +652,7 @@ export const Chats: React.FC = () => {
     try {
       await acceptTerms();
       setTermsAccepted(true);
+      localStorage.setItem(P2P_TERMS_KEY, "true");
     } catch (err) {
       console.error("Failed to accept terms:", err);
     }
@@ -777,23 +804,26 @@ export const Chats: React.FC = () => {
       >
         {reversedMessages.map((msg: any, index: number) => {
             // Determine if this message is from the logged-in user
-            // Compare by sender_id first (most reliable), then by email as fallback
             const isSender =
               (user?.id && msg.sender_id && msg.sender_id === user.id) ||
               (user?.email && msg.sender_email &&
                 msg.sender_email.trim().toLowerCase() === user.email.trim().toLowerCase());
 
-            // Extract display name from sender_name or sender_email
             const displayName = msg.sender_name ||
               (msg.sender_email ? msg.sender_email.split('@')[0] : "Unknown User");
 
+            const prevMsg = index > 0 ? reversedMessages[index - 1] : null;
+            const prevDate = prevMsg?.timestamp ? new Date(prevMsg.timestamp).toDateString() : "";
+            const currDate = msg.timestamp ? new Date(msg.timestamp).toDateString() : "";
+            const showDateSeparator = !msg.timestamp || index === 0 || prevDate !== currDate;
+
             return (
               <React.Fragment key={msg.id || index}>
-                {/* Trade ID separator between messages (like WhatsApp "Yesterday") - show between 2nd and 3rd message, not at top */}
-                {index === 2 && selectedUser?.entity_id && (
-                  <div className="flex justify-center py-2">
-                    <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-[#2C2C34] px-3 py-1 rounded-full">
-                      Trade ID: {selectedUser.entity_id}
+                {/* Date separator (Today, Yesterday, or formatted date) */}
+                {showDateSeparator && msg.timestamp && (
+                  <div className="flex justify-center py-3">
+                    <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-[#2C2C34] px-3 py-1.5 rounded-full">
+                      {getDateSeparatorLabel(msg.timestamp)}
                     </span>
                   </div>
                 )}

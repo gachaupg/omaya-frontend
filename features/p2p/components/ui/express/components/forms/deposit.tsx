@@ -735,11 +735,15 @@ export default function DepositForm({
         .unwrap()
         .then((addressData) => {
           // Auto-fill the wallet address input with the deposit address
-          if (addressData && addressData.data && addressData.data.address) {
-            setWalletAddress(addressData.data.address);
+          // API returns data as array: [{ address, chain, network_name, ... }]
+          const data = addressData?.data;
+          const addressItem = Array.isArray(data) ? data[0] : data;
+          const address = addressItem?.address;
+          if (address) {
+            setWalletAddress(address);
             setWalletError(null); // Clear any existing errors
             // Generate QR code for the address
-            generateQRCode(addressData.data.address);
+            generateQRCode(address);
           }
         })
         .catch((error: unknown) => {

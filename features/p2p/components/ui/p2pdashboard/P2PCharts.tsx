@@ -69,7 +69,7 @@ const P2PCharts = () => {
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("Last Month");
   const [dataKey, setDataKey] = useState(0);
   const [mainTab, setMainTab] = useState<"p2p-buy-sell" | "p2p-withdrawal-deposit">("p2p-buy-sell");
-  const [depositWithdrawTab, setDepositWithdrawTab] = useState<"deposit" | "withdrawal">("deposit");
+  const [depositWithdrawTab, setDepositWithdrawTab] = useState<"all" | "deposit" | "withdrawal">("all");
   const [tableDateFilter, setTableDateFilter] = useState("ALL");
   const [showExportOptions, setShowExportOptions] = useState(false);
   const tableExportRef = useRef<TableExportRef>(null);
@@ -395,6 +395,17 @@ const P2PCharts = () => {
           /* P2P Withdrawal/Deposit - tabs above card, table inside card */
           <div>
             <div className="flex rounded-lg border border-[#E3E6F0] dark:border-[#2A2A35] p-1 bg-gray-100 dark:bg-[#23232B] mb-4 max-w-fit">
+              <button
+                type="button"
+                onClick={() => setDepositWithdrawTab("all")}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                  depositWithdrawTab === "all"
+                    ? "bg-white dark:bg-[#35353E] text-[#1D8751] shadow-sm"
+                    : "text-gray-600 dark:text-[#8B90A5] hover:text-gray-900 dark:hover:text-white"
+                }`}
+              >
+                All
+              </button>
               <button
                 type="button"
                 onClick={() => setDepositWithdrawTab("deposit")}

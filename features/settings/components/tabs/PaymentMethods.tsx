@@ -443,9 +443,16 @@ const PaymentMethods = () => {
                                   <p className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
                                     OMAYA Wallet
                                   </p>
-                                  <p className="text-xs text-gray-500 dark:text-[#8B90A5] mt-0.5">
-                                    {addr.network_name || addr.chain} • {addr.is_default ? "Default" : ""}
-                                  </p>
+                                  <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                                    <span className="text-xs text-gray-500 dark:text-[#8B90A5]">
+                                      {addr.network_name || addr.chain}
+                                    </span>
+                                    {addr.address_type && (
+                                      <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-[#1D8751]/15 text-[#1D8751] dark:bg-[#1D8751]/25 dark:text-[#34D399] border border-[#1D8751]/30">
+                                        {addr.address_type}
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
                               {!!addr.address && (

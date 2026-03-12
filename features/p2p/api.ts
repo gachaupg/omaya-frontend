@@ -90,6 +90,7 @@ export interface P2PDepositAddress {
   is_default: boolean;
   is_active: boolean;
   created_at: string;
+  address_type?: string;
 }
 
 export interface P2PDepositAddressesResponse {
@@ -701,12 +702,15 @@ export const getAllP2PTransactions = async (
 };
 
 export const getMyTransactions = async (
-  page: number = 1
+  page: number = 1,
+  transactionType?: "deposit" | "withdrawal"
 ): Promise<any> => {
   return withRetry(async () => {
-    const response = await get<any>(
-      `${API_CONFIG.P2P_WITHDRAWAL_DEPOSIT.MY_TRANSACTIONS}?page=${page}`
-    );
+    let url = `${API_CONFIG.P2P_WITHDRAWAL_DEPOSIT.MY_TRANSACTIONS}?page=${page}`;
+    if (transactionType) {
+      url += `&transaction_type=${transactionType}`;
+    }
+    const response = await get<any>(url);
     return response.data;
   });
 };
@@ -1075,7 +1079,7 @@ export const getTermsAccepted = async (): Promise<TermsAcceptedResponse> => {
 };
 
 export const acceptTerms = async (): Promise<TermsAcceptedResponse> => {
-  const response = await post<TermsAcceptedResponse>(
+  const response = await patch<TermsAcceptedResponse>(
     API_CONFIG.P2P.TERMS_ACCEPTED,
     { terms_accepted: true }
   );
