@@ -120,45 +120,53 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
     return remaining;
   }, []);
 
-  // Initialize expiry timestamp when we have transaction data
+  // Initialize expiry timestamp - always set so countdown runs even before txId is available
   const effectiveDataForTimer = transactionData || persistedTransactionData;
+  const txIdForTimer =
+    effectiveDataForTimer?.transactionId ||
+    (effectiveDataForTimer as { transaction_id?: string })?.transaction_id ||
+    liveTransactionId;
+
   useEffect(() => {
-    if (!effectiveDataForTimer?.transactionId || !timerActive) return;
+    if (!timerActive) return;
 
     const storageKey = "express_transaction_expiry";
-    const txId = effectiveDataForTimer.transactionId;
 
     if (!expiryTimestampRef.current) {
-      try {
-        const stored = localStorage.getItem(storageKey);
-        if (stored) {
-          const { transactionId, expiry } = JSON.parse(stored);
-          if (transactionId === txId) {
-            expiryTimestampRef.current = expiry;
-            if (expiry <= Date.now()) {
-              // Already expired - trigger expiry flow
-              setTimeRemaining(0);
-              setTimerActive(false);
+      const fallbackExpiry = Date.now() + TIMER_DURATION_SEC * 1000;
+      if (txIdForTimer) {
+        try {
+          const stored = localStorage.getItem(storageKey);
+          if (stored) {
+            const { transactionId, expiry } = JSON.parse(stored);
+            if (transactionId === txIdForTimer) {
+              expiryTimestampRef.current = expiry;
+              if (expiry <= Date.now()) {
+                setTimeRemaining(0);
+                setTimerActive(false);
+                return;
+              }
+              setTimeRemaining(computeTimeRemaining());
               return;
             }
-            setTimeRemaining(computeTimeRemaining());
-            return;
           }
+        } catch {
+          // Invalid stored data, use fresh expiry
         }
-      } catch {
-        // Invalid stored data, use fresh expiry
+        expiryTimestampRef.current = fallbackExpiry;
+        localStorage.setItem(
+          storageKey,
+          JSON.stringify({ transactionId: txIdForTimer, expiry: fallbackExpiry })
+        );
+      } else {
+        // No txId yet - use session expiry so countdown runs (will sync when txId arrives)
+        expiryTimestampRef.current = fallbackExpiry;
       }
-      const expiry = Date.now() + TIMER_DURATION_SEC * 1000;
-      expiryTimestampRef.current = expiry;
-      localStorage.setItem(
-        storageKey,
-        JSON.stringify({ transactionId: txId, expiry })
-      );
     }
     setTimeRemaining(computeTimeRemaining());
-  }, [effectiveDataForTimer?.transactionId, timerActive, computeTimeRemaining]);
+  }, [txIdForTimer, timerActive, computeTimeRemaining]);
 
-  // Timer: update from wall-clock every second + Page Visibility recalc when tab becomes active
+  // Timer: setInterval + wall-clock; recalc when tab becomes active (countdown accurate even when tab inactive)
   useEffect(() => {
     if (!timerActive) return;
 
@@ -168,17 +176,19 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
       if (remaining <= 0) setTimerActive(false);
     };
 
-    const interval = setInterval(tick, 1000);
     tick(); // initial tick
+    const intervalId = setInterval(tick, 1000);
 
-    const onVisibilityChange = () => {
+    const onVisibilityOrFocus = () => {
       if (document.visibilityState === "visible") tick();
     };
-    document.addEventListener("visibilitychange", onVisibilityChange);
+    document.addEventListener("visibilitychange", onVisibilityOrFocus);
+    window.addEventListener("focus", onVisibilityOrFocus);
 
     return () => {
-      clearInterval(interval);
-      document.removeEventListener("visibilitychange", onVisibilityChange);
+      clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", onVisibilityOrFocus);
+      window.removeEventListener("focus", onVisibilityOrFocus);
     };
   }, [timerActive, computeTimeRemaining]);
 

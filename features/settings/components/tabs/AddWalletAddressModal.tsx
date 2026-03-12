@@ -551,7 +551,7 @@ const AddWalletAddressModal = ({
                         : "border-[#E3E6F0] dark:border-[#2A2A35] focus:ring-[#1D8751]/50"
                   } bg-white dark:bg-[var(--card-color)] px-4 py-3 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-[#5C6175] focus:outline-none focus:ring-2`}
                 />
-                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
                   {isValidating && (
                     <svg className="animate-spin h-4 w-4 text-[#1D8751]" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
@@ -564,9 +564,19 @@ const AddWalletAddressModal = ({
                     </svg>
                   )}
                   {!isValidating && addressIsInvalid && (
-                    <svg className="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAddress("");
+                        resetValidation();
+                      }}
+                      className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-red-500/10 hover:bg-red-500/20 text-red-500 transition-colors"
+                      title="Clear address"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
                   )}
                 </div>
               </div>

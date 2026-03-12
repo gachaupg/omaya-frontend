@@ -3,6 +3,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "@/store";
 import { fetchMyTransactions, setCurrentPage } from "@/features/p2p/slices/p2pWithdrawalDepositSlice";
+import { getMyTransactions } from "@/features/p2p/api";
 import { formatDistanceToNow } from "date-fns";
 import { NoDataFound } from "../ui/Transactions";
 import { useDashboardI18n } from "@/lib/useDashboardI18n";
@@ -77,14 +78,57 @@ const P2PWithdrawalDepositTransactions = ({ filterByType = "all" }: P2PWithdrawa
   );
   const itemsPerPage = 10;
   const tableRef = useRef<HTMLDivElement>(null);
+  const [allFilteredData, setAllFilteredData] = useState<any[] | null>(null);
+  const [loadingFiltered, setLoadingFiltered] = useState(false);
+  const prevFilterRef = useRef(filterByType);
 
-  /* -------------------------- fetch data ----------------------------- */
+  /* When filter is deposit/withdrawal: fetch all pages and filter client-side for correct pagination */
   useEffect(() => {
-    dispatch(fetchMyTransactions(currentPage));
-  }, [dispatch, currentPage]);
+    if (filterByType === "all") {
+      setAllFilteredData(null);
+      return;
+    }
+    let cancelled = false;
+    setLoadingFiltered(true);
+    const loadAllFiltered = async () => {
+      const all: any[] = [];
+      let page = 1;
+      let hasMore = true;
+      while (hasMore && page <= 100) {
+        const resp = await getMyTransactions(page);
+        const results = resp?.results || [];
+        if (results.length === 0) break;
+        const filtered = results.filter(
+          (tx: any) => (tx.transaction_type || "").toLowerCase() === filterByType
+        );
+        all.push(...filtered);
+        hasMore = !!resp?.next;
+        page++;
+      }
+      if (!cancelled) {
+        setAllFilteredData(all);
+      }
+      setLoadingFiltered(false);
+    };
+    loadAllFiltered();
+    return () => { cancelled = true; };
+  }, [filterByType]);
+
+  /* Fetch data: when "all" use API pagination; when filter use allFilteredData (client-side) */
+  useEffect(() => {
+    const filterChanged = prevFilterRef.current !== filterByType;
+    if (filterChanged) {
+      prevFilterRef.current = filterByType;
+      dispatch(setCurrentPage(1));
+    }
+    if (filterByType === "all") {
+      const pageToFetch = filterChanged ? 1 : currentPage;
+      dispatch(fetchMyTransactions({ page: pageToFetch, transactionType: undefined }));
+    }
+  }, [dispatch, currentPage, filterByType]);
 
   /* --------------------------- loading / error ----------------------- */
-  if (loading) {
+  if (loading || (filterByType !== "all" && loadingFiltered)) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#1D8751]" />
@@ -100,7 +144,9 @@ const P2PWithdrawalDepositTransactions = ({ filterByType = "all" }: P2PWithdrawa
     );
   }
 
-  if (!transactions || !transactions.results) {
+  const useFilteredMode = filterByType !== "all" && allFilteredData !== null;
+
+  if (!useFilteredMode && (!transactions || !transactions.results)) {
     return (
       <NoDataFound
         title={t(
@@ -115,26 +161,20 @@ const P2PWithdrawalDepositTransactions = ({ filterByType = "all" }: P2PWithdrawa
     );
   }
 
-  // Sort transactions by timestamp (newest first)
-  const sortedResults = [...transactions.results].sort((a: any, b: any) => {
+  const baseResults = useFilteredMode
+    ? allFilteredData
+    : (transactions?.results || []);
+
+  const sortedResults = [...baseResults].sort((a: any, b: any) => {
     const dateA = new Date(a.timestamp).getTime();
     const dateB = new Date(b.timestamp).getTime();
-    return dateB - dateA; // Sort in descending order (newest first)
+    return dateB - dateA;
   });
 
-  // Filter by transaction type if specified
-  const filteredResults =
-    filterByType === "all"
-      ? sortedResults
-      : sortedResults.filter(
-          (tx: any) =>
-            (tx.transaction_type || "").toLowerCase() === filterByType
-        );
-
-  const totalPages = Math.ceil(transactions.count / itemsPerPage);
-
-  // Use filtered results (client-side filter on current page)
-  const paginatedResults = filteredResults;
+  const filteredCount = useFilteredMode ? sortedResults.length : transactions!.count;
+  const totalPages = Math.ceil(filteredCount / itemsPerPage);
+  const startIdx = (currentPage - 1) * itemsPerPage;
+  const paginatedResults = sortedResults.slice(startIdx, startIdx + itemsPerPage);
 
   // Show no data when filtered results are empty
   if (paginatedResults.length === 0) {
@@ -146,7 +186,7 @@ const P2PWithdrawalDepositTransactions = ({ filterByType = "all" }: P2PWithdrawa
         )}
         message={
           filterByType !== "all"
-            ? `No ${filterByType} transactions found on this page.`
+            ? `No ${filterByType} transactions found.`
             : t(
                 "transactions.noWithdrawalDepositMessage",
                 "There are currently no P2P withdrawal/deposit transactions to display. Please check back later or try adjusting your filters."
@@ -194,7 +234,7 @@ const P2PWithdrawalDepositTransactions = ({ filterByType = "all" }: P2PWithdrawa
       <div className="flex flex-col items-center gap-3 sm:gap-4">
         {/* Show count info */}
         <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 text-center px-2">
-          {t("transactions.showing", "Showing")} {((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, transactions.count)} {t("transactions.of", "of")} {transactions.count} {t("transactions.transactions", "transactions")}
+          {t("transactions.showing", "Showing")} {filteredCount === 0 ? 0 : ((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, filteredCount)} {t("transactions.of", "of")} {filteredCount} {t("transactions.transactions", "transactions")}
         </div>
 
         {/* Pagination controls */}
