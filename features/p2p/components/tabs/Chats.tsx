@@ -217,6 +217,20 @@ export const Chats: React.FC = () => {
     }
   }, [selectedUser, showEmojiPicker]);
 
+  // Compute if chat is closed (trade completed/cancelled)
+  const isChatClosed = useMemo(() => {
+    const chatStatus = selectedUser ? (selectedUser as any).status : null;
+    const normalizedStatus = chatStatus ? String(chatStatus).toLowerCase() : null;
+    return normalizedStatus === "complete" || normalizedStatus === "completed" || normalizedStatus === "responded" || normalizedStatus === "cancelled";
+  }, [selectedUser]);
+
+  // Close emoji picker when chat becomes closed
+  useEffect(() => {
+    if (isChatClosed && showEmojiPicker) {
+      setShowEmojiPicker(false);
+    }
+  }, [isChatClosed, showEmojiPicker]);
+
   // Common emojis
   const commonEmojis = [
     "😀", "😃", "😄", "😁", "😆", "😅", "😂", "🤣", "😊", "😇",
@@ -545,7 +559,7 @@ export const Chats: React.FC = () => {
         setIsRecording(false);
         setAudioPreview({ file, duration: durationSeconds, url });
       };
-      mediaRecorder.start();
+      mediaRecorder.start(500); // 500ms timeslice ensures we get data during recording
       setIsRecording(true);
       setRecordingSeconds(0);
     } catch (err) {
@@ -1245,9 +1259,9 @@ export const Chats: React.FC = () => {
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                disabled={!selectedUser || !termsAccepted || isSending || isRecording}
+                disabled={!selectedUser || !termsAccepted || isSending || isRecording || isChatClosed}
                 className="w-8 h-8 flex-shrink-0 rounded-md bg-gray-300 dark:bg-[#374151] text-gray-600 dark:text-gray-400 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-400 dark:hover:bg-[#4B5563] transition-colors"
-                title={!selectedUser ? "Select a conversation to attach images" : "Attach image"}
+                title={isChatClosed ? "Chat is closed" : !selectedUser ? "Select a conversation to attach images" : "Attach image"}
                 aria-label="Attach image"
               >
                 <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -1269,20 +1283,22 @@ export const Chats: React.FC = () => {
                 <button
                   type="button"
                   onClick={isRecording ? stopRecording : startRecording}
-                  disabled={!selectedUser || !termsAccepted || isSending || !!audioPreview}
+                  disabled={!selectedUser || !termsAccepted || isSending || !!audioPreview || isChatClosed}
                   className={`w-8 h-8 flex-shrink-0 rounded-md flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${
                     isRecording
                       ? "bg-red-500 text-white hover:bg-red-600 animate-pulse"
                       : "bg-gray-300 dark:bg-[#374151] text-gray-600 dark:text-gray-400 hover:bg-gray-400 dark:hover:bg-[#4B5563]"
                   }`}
                   title={
-                    !selectedUser
-                      ? "Select a conversation to record"
-                      : audioPreview
-                        ? "Send or discard recording first"
-                        : isRecording
-                          ? "Click to stop recording"
-                          : "Record voice message"
+                    isChatClosed
+                      ? "Chat is closed"
+                      : !selectedUser
+                        ? "Select a conversation to record"
+                        : audioPreview
+                          ? "Send or discard recording first"
+                          : isRecording
+                            ? "Click to stop recording"
+                            : "Record voice message"
                   }
                   aria-label={isRecording ? "Stop recording" : "Record voice message"}
                 >
@@ -1350,12 +1366,12 @@ export const Chats: React.FC = () => {
               <div className="relative" ref={emojiPickerRef}>
                 <button
                   type="button"
-                  disabled={!selectedUser || !termsAccepted || isSending || isRecording}
+                  disabled={!selectedUser || !termsAccepted || isSending || isRecording || isChatClosed}
                   className="w-8 h-8 flex-shrink-0 rounded-full bg-gray-300 dark:bg-[#374151] text-gray-600 dark:text-gray-400 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-400 dark:hover:bg-[#4B5563] transition-colors"
-                  title={!selectedUser ? "Select a conversation to use emojis" : "Pick emoji"}
+                  title={isChatClosed ? "Chat is closed" : !selectedUser ? "Select a conversation to use emojis" : "Pick emoji"}
                   aria-label="Pick emoji"
                   onClick={() => {
-                    if (selectedUser && termsAccepted && !isSending) {
+                    if (selectedUser && termsAccepted && !isSending && !isChatClosed) {
                       setShowEmojiPicker(!showEmojiPicker);
                     }
                   }}
@@ -1366,7 +1382,7 @@ export const Chats: React.FC = () => {
                 </button>
 
                 {/* Emoji picker dropdown */}
-                {showEmojiPicker && selectedUser && (
+                {showEmojiPicker && selectedUser && !isChatClosed && (
                   <div className="absolute bottom-full right-0 mb-2 w-64 h-48 bg-white dark:bg-[#1F2937] border border-gray-300 dark:border-[#374151] rounded-lg shadow-lg p-3 overflow-y-auto z-50">
                     <div className="grid grid-cols-8 gap-1">
                       {commonEmojis.map((emoji, index) => (

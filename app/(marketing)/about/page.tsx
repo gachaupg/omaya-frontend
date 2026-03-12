@@ -33,9 +33,25 @@ import {
   Trophy,
 } from "lucide-react";
 import FloatingParticles from "@/components/ui/floating-particles";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store/rootReducer";
+import { setAuthRedirectPath } from "@/lib/utils/authRedirect";
+
+const PRIVACY_PATH = "/dashboard/account/?tab=privacy";
 
 const AboutPage = () => {
+  const router = useRouter();
+  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
+
+  const handleSecurityClick = () => {
+    if (isAuthenticated) {
+      router.push(PRIVACY_PATH);
+    } else {
+      setAuthRedirectPath(PRIVACY_PATH);
+      router.push("/auth/login");
+    }
+  };
   const stats = [
     {
       icon: Users,
@@ -1147,12 +1163,13 @@ const AboutPage = () => {
                 </div>
               </div>
               {/* CTA Button */}
-              <Link
-                href="/dashboard/account/?tab=privacy"
-                className="inline-block px-6 py-3 bg-[#1D8751] text-white text-sm font-semibold rounded-full hover:bg-[#166b3e] transition-all duration-300"
+              <button
+                type="button"
+                onClick={handleSecurityClick}
+                className="inline-block px-6 py-3 bg-[#1D8751] text-white text-sm font-semibold rounded-full hover:bg-[#166b3e] transition-all duration-300 cursor-pointer"
               >
                 Learn About Our Security
-              </Link>
+              </button>
             </div>
           </div>
         </div>

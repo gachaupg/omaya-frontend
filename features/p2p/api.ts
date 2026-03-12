@@ -2,6 +2,7 @@
  * api.ts – auto‑generated placeholder
  */
 import { del, get, patch, post, put } from "@/lib/apiClient";
+import { storage } from "@/features/auth/utils/storage";
 import { withRetry } from "@/lib/utils/retry";
 import {
   P2PDeposit,
@@ -564,6 +565,13 @@ export const getTradeMessages = async (tradeId: string) => {
   });
 };
 
+/** Get CSRF token from cookies */
+const getCsrfToken = (): string => {
+  if (typeof document === 'undefined') return '';
+  const match = document.cookie.match(/csrftoken=([^;]+)/);
+  return match ? match[1] : '';
+};
+
 export const postTradeMessage = async (
   tradeId: string,
   payload: {
@@ -580,47 +588,52 @@ export const postTradeMessage = async (
   return withRetry(async () => {
     const formData = new FormData();
     formData.append('message', payload.message);
-
-    // Append sender_name if provided
-    if (payload.sender_name) {
-      formData.append('sender_name', payload.sender_name);
-    }
-
-    // Append each image file to FormData
-    payload.uploaded_images.forEach((file) => {
-      formData.append('uploaded_images', file);
-    });
-
-    // Append each audio file to FormData (voice messages). Use the same field name
-    // so the server receives: message, sender_name, duration, uploaded_audios (file).
+    if (payload.sender_name) formData.append('sender_name', payload.sender_name);
+    payload.uploaded_images.forEach((f) => formData.append('uploaded_images', f));
     if (payload.uploaded_audios?.length) {
-      payload.uploaded_audios.forEach((file) => {
-        formData.append('uploaded_audios', file, file.name);
-      });
+      const f = payload.uploaded_audios[0];
+      if (f.size === 0) {
+        throw new Error('Recording failed – audio file is empty. Try recording again.');
+      }
+      formData.append('uploaded_audios', f, f.name);
     }
-
-    // Append duration in seconds (optional, for voice messages)
     if (payload.duration !== undefined && payload.duration >= 0) {
       formData.append('duration', String(Math.round(payload.duration)));
     }
 
-    // DevTools Network tab will show the raw multipart body (boundaries + parts).
-    // This log is a readable summary of what we're sending.
-    if (payload.uploaded_audios?.length) {
-      const f = payload.uploaded_audios[0];
-      logger.debug('p2p', '[P2P Audio] Payload summary: message, sender_name, duration, uploaded_audios:', {
-        message: payload.message || '(empty)',
-        sender_name: payload.sender_name,
-        duration: payload.duration,
-        uploaded_audios: `<audio file: ${f.name}, ${(f.size / 1024).toFixed(1)} KB>`,
+    const hasFiles = (payload.uploaded_images?.length || 0) + (payload.uploaded_audios?.length || 0) > 0;
+
+    if (hasFiles) {
+      const token = storage.getProfile()?.tokens?.access;
+      const url = `${API_CONFIG.BASE_URL}${API_CONFIG.P2P.TRADE_MESSAGES(tradeId)}`;
+      return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', url);
+        xhr.setRequestHeader('Accept', 'application/json');
+        xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+        xhr.setRequestHeader('X-CSRFToken', getCsrfToken());
+        if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+        xhr.withCredentials = true;
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              resolve(JSON.parse(xhr.responseText || '{}'));
+            } catch {
+              resolve({});
+            }
+          } else {
+            reject(new Error(xhr.responseText || `HTTP ${xhr.status}`));
+          }
+        };
+        xhr.onerror = () => reject(new Error('Network error'));
+        // Do NOT set Content-Type – browser must set multipart/form-data; boundary=...
+        xhr.send(formData);
       });
     }
 
-    // Do not set Content-Type manually for FormData – axios sets
-    // multipart/form-data with the correct boundary automatically.
     const response = await post(
       `${API_CONFIG.P2P.TRADE_MESSAGES(tradeId)}`,
-      formData
+      Object.fromEntries(formData.entries()) as Record<string, string>,
     );
     return response.data;
   });
