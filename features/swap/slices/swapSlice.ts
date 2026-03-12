@@ -244,7 +244,9 @@ export const createSwapTransaction = createAsyncThunk(
               "The server encountered an error. Please try again later."
             );
           } else if (
-            error.message === "Amount you entered is too small"
+            error.message === "Amount you entered is too small" ||
+            (error.message?.toLowerCase().includes("failed to create transaction") &&
+              (error.message?.includes("400") || error.message?.toLowerCase().includes("changenow")))
           ) {
             // Show inline above button, no toast
           } else if (

@@ -205,21 +205,44 @@ export const getPublicEstimateSwap = async (
 export const createSwap = async (
   swapData: CreateSwapRequest
 ): Promise<CreateSwapResponse> => {
-  return withRetry(async () => {
-    logger.debug('swap', "Creating swap with data:", swapData);
-    logger.debug('swap', "API endpoint:", API_CONFIG.SWAP.CREATE_SWAP);
+  // No withRetry - fail fast (ChangeNOW 400 = amount too small, retrying is pointless)
+  logger.debug('swap', "Creating swap with data:", swapData);
+  logger.debug('swap', "API endpoint:", API_CONFIG.SWAP.CREATE_SWAP);
 
-    try {
-      const response = await post<CreateSwapResponse>(
-        API_CONFIG.SWAP.CREATE_SWAP,
-        swapData
-      );
-      logger.debug('swap', "Swap response:", response.data);
-      return response.data;
-    } catch (error: any) {
+  try {
+    const response = await post<CreateSwapResponse>(
+      API_CONFIG.SWAP.CREATE_SWAP,
+      swapData
+    );
+    logger.debug('swap', "Swap response:", response.data);
+    return response.data;
+  } catch (error: any) {
       console.error("Swap creation error:", error);
       console.error("Error response:", error.response?.data);
       console.error("Error status:", error.response?.status);
+
+      // Build raw error string from all possible response shapes
+      const rawError =
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        error.response?.data?.detail ||
+        (typeof error.response?.data === "string" ? error.response.data : "") ||
+        "";
+      const rawStr =
+        typeof rawError === "string"
+          ? rawError
+          : JSON.stringify(error.response?.data || {});
+
+      // ChangeNow 400 / "Failed to create transaction" = amount too small (do not retry)
+      const isChangeNowAmountTooSmall =
+        (rawStr.toLowerCase().includes("failed to create transaction") ||
+          rawStr.toLowerCase().includes("changenow") ||
+          rawStr.toLowerCase().includes("changenow.io")) &&
+        (rawStr.includes("400") || rawStr.toLowerCase().includes("bad request"));
+
+      if (isChangeNowAmountTooSmall) {
+        throw new Error("Amount you entered is too small");
+      }
 
       // Provide user-friendly error messages for different status codes
       if (error.response?.status === 500) {
@@ -227,19 +250,6 @@ export const createSwap = async (
           "Server Error: Unable to create swap. Please try again later."
         );
       } else if (error.response?.status === 400) {
-        const rawError =
-          error.response?.data?.error ||
-          error.response?.data?.message ||
-          error.response?.data?.detail ||
-          "";
-        const rawStr = typeof rawError === "string" ? rawError : JSON.stringify(error.response?.data || "");
-        // ChangeNow 400 Bad Request typically means amount too small
-        const isChangeNow400 =
-          (rawStr.toLowerCase().includes("changenow") || rawStr.toLowerCase().includes("changenow.io")) &&
-          (rawStr.includes("400") || rawStr.toLowerCase().includes("bad request"));
-        if (isChangeNow400) {
-          throw new Error("Amount you entered is too small");
-        }
         const errorMessage = typeof rawError === "string" ? rawError : rawStr || "Invalid swap request. Please check your input.";
         throw new Error(`Bad Request: ${errorMessage}`);
       } else if (error.response?.status === 401) {
@@ -265,8 +275,7 @@ export const createSwap = async (
           error.response?.data?.message || "An unexpected error occurred.";
         throw new Error(`Error ${error.response.status}: ${errorMessage}`);
       }
-    }
-  });
+  }
 };
 
 export const getSwapStatus = async (swapId: string): Promise<SwapStatus> => {
