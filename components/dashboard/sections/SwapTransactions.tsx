@@ -49,7 +49,12 @@ const SwapTransactions = () => {
     );
   }
 
-  if (!data || !data.data || data.data.length === 0) {
+  // Show only completed swaps in the dashboard
+  const completedSwaps = (data?.data ?? []).filter((t: SwapTransaction) =>
+    ["completed", "finished"].includes((t.status || "").toLowerCase())
+  );
+
+  if (!data || !data.data || completedSwaps.length === 0) {
     return (
       <div className="overflow-x-auto">
         <div className="w-full text-center py-8">
@@ -102,7 +107,7 @@ const SwapTransactions = () => {
     <div className="w-full">
       {/* Mobile Card Layout */}
       <div className="block sm:hidden space-y-3">
-        {data.data.map((transaction: SwapTransaction) => (
+        {completedSwaps.map((transaction: SwapTransaction) => (
           <div
             key={transaction.id}
             className="bg-transparent border border-[#E8EFF5] dark:border-[#35353E] rounded-xl p-4 space-y-3"
@@ -181,7 +186,7 @@ const SwapTransactions = () => {
             </tr>
           </thead>
           <tbody>
-            {data.data.map((transaction: SwapTransaction) => (
+            {completedSwaps.map((transaction: SwapTransaction) => (
               <tr
                 key={transaction.id}
                 className="border-b border-[#E8EFF5] dark:border-[#35353E] hover:bg-[#F5F5F5] dark:hover:bg-[#23232B] transition-colors"
@@ -238,7 +243,7 @@ const SwapTransactions = () => {
       {data.pages > 1 && (
         <div className="flex flex-col sm:flex-row items-center justify-between mt-4 pt-4 border-t border-[#E8EFF5] dark:border-[#35353E] gap-3 sm:gap-0">
           <div className="text-xs sm:text-sm text-[#788099] text-center sm:text-left">
-            Page {data.page} of {data.pages} ({data.total} total)
+            Page {data.page} of {data.pages} ({completedSwaps.length} completed)
           </div>
           <div className="flex gap-2">
             <button
