@@ -115,6 +115,24 @@ const Withdraw = () => {
     }
 
     setErrors(errorObj);
+
+    const firstErrorField = ["amount", "walletAddress", "confirmAddress"].find(
+      (field) => errorObj[field as keyof typeof errorObj]
+    );
+
+    if (firstErrorField) {
+      setTimeout(() => {
+        const element = document.getElementById(`${firstErrorField}-section`);
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth", block: "center" });
+          const input = element.querySelector("input");
+          if (input) {
+            input.focus({ preventScroll: true });
+          }
+        }
+      }, 100);
+    }
+
     return validationErrors.length === 0 && confirmAddress;
   };
 
@@ -430,7 +448,7 @@ const Withdraw = () => {
 
               <div className="mb-3 p-3 border border-[#E8EFF5] dark:border-[#35353F] bg-white dark:bg-[#1A1A1F] rounded-[18px] shadow-sm">
                 <div className="flex  flex-col md:flex-row gap-4 mb-2">
-                  <div className="flex-1">
+                  <div className="flex-1" id="amount-section">
                     <label className="block text-sm text-[#788099] dark:text-[#A3A3A3] mb-1">Amount</label>
                     <input
                       className={`w-full  bg-white dark:bg-[var(--bg-color)] border border-[#E8EFF5] dark:border-[#35353F] rounded-[18px] px-1 py-1 text-[#788099] dark:text-white text-lg focus:outline-none ${errors.amount ? "border-red-500" : ""
@@ -594,7 +612,7 @@ const Withdraw = () => {
                 <div className="text-md font-bold mb-2 text-[#788099] dark:text-[#788099]">
                   2- Your Wallet Address
                 </div>
-                <div className="mb-2 border border-[#E8EFF5] dark:border-[#35353F] bg-white dark:bg-[#1A1A1F] p-3 rounded-[18px] shadow-sm">
+                <div className="mb-2 border border-[#E8EFF5] dark:border-[#35353F] bg-white dark:bg-[#1A1A1F] p-3 rounded-[18px] shadow-sm" id="walletAddress-section">
                   <label className="block text-[#A3A3A3] mb-1">
                     Wallet/Account Address
                   </label>
@@ -678,7 +696,7 @@ const Withdraw = () => {
                       {errors.walletAddress}
                     </div>
                   )}
-                  <div className="flex items-start text-[#1D8751] text-xs mb-2">
+                  <div className="flex items-start text-[#1D8751] text-xs mb-2" id="confirmAddress-section">
                     <input
                       type="checkbox"
                       className="mr-2 mt-1 accent-[#1D8751] shrink-0"

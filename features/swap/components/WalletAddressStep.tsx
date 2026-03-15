@@ -301,13 +301,15 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                           }
                         }}
                         onSaveCurrent={async () => {
-                          if (!walletAddress.trim() || !currentCurrency) return;
-                          await saveBookmark({
-                            address: walletAddress.trim(),
-                            label: `My ${currentCurrency} wallet`,
-                            network: currentNetwork || "",
-                            asset: currentCurrency,
-                          });
+                          try {
+                            if (!walletAddress.trim() || !currentCurrency) return;
+                            await saveBookmark({
+                              address: walletAddress.trim(),
+                              label: `My ${currentCurrency} wallet`,
+                              network: currentNetwork || "",
+                              asset: currentCurrency,
+                            });
+                          } catch { /* handled by hook */ }
                         }}
                         anchorRef={bookmarkAnchorRef}
                         isDark={isDark}
@@ -559,7 +561,10 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                     href="/legal/terms-of-service"
                     rel="noopener noreferrer"
                     className="text-[#1D8751] underline font-medium hover:text-[#166b3e]"
-                    onClick={onBeforeLegalNavigate}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onBeforeLegalNavigate?.();
+                    }}
                   >
                     Terms of Use
                   </Link>{" "}
@@ -567,7 +572,10 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                     href="/legal/privacy-policy"
                     rel="noopener noreferrer"
                     className="text-[#1D8751] underline font-medium hover:text-[#166b3e]"
-                    onClick={onBeforeLegalNavigate}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onBeforeLegalNavigate?.();
+                    }}
                   >
                     Privacy Policy
                   </Link>
@@ -576,7 +584,10 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                     href="/legal/payment-policy"
                     rel="noopener noreferrer"
                     className="text-[#1D8751] underline font-medium hover:text-[#166b3e]"
-                    onClick={onBeforeLegalNavigate}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onBeforeLegalNavigate?.();
+                    }}
                   >
                     Payment Policies
                   </Link>
@@ -585,7 +596,10 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                     href="/legal/aml-policy"
                     rel="noopener noreferrer"
                     className="text-[#1D8751] font-medium underline hover:text-[#166b3e]"
-                    onClick={onBeforeLegalNavigate}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onBeforeLegalNavigate?.();
+                    }}
                   >
                     AML
                   </Link>
@@ -594,7 +608,10 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                     href="/legal/risk-disclosure-statement"
                     rel="noopener noreferrer"
                     className="text-[#1D8751] font-medium underline hover:text-[#166b3e]"
-                    onClick={onBeforeLegalNavigate}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onBeforeLegalNavigate?.();
+                    }}
                   >
                     Risk Disclosure Statement
                   </Link>

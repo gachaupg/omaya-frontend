@@ -39,6 +39,7 @@ interface ExpressExchangeFormProps {
   balance?: number;
   skipAmountValidation?: boolean; // New prop to skip amount validation when posting ads
   onCancel?: () => void;
+  onBeforeLegalNavigate?: () => void;
 }
 
 const ExpressExchangeForm: React.FC<ExpressExchangeFormProps> = ({
@@ -47,6 +48,7 @@ const ExpressExchangeForm: React.FC<ExpressExchangeFormProps> = ({
   balance,
   skipAmountValidation = false,
   onCancel,
+  onBeforeLegalNavigate,
 }) => {
   // Debug logging for balance
   logger.debug('p2p', "ExpressExchangeForm - Received balance:", balance);
@@ -76,6 +78,7 @@ const ExpressExchangeForm: React.FC<ExpressExchangeFormProps> = ({
           balance={balance}
           skipAmountValidation={skipAmountValidation}
           onCancel={onCancel}
+          onBeforeLegalNavigate={onBeforeLegalNavigate}
         />
       ) : (
         <WithdrawalForm
@@ -84,6 +87,7 @@ const ExpressExchangeForm: React.FC<ExpressExchangeFormProps> = ({
           onModeChange={handleModeChange}
           balance={balance}
           onCancel={onCancel}
+          onBeforeLegalNavigate={onBeforeLegalNavigate}
         />
       )}
     </div>

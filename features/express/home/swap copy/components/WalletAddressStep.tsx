@@ -259,13 +259,15 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                         }
                       }}
                       onSaveCurrent={async () => {
-                        if (!walletAddress.trim() || !currentCurrency) return;
-                        await saveBookmark({
-                          address: walletAddress.trim(),
-                          label: `My ${currentCurrency} wallet`,
-                          network: currentNetwork || "",
-                          asset: currentCurrency,
-                        });
+                        try {
+                          if (!walletAddress.trim() || !currentCurrency) return;
+                          await saveBookmark({
+                            address: walletAddress.trim(),
+                            label: `My ${currentCurrency} wallet`,
+                            network: currentNetwork || "",
+                            asset: currentCurrency,
+                          });
+                        } catch { /* handled by hook */ }
                       }}
                       anchorRef={bookmarkAnchorRef}
                       isDark={isDark}
