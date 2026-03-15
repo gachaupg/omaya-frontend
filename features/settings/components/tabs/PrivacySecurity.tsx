@@ -329,39 +329,38 @@ const PrivacySecurity = () => {
     setShowLogoutModal(true);
   };
 
+  const performLogoutAndRedirect = React.useCallback(() => {
+    dispatch(clearDeviceSessionsError());
+    dispatch(logout());
+    if (typeof window !== "undefined") {
+      const p2pAct = localStorage.getItem("p2p_act");
+      localStorage.clear();
+      if (p2pAct) {
+        localStorage.setItem("p2p_act", p2pAct);
+      }
+      document.cookie = "access_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
+      document.cookie = "refresh_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
+      document.cookie = "twoFA_enabled=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
+      sessionStorage.clear();
+      if ("indexedDB" in window) {
+        window.indexedDB.databases().then((databases) => {
+          databases.forEach((db) => {
+            if (db.name) {
+              window.indexedDB.deleteDatabase(db.name);
+            }
+          });
+        });
+      }
+      window.location.replace("/auth/login");
+    }
+  }, [dispatch]);
+
   const handleLogoutAllDevices = async () => {
     isRedirectingAfterLogoutAllRef.current = true;
     setLogoutLoading(true);
     setLogoutMode("all");
     setLogoutProgress(0);
     dispatch(clearDeviceSessionsError());
-
-    const clearAndRedirect = () => {
-      dispatch(clearDeviceSessionsError());
-      dispatch(logout());
-      if (typeof window !== "undefined") {
-        const p2pAct = localStorage.getItem("p2p_act");
-        localStorage.clear();
-        if (p2pAct) {
-          localStorage.setItem("p2p_act", p2pAct);
-        }
-        document.cookie = "access_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
-        document.cookie = "refresh_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
-        document.cookie = "twoFA_enabled=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
-        sessionStorage.clear();
-        if (typeof window !== "undefined" && "indexedDB" in window) {
-          window.indexedDB.databases().then((databases) => {
-            databases.forEach((db) => {
-              if (db.name) {
-                window.indexedDB.deleteDatabase(db.name);
-              }
-            });
-          });
-        }
-        // Hard redirect so user is fully logged out from the system
-        window.location.replace("/auth/login");
-      }
-    };
 
     try {
       await dispatch(logoutAllDevices()).unwrap();
@@ -373,15 +372,13 @@ const PrivacySecurity = () => {
         // Ignore - we're clearing locally anyway
       }
       setLogoutProgress(100);
-      showToast.success("All devices logged out successfully");
       isRedirectingAfterLogoutAllRef.current = true;
-      clearAndRedirect();
+      performLogoutAndRedirect();
     } catch (_) {
       // Server may return 400 (e.g. already logged out); still clear local state and redirect
       setLogoutProgress(100);
-      showToast.success("Signed out");
       isRedirectingAfterLogoutAllRef.current = true;
-      clearAndRedirect();
+      performLogoutAndRedirect();
     } finally {
       setLogoutLoading(false);
       setShowLogoutModal(false);
@@ -449,13 +446,21 @@ const PrivacySecurity = () => {
     setDeletingSessionId(sessionToDelete.session_id);
     setShowDeleteConfirmModal(false);
 
+    // Deleting current session = sign out immediately
+    if (sessionToDelete.is_current) {
+      try {
+        await dispatch(logoutAllDevices()).unwrap();
+      } catch (_) {
+        // Ignore - we'll clear locally
+      }
+      performLogoutAndRedirect();
+      return;
+    }
+
     try {
       await dispatch(logoutDevice(sessionToDelete.session_id)).unwrap();
       showToast.success("Device session removed successfully");
-      // Refresh the sessions list after deletion
       dispatch(fetchDeviceSessions());
-      
-      // Navigate to account privacy tab after deleting a session
       router.push("/dashboard/account/?tab=privacy");
     } catch (error: any) {
       console.error("Failed to remove device session:", error);
@@ -752,10 +757,12 @@ const PrivacySecurity = () => {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4">
           <div className="dark:bg-[var(--card-color)] bg-white p-4 sm:p-6 rounded-xl w-full max-w-sm sm:max-w-md max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-semibold mb-4 dark:text-white text-gray-900">
-              Delete Session?
+              {sessionToDelete.is_current ? "Sign Out This Device?" : "Delete Session?"}
             </h3>
             <div className="dark:text-[#8C8CA1] text-gray-600 text-sm mb-4">
-              Are you sure you want to delete this session? This will sign out the device from your account.
+              {sessionToDelete.is_current
+                ? "This will sign you out immediately and redirect you to the login page."
+                : "Are you sure you want to delete this session? This will sign out the device from your account."}
             </div>
             <div className="bg-gray-50 dark:bg-[#1F2937] rounded-lg p-3 mb-4 space-y-2 text-sm">
               <div className="flex items-center gap-2">
@@ -790,7 +797,7 @@ const PrivacySecurity = () => {
                 onClick={handleConfirmDelete}
                 disabled={deletingSessionId === sessionToDelete.session_id}
               >
-                {deletingSessionId === sessionToDelete.session_id ? "Deleting..." : "Delete Session"}
+                {deletingSessionId === sessionToDelete.session_id ? (sessionToDelete.is_current ? "Signing out..." : "Deleting...") : (sessionToDelete.is_current ? "Sign Out" : "Delete Session")}
               </button>
               <button
                 className="flex-1 dark:bg-[#35353E] bg-gray-400 dark:text-white text-gray-900 rounded px-4 py-2.5 font-semibold text-sm transition-colors"
@@ -1172,9 +1179,9 @@ const PrivacySecurity = () => {
                         </div>
                         <button
                           onClick={() => handleRemoveSessionClick(session)}
-                          disabled={deletingSessionId === session.session_id || session.is_current}
+                          disabled={deletingSessionId === session.session_id}
                           className="p-2 hover:bg-gray-100 dark:hover:bg-[#2A2A2A] rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                          title={session.is_current ? "Cannot delete current session" : "Delete session"}
+                          title={session.is_current ? "Sign out this device" : "Delete session"}
                         >
                           {deletingSessionId === session.session_id ? (
                             <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-[#1D8751]"></div>

@@ -211,41 +211,26 @@ const PaymentMethods = () => {
     return name.includes("bank");
   };
 
-  const isMobileOrMerchant = (p: UserPaymentDetail) => {
-    const name = (p?.payment_method_name || p?.payment_provider_name || "").toLowerCase();
-    return (
-      name.includes("mobile") ||
-      name.includes("merchant") ||
-      name.includes("money") ||
-      name.includes("mpesa") ||
-      name.includes("mtn") ||
-      name.includes("airtel")
-    );
+  // Normalize status: only "approved" (case-insensitive) goes to Approved tab; all else → Pending
+  const getStatusCategory = (p: UserPaymentDetail): "pending" | "approved" => {
+    const s = (p.status || "").toString().trim().toLowerCase();
+    return s === "approved" ? "approved" : "pending";
   };
 
-  const bankPayments = useMemo(
+  // All payment methods that support pending/approved (exclude pure crypto wallets for P2P)
+  const allPaymentMethodsWithStatus = useMemo(
     () =>
-      userPaymentDetails.filter(
-        (p) => isBankAccount(p) && !isCryptoWallet(p)
-      ),
+      userPaymentDetails.filter((p) => !isCryptoWallet(p)),
     [userPaymentDetails]
   );
 
   const bankPending = useMemo(
-    () => bankPayments.filter((p) => p.status?.toLowerCase() === "pending"),
-    [bankPayments]
+    () => allPaymentMethodsWithStatus.filter((p) => getStatusCategory(p) === "pending"),
+    [allPaymentMethodsWithStatus]
   );
   const bankApproved = useMemo(
-    () => bankPayments.filter((p) => p.status?.toLowerCase() === "approved"),
-    [bankPayments]
-  );
-
-  const mobileMerchantPayments = useMemo(
-    () =>
-      userPaymentDetails.filter(
-        (p) => isMobileOrMerchant(p) && !isCryptoWallet(p)
-      ),
-    [userPaymentDetails]
+    () => allPaymentMethodsWithStatus.filter((p) => getStatusCategory(p) === "approved"),
+    [allPaymentMethodsWithStatus]
   );
 
   const bankByTab = bankTab === "pending" ? bankPending : bankApproved;
@@ -264,10 +249,9 @@ const PaymentMethods = () => {
   }, [bankTab]);
 
   useEffect(() => {
-    if (paymentPage > totalPaymentPages) {
-      setPaymentPage(totalPaymentPages);
-    }
-  }, [totalPaymentPages, paymentPage]);
+    const maxPage = Math.max(1, totalPaymentPages);
+    setPaymentPage((prev) => (prev > maxPage ? maxPage : prev));
+  }, [totalPaymentPages]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -539,18 +523,16 @@ const PaymentMethods = () => {
                   Pending
                 </button>
               </div>
-              {bankByTab.length === 0 && mobileMerchantPayments.length === 0 && (
+              {bankByTab.length === 0 && (
                 <div className="rounded-2xl border border-dashed border-[#E3E6F0] dark:border-[#2A2A35] py-10 text-center text-sm text-gray-500 dark:text-[#7B819C]">
                   No payment methods yet. Add one via Linked Accounts.
                 </div>
               )}
               {paginatedBankPayments.map((payment: UserPaymentDetail) => {
-                const isPending = payment.status?.toLowerCase() === "pending";
+                const isPending = getStatusCategory(payment) === "pending";
                 const isBankMethod =
-                  payment?.payment_method_name
-                    ?.toLowerCase()
-                    .includes("bank") ||
-                  payment?.payment_provider_name?.toLowerCase().includes("bank");
+                  (payment?.payment_method_name || "").toLowerCase().includes("bank") ||
+                  (payment?.payment_provider_name || "").toLowerCase().includes("bank");
                 const inputLabel = isBankMethod ? "Bank Account" : "Wallet Address";
                 const placeholderText = isBankMethod
                   ? "Type in here your bank account number"
@@ -578,11 +560,22 @@ const PaymentMethods = () => {
                           <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-[#FF4D55] border-2 border-white dark:border-[#13131A]" />
                         )}
                       </div>
-                      <div className="flex-1 flex items-center justify-between">
+                      <div className="flex-1 flex items-center justify-between gap-2">
                         <div>
-                          <p className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
-                            {payment?.payment_method_name}
-                          </p>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
+                              {payment?.payment_method_name}
+                            </p>
+                            <span
+                              className={`inline-flex px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold capitalize ${
+                                isPending
+                                  ? "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/50"
+                                  : "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50"
+                              }`}
+                            >
+                              {isPending ? "Pending" : "Approved"}
+                            </span>
+                          </div>
                           <p className="text-xs text-gray-500 dark:text-[#8B90A5] mt-0.5">
                             {payment?.payment_provider_name}
                           </p>
@@ -646,37 +639,6 @@ const PaymentMethods = () => {
                   </div>
                 );
               })}
-              {/* Mobile & Merchant - appear directly */}
-              {mobileMerchantPayments.length > 0 && (
-                <div className="mt-6 pt-4 border-t border-[#E3E6F0] dark:border-[#2A2A35]">
-                  <p className="text-xs font-medium text-gray-500 dark:text-[#8B90A5] uppercase tracking-wide mb-3">Mobile & Merchant</p>
-                  {mobileMerchantPayments.map((payment: UserPaymentDetail) => {
-                    const isBankMethod = payment?.payment_method_name?.toLowerCase().includes("bank") || payment?.payment_provider_name?.toLowerCase().includes("bank");
-                    const inputLabel = isBankMethod ? "Bank Account" : "Wallet Address";
-                    const displayAddress = payment?.wallet_address || payment?.account_number || "";
-                    return (
-                      <div key={payment.id} className="flex flex-col gap-3 rounded-[28px] border border-[#E3E6F0] dark:border-[#2A2A35] bg-gray-50 dark:bg-[var(--card-color)] px-4 py-4 mb-3">
-                        <div className="flex items-start gap-4">
-                          <img src={payment?.provider_logo || "/default-provider-logo.svg"} alt="" className="w-12 h-12 object-contain flex-shrink-0" onError={(e) => { e.currentTarget.src = "/default-provider-logo.svg"; }} />
-                          <div className="flex-1 flex items-center justify-between">
-                            <div>
-                              <p className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">{payment?.payment_method_name}</p>
-                              <p className="text-xs text-gray-500 dark:text-[#8B90A5]">{payment?.payment_provider_name}</p>
-                            </div>
-                            <button className="text-[#1D8751] hover:text-red-500 transition-colors" title="Delete" disabled={deletingMethodId === payment.id.toString()} onClick={() => handleDeleteMethod(payment.id.toString())}>
-                              {deletingMethodId === payment.id.toString() ? <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="#1D8751" strokeWidth="4" fill="none" /><path className="opacity-75" fill="#1D8751" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" /></svg> : <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 cursor-pointer" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2" /></svg>}
-                            </button>
-                          </div>
-                        </div>
-                        <div>
-                          <label className="text-xs font-medium text-gray-500 dark:text-[#8B90A5] mb-2 block">{inputLabel}</label>
-                          <div className="rounded-full border border-[#E3E6F0] dark:border-[#2A2A35] bg-white dark:bg-[var(--card-color)] px-4 py-2 text-sm text-gray-900 dark:text-white">{displayAddress}</div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
               {bankByTab.length > 0 && (
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 mt-2 border-t border-[#E3E6F0] dark:border-[#2A2A35]">
                   <p className="text-xs sm:text-sm text-gray-500 dark:text-[#8B90A5]">

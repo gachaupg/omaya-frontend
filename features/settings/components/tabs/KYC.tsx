@@ -1,39 +1,71 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/store/rootReducer";
-import Image from "next/image";
+import { API_BASE_URL } from "@/config/api";
 import { getP2PProfileThunk, updateProfileThunk } from "@/features/p2p/slices/orderSlice";
 import { getUserProfile } from "@/features/auth/slices/authSlice";
 import { AppDispatch } from "@/store";
-import VerifiedBadge from "@/components/ui/VerifiedBadge";
 import { showToast } from "@/lib/utils/toast";
-
 import { logger } from '@/lib/utils/logger';
 
 const DEFAULT_AVATAR =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56' viewBox='0 0 56 56'%3E%3Ccircle cx='28' cy='28' r='28' fill='%23e5e7eb'/%3E%3Cg fill='%239ca3af'%3E%3Ccircle cx='28' cy='22' r='8'/%3E%3Cpath d='M28 32c-8 0-14 4-14 8v6c0 2 1 3 3 3h22c2 0 3-1 3-3v-6c0-4-6-8-14-8z'/%3E%3C/g%3E%3C/svg%3E";
 
+// Resolve relative URLs to full API URL (same as other profile components)
+const resolvePhotoUrl = (url: string | null | undefined): string => {
+  if (!url || typeof url !== "string" || !url.trim()) return "";
+  const u = url.trim();
+  if (u.startsWith("http://") || u.startsWith("https://") || u.startsWith("data:")) return u;
+  if (u.startsWith("/")) return `${API_BASE_URL.replace(/\/$/, "")}${u}`;
+  return u;
+};
+
 const KYC = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { user } = useSelector((state: RootState) => state.auth);
-  const [profileImage, setProfileImage] = useState(DEFAULT_AVATAR);
+  const { user, profile: userProfile } = useSelector((state: RootState) => state.auth);
+  const p2pProfile = useSelector((state: RootState) => state.p2pMarket?.getP2PProfile);
+  const [profileImage, setProfileImage] = useState<string | null>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("p2p_profile_image") || localStorage.getItem("profile_photo");
+    }
+    return null;
+  });
   const [isUpdating, setIsUpdating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const lastBase64Ref = useRef<string | null>(null);
 
+  // Use same displayImage pattern as P2pProfile and UserCard
+  const displayImage = profileImage || p2pProfile?.profile?.photo || userProfile?.photo || (user as { photo?: string })?.photo || null;
+
+  // Fetch P2P profile (same as UserCard)
   useEffect(() => {
-    if (user) {
-      dispatch(getP2PProfileThunk())
-        .unwrap()
-        .then((response) => {
-          if (response?.profile?.photo) {
-            setProfileImage(response.profile.photo);
+    if (!user) return;
+    dispatch(getP2PProfileThunk())
+      .unwrap()
+      .then((response) => {
+        if (response?.profile?.photo) {
+          setProfileImage(response.profile.photo);
+          if (typeof window !== "undefined") {
+            localStorage.setItem("p2p_profile_image", response.profile.photo);
+            localStorage.setItem("profile_photo", response.profile.photo);
           }
-        })
-        .catch((error) => {
-          logger.error('dashboard', "Failed to fetch profile:", error);
-        });
-    }
+        }
+      })
+      .catch((error) => {
+        logger.error('dashboard', "Failed to fetch profile:", error);
+      });
   }, [dispatch, user]);
+
+  // Listen for profile photo updates (same as UserCard)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handleProfilePhotoUpdate = (event: CustomEvent<{ photoUrl: string }>) => {
+      const url = event.detail?.photoUrl;
+      if (url) setProfileImage(url);
+    };
+    window.addEventListener('profilePhotoUpdated', handleProfilePhotoUpdate as EventListener);
+    return () => window.removeEventListener('profilePhotoUpdated', handleProfilePhotoUpdate as EventListener);
+  }, []);
 
   const handleImageClick = () => fileInputRef.current?.click();
   const handleImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -48,7 +80,7 @@ const KYC = () => {
       const reader = new FileReader();
       reader.onload = async (e) => {
         const base64Image = e.target?.result as string;
-        // Show preview immediately
+        lastBase64Ref.current = base64Image;
         setProfileImage(base64Image);
 
         try {
@@ -62,49 +94,19 @@ const KYC = () => {
           // Refetch P2P profile to get updated photo
           const response = await dispatch(getP2PProfileThunk()).unwrap();
           if (response?.profile?.photo) {
-            const updatedPhotoUrl = response.profile.photo;
-            setProfileImage(updatedPhotoUrl);
-            
-            // Update localStorage immediately with cache-busting timestamp
+            setProfileImage(response.profile.photo);
             if (typeof window !== "undefined") {
-              // Store the photo URL with timestamp to force cache refresh
-              const photoWithTimestamp = updatedPhotoUrl.includes('?') 
-                ? `${updatedPhotoUrl}&t=${Date.now()}`
-                : `${updatedPhotoUrl}?t=${Date.now()}`;
-              localStorage.setItem("profile_photo", updatedPhotoUrl);
-              
-              // Trigger a custom event to notify other components
-              window.dispatchEvent(new CustomEvent('profilePhotoUpdated', { 
-                detail: { photoUrl: updatedPhotoUrl } 
-              }));
+              localStorage.setItem("p2p_profile_image", response.profile.photo);
+              localStorage.setItem("profile_photo", response.profile.photo);
+              window.dispatchEvent(new CustomEvent('profilePhotoUpdated', { detail: { photoUrl: response.profile.photo } }));
             }
           }
-          
-          // Wait a bit for backend to sync, then refresh main auth profile
-          // This ensures the auth profile endpoint has the updated photo
-          await new Promise(resolve => setTimeout(resolve, 500));
           await dispatch(getUserProfile()).unwrap();
-          
-          // Force update localStorage again after getUserProfile to ensure sync
-          if (typeof window !== "undefined" && response?.profile?.photo) {
-            localStorage.setItem("profile_photo", response.profile.photo);
-          }
-          
           showToast.success("Profile image updated successfully");
         } catch (error: any) {
           logger.error('dashboard', "Profile update error:", error);
           showToast.error(error?.message || "Failed to update profile image");
-          // Revert the image if update fails
-          setProfileImage(DEFAULT_AVATAR);
-          // Try to reload the original profile image
-          try {
-            const response = await dispatch(getP2PProfileThunk()).unwrap();
-            if (response?.profile?.photo) {
-              setProfileImage(response.profile.photo);
-            }
-          } catch (fetchError) {
-            // Keep default avatar if fetch fails
-          }
+          setProfileImage(lastBase64Ref.current || null);
         } finally {
           setIsUpdating(false);
         }
@@ -132,7 +134,7 @@ const KYC = () => {
               className="relative cursor-pointer"
               onClick={handleImageClick}
             >
-              {!profileImage || profileImage === DEFAULT_AVATAR ? (
+              {!displayImage ? (
                 <svg
                   width="56"
                   height="56"
@@ -146,17 +148,14 @@ const KYC = () => {
                   <ellipse cx="28" cy="40" rx="16" ry="10" fill="#B8BAC7" />
                 </svg>
               ) : (
-                <Image
-                  src={profileImage}
+                <img
+                  src={resolvePhotoUrl(displayImage)}
                   alt="User avatar"
                   width={56}
                   height={56}
-                  className="object-cover rounded-full aspect-square"
-                  unoptimized
-                  onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-                    const target = e.currentTarget;
-                    target.onerror = null;
-                    target.src = DEFAULT_AVATAR;
+                  className="object-cover rounded-full aspect-square w-14 h-14"
+                  onError={() => {
+                    setProfileImage(lastBase64Ref.current || null);
                   }}
                 />
               )}
