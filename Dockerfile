@@ -1,5 +1,5 @@
-# Use an official Node.js runtime as the base image
-FROM node:20-alpine AS base
+# Use Node.js from ECR Public Gallery to avoid Docker Hub rate limits
+FROM public.ecr.aws/docker/library/node:20-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps

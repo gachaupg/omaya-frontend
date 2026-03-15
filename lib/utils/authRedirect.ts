@@ -2,6 +2,8 @@
 
 const AUTH_REDIRECT_KEY = "auth_redirect";
 const EXPRESS_PREFILL_KEY = "express_prefill_state";
+const RETURNING_FROM_LEGAL_KEY = "omaya_returning_from_legal";
+const EXPRESS_LEGAL_RETURN_STATE_KEY = "omaya_express_legal_return_state";
 
 export const setAuthRedirectPath = (path: string) => {
   if (typeof window === "undefined") {
@@ -34,6 +36,57 @@ export const consumeExpressPrefillState = (): Record<string, any> | null => {
     sessionStorage.removeItem(EXPRESS_PREFILL_KEY);
     return JSON.parse(raw) as Record<string, any>;
   } catch {
+    return null;
+  }
+};
+
+/** Save express form state before navigating to legal pages (Terms, Privacy, etc.) so back button restores it */
+export const setExpressLegalReturnState = (state: Record<string, any>) => {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.setItem(EXPRESS_LEGAL_RETURN_STATE_KEY, JSON.stringify(state));
+    sessionStorage.setItem(RETURNING_FROM_LEGAL_KEY, "1");
+  } catch {
+    // Ignore storage errors
+  }
+};
+
+/** Consume express legal return state when user returns from Terms/Privacy/etc. */
+export const consumeExpressLegalReturnState = (): Record<string, any> | null => {
+  if (typeof window === "undefined") return null;
+  try {
+    const returning = sessionStorage.getItem(RETURNING_FROM_LEGAL_KEY);
+    if (!returning) return null;
+    const raw = sessionStorage.getItem(EXPRESS_LEGAL_RETURN_STATE_KEY);
+    if (!raw) {
+      sessionStorage.removeItem(RETURNING_FROM_LEGAL_KEY);
+      return null;
+    }
+    sessionStorage.removeItem(RETURNING_FROM_LEGAL_KEY);
+    sessionStorage.removeItem(EXPRESS_LEGAL_RETURN_STATE_KEY);
+    const state = JSON.parse(raw) as Record<string, any>;
+    const paymentDetail = state.selectedPaymentDetail;
+    const paymentDetails = state.selectedPaymentDetails ?? (paymentDetail ? [paymentDetail] : undefined);
+    return {
+      amountValue: state.payAmount,
+      amountInput: state.payAmountInput,
+      receiveAmountValue: state.getAmount,
+      receiveAmountInput: state.getAmountInput,
+      payBank: state.payBank,
+      payment: paymentDetail,
+      paymentDetails,
+      asset: state.selectedAsset,
+      selectedAsset: state.selectedAsset,
+      selectedNetwork: state.selectedNetwork,
+      walletAddress: state.walletAddress,
+      termsAccepted: state.termsAccepted ?? state.isTermsAccepted,
+      apiResponse: state.apiResponse,
+      transactionCode: state.transactionCode,
+      isFirstCardSubmitted: state.isFirstCardSubmitted ?? true,
+    };
+  } catch {
+    sessionStorage.removeItem(RETURNING_FROM_LEGAL_KEY);
+    sessionStorage.removeItem(EXPRESS_LEGAL_RETURN_STATE_KEY);
     return null;
   }
 };
