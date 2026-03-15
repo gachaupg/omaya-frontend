@@ -16,8 +16,8 @@ import {
   fetchSupportedAssets,
   fetchSwapEstimate,
 } from "../../swap/slices/swapSlice";
-import { fetchUserPaymentDetails, fetchPublicPaymentMethods } from "../../p2p/slices/paymentMethodsSlice";
-import { fetchAdminWalletList, fetchAdminPaymentDetails } from "../../exchange/slices/paymentSlice";
+import { fetchPublicPaymentMethods } from "../../p2p/slices/paymentMethodsSlice";
+import { fetchAdminWalletList, fetchAdminPaymentDetails, fetchUserPaymentDetails } from "../../exchange/slices/paymentSlice";
 import PaymentMethodsModal from "../../p2p/components/ui/p2pdashboard/sections/PaymentMethodsModal";
 import { createExpressWithdrawal, fetchCommission, getCommissionApiAsset } from "../../express/api";
 import { Asset, DepositResponse } from "../../exchange/types";
@@ -46,6 +46,7 @@ import { ClipboardPaste } from "lucide-react";
 import CopyButton from "@/components/ui/CopyButton";
 
 import { logger } from '@/lib/utils/logger';
+import { useValidateAddress } from "@/hooks/useValidateAddress";
 
 interface UserPaymentDetail {
   id: number;
@@ -54,6 +55,7 @@ interface UserPaymentDetail {
   payment_provider_name: string;
   account_name: string;
   account_number: string;
+  status?: string;
   provider_name?: string;
   provider_logo?: string;
   wallet_address?: string;
@@ -61,6 +63,7 @@ interface UserPaymentDetail {
 
 // Helper function to get network value from asset (handles both Asset and SupportedAsset types)
 const getAssetNetwork = (asset: any): string => {
+  if (!asset) return "";
   // For SupportedAsset (swap assets) - has network property
   if (asset.network) {
     return asset.network;
@@ -88,6 +91,12 @@ const isSimpleCalculationAsset = (asset: any) => {
 };
 
 const isCommissionApiAsset = (asset: any) => !!getCommissionApiAsset(asset?.ticker || asset?.symbol || "");
+
+const isForexAsset = (asset: any) => {
+  if (!asset) return false;
+  const ticker = (asset?.ticker || asset?.symbol || "").toLowerCase();
+  return ticker === "fxp";
+};
 
 interface RatesCalculatorProps {
   activeTab?: 'crypto' | 'moneyx';
@@ -164,12 +173,69 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
   const [walletError, setWalletError] = useState<string>("");
   const [isPasted, setIsPasted] = useState(false);
 
+  // Currency and network from selected asset (for address validation)
+  const currentCurrency = useMemo(() => {
+    if (!selectedAsset) return "";
+    const v = selectedAsset.ticker || selectedAsset.symbol;
+    return (v === "USDT Tether" ? "USDT" : v || "").toLowerCase().trim();
+  }, [selectedAsset]);
+  const currentNetwork = useMemo(() => getAssetNetwork(selectedAsset) || "", [selectedAsset]);
+
+  // API-based address validation (same as express deposit / swap)
+  const {
+    result: addressValidationResult,
+    isValidating: isAddressValidating,
+    error: addressValidationError,
+    validate: validateAddress,
+    reset: resetAddressValidation,
+  } = useValidateAddress({
+    currency: currentCurrency,
+    network: currentNetwork,
+    debounceMs: 500,
+    minLength: 10,
+    validateEmpty: false,
+  });
+
+  // Sync validation result to walletError
+  useEffect(() => {
+    if (walletAddress.trim() === "") {
+      setWalletError("");
+      return;
+    }
+    if (!currentCurrency) {
+      setWalletError("Please select an asset first");
+      return;
+    }
+    if (isAddressValidating) return;
+    if (addressValidationResult) {
+      setWalletError(
+        addressValidationResult.isValid
+          ? ""
+          : (addressValidationResult.message || addressValidationResult.error || "Invalid address")
+      );
+    } else if (addressValidationError) {
+      setWalletError(addressValidationError);
+    }
+  }, [addressValidationResult, addressValidationError, isAddressValidating, walletAddress, currentCurrency]);
+
+  // Re-validate when asset changes
+  useEffect(() => {
+    if (walletAddress.trim() && currentCurrency) {
+      resetAddressValidation();
+      validateAddress(walletAddress, currentCurrency, currentNetwork);
+    }
+  }, [currentCurrency, currentNetwork]);
+
   const handlePaste = async () => {
     try {
       const text = await navigator.clipboard.readText();
       if (text) {
-        setWalletAddress(text);
+        const value = text.trim();
+        setWalletAddress(value);
         setWalletError("");
+        if (value && currentCurrency && currentNetwork) {
+          validateAddress(value, currentCurrency, currentNetwork);
+        }
         setIsPasted(true);
         setTimeout(() => setIsPasted(false), 2000);
       }
@@ -240,19 +306,21 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
     publicMethodsError
   } = useSelector((state: RootState) => state.paymentMethods);
 
-  const { adminPaymentDetails, adminWalletList, loading: paymentLoading, error: paymentError } = useSelector(
+  const { adminPaymentDetails, adminWalletList, loading: paymentLoading, error: paymentError, userPaymentDetails: userPaymentDetailsFromPayment, loading: userPaymentDetailsLoading } = useSelector(
     (state: RootState) => (state as any).payment || {}
   );
-  const { userPaymentDetails: userPaymentDetailsFromPayment } = useSelector(
-    (state: RootState) => (state as any).payment || {}
-  );
+  // Match express withdrawal: prefer payment slice, fallback p2p
   const effectiveUserPaymentDetailsFromRedux =
-    (userPaymentDetails?.length > 0 ? userPaymentDetails : userPaymentDetailsFromPayment) || [];
-  const rawUserDetails = userPaymentDetails ?? userPaymentDetailsFromPayment;
+    userPaymentDetailsFromPayment?.length > 0
+      ? userPaymentDetailsFromPayment
+      : (userPaymentDetails?.length > 0 ? userPaymentDetails : []);
+  let rawUserDetails = effectiveUserPaymentDetailsFromRedux.length > 0 ? effectiveUserPaymentDetailsFromRedux : userPaymentDetails;
   const effectiveUserPaymentDetails = (() => {
     if (Array.isArray(rawUserDetails) && rawUserDetails.length > 0) return rawUserDetails;
-    if (Array.isArray((rawUserDetails as any)?.data)) return (rawUserDetails as any).data;
-    if (Array.isArray((rawUserDetails as any)?.results)) return (rawUserDetails as any).results;
+    if (rawUserDetails && typeof rawUserDetails === "object" && !Array.isArray(rawUserDetails)) {
+      const d = (rawUserDetails as any)?.data || (rawUserDetails as any)?.payment_details || rawUserDetails;
+      if (Array.isArray(d)) return d;
+    }
     return Array.isArray(rawUserDetails) ? rawUserDetails : [];
   })();
 
@@ -275,8 +343,12 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
   }, [adminWalletListDisplayData]);
 
   useEffect(() => {
-    if (effectiveUserPaymentDetails.length > 0) userPaymentMethodsRef.current = effectiveUserPaymentDetails;
-  }, [effectiveUserPaymentDetails, userDetailsLoading]);
+    if (userPaymentDetailsFromPayment && Array.isArray(userPaymentDetailsFromPayment) && userPaymentDetailsFromPayment.length > 0) {
+      userPaymentMethodsRef.current = userPaymentDetailsFromPayment;
+    } else if (userPaymentDetails && Array.isArray(userPaymentDetails) && userPaymentDetails.length > 0) {
+      userPaymentMethodsRef.current = userPaymentDetails;
+    }
+  }, [userPaymentDetailsFromPayment, userPaymentDetails, userDetailsLoading]);
 
   const adminWalletListDisplay = {
     displayData: adminWalletListDisplayData,
@@ -286,7 +358,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
 
   const userPaymentMethodsDisplay = usePaymentMethodsDisplay(
     effectiveUserPaymentDetails,
-    userDetailsLoading,
+    userPaymentDetailsLoading ?? userDetailsLoading,
     null
   );
 
@@ -295,6 +367,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
 
   const assetDropdownRef = useRef<HTMLDivElement>(null);
   const assetDropdownContentRef = useRef<HTMLDivElement | null>(null);  // dropdown panel
+  const expandedSectionRef = useRef<HTMLDivElement>(null);
 
   const methodDropdownRef = useRef<HTMLDivElement>(null);
   const methodDropdownContentRef = useRef<HTMLDivElement | null>(null)
@@ -345,7 +418,6 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
           });
       });
 
-    // Fetch user payment details
     dispatch(fetchUserPaymentDetails());
 
     // Fetch public payment methods (for non-authenticated users)
@@ -869,6 +941,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
     setQrCodeUrl("");
     setWalletAddress("");
     setWalletError("");
+    resetAddressValidation();
 
     // Clear estimate to force recalculation
     setEstimate(null);
@@ -885,6 +958,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
     setQrCodeUrl("");
     setWalletAddress("");
     setWalletError("");
+    resetAddressValidation();
     setShowExchanging(false);
     setExchangingData(null);
     setForceUpdate((prev) => prev + 1);
@@ -894,6 +968,21 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
     if (!responseData || !transactionId) {
       showToast.error("No transaction data available");
       return;
+    }
+
+    if (isDepositMode && walletAddress.trim()) {
+      if (!currentCurrency || !currentNetwork) {
+        showToast.error("Please select an asset first");
+        return;
+      }
+      if (addressValidationResult && !addressValidationResult.isValid) {
+        showToast.error(addressValidationResult.message || addressValidationResult.error || "Please enter a valid wallet address");
+        return;
+      }
+      if (isAddressValidating) {
+        showToast.error("Please wait for address validation to complete");
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -1098,7 +1187,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
     return methodMap[methodName] || methodName;
   };
 
-  // Available payment method names from API (for matching user payment details)
+  // Available payment method names - include API + user accounts so pending are not filtered out
   const availablePaymentMethodNames = React.useMemo(() => {
     const methods = new Set<string>();
     if (Array.isArray(publicMethodsData?.data?.providers)) {
@@ -1108,19 +1197,30 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
       });
     }
     uniquePaymentMethods.forEach(m => m && methods.add(m));
+    const userDetails = effectiveUserPaymentDetailsFromRedux.length > 0 ? effectiveUserPaymentDetailsFromRedux : (userPaymentDetails || []);
+    const userArr = Array.isArray(userDetails) ? userDetails : [];
+    userArr.forEach((d: any) => {
+      const n = normalizePaymentMethodName(d?.payment_method_name);
+      if (n) methods.add(n);
+    });
     return Array.from(methods);
-  }, [publicMethodsData, uniquePaymentMethods]);
+  }, [publicMethodsData, uniquePaymentMethods, effectiveUserPaymentDetailsFromRedux, userPaymentDetails]);
 
-  // Enhanced filtering - exact as express withdrawal
+  // Enhanced filtering - copy from express withdrawal exactly
   const enhancedFilteredUserPaymentDetails = useMemo(() => {
     if (!payBank) return [];
 
-    let rawUserDetails = effectiveUserPaymentDetailsFromRedux.length > 0 ? effectiveUserPaymentDetailsFromRedux : effectiveUserPaymentDetails;
-    if (rawUserDetails && typeof rawUserDetails === "object" && !Array.isArray(rawUserDetails)) {
-      rawUserDetails = (rawUserDetails as any)?.data || (rawUserDetails as any)?.payment_details || rawUserDetails;
+    let rawDetails = effectiveUserPaymentDetailsFromRedux.length > 0 ? effectiveUserPaymentDetailsFromRedux : userPaymentDetails;
+    if (rawDetails && typeof rawDetails === "object" && !Array.isArray(rawDetails)) {
+      rawDetails = (rawDetails as any)?.data || (rawDetails as any)?.payment_details || rawDetails;
     }
 
-    const sourceData = userPaymentMethodsDisplay.displayData || effectiveUserPaymentMethods || (Array.isArray(rawUserDetails) ? rawUserDetails : []) || [];
+    const sourceData =
+      userPaymentMethodsDisplay.displayData ||
+      effectiveUserPaymentMethods ||
+      effectiveUserPaymentDetails ||
+      (Array.isArray(rawDetails) ? rawDetails : []) ||
+      [];
 
     const filtered = (Array.isArray(sourceData) ? sourceData : []).filter((detail: any) => {
       const normalizeProviderName = (name: string | null | undefined): string => {
@@ -1135,19 +1235,36 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
       const normalizedDetailPaymentProvider = normalizeProviderName(detail.payment_provider);
       const normalizedSelectedProvider = normalizeProviderName(selectedProviderField);
 
-      const providerMatch1 = detail.payment_provider_name === selectedProviderField || normalizedDetailProvider === normalizedSelectedProvider || normalizedDetailProvider === normalizedPayBank || detail.payment_provider_name === payBank;
-      const providerMatch2 = normalizedDetailName === normalizedSelectedProvider || normalizedDetailName === normalizedPayBank || detail.provider_name === payBank;
-      const providerMatch3 = normalizedDetailPaymentProvider === normalizedSelectedProvider || normalizedDetailPaymentProvider === normalizedPayBank || detail.payment_provider === payBank;
+      const providerMatch1 =
+        detail.payment_provider_name === selectedProviderField ||
+        normalizedDetailProvider === normalizedSelectedProvider ||
+        normalizedDetailProvider === normalizedPayBank ||
+        detail.payment_provider_name === payBank;
+      const providerMatch2 =
+        normalizedDetailName === normalizedSelectedProvider ||
+        normalizedDetailName === normalizedPayBank ||
+        detail.provider_name === payBank;
+      const providerMatch3 =
+        normalizedDetailPaymentProvider === normalizedSelectedProvider ||
+        normalizedDetailPaymentProvider === normalizedPayBank ||
+        detail.payment_provider === payBank;
       const matchesProvider = providerMatch1 || providerMatch2 || providerMatch3;
 
       const userPaymentMethodName = normalizePaymentMethodName(detail.payment_method_name);
-      const hasValidPaymentMethod = userPaymentMethodName ? availablePaymentMethodNames.includes(userPaymentMethodName) : false;
+      const hasValidPaymentMethod = userPaymentMethodName
+        ? availablePaymentMethodNames.includes(userPaymentMethodName)
+        : false;
+      const isPending = (detail.status || "").toString().trim().toLowerCase() !== "approved" && (detail.status || "").toString().trim().toLowerCase() !== "verified";
 
-      return matchesProvider && hasValidPaymentMethod;
+      if (selectedAsset && isForexAsset(selectedAsset)) {
+        const isApproved = detail.status?.toLowerCase() === "approved";
+        return matchesProvider && isApproved && hasValidPaymentMethod;
+      }
+      return matchesProvider && (hasValidPaymentMethod || isPending);
     });
 
     return filtered;
-  }, [payBank, userPaymentMethodsDisplay.displayData, effectiveUserPaymentMethods, effectiveUserPaymentDetails, effectiveUserPaymentDetailsFromRedux, availablePaymentMethodNames, selectedProviderData]);
+  }, [payBank, userPaymentMethodsDisplay.displayData, effectiveUserPaymentMethods, effectiveUserPaymentDetails, selectedAsset, availablePaymentMethodNames, userPaymentDetails, selectedProviderData, effectiveUserPaymentDetailsFromRedux]);
 
   // Legacy: filteredUserPaymentDetails for backward compat
   const filteredUserPaymentDetails = selectedPaymentMethod
@@ -1156,12 +1273,30 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
     )
     : [];
 
+  // Check if selected payment is pending (same as express withdrawal)
+  const isSelectedPaymentPending =
+    selectedPaymentDetails.length > 0 &&
+    !!(
+      selectedPaymentDetails[0].status &&
+      selectedPaymentDetails[0].status.toLowerCase() !== "approved" &&
+      selectedPaymentDetails[0].status.toLowerCase() !== "verified"
+    );
+
   // Auto-select first account when accounts are available (withdrawal) - exact as express
   useEffect(() => {
     if (payBank && enhancedFilteredUserPaymentDetails.length > 0 && selectedPaymentDetails.length === 0) {
       setSelectedPaymentDetails([enhancedFilteredUserPaymentDetails[0]]);
     }
   }, [payBank, enhancedFilteredUserPaymentDetails, selectedPaymentDetails]);
+
+  // Scroll expanded section into view when form expands (withdrawal/deposit)
+  useEffect(() => {
+    if (isFirstCardSubmitted && selectedPaymentDetail && expandedSectionRef.current) {
+      setTimeout(() => {
+        expandedSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
+    }
+  }, [isFirstCardSubmitted, selectedPaymentDetail]);
 
   // Add "Bank" as a default option if not already present
   // Ensure all payment methods are valid strings
@@ -1668,6 +1803,11 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
       showToast.error("Please select your registered account");
       return;
     }
+    if (!isDepositMode && isSelectedPaymentPending) {
+      setPaymentMethodError("Selected payment method is pending verification");
+      showToast.error("Selected payment method is pending verification");
+      return;
+    }
     if (isDepositMode && !selectedPaymentDetail) {
       showToast.error("Please select a payment method");
       return;
@@ -1775,13 +1915,17 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
         setIsFirstCardSubmitted(true);
         setForceUpdate((prev) => prev + 1);
       } else {
-        // Withdrawal API structure - exact as express withdrawal.tsx
+        // Withdrawal payload - exact as express withdrawal.tsx
         const withdrawalDetail = selectedPaymentDetails[0];
+        // Ensure expanded section has a payment detail to display
+        setSelectedPaymentDetail(withdrawalDetail);
         const withdrawalPayload: ExpressWithdrawalPayload = {
           asset: (selectedAsset.ticker?.toUpperCase() || selectedAsset.symbol?.toUpperCase()) as string,
           amount: amount,
           network: getAssetNetwork(selectedAsset),
-          user_payment_detail_id: withdrawalDetail?.user_payment_detail_id || String(withdrawalDetail?.id),
+          user_payment_detail_id: isForexAsset(selectedAsset)
+            ? (withdrawalDetail?.user_payment_detail_id ?? String(withdrawalDetail?.id))
+            : String(withdrawalDetail?.id),
         };
 
         logger.debug('general', "Submitting withdrawal request:", withdrawalPayload);
@@ -1802,15 +1946,27 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
         setIsFirstCardSubmitted(true);
         setForceUpdate((prev) => prev + 1);
 
-        // Extract addresses from response (similar to withdrawal.tsx)
+        // Extract addresses from response (similar to express home withdrawal)
+        let addr = "";
         if (responseData.withdrawal_address) {
+          addr = responseData.withdrawal_address;
           setWithdrawalAddress(responseData.withdrawal_address);
         }
         if (responseData.payout_address) {
           setPayoutAddress(responseData.payout_address);
         }
+
+        // Prefer backend QR code URL if present, otherwise generate from withdrawal address
+        let qr = "";
         if (responseData.qr_code_url) {
-          setQrCodeUrl(responseData.qr_code_url);
+          qr = responseData.qr_code_url;
+        } else if (addr) {
+          qr = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
+            addr
+          )}`;
+        }
+        if (qr) {
+          setQrCodeUrl(qr);
         }
 
         showToast.success("Withdrawal transaction submitted successfully!");
@@ -1907,9 +2063,9 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
   }
 
   return (
-    <div className="bg-white dark:bg-[#18181D] p-3 sm:p-4 lg:p-6 rounded-xl sm:rounded-xl lg:rounded-2xl border-[1.5px] border-gray-200 dark:border-[#35353E] shadow-md container mx-auto">
+    <div className="bg-white dark:bg-[#18181D] p-3 sm:p-4 lg:p-6 rounded-xl sm:rounded-xl lg:rounded-2xl border-[1.5px] border-gray-200 dark:border-[#35353E] shadow-md container mx-auto overflow-visible">
       <div className="mb-2" />
-      <div className={`w-full ${isDark ? "text-white" : "text-[#1F2937]"}`}>
+      <div className={`w-full overflow-visible ${isDark ? "text-white" : "text-[#1F2937]"}`}>
         {/* Top Section - You Send: Amount and Bank/Payment Method in one card */}
         <div className="relative mb-0 pb-2">
           {/* Swap Indicator - Clickable */}
@@ -2095,10 +2251,10 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                   {!isDepositMode && payBank && (
                     <div className="mt-3 w-full relative z-10">
                       <label className={`block text-[17px] font-semibold mb-2 ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"}`}>
-                        {t("rates.registeredAccount", "Registered Account")}
+                       ggggg {t("rates.registeredAccount", "Registered Account")}
                       </label>
                       {(() => {
-                        const allUserAccounts = userPaymentMethodsDisplay.displayData || effectiveUserPaymentMethods || [];
+                        const allUserAccounts = userPaymentMethodsDisplay.displayData || effectiveUserPaymentMethods || effectiveUserPaymentDetails || [];
                         const hasAnyAccounts = allUserAccounts.length > 0;
                         const hasFilteredAccounts = enhancedFilteredUserPaymentDetails.length > 0;
 
@@ -2146,11 +2302,14 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                                   const accountName = detail.account_name || "No Name";
                                   const accountNumber = detail.account_number || detail.wallet_address || "No Account";
                                   const displayLabel = `${accountNumber} - ${accountName}`;
+                                  const isPending = !!(detail.status && detail.status !== "approved" && detail.status !== "verified");
                                   return {
                                     value: detail.id.toString(),
-                                    label: displayLabel,
+                                    label: isPending ? `${displayLabel} (Pending)` : displayLabel,
                                     logo: providerLogo || undefined,
                                     title: `Account Number: ${accountNumber} | Account Name: ${accountName}${providerName ? ` | Provider: ${providerName}` : ""}`,
+                                    disabled: isPending,
+                                    subtitle: isPending ? "Pending" : undefined,
                                   };
                                 })}
                                 value={selectedPaymentDetails.length > 0 ? selectedPaymentDetails[0].id.toString() : ""}
@@ -2616,6 +2775,21 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
         </div>
       </div>
 
+      {!isFirstCardSubmitted && !isDepositMode && isSelectedPaymentPending && selectedPaymentDetails.length > 0 && (
+        <div className="mb-3 flex items-start gap-3 p-4 rounded-2xl bg-[#F79330]/10 border border-[#F79330]/40">
+          <svg className="w-5 h-5 text-[#F79330] flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-[#F79330]">Account Pending Approval</p>
+            <p className="text-xs text-[#F79330]/80 mt-1">
+              Your account{selectedPaymentDetails[0]?.account_name ? ` "${selectedPaymentDetails[0].account_name}"` : ""}{selectedPaymentDetails[0]?.account_number ? ` (${selectedPaymentDetails[0].account_number})` : ""} is pending approval. Please{" "}
+              <a href="/contactUs/" className="text-[#1D8751] underline font-semibold hover:text-[#17693f] transition-colors">contact support</a>{" "}
+              to get your account approved.
+            </p>
+          </div>
+        </div>
+      )}
       {/* Estimated Price Warning */}
       <div className={`flex items-start ${isDark ? "text-white" : "text-[#1F2937]"} text-xs sm:text-sm lg:text-sm mt-2 mb-4`}>
         <AlertCircle className="w-4 h-4 text-[#E23D3A] mr-2 mt-0.5 flex-shrink-0" />
@@ -2699,21 +2873,23 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
       {!isFirstCardSubmitted && (
         <button
           onClick={handleSubmit}
-          disabled={isSubmitting || !isVerified}
-          className={`w-full py-3 px-4 rounded-xl font-semibold text-white bg-[#1D8751] hover:bg-[#0f8f4d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${(isSubmitting || !isVerified) ? "opacity-50 cursor-not-allowed" : ""
+          disabled={isSubmitting || !isVerified || (!isDepositMode && isSelectedPaymentPending)}
+          className={`w-full py-3 px-4 rounded-xl font-semibold text-white bg-[#1D8751] hover:bg-[#0f8f4d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${(isSubmitting || !isVerified || (!isDepositMode && isSelectedPaymentPending)) ? "opacity-50 cursor-not-allowed" : ""
             }`}
         >
           {isSubmitting
             ? t("rates.processing", "Processing...")
             : !isVerified
               ? t("rates.verifyToContinue", "Verify account to continue")
-              : t("rates.exchangeNow", "Exchange Now")}
+              : !isDepositMode && isSelectedPaymentPending
+                ? "Account pending approval"
+                : t("rates.exchangeNow", "Exchange Now")}
         </button>
       )}
 
       {/* Expanded Pages - shown after first card submission */}
       {selectedPaymentDetail && isFirstCardSubmitted && (
-        <>
+        <div ref={expandedSectionRef} className="scroll-mt-4">
           {/* Payment Details Card */}
           <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
             <span className="text-[#7e7e8f] dark:text-[#788099]">2-</span>{" "}
@@ -2903,8 +3079,14 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                     type="text"
                     value={walletAddress}
                     onChange={(e) => {
-                      setWalletAddress(e.target.value);
-                      setWalletError("");
+                      const value = e.target.value;
+                      setWalletAddress(value);
+                      if (value.trim() && currentCurrency && currentNetwork) {
+                        validateAddress(value, currentCurrency, currentNetwork);
+                      } else {
+                        resetAddressValidation();
+                        setWalletError("");
+                      }
                     }}
                     placeholder={t("rates.enterWalletAddressPlaceholder", "Enter your wallet address")}
                     className="flex-1 bg-transparent text-[#35353e] dark:text-[#788099] placeholder-[#7e7e8f] focus:outline-none min-w-0"
@@ -2921,7 +3103,25 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                   </button>
                 </div>
                 {walletError && (
-                  <p className="text-red-500 text-sm mb-4">{walletError}</p>
+                  <p className="text-red-500 text-sm mb-4 flex items-center gap-1.5">
+                    <AlertCircle size={16} className="shrink-0" />
+                    {walletError}
+                  </p>
+                )}
+                {isAddressValidating && walletAddress.trim() && (
+                  <p className="text-[#788099] text-sm mb-4 flex items-center gap-1.5">
+                    <span className="animate-spin rounded-full h-4 w-4 border-2 border-[#1D8751] border-t-transparent block" />
+                    {t("rates.validatingAddress", "Validating address...")}
+                  </p>
+                )}
+                {walletAddress.trim() && selectedAsset && !walletError && !isAddressValidating && addressValidationResult?.isValid && (
+                  <p className="text-[#1D8751] text-sm mb-4 flex items-center gap-1.5">
+                    <svg width="16" height="16" viewBox="0 0 20 20" fill="none" className="shrink-0">
+                      <circle cx="10" cy="10" r="9" stroke="currentColor" strokeWidth="2" fill="none" />
+                      <path d="M6 10l3 3 5-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    {t("rates.validAddress", "Valid address")}
+                  </p>
                 )}
                 <div className="flex gap-2 sm:gap-3 flex-col sm:flex-row">
                   <button
@@ -2933,9 +3133,9 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                   <button
                     onClick={handleProceedToExchanging}
                     disabled={
-                      isSubmitting || !isVerified || !walletAddress.trim() || !!walletError
+                      isSubmitting || !isVerified || !walletAddress.trim() || !!walletError || isAddressValidating
                     }
-                    className={`flex-1 font-semibold py-2 sm:py-2 px-3 sm:px-4 rounded-lg transition-colors flex items-center justify-center text-sm sm:text-base ${isSubmitting || !isVerified || !walletAddress.trim() || !!walletError
+                    className={`flex-1 font-semibold py-2 sm:py-2 px-3 sm:px-4 rounded-lg transition-colors flex items-center justify-center text-sm sm:text-base ${isSubmitting || !isVerified || !walletAddress.trim() || !!walletError || isAddressValidating
                       ? "bg-gray-500 cursor-not-allowed text-white"
                       : "bg-[#1D8751] hover:bg-[#166b3f] text-white"
                       }`}
@@ -2959,39 +3159,98 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                 </div>
               </>
             ) : (
-              // Withdrawal Mode: Only transaction details and proceed button
-              <div className="mt-6 p-1 bg-[#1D8751] bg-opacity-10 border border-[#1D8751] rounded-xl">
-                <button
-                  onClick={handleProceedToExchanging}
-                  disabled={isSubmitting || !isVerified}
-                  className={`w-full font-semibold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 ${(isSubmitting || !isVerified)
-                    ? "bg-gray-500 cursor-not-allowed text-white"
-                    : "bg-[#1D8751] hover:bg-[#166b3f] text-white"
-                    }`}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                      <span>{t("rates.processing", "Processing...")}</span>
-                    </>
+              // Withdrawal Mode: show wallet address + QR (same idea as express home withdrawal)
+              <>
+                {/* USDT Wallet Address */}
+                <div className="mb-4">
+                  <h3 className="text-sm sm:text-base text-[#35353e] dark:text-[#788099] font-semibold mb-2">
+                    {t("rates.usdtWalletAddress", "USDT Wallet Address")}
+                  </h3>
+                  {withdrawalAddress ? (
+                    <div className="dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-xl p-3 sm:p-4">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
+                        <span className="text-[#35353e] dark:text-[#788099] text-xs sm:text-sm font-mono break-all flex-1">
+                          {withdrawalAddress}
+                        </span>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(withdrawalAddress);
+                              setIsWalletAddressCopied(true);
+                              setTimeout(() => setIsWalletAddressCopied(false), 2000);
+                            }}
+                            className="flex items-center gap-1 bg-[#23232b] dark:bg-[#35353E] border border-[#1D8751] text-[#1D8751] rounded-full px-2 sm:px-4 py-1 font-semibold text-xs sm:text-base hover:bg-[#1D8751] hover:text-[#35353e] transition-colors"
+                          >
+                            {isWalletAddressCopied ? t("rates.copied", "Copied") : t("rates.copy", "Copy")}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   ) : (
-                    <>
-                      <img
-                        src="https://res.cloudinary.com/pitz/image/upload/v1752429993/Express_1_ggdxth.png"
-                        alt=""
-                      />
-                      <img
-                        className="mt-2"
-                        src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
-                        alt=""
-                      />
-                    </>
+                    <div className="dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-xl p-4">
+                      <div className="flex items-center gap-3">
+                        <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
+                          <path
+                            d="M9 12l2 2 4-4"
+                            stroke="#1D8751"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                        <span className="text-[#1D8751] font-medium">
+                          {t("rates.withdrawalSubmitted", "Withdrawal transaction submitted successfully. Please send funds to the address above if required by the provider.")}
+                        </span>
+                      </div>
+                    </div>
                   )}
-                </button>
-              </div>
+                </div>
+
+                {/* QR Code (same style as express home withdrawal, grey-ish border) */}
+                {qrCodeUrl && (
+                  <div className="mb-4">
+                    <div className="dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-xl p-4 flex justify-center items-center">
+                      <img src={qrCodeUrl} alt="QR Code" className="w-40 h-40 sm:w-48 sm:h-48" />
+                    </div>
+                  </div>
+                )}
+
+                {/* Proceed button (kept small) */}
+                <div className="mt-4 p-1 bg-[#1D8751] bg-opacity-10 border border-[#1D8751] rounded-xl">
+                  <button
+                    type="button"
+                    onClick={handleProceedToExchanging}
+                    disabled={isSubmitting || !isVerified}
+                    className={`w-full font-semibold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 ${(isSubmitting || !isVerified)
+                      ? "bg-gray-500 cursor-not-allowed text-white"
+                      : "bg-[#1D8751] hover:bg-[#166b3f] text-white"
+                      }`}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                        <span>{t("rates.processing", "Processing...")}</span>
+                      </>
+                    ) : (
+                      <>
+                        <img
+                          src="https://res.cloudinary.com/pitz/image/upload/v1752429993/Express_1_ggdxth.png"
+                          alt=""
+                        />
+                        <img
+                          className="mt-2"
+                          src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
+                          alt=""
+                        />
+                      </>
+                    )}
+                  </button>
+                </div>
+              </>
             )}
           </div>
-        </>
+        </div>
       )}
 
       {/* PaymentMethodsModal - exact as express withdrawal */}

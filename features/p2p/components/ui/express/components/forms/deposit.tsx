@@ -30,7 +30,7 @@ import { useBookmarkedAddresses } from "@/features/express/hooks/useBookmarkedAd
 import { BookmarkDropdown } from "@/features/express/components/forms/BookmarkDropdown";
 import { useValidateAddress } from "@/hooks/useValidateAddress";
 import { showToast } from "@/lib/utils/toast";
-import { createExpressDeposit, fetchCommission, getCommissionApiAsset } from "../../api";
+import { createExpressDeposit, fetchCommission, getCommissionApiAsset, fetchDepositStatus } from "../../api";
 import { ExpressDepositResponse } from "../../types";
 
 import { logger } from '@/lib/utils/logger';
@@ -200,6 +200,7 @@ export default function DepositForm({
   const [isCodeCopied, setIsCodeCopied] = useState(false);
   const [isDepositAddressCopied, setIsDepositAddressCopied] = useState(false);
   const paymentDetailsRef = useRef<HTMLDivElement>(null);
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Commission from API for USDT, USDC, FX Primus (null = not yet fetched, 0 = API returned 0)
   const [apiCommission, setApiCommission] = useState<number | null>(null);
@@ -586,8 +587,52 @@ export default function DepositForm({
       if (websocket) {
         websocket.close();
       }
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
     };
   }, [websocket]);
+
+  // Fallback polling for deposit status when user sent funds before WebSocket connected
+  useEffect(() => {
+    const txId = depositResponse?.transaction_id;
+    if (!isTransactionSubmitted || !txId) return;
+
+    // Clear any existing interval
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+    }
+
+    const poll = async () => {
+      try {
+        const result = await fetchDepositStatus(txId);
+        if (result?.status) {
+          setTransactionStatus(result.status);
+          if (result.status === "completed") {
+            showToast.success("Deposit completed successfully!");
+            if (pollingIntervalRef.current) {
+              clearInterval(pollingIntervalRef.current);
+              pollingIntervalRef.current = null;
+            }
+          }
+        }
+      } catch {
+        // Silent – WebSocket may still deliver updates
+      }
+    };
+
+    // Run immediately in case status was already updated before opening this page
+    poll();
+    const interval = setInterval(poll, 3000);
+    pollingIntervalRef.current = interval;
+
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+    };
+  }, [isTransactionSubmitted, depositResponse?.transaction_id]);
 
 
   // Handle simple deposit submission
