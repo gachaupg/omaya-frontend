@@ -88,21 +88,12 @@ export const overviewTotalData = (
     ];
   }
   if (type === "swap") {
+    // Dashboard swap: show only completed swaps
     return [
       {
         label: "Completed",
-        value: transactionSummary.total_completed_changenow_swaps,
+        value: transactionSummary.total_completed_changenow_swaps ?? 0,
         color: "#1D8751",
-      },
-      {
-        label: "Pending",
-        value: transactionSummary.total_pending_changenow_swaps,
-        color: "#facc15",
-      },
-      {
-        label: "Failed",
-        value: transactionSummary.total_failed_changenow_swaps,
-        color: "#ef4444",
       },
     ];
   }
@@ -242,7 +233,7 @@ export const overviewTotalSummary = (
   }
   if (type === "swap") {
     return {
-      total: Math.abs(transactionSummary.total_changenow_swaps || 0),
+      total: Math.abs(transactionSummary.total_completed_changenow_swaps ?? 0),
       currency: "USD",
     };
   }

@@ -75,11 +75,7 @@ const VolumeChart: React.FC<VolumeChartProps> = ({ transactionSummary }) => {
     },
     {
       title: "Swap",
-      value: formatValue(
-        transactionSummary.total_changenow_swaps ??
-        transactionSummary.total_completed_changenow_swaps ??
-        0
-      ),
+      value: formatValue(transactionSummary.total_completed_changenow_swaps ?? 0),
     },
   ];
 
