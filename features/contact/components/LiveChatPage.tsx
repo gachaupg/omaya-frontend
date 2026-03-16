@@ -112,10 +112,17 @@ const LiveChatPage: React.FC = () => {
     try {
       const response = await getChatMessages(sessionId);
       logger.debug("live-chat", "Chat history loaded:", response.messages);
-      
-      // Set initial messages from API response
+
+      // Normalize and set initial messages from API response
       if (response.messages && response.messages.length > 0) {
-        setInitialMessages(response.messages);
+        const normalizedMessages: ChatMessage[] = response.messages.map((m: any) => ({
+          sender_name: m.is_system_message ? "System" : (m.sender_name || "Unknown"),
+          sender_role: (m.sender_role === "customer" ? "user" : m.sender_role === "admin" ? "agent" : m.sender_role || "agent") as "user" | "agent",
+          message: m.message || "",
+          timestamp: m.timestamp || new Date().toISOString(),
+        }));
+
+        setInitialMessages(normalizedMessages);
       }
     } catch (error: any) {
       logger.error("live-chat", "Failed to load chat history:", error);
@@ -191,7 +198,7 @@ const LiveChatPage: React.FC = () => {
 
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-4 sm:p-5 md:p-6 bg-gray-50 dark:bg-[#15161D] space-y-3">
-        {isCreatingSession ? (
+        {isCreatingSession && (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
               <Loader2 className="w-8 h-8 animate-spin text-[#1D8751] mx-auto mb-2" />
@@ -200,11 +207,15 @@ const LiveChatPage: React.FC = () => {
               </p>
             </div>
           </div>
-        ) : isLoadingHistory ? (
+        )}
+
+        {!isCreatingSession && isLoadingHistory && (
           <div className="flex items-center justify-center h-full">
             <Loader2 className="w-6 h-6 animate-spin text-[#1D8751]" />
           </div>
-        ) : messages.length === 0 ? (
+        )}
+
+        {!isCreatingSession && !isLoadingHistory && messages.length === 0 && (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
               <MessageCircle className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-3" />
@@ -213,54 +224,68 @@ const LiveChatPage: React.FC = () => {
               </p>
             </div>
           </div>
-        ) : (
-          messages.map((message, index) => {
-            const isUser = message.sender_role === "user";
-            const isSystem = message.sender_name === "System";
+        )}
 
-            return (
-              <div
-                key={index}
-                className={`flex ${isUser ? "justify-end" : "justify-start"}`}
-              >
+        {!isCreatingSession && !isLoadingHistory && messages.length > 0 && (
+          <>
+            {messages.map((message, index) => {
+              const isUser = message.sender_role === "user";
+              const isSystem = message.sender_name === "System";
+
+              return (
                 <div
-                  className={`max-w-[75%] sm:max-w-[60%] rounded-xl sm:rounded-2xl px-3 sm:px-4 py-1.5 sm:py-2 ${
-                    isSystem
-                      ? "bg-yellow-50 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200 mx-auto text-center"
-                      : isUser
-                      ? "bg-[#1D8751] text-white"
-                      : "bg-white dark:bg-[#2A2A2A] text-gray-900 dark:text-white border border-gray-200 dark:border-[#35353E]"
-                  }`}
+                  key={index}
+                  className={`flex ${isUser ? "justify-end" : "justify-start"}`}
                 >
-                  {!isSystem && (
-                    <div
-                      className={`text-xs font-medium mb-0.5 ${
-                        isUser
-                          ? "text-white/80"
-                          : "text-gray-500 dark:text-gray-400"
-                      }`}
-                    >
-                      {message.sender_name}
-                    </div>
-                  )}
-                  <div className="text-sm whitespace-pre-wrap break-words leading-relaxed">
-                    {message.message}
-                  </div>
                   <div
-                    className={`text-xs mt-0.5 ${
+                    className={`relative max-w-[80%] sm:max-w-[65%] rounded-2xl px-3.5 sm:px-4 py-2 sm:py-2.5 shadow-sm ${
                       isSystem
-                        ? "text-yellow-600 dark:text-yellow-300"
+                        ? "bg-yellow-50 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200 mx-auto text-center border border-yellow-100/70 dark:border-yellow-800/40"
                         : isUser
-                        ? "text-white/70"
-                        : "text-gray-400 dark:text-gray-500"
+                        ? "bg-[#1D8751] text-white shadow-md rounded-br-sm"
+                        : "bg-white dark:bg-[#2A2A2A] text-gray-900 dark:text-white border border-gray-200 dark:border-[#35353E] rounded-bl-sm"
                     }`}
                   >
-                    {formatTime(message.timestamp)}
+                    {!isSystem && (
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <div
+                          className={`text-xs font-semibold truncate ${
+                            isUser
+                              ? "text-white/90"
+                              : "text-gray-600 dark:text-gray-300"
+                          }`}
+                        >
+                          {message.sender_name}
+                        </div>
+                        <div
+                          className={`text-[10px] sm:text-xs whitespace-nowrap ${
+                            isUser
+                              ? "text-white/60"
+                              : "text-gray-400 dark:text-gray-500"
+                          }`}
+                        >
+                          {formatTime(message.timestamp)}
+                        </div>
+                      </div>
+                    )}
+                    <div
+                      className={`text-sm whitespace-pre-wrap break-words leading-relaxed ${
+                        isSystem ? "mt-0.5" : ""
+                      }`}
+                    >
+                      {message.message}
+                    </div>
+
+                    {isSystem && (
+                      <div className="text-[11px] mt-1.5 text-yellow-700 dark:text-yellow-300/90">
+                        {formatTime(message.timestamp)}
+                      </div>
+                    )}
                   </div>
                 </div>
-              </div>
-            );
-          })
+              );
+            })}
+          </>
         )}
 
         {/* Typing Indicator */}

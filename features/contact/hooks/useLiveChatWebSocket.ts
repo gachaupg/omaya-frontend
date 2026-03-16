@@ -150,12 +150,22 @@ export const useLiveChatWebSocket = ({
           
           // Handle different message types
           if (data.type === "chat_history" && Array.isArray(data.messages)) {
-            const chatMessages: ChatMessage[] = data.messages.map((m) => ({
-              sender_name: m.is_system_message ? "System" : (m.sender_name || "Unknown"),
-              sender_role: (m.sender_role === "admin" ? "agent" : m.sender_role || "agent") as "user" | "agent",
-              message: m.message || "",
-              timestamp: m.timestamp || new Date().toISOString(),
-            }));
+            const chatMessages: ChatMessage[] = data.messages.map((m) => {
+              const rawRole = (m.sender_role || "").toLowerCase();
+              const normalizedRole =
+                rawRole === "customer"
+                  ? "user"
+                  : rawRole === "admin"
+                  ? "agent"
+                  : (rawRole as "user" | "agent") || "agent";
+
+              return {
+                sender_name: m.is_system_message ? "System" : (m.sender_name || "Unknown"),
+                sender_role: normalizedRole,
+                message: m.message || "",
+                timestamp: m.timestamp || new Date().toISOString(),
+              };
+            });
             setMessages(chatMessages);
             historyLoadedRef.current = true;
             onChatHistoryRef.current?.({ status: data.status, messages: data.messages });
@@ -163,10 +173,17 @@ export const useLiveChatWebSocket = ({
           } else if (data.type === "chat_message") {
             // Support both { data: { message, sender_role, ... } } and { message } at top level
             const msgContent = (data.data?.message ?? data.message ?? "").trim();
-            const senderRole = (data.data?.sender_role || "user") as string;
+            const rawRole = (data.data?.sender_role || "user").toLowerCase();
+            const normalizedRole =
+              rawRole === "customer"
+                ? "user"
+                : rawRole === "admin"
+                ? "agent"
+                : (rawRole as "user" | "agent");
+
             const chatMessage: ChatMessage = {
               sender_name: data.data?.sender_name || "Unknown",
-              sender_role: (senderRole === "admin" ? "agent" : senderRole) as "user" | "agent",
+              sender_role: normalizedRole,
               message: msgContent,
               timestamp: data.data?.timestamp || new Date().toISOString(),
             };
@@ -177,7 +194,7 @@ export const useLiveChatWebSocket = ({
             if (sentAt && now - sentAt < 5000) {
               pendingSentRef.current.delete(msgContent);
               logger.debug("live-chat", "Skipping server echo:", chatMessage.message);
-            } else if (senderRole === "user") {
+            } else if (rawRole === "user" || rawRole === "customer") {
               logger.debug("live-chat", "Skipping user message from server:", chatMessage.message);
             } else {
               setMessages((prev) => [...prev, chatMessage]);
