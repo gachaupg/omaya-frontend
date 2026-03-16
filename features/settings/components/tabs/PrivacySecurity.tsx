@@ -318,8 +318,21 @@ const PrivacySecurity = () => {
       update2FA(false, JSON.stringify(result)); // Store the disable response
       showToast.success("2FA disabled successfully!");
     } catch (error: any) {
-      const errorMessage = error?.error || error?.message || String(error);
-      setDisableError("Invalid code or failed to disable: " + errorMessage);
+      const rawMessage = error?.error || error?.message || String(error);
+      let friendlyMessage = "Something went wrong while disabling 2FA. Please try again.";
+
+      if (rawMessage && rawMessage.toLowerCase().includes("2fa is not enabled")) {
+        friendlyMessage = "2FA is not enabled on your account.";
+      } else if (/request failed with status code 400/i.test(rawMessage)) {
+        friendlyMessage =
+          "Incorrect 2FA code. Please enter the 6-digit code from your authenticator app.";
+      } else if (rawMessage && !/status code \d+/i.test(rawMessage)) {
+        // Use backend message only if it doesn't look like a raw status line
+        friendlyMessage = rawMessage;
+      }
+
+      setDisableError(friendlyMessage);
+      showToast.error(friendlyMessage);
     } finally {
       setDisableLoading(false);
     }
@@ -884,53 +897,7 @@ const PrivacySecurity = () => {
             <div className="text-base font-semibold dark:text-white text-gray-900">
               2 Factor Authentication
             </div>
-            <button
-              type="button"
-              onClick={async () => {
-                try {
-                  setIsCreatingSession(true);
-                  const ipAddress = await getCurrentIPAddress();
-                  const location = await getLocationFromIP(ipAddress);
-                  const existingSessionWithSameIP = allSessions.find((session: DeviceSession) =>
-                    session.ip_address === ipAddress && session.is_active
-                  );
-                  if (existingSessionWithSameIP) {
-                    showToast.info("Session with this IP address already exists");
-                    return;
-                  }
-                  const userAgent = navigator.userAgent;
-                  const payload: CreateDeviceSessionPayload = {
-                    ip_address: ipAddress,
-                    location,
-                    browser: getBrowserInfo(userAgent),
-                    sign_in_time: new Date().toISOString(),
-                    user_agent: userAgent,
-                    device_type: getDeviceType(),
-                    description: `${getDeviceType()} - ${getBrowserInfo(userAgent)}`,
-                    device_data: getDeviceData(),
-                    network_data: getNetworkData(),
-                    fingerprint_data: getFingerprintData(),
-                    browser_capabilities: getBrowserCapabilities(),
-                    login_patterns: {},
-                    session_duration: 0,
-                    failed_login_attempts: getFailedLoginAttempts(),
-                    suspicious_behavior_detected: false,
-                  };
-                  await dispatch(createDeviceSession(payload)).unwrap();
-                  dispatch(fetchDeviceSessions(undefined));
-                  showToast.success("Device session created successfully!");
-                } catch (error) {
-                  console.error("Failed to create device session:", error);
-                  showToast.error("Failed to create device session");
-                } finally {
-                  setIsCreatingSession(false);
-                }
-              }}
-              disabled={isCreatingSession}
-              className="px-4 py-2 rounded-xl text-sm font-semibold bg-[#1D8751] text-white border border-[#1D8751] hover:bg-[#17693f] hover:border-[#17693f] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isCreatingSession ? "Posting..." : "Post"}
-            </button>
+           
           </div>
           <div className="flex gap-3 mb-2">
             <button
