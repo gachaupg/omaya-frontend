@@ -383,7 +383,7 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
           <img 
             className="w-80 h-40 object-contain" 
             src={isDark 
-              ? "https://res.cloudinary.com/pitz/image/upload/v1756484286/Screenshot_2025-08-29_191548_two36s.png" 
+              ? "/assets/Screenshot_2025-08-29_191548_two36s.png" 
               : "/images/suc.png"
             } 
             alt="Success" 

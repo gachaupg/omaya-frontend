@@ -152,7 +152,7 @@ const ReferralMainCard: React.FC<Props> = ({
                          text-white font-semibold tracking-wide flex items-center justify-center gap-2"
             >
               <img
-                src="https://res.cloudinary.com/pitz/image/upload/v1763908134/Group_3_ocyc3p.png"
+                src="/assets/Group_3_ocyc3p.png"
                 alt="Withdraw icon"
                 width={22}
                 height={22}

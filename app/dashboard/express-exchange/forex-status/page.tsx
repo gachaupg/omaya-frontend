@@ -10,6 +10,7 @@ import { forexStatusWebSocket } from "@/features/express/services/forexStatusWeb
 import type { AppDispatch } from "@/store";
 import { useRouteProtection } from "@/features/auth/hooks/useRouteProtection";
 import Loader from "@/features/p2p/components/Common/Loader";
+import { withTimeout } from "@/lib/utils/fetchWithTimeout";
 
 function ForexStatusContent() {
   const { isChecking, isVerified } = useRouteProtection();
@@ -74,13 +75,13 @@ function ForexStatusContent() {
       }
     }
 
-    // Only fetch from API if not in Redux or cache
-    dispatch(fetchForexExchangeThunk(transactionId)).unwrap().then((data) => {
-      // Save to localStorage for future reloads
-      localStorage.setItem('currentForexExchange', JSON.stringify(data));
-    }).catch((error) => {
-      console.error('❌ Failed to load forex exchange:', error);
-    });
+    withTimeout(dispatch(fetchForexExchangeThunk(transactionId)).unwrap(), 15_000)
+      .then((data) => {
+        localStorage.setItem('currentForexExchange', JSON.stringify(data));
+      })
+      .catch((error) => {
+        console.error('❌ Failed to load forex exchange:', error);
+      });
   }, [transactionId, currentExchange, dispatch]);
 
   // WebSocket connection for real-time status updates
@@ -347,7 +348,7 @@ function ForexStatusContent() {
                 </div>
                 <div className="flex items-center mb-1">
                   <img
-                    src="https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
+                    src="/assets/image_7_jijlik.png"
                     alt={currentExchange.admin_payment_info.provider_name}
                     className="w-6 h-6 rounded-full mr-2"
                   />
@@ -668,7 +669,7 @@ function ForexStatusContent() {
           {/* From - Bank/USD */}
           <div className="flex items-center gap-2">
             <img
-              src="https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
+              src="/assets/image_7_jijlik.png"
               alt={currentExchange.admin_payment_info?.provider_name || "Bank"}
               className="w-8 h-8 rounded-full"
             />

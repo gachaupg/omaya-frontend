@@ -44,30 +44,11 @@ const getAssetName = (symbol: string) => {
   }
 };
 
-const getPaymentMethodInitials = (method: string | null): string => {
-  if (!method) return "PM";
-  const words = method.split(" ");
-  if (words.length >= 2) {
-    return (words[0][0] + words[1][0]).toUpperCase();
-  }
-  return method.substring(0, 2).toUpperCase();
-};
-
-const extractPaymentInfo = (tx: any) => {
-  const providerName = tx?.payment_provider || null;
-  const methodLabel = tx?.payment_method || null;
-  // Try to get provider logo from transaction data
-  // If not available, we'll use initials
-  const providerLogo = tx?.provider_logo || tx?.logo || null;
-  const displayImage = providerLogo;
-  const initials = getPaymentMethodInitials(methodLabel);
-
-  return {
-    displayImage,
-    providerName,
-    methodLabel,
-    initials,
-  };
+/** Display first 5 chars ... last 5 chars (full id in title for copy/hover) */
+const formatTransactionId = (id: string | null | undefined): string => {
+  if (!id) return "";
+  if (id.length <= 12) return id;
+  return `${id.slice(0, 5)}...${id.slice(-5)}`;
 };
 
 const P2PWithdrawalDepositTransactions = ({ filterByType = "all" }: P2PWithdrawalDepositTransactionsProps) => {
@@ -289,8 +270,6 @@ const P2PWithdrawalDepositTransactions = ({ filterByType = "all" }: P2PWithdrawa
       {/* Mobile Card Layout */}
       <div className="block sm:hidden space-y-3 px-4 pt-4 pb-2">
         {paginatedResults.map((tx: any, index: number) => {
-          const paymentInfo = extractPaymentInfo(tx);
-
           return (
             <div
               key={tx.transaction_id || `tx-${index}`}
@@ -330,6 +309,12 @@ const P2PWithdrawalDepositTransactions = ({ filterByType = "all" }: P2PWithdrawa
               </div>
 
               <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="col-span-2">
+                  <div className="text-xs text-gray-500 dark:text-[#A0A3BC] mb-1">Transaction ID</div>
+                  <div className="font-mono font-medium text-xs text-gray-900 dark:text-white break-all" title={tx.transaction_id || ""}>
+                    {tx.transaction_id ? formatTransactionId(tx.transaction_id) : t("transactions.notAvailable", "N/A")}
+                  </div>
+                </div>
                 <div>
                   <div className="text-xs text-gray-500 dark:text-[#A0A3BC] mb-1">Type</div>
                   <div className="font-medium text-sm sm:text-base text-gray-500 dark:text-[#A0A3BC] capitalize">
@@ -345,40 +330,6 @@ const P2PWithdrawalDepositTransactions = ({ filterByType = "all" }: P2PWithdrawa
                       }`}
                   >
                     {tx.amount || tx.total_amount || "0.00"}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                    Payment
-                  </div>
-                  <div className="flex items-center gap-3">
-                    {paymentInfo.displayImage ? (
-                      <img
-                        src={paymentInfo.displayImage}
-                        alt={paymentInfo.providerName || "Payment method"}
-                        className="w-8 h-8 rounded-full border border-[#E8EFF5] dark:border-[#35353E] bg-white dark:bg-[#1D1D23]"
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                        }}
-                      />
-                    ) : (
-                      <div className="w-8 h-8 rounded-full border border-[#E8EFF5] dark:border-[#35353E] bg-[#1D8751] dark:bg-[#1D8751] flex items-center justify-center flex-shrink-0">
-                        <span className="text-white text-xs font-semibold">
-                          {paymentInfo.initials}
-                        </span>
-                      </div>
-                    )}
-                    <div className="flex flex-col min-w-0">
-                      <div className="font-medium text-gray-900 dark:text-white text-sm">
-                        {paymentInfo.methodLabel ||
-                          t("transactions.notAvailable", "N/A")}
-                      </div>
-                      {paymentInfo.providerName && (
-                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                          {paymentInfo.providerName}
-                        </div>
-                      )}
-                    </div>
                   </div>
                 </div>
                 <div>
@@ -402,9 +353,9 @@ const P2PWithdrawalDepositTransactions = ({ filterByType = "all" }: P2PWithdrawa
             <tr className="border-b border-gray-200 dark:border-[#35353E]">
               {[
                 t("transactions.asset", "Asset"),
+                t("transactions.transactionId", "Transaction ID"),
                 t("transactions.transactionType", "Transaction Type"),
                 t("transactions.amount", "Amount"),
-                t("transactions.paymentMethod", "Payment Method"),
                 t("transactions.status", "Status"),
                 t("transactions.when", "When"),
               ].map((h) => (
@@ -423,8 +374,6 @@ const P2PWithdrawalDepositTransactions = ({ filterByType = "all" }: P2PWithdrawa
 
           <tbody className="divide-y divide-gray-200 dark:divide-[#2A2A35]">
             {paginatedResults.map((tx: any, index: number) => {
-              const paymentInfo = extractPaymentInfo(tx);
-
               return (
                 <tr
                   key={tx.transaction_id || `tx-${index}`}
@@ -452,6 +401,13 @@ const P2PWithdrawalDepositTransactions = ({ filterByType = "all" }: P2PWithdrawa
                     </div>
                   </td>
 
+                  {/* Transaction ID (second after Asset) */}
+                  <td className="px-3 sm:px-4 py-2 whitespace-nowrap">
+                    <span className="font-mono text-xs sm:text-sm text-gray-700 dark:text-gray-200 inline-block" title={tx.transaction_id || ""}>
+                      {tx.transaction_id ? formatTransactionId(tx.transaction_id) : t("transactions.notAvailable", "N/A")}
+                    </span>
+                  </td>
+
                   {/* Type */}
                   <td className="px-3 sm:px-4 py-2 text-xs sm:text-sm text-gray-500 dark:text-[#A0A3BC] capitalize">
                     {tx.transaction_type}
@@ -465,39 +421,6 @@ const P2PWithdrawalDepositTransactions = ({ filterByType = "all" }: P2PWithdrawa
                       }`}
                   >
                     {tx.amount || tx.total_amount || "0.00"}
-                  </td>
-
-                  {/* Payment Method */}
-                  <td className="px-3 sm:px-4 py-2 whitespace-nowrap">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      {paymentInfo.displayImage ? (
-                        <img
-                          src={paymentInfo.displayImage}
-                          alt={paymentInfo.providerName || "Payment method"}
-                          className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border border-[#E8EFF5] dark:border-[#35353E] bg-white dark:bg-[#1D1D23] flex-shrink-0"
-                          onError={(e) => {
-                            e.currentTarget.style.display = 'none';
-                          }}
-                        />
-                      ) : (
-                        <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border border-[#E8EFF5] dark:border-[#35353E] bg-[#1D8751] dark:bg-[#1D8751] flex items-center justify-center flex-shrink-0">
-                          <span className="text-white text-xs font-semibold">
-                            {paymentInfo.initials}
-                          </span>
-                        </div>
-                      )}
-                      <div className="flex flex-col min-w-0 leading-tight">
-                        <span className="font-medium text-xs sm:text-sm text-gray-700 dark:text-gray-200 truncate">
-                          {paymentInfo.methodLabel ||
-                            t("transactions.notAvailable", "N/A")}
-                        </span>
-                        {paymentInfo.providerName && (
-                          <span className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                            {paymentInfo.providerName}
-                          </span>
-                        )}
-                      </div>
-                    </div>
                   </td>
 
                   {/* Status */}

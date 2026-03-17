@@ -4,6 +4,7 @@ import { AppDispatch, RootState } from '@/store';
 import { fetchUnreadMessages, updateUnreadCount } from '../slices/unreadMessagesSlice';
 import { getUnreadMessageCount } from '../api';
 import { logger } from '@/lib/utils/logger';
+import { withTimeout } from '@/lib/utils/fetchWithTimeout';
 
 export const useUnreadMessages = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -28,7 +29,7 @@ export const useUnreadMessages = () => {
     if (!isAuthenticated) return;
     
     try {
-      await dispatch(fetchUnreadMessages({ page, limit })).unwrap();
+      await withTimeout(dispatch(fetchUnreadMessages({ page, limit })).unwrap(), 15_000);
     } catch (error) {
       logger.error('p2p', 'Error fetching unread messages:', error);
     }

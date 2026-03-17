@@ -288,7 +288,7 @@ const Filters: React.FC<FiltersProps> = ({
             <div className="flex items-center gap-4 w-full">
               <div className={iconWrapper}>
                 <Image
-                  src="https://res.cloudinary.com/pitz/image/upload/v1763388449/Icon_1_kiuery.png"
+                  src="/assets/Icon_1_kiuery.png"
                   alt="Type icon"
                   width={24}
                   height={24}
@@ -342,7 +342,7 @@ const Filters: React.FC<FiltersProps> = ({
             <div className="flex items-center gap-4 w-full">
               <div className={iconWrapper}>
                 <Image
-                  src="https://res.cloudinary.com/pitz/image/upload/v1763388449/annotation-check_ergtxp.png"
+                  src="/assets/annotation-check_ergtxp.png"
                   alt="Status icon"
                   width={24}
                   height={24}
@@ -396,7 +396,7 @@ const Filters: React.FC<FiltersProps> = ({
             <div className="flex items-center gap-4 w-full">
               <div className={iconWrapper}>
                 <Image
-                  src="https://res.cloudinary.com/pitz/image/upload/v1763388449/calendar-03_rnsmmq.png"
+                  src="/assets/calendar-03_rnsmmq.png"
                   alt="Date icon"
                   width={24}
                   height={24}

@@ -1024,13 +1024,13 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                       effectiveTransactionData.paymentDetail.logo_url ||
                       effectiveTransactionData.paymentDetail.logo ||
                       effectiveTransactionData.paymentDetail.provider_logo ||
-                      "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
+                      "/assets/image_7_jijlik.png"
                     }
                     alt={effectiveTransactionData.paymentDetail.provider_name}
                     className="w-5 h-5 rounded-full mr-2"
                     onError={(e) => {
-                      if (e.currentTarget.src !== "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png") {
-                        e.currentTarget.src = "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+                      if (e.currentTarget.src !== "/assets/image_7_jijlik.png") {
+                        e.currentTarget.src = "/assets/image_7_jijlik.png";
                       }
                     }}
                   />
@@ -1614,7 +1614,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
             ) : (
               <>
                 <img
-                  src="https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
+                  src="/assets/image_7_jijlik.png"
                   alt="Bank"
                   className="w-8 h-8 rounded-full flex-shrink-0 mt-0.5"
                 />

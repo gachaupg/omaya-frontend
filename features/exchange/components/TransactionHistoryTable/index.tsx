@@ -17,7 +17,7 @@ const ReceiptModal = ({ isOpen, onClose, transaction }: { isOpen: boolean; onClo
         {/* Header */}
         <div className="relative z-10 p-6 pb-4">
           <div className="flex items-center justify-between mb-4">
-            <img src="https://res.cloudinary.com/dam1sxczj/image/upload/v1747133499/Omaya_green-logo_yva2ah.png" alt="" />
+            <img src="/assets/Omaya_green-logo_yva2ah.png" alt="" />
             <button onClick={onClose} className="text-[#9CA3AF] hover:text-white">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
             </button>

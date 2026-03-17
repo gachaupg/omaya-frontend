@@ -47,7 +47,7 @@ const fallbackSupportedAssets = [
     name: "FXPRIMUS",
     symbol: "FXP",
     image:
-      "https://res.cloudinary.com/dam1sxczj/image/upload/v1746793801/FXPRIMUS-logo_2_k8ikwb.png",
+      "/assets/FXPRIMUS-logo_2_k8ikwb.png",
     current_price: 0,
     price_change_percentage_24h: 0,
   },
@@ -56,7 +56,7 @@ const fallbackSupportedAssets = [
     name: "Perfect Money",
     symbol: "PM",
     image:
-      "https://res.cloudinary.com/dam1sxczj/image/upload/v1746793801/Perfect_Money_Logo_2_niaa2j.png",
+      "/assets/Perfect_Money_Logo_2_niaa2j.png",
     current_price: 0,
     price_change_percentage_24h: 0,
   },
@@ -65,7 +65,7 @@ const fallbackSupportedAssets = [
     name: "USDT Tether (ERC20)",
     symbol: "USDT",
     image:
-      "https://res.cloudinary.com/dam1sxczj/image/upload/v1746793800/Group_164023_bluiv9.png",
+      "/assets/Group_164023_bluiv9.png",
     current_price: 1.0,
     price_change_percentage_24h: 0.01,
   },
@@ -74,7 +74,7 @@ const fallbackSupportedAssets = [
     name: "Bitcoin",
     symbol: "BTC",
     image:
-      "https://res.cloudinary.com/dam1sxczj/image/upload/v1746793800/Bitcoin-1_b6ku56.png",
+      "/assets/Bitcoin-1_b6ku56.png",
     current_price: 42580,
     price_change_percentage_24h: 2.4,
   },
@@ -83,7 +83,7 @@ const fallbackSupportedAssets = [
     name: "USDT Tether (TRC20)",
     symbol: "USDT",
     image:
-      "https://res.cloudinary.com/dam1sxczj/image/upload/v1746793800/Tether_ttkeym.png",
+      "/assets/Tether_ttkeym.png",
     current_price: 1.0,
     price_change_percentage_24h: 0.01,
   },
@@ -92,7 +92,7 @@ const fallbackSupportedAssets = [
     name: "ICM Capital",
     symbol: "ICM",
     image:
-      "https://res.cloudinary.com/dam1sxczj/image/upload/v1746793800/ICMCapital_1_qte6tt.png",
+      "/assets/ICMCapital_1_qte6tt.png",
     current_price: 0,
     price_change_percentage_24h: 0,
   },
@@ -565,7 +565,7 @@ export default function MarketingPage() {
 
           <div className="w-full mt-4">
             <img
-              src="https://res.cloudinary.com/pitz/image/upload/v1766121183/Container_14_omqgii.png"
+              src="/assets/Container_14_omqgii.png"
               alt="Celebrating Success"
               className="w-full h-auto object-cover"
             />
@@ -687,7 +687,7 @@ export default function MarketingPage() {
                                   className="object-contain w-9 h-9"
                                   unoptimized
                                   onError={(e) => {
-                                    (e.target as any).src = 'https://res.cloudinary.com/pitz/image/upload/v1764667057/salam_vizvxy.svg';
+                                    (e.target as any).src = '/assets/salam_vizvxy.svg';
                                   }}
                                 />
                              </div>
@@ -855,7 +855,7 @@ export default function MarketingPage() {
                 {/* Main illustration area */}
                 <div className="relative w-full">
                   <Image
-                    src="https://res.cloudinary.com/pitz/image/upload/v1765268255/Container_17_n6i2xm.png"
+                    src="/assets/Container_17_n6i2xm.png"
                     alt="Safe & Reliable Cryptocurrency Exchange Platform"
                     width={800}
                     height={600}
@@ -1136,7 +1136,7 @@ export default function MarketingPage() {
               className="flex justify-center mt-5 cursor-pointer"
               onClick={() => router.push(isAuthenticated ? '/dashboard' : '/auth/login')}
             >
-              <img src="https://res.cloudinary.com/pitz/image/upload/v1765959050/Button_muu3er.png" alt="Get Started" />
+              <img src="/assets/Button_muu3er.png" alt="Get Started" />
             </div>
           </div>
         </div>
@@ -1183,7 +1183,7 @@ export default function MarketingPage() {
               {/* Phone Image */}
               <div className="relative z-10">
                 <Image
-                  src="https://res.cloudinary.com/pitz/image/upload/v1765870778/iPhone_13_Mockup_1_wnbmqk.png"
+                  src="/assets/iPhone_13_Mockup_1_wnbmqk.png"
                   alt="OMAYA Exchange Mobile App"
                   width={350}
                   height={700}
@@ -1263,7 +1263,7 @@ export default function MarketingPage() {
                   className="inline-flex items-center justify-center gap-3 bg-gray-900 dark:bg-black/50 hover:bg-gray-800 dark:hover:bg-black/70 border border-gray-300 dark:border-white/20 rounded-xl px-6 py-4 transition-colors min-w-[200px]"
                 >
                   <Image
-                    src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746539125/Appstore_nqe65y.png"
+                    src="/assets/Appstore_nqe65y.png"
                     alt="Download on the App Store"
                     width={28}
                     height={28}
@@ -1276,7 +1276,7 @@ export default function MarketingPage() {
                   className="inline-flex items-center justify-center gap-3 bg-gray-900 dark:bg-black/50 hover:bg-gray-800 dark:hover:bg-black/70 border border-gray-300 dark:border-white/20 rounded-xl px-6 py-4 transition-colors min-w-[200px]"
                 >
                   <Image
-                    src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746539313/googleplay_1_w8djf0.png"
+                    src="/assets/googleplay_1_w8djf0.png"
                     alt="GET IT ON Google Play"
                     width={28}
                     height={28}
@@ -1388,7 +1388,7 @@ export default function MarketingPage() {
           {/* Card Image - Full width on small screens, centered on larger screens */}
           <div className="w-full md:mx-auto md:max-w-6xl md:rounded-3xl overflow-hidden">
                 <Image
-              src="https://res.cloudinary.com/pitz/image/upload/v1765346728/Container_37_fpyfvs.png"
+              src="/assets/Container_37_fpyfvs.png"
               alt="Refer and Invite your friends and earn commission"
               width={1440}
               height={800}

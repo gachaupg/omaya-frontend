@@ -20,48 +20,64 @@ export const useRouteProtection = () => {
   const [isChecking, setIsChecking] = useState(true);
   const [isVerified, setIsVerified] = useState<boolean | undefined>(undefined);
 
-  // Check verification status
+  // Check verification status (with timeout so slow API doesn't block the whole app)
   useEffect(() => {
+    const ROUTE_PROTECTION_TIMEOUT_MS = 12_000; // 12s – don’t block UI indefinitely
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
     const checkVerification = async () => {
       if (!isAuthenticated) {
         setIsChecking(false);
         return;
       }
 
+      timeoutId = setTimeout(() => {
+        timeoutId = null;
+        setIsChecking(false);
+        // Allow through on timeout so user can at least use the app; KYC can be rechecked in background
+        setIsVerified(undefined);
+      }, ROUTE_PROTECTION_TIMEOUT_MS);
+
       try {
-        // Check KYC status from API
         const result = await dispatch(checkKYCStatus()).unwrap();
+        if (timeoutId) clearTimeout(timeoutId);
+        timeoutId = null;
         const kycStatus = result as any;
-        
-        // Determine verification status
-        const verified = kycStatus?.is_verified === true || 
-                        (kycState.isVerified !== undefined ? kycState.isVerified : user?.is_verified === true);
-        
+
+        const verified =
+          kycStatus?.is_verified === true ||
+          (kycState.isVerified !== undefined ? kycState.isVerified : user?.is_verified === true);
+
         setIsVerified(verified);
-        
-        // If user is not verified, redirect and show modal
+
         if (verified === false) {
           router.push("/dashboard");
           dispatch(openKYCModal());
         }
       } catch (error) {
-        // Fallback to user data if API check fails
-        const verified = kycState.isVerified !== undefined 
-          ? kycState.isVerified 
-          : (user?.is_verified ?? false);
-        
+        if (timeoutId) clearTimeout(timeoutId);
+        timeoutId = null;
+        const verified =
+          kycState.isVerified !== undefined
+            ? kycState.isVerified
+            : (user?.is_verified ?? false);
+
         setIsVerified(verified);
-        
+
         if (verified === false) {
           router.push("/dashboard");
           dispatch(openKYCModal());
         }
       } finally {
+        if (timeoutId) clearTimeout(timeoutId);
         setIsChecking(false);
       }
     };
 
     checkVerification();
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, [isAuthenticated, dispatch, router, kycState.isVerified, user?.is_verified]);
 
   return {

@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/store";
 import { fetchSupportedAssets } from "../slices/swapSlice";
 import { logger } from "@/lib/logger";
+import { withTimeout } from "@/lib/utils/fetchWithTimeout";
 
 interface SwapDataProviderProps {
   children: ReactNode;
@@ -33,14 +34,7 @@ export const SwapDataProvider = ({ children }: SwapDataProviderProps) => {
 
     if (needsData) {
       logger.info("[SwapDataProvider] Fetching swap supported assets...");
-
-      // Add timeout to prevent infinite loading
-      const fetchPromise = dispatch(fetchSupportedAssets(false));
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Asset fetch timeout")), 10000)
-      );
-
-      Promise.race([fetchPromise, timeoutPromise])
+      withTimeout(dispatch(fetchSupportedAssets(false)).unwrap(), 15_000)
         .then(() => {
           logger.info("[SwapDataProvider] Swap assets loaded successfully");
         })

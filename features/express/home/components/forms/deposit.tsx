@@ -44,6 +44,7 @@ import { useBookmarkedAddresses } from "@/features/express/hooks/useBookmarkedAd
 import { BookmarkDropdown } from "@/features/express/components/forms/BookmarkDropdown";
 import { bookmarkedAddressesApi } from "@/features/express/services/bookmarkedAddressesApi";
 import { fetchCommission, getCommissionApiAsset } from "@/features/express/api";
+import { withTimeout } from "@/features/express/utils/fetchWithTimeout";
 
 interface DepositFormProps {
   onExchange?: (transactionData: {
@@ -892,26 +893,20 @@ export default function DepositForm({
       return;
     }
 
-    // First try to get from cache, then force refresh if no data
-    dispatch(fetchAssets(false))
-      .unwrap()
+    withTimeout(dispatch(fetchAssets(false)).unwrap(), 15_000)
       .then((data) => {
-
-
-        // If no assets in cache, force refresh
         if (!data?.assets || data.assets.length === 0) {
-          return dispatch(fetchAssets(true)).unwrap();
+          return withTimeout(dispatch(fetchAssets(true)).unwrap(), 15_000);
         }
         return data;
       })
       .catch((error: unknown) => {
-        // If cache fetch fails, try force refresh
-        return dispatch(fetchAssets(true))
-          .unwrap()
-          .catch((refreshError: unknown) => {
+        return withTimeout(dispatch(fetchAssets(true)).unwrap(), 15_000).catch(
+          (refreshError: unknown) => {
             showToast.error(`Failed to fetch assets: ${refreshError}`);
             throw refreshError;
-          });
+          }
+        );
       });
   }, [dispatch]);
 
@@ -922,34 +917,25 @@ export default function DepositForm({
       return;
     }
 
-    dispatch(fetchSupportedAssets(false))
-      .unwrap()
+    withTimeout(dispatch(fetchSupportedAssets(false)).unwrap(), 15_000)
       .then((data) => {
-        // If no assets in cache, force refresh
         if (!data || data.length === 0) {
-          return dispatch(fetchSupportedAssets(true)).unwrap();
+          return withTimeout(dispatch(fetchSupportedAssets(true)).unwrap(), 15_000);
         }
         return data;
       })
       .catch((error: unknown) => {
-        // If cache fetch fails, try force refresh
-        return dispatch(fetchSupportedAssets(true))
-          .unwrap()
-          .catch((refreshError: unknown) => {
-
-            // Only show error if it's a network issue, not cache issues
+        return withTimeout(dispatch(fetchSupportedAssets(true)).unwrap(), 15_000).catch(
+          (refreshError: unknown) => {
             if (refreshError instanceof Error) {
               if (refreshError.message.includes("Network Error") || refreshError.message.includes("Network connection issue")) {
                 showToast.warning("Network Issue", "Unable to fetch assets due to network problems. Using fallback data.");
               } else if (refreshError.message.includes("Server Error")) {
                 showToast.error("Server Error", "Unable to fetch assets from server. Please try again later.");
               } else if (!refreshError.message.includes("Cache")) {
-                // Only show error if it's not a cache-related issue
                 showToast.error("Asset Loading Error", `Failed to fetch swap assets: ${refreshError.message}`);
               }
             }
-
-            // Set fallback assets so the form can still work
             const fallbackAssets = [
               {
                 ticker: "USDT",
@@ -3217,13 +3203,13 @@ export default function DepositForm({
             >
               {/* Light mode image */}
               <img
-                src="https://res.cloudinary.com/pitz/image/upload/v1756579504/Frame_36261_1_d9cnq1.png"
+                src="/assets/Frame_36261_1_d9cnq1.png"
                 alt="swap icon"
                 className="w-10 h-10 dark:hidden"
               />
               {/* Dark mode image */}
               <img
-                src="https://res.cloudinary.com/pitz/image/upload/v1755500509/Frame_36261_ledmyw.png"
+                src="/assets/Frame_36261_ledmyw.png"
                 alt="swap icon"
                 className="w-10 h-10 hidden dark:block"
               />
@@ -3491,7 +3477,7 @@ export default function DepositForm({
             </span>
           </div>
           <img
-            src="https://res.cloudinary.com/pitz/image/upload/v1753424863/Screenshot_2025-07-25_092724_rjinec.png"
+            src="/assets/Screenshot_2025-07-25_092724_rjinec.png"
             alt=""
             style={{ cursor: "pointer" }}
             onClick={() =>
@@ -3507,7 +3493,7 @@ export default function DepositForm({
         {!isFirstCardSubmitted && !showForexForm && (
           <div className="mt-4 mb-3 flex items-center gap-3 p-3 rounded-2xl bg-transparent">
             <img
-              src="https://res.cloudinary.com/pitz/image/upload/v1765784047/alert-circle_1_ujybne.png"
+              src="/assets/alert-circle_1_ujybne.png"
               alt="Warning"
               className="w-5 h-5 flex-shrink-0 mt-1"
             />
@@ -3624,7 +3610,7 @@ export default function DepositForm({
                   <span className="text-base font-semibold text-white">E</span>
                   <img
                     className="h-5 w-auto mt-2"
-                    src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
+                    src="/assets/Group_5_gkxzdz.png"
                     alt="Express icon"
                   />
                 </span>
@@ -3656,12 +3642,12 @@ export default function DepositForm({
                         src={
                           selectedPaymentDetail.provider_logo ||
                           selectedPaymentDetail.logo ||
-                          "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
+                          "/assets/image_7_jijlik.png"
                         }
                         alt={`${selectedPaymentDetail.provider_name || 'Bank'} Logo`}
                         className="w-8 h-8 rounded-full object-contain"
                         onError={(e) => {
-                          e.currentTarget.src = "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+                          e.currentTarget.src = "/assets/image_7_jijlik.png";
                         }}
                       />
                       <span className={`${isDark ? "text-[#D1D5DB]" : "text-[#1F2937]"} text-base font-semibold`}>
@@ -3858,12 +3844,12 @@ export default function DepositForm({
                     src={
                       selectedPaymentDetail.provider_logo ||
                       selectedPaymentDetail.logo ||
-                      "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
+                      "/assets/image_7_jijlik.png"
                     }
                     alt={`${selectedPaymentDetail.provider_name || 'Bank'} Logo`}
                     className="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-contain"
                     onError={(e) => {
-                      e.currentTarget.src = "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+                      e.currentTarget.src = "/assets/image_7_jijlik.png";
                     }}
                   />
                   <span className={`${isDark ? "text-[#D1D5DB]" : "text-[#1F2937]"} text-sm sm:text-base font-semibold truncate max-w-[150px] sm:max-w-none`}>
@@ -4323,7 +4309,7 @@ export default function DepositForm({
                   E
                   <img
                     className="mt-2"
-                    src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
+                    src="/assets/Group_5_gkxzdz.png"
                     alt=""
                   />
                 </span>

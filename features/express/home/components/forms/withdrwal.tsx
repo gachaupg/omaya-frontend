@@ -53,6 +53,7 @@ import {
 } from "@/lib/utils/authRedirect";
 import { openKYCModal, checkKYCStatus } from "@/features/auth/slices/authSlice";
 import { bookmarkedAddressesApi } from "@/features/express/services/bookmarkedAddressesApi";
+import { withTimeout } from "@/features/express/utils/fetchWithTimeout";
 
 // Add UserPaymentDetail interface
 interface UserPaymentDetail {
@@ -552,20 +553,15 @@ export default function WithdrawalForm({
   // Debug function to test asset fetching
   const handleDebugAssets = async () => {
     try {
-
-      await dispatch(fetchAssets(true)).unwrap();
-
-
-      await dispatch(fetchSupportedAssets(true)).unwrap();
-
+      await withTimeout(dispatch(fetchAssets(true)).unwrap(), 15_000);
+      await withTimeout(dispatch(fetchSupportedAssets(true)).unwrap(), 15_000);
     } catch (error) {
     }
   };
 
-  // Force refresh assets
   const handleForceRefreshAssets = async () => {
     try {
-      await dispatch(fetchSupportedAssets(true)).unwrap();
+      await withTimeout(dispatch(fetchSupportedAssets(true)).unwrap(), 15_000);
     } catch (error) {
     }
   };
@@ -971,9 +967,7 @@ export default function WithdrawalForm({
       return;
     }
 
-    // First try to get from cache, then force refresh if no data
-    dispatch(fetchAdminPaymentDetails(false))
-      .unwrap()
+    withTimeout(dispatch(fetchAdminPaymentDetails(false)).unwrap(), 15_000)
       .then((data) => {
         // Update ref immediately
         if (data && data.length > 0) {
@@ -981,16 +975,13 @@ export default function WithdrawalForm({
             p.is_active === undefined || p.is_active === null || p.is_active === true || p.is_active === 'true'
           );
         }
-        // If no payment methods in cache, force refresh
         if (!data || (Array.isArray(data) && data.length === 0)) {
-          return dispatch(fetchAdminPaymentDetails(true)).unwrap();
+          return withTimeout(dispatch(fetchAdminPaymentDetails(true)).unwrap(), 15_000);
         }
         return data;
       })
       .catch((error: unknown) => {
-        // If cache fetch fails, try force refresh
-        return dispatch(fetchAdminPaymentDetails(true))
-          .unwrap()
+        return withTimeout(dispatch(fetchAdminPaymentDetails(true)).unwrap(), 15_000)
           .then((data) => {
             // Update ref immediately
             if (data && data.length > 0) {
@@ -1021,23 +1012,16 @@ export default function WithdrawalForm({
       return;
     }
 
-    dispatch(fetchAdminWalletList(false))
-      .unwrap()
+    withTimeout(dispatch(fetchAdminWalletList(false)).unwrap(), 15_000)
       .then((data) => {
         console.log("✅ Admin wallet list fetched successfully");
         setHasFetchedAdminWallet(true);
-        setAdminWalletRetryCount(0); // Reset retry count on success
-
-        // If no data in cache, try one force refresh (counts as a retry)
+        setAdminWalletRetryCount(0);
         if ((!data || !data.results || data.results.length === 0) && adminWalletRetryCount === 0) {
           setAdminWalletRetryCount(1);
-          dispatch(fetchAdminWalletList(true)).unwrap()
-            .then(() => {
-              setHasFetchedAdminWallet(true);
-            })
-            .catch(() => {
-              setHasFetchedAdminWallet(true);
-            });
+          withTimeout(dispatch(fetchAdminWalletList(true)).unwrap(), 15_000)
+            .then(() => setHasFetchedAdminWallet(true))
+            .catch(() => setHasFetchedAdminWallet(true));
         }
       })
       .catch((error: unknown) => {
@@ -1067,31 +1051,21 @@ export default function WithdrawalForm({
       return;
     }
 
-    // First try to get from cache, then force refresh if no data
-    dispatch(fetchAssets(false))
-      .unwrap()
+    withTimeout(dispatch(fetchAssets(false)).unwrap(), 15_000)
       .then((data) => {
         console.log("✅ Assets fetched successfully");
         setHasFetchedAssets(true);
-        setAssetsRetryCount(0); // Reset retry count on success
-
-        // If no assets in cache, try one force refresh (counts as a retry)
+        setAssetsRetryCount(0);
         if ((!data?.assets || data.assets.length === 0) && assetsRetryCount === 0) {
           setAssetsRetryCount(1);
-          dispatch(fetchAssets(true)).unwrap()
-            .then(() => {
-              setHasFetchedAssets(true);
-            })
-            .catch(() => {
-              setHasFetchedAssets(true);
-            });
+          withTimeout(dispatch(fetchAssets(true)).unwrap(), 15_000)
+            .then(() => setHasFetchedAssets(true))
+            .catch(() => setHasFetchedAssets(true));
         }
       })
       .catch((error: unknown) => {
         console.error(`❌ Failed to fetch assets (attempt ${assetsRetryCount + 1}/${MAX_RETRIES}):`, error);
         setAssetsRetryCount(prev => prev + 1);
-
-        // Only show toast on final retry
         if (assetsRetryCount + 1 >= MAX_RETRIES) {
           if (!isHomePage) {
             showToast.error(`Failed to fetch assets after ${MAX_RETRIES} attempts`);
@@ -1108,19 +1082,13 @@ export default function WithdrawalForm({
       return;
     }
 
-    // First try to get from cache, then force refresh if no data
-    dispatch(fetchUserPaymentDetails(false))
-      .unwrap()
+    withTimeout(dispatch(fetchUserPaymentDetails(false)).unwrap(), 15_000)
       .then((data) => {
-        // Update ref immediately
         if (data && data.length > 0) {
           userPaymentMethodsRef.current = data;
         }
-
-        // If no payment methods in cache, force refresh
         if (!data || (Array.isArray(data) && data.length === 0)) {
-          return dispatch(fetchUserPaymentDetails(true))
-            .unwrap()
+          return withTimeout(dispatch(fetchUserPaymentDetails(true)).unwrap(), 15_000)
             .then((freshData) => {
               if (freshData && freshData.length > 0) {
                 userPaymentMethodsRef.current = freshData;
@@ -1134,18 +1102,14 @@ export default function WithdrawalForm({
         return data;
       })
       .catch((error: unknown) => {
-        // If cache fetch fails, try force refresh
-        return dispatch(fetchUserPaymentDetails(true))
-          .unwrap()
+        return withTimeout(dispatch(fetchUserPaymentDetails(true)).unwrap(), 15_000)
           .then((data) => {
-            // Update ref immediately
             if (data && data.length > 0) {
               userPaymentMethodsRef.current = data;
             }
             return data;
           })
           .catch((refreshError: unknown) => {
-            // Don't show toast error - the UI will handle the loading/error state gracefully
             throw refreshError;
           });
       });
@@ -1192,36 +1156,25 @@ export default function WithdrawalForm({
       return;
     }
 
-    dispatch(fetchSupportedAssets(false))
-      .unwrap()
+    withTimeout(dispatch(fetchSupportedAssets(false)).unwrap(), 15_000)
       .then((data) => {
         console.log("✅ Swap assets fetched successfully");
         setHasFetchedSwapAssets(true);
-        setSwapAssetsRetryCount(0); // Reset retry count on success
-
-        // If no assets in cache, try one force refresh (counts as a retry)
+        setSwapAssetsRetryCount(0);
         if ((!data || data.length === 0) && swapAssetsRetryCount === 0) {
           setSwapAssetsRetryCount(1);
-          dispatch(fetchSupportedAssets(true)).unwrap()
-            .then(() => {
-              setHasFetchedSwapAssets(true);
-            })
-            .catch(() => {
-              setHasFetchedSwapAssets(true);
-            });
+          withTimeout(dispatch(fetchSupportedAssets(true)).unwrap(), 15_000)
+            .then(() => setHasFetchedSwapAssets(true))
+            .catch(() => setHasFetchedSwapAssets(true));
         }
       })
       .catch((error: unknown) => {
         console.error(`❌ Failed to fetch swap assets (attempt ${swapAssetsRetryCount + 1}/${MAX_RETRIES}):`, error);
         setSwapAssetsRetryCount(prev => prev + 1);
-
-        // Only show toast on final retry
         if (swapAssetsRetryCount + 1 >= MAX_RETRIES) {
           if (!isHomePage) {
             showToast.warning("Unable to fetch swap assets. Using fallback data.");
           }
-
-          // Set fallback assets
           const fallbackAssets = [
             {
               ticker: "USDT",
@@ -4076,13 +4029,13 @@ export default function WithdrawalForm({
                 >
                   {/* Light mode image */}
                   <img
-                    src="https://res.cloudinary.com/pitz/image/upload/v1756579504/Frame_36261_1_d9cnq1.png"
+                    src="/assets/Frame_36261_1_d9cnq1.png"
                     alt="swap icon"
                     className="w-10 h-10 dark:hidden"
                   />
                   {/* Dark mode image */}
                   <img
-                    src="https://res.cloudinary.com/pitz/image/upload/v1755500509/Frame_36261_ledmyw.png"
+                    src="/assets/Frame_36261_ledmyw.png"
                     alt="swap icon"
                     className="w-10 h-10 hidden dark:block"
                   />
@@ -4521,7 +4474,7 @@ export default function WithdrawalForm({
                                   onClick={async () => {
                                     try {
                                       setIsRefreshingAccounts(true);
-                                      await dispatch(fetchUserPaymentDetails(true)).unwrap();
+                                      await withTimeout(dispatch(fetchUserPaymentDetails(true)).unwrap(), 15_000);
                                       showToast.success("Accounts refreshed");
                                     } catch (error) {
                                       showToast.error("Failed to refresh payment details");
@@ -4705,7 +4658,7 @@ export default function WithdrawalForm({
               </span>
             </div>
             <img
-              src="https://res.cloudinary.com/pitz/image/upload/v1753424863/Screenshot_2025-07-25_092724_rjinec.png"
+              src="/assets/Screenshot_2025-07-25_092724_rjinec.png"
               alt=""
               style={{ cursor: "pointer" }}
               onClick={() =>
@@ -4721,7 +4674,7 @@ export default function WithdrawalForm({
             {!isTransactionSubmitted && !showForexWithdrawalForm && (
               <div className="mt-4 mb-3 flex items-center gap-3 p-3 rounded-2xl bg-transparent">
                 <img
-                  src="https://res.cloudinary.com/pitz/image/upload/v1765784047/alert-circle_1_ujybne.png"
+                  src="/assets/alert-circle_1_ujybne.png"
                   alt="Warning"
                   className="w-5 h-5 flex-shrink-0 mt-1"
                 />
@@ -4820,7 +4773,7 @@ export default function WithdrawalForm({
                       <span className="text-base font-medium text-white">Express</span>
                       <img
                         className="h-5 w-auto mt-3"
-                        src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
+                        src="/assets/Group_5_gkxzdz.png"
                         alt="Express icon"
                       />
                     </span>
@@ -5147,7 +5100,7 @@ export default function WithdrawalForm({
                       E
                       <img
                         className="mt-2"
-                        src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
+                        src="/assets/Group_5_gkxzdz.png"
                         alt=""
                       />
                     </span>
@@ -5181,8 +5134,8 @@ export default function WithdrawalForm({
                 try {
                   // Refresh both user and admin payment details after adding (force refresh)
                   await Promise.all([
-                    dispatch(fetchUserPaymentDetails(true)).unwrap(),
-                    dispatch(fetchAdminWalletList(true)).unwrap(),
+                    withTimeout(dispatch(fetchUserPaymentDetails(true)).unwrap(), 15_000),
+                    withTimeout(dispatch(fetchAdminWalletList(true)).unwrap(), 15_000),
                   ]);
                   showToast.success("Payment method added successfully!");
                 } catch (error) {

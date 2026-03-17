@@ -66,32 +66,32 @@ const Merchant = () => {
       key: 'bank_account_ownership_proof' as keyof typeof files,
       title: 'Bank Account Ownership Proof',
       description: 'Bank statement showing your name & account number',
-      image: 'https://res.cloudinary.com/pitz/image/upload/v1746710370/coins-rotate_d278mb.png',
+      image: '/assets/coins-rotate_d278mb.png',
       required: true
     },
     {
       key: 'business_registration_certificate' as keyof typeof files,
       title: 'Business Registration Certificate',
       description: 'Required if applying as a company',
-      image: 'https://res.cloudinary.com/pitz/image/upload/v1746710370/coins-rotate_d278mb.png'
+      image: '/assets/coins-rotate_d278mb.png'
     },
     {
       key: 'tax_identification_number_certificate' as keyof typeof files,
       title: 'Tax Identification Number (TIN) or VAT Certificate',
       description: 'Official tax identification document',
-      image: 'https://res.cloudinary.com/pitz/image/upload/v1746710370/coins-rotate_d278mb.png'
+      image: '/assets/coins-rotate_d278mb.png'
     },
     {
       key: 'articles_of_association' as keyof typeof files,
       title: 'Articles of Association / Constitution',
       description: 'To verify who owns and controls the business',
-      image: 'https://res.cloudinary.com/pitz/image/upload/v1746710370/coins-rotate_d278mb.png'
+      image: '/assets/coins-rotate_d278mb.png'
     },
     {
       key: 'proof_of_address' as keyof typeof files,
       title: 'Proof of Address',
       description: 'Utility bill, bank statement, or government document showing your address',
-      image: 'https://res.cloudinary.com/pitz/image/upload/v1746710370/coins-rotate_d278mb.png',
+      image: '/assets/coins-rotate_d278mb.png',
       required: true
     }
   ]
@@ -210,7 +210,7 @@ const Merchant = () => {
         {/* Header Section */}
         <div className="relative mb-6 px-4">
           <img
-            src="https://res.cloudinary.com/pitz/image/upload/v1762878377/images_2_qysivu.jpg"
+            src="/assets/images_2_qysivu.jpg"
             alt="P2P merchant hero"
             className="w-full rounded-2xl object-cover max-h-[140px] md:max-h-[170px] lg:max-h-[190px]"
           />

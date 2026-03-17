@@ -316,7 +316,7 @@ export const Table = forwardRef<TableExportRef, TableProps>(({
         let currentY = 12;
 
         // Load and add OMAYA logo at top (centered)
-        const logoUrl = "https://res.cloudinary.com/pitz/image/upload/v1764572384/bad9edd9da5201cb8f8f9cea35bf46f4fb541bd6_lplbyc.png";
+        const logoUrl = "/assets/bad9edd9da5201cb8f8f9cea35bf46f4fb541bd6_lplbyc.png";
         const logoWidth = 48;
         const logoHeight = 18;
         try {
@@ -1218,7 +1218,7 @@ export const Table = forwardRef<TableExportRef, TableProps>(({
             {/* Omaya.io Logo at the top */}
             <div className="flex items-center justify-center mb-3 sm:mb-4">
               <img
-                src="https://res.cloudinary.com/pitz/image/upload/v1764572384/bad9edd9da5201cb8f8f9cea35bf46f4fb541bd6_lplbyc.png"
+                src="/assets/bad9edd9da5201cb8f8f9cea35bf46f4fb541bd6_lplbyc.png"
                 alt="OMAYA"
                 className="h-6 sm:h-8 w-auto object-contain"
               />
@@ -1345,7 +1345,7 @@ export const Table = forwardRef<TableExportRef, TableProps>(({
                 <span className="text-[#6b7280] dark:text-[#788099] flex items-center gap-1 text-xs sm:text-sm">
                   <span className="truncate">Salaam Bank</span>{" "}
                   <img
-                    src="https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
+                    src="/assets/image_7_jijlik.png"
                     alt=""
                     className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0"
                   />

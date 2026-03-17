@@ -565,7 +565,7 @@ const DepositModal: React.FC<DepositModalProps> = ({ asset, assetType, onClose }
               onClick={handlePasteClick}
               title="Paste"
             >
-              <img src="https://res.cloudinary.com/dam1sxczj/image/upload/v1748885082/Vector_se1lvr.png" alt="Paste" className='w-5 h-5' />
+              <img src="/assets/Vector_se1lvr.png" alt="Paste" className='w-5 h-5' />
             </button>
           </div>
 

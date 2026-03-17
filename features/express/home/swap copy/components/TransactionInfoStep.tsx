@@ -482,13 +482,13 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
             >
               {/* Light mode image */}
               <img
-                src="https://res.cloudinary.com/pitz/image/upload/v1756579504/Frame_36261_1_d9cnq1.png"
+                src="/assets/Frame_36261_1_d9cnq1.png"
                 alt="swap icon"
                 className="w-10 h-10 dark:hidden"
               />
               {/* Dark mode image */}
               <img
-                src="https://res.cloudinary.com/pitz/image/upload/v1755500509/Frame_36261_ledmyw.png"
+                src="/assets/Frame_36261_ledmyw.png"
                 alt="swap icon"
                 className="w-10 h-10 hidden dark:block"
               />
@@ -630,7 +630,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
         {!hideContinueButton && (
           <div className="mt-4 mb-3 flex items-center gap-3 p-3 rounded-2xl bg-transparent">
             <img
-              src="https://res.cloudinary.com/pitz/image/upload/v1765784047/alert-circle_1_ujybne.png"
+              src="/assets/alert-circle_1_ujybne.png"
               alt="Warning"
               className="w-5 h-5 flex-shrink-0"
             />

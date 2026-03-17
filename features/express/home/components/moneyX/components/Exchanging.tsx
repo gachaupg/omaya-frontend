@@ -1011,7 +1011,7 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
                       className="w-6 h-6 mr-2 rounded-md object-contain bg-white flex-shrink-0"
                       onError={(e) => {
                         e.currentTarget.src =
-                          "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+                          "/assets/image_7_jijlik.png";
                       }}
                     />
                   ) : null}
@@ -1047,7 +1047,7 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
                       className="w-6 h-6 mr-2 rounded-md object-contain bg-white flex-shrink-0"
                       onError={(e) => {
                         e.currentTarget.src =
-                          "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+                          "/assets/image_7_jijlik.png";
                       }}
                     />
                   ) : null}
@@ -1600,7 +1600,7 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
                     className="w-8 h-8 rounded-md object-contain bg-white flex-shrink-0 mt-0.5"
                     onError={(e) => {
                       e.currentTarget.src =
-                        "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+                        "/assets/image_7_jijlik.png";
                     }}
                   />
                 )}
@@ -1648,7 +1648,7 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
                     className="w-8 h-8 rounded-md object-contain bg-white flex-shrink-0 mt-0.5"
                     onError={(e) => {
                       e.currentTarget.src =
-                        "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+                        "/assets/image_7_jijlik.png";
                     }}
                   />
                 )}

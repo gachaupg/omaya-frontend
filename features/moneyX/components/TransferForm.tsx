@@ -32,9 +32,11 @@ interface TransferFormProps {
     moneyXTransaction?: any;
   }) => void;
   initialState?: Record<string, any>;
+  /** Used for range-commissions API: commission_type=deposit | withdrawal */
+  commissionType?: "deposit" | "withdrawal";
 }
 
-export default function TransferForm({ onTransfer, initialState }: TransferFormProps) {
+export default function TransferForm({ onTransfer, initialState, commissionType = "deposit" }: TransferFormProps) {
   const dispatch = useDispatch<AppDispatch>();
   const { isDark } = useTheme();
   const { t } = useExpressI18n();
@@ -193,7 +195,7 @@ export default function TransferForm({ onTransfer, initialState }: TransferFormP
     }
     if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
     commissionFetchTimeoutRef.current = setTimeout(() => {
-      dispatch(fetchMoneyXCommission(amount))
+      dispatch(fetchMoneyXCommission({ amount, commissionType }))
         .unwrap()
         .then((result) => {
           setApiCommission(result.commission);
@@ -203,7 +205,7 @@ export default function TransferForm({ onTransfer, initialState }: TransferFormP
     return () => {
       if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
     };
-  }, [payAmount, getAmount, isCalculatingFromPay, dispatch]);
+  }, [payAmount, getAmount, isCalculatingFromPay, commissionType, dispatch]);
 
   // Recalculate the other field when apiCommission updates (commission is a percentage: receive = send - send*rate/100)
   useEffect(() => {
@@ -1139,13 +1141,13 @@ export default function TransferForm({ onTransfer, initialState }: TransferFormP
             >
               {/* Light mode image */}
               <img
-                src="https://res.cloudinary.com/pitz/image/upload/v1756579504/Frame_36261_1_d9cnq1.png"
+                src="/assets/Frame_36261_1_d9cnq1.png"
                 alt="swap icon"
                 className="w-10 h-10 sm:w-10 sm:h-10 dark:hidden"
               />
               {/* Dark mode image */}
               <img
-                src="https://res.cloudinary.com/pitz/image/upload/v1755500509/Frame_36261_ledmyw.png"
+                src="/assets/Frame_36261_ledmyw.png"
                 alt="swap icon"
                 className="w-10 h-10 sm:w-10 sm:h-10 hidden dark:block"
               />

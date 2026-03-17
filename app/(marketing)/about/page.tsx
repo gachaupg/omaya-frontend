@@ -204,7 +204,7 @@ const AboutPage = () => {
       description: "OMAYA Exchange was founded by crypto pioneers and fintech experts with a vision to revolutionize digital asset trading.",
       icon: Rocket,
       pills: ["10 Cryptocurrencies", "Beta Launch", "1,000+ Users"],
-      image: "https://res.cloudinary.com/pitz/image/upload/v1764575266/Container_9_e1cnzo.png",
+      image: "/assets/Container_9_e1cnzo.png",
       align: "right",
     },
     {
@@ -214,7 +214,7 @@ const AboutPage = () => {
       description: "Expanded to 50 countries and reached 10,000 active users with enhanced trading features and mobile app launch.",
       icon: TrendingUp,
       pills: ["50 Countries", "$100M+ Volume", "10K+ Users"],
-      image: "https://res.cloudinary.com/pitz/image/upload/v1764575158/Container_5_aj1cpq.png",
+      image: "/assets/Container_5_aj1cpq.png",
       align: "left",
     },
     {
@@ -224,7 +224,7 @@ const AboutPage = () => {
       description: "Reached 150+ countries with 24/7 multilingual support and introduced P2P trading and staking features.",
       icon: Globe,
       pills: ["150+ Countries", "200+ Coins", "15 Languages"],
-      image: "https://res.cloudinary.com/pitz/image/upload/v1764575266/Container_8_c6iouu.png",
+      image: "/assets/Container_8_c6iouu.png",
       align: "right",
     },
     {
@@ -234,7 +234,7 @@ const AboutPage = () => {
       description: "Won Best Crypto Exchange Award and achieved ISO 27001 certification for information security management.",
       icon: Trophy,
       pills: ["50K+ Traders", "ISO Certified", "Best Exchange"],
-      image: "https://res.cloudinary.com/pitz/image/upload/v1764575156/Container_7_ffwiyh.png",
+      image: "/assets/Container_7_ffwiyh.png",
       align: "left",
     },
   ];
@@ -461,7 +461,7 @@ const AboutPage = () => {
             <div className="relative">
               <div className="relative w-full h-[600px] rounded-3xl overflow-hidden">
                 <Image
-                  src="https://res.cloudinary.com/pitz/image/upload/v1764574482/Container_ihax20.png"
+                  src="/assets/Container_ihax20.png"
                   alt="Our Mission"
                   fill
                   className="object-cover"
@@ -481,7 +481,7 @@ const AboutPage = () => {
             <div className="relative order-2 md:order-1">
               <div className="relative w-full h-[600px] rounded-3xl overflow-hidden">
                 <Image
-                  src="https://res.cloudinary.com/pitz/image/upload/v1764574805/Container_2_yazuhu.png"
+                  src="/assets/Container_2_yazuhu.png"
                   alt="Our Vision"
                   fill
                   className="object-cover"
@@ -942,7 +942,7 @@ const AboutPage = () => {
             <div className="flex flex-col relative w-full min-w-0">
               <div className="relative w-full h-40 rounded-2xl overflow-hidden bg-gray-100 dark:bg-[#14141A]">
                 <Image
-                  src="https://res.cloudinary.com/pitz/image/upload/v1764575266/Container_9_e1cnzo.png"
+                  src="/assets/Container_9_e1cnzo.png"
                   alt="Best Crypto Exchange"
                   fill
                   className="object-cover rounded-2xl !w-full !h-full"
@@ -973,7 +973,7 @@ const AboutPage = () => {
             <div className="flex flex-col relative w-full min-w-0">
               <div className="relative w-full h-40 rounded-2xl overflow-hidden bg-gray-100 dark:bg-[#14141A]">
                 <Image
-                  src="https://res.cloudinary.com/pitz/image/upload/v1764575591/Container_11_tss9j7.png"
+                  src="/assets/Container_11_tss9j7.png"
                   alt="ISO Certified"
                   fill
                   className="object-cover rounded-2xl !w-full !h-full"
@@ -1003,7 +1003,7 @@ const AboutPage = () => {
             <div className="flex flex-col relative w-full min-w-0">
               <div className="relative w-full h-40 rounded-2xl overflow-hidden bg-gray-100 dark:bg-[#14141A]">
                 <Image
-                  src="https://res.cloudinary.com/pitz/image/upload/v1764575158/Container_5_aj1cpq.png"
+                  src="/assets/Container_5_aj1cpq.png"
                   alt="Trusted Users"
                   fill
                   className="object-cover rounded-2xl !w-full !h-full"
@@ -1069,7 +1069,7 @@ const AboutPage = () => {
             <div className="relative">
               <div className="relative w-full h-[400px] overflow-hidden">
                 <Image
-                  src="https://res.cloudinary.com/pitz/image/upload/v1764575591/Container_11_tss9j7.png"
+                  src="/assets/Container_11_tss9j7.png"
                   alt="Security Padlock"
                   fill
                   className="object-contain"

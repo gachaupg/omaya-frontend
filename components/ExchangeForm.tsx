@@ -15,6 +15,7 @@ import {
   useAssetsDisplay,
   usePaymentMethodsDisplay,
 } from "@/features/express/hooks/useDataDisplay";
+import { withTimeout } from "@/lib/utils/fetchWithTimeout";
 import { FaSearch } from "react-icons/fa";
 import Express from "@/features/express/home/express/express";
 import SwapWidget from "@/features/express/home/swap copy/components/SwapWidget";
@@ -429,7 +430,7 @@ export default function ExchangeForm({
     if (provider?.provider_logo) {
       return provider.provider_logo;
     }
-    return "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+    return "/assets/image_7_jijlik.png";
   };
 
   // Get unique payment methods from normalized data
@@ -522,31 +523,24 @@ export default function ExchangeForm({
       return;
     }
 
-    // Fetch assets
-    dispatch(fetchAssets(false)).unwrap();
+    withTimeout(dispatch(fetchAssets(false)).unwrap(), 15_000).catch(() => {});
   }, [dispatch, isHomePage, isAuthenticated]);
 
   useEffect(() => {
-    // Skip API calls on home page if user is not authenticated
     if (isHomePage && !isAuthenticated) {
       return;
     }
-
-    // Fetch swap assets
-    dispatch(fetchSupportedAssets(false)).unwrap();
+    withTimeout(dispatch(fetchSupportedAssets(false)).unwrap(), 15_000).catch(() => {});
   }, [dispatch, isHomePage, isAuthenticated]);
 
   useEffect(() => {
     if (isHomePage) {
-      // For home page, use public payment methods (no authentication required)
-      dispatch(fetchPublicPaymentMethods()).unwrap();
+      withTimeout(dispatch(fetchPublicPaymentMethods()).unwrap(), 15_000).catch(() => {});
     } else {
-      // For authenticated pages, use admin payment methods
       if (!isAuthenticated) {
         return;
       }
-
-      dispatch(fetchAdminPaymentDetails(false)).unwrap();
+      withTimeout(dispatch(fetchAdminPaymentDetails(false)).unwrap(), 15_000).catch(() => {});
     }
   }, [dispatch, isHomePage, isAuthenticated]);
 
@@ -681,7 +675,7 @@ export default function ExchangeForm({
     setPaymentSearchTerm("");
 
     const providerName = provider.provider_name || provider.method_name || "Payment Method";
-    const providerLogo = provider.logo || "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+    const providerLogo = provider.logo || "/assets/image_7_jijlik.png";
 
     // Update currency display based on current mode
     if (mode === "deposit") {
@@ -711,7 +705,7 @@ export default function ExchangeForm({
       // For deposit: payment method -> asset
       if (selectedPaymentMethod) {
         const providerName = selectedPaymentMethod.provider_name || selectedPaymentMethod.method_name || "Payment Method";
-        const providerLogo = selectedPaymentMethod.logo || "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+        const providerLogo = selectedPaymentMethod.logo || "/assets/image_7_jijlik.png";
         setPayCurrency({
           label: providerName,
           sub: selectedPaymentMethod.method_display || selectedPaymentMethod.method_name || "Payment Method",
@@ -740,7 +734,7 @@ export default function ExchangeForm({
 
       if (selectedPaymentMethod) {
         const providerName = selectedPaymentMethod.provider_name || selectedPaymentMethod.method_name || "Payment Method";
-        const providerLogo = selectedPaymentMethod.logo || "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+        const providerLogo = selectedPaymentMethod.logo || "/assets/image_7_jijlik.png";
         setGetCurrency({
           label: providerName,
           sub: selectedPaymentMethod.method_display || selectedPaymentMethod.method_name || "Payment Method",
@@ -982,7 +976,7 @@ export default function ExchangeForm({
             return filteredPaymentProviders.map(
               (provider: any, index: number) => {
                 const isSelected = isProviderSelected(provider);
-                const fallbackLogo = "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+                const fallbackLogo = "/assets/image_7_jijlik.png";
 
                 return (
                   <div
@@ -1164,7 +1158,7 @@ export default function ExchangeForm({
     // Light Mode / Inactive: Group_6 (Dark X)
     // Dark Mode Active: Group_7 (Green/White X)
     const moneyXIconSrc1 = "/images/x.png";
-    const moneyXIconSrc2 = "https://res.cloudinary.com/pitz/image/upload/v1764663236/Group_7_ichuyz.png";
+    const moneyXIconSrc2 = "/assets/Group_7_ichuyz.png";
 
     // Process label rendering
     const renderLabel = () => {
@@ -1640,7 +1634,19 @@ export default function ExchangeForm({
           }`}>
         {renderTabs()}
         <div className="pt-2 sm:pt-3 px-3 sm:px-4 md:px-5 py-3 border-l border-r border-b border-border dark:border-accent rounded-b-2xl">
-          <MoneyX isHomePage={isHomePage} />
+          {/* Deposit / Withdrawal toggle for MoneyX (range-commissions API uses commission_type) */}
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-sm text-gray-600 dark:text-gray-400">Type:</span>
+            <button
+              type="button"
+              onClick={handleModeToggle}
+              className="flex rounded-lg border border-gray-300 dark:border-[#35353E] p-1 bg-gray-100 dark:bg-[#23232B]"
+            >
+              <span className={`px-2 py-1 rounded text-xs font-medium ${mode === "deposit" ? "bg-white dark:bg-[#35353E] text-[#1D8751] shadow-sm" : "text-gray-500 dark:text-gray-400"}`}>Deposit</span>
+              <span className={`px-2 py-1 rounded text-xs font-medium ${mode === "withdrawal" ? "bg-white dark:bg-[#35353E] text-[#1D8751] shadow-sm" : "text-gray-500 dark:text-gray-400"}`}>Withdrawal</span>
+            </button>
+          </div>
+          <MoneyX isHomePage={isHomePage} commissionType={mode} />
         </div>
       </div>
     );

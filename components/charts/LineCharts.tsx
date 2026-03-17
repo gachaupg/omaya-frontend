@@ -505,7 +505,7 @@ const Dropdown = ({
       ))}
     </select>
     <Image
-      src="https://res.cloudinary.com/pitz/image/upload/v1763727113/Frame_34634_zwzons.png"
+      src="/assets/Frame_34634_zwzons.png"
       alt="Dropdown arrow"
       width={15}
       height={15}

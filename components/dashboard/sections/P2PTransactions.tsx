@@ -14,7 +14,7 @@ import { useDashboardI18n } from "@/lib/useDashboardI18n";
 import { SortArrowsIcon } from "@/components/ui/SortArrowsIcon";
 
 const COIN_ICONS: Record<string, string> = {
-  USDT: "https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png",
+  USDT: "/assets/TRC20_tvugf8.png",
   BTC: "https://cryptologos.cc/logos/bitcoin-btc-logo.png",
   ETH: "https://cryptologos.cc/logos/ethereum-eth-logo.png",
 };

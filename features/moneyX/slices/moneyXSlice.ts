@@ -68,14 +68,16 @@ export interface RangeCommissionResponse {
   results: RangeCommissionResult[];
 }
 
+export type MoneyXCommissionType = "deposit" | "withdrawal";
+
 export const fetchMoneyXCommission = createAsyncThunk<
   { commission: number; isPercentage: boolean },
-  number
+  { amount: number; commissionType?: MoneyXCommissionType }
 >(
   "moneyX/fetchCommission",
-  async (amount, { rejectWithValue }) => {
+  async ({ amount, commissionType = "deposit" }, { rejectWithValue }) => {
     try {
-      const url = `${API_BASE_URL}${API_CONFIG.MONEYX.RANGE_COMMISSION(amount)}`;
+      const url = `${API_BASE_URL}${API_CONFIG.MONEYX.RANGE_COMMISSION(amount, commissionType)}`;
       const response = await axios.get<RangeCommissionResponse>(url);
       const result = response.data?.results?.[0];
       if (result) {

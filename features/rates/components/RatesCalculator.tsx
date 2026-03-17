@@ -24,6 +24,7 @@ import { Asset, DepositResponse } from "../../exchange/types";
 import { SupportedAsset } from "../../swap/types";
 import { ExpressWithdrawalPayload } from "../../express/types";
 import { useAssetsDisplay, usePaymentMethodsDisplay } from "../../express/hooks/useDataDisplay";
+import { withTimeout } from "@/lib/utils/fetchWithTimeout";
 import { AlertCircle } from "lucide-react";
 import CustomSelect from "@/components/ui/CustomSelect";
 import {
@@ -373,20 +374,16 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
   const methodDropdownContentRef = useRef<HTMLDivElement | null>(null)
   console.log('publicPaymentMethods', publicPaymentMethods);
   useEffect(() => {
-    // Fetch exchange assets
-    dispatch(fetchAssets(false))
-      .unwrap()
+    withTimeout(dispatch(fetchAssets(false)).unwrap(), 15_000)
       .then((data) => {
         logger.debug('general', "DEBUG: Exchange assets loaded in rates calculator:", {
           hasAssets: !!data?.assets,
           assetsLength: data?.assets?.length || 0,
           totalBalance: data?.total_wallet_balance,
         });
-
-        // If no assets in cache, force refresh
         if (!data?.assets || data.assets.length === 0) {
           logger.debug('general', "🔄 No exchange assets in cache, forcing refresh...");
-          return dispatch(fetchAssets(true)).unwrap();
+          return withTimeout(dispatch(fetchAssets(true)).unwrap(), 15_000);
         }
         return data;
       })
@@ -395,38 +392,31 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
           "Failed to fetch exchange assets from cache, trying force refresh:",
           error
         );
-        // If cache fetch fails, try force refresh
-        return dispatch(fetchAssets(true))
-          .unwrap()
-          .catch((refreshError: unknown) => {
+        return withTimeout(dispatch(fetchAssets(true)).unwrap(), 15_000).catch(
+          (refreshError: unknown) => {
             console.error(`Failed to fetch assets: ${refreshError}`);
             throw refreshError;
-          });
+          }
+        );
       });
 
-    // Fetch swap assets
-    dispatch(fetchSupportedAssets(false))
-      .unwrap()
-      .catch((error: unknown) => {
-        console.error("Failed to fetch swap assets:", error);
-        // If cache fetch fails, try force refresh
-        return dispatch(fetchSupportedAssets(true))
-          .unwrap()
-          .catch((refreshError: unknown) => {
-            console.error(`Failed to fetch swap assets: ${refreshError}`);
-            throw refreshError;
-          });
-      });
+    withTimeout(dispatch(fetchSupportedAssets(false)).unwrap(), 15_000).catch((error: unknown) => {
+      console.error("Failed to fetch swap assets:", error);
+      return withTimeout(dispatch(fetchSupportedAssets(true)).unwrap(), 15_000).catch(
+        (refreshError: unknown) => {
+          console.error(`Failed to fetch swap assets: ${refreshError}`);
+          throw refreshError;
+        }
+      );
+    });
 
-    dispatch(fetchUserPaymentDetails());
+    withTimeout(dispatch(fetchUserPaymentDetails()).unwrap(), 15_000).catch(() => {});
 
-    // Fetch public payment methods (for non-authenticated users)
-    dispatch(fetchPublicPaymentMethods());
+    withTimeout(dispatch(fetchPublicPaymentMethods()).unwrap(), 15_000).catch(() => {});
 
-    // Fetch admin wallet list for fallback (like express withdrawal)
     if (isAuthenticated) {
-      dispatch(fetchAdminWalletList());
-      dispatch(fetchAdminPaymentDetails());
+      withTimeout(dispatch(fetchAdminWalletList()).unwrap(), 15_000).catch(() => {});
+      withTimeout(dispatch(fetchAdminPaymentDetails()).unwrap(), 15_000).catch(() => {});
     }
   }, [dispatch, isAuthenticated]);
 
@@ -2078,8 +2068,8 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
               <img
                 src={
                   isDark
-                    ? "https://res.cloudinary.com/pitz/image/upload/v1755500509/Frame_36261_ledmyw.png"
-                    : "https://res.cloudinary.com/pitz/image/upload/v1756579504/Frame_36261_1_d9cnq1.png"
+                    ? "/assets/Frame_36261_ledmyw.png"
+                    : "/assets/Frame_36261_1_d9cnq1.png"
                 }
                 alt="swap"
                 className="w-11 h-11"
@@ -2269,7 +2259,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                                   type="button"
                                   onClick={async () => {
                                     try {
-                                      await dispatch(fetchUserPaymentDetails()).unwrap();
+                                      await withTimeout(dispatch(fetchUserPaymentDetails()).unwrap(), 15_000);
                                     } catch {
                                       showToast.error("Failed to refresh payment details");
                                     }
@@ -2907,7 +2897,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                     src={
                       selectedPaymentDetail.logo ||
                       selectedPaymentDetail.provider_logo ||
-                      "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
+                      "/assets/image_7_jijlik.png"
                     }
                     alt="Bank Logo"
                     className="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-contain flex-shrink-0"
@@ -3150,7 +3140,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                         E
                         <img
                           className="mt-2"
-                          src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
+                          src="/assets/Group_5_gkxzdz.png"
                           alt="XCHANGE"
                         />
                       </>
@@ -3235,12 +3225,12 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                     ) : (
                       <>
                         <img
-                          src="https://res.cloudinary.com/pitz/image/upload/v1752429993/Express_1_ggdxth.png"
+                          src="/assets/Express_1_ggdxth.png"
                           alt=""
                         />
                         <img
                           className="mt-2"
-                          src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
+                          src="/assets/Group_5_gkxzdz.png"
                           alt=""
                         />
                       </>
@@ -3260,8 +3250,8 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
         onAdd={async () => {
           try {
             await Promise.all([
-              dispatch(fetchUserPaymentDetails()).unwrap(),
-              dispatch(fetchAdminWalletList()).unwrap(),
+              withTimeout(dispatch(fetchUserPaymentDetails()).unwrap(), 15_000),
+              withTimeout(dispatch(fetchAdminWalletList()).unwrap(), 15_000),
             ]);
             showToast.success("Payment method added successfully!");
           } catch {

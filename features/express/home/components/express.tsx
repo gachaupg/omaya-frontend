@@ -57,7 +57,7 @@ const Express = ({ isHomePage = false }: ExpressProps) => {
 
                     <img
                       className="mt-2"
-                      src="https://res.cloudinary.com/pitz/image/upload/v1752561097/Group_9_gen9av.png"
+                      src="/assets/Group_9_gen9av.png"
                       alt=""
                     />
                   </span>
@@ -71,7 +71,7 @@ const Express = ({ isHomePage = false }: ExpressProps) => {
 
                     <img
                       className="mt-2"
-                      src="https://res.cloudinary.com/pitz/image/upload/v1752561097/Group_9_gen9av.png"
+                      src="/assets/Group_9_gen9av.png"
                       alt=""
                     />
                   </span>

@@ -32,6 +32,7 @@ import SuccessPage from "@/features/express/components/success";
 import { SwapWidgetSkeleton } from "@/components/ui/Skeletons";
 
 import { logger } from "@/lib/utils/logger";
+import { withTimeout } from "@/lib/utils/fetchWithTimeout";
 
 // Minimum swap value in USD/USDT - smaller amounts can disappear due to fees
 const MIN_SWAP_USD = 30;
@@ -368,12 +369,10 @@ const SwapWidget = () => {
               amount: amount,
             };
 
-      dispatch(fetchSwapEstimate(estimateParams)).catch((error) => {
+      withTimeout(dispatch(fetchSwapEstimate(estimateParams)).unwrap(), 15_000).catch((error) => {
         logger.error("swap", "Failed to fetch swap estimate:", error);
         logger.debug("swap", "Estimate params:", estimateParams);
         logger.debug("swap", "Active input field:", activeInputField);
-        // Don't show error toast for reverse calculation failures
-        // as they might be expected (unsupported pairs, etc.)
         if (activeInputField === "from") {
           handleApiError(error);
         } else {
@@ -766,16 +765,16 @@ const SwapWidget = () => {
           "swap",
           "SwapWidget detected stale loading state. Forcing supported assets refresh."
         );
-        dispatch(fetchSupportedAssets(true));
+        withTimeout(dispatch(fetchSupportedAssets(true)).unwrap(), 15_000).catch(() => {});
       }
-    }, 8000); // fallback after 8s
+    }, 8000);
 
     return () => clearTimeout(staleLoadingTimer);
   }, [loading, supportedAssets.length, dispatch]);
 
   const handleSupportedAssetsRetry = useCallback(() => {
     setSkeletonTimeoutReached(false);
-    dispatch(fetchSupportedAssets(true));
+    withTimeout(dispatch(fetchSupportedAssets(true)).unwrap(), 15_000).catch(() => {});
   }, [dispatch]);
 
   // Show skeleton while loading initial data (supported assets)

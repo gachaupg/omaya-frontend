@@ -349,7 +349,7 @@ export const ordersTransactionsData: TransactionType[] = [
     rate: "0.89",
     payment: {
       bank: "Salam Bank",
-      logo: "https://res.cloudinary.com/pitz/image/upload/v1746705424/1d80d34ccb0f17b03572fe01e820f090edc3e463_y13v5u.jpg",
+      logo: "/assets/1d80d34ccb0f17b03572fe01e820f090edc3e463_y13v5u.jpg",
     },
   },
   {
@@ -363,7 +363,7 @@ export const ordersTransactionsData: TransactionType[] = [
     rate: "0.89",
     payment: {
       bank: "Dahabshiil Bank",
-      logo: "https://res.cloudinary.com/pitz/image/upload/v1746705424/1d80d34ccb0f17b03572fe01e820f090edc3e463_y13v5u.jpg",
+      logo: "/assets/1d80d34ccb0f17b03572fe01e820f090edc3e463_y13v5u.jpg",
     },
   },
   {
@@ -377,7 +377,7 @@ export const ordersTransactionsData: TransactionType[] = [
     rate: "0.89",
     payment: {
       bank: "Dahabshiil Bank",
-      logo: "https://res.cloudinary.com/pitz/image/upload/v1746705424/1d80d34ccb0f17b03572fe01e820f090edc3e463_y13v5u.jpg",
+      logo: "/assets/1d80d34ccb0f17b03572fe01e820f090edc3e463_y13v5u.jpg",
     },
   },
   {
@@ -391,7 +391,7 @@ export const ordersTransactionsData: TransactionType[] = [
     rate: "0.89",
     payment: {
       bank: "Salam Bank",
-      logo: "https://res.cloudinary.com/pitz/image/upload/v1746705424/1d80d34ccb0f17b03572fe01e820f090edc3e463_y13v5u.jpg",
+      logo: "/assets/1d80d34ccb0f17b03572fe01e820f090edc3e463_y13v5u.jpg",
     },
   },
   {
@@ -405,7 +405,7 @@ export const ordersTransactionsData: TransactionType[] = [
     rate: "0.89",
     payment: {
       bank: "Salam Bank",
-      logo: "https://res.cloudinary.com/pitz/image/upload/v1746705424/1d80d34ccb0f17b03572fe01e820f090edc3e463_y13v5u.jpg",
+      logo: "/assets/1d80d34ccb0f17b03572fe01e820f090edc3e463_y13v5u.jpg",
     },
   },
   {
@@ -419,7 +419,7 @@ export const ordersTransactionsData: TransactionType[] = [
     rate: "0.89",
     payment: {
       bank: "Salam Bank",
-      logo: "https://res.cloudinary.com/pitz/image/upload/v1746705424/1d80d34ccb0f17b03572fe01e820f090edc3e463_y13v5u.jpg",
+      logo: "/assets/1d80d34ccb0f17b03572fe01e820f090edc3e463_y13v5u.jpg",
     },
   },
   {
@@ -433,7 +433,7 @@ export const ordersTransactionsData: TransactionType[] = [
     rate: "0.89",
     payment: {
       bank: "Salam Bank",
-      logo: "https://res.cloudinary.com/pitz/image/upload/v1746705424/1d80d34ccb0f17b03572fe01e820f090edc3e463_y13v5u.jpg",
+      logo: "/assets/1d80d34ccb0f17b03572fe01e820f090edc3e463_y13v5u.jpg",
     },
   },
   {
@@ -447,7 +447,7 @@ export const ordersTransactionsData: TransactionType[] = [
     rate: "0.89",
     payment: {
       bank: "Salam Bank",
-      logo: "https://res.cloudinary.com/pitz/image/upload/v1746705424/1d80d34ccb0f17b03572fe01e820f090edc3e463_y13v5u.jpg",
+      logo: "/assets/1d80d34ccb0f17b03572fe01e820f090edc3e463_y13v5u.jpg",
     },
   },
   {
@@ -461,7 +461,7 @@ export const ordersTransactionsData: TransactionType[] = [
     rate: "0.89",
     payment: {
       bank: "Salam Bank",
-      logo: "https://res.cloudinary.com/pitz/image/upload/v1746705424/1d80d34ccb0f17b03572fe01e820f090edc3e463_y13v5u.jpg",
+      logo: "/assets/1d80d34ccb0f17b03572fe01e820f090edc3e463_y13v5u.jpg",
     },
   },
   {
@@ -475,7 +475,7 @@ export const ordersTransactionsData: TransactionType[] = [
     rate: "0.89",
     payment: {
       bank: "Salam Bank",
-      logo: "https://res.cloudinary.com/pitz/image/upload/v1746705424/1d80d34ccb0f17b03572fe01e820f090edc3e463_y13v5u.jpg",
+      logo: "/assets/1d80d34ccb0f17b03572fe01e820f090edc3e463_y13v5u.jpg",
     },
   },
   // Add more sample entries as needed
