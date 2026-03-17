@@ -7,7 +7,8 @@
     "build": "next build",
     "build:docker": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "download-assets": "node scripts/download-cloudinary-assets.mjs"
   },
   "dependencies": {
     "@faceio/fiojs": "^1.1.0",

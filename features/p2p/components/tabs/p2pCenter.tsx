@@ -135,7 +135,7 @@ const P2PCenter: React.FC = () => {
                     if (!detail || typeof detail !== 'object' || Array.isArray(detail)) {
                       return {
                         bank: "",
-                        logo: "https://res.cloudinary.com/pitz/image/upload/v1764667057/salam_vizvxy.svg",
+                        logo: "/assets/salam_vizvxy.svg",
                       };
                     }
 
@@ -148,14 +148,14 @@ const P2PCenter: React.FC = () => {
                         ? `/banks/${providerString
                           .toLowerCase()
                           .replace(/\s+/g, "")}.png`
-                        : "https://res.cloudinary.com/pitz/image/upload/v1764667057/salam_vizvxy.svg",
+                        : "/assets/salam_vizvxy.svg",
                     };
                   } catch (e) {
                     // If any error occurs, return safe defaults
                     console.warn('Error processing payment detail in transformedTrades:', e, detail);
                     return {
                       bank: "",
-                      logo: "https://res.cloudinary.com/pitz/image/upload/v1764667057/salam_vizvxy.svg",
+                      logo: "/assets/salam_vizvxy.svg",
                     };
                   }
                 })
@@ -278,7 +278,7 @@ const P2PCenter: React.FC = () => {
                     if (!detail || typeof detail !== 'object' || Array.isArray(detail)) {
                       return {
                         bank: '',
-                        logo: "https://res.cloudinary.com/dam1sxczj/image/upload/v1748884335/image_7_dqkxkj.png",
+                        logo: "/assets/image_7_dqkxkj.png",
                       };
                     }
 
@@ -289,7 +289,7 @@ const P2PCenter: React.FC = () => {
                       typeof detail.provider_logo === 'string' &&
                       detail.provider_logo.trim()
                       ? detail.provider_logo.trim()
-                      : "https://res.cloudinary.com/dam1sxczj/image/upload/v1748884335/image_7_dqkxkj.png";
+                      : "/assets/image_7_dqkxkj.png";
 
                     return {
                       bank: provider || '',
@@ -300,7 +300,7 @@ const P2PCenter: React.FC = () => {
                     console.warn('Error processing payment detail:', e, detail);
                     return {
                       bank: '',
-                      logo: "https://res.cloudinary.com/dam1sxczj/image/upload/v1748884335/image_7_dqkxkj.png",
+                      logo: "/assets/image_7_dqkxkj.png",
                     };
                   }
                 })

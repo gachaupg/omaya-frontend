@@ -59,18 +59,18 @@ export const metadata: Metadata = {
         type: "image/x-icon",
       },
       {
-        url: "https://res.cloudinary.com/pitz/image/upload/v1761576566/Omaya_green-logo_yva2ah_1_huqqlj.webp",
+        url: "/assets/Omaya_green-logo_yva2ah_1_huqqlj.webp",
         sizes: "32x32",
         type: "image/webp",
       },
       {
-        url: "https://res.cloudinary.com/pitz/image/upload/v1761576566/Omaya_green-logo_yva2ah_1_huqqlj.webp",
+        url: "/assets/Omaya_green-logo_yva2ah_1_huqqlj.webp",
         sizes: "16x16",
         type: "image/webp",
       },
     ],
     shortcut: "/favicon.ico",
-    apple: "https://res.cloudinary.com/pitz/image/upload/v1761576566/Omaya_green-logo_yva2ah_1_huqqlj.webp",
+    apple: "/assets/Omaya_green-logo_yva2ah_1_huqqlj.webp",
   },
 };
 

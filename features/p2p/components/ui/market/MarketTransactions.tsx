@@ -737,7 +737,7 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
           >
             <div className="flex h-5 w-5 sm:h-8 sm:w-8 items-center justify-center rounded-full border bg-[#F5F7FB]/80 border-gray-200 dark:bg-[#1B1E2B]/80 dark:border-white/10 flex-shrink-0">
               <Image
-                src="https://res.cloudinary.com/pitz/image/upload/v1746710370/coins-rotate_d278mb.png"
+                src="/assets/coins-rotate_d278mb.png"
                 alt="Payment Method"
                 width={20}
                 height={20}

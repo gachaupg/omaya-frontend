@@ -17,6 +17,7 @@ import {
   fetchSwapEstimate,
 } from "@/features/swap/slices/swapSlice";
 import { API_CONFIG } from "@/lib/appConfig";
+import { withTimeout } from "@/lib/utils/fetchWithTimeout";
 
 // import { showToast } from "../../../../lib/utils/toast";
 import { DepositResponse } from "@/features/exchange/types";
@@ -230,12 +231,11 @@ export default function DepositForm({
       logger.debug('p2p', "Current exchange assets:", assets);
       logger.debug('p2p', "Current swap assets:", swapAssets);
 
-      // Force refresh both asset types
       logger.debug('p2p', "🔄 Force refreshing exchange assets...");
-      await dispatch(fetchAssets(true)).unwrap();
+      await withTimeout(dispatch(fetchAssets(true)).unwrap(), 15_000);
 
       logger.debug('p2p', "🔄 Force refreshing swap assets...");
-      await dispatch(fetchSupportedAssets(true)).unwrap();
+      await withTimeout(dispatch(fetchSupportedAssets(true)).unwrap(), 15_000);
 
       logger.debug('p2p', "✅ Assets force refreshed");
     } catch (error) {
@@ -734,42 +734,34 @@ export default function DepositForm({
   }, [dispatch]);
 
   useEffect(() => {
-    // First try to get from cache, then force refresh if no data
-    dispatch(fetchAssets(false))
-      .unwrap()
+    withTimeout(dispatch(fetchAssets(false)).unwrap(), 15_000)
       .then((data) => {
         logger.debug('p2p', "DEBUG: Exchange assets loaded:", {
           hasAssets: !!data?.assets,
           assetsLength: data?.assets?.length || 0,
           totalBalance: data?.total_wallet_balance
         });
-
-        // If no assets in cache, force refresh
         if (!data?.assets || data.assets.length === 0) {
           logger.debug('p2p', "🔄 No assets in cache, forcing refresh...");
-          return dispatch(fetchAssets(true)).unwrap();
+          return withTimeout(dispatch(fetchAssets(true)).unwrap(), 15_000);
         }
         return data;
       })
       .catch((error: unknown) => {
         console.error("Failed to fetch assets from cache, trying force refresh:", error);
-        // If cache fetch fails, try force refresh
-        return dispatch(fetchAssets(true))
-          .unwrap()
-          .catch((refreshError: unknown) => {
+        return withTimeout(dispatch(fetchAssets(true)).unwrap(), 15_000).catch(
+          (refreshError: unknown) => {
             showToast.error(`Failed to fetch assets: ${refreshError}`);
             throw refreshError;
-          });
+          }
+        );
       });
   }, [dispatch]);
 
-  // Fetch user payment details
   useEffect(() => {
-    dispatch(fetchUserPaymentDetails())
-      .unwrap()
-      .catch((error: unknown) => {
-        showToast.error(`Failed to fetch user payment details: ${error}`);
-      });
+    withTimeout(dispatch(fetchUserPaymentDetails()).unwrap(), 15_000).catch((error: unknown) => {
+      showToast.error(`Failed to fetch user payment details: ${error}`);
+    });
   }, [dispatch]);
 
   // Fetch deposit address when asset and network are available
@@ -799,29 +791,23 @@ export default function DepositForm({
     }
   }, [dispatch, selectedAsset, selectedNetwork]);
 
-  // Fetch swap assets
   useEffect(() => {
-    dispatch(fetchSupportedAssets(false))
-      .unwrap()
+    withTimeout(dispatch(fetchSupportedAssets(false)).unwrap(), 15_000)
       .then((data) => {
         logger.debug('p2p', "DEBUG: Swap assets loaded:", {
           hasAssets: !!data,
           assetsLength: data?.length || 0
         });
-
-        // If no assets in cache, force refresh
         if (!data || data.length === 0) {
           logger.debug('p2p', "🔄 No swap assets in cache, forcing refresh...");
-          return dispatch(fetchSupportedAssets(true)).unwrap();
+          return withTimeout(dispatch(fetchSupportedAssets(true)).unwrap(), 15_000);
         }
         return data;
       })
       .catch((error: unknown) => {
         console.error("Failed to fetch swap assets from cache, trying force refresh:", error);
-        // If cache fetch fails, try force refresh
-        return dispatch(fetchSupportedAssets(true))
-          .unwrap()
-          .catch((refreshError: unknown) => {
+        return withTimeout(dispatch(fetchSupportedAssets(true)).unwrap(), 15_000).catch(
+          (refreshError: unknown) => {
             console.error("Failed to fetch swap assets even with force refresh:", refreshError);
 
             // Only show error if it's a network issue, not cache issues

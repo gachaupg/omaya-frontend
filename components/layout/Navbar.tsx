@@ -214,7 +214,7 @@ const LanguageSelector = ({ isMobile = false }: { isMobile?: boolean }) => {
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center space-x-2 sm:space-x-2 lg:space-x-2">
                   <Image
-                    src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746538734/united_kingdom_zud79x.png"
+                    src="/assets/united_kingdom_zud79x.png"
                     alt="English"
                     width={20}
                     height={20}
@@ -236,7 +236,7 @@ const LanguageSelector = ({ isMobile = false }: { isMobile?: boolean }) => {
               <div className="flex items-center justify-between w-full gap-2 sm:gap-4 lg:gap-8">
                 <div className="flex items-center space-x-2 sm:space-x-2 lg:space-x-2">
                   <Image
-                    src="https://res.cloudinary.com/dam1sxczj/image/upload/v1747216099/somali_jq5e97.png"
+                    src="/assets/somali_jq5e97.png"
                     alt="Somali"
                     width={20}
                     height={20}
@@ -494,7 +494,7 @@ export default function Navbar() {
   const depositItems: DropdownItem[] = [
     {
       href: "/dashboard/express-exchange",
-      icon: "https://res.cloudinary.com/pitz/image/upload/v1752243765/Vector_2_xauedx.png",
+      icon: "/assets/Vector_2_xauedx.png",
       title: (
         <span className="flex items-center gap-0.5">
           <span>E</span>
@@ -514,7 +514,7 @@ export default function Navbar() {
     },
     {
       href: "/dashboard/exchange",
-      icon: "https://res.cloudinary.com/pitz/image/upload/v1764568507/uil_exchange_1_okxkvb.png",
+      icon: "/assets/uil_exchange_1_okxkvb.png",
       title: (
         <span className="flex items-center text-[#76777B] dark:text-white font-bold">
           Money{" "}
@@ -528,19 +528,19 @@ export default function Navbar() {
     },
     {
       href: "/dashboard/p2p",
-      icon: "https://res.cloudinary.com/pitz/image/upload/v1747237692/users-profiles-left_e2oejc.png",
+      icon: "/assets/users-profiles-left_e2oejc.png",
       title: "P2P",
       description: "Buy and sell cryptocurrencies directly with flexible payment methods",
     },
     {
       href: "/dashboard/swap",
-      icon: "https://res.cloudinary.com/pitz/image/upload/v1747237691/Group_164002_fgt2kf.png",
+      icon: "/assets/Group_164002_fgt2kf.png",
       title: "Swap",
       description: "Exchange one cryptocurrency for another instantly and securely within your wallet",
     },
     {
       href: "/dashboard/account?tab=referral",
-      icon: "https://res.cloudinary.com/pitz/image/upload/v1747237692/users-profiles-left_e2oejc.png",
+      icon: "/assets/users-profiles-left_e2oejc.png",
       title: "Referral",
       description: "Share your referral link and earn rewards from your referrals",
     },
@@ -890,19 +890,19 @@ export default function Navbar() {
     if ((isHomePage && isNotScrolled)) {
       // Home page, not scrolled: white logo for transparent/green background
       return {
-        src: "https://res.cloudinary.com/pitz/image/upload/v1764572384/bad9edd9da5201cb8f8f9cea35bf46f4fb541bd6_lplbyc.png",
+        src: "/assets/bad9edd9da5201cb8f8f9cea35bf46f4fb541bd6_lplbyc.png",
         alt: "OMAYA Exchange",
       };
     } else if (isDarkTheme) {
       // Dark theme: green logo
       return {
-        src: "https://res.cloudinary.com/pitz/image/upload/v1764572384/bad9edd9da5201cb8f8f9cea35bf46f4fb541bd6_lplbyc.png",
+        src: "/assets/bad9edd9da5201cb8f8f9cea35bf46f4fb541bd6_lplbyc.png",
         alt: "OMAYA Exchange",
       };
     } else {
       // Light theme: default logo
       return {
-        src: "https://res.cloudinary.com/pitz/image/upload/v1764572384/bad9edd9da5201cb8f8f9cea35bf46f4fb541bd6_lplbyc.png",
+        src: "/assets/bad9edd9da5201cb8f8f9cea35bf46f4fb541bd6_lplbyc.png",
         alt: "OMAYA Exchange",
       };
     }

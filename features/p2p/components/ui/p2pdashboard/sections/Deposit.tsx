@@ -258,7 +258,7 @@ const Deposit: React.FC = () => {
           {selectedAssetId && selectedNetworkId && (
             <div className="w-full bg-gray-50 dark:bg-[#35353E] border border-[#1D8751] rounded-[24px] flex flex-col sm:flex-row items-center p-4 sm:px-8 mt-4">
               <img
-                src="https://res.cloudinary.com/pitz/image/upload/v1747039472/download_1_qytuya.png"
+                src="/assets/download_1_qytuya.png"
                 alt="QR"
                 className="w-[60px] h-[60px] rounded-[8px] bg-white object-contain mb-4 sm:mb-0"
               />

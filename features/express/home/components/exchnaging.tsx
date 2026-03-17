@@ -1036,12 +1036,12 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                         effectiveTransactionData?.asset?.icon_url ||
                         effectiveTransactionData?.asset?.image_url ||
                         effectiveTransactionData?.asset?.image ||
-                        "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                        "/assets/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
                       }
                       alt={effectiveTransactionData?.asset?.ticker || effectiveTransactionData?.asset?.symbol || effectiveTransactionData?.asset?.name || "Asset"}
                       className="w-5 h-5 rounded-full shrink-0"
                       onError={(e) => {
-                        e.currentTarget.src = "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                        e.currentTarget.src = "/assets/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
                       }}
                     />
                     <span className={`text-sm font-medium ${isDark ? "text-white" : "text-gray-900"}`}>
@@ -1070,7 +1070,7 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                     <p className={`text-xs font-medium mb-1.5 ${isDark ? "text-[#7B7B7B]" : "text-gray-500"}`}>Bank</p>
                     <div className="flex items-center gap-2 mb-2">
                       <img
-                        src="https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
+                        src="/assets/image_7_jijlik.png"
                         alt={effectiveTransactionData.paymentDetail.provider_name}
                         className="w-5 h-5 rounded-full shrink-0"
                       />
@@ -1648,7 +1648,7 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
             effectiveTransactionData?.paymentDetail ? (
               <>
                 <img
-                  src="https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
+                  src="/assets/image_7_jijlik.png"
                   alt={effectiveTransactionData.paymentDetail.provider_name}
                   className="w-8 h-8 rounded-full flex-shrink-0 mt-0.5"
                 />
@@ -1677,7 +1677,7 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                     effectiveTransactionData?.asset?.icon_url ||
                     effectiveTransactionData?.asset?.image_url ||
                     effectiveTransactionData?.asset?.image ||
-                    "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                    "/assets/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
                   }
                   alt={
                     effectiveTransactionData?.asset?.symbol ||
@@ -1690,7 +1690,7 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                   className="w-8 h-8 rounded-full flex-shrink-0 mt-0.5"
                   onError={(e) => {
                     e.currentTarget.src =
-                      "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                      "/assets/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
                   }}
                 />
                 <div className="min-w-0 flex-1 space-y-0.5">
@@ -1730,7 +1730,7 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                     effectiveTransactionData?.asset?.icon_url ||
                     effectiveTransactionData?.asset?.image_url ||
                     effectiveTransactionData?.asset?.image ||
-                    "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                    "/assets/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
                   }
                   alt={
                     effectiveTransactionData?.asset?.symbol ||
@@ -1743,7 +1743,7 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                   className="w-8 h-8 rounded-full flex-shrink-0 mt-0.5"
                   onError={(e) => {
                     e.currentTarget.src =
-                      "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                      "/assets/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
                   }}
                 />
                 <div className="min-w-0 flex-1 space-y-0.5">
@@ -1783,7 +1783,7 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
             ) : (
               <>
                 <img
-                  src="https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
+                  src="/assets/image_7_jijlik.png"
                   alt="Bank"
                   className="w-8 h-8 rounded-full flex-shrink-0 mt-0.5"
                 />

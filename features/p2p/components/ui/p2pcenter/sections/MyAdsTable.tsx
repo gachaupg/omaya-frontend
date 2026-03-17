@@ -314,11 +314,11 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
                         return validDetails.map((p: any, i: number) => (
                           <div key={i} className="flex items-center gap-2">
                             <img
-                              src={p?.provider_logo || "https://res.cloudinary.com/dam1sxczj/image/upload/v1748884335/image_7_dqkxkj.png"}
+                              src={p?.provider_logo || "/assets/image_7_dqkxkj.png"}
                               alt=""
                               className="w-5 h-5 rounded"
                               onError={(e) => {
-                                (e.target as HTMLImageElement).src = "https://res.cloudinary.com/dam1sxczj/image/upload/v1748884335/image_7_dqkxkj.png";
+                                (e.target as HTMLImageElement).src = "/assets/image_7_dqkxkj.png";
                               }}
                             />
                             <span className="text-base font-medium text-gray-900 dark:text-white">{p?.provider || p?.payment_method || p?.name || 'Payment method'}</span>
@@ -333,11 +333,11 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
                         return (
                           <div className="flex items-center gap-2">
                             <img
-                              src={(details as any)?.provider_logo || "https://res.cloudinary.com/dam1sxczj/image/upload/v1748884335/image_7_dqkxkj.png"}
+                              src={(details as any)?.provider_logo || "/assets/image_7_dqkxkj.png"}
                               alt=""
                               className="w-5 h-5 rounded"
                               onError={(e) => {
-                                (e.target as HTMLImageElement).src = "https://res.cloudinary.com/dam1sxczj/image/upload/v1748884335/image_7_dqkxkj.png";
+                                (e.target as HTMLImageElement).src = "/assets/image_7_dqkxkj.png";
                               }}
                             />
                             <span className="text-base font-medium text-gray-900 dark:text-white">{provider}</span>
@@ -465,11 +465,11 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
                           {validDetails.slice(0, 2).map((p: any, i: number) => (
                             <div key={i} className="flex items-center gap-1.5">
                               <img
-                                src={p?.provider_logo || "https://res.cloudinary.com/dam1sxczj/image/upload/v1748884335/image_7_dqkxkj.png"}
+                                src={p?.provider_logo || "/assets/image_7_dqkxkj.png"}
                                 alt=""
                                 className="w-5 h-5 rounded"
                                 onError={(e) => {
-                                  (e.target as HTMLImageElement).src = "https://res.cloudinary.com/dam1sxczj/image/upload/v1748884335/image_7_dqkxkj.png";
+                                  (e.target as HTMLImageElement).src = "/assets/image_7_dqkxkj.png";
                                 }}
                               />
                               <span className="text-sm font-medium text-gray-900 dark:text-white">{p?.provider || p?.payment_method || p?.name || 'Payment method'}</span>
@@ -490,11 +490,11 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
                       return (
                         <div className="flex items-center gap-1.5">
                           <img
-                            src={(details as any)?.provider_logo || "https://res.cloudinary.com/dam1sxczj/image/upload/v1748884335/image_7_dqkxkj.png"}
+                            src={(details as any)?.provider_logo || "/assets/image_7_dqkxkj.png"}
                             alt=""
                             className="w-5 h-5 rounded"
                             onError={(e) => {
-                              (e.target as HTMLImageElement).src = "https://res.cloudinary.com/dam1sxczj/image/upload/v1748884335/image_7_dqkxkj.png";
+                              (e.target as HTMLImageElement).src = "/assets/image_7_dqkxkj.png";
                             }}
                           />
                           <span className="text-sm font-medium text-gray-900 dark:text-white">{provider}</span>

@@ -51,6 +51,7 @@ import { useBookmarkedAddresses } from "../../hooks/useBookmarkedAddresses";
 import { BookmarkDropdown } from "./BookmarkDropdown";
 import { bookmarkedAddressesApi } from "../../services/bookmarkedAddressesApi";
 import { fetchCommission, getCommissionApiAsset } from "../../api";
+import { withTimeout } from "../../utils/fetchWithTimeout";
 
 interface DepositFormProps {
   onExchange?: (transactionData: {
@@ -1051,24 +1052,21 @@ export default function DepositForm({
       return;
     }
 
-    // First try to get from cache, then force refresh if no data
-    dispatch(fetchAssets(false))
-      .unwrap()
+    // First try cache, then force refresh if no data; timeout so slow API doesn't freeze the form
+    withTimeout(dispatch(fetchAssets(false)).unwrap(), 15_000)
       .then((data) => {
-        // If no assets in cache, force refresh
         if (!data?.assets || data.assets.length === 0) {
-          return dispatch(fetchAssets(true)).unwrap();
+          return withTimeout(dispatch(fetchAssets(true)).unwrap(), 15_000);
         }
         return data;
       })
       .catch((error: unknown) => {
-        // If cache fetch fails, try force refresh
-        return dispatch(fetchAssets(true))
-          .unwrap()
-          .catch((refreshError: unknown) => {
+        return withTimeout(dispatch(fetchAssets(true)).unwrap(), 15_000).catch(
+          (refreshError: unknown) => {
             showToast.error(`Failed to fetch assets: ${refreshError}`);
             throw refreshError;
-          });
+          }
+        );
       });
   }, [dispatch]);
 
@@ -1079,20 +1077,16 @@ export default function DepositForm({
       return;
     }
 
-    dispatch(fetchSupportedAssets(false))
-      .unwrap()
+    withTimeout(dispatch(fetchSupportedAssets(false)).unwrap(), 15_000)
       .then((data) => {
-        // If no assets in cache, force refresh
         if (!data || data.length === 0) {
-          return dispatch(fetchSupportedAssets(true)).unwrap();
+          return withTimeout(dispatch(fetchSupportedAssets(true)).unwrap(), 15_000);
         }
         return data;
       })
       .catch((error: unknown) => {
-        // If cache fetch fails, try force refresh
-        return dispatch(fetchSupportedAssets(true))
-          .unwrap()
-          .catch((refreshError: unknown) => {
+        return withTimeout(dispatch(fetchSupportedAssets(true)).unwrap(), 15_000).catch(
+          (refreshError: unknown) => {
             // Only show error if it's a network issue, not cache issues
             if (refreshError instanceof Error) {
               if (
@@ -3566,13 +3560,13 @@ export default function DepositForm({
               >
                 {/* Light mode image */}
                 <img
-                  src="https://res.cloudinary.com/pitz/image/upload/v1756579504/Frame_36261_1_d9cnq1.png"
+                  src="/assets/Frame_36261_1_d9cnq1.png"
                   alt="swap icon"
                   className="w-10 h-10 sm:w-10 sm:h-10 dark:hidden"
                 />
                 {/* Dark mode image */}
                 <img
-                  src="https://res.cloudinary.com/pitz/image/upload/v1755500509/Frame_36261_ledmyw.png"
+                  src="/assets/Frame_36261_ledmyw.png"
                   alt="swap icon"
                   className="w-10 h-10 sm:w-10 sm:h-10 hidden dark:block"
                 />
@@ -3913,7 +3907,7 @@ export default function DepositForm({
             </span>
           </div>
           <img
-            src="https://res.cloudinary.com/pitz/image/upload/v1753424863/Screenshot_2025-07-25_092724_rjinec.png"
+            src="/assets/Screenshot_2025-07-25_092724_rjinec.png"
             alt=""
             style={{ cursor: "pointer" }}
             onClick={() =>
@@ -4018,7 +4012,7 @@ export default function DepositForm({
                   </span>
                   <img
                     className="mt-2"
-                    src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
+                    src="/assets/Group_5_gkxzdz.png"
                     alt=""
                   />
                 </span>
@@ -4810,7 +4804,7 @@ export default function DepositForm({
                   </span>
                   <img
                     className="mt-2"
-                    src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
+                    src="/assets/Group_5_gkxzdz.png"
                     alt=""
                   />
                 </span>

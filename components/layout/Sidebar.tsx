@@ -261,7 +261,7 @@ export default function Sidebar() {
                       <>
                         <img
                           className="w-7 h-6 sm:w-8 sm:h-7 object-cover flex-shrink-0"
-                          src="https://res.cloudinary.com/pitz/image/upload/v1764568507/uil_exchange_1_okxkvb.png"
+                          src="/assets/uil_exchange_1_okxkvb.png"
                           alt=""
                         />
                         <span
@@ -279,7 +279,7 @@ export default function Sidebar() {
                             className="mt-[5px] w-3.5 h-3.5"
                             src={isActive
 
-                              ? isDark ? "https://res.cloudinary.com/pitz/image/upload/v1764663236/Group_7_ichuyz.png"
+                              ? isDark ? "/assets/Group_7_ichuyz.png"
                                 : "/images/x.png"
                               : "/images/x.png"
                             }

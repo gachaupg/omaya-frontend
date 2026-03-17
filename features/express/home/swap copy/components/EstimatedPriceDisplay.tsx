@@ -63,7 +63,7 @@ const EstimatedPriceDisplay: React.FC<EstimatedPriceDisplayProps> = ({
           disabled={!fromAsset || !toAsset}
         >
           <img
-            src="https://res.cloudinary.com/pitz/image/upload/v1752243765/Vector_2_xauedx.png"
+            src="/assets/Vector_2_xauedx.png"
             alt="Exchange"
             className="w-5 h-5"
           />

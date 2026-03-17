@@ -1,6 +1,9 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { AssetsResponse, Asset } from "../types";
 import { getAssets } from "../api";
+import { sliceCache } from "@/lib/utils/sliceCache";
+
+const ASSETS_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour – refetch only after TTL to avoid refetching at all cost
 
 interface AssetsState {
   data: AssetsResponse | null;
@@ -14,12 +17,27 @@ const initialState: AssetsState = {
   error: null,
 };
 
-export const fetchAssets = createAsyncThunk(
+export const fetchAssets = createAsyncThunk<
+  AssetsResponse,
+  boolean | undefined
+>(
   "assets/fetchAssets",
-  async (_, { rejectWithValue }) => {
+  async (forceRefresh = false, { rejectWithValue }) => {
     try {
-      const response = await getAssets();
-      return response;
+      if (forceRefresh) {
+        await sliceCache.delete("p2pAssets", "fetchAssets");
+      }
+      const data = await sliceCache.getOrSet<AssetsResponse>(
+        "p2pAssets",
+        "fetchAssets",
+        async () => {
+          const response = await getAssets();
+          return response;
+        },
+        undefined,
+        ASSETS_CACHE_TTL_MS
+      );
+      return data;
     } catch (error: any) {
       return rejectWithValue(error.message || "Failed to fetch assets");
     }

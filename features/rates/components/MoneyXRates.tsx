@@ -195,7 +195,7 @@ const MoneyXRates = () => {
     }
     if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
     commissionFetchTimeoutRef.current = setTimeout(() => {
-      dispatch(fetchMoneyXCommission(amount))
+      dispatch(fetchMoneyXCommission({ amount, commissionType: "deposit" }))
         .unwrap()
         .then((result) => {
           setApiCommission(result.commission);
@@ -862,8 +862,8 @@ const MoneyXRates = () => {
               <img
                 src={
                   isDark
-                    ? "https://res.cloudinary.com/pitz/image/upload/v1755500509/Frame_36261_ledmyw.png"
-                    : "https://res.cloudinary.com/pitz/image/upload/v1756579504/Frame_36261_1_d9cnq1.png"
+                    ? "/assets/Frame_36261_ledmyw.png"
+                    : "/assets/Frame_36261_1_d9cnq1.png"
                 }
                 alt="swap"
                 className="w-11 h-11"

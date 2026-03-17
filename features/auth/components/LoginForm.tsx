@@ -243,7 +243,7 @@ export default function LoginPage() {
             <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] hover:bg-gray-50 dark:hover:bg-[#2A2A32] transition-colors cursor-pointer min-w-[140px]">
               <div className="relative w-6 h-6 shrink-0">
                 <Image
-                  src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746787514/Google_Play-Icon-Logo.wine_dqxxk7.svg"
+                  src="/assets/Google_Play-Icon-Logo.wine_dqxxk7.svg"
                   alt="Google Play"
                   fill
                   className="object-contain"
@@ -259,7 +259,7 @@ export default function LoginPage() {
             <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] hover:bg-gray-50 dark:hover:bg-[#2A2A32] transition-colors cursor-pointer min-w-[140px]">
               <div className="relative w-6 h-6 shrink-0">
                 <Image
-                  src="https://res.cloudinary.com/dam1sxczj/image/upload/v1747288173/dark_apple_rwpgwi.png"
+                  src="/assets/dark_apple_rwpgwi.png"
                   alt="App Store"
                   fill
                   className="object-contain brightness-0 dark:brightness-100"

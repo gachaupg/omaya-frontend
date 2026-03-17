@@ -453,7 +453,7 @@ export default function Footer() {
             <div className="flex md:hidden flex-col gap-2 items-start">
               <div className="flex items-center gap-2">
                 <Image
-                  src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746539125/Appstore_nqe65y.png"
+                  src="/assets/Appstore_nqe65y.png"
                   alt="App Store"
                   width={60}
                   height={60}
@@ -461,7 +461,7 @@ export default function Footer() {
                   style={{ width: "60px", height: "60px" }}
                 />
                 <Image
-                  src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746551283/qr-code-bc94057f452f4806af70fd34540f72ad_3_jk8lq1.png"
+                  src="/assets/qr-code-bc94057f452f4806af70fd34540f72ad_3_jk8lq1.png"
                   alt="App Store QR Code"
                   width={60}
                   height={60}
@@ -480,7 +480,7 @@ export default function Footer() {
                   style={{ width: "60px", height: "60px" }}
                 />
                 <Image
-                  src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746551283/qr-code-bc94057f452f4806af70fd34540f72ad_3_jk8lq1.png"
+                  src="/assets/qr-code-bc94057f452f4806af70fd34540f72ad_3_jk8lq1.png"
                   alt="Google Play QR Code"
                   width={60}
                   height={60}
@@ -497,7 +497,7 @@ export default function Footer() {
                   <tr>
                     <td style={{ padding: 0, width: '70px', height: '70px' }} className="lg:w-[84px] lg:h-[84px]">
                       <Image
-                        src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746539125/Appstore_nqe65y.png"
+                        src="/assets/Appstore_nqe65y.png"
                         alt="App Store QR Code"
                         width={84}
                         height={84}
@@ -508,7 +508,7 @@ export default function Footer() {
                     <td style={{ padding: 0, paddingLeft: '8px' }} className="lg:pl-3">
                       <div style={{ width: '70px', height: '70px' }} className="lg:w-[84px] lg:h-[84px]">
                         <Image
-                          src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746551283/qr-code-bc94057f452f4806af70fd34540f72ad_3_jk8lq1.png"
+                          src="/assets/qr-code-bc94057f452f4806af70fd34540f72ad_3_jk8lq1.png"
                           alt="App Store QR Code"
                           width={84}
                           height={84}
@@ -541,7 +541,7 @@ export default function Footer() {
                     <td style={{ padding: 0, paddingLeft: '8px' }} className="lg:pl-3">
                       <div style={{ width: '70px', height: '70px' }} className="lg:w-[84px] lg:h-[84px]">
                         <Image
-                          src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746551283/qr-code-bc94057f452f4806af70fd34540f72ad_3_jk8lq1.png"
+                          src="/assets/qr-code-bc94057f452f4806af70fd34540f72ad_3_jk8lq1.png"
                           alt="Google Play QR Code"
                           width={84}
                           height={84}
@@ -564,7 +564,7 @@ export default function Footer() {
             <span className="text-xs text-gray-900 dark:text-white">Powered By:</span>
             <span className="flex flex-col items-center">
               <img
-                src="https://res.cloudinary.com/dmoqammol/image/upload/v1763650633/Group_34253_ysx2s5.png"
+                src="/assets/Group_34253_ysx2s5.png"
                 alt="OMAYA Technologies"
                 className="h-5 sm:h-6 w-auto"
               />

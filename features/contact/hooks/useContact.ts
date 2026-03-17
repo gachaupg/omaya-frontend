@@ -8,6 +8,7 @@ import {
   resetContactState 
 } from '../slices/contactSlice';
 import type { ContactFormData } from '../types';
+import { withTimeout } from '@/lib/utils/fetchWithTimeout';
 
 export const useContact = () => {
   const dispatch = useAppDispatch();
@@ -27,7 +28,7 @@ export const useContact = () => {
 
   const getContactSubmissions = useCallback(async () => {
     try {
-      await dispatch(fetchContactSubmissions()).unwrap();
+      await withTimeout(dispatch(fetchContactSubmissions()).unwrap(), 15_000);
       return { success: true };
     } catch (error) {
       return { success: false, error: error as string };

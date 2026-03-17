@@ -113,6 +113,9 @@ export const postUserPaymentDetail = createAsyncThunk<
   }
 );
 
+// In-flight promise so multiple concurrent dispatches result in a single request
+let userPaymentDetailsInFlightP2P: Promise<P2PResponse[]> | null = null;
+
 export const fetchUserPaymentDetails = createAsyncThunk<
   P2PResponse[],
   void,
@@ -121,8 +124,16 @@ export const fetchUserPaymentDetails = createAsyncThunk<
   "paymentMethods/fetchUserPaymentDetails",
   async (_, { rejectWithValue }) => {
     try {
-      return await getUserPaymentDetails();
+      if (!userPaymentDetailsInFlightP2P) {
+        userPaymentDetailsInFlightP2P = getUserPaymentDetails().finally(
+          () => {
+            userPaymentDetailsInFlightP2P = null;
+          }
+        );
+      }
+      return await userPaymentDetailsInFlightP2P;
     } catch (err: any) {
+      userPaymentDetailsInFlightP2P = null;
       return rejectWithValue(
         err.message || "Failed to fetch user payment details"
       );

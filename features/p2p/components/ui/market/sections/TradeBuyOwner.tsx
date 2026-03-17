@@ -539,7 +539,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                 <div className="flex flex-row justify-between w-full items-center bg-[#EEF1F4] dark:bg-accent rounded-xl px-3 sm:px-4 py-2.5 min-h-[52px]">
                   <div className="flex flex-row items-center gap-2 min-w-0">
                     <Image
-                      src="https://res.cloudinary.com/pitz/image/upload/v1750918504/tether_1_yim48g.png"
+                      src="/assets/tether_1_yim48g.png"
                       alt="USDT"
                       width={20}
                       height={20}

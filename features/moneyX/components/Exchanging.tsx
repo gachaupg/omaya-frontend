@@ -949,7 +949,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                       className="w-5 h-5 sm:w-6 sm:h-6 rounded-md object-contain bg-white flex-shrink-0"
                       onError={(e) => {
                         e.currentTarget.src =
-                          "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+                          "/assets/image_7_jijlik.png";
                       }}
                     />
                   ) : null}
@@ -983,7 +983,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                       className="w-5 h-5 sm:w-6 sm:h-6 rounded-md object-contain bg-white flex-shrink-0"
                       onError={(e) => {
                         e.currentTarget.src =
-                          "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+                          "/assets/image_7_jijlik.png";
                       }}
                     />
                   ) : null}
@@ -1525,7 +1525,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                       className="w-6 h-6 sm:w-8 sm:h-8 rounded-md object-contain bg-white flex-shrink-0 mt-0.5"
                       onError={(e) => {
                         e.currentTarget.src =
-                          "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+                          "/assets/image_7_jijlik.png";
                       }}
                     />
                   )}
@@ -1570,7 +1570,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                       className="w-6 h-6 sm:w-8 sm:h-8 rounded-md object-contain bg-white flex-shrink-0 mt-0.5"
                       onError={(e) => {
                         e.currentTarget.src =
-                          "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+                          "/assets/image_7_jijlik.png";
                       }}
                     />
                   )}

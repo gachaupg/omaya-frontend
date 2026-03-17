@@ -267,8 +267,8 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
         <img 
           className="w-full max-w-80 h-auto object-contain" 
           src={isDark 
-            ? "https://res.cloudinary.com/pitz/image/upload/v1756484286/Screenshot_2025-08-29_191548_two36s.png" 
-            : "https://res.cloudinary.com/pitz/image/upload/v1756925670/success_wdhc19.png"
+            ? "/assets/Screenshot_2025-08-29_191548_two36s.png" 
+            : "/assets/success_wdhc19.png"
           } 
           alt="Success" 
         />
@@ -391,8 +391,8 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
        <img 
          className="w-full" 
          src={isDark 
-           ? "https://res.cloudinary.com/pitz/image/upload/v1756484240/Frame_34947_qeutak.png" 
-           : "https://res.cloudinary.com/pitz/image/upload/v1756925740/Frame_34947_khxqxo.png"
+           ? "/assets/Frame_34947_qeutak.png" 
+           : "/assets/Frame_34947_khxqxo.png"
          } 
          alt="" 
        />

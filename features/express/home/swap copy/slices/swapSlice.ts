@@ -67,7 +67,7 @@ export const fetchSupportedAssets = createAsyncThunk<SupportedAsset[], boolean |
         const response = await getSupportedAssets();
         logger.debug('swap', "✅ Force refresh API response received:", response?.length || 0, "assets");
         // Cache the fresh data
-        await sliceCache.set('swap', 'fetchSupportedAssets', response, undefined, 2 * 60 * 60 * 1000);
+        await sliceCache.set('swap', 'fetchSupportedAssets', response, undefined, 60 * 60 * 1000);
         data = response;
       } else {
         data = await sliceCache.getOrSet(
@@ -80,7 +80,7 @@ export const fetchSupportedAssets = createAsyncThunk<SupportedAsset[], boolean |
             return response;
           },
           undefined, // no params
-          2 * 60 * 60 * 1000 // 2 hours cache
+          60 * 60 * 1000 // 1 hour cache – refetch only after TTL to avoid refetching at all cost
         );
       }
       

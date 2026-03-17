@@ -32,6 +32,7 @@ import { debugAssetFetching } from "@/lib/utils/debugAssets";
 import OTPModal from "./OTPModal";
 
 import { logger } from '@/lib/utils/logger';
+import { withTimeout } from "@/lib/utils/fetchWithTimeout";
 import { useExpressI18n } from "@/lib/useExpressI18n";
 import { useTheme } from "@/context/theme";
 import { TermsAndConditionsSummary } from "./TermsAndConditionsSummary";
@@ -294,7 +295,7 @@ export default function WithdrawalForm({
   const handleForceRefreshAssets = async () => {
     try {
       logger.debug('p2p', "=== Force refreshing assets ===");
-      await dispatch(fetchSupportedAssets(true)).unwrap();
+      await withTimeout(dispatch(fetchSupportedAssets(true)).unwrap(), 15_000);
       logger.debug('p2p', "✅ Assets force refreshed");
     } catch (error) {
       console.error("❌ Force refresh failed:", error);
@@ -2945,7 +2946,7 @@ export default function WithdrawalForm({
               <h3 className="text-sm sm:text-base font-medium text-[#7e7e8f] dark:text-[#ffffff]">
                 Transfer Details
               </h3>
-              <img className="w-4 h-4" src="https://res.cloudinary.com/pitz/image/upload/v1764942946/alert-circle_llaycw.png" alt="alert-circle" />
+              <img className="w-4 h-4" src="/assets/alert-circle_llaycw.png" alt="alert-circle" />
             </div>
             <div className="bg-white dark:bg-[var(--card-color)] border border-[#1D8751] rounded-lg sm:rounded-xl p-4">
               <ul className="space-y-3">
