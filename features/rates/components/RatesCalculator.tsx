@@ -19,7 +19,15 @@ import {
 import { fetchPublicPaymentMethods } from "../../p2p/slices/paymentMethodsSlice";
 import { fetchAdminWalletList, fetchAdminPaymentDetails, fetchUserPaymentDetails } from "../../exchange/slices/paymentSlice";
 import PaymentMethodsModal from "../../p2p/components/ui/p2pdashboard/sections/PaymentMethodsModal";
-import { createExpressWithdrawal, fetchCommission, getCommissionApiAsset } from "../../express/api";
+import {
+  createExpressWithdrawal,
+  fetchCommission,
+  getCommissionApiAsset,
+  fetchExchangeCommissionLookup,
+  getExchangeLookupParams,
+  isExchangeCommissionLookupAsset,
+  type ExchangeCommissionLookupResponse,
+} from "../../express/api";
 import { Asset, DepositResponse } from "../../exchange/types";
 import { SupportedAsset } from "../../swap/types";
 import { ExpressWithdrawalPayload } from "../../express/types";
@@ -78,16 +86,14 @@ const getAssetNetwork = (asset: any): string => {
   return "";
 };
 
-// Check if asset is one of the first two direct assets (USDT on BSC or USDC on BSC)
 const isSimpleCalculationAsset = (asset: any) => {
   if (!asset) return false;
   const ticker = (asset?.ticker || asset?.symbol || "").toLowerCase();
   const network = (asset?.network || "").toLowerCase();
-
-  // First two assets: USDT on BSC and USDC on BSC
   return (
     (ticker === "usdt" && network === "bsc") ||
-    (ticker === "usdc" && network === "bsc")
+    (ticker === "usdc" && network === "bsc") ||
+    isExchangeCommissionLookupAsset(asset)
   );
 };
 
@@ -262,6 +268,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
   // Debounce and cache for faster, fewer API calls
   const estimateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [apiCommission, setApiCommission] = useState<number | null>(null);
+  const [exchangeLookupResponse, setExchangeLookupResponse] = useState<ExchangeCommissionLookupResponse | null>(null);
   const commissionFetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [estimateCache, setEstimateCache] = useState<
     Map<string, { data: any; timestamp: number }>
@@ -553,43 +560,88 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
     };
   }, [isAssetDropdownOpen, isMethodDropdownOpen]);
 
-  // Fetch commission for USDT, USDC, FX Primus
+  // Fetch commission: first 3 assets use exchange commission-lookup; else USDT/USDC/FXP use legacy % API
   useEffect(() => {
-    const apiAsset = selectedAsset ? getCommissionApiAsset(selectedAsset.ticker || selectedAsset.symbol || "") : null;
-    if (!apiAsset || !selectedAsset) {
+    if (!selectedAsset) {
       setApiCommission(null);
+      setExchangeLookupResponse(null);
       return;
     }
+    const params = getExchangeLookupParams(selectedAsset);
     const amt = isCalculatingFromPay ? (parseFloat(amount) || 0) : (parseFloat(receiveAmount) || 0);
     if (amt <= 0) {
-      setApiCommission(null);
+      if (params) setExchangeLookupResponse(null);
+      else setApiCommission(null);
       return;
     }
+    if (params) {
+      if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
+      commissionFetchTimeoutRef.current = setTimeout(() => {
+        const type = isDepositMode ? "deposit" : "withdrawal";
+        if (type === "deposit") {
+          // Rates: deposit = crypto -> USD with network (USDT/USDC on BSC, etc.)
+          fetchExchangeCommissionLookup(amt, "deposit", params.from_currency, "USD", params.from_network)
+            .then((res) => {
+              setExchangeLookupResponse(res);
+              setApiCommission(null);
+              if (isCalculatingFromPay && res.to_amount != null) {
+                const toAmount = parseFloat(res.to_amount);
+                if (!Number.isNaN(toAmount)) setReceiveAmount(res.to_amount);
+              }
+            })
+            .catch(() => setExchangeLookupResponse(null));
+        } else {
+          // Rates: withdrawal = crypto -> USD with network
+          fetchExchangeCommissionLookup(amt, "withdrawal", params.from_currency, "USD", params.from_network)
+            .then((res) => {
+              setExchangeLookupResponse(res);
+              setApiCommission(null);
+              if (isCalculatingFromPay && res.to_amount != null) {
+                const toAmount = parseFloat(res.to_amount);
+                if (!Number.isNaN(toAmount)) setReceiveAmount(res.to_amount);
+              }
+            })
+            .catch(() => setExchangeLookupResponse(null));
+        }
+      }, 300);
+      return () => { if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current); };
+    }
+    const apiAsset = getCommissionApiAsset(selectedAsset.ticker || selectedAsset.symbol || "");
+    if (!apiAsset) { setApiCommission(null); return; }
     if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
     commissionFetchTimeoutRef.current = setTimeout(() => {
       fetchCommission(apiAsset, amt, isDepositMode ? "deposit" : "withdrawal")
-        .then((c) => setApiCommission(c))
+        .then((c) => { setApiCommission(c); setExchangeLookupResponse(null); })
         .catch(() => setApiCommission(null));
     }, 300);
-    return () => {
-      if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
-    };
+    return () => { if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current); };
   }, [selectedAsset, amount, receiveAmount, isCalculatingFromPay, isDepositMode]);
 
-  // Recalculate receive/send when apiCommission arrives (was null during initial calculation)
   useEffect(() => {
-    if (selectedAsset && isCommissionApiAsset(selectedAsset) && apiCommission !== null) {
+    if (!selectedAsset || isExchangeCommissionLookupAsset(selectedAsset)) return;
+    if (isCommissionApiAsset(selectedAsset) && apiCommission !== null) {
       if (isCalculatingFromPay && parseFloat(amount) > 0) {
         const amt = parseFloat(amount) || 0;
-        const calculatedReceive = Math.max(0, amt * (1 - apiCommission / 100));
-        setReceiveAmount(calculatedReceive.toFixed(2));
+        setReceiveAmount((Math.max(0, amt * (1 - apiCommission / 100))).toFixed(2));
       } else if (!isCalculatingFromPay && parseFloat(receiveAmount) > 0) {
         const recv = parseFloat(receiveAmount) || 0;
-        const calculatedAmount = recv / (1 - apiCommission / 100);
-        setAmount(calculatedAmount.toFixed(2));
+        setAmount((recv / (1 - apiCommission / 100)).toFixed(2));
       }
     }
   }, [apiCommission]);
+
+  useEffect(() => {
+    if (!selectedAsset || !isExchangeCommissionLookupAsset(selectedAsset) || !exchangeLookupResponse?.local_commission || isCalculatingFromPay || parseFloat(receiveAmount) <= 0) return;
+    const lc = exchangeLookupResponse.local_commission;
+    const recv = parseFloat(receiveAmount) || 0;
+    if (lc.commission_mode === "flat_fee" && lc.fee != null) {
+      const fee = parseFloat(lc.fee);
+      if (!Number.isNaN(fee)) setAmount((recv + fee).toFixed(2));
+    } else if (lc.commission_mode === "percentage" && lc.rate != null) {
+      const rate = parseFloat(lc.rate);
+      if (!Number.isNaN(rate) && rate < 100) setAmount((recv / (1 - rate / 100)).toFixed(2));
+    }
+  }, [selectedAsset, exchangeLookupResponse, isCalculatingFromPay, receiveAmount]);
 
   // Fetch estimate for non-direct assets - debounced + cached for faster response
   useEffect(() => {

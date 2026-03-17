@@ -28,7 +28,15 @@ import { showToast } from "../../../../../lib/utils/toast";
 import { DepositResponse } from "../../../../exchange/types";
 import { SupportedAsset } from "../../../../swap/types";
 import { FaSearch } from "react-icons/fa";
-import { createExpressWithdrawal, fetchCommission, getCommissionApiAsset } from "../../../api";
+import {
+  createExpressWithdrawal,
+  fetchCommission,
+  getCommissionApiAsset,
+  fetchExchangeCommissionLookup,
+  getExchangeLookupParams,
+  isExchangeCommissionLookupAsset,
+  type ExchangeCommissionLookupResponse,
+} from "../../../api";
 import {
   ExpressWithdrawalPayload,
   ExpressWithdrawalResponse,
@@ -730,6 +738,7 @@ export default function WithdrawalForm({
   // Add state for API validation errors
   const [apiValidationError, setApiValidationError] = useState<string | null>(null);
   const [apiCommission, setApiCommission] = useState<number | null>(null);
+  const [exchangeLookupResponse, setExchangeLookupResponse] = useState<ExchangeCommissionLookupResponse | null>(null);
   const commissionFetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Add calculation error state for display below "You Send" input
@@ -1366,62 +1375,99 @@ export default function WithdrawalForm({
     };
   }, [isAssetDropdownOpen]);
 
-  // Check if asset is one of the first two direct assets (USDT on BSC or USDC on BSC)
   const isSimpleCalculationAsset = (asset: any) => {
     if (!asset) return false;
     const ticker = (asset?.ticker || asset?.symbol || "").toLowerCase();
     const network = (asset?.network || "").toLowerCase();
-
-    // First two assets: USDT on BSC and USDC on BSC
     return (ticker === "usdt" && network === "bsc") ||
-      (ticker === "usdc" && network === "bsc");
+      (ticker === "usdc" && network === "bsc") ||
+      isExchangeCommissionLookupAsset(asset);
   };
 
   const isCommissionApiAsset = (asset: any) => !!getCommissionApiAsset(asset?.ticker || asset?.symbol || "");
 
   useEffect(() => {
-    const apiAsset = selectedAsset ? getCommissionApiAsset(selectedAsset.ticker || selectedAsset.symbol || "") : null;
-    if (!apiAsset || !selectedAsset) {
+    if (!selectedAsset) {
       setApiCommission(null);
+      setExchangeLookupResponse(null);
       return;
     }
+    const params = getExchangeLookupParams(selectedAsset);
     const amount = isCalculatingFromPay
       ? (parseFloat(payAmountInput) || payAmount)
       : (parseFloat(getAmountInput) || getAmount);
     if (amount <= 0) {
-      setApiCommission(null);
+      if (params) setExchangeLookupResponse(null);
+      else setApiCommission(null);
       return;
     }
+    if (params) {
+      if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
+      commissionFetchTimeoutRef.current = setTimeout(() => {
+        fetchExchangeCommissionLookup(amount, "withdrawal", params.from_currency, "USD", params.from_network)
+          .then((res) => {
+            setExchangeLookupResponse(res);
+            setApiCommission(null);
+            if (isCalculatingFromPay && res.to_amount != null) {
+              const toAmount = parseFloat(res.to_amount);
+              if (!Number.isNaN(toAmount)) {
+                setGetAmount(toAmount);
+                setGetAmountInput(res.to_amount);
+                setPreviousValidAmount(res.to_amount);
+              }
+            }
+          })
+          .catch(() => setExchangeLookupResponse(null));
+      }, 300);
+      return () => { if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current); };
+    }
+    const apiAsset = getCommissionApiAsset(selectedAsset.ticker || selectedAsset.symbol || "");
+    if (!apiAsset) { setApiCommission(null); return; }
     if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
     commissionFetchTimeoutRef.current = setTimeout(() => {
       fetchCommission(apiAsset, amount, "withdrawal")
-        .then((c) => setApiCommission(c))
+        .then((c) => { setApiCommission(c); setExchangeLookupResponse(null); })
         .catch(() => setApiCommission(null));
     }, 300);
-    return () => {
-      if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
-    };
+    return () => { if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current); };
   }, [selectedAsset, payAmountInput, getAmountInput, payAmount, getAmount, isCalculatingFromPay]);
 
-  // Recalculate receive amount when apiCommission arrives (was null during initial calculation)
   useEffect(() => {
-    if (selectedAsset && isCommissionApiAsset(selectedAsset) && apiCommission !== null) {
+    if (!selectedAsset || isExchangeCommissionLookupAsset(selectedAsset)) return;
+    if (isCommissionApiAsset(selectedAsset) && apiCommission !== null) {
       if (isCalculatingFromPay && payAmount > 0) {
-        // Forward: You Send -> You Receive
         const commissionAmount = (payAmount * apiCommission) / 100;
         const calculatedGetAmount = Math.max(0, payAmount - commissionAmount);
         setGetAmount(calculatedGetAmount);
         setGetAmountInput(calculatedGetAmount.toString());
         setPreviousValidAmount(calculatedGetAmount.toString());
       } else if (!isCalculatingFromPay && getAmount > 0) {
-        // Reverse: You Receive -> You Send
-        const commissionRate = apiCommission;
-        const calculatedPayAmount = getAmount / (1 - commissionRate / 100);
+        const calculatedPayAmount = getAmount / (1 - apiCommission / 100);
         setPayAmount(calculatedPayAmount);
         setPayAmountInput(calculatedPayAmount.toString());
       }
     }
   }, [apiCommission, payAmount, getAmount, isCalculatingFromPay, selectedAsset]);
+
+  useEffect(() => {
+    if (!selectedAsset || !isExchangeCommissionLookupAsset(selectedAsset) || !exchangeLookupResponse?.local_commission || isCalculatingFromPay || getAmount <= 0) return;
+    const lc = exchangeLookupResponse.local_commission;
+    if (lc.commission_mode === "flat_fee" && lc.fee != null) {
+      const fee = parseFloat(lc.fee);
+      if (!Number.isNaN(fee)) {
+        const calculatedPay = getAmount + fee;
+        setPayAmount(calculatedPay);
+        setPayAmountInput(calculatedPay.toString());
+      }
+    } else if (lc.commission_mode === "percentage" && lc.rate != null) {
+      const rate = parseFloat(lc.rate);
+      if (!Number.isNaN(rate) && rate < 100) {
+        const calculatedPay = getAmount / (1 - rate / 100);
+        setPayAmount(calculatedPay);
+        setPayAmountInput(calculatedPay.toString());
+      }
+    }
+  }, [selectedAsset, exchangeLookupResponse, isCalculatingFromPay, getAmount]);
 
   // FXP withdrawal rate: 1 FXP = 1.1 USD (user sends FXP, receives USD)
   const FXP_TO_USD_RATE = 1.1;
@@ -2827,23 +2873,19 @@ export default function WithdrawalForm({
   // Calculate fees and amounts - Network fee is always 0 for BEP20
   const networkFee = 0;
 
-  // Use commission API for USDT/USDC/FX Primus - API returns % (e.g. {"commission":"2.00"} = 2%)
   let commissionAmount = 0;
-  if (selectedAsset && isSimpleCalculationAsset(selectedAsset)) {
-    if (isCommissionApiAsset(selectedAsset)) {
-      const rate = apiCommission ?? 2; // Default 2% while API loads
-      commissionAmount = (payAmount * rate) / 100;
-    } else {
-      const commissionRate = selectedAsset?.range_commissions?.[0]?.commission
-        ? parseFloat(selectedAsset.range_commissions[0].commission)
-        : 2;
+  if (selectedAsset && isExchangeCommissionLookupAsset(selectedAsset) && exchangeLookupResponse?.local_commission) {
+    const lc = exchangeLookupResponse.local_commission;
+    if (lc.commission_mode === "flat_fee" && lc.fee != null) commissionAmount = parseFloat(lc.fee) || 0;
+    else if (lc.commission_mode === "percentage" && lc.rate != null) commissionAmount = (payAmount * parseFloat(lc.rate)) / 100;
+  } else if (selectedAsset && isSimpleCalculationAsset(selectedAsset)) {
+    if (isCommissionApiAsset(selectedAsset)) commissionAmount = (payAmount * (apiCommission ?? 2)) / 100;
+    else {
+      const commissionRate = selectedAsset?.range_commissions?.[0]?.commission ? parseFloat(selectedAsset.range_commissions[0].commission) : 2;
       commissionAmount = (payAmount * commissionRate) / 100;
     }
   } else {
-    // Use default commission rate for other assets
-    const commissionRate = selectedAsset?.range_commissions?.[0]?.commission
-      ? parseFloat(selectedAsset.range_commissions[0].commission)
-      : 2; // Default 2% commission for other assets
+    const commissionRate = selectedAsset?.range_commissions?.[0]?.commission ? parseFloat(selectedAsset.range_commissions[0].commission) : 2;
     commissionAmount = (payAmount * commissionRate) / 100;
   }
 
@@ -2856,26 +2898,20 @@ export default function WithdrawalForm({
       clearTimeout(calculationTimeout);
     }
 
-    // For simple calculations, do them immediately without any delays (API commission is % e.g. 2 = 2%)
     if (fromPay && selectedAsset && isSimpleCalculationAsset(selectedAsset)) {
+      if (isExchangeCommissionLookupAsset(selectedAsset)) {
+        setReceiveAmountError(null);
+        return;
+      }
       const commissionAmount = isCommissionApiAsset(selectedAsset)
         ? (fromAmount * (apiCommission ?? 2)) / 100
         : (fromAmount * (selectedAsset?.range_commissions?.[0]?.commission ? parseFloat(selectedAsset.range_commissions[0].commission) : 2)) / 100;
       const calculatedGetAmount = Math.max(0, fromAmount - commissionAmount);
-
-      // Show result immediately
       setGetAmount(calculatedGetAmount);
       setGetAmountInput(calculatedGetAmount.toString());
       setPreviousValidAmount(calculatedGetAmount.toString());
-
-      // Validate the calculated amount
-      const validationError = validateReceiveAmount(
-        calculatedGetAmount,
-        selectedAsset
-      );
+      const validationError = validateReceiveAmount(calculatedGetAmount, selectedAsset);
       setReceiveAmountError(validationError);
-
-      // Show info modal if receive amount exceeds $15,000
       if (calculatedGetAmount > 15000) {
         setIsInfoModalOpen(true);
       }

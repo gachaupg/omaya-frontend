@@ -44,6 +44,17 @@ export const API_CONFIG = {
   },
   COMMISSION_LOOKUP: (amount: number, type: "deposit" | "withdrawal", feature: string = "exchange") =>
     `/administration/commission-lookup/?feature=${feature}&commission_type=${type}&amount=${amount}`,
+  /** Exchange estimate: from_currency, to_currency=USD, optional from_network (BEP20, BSC, ETH). Used for first 3 assets only. */
+  COMMISSION_LOOKUP_EXCHANGE: (
+    amount: number,
+    type: "deposit" | "withdrawal",
+    from_currency: string,
+    to_currency: string = "USD",
+    from_network?: string
+  ) => {
+    const base = `/administration/commission-lookup/?feature=exchange&commission_type=${type}&amount=${amount}&from_currency=${encodeURIComponent(from_currency)}&to_currency=${encodeURIComponent(to_currency)}`;
+    return from_network ? `${base}&from_network=${encodeURIComponent(from_network)}` : base;
+  },
   P2P: {
     BASE: "/trading_engine/p2p/",
     WALLETS: "api/wallet/wallets/",

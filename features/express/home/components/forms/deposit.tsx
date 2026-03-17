@@ -43,7 +43,14 @@ import { openKYCModal, checkKYCStatus } from "@/features/auth/slices/authSlice";
 import { useBookmarkedAddresses } from "@/features/express/hooks/useBookmarkedAddresses";
 import { BookmarkDropdown } from "@/features/express/components/forms/BookmarkDropdown";
 import { bookmarkedAddressesApi } from "@/features/express/services/bookmarkedAddressesApi";
-import { fetchCommission, getCommissionApiAsset } from "@/features/express/api";
+import {
+  fetchCommission,
+  getCommissionApiAsset,
+  fetchExchangeCommissionLookup,
+  getExchangeLookupParams,
+  isExchangeCommissionLookupAsset,
+  type ExchangeCommissionLookupResponse,
+} from "@/features/express/api";
 import { withTimeout } from "@/features/express/utils/fetchWithTimeout";
 
 interface DepositFormProps {
@@ -577,6 +584,7 @@ export default function DepositForm({
   const [bookmarkOpen, setBookmarkOpen] = useState(false);
   const bookmarkAnchorRef = useRef<HTMLSpanElement>(null);
   const [apiCommission, setApiCommission] = useState<number | null>(null);
+  const [exchangeLookupResponse, setExchangeLookupResponse] = useState<ExchangeCommissionLookupResponse | null>(null);
   const commissionFetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [isAddressConfirmed, setIsAddressConfirmed] = useState(false);
   const [forceUpdate, setForceUpdate] = useState(0);
@@ -1046,15 +1054,13 @@ export default function DepositForm({
     };
   }, [isAssetDropdownOpen]);
 
-  // Check if asset is one of the first two direct assets (USDT on BSC or USDC on BSC)
   const isSimpleCalculationAsset = (asset: any) => {
     if (!asset) return false;
     const ticker = (asset?.ticker || asset?.symbol || "").toLowerCase();
     const network = (asset?.network || "").toLowerCase();
-
-    // First two assets: USDT on BSC and USDC on BSC
     return (ticker === "usdt" && network === "bsc") ||
-      (ticker === "usdc" && network === "bsc");
+      (ticker === "usdc" && network === "bsc") ||
+      isExchangeCommissionLookupAsset(asset);
   };
 
   // Check if asset is FXP (forex)
@@ -1070,47 +1076,85 @@ export default function DepositForm({
   const isCommissionApiAsset = (asset: any) => !!getCommissionApiAsset(asset?.ticker || asset?.symbol || "");
 
   useEffect(() => {
-    const apiAsset = selectedAsset ? getCommissionApiAsset(selectedAsset.ticker || selectedAsset.symbol || "") : null;
-    if (!apiAsset || !selectedAsset) {
+    if (!selectedAsset) {
       setApiCommission(null);
+      setExchangeLookupResponse(null);
       return;
     }
+    const params = getExchangeLookupParams(selectedAsset);
     const amount = isCalculatingFromPay
       ? (parseFloat(payAmountInput) || payAmount)
       : (parseFloat(getAmountInput) || getAmount);
     if (amount <= 0) {
-      setApiCommission(null);
+      if (params) setExchangeLookupResponse(null);
+      else setApiCommission(null);
       return;
     }
+    if (params) {
+      if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
+      commissionFetchTimeoutRef.current = setTimeout(() => {
+        // Home: deposit = crypto -> USD with network for USDT/USDC
+        fetchExchangeCommissionLookup(amount, "deposit", params.from_currency, "USD", params.from_network)
+          .then((res) => {
+            setExchangeLookupResponse(res);
+            setApiCommission(null);
+            if (isCalculatingFromPay && res.to_amount != null) {
+              const toAmount = parseFloat(res.to_amount);
+              if (!Number.isNaN(toAmount)) {
+                setGetAmount(toAmount);
+                setGetAmountInput(res.to_amount);
+              }
+            }
+          })
+          .catch(() => setExchangeLookupResponse(null));
+      }, 300);
+      return () => { if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current); };
+    }
+    const apiAsset = getCommissionApiAsset(selectedAsset.ticker || selectedAsset.symbol || "");
+    if (!apiAsset) { setApiCommission(null); return; }
     if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
     commissionFetchTimeoutRef.current = setTimeout(() => {
       fetchCommission(apiAsset, amount, "deposit")
-        .then((c) => setApiCommission(c))
+        .then((c) => { setApiCommission(c); setExchangeLookupResponse(null); })
         .catch(() => setApiCommission(null));
     }, 300);
-    return () => {
-      if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
-    };
+    return () => { if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current); };
   }, [selectedAsset, payAmountInput, getAmountInput, payAmount, getAmount, isCalculatingFromPay]);
 
-  // Recalculate receive amount when apiCommission arrives (was null during initial calculation)
   useEffect(() => {
-    if (selectedAsset && isCommissionApiAsset(selectedAsset) && apiCommission !== null) {
+    if (!selectedAsset || isExchangeCommissionLookupAsset(selectedAsset)) return;
+    if (isCommissionApiAsset(selectedAsset) && apiCommission !== null) {
       if (isCalculatingFromPay && payAmount > 0) {
-        // Forward: You Send -> You Receive
         const commissionAmount = (payAmount * apiCommission) / 100;
-        const calculatedGetAmount = Math.max(0, payAmount - commissionAmount);
-        setGetAmount(calculatedGetAmount);
-        setGetAmountInput(calculatedGetAmount.toString());
+        setGetAmount(Math.max(0, payAmount - commissionAmount));
+        setGetAmountInput((Math.max(0, payAmount - commissionAmount)).toString());
       } else if (!isCalculatingFromPay && getAmount > 0) {
-        // Reverse: You Receive -> You Send
-        const commissionRate = apiCommission;
-        const calculatedPayAmount = getAmount / (1 - commissionRate / 100);
+        const calculatedPayAmount = getAmount / (1 - apiCommission / 100);
         setPayAmount(calculatedPayAmount);
         setPayAmountInput(calculatedPayAmount.toString());
       }
     }
   }, [apiCommission, payAmount, getAmount, isCalculatingFromPay, selectedAsset]);
+
+  useEffect(() => {
+    if (!selectedAsset || !isExchangeCommissionLookupAsset(selectedAsset) || !exchangeLookupResponse?.local_commission || isCalculatingFromPay || getAmount <= 0) return;
+    const lc = exchangeLookupResponse.local_commission;
+    if (lc.commission_mode === "flat_fee" && lc.fee != null) {
+      const fee = parseFloat(lc.fee);
+      if (!Number.isNaN(fee)) {
+        const calculatedPay = getAmount + fee;
+        setPayAmount(calculatedPay);
+        setPayAmountInput(calculatedPay.toString());
+      }
+    } else if (lc.commission_mode === "percentage" && lc.rate != null) {
+      const rate = parseFloat(lc.rate);
+      if (!Number.isNaN(rate) && rate < 100) {
+        const calculatedPay = getAmount / (1 - rate / 100);
+        setPayAmount(calculatedPay);
+        setPayAmountInput(calculatedPay.toString());
+      }
+    }
+  }, [selectedAsset, exchangeLookupResponse, isCalculatingFromPay, getAmount]);
 
   // Fetch estimate for non-direct assets - debounced to avoid rapid API calls
   useEffect(() => {
@@ -1998,16 +2042,17 @@ export default function DepositForm({
     );
   };
 
-  // Calculate fees and amounts - Network fee is always 0
   const networkFee = 0;
   let commissionAmount: number;
-  if (selectedAsset && isCommissionApiAsset(selectedAsset)) {
-    const rate = apiCommission ?? 2; // Default 2% while API loads
-    commissionAmount = (payAmount * rate) / 100;
+  if (selectedAsset && isExchangeCommissionLookupAsset(selectedAsset) && exchangeLookupResponse?.local_commission) {
+    const lc = exchangeLookupResponse.local_commission;
+    if (lc.commission_mode === "flat_fee" && lc.fee != null) commissionAmount = parseFloat(lc.fee) || 0;
+    else if (lc.commission_mode === "percentage" && lc.rate != null) commissionAmount = (payAmount * parseFloat(lc.rate)) / 100;
+    else commissionAmount = 0;
+  } else if (selectedAsset && isCommissionApiAsset(selectedAsset)) {
+    commissionAmount = (payAmount * (apiCommission ?? 2)) / 100;
   } else {
-    const commissionRate = selectedAsset?.range_commissions?.[0]?.commission
-      ? parseFloat(selectedAsset.range_commissions[0].commission)
-      : 2;
+    const commissionRate = selectedAsset?.range_commissions?.[0]?.commission ? parseFloat(selectedAsset.range_commissions[0].commission) : 2;
     commissionAmount = (payAmount * commissionRate) / 100;
   }
   const totalFees = networkFee + commissionAmount;
@@ -2039,12 +2084,14 @@ export default function DepositForm({
       return;
     }
 
-    // For direct assets (USDT on BSC, USDC on BSC), API commission is % e.g. {"commission":"2.00"} = 2%
     if (isSimpleCalculationAsset(selectedAsset)) {
+      if (isExchangeCommissionLookupAsset(selectedAsset)) {
+        setReceiveAmountError(null);
+        return;
+      }
       const commissionAmount = isCommissionApiAsset(selectedAsset)
         ? (fromAmount * (apiCommission ?? 2)) / 100
         : (fromAmount * (selectedAsset?.range_commissions?.[0]?.commission ? parseFloat(selectedAsset.range_commissions[0].commission) : 2)) / 100;
-
       if (fromPay) {
         const calculatedGetAmount = Math.max(0, fromAmount - commissionAmount);
         setGetAmount(calculatedGetAmount);
@@ -2055,10 +2102,7 @@ export default function DepositForm({
         setPayAmount(calculatedPayAmount);
         setPayAmountInput(calculatedPayAmount.toString());
       }
-
       setReceiveAmountError(null);
-
-      // For direct assets, no loading states needed - calculation is instant
       return;
     }
 
@@ -3022,16 +3066,15 @@ export default function DepositForm({
                           setIsInfoModalOpen(true);
                         }
 
-                        // For direct assets, calculate immediately (API commission is % e.g. 2 = 2%)
                         if (selectedAsset && newAmount > 0 && isSimpleCalculationAsset(selectedAsset)) {
-                          const commissionAmount = isCommissionApiAsset(selectedAsset)
-                            ? (newAmount * (apiCommission ?? 2)) / 100
-                            : (newAmount * (selectedAsset?.range_commissions?.[0]?.commission ? parseFloat(selectedAsset.range_commissions[0].commission) : 2)) / 100;
-                          const calculatedGetAmount = Math.max(0, newAmount - commissionAmount);
-                          setGetAmount(calculatedGetAmount);
-                          setGetAmountInput(calculatedGetAmount.toString());
-
-                          // Simple assets don't need loading states - calculation is instant
+                          if (!isExchangeCommissionLookupAsset(selectedAsset)) {
+                            const commissionAmount = isCommissionApiAsset(selectedAsset)
+                              ? (newAmount * (apiCommission ?? 2)) / 100
+                              : (newAmount * (selectedAsset?.range_commissions?.[0]?.commission ? parseFloat(selectedAsset.range_commissions[0].commission) : 2)) / 100;
+                            const calculatedGetAmount = Math.max(0, newAmount - commissionAmount);
+                            setGetAmount(calculatedGetAmount);
+                            setGetAmountInput(calculatedGetAmount.toString());
+                          }
                         } else if (selectedAsset && newAmount > 0 && isForexAsset(selectedAsset)) {
                           // For FXP, calculate immediately with 1.06 rate
                           const calculatedGetAmount = newAmount / FXP_EXCHANGE_RATE;
@@ -3275,14 +3318,13 @@ export default function DepositForm({
                         // Clear API validation error when user changes amount
                         setApiValidationError(null);
 
-                        // For direct assets, calculate immediately (API commission is % e.g. 2 = 2%)
                         if (selectedAsset && newAmount > 0 && isSimpleCalculationAsset(selectedAsset)) {
-                          const commissionRate = isCommissionApiAsset(selectedAsset) ? (apiCommission ?? 2) : (selectedAsset?.range_commissions?.[0]?.commission ? parseFloat(selectedAsset.range_commissions[0].commission) : 2);
-                          const calculatedPayAmount = newAmount / (1 - commissionRate / 100);
-                          setPayAmount(calculatedPayAmount);
-                          setPayAmountInput(calculatedPayAmount.toString());
-
-                          // Simple assets don't need loading states - calculation is instant
+                          if (!isExchangeCommissionLookupAsset(selectedAsset)) {
+                            const commissionRate = isCommissionApiAsset(selectedAsset) ? (apiCommission ?? 2) : (selectedAsset?.range_commissions?.[0]?.commission ? parseFloat(selectedAsset.range_commissions[0].commission) : 2);
+                            const calculatedPayAmount = newAmount / (1 - commissionRate / 100);
+                            setPayAmount(calculatedPayAmount);
+                            setPayAmountInput(calculatedPayAmount.toString());
+                          }
                         } else if (selectedAsset && newAmount > 0 && isForexAsset(selectedAsset)) {
                           // For FXP, calculate immediately with 1.06 rate (reverse)
                           const calculatedPayAmount = newAmount * FXP_EXCHANGE_RATE;
