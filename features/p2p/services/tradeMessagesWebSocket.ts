@@ -82,6 +82,7 @@ export class TradeMessagesWebSocket {
       // Only log on first connection attempt
       if (this.reconnectAttempts === 0) {
         logger.debug('p2p', "🔌 Connecting to Trade Messages WebSocket...");
+        console.log("Trade Messages WebSocket URL:", this.url);
       }
 
       this.ws = new WebSocket(this.url);

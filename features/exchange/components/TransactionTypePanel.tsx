@@ -337,7 +337,7 @@ const TransactionTypePanel: React.FC<Props> = ({
           </div>
           <div className="mt-4 flex items-center gap-2">
             <div className="w-4 h-4">
-              <img src="https://res.cloudinary.com/dam1sxczj/image/upload/v1748601844/Icon_1_yzegcg.png" alt=""/>
+              <img src="/assets/Icon_1_yzegcg.png" alt=""/>
             </div>  
             <p className="text-[#1D8751] text-sm cursor-pointer">For more {selectedType === "crypto" ? "crypto assets" : "forex assets"}, please contact us via Customer Support</p>
           </div>

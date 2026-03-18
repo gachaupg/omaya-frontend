@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
+import { useSelector } from "react-redux";
 import { CreateSwapResponse } from "../types";
 import { connectSwapStatusWebSocket } from "./websocket";
+import { cookieUtils } from "@/lib/utils/cookieUtils";
 import { API_CONFIG } from "@/lib/appConfig";
 import SuccessPage from "./success";
 import { Copy } from "lucide-react";
@@ -97,6 +99,8 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
   onBack,
   onNext,
 }) => {
+  const { tokens } = useSelector((state: any) => state.auth);
+  const token = tokens?.access ?? cookieUtils.getCookie("access_token") ?? (typeof window !== "undefined" ? localStorage.getItem("access_token") : null);
   const [status, setStatus] = useState<string>("pending");
   const [statusObj, setStatusObj] = useState<any>(null);
   const [wsConnected, setWsConnected] = useState<boolean>(false);
@@ -128,6 +132,7 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
     function connect() {
       if (!swapResponse?.id) return; // Ensure swapResponse is not null
       ws = connectSwapStatusWebSocket(swapResponse.id, {
+        token: token ?? undefined,
         onOpen: (event: Event) => {
           logger.debug('swap', "WebSocket connection opened", event);
           setWsConnected(true);
@@ -448,38 +453,38 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
       {/* Terms and Conditions Summary - always at the very bottom */}
       <div className="w-full sm:max-w-4xl mb-2 mt-4">
         <div className="bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-400 dark:border-yellow-500 rounded-xl p-4 sm:p-5 shadow-lg">
-          <h3 className="text-white font-semibold text-base sm:text-lg mb-3 sm:mb-4">
+          <h3 className="text-yellow-900 dark:text-white font-semibold text-base sm:text-lg mb-3 sm:mb-4">
             Terms and Conditions Summary
           </h3>
           <div className="space-y-0.5">
             {/* Term 1 - Dynamic asset and network */}
             <div className="flex items-start gap-2 sm:gap-3">
-              <span className="text-white text-lg sm:text-xl font-bold mt-0.5">•</span>
-              <p className="text-white text-xs sm:text-sm flex-1">
+              <span className="text-yellow-900 dark:text-white text-lg sm:text-xl font-bold mt-0.5">•</span>
+              <p className="text-yellow-900 dark:text-white text-xs sm:text-sm flex-1">
                 Only send {statusObj?.from_currency || swapResponse?.fromCurrency || ""} ({statusObj?.fromNetwork || swapResponse?.fromNetwork || "TRC20"}) to this address
               </p>
             </div>
             
             {/* Term 2 - Send exact amount */}
             <div className="flex items-start gap-2 sm:gap-3">
-              <span className="text-white text-lg sm:text-xl font-bold mt-0.5">•</span>
-              <p className="text-white text-xs sm:text-sm flex-1">
+              <span className="text-yellow-900 dark:text-white text-lg sm:text-xl font-bold mt-0.5">•</span>
+              <p className="text-yellow-900 dark:text-white text-xs sm:text-sm flex-1">
                 Send exactly the amount specified below
               </p>
             </div>
             
             {/* Term 3 - No exchange accounts */}
             <div className="flex items-start gap-2 sm:gap-3">
-              <span className="text-white text-lg sm:text-xl font-bold mt-0.5">•</span>
-              <p className="text-white text-xs sm:text-sm flex-1">
+              <span className="text-yellow-900 dark:text-white text-lg sm:text-xl font-bold mt-0.5">•</span>
+              <p className="text-yellow-900 dark:text-white text-xs sm:text-sm flex-1">
                 Do not send from exchange accounts
               </p>
             </div>
             
             {/* Term 4 - Minimum confirmations */}
             <div className="flex items-start gap-2 sm:gap-3">
-              <span className="text-white text-lg sm:text-xl font-bold mt-0.5">•</span>
-              <p className="text-white text-xs sm:text-sm flex-1">
+              <span className="text-yellow-900 dark:text-white text-lg sm:text-xl font-bold mt-0.5">•</span>
+              <p className="text-yellow-900 dark:text-white text-xs sm:text-sm flex-1">
                 Minimum confirmations required: 1
               </p>
             </div>

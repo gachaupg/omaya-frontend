@@ -20,6 +20,28 @@ const FacebookAuthButton = React.lazy(() => import("./FacebookAuthButton"));
 import { useI18n } from "@/lib/useI18n";
 import { countries } from "./countries";
 
+/** Expected national number length (digits only) by country code for phone validation */
+const PHONE_LENGTH_BY_COUNTRY: Record<string, { min: number; max: number }> = {
+  SO: { min: 8, max: 9 },   // Somalia
+  KE: { min: 9, max: 9 },   // Kenya
+  ET: { min: 9, max: 9 },   // Ethiopia
+  TZ: { min: 9, max: 9 },   // Tanzania
+  UG: { min: 9, max: 9 },   // Uganda
+  US: { min: 10, max: 10 }, // United States
+  CA: { min: 10, max: 10 }, // Canada
+  GB: { min: 10, max: 11 }, // United Kingdom
+  IN: { min: 10, max: 10 }, // India
+  CN: { min: 10, max: 11 }, // China
+  NG: { min: 10, max: 11 }, // Nigeria
+  ZA: { min: 9, max: 9 },   // South Africa
+  EG: { min: 9, max: 10 },  // Egypt
+  SA: { min: 9, max: 9 },   // Saudi Arabia
+  AE: { min: 9, max: 9 },   // UAE
+  PK: { min: 10, max: 10 }, // Pakistan
+  BD: { min: 10, max: 10 }, // Bangladesh
+  GH: { min: 9, max: 10 },  // Ghana
+};
+
 // Email Verification Modal Component
 interface EmailVerificationModalProps {
   isOpen: boolean;
@@ -598,12 +620,35 @@ export default function RegistrationPage() {
       isValid = false;
     }
 
-    // Phone validation
+    // Phone validation (ignore leading 0, e.g. 07... → 7...)
+    const digitsOnly = phone.replace(/\D/g, "");
+    const digitsForValidation = digitsOnly.replace(/^0+/, "") || digitsOnly;
     if (!phone.trim()) {
       const message = "Phone number is required";
       newErrors.phone = message;
       validationMessages.push(message);
       isValid = false;
+    } else if (digitsForValidation.length < 7) {
+      const message = "Phone number must be at least 7 digits";
+      newErrors.phone = message;
+      validationMessages.push(message);
+      isValid = false;
+    } else {
+      const countryRule = PHONE_LENGTH_BY_COUNTRY[selectedCountry];
+      if (countryRule) {
+        if (digitsForValidation.length < countryRule.min || digitsForValidation.length > countryRule.max) {
+          const countryName = countries.find((c) => c.code === selectedCountry)?.name || selectedCountry;
+          const message = `Phone number for ${countryName} must be ${countryRule.min}-${countryRule.max} digits`;
+          newErrors.phone = message;
+          validationMessages.push(message);
+          isValid = false;
+        }
+      } else if (digitsForValidation.length > 15) {
+        const message = "Phone number is too long";
+        newErrors.phone = message;
+        validationMessages.push(message);
+        isValid = false;
+      }
     }
 
     // Password validation
@@ -790,7 +835,7 @@ export default function RegistrationPage() {
           <div className="w-[438px] h-[403px] bg-[#1D8751] blur-[60px] absolute left-16 2xl:left-54 opacity-60"></div>
           <div className="relative">
             <Image
-              src="https://res.cloudinary.com/dam1sxczj/image/upload/v1747220053/iphone_vn7ejc.png"
+              src="/images/iphone_vn7ejc.webp"
               alt="OMAYA Exchange Mobile App"
               width={350}
               height={650}
@@ -804,7 +849,7 @@ export default function RegistrationPage() {
               <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] hover:bg-gray-50 dark:hover:bg-[#2A2A32] transition-colors cursor-pointer min-w-[140px]">
                 <div className="relative w-6 h-6 shrink-0">
                   <Image
-                    src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746787514/Google_Play-Icon-Logo.wine_dqxxk7.svg"
+                    src="/assets/Google_Play-Icon-Logo.wine_dqxxk7.svg"
                     alt="Google Play"
                     fill
                     className="object-contain"
@@ -820,7 +865,7 @@ export default function RegistrationPage() {
               <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] hover:bg-gray-50 dark:hover:bg-[#2A2A32] transition-colors cursor-pointer min-w-[140px]">
                 <div className="relative w-6 h-6 shrink-0">
                   <Image
-                    src="https://res.cloudinary.com/dam1sxczj/image/upload/v1747288173/dark_apple_rwpgwi.png"
+                    src="/assets/dark_apple_rwpgwi.png"
                     alt="App Store"
                     fill
                     className="object-contain brightness-0 dark:brightness-100"
@@ -848,26 +893,6 @@ export default function RegistrationPage() {
                   "Please register with correct information"
                 )}
               </p>
-              {formErrors.length > 0 && (
-                <div
-                  ref={errorBannerRef}
-                  role="alert"
-                  aria-live="assertive"
-                  className="mt-4 rounded-xl border border-red-200 dark:border-[#F04438] bg-red-50 dark:bg-[#FDECEC]/10 px-4 py-3 text-left"
-                >
-                  <p className="text-red-800 dark:text-[#B42318] text-sm font-semibold mb-2">
-                    {t(
-                      "auth.register.fixIssues",
-                      "Please resolve the following:"
-                    )}
-                  </p>
-                  <ul className="list-disc space-y-1 pl-5 text-red-800 dark:text-[#B42318] text-sm">
-                    {formErrors.map((message, index) => (
-                      <li key={`summary-${message}-${index}`}>{message}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
@@ -1507,7 +1532,7 @@ export default function RegistrationPage() {
                   />
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <img
-                      src="https://res.cloudinary.com/dam1sxczj/image/upload/v1747313820/link-svgrepo-com_pnpakl.svg"
+                      src="/assets/link-svgrepo-com_pnpakl.svg"
                       className="w-4 h-4"
                       alt=""
                     />
@@ -1620,8 +1645,12 @@ export default function RegistrationPage() {
                       "auth.register.terms",
                       "By clicking Register, you agree to our Terms of Services and that you have read our Data Use Policy, including our Cookie Use"
                     ).split(/(Terms of Services|Data Use Policy|Cookie Use)/).map((part, i) =>
-                      ["Terms of Services", "Data Use Policy", "Cookie Use"].includes(part) ? (
-                        <Link key={i} href="/legal/terms" className="text-[#1D8751] hover:underline">{part}</Link>
+                      part === "Terms of Services" ? (
+                        <Link key={i} href="/legal/terms-of-service" className="text-[#1D8751] hover:underline">{part}</Link>
+                      ) : part === "Data Use Policy" ? (
+                        <Link key={i} href="/legal/data-use-policy" className="text-[#1D8751] hover:underline">{part}</Link>
+                      ) : part === "Cookie Use" ? (
+                        <Link key={i} href="/legal/cookies-policy" className="text-[#1D8751] hover:underline">{part}</Link>
                       ) : (
                         part
                       )
@@ -1635,26 +1664,27 @@ export default function RegistrationPage() {
                 )}
               </div>
 
-              {/* Global form errors */}
-              {/* {formErrors.length > 0 && (
+              {/* Error card above Register button */}
+              {formErrors.length > 0 && (
                 <div
+                  ref={errorBannerRef}
                   role="alert"
                   aria-live="assertive"
-                  className="mt-4 rounded-xl border border-[#F04438] bg-[#FDECEC] px-4 py-3 text-left"
+                  className="rounded-xl border border-red-200 dark:border-[#F04438] bg-red-50 dark:bg-[#FDECEC]/10 px-4 py-3 text-left"
                 >
-                  <p className="text-[#B42318] text-sm font-semibold mb-2">
+                  <p className="text-red-800 dark:text-[#B42318] text-sm font-semibold mb-2">
                     {t(
                       "auth.register.fixIssues",
                       "Please resolve the following:"
                     )}
                   </p>
-                  <ul className="list-disc space-y-1 pl-5 text-[#B42318] text-sm">
+                  <ul className="list-disc space-y-1 pl-5 text-red-800 dark:text-[#B42318] text-sm">
                     {formErrors.map((message, index) => (
                       <li key={`button-${message}-${index}`}>{message}</li>
                     ))}
                   </ul>
                 </div>
-              )} */}
+              )}
 
               {/* Register Button */}
               <button

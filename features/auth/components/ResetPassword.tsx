@@ -74,7 +74,7 @@ const ResetPassword = () => {
         <div className="w-[438px] h-[403px] bg-[#1D8751] blur-[60px]  absolute left-16 2xl:left-54 opacity-60"></div>
         <div className="relative">
           <Image
-            src="https://res.cloudinary.com/dam1sxczj/image/upload/v1747220053/iphone_vn7ejc.png"
+            src="/images/iphone_vn7ejc.webp"
             alt="OMAYA Exchange Mobile App"
             width={350}
             height={650}
@@ -87,7 +87,7 @@ const ResetPassword = () => {
             <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] hover:bg-gray-50 dark:hover:bg-[#2A2A32] transition-colors cursor-pointer min-w-[140px]">
               <div className="relative w-6 h-6 shrink-0">
                 <Image
-                  src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746787514/Google_Play-Icon-Logo.wine_dqxxk7.svg"
+                  src="/assets/Google_Play-Icon-Logo.wine_dqxxk7.svg"
                   alt="Google Play"
                   fill
                   className="object-contain"
@@ -103,7 +103,7 @@ const ResetPassword = () => {
             <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] hover:bg-gray-50 dark:hover:bg-[#2A2A32] transition-colors cursor-pointer min-w-[140px]">
               <div className="relative w-6 h-6 shrink-0">
                 <Image
-                  src="https://res.cloudinary.com/dam1sxczj/image/upload/v1747288173/dark_apple_rwpgwi.png"
+                  src="/assets/dark_apple_rwpgwi.png"
                   alt="App Store"
                   fill
                   className="object-contain brightness-0 dark:brightness-100"
@@ -169,7 +169,7 @@ const ResetPassword = () => {
                           strokeLinejoin="round"
                         />
                         <path
-                        
+
                           d="M10 12C11.1046 12 12 11.1046 12 10C12 8.89543 11.1046 8 10 8C8.89543 8 8 8.89543 8 10C8 11.1046 8.89543 12 10 12Z"
                           stroke="#788099"
                           strokeWidth="1.5"

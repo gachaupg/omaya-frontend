@@ -13,9 +13,10 @@ interface MoneyXProps {
     moneyxTransactionId?: string;
     moneyXTransaction?: any;
   }) => void;
+  initialState?: Record<string, any>;
 }
 
-const MoneyX = ({ onTransferComplete }: MoneyXProps) => {
+const MoneyX = ({ onTransferComplete, initialState }: MoneyXProps) => {
   const handleTransfer = (data: {
     fromPaymentMethod: any;
     toPaymentMethod: any;
@@ -65,7 +66,7 @@ const MoneyX = ({ onTransferComplete }: MoneyXProps) => {
 
   return (
     <div className="w-full max-w-5xl mx-auto box-border px-4 sm:px-6 pt-0 mb-0 overflow-x-hidden">
-      <TransferForm onTransfer={handleTransfer} />
+      <TransferForm onTransfer={handleTransfer} initialState={initialState} />
     </div>
   );
 };

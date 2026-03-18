@@ -5,9 +5,10 @@ import {
   TransactionStatusMessage,
 } from "../websockets";
 import { API_CONFIG } from "@/lib/appConfig";
+import { cookieUtils } from "@/lib/utils/cookieUtils";
 import { useTheme } from "@/context/theme";
 import CopyButton from "@/components/ui/CopyButton";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "@/store/rootReducer";
 import { logger } from '@/lib/utils/logger';
 
@@ -62,6 +63,8 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const { isDark } = useTheme();
+  const { tokens } = useSelector((state: any) => state.auth);
+  const token = tokens?.access ?? cookieUtils.getCookie("access_token") ?? (typeof window !== "undefined" ? localStorage.getItem("access_token") : null);
   const [currentStatus, setCurrentStatus] = useState<string>(() =>
     transactionData?.status || "pending"
   );
@@ -70,7 +73,9 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
   const [wsError, setWsError] = useState<string | null>(null);
   const [connectionAttempts, setConnectionAttempts] = useState<number>(0);
 
-  // Timer state - 15 minutes in seconds
+  // Timer state - 15 minutes, based on wall-clock to avoid tab throttling
+  const TIMER_DURATION_SEC = 15 * 60;
+  const expiryTimestampRef = React.useRef<number | null>(null);
   const [timeRemaining, setTimeRemaining] = useState<number>(15 * 60);
   const [timerActive, setTimerActive] = useState<boolean>(true);
 
@@ -107,29 +112,110 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
     };
   }, []);
 
-  // Timer countdown effect
+  // Compute remaining time from wall-clock (immune to tab throttling)
+  const computeTimeRemaining = React.useCallback(() => {
+    const expiry = expiryTimestampRef.current;
+    if (!expiry) return TIMER_DURATION_SEC;
+    const remaining = Math.max(0, Math.ceil((expiry - Date.now()) / 1000));
+    return remaining;
+  }, []);
+
+  // Initialize expiry timestamp - always set so countdown runs even before txId is available
+  const effectiveDataForTimer = transactionData || persistedTransactionData;
+  const txIdForTimer =
+    effectiveDataForTimer?.transactionId ||
+    (effectiveDataForTimer as { transaction_id?: string })?.transaction_id ||
+    liveTransactionId;
+
   useEffect(() => {
     if (!timerActive) return;
 
-    const interval = setInterval(() => {
-      setTimeRemaining((prev) => {
-        if (prev <= 1) {
-          setTimerActive(false);
-          return 0;
+    const storageKey = "express_transaction_expiry";
+
+    if (!expiryTimestampRef.current) {
+      const fallbackExpiry = Date.now() + TIMER_DURATION_SEC * 1000;
+      if (txIdForTimer) {
+        try {
+          const stored = localStorage.getItem(storageKey);
+          if (stored) {
+            const { transactionId, expiry } = JSON.parse(stored);
+            if (transactionId === txIdForTimer) {
+              expiryTimestampRef.current = expiry;
+              if (expiry <= Date.now()) {
+                setTimeRemaining(0);
+                setTimerActive(false);
+                return;
+              }
+              setTimeRemaining(computeTimeRemaining());
+              return;
+            }
+          }
+        } catch {
+          // Invalid stored data, use fresh expiry
         }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [timerActive]);
-
-  // Auto-cancel when timer expires
-  useEffect(() => {
-    if (timeRemaining === 0 && effectiveTransactionData?.transactionId) {
-      handleCancelTransaction();
+        expiryTimestampRef.current = fallbackExpiry;
+        localStorage.setItem(
+          storageKey,
+          JSON.stringify({ transactionId: txIdForTimer, expiry: fallbackExpiry })
+        );
+      } else {
+        // No txId yet - use session expiry so countdown runs (will sync when txId arrives)
+        expiryTimestampRef.current = fallbackExpiry;
+      }
     }
-  }, [timeRemaining]);
+    setTimeRemaining(computeTimeRemaining());
+  }, [txIdForTimer, timerActive, computeTimeRemaining]);
+
+  // Timer: setInterval + wall-clock; recalc when tab becomes active (countdown accurate even when tab inactive)
+  useEffect(() => {
+    if (!timerActive) return;
+
+    const tick = () => {
+      const remaining = computeTimeRemaining();
+      setTimeRemaining(remaining);
+      if (remaining <= 0) setTimerActive(false);
+    };
+
+    tick(); // initial tick
+    const intervalId = setInterval(tick, 1000);
+
+    const onVisibilityOrFocus = () => {
+      if (document.visibilityState === "visible") tick();
+    };
+    document.addEventListener("visibilitychange", onVisibilityOrFocus);
+    window.addEventListener("focus", onVisibilityOrFocus);
+
+    return () => {
+      clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", onVisibilityOrFocus);
+      window.removeEventListener("focus", onVisibilityOrFocus);
+    };
+  }, [timerActive, computeTimeRemaining]);
+
+  // Auto-cancel when timer expires, then redirect to dashboard
+  const hasRedirectedOnExpiry = React.useRef(false);
+  const effectiveData = transactionData || persistedTransactionData;
+  useEffect(() => {
+    if (timeRemaining !== 0 || hasRedirectedOnExpiry.current) return;
+
+    hasRedirectedOnExpiry.current = true;
+
+    const onTimeExpired = async () => {
+      const txId = effectiveData?.transactionId;
+      if (txId) {
+        try {
+          await dispatch(cancelP2PDepositTransaction(txId)).unwrap();
+        } catch (error) {
+          logger.error('p2p', "Failed to cancel transaction:", error);
+        }
+        localStorage.removeItem("express_transaction_data");
+        localStorage.removeItem("express_transaction_expiry");
+      }
+      router.push("/dashboard");
+    };
+
+    onTimeExpired();
+  }, [timeRemaining, effectiveData?.transactionId, dispatch, router]);
 
   // Format time as MM:SS
   const formatTime = (seconds: number) => {
@@ -147,6 +233,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
 
       // Clear localStorage
       localStorage.removeItem("express_transaction_data");
+      localStorage.removeItem("express_transaction_expiry");
 
       // Redirect to home page
       router.push("/");
@@ -161,6 +248,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
   useEffect(() => {
     if (currentStatus === "completed") {
       setTimerActive(false);
+      localStorage.removeItem("express_transaction_expiry");
     }
   }, [currentStatus]);
 
@@ -338,6 +426,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
       effectiveTransactionData?.type || "withdrawal",
       finalWebsocketUrl,
       {
+        token: token ?? undefined,
         onMessage: (data: TransactionStatusMessage) => {
           console.log("[P2P Exchanging] WebSocket message:", data);
 
@@ -454,7 +543,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                 if (!result?.status) return;
                 const s = result.status;
                 setCurrentStatus(s === "completed" ? "completed" : s === "pending_blockchain" ? "confirming" : s);
-              }).catch(() => {});
+              }).catch(() => { });
             }
           } else if (data.status && typeof data.status === "string") {
             // ChangeNow format
@@ -672,7 +761,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
     if (!txId || effectiveTransactionData?.type !== "deposit") return;
     fetchDepositStatus(txId).then((result) => {
       if (result?.status) setCurrentStatus(result.status);
-    }).catch(() => {});
+    }).catch(() => { });
   }, [isConnected, effectiveTransactionData?.transactionId, effectiveTransactionData?.type]);
 
   // Debug logging (and print socket URL + data for debugging)
@@ -867,12 +956,12 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                       effectiveTransactionData?.asset?.icon_url ||
                       effectiveTransactionData?.asset?.image_url ||
                       effectiveTransactionData?.asset?.image ||
-                      "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                      "/images/tether.svg"
                     }
                     alt={effectiveTransactionData?.asset?.ticker || effectiveTransactionData?.asset?.symbol || effectiveTransactionData?.asset?.name || "Asset"}
                     className="w-6 h-6 rounded-full mr-2"
                     onError={(e) => {
-                      e.currentTarget.src = "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                      e.currentTarget.src = "/images/tether.svg";
                     }}
                   />
                   <span
@@ -935,13 +1024,13 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                       effectiveTransactionData.paymentDetail.logo_url ||
                       effectiveTransactionData.paymentDetail.logo ||
                       effectiveTransactionData.paymentDetail.provider_logo ||
-                      "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
+                      "/assets/image_7_jijlik.png"
                     }
                     alt={effectiveTransactionData.paymentDetail.provider_name}
                     className="w-5 h-5 rounded-full mr-2"
                     onError={(e) => {
-                      if (e.currentTarget.src !== "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png") {
-                        e.currentTarget.src = "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+                      if (e.currentTarget.src !== "/assets/image_7_jijlik.png") {
+                        e.currentTarget.src = "/assets/image_7_jijlik.png";
                       }
                     }}
                   />
@@ -1428,17 +1517,16 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               <>
                 <img
                   src={
-                    effectiveTransactionData.paymentDetail.logo_url ||
-                    effectiveTransactionData.paymentDetail.logo ||
-                    effectiveTransactionData.paymentDetail.provider_logo ||
-                    "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
+                    effectiveTransactionData?.asset?.icon ||
+                    effectiveTransactionData?.asset?.icon_url ||
+                    effectiveTransactionData?.asset?.image_url ||
+                    effectiveTransactionData?.asset?.image ||
+                    "/images/tether.svg"
                   }
-                  alt={effectiveTransactionData.paymentDetail.provider_name}
-                  className="w-7 h-7 rounded-full flex-shrink-0 mt-0.5"
+                  alt={effectiveTransactionData?.asset?.symbol || "USDT"}
+                  className="w-8 h-8 rounded-full flex-shrink-0 mt-0.5"
                   onError={(e) => {
-                    if (e.currentTarget.src !== "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png") {
-                      e.currentTarget.src = "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
-                    }
+                    e.currentTarget.src = "/images/tether.svg";
                   }}
                 />
                 <div className="min-w-0 flex-1 space-y-0.5">
@@ -1464,12 +1552,12 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                     effectiveTransactionData?.asset?.icon_url ||
                     effectiveTransactionData?.asset?.image_url ||
                     effectiveTransactionData?.asset?.image ||
-                    "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                    "/images/tether.svg"
                   }
                   alt={effectiveTransactionData?.asset?.symbol || "USDT"}
                   className="w-8 h-8 rounded-full flex-shrink-0 mt-0.5"
                   onError={(e) => {
-                    e.currentTarget.src = "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                    e.currentTarget.src = "/images/tether.svg";
                   }}
                 />
                 <div className="min-w-0 flex-1 space-y-0.5">
@@ -1499,12 +1587,12 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                     effectiveTransactionData?.asset?.icon_url ||
                     effectiveTransactionData?.asset?.image_url ||
                     effectiveTransactionData?.asset?.image ||
-                    "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                    "/images/tether.svg"
                   }
                   alt={effectiveTransactionData?.asset?.symbol || "USDT"}
                   className="w-8 h-8 rounded-full flex-shrink-0 mt-0.5"
                   onError={(e) => {
-                    e.currentTarget.src = "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                    e.currentTarget.src = "/images/tether.svg";
                   }}
                 />
                 <div className="min-w-0 flex-1 space-y-0.5">
@@ -1526,7 +1614,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
             ) : (
               <>
                 <img
-                  src="https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
+                  src="/assets/image_7_jijlik.png"
                   alt="Bank"
                   className="w-8 h-8 rounded-full flex-shrink-0 mt-0.5"
                 />
@@ -1570,9 +1658,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
             <li className="text-white text-sm">
               Do not send from exchange accounts
             </li>
-            <li className="text-white text-sm">
-              Minimum confirmations required: 1
-            </li>
+           
           </ul>
         </div>
       </div>

@@ -35,22 +35,22 @@ const stripHtmlTags = (html: string): string => {
 
 const steps = [
   {
-    icon: "https://res.cloudinary.com/dam1sxczj/image/upload/v1746707947/create_account_gzbijn.png",
+    icon: "/assets/create_account_gzbijn.png",
     title: "marketing.steps.create.title",
     description: "marketing.steps.create.desc",
   },
   {
-    icon: "https://res.cloudinary.com/dam1sxczj/image/upload/v1746707947/verify_i9k3dd.png",
+    icon: "/assets/verify_i9k3dd.png",
     title: "marketing.steps.verify.title",
     description: "marketing.steps.verify.desc",
   },
   {
-    icon: "https://res.cloudinary.com/dam1sxczj/image/upload/v1746707947/Transfermoney_hnssjb.png",
+    icon: "/assets/Transfermoney_hnssjb.png",
     title: "marketing.steps.transfer.title",
     description: "marketing.steps.transfer.desc",
   },
   {
-    icon: "https://res.cloudinary.com/dam1sxczj/image/upload/v1746707947/exchange_gmhyus.png",
+    icon: "/assets/exchange_gmhyus.png",
     title: "marketing.steps.start.title",
     description: "marketing.steps.start.desc",
   },
@@ -89,7 +89,7 @@ const fallbackSupportedAssets = [
     name: "FXPRIMUS",
     symbol: "FXP",
     image:
-      "https://res.cloudinary.com/dam1sxczj/image/upload/v1746793801/FXPRIMUS-logo_2_k8ikwb.png",
+      "/assets/FXPRIMUS-logo_2_k8ikwb.png",
     current_price: 0,
     price_change_percentage_24h: 0,
   },
@@ -98,7 +98,7 @@ const fallbackSupportedAssets = [
     name: "Perfect Money",
     symbol: "PM",
     image:
-      "https://res.cloudinary.com/dam1sxczj/image/upload/v1746793801/Perfect_Money_Logo_2_niaa2j.png",
+      "/assets/Perfect_Money_Logo_2_niaa2j.png",
     current_price: 0,
     price_change_percentage_24h: 0,
   },
@@ -107,7 +107,7 @@ const fallbackSupportedAssets = [
     name: "USDT Tether (ERC20)",
     symbol: "USDT",
     image:
-      "https://res.cloudinary.com/dam1sxczj/image/upload/v1746793800/Group_164023_bluiv9.png",
+      "/assets/Group_164023_bluiv9.png",
     current_price: 1.0,
     price_change_percentage_24h: 0.01,
   },
@@ -116,7 +116,7 @@ const fallbackSupportedAssets = [
     name: "Bitcoin",
     symbol: "BTC",
     image:
-      "https://res.cloudinary.com/dam1sxczj/image/upload/v1746793800/Bitcoin-1_b6ku56.png",
+      "/assets/Bitcoin-1_b6ku56.png",
     current_price: 42580,
     price_change_percentage_24h: 2.4,
   },
@@ -125,7 +125,7 @@ const fallbackSupportedAssets = [
     name: "USDT Tether (TRC20)",
     symbol: "USDT",
     image:
-      "https://res.cloudinary.com/dam1sxczj/image/upload/v1746793800/Tether_ttkeym.png",
+      "/assets/Tether_ttkeym.png",
     current_price: 1.0,
     price_change_percentage_24h: 0.01,
   },
@@ -134,7 +134,7 @@ const fallbackSupportedAssets = [
     name: "ICM Capital",
     symbol: "ICM",
     image:
-      "https://res.cloudinary.com/dam1sxczj/image/upload/v1746793800/ICMCapital_1_qte6tt.png",
+      "/assets/ICMCapital_1_qte6tt.png",
     current_price: 0,
     price_change_percentage_24h: 0,
   },
@@ -1073,7 +1073,7 @@ export default function MarketingPage() {
                   <div className="relative">
                     <div className="relative w-full overflow-hidden rounded-t-[1.5rem] md:rounded-t-[2rem] rounded-b-lg">
                       <Image
-                        src="https://res.cloudinary.com/pitz/image/upload/v1765268255/Container_17_n6i2xm.png"
+                        src="/assets/Container_17_n6i2xm.png"
                         alt="Safe & Reliable Cryptocurrency Exchange Platform"
                         width={800}
                         height={600}
@@ -1448,7 +1448,7 @@ export default function MarketingPage() {
               {/* Phone Image */}
               <div className="relative z-10">
                 <Image
-                  src="https://res.cloudinary.com/pitz/image/upload/v1765870778/iPhone_13_Mockup_1_wnbmqk.png"
+                  src="/assets/iPhone_13_Mockup_1_wnbmqk.png"
                   alt="OMAYA Exchange Mobile App"
                   width={350}
                   height={700}

@@ -20,7 +20,15 @@ import {
   BrowserSession,
 } from "../../../../lib/utils/browserUtils";
 import { enable2FA, verify2FASetup } from "../../../auth/slices/authSlice";
-import { getCurrentIPAddress, getLocationFromIP } from "../../utils/sessionUtils";
+import {
+  getCurrentIPAddress,
+  getLocationFromIP,
+  getDeviceData,
+  getNetworkData,
+  getFingerprintData,
+  getBrowserCapabilities,
+  getFailedLoginAttempts,
+} from "../../utils/sessionUtils";
 
 import { logger } from '@/lib/utils/logger';
 
@@ -128,6 +136,7 @@ const PrivacySecurity = () => {
   const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null);
   const [sessionToDelete, setSessionToDelete] = useState<DeviceSession | null>(null);
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+  const isRedirectingAfterLogoutAllRef = useRef(false);
 
   // Track session creation to prevent premature auto-logout
   const [isCreatingSession, setIsCreatingSession] = useState(false);
@@ -279,6 +288,9 @@ const PrivacySecurity = () => {
       setVerifyCode("");
       update2FA(true, JSON.stringify(result)); // Store the success response
       showToast.success("2FA enabled successfully!");
+      if (typeof window !== "undefined") {
+        window.location.reload();
+      }
     } catch (error) {
       setVerifyError("Invalid code or failed to verify: " + error);
     } finally {
@@ -306,8 +318,21 @@ const PrivacySecurity = () => {
       update2FA(false, JSON.stringify(result)); // Store the disable response
       showToast.success("2FA disabled successfully!");
     } catch (error: any) {
-      const errorMessage = error?.error || error?.message || String(error);
-      setDisableError("Invalid code or failed to disable: " + errorMessage);
+      const rawMessage = error?.error || error?.message || String(error);
+      let friendlyMessage = "Something went wrong while disabling 2FA. Please try again.";
+
+      if (rawMessage && rawMessage.toLowerCase().includes("2fa is not enabled")) {
+        friendlyMessage = "2FA is not enabled on your account.";
+      } else if (/request failed with status code 400/i.test(rawMessage)) {
+        friendlyMessage =
+          "Incorrect 2FA code. Please enter the 6-digit code from your authenticator app.";
+      } else if (rawMessage && !/status code \d+/i.test(rawMessage)) {
+        // Use backend message only if it doesn't look like a raw status line
+        friendlyMessage = rawMessage;
+      }
+
+      setDisableError(friendlyMessage);
+      showToast.error(friendlyMessage);
     } finally {
       setDisableLoading(false);
     }
@@ -317,37 +342,38 @@ const PrivacySecurity = () => {
     setShowLogoutModal(true);
   };
 
+  const performLogoutAndRedirect = React.useCallback(() => {
+    dispatch(clearDeviceSessionsError());
+    dispatch(logout());
+    if (typeof window !== "undefined") {
+      const p2pAct = localStorage.getItem("p2p_act");
+      localStorage.clear();
+      if (p2pAct) {
+        localStorage.setItem("p2p_act", p2pAct);
+      }
+      document.cookie = "access_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
+      document.cookie = "refresh_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
+      document.cookie = "twoFA_enabled=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
+      sessionStorage.clear();
+      if ("indexedDB" in window) {
+        window.indexedDB.databases().then((databases) => {
+          databases.forEach((db) => {
+            if (db.name) {
+              window.indexedDB.deleteDatabase(db.name);
+            }
+          });
+        });
+      }
+      window.location.replace("/auth/login");
+    }
+  }, [dispatch]);
+
   const handleLogoutAllDevices = async () => {
+    isRedirectingAfterLogoutAllRef.current = true;
     setLogoutLoading(true);
     setLogoutMode("all");
     setLogoutProgress(0);
     dispatch(clearDeviceSessionsError());
-
-    const clearAndRedirect = () => {
-      dispatch(logout());
-      if (typeof window !== "undefined") {
-        const p2pAct = localStorage.getItem("p2p_act");
-        localStorage.clear();
-        if (p2pAct) {
-          localStorage.setItem("p2p_act", p2pAct);
-        }
-        document.cookie = "access_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
-        document.cookie = "refresh_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
-        document.cookie = "twoFA_enabled=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
-        sessionStorage.clear();
-        if (typeof window !== "undefined" && "indexedDB" in window) {
-          window.indexedDB.databases().then((databases) => {
-            databases.forEach((db) => {
-              if (db.name) {
-                window.indexedDB.deleteDatabase(db.name);
-              }
-            });
-          });
-        }
-        // Hard redirect so user is fully logged out from the system
-        window.location.replace("/auth/login");
-      }
-    };
 
     try {
       await dispatch(logoutAllDevices()).unwrap();
@@ -359,13 +385,13 @@ const PrivacySecurity = () => {
         // Ignore - we're clearing locally anyway
       }
       setLogoutProgress(100);
-      showToast.success("All devices logged out successfully");
-      clearAndRedirect();
+      isRedirectingAfterLogoutAllRef.current = true;
+      performLogoutAndRedirect();
     } catch (_) {
       // Server may return 400 (e.g. already logged out); still clear local state and redirect
       setLogoutProgress(100);
-      showToast.success("Signed out");
-      clearAndRedirect();
+      isRedirectingAfterLogoutAllRef.current = true;
+      performLogoutAndRedirect();
     } finally {
       setLogoutLoading(false);
       setShowLogoutModal(false);
@@ -433,13 +459,21 @@ const PrivacySecurity = () => {
     setDeletingSessionId(sessionToDelete.session_id);
     setShowDeleteConfirmModal(false);
 
+    // Deleting current session = sign out immediately
+    if (sessionToDelete.is_current) {
+      try {
+        await dispatch(logoutAllDevices()).unwrap();
+      } catch (_) {
+        // Ignore - we'll clear locally
+      }
+      performLogoutAndRedirect();
+      return;
+    }
+
     try {
       await dispatch(logoutDevice(sessionToDelete.session_id)).unwrap();
       showToast.success("Device session removed successfully");
-      // Refresh the sessions list after deletion
       dispatch(fetchDeviceSessions());
-      
-      // Navigate to account privacy tab after deleting a session
       router.push("/dashboard/account/?tab=privacy");
     } catch (error: any) {
       console.error("Failed to remove device session:", error);
@@ -573,11 +607,15 @@ const PrivacySecurity = () => {
     }
   }, [allSessions.length, currentPage, paginatedSessions.length, totalPages]);
 
-  // Never show raw "Request failed with status 400" etc. on the UI
+  // Never show raw "Request failed with status 400" etc. on the UI.
+  // Don't show when redirecting after sign-out-all (avoids red error flash before login).
   const displaySessionError =
-    deviceSessionsError && !/request failed with status code \d+/i.test(deviceSessionsError) && !/status code \d+/i.test(deviceSessionsError)
+    !isRedirectingAfterLogoutAllRef.current &&
+    deviceSessionsError &&
+    !/request failed with status code \d+/i.test(deviceSessionsError) &&
+    !/status code \d+/i.test(deviceSessionsError)
       ? deviceSessionsError
-      : deviceSessionsError
+      : deviceSessionsError && !isRedirectingAfterLogoutAllRef.current
         ? "Unable to load device sessions"
         : null;
 
@@ -732,10 +770,12 @@ const PrivacySecurity = () => {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4">
           <div className="dark:bg-[var(--card-color)] bg-white p-4 sm:p-6 rounded-xl w-full max-w-sm sm:max-w-md max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-semibold mb-4 dark:text-white text-gray-900">
-              Delete Session?
+              {sessionToDelete.is_current ? "Sign Out This Device?" : "Delete Session?"}
             </h3>
             <div className="dark:text-[#8C8CA1] text-gray-600 text-sm mb-4">
-              Are you sure you want to delete this session? This will sign out the device from your account.
+              {sessionToDelete.is_current
+                ? "This will sign you out immediately and redirect you to the login page."
+                : "Are you sure you want to delete this session? This will sign out the device from your account."}
             </div>
             <div className="bg-gray-50 dark:bg-[#1F2937] rounded-lg p-3 mb-4 space-y-2 text-sm">
               <div className="flex items-center gap-2">
@@ -770,7 +810,7 @@ const PrivacySecurity = () => {
                 onClick={handleConfirmDelete}
                 disabled={deletingSessionId === sessionToDelete.session_id}
               >
-                {deletingSessionId === sessionToDelete.session_id ? "Deleting..." : "Delete Session"}
+                {deletingSessionId === sessionToDelete.session_id ? (sessionToDelete.is_current ? "Signing out..." : "Deleting...") : (sessionToDelete.is_current ? "Sign Out" : "Delete Session")}
               </button>
               <button
                 className="flex-1 dark:bg-[#35353E] bg-gray-400 dark:text-white text-gray-900 rounded px-4 py-2.5 font-semibold text-sm transition-colors"
@@ -853,8 +893,11 @@ const PrivacySecurity = () => {
           Privacy & Security
         </div>
         <div className="w-full rounded-2xl px-3 sm:px-4 md:px-5 py-4 sm:py-5 flex flex-col gap-4 max-w-none mx-auto bg-white dark:bg-[var(--card-color)] border border-[#E4E6F0] dark:border-[#35353E] shadow-sm">
-          <div className="text-base font-semibold mb-2 dark:text-white text-gray-900">
-            2 Factor Authentication
+          <div className="flex items-center justify-between gap-3 mb-2">
+            <div className="text-base font-semibold dark:text-white text-gray-900">
+              2 Factor Authentication
+            </div>
+           
           </div>
           <div className="flex gap-3 mb-2">
             <button
@@ -988,11 +1031,11 @@ const PrivacySecurity = () => {
           )} */}
             </div>
 
-            {displaySessionError && !logoutLoading && (
+            {/* {displaySessionError && !logoutLoading && (
               <div className="text-red-500 text-sm mb-3">
                 Error: {displaySessionError}
               </div>
-            )}
+            )} */}
 
             {deviceSessionsLoading ? (
               <div className="flex items-center justify-center py-6">
@@ -1004,7 +1047,7 @@ const PrivacySecurity = () => {
             ) : paginatedSessions.length === 0 ? (
               <div className="text-center py-6 dark:text-[#808080] text-gray-600 text-sm">
                 No active device sessions found
-                {displaySessionError && !logoutLoading && (
+                {displaySessionError && !logoutLoading && !isRedirectingAfterLogoutAllRef.current && (
                   <div className="mt-2 text-xs text-red-400">
                     API Error: {displaySessionError}
                   </div>
@@ -1035,14 +1078,23 @@ const PrivacySecurity = () => {
                           return;
                         }
 
+                        const userAgent = navigator.userAgent;
                         const payload: CreateDeviceSessionPayload = {
                           ip_address: ipAddress,
                           location: location,
-                          browser: getBrowserInfo(navigator.userAgent),
+                          browser: getBrowserInfo(userAgent),
                           sign_in_time: new Date().toISOString(),
-                          user_agent: navigator.userAgent,
+                          user_agent: userAgent,
                           device_type: getDeviceType(),
-                          description: `${getDeviceType()} - ${getBrowserInfo(navigator.userAgent)}`,
+                          description: `${getDeviceType()} - ${getBrowserInfo(userAgent)}`,
+                          device_data: getDeviceData(),
+                          network_data: getNetworkData(),
+                          fingerprint_data: getFingerprintData(),
+                          browser_capabilities: getBrowserCapabilities(),
+                          login_patterns: {},
+                          session_duration: 0,
+                          failed_login_attempts: getFailedLoginAttempts(),
+                          suspicious_behavior_detected: false,
                         };
 
                         await dispatch(createDeviceSession(payload)).unwrap();
@@ -1094,9 +1146,9 @@ const PrivacySecurity = () => {
                         </div>
                         <button
                           onClick={() => handleRemoveSessionClick(session)}
-                          disabled={deletingSessionId === session.session_id || session.is_current}
+                          disabled={deletingSessionId === session.session_id}
                           className="p-2 hover:bg-gray-100 dark:hover:bg-[#2A2A2A] rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                          title={session.is_current ? "Cannot delete current session" : "Delete session"}
+                          title={session.is_current ? "Sign out this device" : "Delete session"}
                         >
                           {deletingSessionId === session.session_id ? (
                             <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-[#1D8751]"></div>

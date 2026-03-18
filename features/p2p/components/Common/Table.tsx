@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useImperativeHandle, forwardRef } from "react";
 import { tokens } from "@/styles/tokens";
 import { TransactionType } from "@/features/p2p/types";
 import Button from "./Button";
@@ -29,9 +29,18 @@ type TableProps = {
   onDateFilterChange?: (filter: string) => void;
   dateFilter?: string;
   showExportButton?: boolean;
+  /** When true, hide the title + ALL + Search + Export row (for parent-provided toolbar) */
+  hideToolbar?: boolean;
+  /** When hideToolbar is true, use this for export search filter */
+  externalSearchQuery?: string;
 };
 
-export const Table: React.FC<TableProps> = ({
+export interface TableExportRef {
+  exportCsv: () => Promise<void>;
+  exportPdf: () => Promise<void>;
+}
+
+export const Table = forwardRef<TableExportRef, TableProps>(({
   title = "P2P History",
   data = [],
   allDataForExport,
@@ -48,7 +57,9 @@ export const Table: React.FC<TableProps> = ({
   onDateFilterChange,
   dateFilter: externalDateFilter,
   showExportButton = true,
-}) => {
+  hideToolbar = false,
+  externalSearchQuery,
+}, ref) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showExportOptions, setShowExportOptions] = useState(false);
   const [selectedTransaction, setSelectedTransaction] =
@@ -245,8 +256,9 @@ export const Table: React.FC<TableProps> = ({
     logger.debug('p2p', `Export - After date filter (${dateFilter}): ${dataToExport.length} items`);
 
     // Apply search filter if search query exists
-    if (searchQuery && searchQuery.trim()) {
-      const searchLower = searchQuery.toLowerCase().trim();
+    const activeSearchQuery = hideToolbar && externalSearchQuery !== undefined ? externalSearchQuery : searchQuery;
+    if (activeSearchQuery && activeSearchQuery.trim()) {
+      const searchLower = activeSearchQuery.toLowerCase().trim();
       const beforeSearch = dataToExport.length;
       dataToExport = dataToExport.filter((item) => {
         // Search across multiple fields
@@ -262,7 +274,7 @@ export const Table: React.FC<TableProps> = ({
           .toLowerCase();
         return searchableText.includes(searchLower);
       });
-      logger.debug('p2p', `Export - After search filter ("${searchQuery}"): ${dataToExport.length} items (was ${beforeSearch})`);
+      logger.debug('p2p', `Export - After search filter ("${activeSearchQuery}"): ${dataToExport.length} items (was ${beforeSearch})`);
     }
 
     logger.debug('p2p', `Export - Final data to export: ${dataToExport.length} items`);
@@ -304,7 +316,7 @@ export const Table: React.FC<TableProps> = ({
         let currentY = 12;
 
         // Load and add OMAYA logo at top (centered)
-        const logoUrl = "https://res.cloudinary.com/pitz/image/upload/v1764572384/bad9edd9da5201cb8f8f9cea35bf46f4fb541bd6_lplbyc.png";
+        const logoUrl = "/assets/bad9edd9da5201cb8f8f9cea35bf46f4fb541bd6_lplbyc.png";
         const logoWidth = 48;
         const logoHeight = 18;
         try {
@@ -453,6 +465,11 @@ export const Table: React.FC<TableProps> = ({
     }
   };
 
+  useImperativeHandle(ref, () => ({
+    exportCsv: () => handleExport("csv"),
+    exportPdf: () => handleExport("pdf"),
+  }));
+
   // Add effect to monitor selectedTransaction changes
   React.useEffect(() => {
     logger.debug('p2p', "Selected transaction updated:", selectedTransaction);
@@ -585,6 +602,7 @@ export const Table: React.FC<TableProps> = ({
   return (
     <>
       <div className="mt-1">
+        {!hideToolbar && (
         <div className="flex flex-col gap-2 sm:gap-3 md:flex-row md:items-center md:justify-between mb-1">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
             <h3
@@ -737,271 +755,148 @@ export const Table: React.FC<TableProps> = ({
             )}
           </div>
         </div>
+        )}
 
-        <div ref={tableContainerRef} className="mt-3 w-full pb-4 scroll-smooth">
+        <div ref={tableContainerRef} className={`w-full pb-4 scroll-smooth ${hideToolbar ? "" : "mt-3"}`}>
           <div className="overflow-x-auto md:overflow-visible">
-          <div
-            className={`w-full md:min-w-0 border-2 bg-white dark:bg-[var(--card-color)] border-gray-200 dark:border-[#35353E] shadow-lg rounded-[24px] overflow-hidden`}
-          >
-            {/* Desktop Table Header - Hidden on mobile */}
             <div
-              className={`hidden md:grid grid-cols-6 ${desktopGridCols} py-2 px-4 border-b bg-gray-50 dark:bg-[#35353E] border-gray-200 dark:border-[#35353E] rounded-t-[24px]`}
+              className={`w-full md:min-w-0 border-2 bg-white dark:bg-[var(--card-color)] border-gray-200 dark:border-[#35353E] shadow-lg rounded-[24px] overflow-hidden`}
             >
+              {/* Desktop Table Header - Hidden on mobile */}
               <div
-                className={`text-sm font-medium text-gray-900 dark:text-white`}
+                className={`hidden md:grid grid-cols-6 ${desktopGridCols} py-2 px-4 border-b bg-gray-50 dark:bg-[#35353E] border-gray-200 dark:border-[#35353E] rounded-t-[24px]`}
               >
-                Asset
-              </div>
-              {type === "p2p" && (
                 <div
-                  className={`text-sm font-medium text-gray-900 dark:text-white flex items-center justify-start -ml-4 pl-0`}
+                  className={`text-sm font-medium text-gray-900 dark:text-white`}
                 >
-                  <span>ID</span>
+                  Asset
+                </div>
+                {type === "p2p" && (
+                  <div
+                    className={`text-sm font-medium text-gray-900 dark:text-white flex items-center justify-start -ml-4 pl-0`}
+                  >
+                    <span>ID</span>
+                    <TiArrowUnsorted className="w-3 h-3 ml-1 text-gray-400" />
+                  </div>
+                )}
+                <div
+                  className={`text-sm font-medium text-gray-900 dark:text-white flex items-center`}
+                >
+                  Type
                   <TiArrowUnsorted className="w-3 h-3 ml-1 text-gray-400" />
                 </div>
-              )}
-              <div
-                className={`text-sm font-medium text-gray-900 dark:text-white flex items-center`}
-              >
-                Type
-                <TiArrowUnsorted className="w-3 h-3 ml-1 text-gray-400" />
-              </div>
-              <div
-                className={`text-sm font-medium text-gray-900 dark:text-white flex items-center`}
-              >
-                Date
-                <TiArrowUnsorted className="w-3 h-3 ml-1 text-gray-400" />
-              </div>
-              <div
-                className={`text-sm font-medium text-gray-900 dark:text-white flex items-center`}
-              >
-                Amount
-                <TiArrowUnsorted className="w-3 h-3 ml-1 text-gray-400" />
-              </div>
-              <div
-                className={`text-sm font-medium text-gray-900 dark:text-white flex items-center`}
-              >
-                Status
-                <TiArrowUnsorted className="w-3 h-3 ml-1 text-gray-400" />
-              </div>
-              <div
-                className={`text-sm font-medium text-gray-900 dark:text-white flex items-center`}
-              >
-                Receipt
-                <TiArrowUnsorted className="w-3 h-3 ml-1 text-gray-400" />
-              </div>
-            </div>
-
-            {/* Table Body */}
-            <div className={`bg-white dark:bg-[var(--card-color)] ${totalPages <= 1 ? 'rounded-b-[24px]' : ''}`}>
-              {filteredData.length === 0 && data.length > 0 ? (
-                <div className="w-full text-center py-12 px-4 bg-white dark:bg-[var(--card-color)]">
-                  <div className="flex flex-col items-center justify-center">
-                    <div className="w-16 h-16 mb-4 rounded-full bg-gray-100 dark:bg-[#35353E] flex items-center justify-center">
-                      <svg
-                        width="24"
-                        height="24"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="text-gray-500 dark:text-[#788099]"
-                      >
-                        <path
-                          d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                        <path
-                          d="M12 8V12"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                        <path
-                          d="M12 16H12.01"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-500 dark:text-[#788099] mb-2">
-                      No Data Matches Filter
-                    </h3>
-                    <p className="text-sm text-gray-400 dark:text-[#8C8CA1] text-center max-w-md mb-4">
-                      No records found for the selected date filter ({dateFilter}). Please try a different time period or reset to view all records.
-                    </p>
-                    <button
-                      onClick={() => handleDateFilterChange("ALL")}
-                      className="inline-flex items-center px-4 py-2 border dark:border-[#35353E] border-gray-300 rounded-md shadow-sm text-sm font-medium dark:text-white text-gray-900 dark:bg-[var(--bg-color)] bg-gray-100 dark:hover:bg-[#35353E] hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1D8751] transition-colors"
-                    >
-                      <svg
-                        className="w-4 h-4 mr-2"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M6 18L18 6M6 6l12 12"
-                        />
-                      </svg>
-                      Reset to All Records
-                    </button>
-                  </div>
+                <div
+                  className={`text-sm font-medium text-gray-900 dark:text-white flex items-center`}
+                >
+                  Date
+                  <TiArrowUnsorted className="w-3 h-3 ml-1 text-gray-400" />
                 </div>
-              ) : (
-                filteredData.map((row, idx) => {
-                  const isLastRow = idx === filteredData.length - 1;
-                  return (
-                    <React.Fragment key={idx}>
-                      {/* Desktop Grid View */}
-                      <div
-                        className={`hidden md:grid ${desktopGridCols} mx-2 py-2 px-2 items-center hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors duration-200 bg-white dark:bg-[var(--card-color)] relative`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <img
-                            src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
-                            alt={row.asset || "Asset"}
-                            className="w-6 h-6"
-                          />
-                         
-                        </div>
-                        {type === "p2p" && (
-                          <div
-                            className={`text-sm text-left text-gray-600 dark:text-[#788099] cursor-pointer relative -ml-4 pl-0`}
-                            onMouseEnter={() => setTooltipId(row.id || "")}
-                            onMouseLeave={() => setTooltipId(null)}
-                            onClick={() => {
-                              if (row.id) {
-                                navigator.clipboard.writeText(row.id);
-                                setCopiedId(row.id);
-                                setTimeout(() => setCopiedId(null), 2000);
-                              }
-                            }}
-                            title={`Click to copy full ID: ${row.id || ""}`}
-                          >
-                            {row.id ? `${row.id.slice(0, 3)}...${row.id.slice(-3)}` : "--"}
-                            {tooltipId === row.id && row.id && (
-                              <div className="absolute z-50 px-3 py-2 text-xs text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-900 rounded-lg shadow-xl whitespace-nowrap -top-10 left-1/2 transform -translate-x-1/2 border border-gray-300 dark:border-gray-700">
-                                <div className="flex items-center gap-2">
-                                  <span>{row.id}</span>
-                                  <svg
-                                    className="w-3 h-3"
-                                    fill="currentColor"
-                                    viewBox="0 0 20 20"
-                                  >
-                                    <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
-                                    <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
-                                  </svg>
-                                </div>
-                                <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-100 dark:border-t-gray-900"></div>
-                              </div>
-                            )}
-                            {copiedId === row.id && (
-                              <div className="absolute z-50 px-2 py-1 text-xs text-white bg-green-600 rounded shadow-lg whitespace-nowrap -top-8 left-1/2 transform -translate-x-1/2">
-                                Copied!
-                                <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-green-600"></div>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                        <div className={`text-sm ${getAmountColor(String(row.type))}`}>
-                          {formatTypeLabel(row.type)}
-                        </div>
-                        <div
-                          className={`text-sm text-gray-600 dark:text-[#788099]`}
+                <div
+                  className={`text-sm font-medium text-gray-900 dark:text-white flex items-center`}
+                >
+                  Amount
+                  <TiArrowUnsorted className="w-3 h-3 ml-1 text-gray-400" />
+                </div>
+                <div
+                  className={`text-sm font-medium text-gray-900 dark:text-white flex items-center`}
+                >
+                  Status
+                  <TiArrowUnsorted className="w-3 h-3 ml-1 text-gray-400" />
+                </div>
+                <div
+                  className={`text-sm font-medium text-gray-900 dark:text-white flex items-center`}
+                >
+                  Receipt
+                  <TiArrowUnsorted className="w-3 h-3 ml-1 text-gray-400" />
+                </div>
+              </div>
+
+              {/* Table Body */}
+              <div className={`bg-white dark:bg-[var(--card-color)] ${totalPages <= 1 ? 'rounded-b-[24px]' : ''}`}>
+                {filteredData.length === 0 && data.length > 0 ? (
+                  <div className="w-full text-center py-12 px-4 bg-white dark:bg-[var(--card-color)]">
+                    <div className="flex flex-col items-center justify-center">
+                      <div className="w-16 h-16 mb-4 rounded-full bg-gray-100 dark:bg-[#35353E] flex items-center justify-center">
+                        <svg
+                          width="24"
+                          height="24"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="text-gray-500 dark:text-[#788099]"
                         >
-                          {formatP2PDate(row.date)}
-                        </div>
-                        <div className={`text-sm font-semibold ${getAmountColor(String(row.type))}`}>
-                          {formatNumber(Number(row.amount)).toString()} USDT
-                        </div>
-                        <div
-                          className={`text-sm ${getStatusColor(String(row.status))}`}
-                        >
-                          {row.status}
-                        </div>
-                        <div className="flex items-center">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-[#1D8751]"
-                            onClick={() => handleViewTransaction(row)}
-                          >
-                            <Eye size={18} />
-                          </Button>
-                        </div>
-                        {!isLastRow && (
-                          <div
-                            className={`absolute bottom-0 left-4 right-4 h-px bg-gray-200 dark:bg-gray-800`}
+                          <path
+                            d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
                           />
-                        )}
+                          <path
+                            d="M12 8V12"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                          <path
+                            d="M12 16H12.01"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
                       </div>
-
-                      {/* Mobile Card View */}
-                      <div
-                        className={`md:hidden flex flex-col gap-2 p-3 mx-2 relative hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors duration-200 bg-white dark:bg-[var(--card-color)]`}
+                      <h3 className="text-lg font-semibold text-gray-500 dark:text-[#788099] mb-2">
+                        No Data Matches Filter
+                      </h3>
+                      <p className="text-sm text-gray-400 dark:text-[#8C8CA1] text-center max-w-md mb-4">
+                        No records found for the selected date filter ({dateFilter}). Please try a different time period or reset to view all records.
+                      </p>
+                      <button
+                        onClick={() => handleDateFilterChange("ALL")}
+                        className="inline-flex items-center px-4 py-2 border dark:border-[#35353E] border-gray-300 rounded-md shadow-sm text-sm font-medium dark:text-white text-gray-900 dark:bg-[var(--bg-color)] bg-gray-100 dark:hover:bg-[#35353E] hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1D8751] transition-colors"
                       >
-                        {/* Top Row: Asset and Type */}
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <svg
+                          className="w-4 h-4 mr-2"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M6 18L18 6M6 6l12 12"
+                          />
+                        </svg>
+                        Reset to All Records
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  filteredData.map((row, idx) => {
+                    const isLastRow = idx === filteredData.length - 1;
+                    return (
+                      <React.Fragment key={idx}>
+                        {/* Desktop Grid View */}
+                        <div
+                          className={`hidden md:grid ${desktopGridCols} mx-2 py-2 px-2 items-center hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors duration-200 bg-white dark:bg-[var(--card-color)] relative`}
+                        >
+                          <div className="flex items-center gap-2">
                             <img
-                              src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                              src="/images/tether.svg"
                               alt={row.asset || "Asset"}
-                              className="w-6 h-6 flex-shrink-0"
+                              className="w-6 h-6"
                             />
-                            {getAssetLabel(row.asset) && (
-                              <span className="text-sm font-medium text-[#1D8751] dark:text-[#1D8751] truncate">
-                                {getAssetLabel(row.asset)}
-                              </span>
-                            )}
-                          </div>
-                          <div
-                            className={`text-sm font-semibold flex-shrink-0 ${getAmountColor(String(row.type))}`}
-                          >
-                            {formatTypeLabel(row.type)}
-                          </div>
-                        </div>
 
-                        {/* Amount Row */}
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-gray-500 dark:text-[#788099]">Amount</span>
-                          <span
-                            className={`text-sm font-semibold ${getAmountColor(String(row.type))}`}
-                          >
-                            {formatNumber(Number(row.amount)).toString()} USDT
-                          </span>
-                        </div>
-
-                        {/* Date and Status Row */}
-                        <div className="flex items-center justify-between">
-                          <div className="flex flex-col">
-                            <span className="text-xs text-gray-500 dark:text-[#788099]">Date</span>
-                            <span className={`text-sm text-gray-600 dark:text-[#788099]`}>
-                              {formatP2PDate(row.date)}
-                            </span>
                           </div>
-                          <div className="flex flex-col items-end">
-                            <span className="text-xs text-gray-500 dark:text-[#788099]">Status</span>
-                            <span className={`text-sm ${getStatusColor(String(row.status))}`}>
-                              {row.status}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* ID Row (only for p2p type) */}
-                        {type === "p2p" && row.id && (
-                          <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-800">
-                            <span className="text-xs text-gray-500 dark:text-[#788099]">ID</span>
+                          {type === "p2p" && (
                             <div
-                              className={`text-xs text-gray-600 dark:text-[#788099] cursor-pointer relative`}
+                              className={`text-sm text-left text-gray-600 dark:text-[#788099] cursor-pointer relative -ml-4 pl-0`}
+                              onMouseEnter={() => setTooltipId(row.id || "")}
+                              onMouseLeave={() => setTooltipId(null)}
                               onClick={() => {
                                 if (row.id) {
                                   navigator.clipboard.writeText(row.id);
@@ -1009,172 +904,293 @@ export const Table: React.FC<TableProps> = ({
                                   setTimeout(() => setCopiedId(null), 2000);
                                 }
                               }}
+                              title={`Click to copy full ID: ${row.id || ""}`}
                             >
-                              {row.id.slice(0, 8)}...{row.id.slice(-6)}
+                              {row.id ? `${row.id.slice(0, 3)}...${row.id.slice(-3)}` : "--"}
+                              {tooltipId === row.id && row.id && (
+                                <div className="absolute z-50 px-3 py-2 text-xs text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-900 rounded-lg shadow-xl whitespace-nowrap -top-10 left-1/2 transform -translate-x-1/2 border border-gray-300 dark:border-gray-700">
+                                  <div className="flex items-center gap-2">
+                                    <span>{row.id}</span>
+                                    <svg
+                                      className="w-3 h-3"
+                                      fill="currentColor"
+                                      viewBox="0 0 20 20"
+                                    >
+                                      <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
+                                      <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
+                                    </svg>
+                                  </div>
+                                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-100 dark:border-t-gray-900"></div>
+                                </div>
+                              )}
                               {copiedId === row.id && (
-                                <div className="absolute z-50 px-2 py-1 text-xs text-white bg-green-600 rounded shadow-lg whitespace-nowrap -top-8 right-0">
+                                <div className="absolute z-50 px-2 py-1 text-xs text-white bg-green-600 rounded shadow-lg whitespace-nowrap -top-8 left-1/2 transform -translate-x-1/2">
                                   Copied!
-                                  <div className="absolute top-full right-4 transform w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-green-600"></div>
+                                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-green-600"></div>
                                 </div>
                               )}
                             </div>
+                          )}
+                          <div className={`text-sm ${getAmountColor(String(row.type))}`}>
+                            {formatTypeLabel(row.type)}
                           </div>
-                        )}
-
-                        {/* Action Button */}
-                        <div className="pt-2 border-t border-gray-200 dark:border-gray-800">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="w-full text-[#1D8751] justify-center"
-                            onClick={() => handleViewTransaction(row)}
-                          >
-                            <Eye size={18} className="mr-2" />
-                            View Receipt
-                          </Button>
-                        </div>
-                        {!isLastRow && (
                           <div
-                            className={`absolute bottom-0 left-4 right-4 h-px bg-gray-200 dark:bg-gray-800`}
-                          />
-                        )}
-                      </div>
-                    </React.Fragment>
-                  );
-                })
-              )}
-            </div>
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex justify-center items-center gap-1.5 sm:gap-2 py-4 pb-6 bg-white dark:bg-[var(--card-color)] rounded-b-[24px] overflow-x-auto px-2">
-                <button
-                  onClick={() => {
-                    logger.debug('p2p', "Previous page clicked, current:", currentPage);
-                    if (onPageChange) {
-                      handlePageChangeWithScroll(currentPage - 1);
-                    } else {
-                      logger.debug('p2p', "onPageChange is not provided");
-                    }
-                  }}
-                  disabled={currentPage === 1}
-                  className={`min-w-[36px] px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium border flex items-center justify-center ${
-                    currentPage === 1
-                      ? "opacity-50 cursor-not-allowed border-gray-200 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] text-gray-400 dark:text-[#8C8CA1]"
-                      : "border-[#1D8751] bg-white dark:bg-[var(--card-color)] text-[#1D8751] hover:bg-[#1D8751] hover:text-white transition-colors"
-                  }`}
-                >
-                  <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M15 18l-6-6 6-6" />
-                  </svg>
-                </button>
-                {(() => {
-                  const pageButtons = [];
-                  // On small screens show fewer pages so prev/next buttons are always visible
-                  const maxPagesToShow = isSmallScreen ? 3 : 7;
-                  const sidePages = isSmallScreen ? 0 : 2;
+                            className={`text-sm text-gray-600 dark:text-[#788099]`}
+                          >
+                            {formatP2PDate(row.date)}
+                          </div>
+                          <div className={`text-sm font-semibold ${getAmountColor(String(row.type))}`}>
+                            {formatNumber(Number(row.amount)).toString()} USDT
+                          </div>
+                          <div
+                            className={`text-sm ${getStatusColor(String(row.status))}`}
+                          >
+                            {row.status}
+                          </div>
+                          <div className="flex items-center">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-[#1D8751]"
+                              onClick={() => handleViewTransaction(row)}
+                            >
+                              <Eye size={18} />
+                            </Button>
+                          </div>
+                          {!isLastRow && (
+                            <div
+                              className={`absolute bottom-0 left-4 right-4 h-px bg-gray-200 dark:bg-gray-800`}
+                            />
+                          )}
+                        </div>
 
-                  const btnClass = (active: boolean) =>
-                    `min-w-[28px] px-1.5 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-medium border border-gray-200 dark:border-[#35353E] text-center ${
-                      active
+                        {/* Mobile Card View */}
+                        <div
+                          className={`md:hidden flex flex-col gap-2 p-3 mx-2 relative hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors duration-200 bg-white dark:bg-[var(--card-color)]`}
+                        >
+                          {/* Top Row: Asset and Type */}
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                              <img
+                                src="/images/tether.svg"
+                                alt={row.asset || "Asset"}
+                                className="w-6 h-6 flex-shrink-0"
+                              />
+                              {getAssetLabel(row.asset) && (
+                                <span className="text-sm font-medium text-[#1D8751] dark:text-[#1D8751] truncate">
+                                  {getAssetLabel(row.asset)}
+                                </span>
+                              )}
+                            </div>
+                            <div
+                              className={`text-sm font-semibold flex-shrink-0 ${getAmountColor(String(row.type))}`}
+                            >
+                              {formatTypeLabel(row.type)}
+                            </div>
+                          </div>
+
+                          {/* Amount Row */}
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-gray-500 dark:text-[#788099]">Amount</span>
+                            <span
+                              className={`text-sm font-semibold ${getAmountColor(String(row.type))}`}
+                            >
+                              {formatNumber(Number(row.amount)).toString()} USDT
+                            </span>
+                          </div>
+
+                          {/* Date and Status Row */}
+                          <div className="flex items-center justify-between">
+                            <div className="flex flex-col">
+                              <span className="text-xs text-gray-500 dark:text-[#788099]">Date</span>
+                              <span className={`text-sm text-gray-600 dark:text-[#788099]`}>
+                                {formatP2PDate(row.date)}
+                              </span>
+                            </div>
+                            <div className="flex flex-col items-end">
+                              <span className="text-xs text-gray-500 dark:text-[#788099]">Status</span>
+                              <span className={`text-sm ${getStatusColor(String(row.status))}`}>
+                                {row.status}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* ID Row (only for p2p type) */}
+                          {type === "p2p" && row.id && (
+                            <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-800">
+                              <span className="text-xs text-gray-500 dark:text-[#788099]">ID</span>
+                              <div
+                                className={`text-xs text-gray-600 dark:text-[#788099] cursor-pointer relative`}
+                                onClick={() => {
+                                  if (row.id) {
+                                    navigator.clipboard.writeText(row.id);
+                                    setCopiedId(row.id);
+                                    setTimeout(() => setCopiedId(null), 2000);
+                                  }
+                                }}
+                              >
+                                {row.id.slice(0, 8)}...{row.id.slice(-6)}
+                                {copiedId === row.id && (
+                                  <div className="absolute z-50 px-2 py-1 text-xs text-white bg-green-600 rounded shadow-lg whitespace-nowrap -top-8 right-0">
+                                    Copied!
+                                    <div className="absolute top-full right-4 transform w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-green-600"></div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Action Button */}
+                          <div className="pt-2 border-t border-gray-200 dark:border-gray-800">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="w-full text-[#1D8751] justify-center"
+                              onClick={() => handleViewTransaction(row)}
+                            >
+                              <Eye size={18} className="mr-2" />
+                              View Receipt
+                            </Button>
+                          </div>
+                          {!isLastRow && (
+                            <div
+                              className={`absolute bottom-0 left-4 right-4 h-px bg-gray-200 dark:bg-gray-800`}
+                            />
+                          )}
+                        </div>
+                      </React.Fragment>
+                    );
+                  })
+                )}
+              </div>
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex justify-center items-center gap-1.5 sm:gap-2 py-4 pb-6 bg-white dark:bg-[var(--card-color)] rounded-b-[24px] overflow-x-auto px-2">
+                  <button
+                    onClick={() => {
+                      logger.debug('p2p', "Previous page clicked, current:", currentPage);
+                      if (onPageChange) {
+                        handlePageChangeWithScroll(currentPage - 1);
+                      } else {
+                        logger.debug('p2p', "onPageChange is not provided");
+                      }
+                    }}
+                    disabled={currentPage === 1}
+                    className={`min-w-[36px] px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium border flex items-center justify-center ${currentPage === 1
+                        ? "opacity-50 cursor-not-allowed border-gray-200 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] text-gray-400 dark:text-[#8C8CA1]"
+                        : "border-[#1D8751] bg-white dark:bg-[var(--card-color)] text-[#1D8751] hover:bg-[#1D8751] hover:text-white transition-colors"
+                      }`}
+                  >
+                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M15 18l-6-6 6-6" />
+                    </svg>
+                  </button>
+                  {(() => {
+                    const pageButtons = [];
+                    // On small screens show fewer pages so prev/next buttons are always visible
+                    const maxPagesToShow = isSmallScreen ? 3 : 7;
+                    const sidePages = isSmallScreen ? 0 : 2;
+
+                    const btnClass = (active: boolean) =>
+                      `min-w-[28px] px-1.5 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-medium border border-gray-200 dark:border-[#35353E] text-center ${active
                         ? "bg-[#1D8751] text-white border-[#1D8751]"
                         : "bg-white text-gray-400 hover:bg-gray-100 dark:bg-[var(--card-color)] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]"
-                    }`;
+                      }`;
 
-                  if (totalPages <= maxPagesToShow) {
-                    // Show all pages if total fits
-                    for (let i = 1; i <= totalPages; i++) {
-                      pageButtons.push(
-                        <button
-                          key={i}
-                          onClick={() => handlePageChangeWithScroll(i)}
-                          className={btnClass(currentPage === i)}
-                        >
-                          {i}
-                        </button>
-                      );
-                    }
-                  } else {
-                    // Smart pagination: first page
-                    pageButtons.push(
-                      <button key={1} onClick={() => handlePageChangeWithScroll(1)} className={btnClass(currentPage === 1)}>1</button>
-                    );
-
-                    // Calculate range around current page
-                    let startPage = Math.max(2, currentPage - sidePages);
-                    let endPage = Math.min(totalPages - 1, currentPage + sidePages);
-
-                    // Clamp near start
-                    if (!isSmallScreen && currentPage <= 4) {
-                      startPage = 2;
-                      endPage = Math.min(6, totalPages - 1);
-                    } else if (!isSmallScreen && currentPage >= totalPages - 3) {
-                      startPage = Math.max(2, totalPages - 5);
-                      endPage = totalPages - 1;
-                    }
-
-                    // On small screens only show current page in the middle (between first and last)
-                    if (isSmallScreen) {
-                      startPage = currentPage === 1 ? totalPages : currentPage;
-                      endPage = currentPage === totalPages ? 1 : currentPage;
-                      // Just show current if it's not 1 or last
-                      startPage = currentPage;
-                      endPage = currentPage;
-                    }
-
-                    // Left ellipsis
-                    if (startPage > 2) {
-                      pageButtons.push(
-                        <span key="el" className="px-0.5 text-xs text-gray-400 dark:text-[#8C8CA1]">…</span>
-                      );
-                    }
-
-                    // Middle pages
-                    for (let i = startPage; i <= endPage; i++) {
-                      if (i > 1 && i < totalPages) {
+                    if (totalPages <= maxPagesToShow) {
+                      // Show all pages if total fits
+                      for (let i = 1; i <= totalPages; i++) {
                         pageButtons.push(
-                          <button key={i} onClick={() => handlePageChangeWithScroll(i)} className={btnClass(currentPage === i)}>{i}</button>
+                          <button
+                            key={i}
+                            onClick={() => handlePageChangeWithScroll(i)}
+                            className={btnClass(currentPage === i)}
+                          >
+                            {i}
+                          </button>
                         );
                       }
-                    }
-
-                    // Right ellipsis
-                    if (endPage < totalPages - 1) {
+                    } else {
+                      // Smart pagination: first page
                       pageButtons.push(
-                        <span key="er" className="px-0.5 text-xs text-gray-400 dark:text-[#8C8CA1]">…</span>
+                        <button key={1} onClick={() => handlePageChangeWithScroll(1)} className={btnClass(currentPage === 1)}>1</button>
+                      );
+
+                      // Calculate range around current page
+                      let startPage = Math.max(2, currentPage - sidePages);
+                      let endPage = Math.min(totalPages - 1, currentPage + sidePages);
+
+                      // Clamp near start
+                      if (!isSmallScreen && currentPage <= 4) {
+                        startPage = 2;
+                        endPage = Math.min(6, totalPages - 1);
+                      } else if (!isSmallScreen && currentPage >= totalPages - 3) {
+                        startPage = Math.max(2, totalPages - 5);
+                        endPage = totalPages - 1;
+                      }
+
+                      // On small screens only show current page in the middle (between first and last)
+                      if (isSmallScreen) {
+                        startPage = currentPage === 1 ? totalPages : currentPage;
+                        endPage = currentPage === totalPages ? 1 : currentPage;
+                        // Just show current if it's not 1 or last
+                        startPage = currentPage;
+                        endPage = currentPage;
+                      }
+
+                      // Left ellipsis
+                      if (startPage > 2) {
+                        pageButtons.push(
+                          <span key="el" className="px-0.5 text-xs text-gray-400 dark:text-[#8C8CA1]">…</span>
+                        );
+                      }
+
+                      // Middle pages
+                      for (let i = startPage; i <= endPage; i++) {
+                        if (i > 1 && i < totalPages) {
+                          pageButtons.push(
+                            <button key={i} onClick={() => handlePageChangeWithScroll(i)} className={btnClass(currentPage === i)}>{i}</button>
+                          );
+                        }
+                      }
+
+                      // Right ellipsis
+                      if (endPage < totalPages - 1) {
+                        pageButtons.push(
+                          <span key="er" className="px-0.5 text-xs text-gray-400 dark:text-[#8C8CA1]">…</span>
+                        );
+                      }
+
+                      // Last page
+                      pageButtons.push(
+                        <button key={totalPages} onClick={() => handlePageChangeWithScroll(totalPages)} className={btnClass(currentPage === totalPages)}>{totalPages}</button>
                       );
                     }
 
-                    // Last page
-                    pageButtons.push(
-                      <button key={totalPages} onClick={() => handlePageChangeWithScroll(totalPages)} className={btnClass(currentPage === totalPages)}>{totalPages}</button>
-                    );
-                  }
-
-                  return pageButtons;
-                })()}
-                <button
-                  onClick={() => {
-                    logger.debug('p2p', "Next page clicked, current:", currentPage);
-                    if (onPageChange) {
-                      handlePageChangeWithScroll(currentPage + 1);
-                    } else {
-                      logger.debug('p2p', "onPageChange is not provided");
-                    }
-                  }}
-                  disabled={currentPage === totalPages}
-                  className={`min-w-[36px] px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium border flex items-center justify-center ${
-                    currentPage === totalPages
-                      ? "opacity-50 cursor-not-allowed border-gray-200 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] text-gray-400 dark:text-[#8C8CA1]"
-                      : "border-[#1D8751] bg-white dark:bg-[var(--card-color)] text-[#1D8751] hover:bg-[#1D8751] hover:text-white transition-colors"
-                  }`}
-                >
-                  <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M9 18l6-6-6-6" />
-                  </svg>
-                </button>
-              </div>
-            )}
-          </div>
+                    return pageButtons;
+                  })()}
+                  <button
+                    onClick={() => {
+                      logger.debug('p2p', "Next page clicked, current:", currentPage);
+                      if (onPageChange) {
+                        handlePageChangeWithScroll(currentPage + 1);
+                      } else {
+                        logger.debug('p2p', "onPageChange is not provided");
+                      }
+                    }}
+                    disabled={currentPage === totalPages}
+                    className={`min-w-[36px] px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium border flex items-center justify-center ${currentPage === totalPages
+                        ? "opacity-50 cursor-not-allowed border-gray-200 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] text-gray-400 dark:text-[#8C8CA1]"
+                        : "border-[#1D8751] bg-white dark:bg-[var(--card-color)] text-[#1D8751] hover:bg-[#1D8751] hover:text-white transition-colors"
+                      }`}
+                  >
+                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M9 18l6-6-6-6" />
+                    </svg>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -1202,7 +1218,7 @@ export const Table: React.FC<TableProps> = ({
             {/* Omaya.io Logo at the top */}
             <div className="flex items-center justify-center mb-3 sm:mb-4">
               <img
-                src="https://res.cloudinary.com/pitz/image/upload/v1764572384/bad9edd9da5201cb8f8f9cea35bf46f4fb541bd6_lplbyc.png"
+                src="/assets/bad9edd9da5201cb8f8f9cea35bf46f4fb541bd6_lplbyc.png"
                 alt="OMAYA"
                 className="h-6 sm:h-8 w-auto object-contain"
               />
@@ -1214,8 +1230,8 @@ export const Table: React.FC<TableProps> = ({
                 <img
                   src={
                     selectedTransaction.asset === "Tron"
-                      ? "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
-                      : "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                      ? "/images/tether.svg"
+                      : "/images/tether.svg"
                   }
                   alt={selectedTransaction.asset}
                   className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex-shrink-0"
@@ -1329,7 +1345,7 @@ export const Table: React.FC<TableProps> = ({
                 <span className="text-[#6b7280] dark:text-[#788099] flex items-center gap-1 text-xs sm:text-sm">
                   <span className="truncate">Salaam Bank</span>{" "}
                   <img
-                    src="https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
+                    src="/assets/image_7_jijlik.png"
                     alt=""
                     className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0"
                   />
@@ -1412,5 +1428,7 @@ export const Table: React.FC<TableProps> = ({
       )}
     </>
   );
-};
+});
+
+Table.displayName = "Table";
 

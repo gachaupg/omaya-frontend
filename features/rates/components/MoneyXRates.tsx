@@ -186,23 +186,19 @@ const MoneyXRates = () => {
   const commissionFetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const paymentDetailsRef = useRef<HTMLDivElement>(null);
 
-  // Amount for commission API - use pay when from pay, else approx send from receive (getAmount/0.98)
-  const commissionFetchAmount = isCalculatingFromPay ? payAmount : (getAmount > 0 ? getAmount / 0.98 : 0);
-
-  // Fetch MoneyX commission from API (API returns fixed amount e.g. {"commission":"120.00"})
+  // Fetch commission percentage from range-commissions API (no auth, returns percentage e.g. 3%)
   useEffect(() => {
-    const amount = commissionFetchAmount || payAmount || getAmount;
+    const amount = isCalculatingFromPay ? payAmount : getAmount;
     if (!amount || amount <= 0) {
       setApiCommission(null);
       return;
     }
     if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
     commissionFetchTimeoutRef.current = setTimeout(() => {
-      dispatch(fetchMoneyXCommission(amount))
+      dispatch(fetchMoneyXCommission({ amount, commissionType: "deposit" }))
         .unwrap()
-        .then((commissionStr) => {
-          const val = parseFloat(commissionStr) || 0;
-          setApiCommission(val);
+        .then((result) => {
+          setApiCommission(result.commission);
         })
         .catch(() => setApiCommission(null));
     }, 150);
@@ -211,15 +207,16 @@ const MoneyXRates = () => {
     };
   }, [payAmount, getAmount, isCalculatingFromPay, dispatch]);
 
-  // Recalculate the other field when apiCommission updates (commission = fixed amount: receive = send - commission, send = receive + commission)
+  // Recalculate the other field when apiCommission updates (commission is a percentage: receive = send - send*rate/100)
   useEffect(() => {
-    const commissionAmount = apiCommission ?? 0;
+    const rate = apiCommission ?? 0;
     if (isCalculatingFromPay && payAmount > 0) {
+      const commissionAmount = (payAmount * rate) / 100;
       const calculatedGetAmount = Math.max(0, payAmount - commissionAmount);
       setGetAmount(calculatedGetAmount);
       setGetAmountInput(calculatedGetAmount.toFixed(2));
     } else if (!isCalculatingFromPay && getAmount > 0) {
-      const calculatedPayAmount = getAmount + commissionAmount;
+      const calculatedPayAmount = rate >= 100 ? getAmount : getAmount / (1 - rate / 100);
       setPayAmount(calculatedPayAmount);
       setPayAmountInput(calculatedPayAmount.toFixed(2));
     }
@@ -371,7 +368,7 @@ const MoneyXRates = () => {
     getProviderName,
   ]);
 
-  // Calculate amounts (commission = fixed amount: receive = send - commission, send = receive + commission)
+  // Calculate amounts using commission percentage (receive = send - send*rate/100)
   const handleAmountChange = (value: string, isFromPay: boolean) => {
     if (value === "" || /^\d*\.?\d*$/.test(value)) {
       if (value.includes(".")) {
@@ -382,12 +379,13 @@ const MoneyXRates = () => {
       }
 
       const newAmount = parseFloat(value) || 0;
-      const commissionAmount = apiCommission ?? 0;
+      const rate = apiCommission ?? 0;
 
       if (isFromPay) {
         setPayAmountInput(value);
         setPayAmount(newAmount);
         setIsCalculatingFromPay(true);
+        const commissionAmount = (newAmount * rate) / 100;
         const calculatedGetAmount = Math.max(0, newAmount - commissionAmount);
         setGetAmount(calculatedGetAmount);
         setGetAmountInput(calculatedGetAmount.toFixed(2));
@@ -395,19 +393,20 @@ const MoneyXRates = () => {
         setGetAmountInput(value);
         setGetAmount(newAmount);
         setIsCalculatingFromPay(false);
-        const calculatedPayAmount = newAmount + commissionAmount;
+        const calculatedPayAmount = rate >= 100 ? newAmount : newAmount / (1 - rate / 100);
         setPayAmount(calculatedPayAmount);
         setPayAmountInput(calculatedPayAmount.toFixed(2));
       }
     }
   };
 
-  // Commission from API = fixed amount (You Receive = You Send - commission)
+  // Commission from API = percentage (You Receive = You Send - You Send * rate / 100)
   const amountNum = parseFloat(payAmountInput) || 0;
-  const commissionAmount = apiCommission ?? 0;
+  const commissionRate = apiCommission ?? 0;
+  const commissionAmount = (amountNum * commissionRate) / 100;
   const networkFee = 0;
   const totalFees = commissionAmount;
-  const amountIncludingFees = amountNum; // Amount to transfer (You Send); commission is deducted to get You Receive
+  const amountIncludingFees = amountNum;
 
   // Filter payment methods based on search
   const filteredFromMethods = finalPaymentMethods.filter((method: any) => {
@@ -863,8 +862,8 @@ const MoneyXRates = () => {
               <img
                 src={
                   isDark
-                    ? "https://res.cloudinary.com/pitz/image/upload/v1755500509/Frame_36261_ledmyw.png"
-                    : "https://res.cloudinary.com/pitz/image/upload/v1756579504/Frame_36261_1_d9cnq1.png"
+                    ? "/assets/Frame_36261_ledmyw.png"
+                    : "/assets/Frame_36261_1_d9cnq1.png"
                 }
                 alt="swap"
                 className="w-11 h-11"

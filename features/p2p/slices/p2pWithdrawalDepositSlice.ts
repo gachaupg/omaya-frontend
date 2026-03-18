@@ -69,8 +69,10 @@ const initialState: P2PWithdrawalDepositState = {
 
 export const fetchMyTransactions = createAsyncThunk(
   "p2pWithdrawalDeposit/fetchMyTransactions",
-  async (page: number = 1) => {
-    const response = await getMyTransactions(page);
+  async (payload: { page: number; transactionType?: "deposit" | "withdrawal" } | number) => {
+    const page = typeof payload === "number" ? payload : payload.page;
+    const transactionType = typeof payload === "object" ? payload.transactionType : undefined;
+    const response = await getMyTransactions(page, transactionType);
     return response;
   }
 );

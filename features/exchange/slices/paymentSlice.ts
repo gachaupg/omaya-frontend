@@ -107,30 +107,49 @@ export const fetchPaymentProviders = createAsyncThunk<PaymentProvider[], string>
   }
 );
 
-// Fetch user payment details with caching
+// In-flight promise so multiple concurrent dispatches result in a single request
+let userPaymentDetailsInFlight: Promise<UserPaymentDetail[]> | null = null;
+
+// Fetch user payment details with caching and in-flight deduplication (fetch once per burst)
 export const fetchUserPaymentDetails = createAsyncThunk<UserPaymentDetail[], boolean | undefined>(
   'payment/fetchUserPaymentDetails',
   async (forceRefresh = false, { rejectWithValue }) => {
     try {
-      // If forcing refresh, delete cache first
       if (forceRefresh) {
         await sliceCache.delete('payment', 'fetchUserPaymentDetails');
+        userPaymentDetailsInFlight = null;
       }
 
-      const data = await sliceCache.getOrSet(
+      const cached = await sliceCache.get<UserPaymentDetail[]>(
         'payment',
         'fetchUserPaymentDetails',
-        async () => {
-          logger.debug('exchange', 'Fetching user payment details from API');
-          const response = await get<UserPaymentDetail[]>(EXCHANGE_ENDPOINTS.USER_PAYMENT_DETAILS);
-          return response.data;
-        },
-        undefined, // no params
-        5 * 60 * 1000 // 5 minutes cache - user payment details change more frequently
+        undefined
       );
-      
-      return data;
+      if (cached) return cached;
+
+      if (!userPaymentDetailsInFlight) {
+        userPaymentDetailsInFlight = (async () => {
+          try {
+            logger.debug('exchange', 'Fetching user payment details from API');
+            const response = await get<UserPaymentDetail[]>(EXCHANGE_ENDPOINTS.USER_PAYMENT_DETAILS);
+            const data = response.data;
+            await sliceCache.set(
+              'payment',
+              'fetchUserPaymentDetails',
+              data,
+              undefined,
+              5 * 60 * 1000
+            );
+            return data;
+          } finally {
+            userPaymentDetailsInFlight = null;
+          }
+        })();
+      }
+
+      return await userPaymentDetailsInFlight;
     } catch (error: any) {
+      userPaymentDetailsInFlight = null;
       return rejectWithValue(error.message || 'Failed to fetch user payment details');
     }
   }

@@ -5,8 +5,11 @@ import { useDispatch } from "react-redux";
 import type { AppDispatch } from "@/store";
 import type { P2PResponse } from "@/features/p2p/types";
 import type { PayloadAction } from "@reduxjs/toolkit";
+import toast from "react-hot-toast";
 
 import { logger } from '@/lib/utils/logger';
+
+const MIN_ORDER_AMOUNT = 10;
 
 interface EditAdModalProps {
   isOpen: boolean;
@@ -49,12 +52,28 @@ const EditAdModal: React.FC<EditAdModalProps> = ({
     }
   }, [initialData]);
 
+  const minOrder = parseFloat(formData.min_order_amount) || 0;
+  const maxOrder = parseFloat(formData.max_order_amount) || 0;
+  const minOrderError =
+    formData.min_order_amount !== "" && minOrder < MIN_ORDER_AMOUNT
+      ? `Minimum Order cannot be less than ${MIN_ORDER_AMOUNT}`
+      : null;
+  const maxOrderError =
+    formData.max_order_amount !== ""
+      ? maxOrder < MIN_ORDER_AMOUNT
+        ? `Maximum Order cannot be less than ${MIN_ORDER_AMOUNT}`
+        : maxOrder < minOrder
+        ? "Maximum Order cannot be less than Minimum Order"
+        : null
+      : null;
+  const isFormValid = !minOrderError && !maxOrderError;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isFormValid) return;
+
     setIsLoading(true);
     try {
-   
-
       // Ensure all numeric values are properly formatted and payment details are valid
       const submitData = {
         ...formData,
@@ -147,6 +166,8 @@ const EditAdModal: React.FC<EditAdModalProps> = ({
                     <input
                       type="number"
                       step="0.00000001"
+                      min={MIN_ORDER_AMOUNT}
+                      placeholder={`Min ${MIN_ORDER_AMOUNT}`}
                       value={formData.min_order_amount}
                       onChange={(e) =>
                         setFormData({
@@ -154,9 +175,16 @@ const EditAdModal: React.FC<EditAdModalProps> = ({
                           min_order_amount: e.target.value,
                         })
                       }
-                      className="w-full px-3 py-2 dark:bg-[#35353E] bg-gray-100 rounded-lg dark:text-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1D8751] text-sm"
+                      className={`w-full px-3 py-2 dark:bg-[#35353E] bg-gray-100 rounded-lg dark:text-white text-gray-900 focus:outline-none focus:ring-2 text-sm ${
+                        minOrderError
+                          ? "focus:ring-red-500 ring-2 ring-red-500 dark:ring-red-500"
+                          : "focus:ring-[#1D8751]"
+                      }`}
                       required
                     />
+                    {minOrderError && (
+                      <p className="mt-1 text-xs text-red-500">{minOrderError}</p>
+                    )}
                   </div>
 
                   <div>
@@ -166,6 +194,8 @@ const EditAdModal: React.FC<EditAdModalProps> = ({
                     <input
                       type="number"
                       step="0.00000001"
+                      min={MIN_ORDER_AMOUNT}
+                      placeholder={`Min ${MIN_ORDER_AMOUNT}`}
                       value={formData.max_order_amount}
                       onChange={(e) =>
                         setFormData({
@@ -173,9 +203,16 @@ const EditAdModal: React.FC<EditAdModalProps> = ({
                           max_order_amount: e.target.value,
                         })
                       }
-                      className="w-full px-3 py-2 dark:bg-[#35353E] bg-gray-100 rounded-lg dark:text-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1D8751] text-sm"
+                      className={`w-full px-3 py-2 dark:bg-[#35353E] bg-gray-100 rounded-lg dark:text-white text-gray-900 focus:outline-none focus:ring-2 text-sm ${
+                        maxOrderError
+                          ? "focus:ring-red-500 ring-2 ring-red-500 dark:ring-red-500"
+                          : "focus:ring-[#1D8751]"
+                      }`}
                       required
                     />
+                    {maxOrderError && (
+                      <p className="mt-1 text-xs text-red-500">{maxOrderError}</p>
+                    )}
                   </div>
                 </div>
 
@@ -250,7 +287,7 @@ const EditAdModal: React.FC<EditAdModalProps> = ({
                 <button
                   type="submit"
                   className="px-4 py-2 text-sm font-medium bg-[#1D8751] text-white rounded-lg hover:bg-[#166c41] transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled={isLoading}
+                  disabled={isLoading || !isFormValid}
                 >
                   {isLoading ? (
                     <>

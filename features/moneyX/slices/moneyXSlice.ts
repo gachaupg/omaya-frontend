@@ -3,7 +3,9 @@
  */
 import { createSlice, PayloadAction, createAsyncThunk } from "@reduxjs/toolkit";
 import { API_CONFIG } from "@/lib/appConfig";
+import { API_BASE_URL } from "@/config/api";
 import { post, patch, get, AxiosError } from "@/lib/apiClient";
+import axios from "axios";
 import { logger } from '@/lib/utils/logger';
 
 import {
@@ -53,24 +55,40 @@ const handleApiError = (error: unknown): string => {
   return "An unexpected error occurred";
 };
 
-// Commission API response
-export interface MoneyXCommissionResponse {
+// Range commission API response (no auth required)
+export interface RangeCommissionResult {
   commission: string;
+  is_percentage: boolean;
+  range_min: string;
+  range_max: string;
 }
 
+export interface RangeCommissionResponse {
+  count: number;
+  results: RangeCommissionResult[];
+}
+
+export type MoneyXCommissionType = "deposit" | "withdrawal";
+
 export const fetchMoneyXCommission = createAsyncThunk<
-  string,
-  number
+  { commission: number; isPercentage: boolean },
+  { amount: number; commissionType?: MoneyXCommissionType }
 >(
   "moneyX/fetchCommission",
-  async (amount, { rejectWithValue }) => {
+  async ({ amount, commissionType = "deposit" }, { rejectWithValue }) => {
     try {
-      const response = await get<MoneyXCommissionResponse>(
-        API_CONFIG.MONEYX.COMMISSION(amount)
-      );
-      return response.data?.commission ?? "0";
+      const url = `${API_BASE_URL}${API_CONFIG.MONEYX.RANGE_COMMISSION(amount, commissionType)}`;
+      const response = await axios.get<RangeCommissionResponse>(url);
+      const result = response.data?.results?.[0];
+      if (result) {
+        return {
+          commission: parseFloat(result.commission) || 0,
+          isPercentage: result.is_percentage ?? true,
+        };
+      }
+      return { commission: 0, isPercentage: true };
     } catch (error) {
-      logger.error('moneyX', "Failed to fetch commission:", error);
+      logger.error('moneyX', "Failed to fetch range commission:", error);
       return rejectWithValue(handleApiError(error));
     }
   }

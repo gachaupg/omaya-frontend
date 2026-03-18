@@ -10,13 +10,14 @@ import TwoFAModal from "../features/auth/components/2fa";
 import GoogleOAuthDebug from "../features/auth/components/GoogleOAuthDebug";
 import { useTokenRefresh } from "@/hooks/useTokenRefresh";
 import { useUserPaymentDetailsWebSocket } from "@/features/p2p/hooks/useUserPaymentDetailsWebSocket";
-
+import { useP2PWithdrawalStatusWebSocket } from "@/features/p2p/hooks/useP2PWithdrawalStatusWebSocket";
 const GlobalSessionManager = () => {
   const dispatch = useDispatch();
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
   useTokenRefresh();
   useUserPaymentDetailsWebSocket({ enabled: isAuthenticated });
-  
+  useP2PWithdrawalStatusWebSocket();
+
   // Initialize authentication state from localStorage only once on mount
   // Use a ref to ensure we only run once, and skip if already authenticated
   const hasInitialized = React.useRef(false);
@@ -39,8 +40,6 @@ const GlobalSessionManager = () => {
     <>
       {/* 2FA Modal - available globally */}
       <TwoFAModal />
-      
-    
     </>
   );
 };

@@ -84,7 +84,7 @@ const BuyWidget = () => {
           <div className="mb-3 flex items-center relative">
             <span className="absolute left-4 top-1/2 -translate-y-1/2">
               <img
-                src="https://res.cloudinary.com/pitz/image/upload/v1749724441/wallet-01_hugnf4.png"
+                src="/assets/wallet-01_hugnf4.png"
                 alt="Wallet Icon"
                 className="w-5 h-5"
               />
@@ -107,7 +107,7 @@ const BuyWidget = () => {
             >
               Paste
               <img
-                src="https://res.cloudinary.com/pitz/image/upload/v1749724441/wallet-01_hugnf4.png"
+                src="/assets/wallet-01_hugnf4.png"
                 alt="Paste Icon"
                 className="w-4 h-4 ml-1"
               />

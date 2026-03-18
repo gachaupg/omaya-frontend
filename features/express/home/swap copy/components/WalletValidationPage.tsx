@@ -234,7 +234,7 @@ const WalletValidationPage: React.FC<WalletValidationPageProps> = ({
             {/* Wallet Icon */}
             <span className="absolute left-4 top-1/2 -translate-y-1/2">
               <img
-                src="https://res.cloudinary.com/pitz/image/upload/v1749724441/wallet-01_hugnf4.png"
+                src="/assets/wallet-01_hugnf4.png"
                 alt="Wallet Icon"
                 className="w-4 h-4"
               />
@@ -260,7 +260,7 @@ const WalletValidationPage: React.FC<WalletValidationPageProps> = ({
             >
               Paste
               <img
-                src="https://res.cloudinary.com/pitz/image/upload/v1749724441/wallet-01_hugnf4.png"
+                src="/assets/wallet-01_hugnf4.png"
                 alt="Paste Icon"
                 className="w-4 h-4 ml-1"
               />

@@ -8,7 +8,7 @@ import { fetchWallets } from "@/features/p2p/slices/walletSlice";
 import { selectP2PWalletAmounts, selectTransactionSummary } from "@/features/p2p/selectors";
 
 const USDT_ICON =
-  "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+  "/images/tether.svg";
 
 const Available = () => {
   const dispatch = useDispatch<AppDispatch>();

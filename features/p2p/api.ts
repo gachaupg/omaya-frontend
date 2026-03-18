@@ -2,6 +2,7 @@
  * api.ts – auto‑generated placeholder
  */
 import { del, get, patch, post, put } from "@/lib/apiClient";
+import { storage } from "@/features/auth/utils/storage";
 import { withRetry } from "@/lib/utils/retry";
 import {
   P2PDeposit,
@@ -90,6 +91,7 @@ export interface P2PDepositAddress {
   is_default: boolean;
   is_active: boolean;
   created_at: string;
+  address_type?: string;
 }
 
 export interface P2PDepositAddressesResponse {
@@ -563,9 +565,22 @@ export const getTradeMessages = async (tradeId: string) => {
   });
 };
 
+/** Get CSRF token from cookies */
+const getCsrfToken = (): string => {
+  if (typeof document === 'undefined') return '';
+  const match = document.cookie.match(/csrftoken=([^;]+)/);
+  return match ? match[1] : '';
+};
+
 export const postTradeMessage = async (
   tradeId: string,
-  payload: { message: string; uploaded_images: File[]; sender_name?: string }
+  payload: {
+    message: string;
+    uploaded_images: File[];
+    uploaded_audios?: File[];
+    duration?: number;
+    sender_name?: string;
+  }
 ) => {
   if (!tradeId || tradeId.trim() === '') {
     throw new Error('Trade ID is required');
@@ -573,25 +588,52 @@ export const postTradeMessage = async (
   return withRetry(async () => {
     const formData = new FormData();
     formData.append('message', payload.message);
-
-    // Append sender_name if provided
-    if (payload.sender_name) {
-      formData.append('sender_name', payload.sender_name);
+    if (payload.sender_name) formData.append('sender_name', payload.sender_name);
+    payload.uploaded_images.forEach((f) => formData.append('uploaded_images', f));
+    if (payload.uploaded_audios?.length) {
+      const f = payload.uploaded_audios[0];
+      if (f.size === 0) {
+        throw new Error('Recording failed – audio file is empty. Try recording again.');
+      }
+      formData.append('uploaded_audios', f, f.name);
+    }
+    if (payload.duration !== undefined && payload.duration >= 0) {
+      formData.append('duration', String(Math.round(payload.duration)));
     }
 
-    // Append each file to FormData
-    payload.uploaded_images.forEach((file, index) => {
-      formData.append(`uploaded_images`, file);
-    });
+    const hasFiles = (payload.uploaded_images?.length || 0) + (payload.uploaded_audios?.length || 0) > 0;
+
+    if (hasFiles) {
+      const token = storage.getProfile()?.tokens?.access;
+      const url = `${API_CONFIG.BASE_URL}${API_CONFIG.P2P.TRADE_MESSAGES(tradeId)}`;
+      return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', url);
+        xhr.setRequestHeader('Accept', 'application/json');
+        xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+        xhr.setRequestHeader('X-CSRFToken', getCsrfToken());
+        if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+        xhr.withCredentials = true;
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              resolve(JSON.parse(xhr.responseText || '{}'));
+            } catch {
+              resolve({});
+            }
+          } else {
+            reject(new Error(xhr.responseText || `HTTP ${xhr.status}`));
+          }
+        };
+        xhr.onerror = () => reject(new Error('Network error'));
+        // Do NOT set Content-Type – browser must set multipart/form-data; boundary=...
+        xhr.send(formData);
+      });
+    }
 
     const response = await post(
       `${API_CONFIG.P2P.TRADE_MESSAGES(tradeId)}`,
-      formData,
-      {
-        headers: {
-          "Content-Type": "multipart/form-data"
-        }
-      }
+      Object.fromEntries(formData.entries()) as Record<string, string>,
     );
     return response.data;
   });
@@ -673,12 +715,15 @@ export const getAllP2PTransactions = async (
 };
 
 export const getMyTransactions = async (
-  page: number = 1
+  page: number = 1,
+  transactionType?: "deposit" | "withdrawal"
 ): Promise<any> => {
   return withRetry(async () => {
-    const response = await get<any>(
-      `${API_CONFIG.P2P_WITHDRAWAL_DEPOSIT.MY_TRANSACTIONS}?page=${page}`
-    );
+    let url = `${API_CONFIG.P2P_WITHDRAWAL_DEPOSIT.MY_TRANSACTIONS}?page=${page}`;
+    if (transactionType) {
+      url += `&transaction_type=${transactionType}`;
+    }
+    const response = await get<any>(url);
     return response.data;
   });
 };
@@ -754,6 +799,28 @@ export const updateUserPaymentDetail = async (
       data
     );
     logger.debug('p2p', "API: Update response received:", response);
+    return response.data;
+  });
+};
+
+/** Send OTP for adding payment detail. OTP is sent to user's email. No body required. */
+export const sendPaymentDetailAddOtp = async (): Promise<{ message: string }> => {
+  return withRetry(async () => {
+    const response = await post<{ message: string }>(
+      API_CONFIG.PAYMENTS.SEND_ADD_OTP,
+      {}
+    );
+    return response.data;
+  });
+};
+
+/** Verify OTP for adding payment detail. Required before addUserPaymentDetail. */
+export const verifyPaymentDetailAddOtp = async (otp: string): Promise<{ message: string }> => {
+  return withRetry(async () => {
+    const response = await post<{ message: string }>(
+      API_CONFIG.PAYMENTS.VERIFY_ADD_OTP,
+      { otp }
+    );
     return response.data;
   });
 };
@@ -1012,4 +1079,22 @@ export const getGroupedMessages = async (
     });
     return response.data;
   });
+};
+
+/** P2P Trading Terms & Conditions – API (not localStorage) */
+export interface TermsAcceptedResponse {
+  terms_accepted: boolean;
+}
+
+export const getTermsAccepted = async (): Promise<TermsAcceptedResponse> => {
+  const response = await get<TermsAcceptedResponse>(API_CONFIG.P2P.TERMS_ACCEPTED);
+  return response.data;
+};
+
+export const acceptTerms = async (): Promise<TermsAcceptedResponse> => {
+  const response = await patch<TermsAcceptedResponse>(
+    API_CONFIG.P2P.TERMS_ACCEPTED,
+    { terms_accepted: true }
+  );
+  return response.data;
 };

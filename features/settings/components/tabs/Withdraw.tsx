@@ -16,6 +16,10 @@ import { useRouter } from "next/navigation";
 import Cash from "./cash";
 import { useDebounce } from "@/hooks/useDebounce";
 import { ReferralFeeCalculation } from "@/features/settings/types";
+import { useValidateAddress } from "@/hooks/useValidateAddress";
+import { useBookmarkedAddresses } from "@/features/express/hooks/useBookmarkedAddresses";
+import { BookmarkDropdown } from "@/features/express/components/forms/BookmarkDropdown";
+import { useTheme } from "@/context/theme";
 
 const Withdraw = () => {
   const [activeTab, setActiveTab] = useState<"usdt" | "cash">("usdt");
@@ -36,6 +40,7 @@ const Withdraw = () => {
   }>({});
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
+  const { isDark } = useTheme();
   const { loading, error, success, showOtpModal, withdrawalId, otpVerifying, otpError, fees, feesLoading, feesError } = useSelector(
     (state: any) => state.referralWallet
   );
@@ -47,6 +52,29 @@ const Withdraw = () => {
 
   // Debounce amount to avoid too many API calls
   const debouncedAmount = useDebounce(amount, 500);
+
+  // Address validation (USDT BSC/BEP20)
+  const {
+    result: addressValidationResult,
+    isValidating: isAddressValidating,
+    validate: validateAddress,
+    reset: resetAddressValidation,
+  } = useValidateAddress({ currency: "usdt", network: "bsc", debounceMs: 500 });
+
+  // Bookmarked addresses
+  const [bookmarkOpen, setBookmarkOpen] = useState(false);
+  const bookmarkAnchorRef = useRef<HTMLSpanElement>(null);
+  const { bookmarks, loading: bookmarksLoading, saving: bookmarkSaving, fetchBookmarks, saveBookmark } =
+    useBookmarkedAddresses("usdt", "bsc");
+
+  // Validate address when wallet address changes
+  useEffect(() => {
+    if (walletAddress.trim()) {
+      validateAddress(walletAddress.trim(), "usdt", "bsc");
+    } else {
+      resetAddressValidation();
+    }
+  }, [walletAddress, validateAddress, resetAddressValidation]);
 
 
   const handlePaste = async () => {
@@ -87,6 +115,24 @@ const Withdraw = () => {
     }
 
     setErrors(errorObj);
+
+    const firstErrorField = ["amount", "walletAddress", "confirmAddress"].find(
+      (field) => errorObj[field as keyof typeof errorObj]
+    );
+
+    if (firstErrorField) {
+      setTimeout(() => {
+        const element = document.getElementById(`${firstErrorField}-section`);
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth", block: "center" });
+          const input = element.querySelector("input");
+          if (input) {
+            input.focus({ preventScroll: true });
+          }
+        }
+      }, 100);
+    }
+
     return validationErrors.length === 0 && confirmAddress;
   };
 
@@ -402,7 +448,7 @@ const Withdraw = () => {
 
               <div className="mb-3 p-3 border border-[#E8EFF5] dark:border-[#35353F] bg-white dark:bg-[#1A1A1F] rounded-[18px] shadow-sm">
                 <div className="flex  flex-col md:flex-row gap-4 mb-2">
-                  <div className="flex-1">
+                  <div className="flex-1" id="amount-section">
                     <label className="block text-sm text-[#788099] dark:text-[#A3A3A3] mb-1">Amount</label>
                     <input
                       className={`w-full  bg-white dark:bg-[var(--bg-color)] border border-[#E8EFF5] dark:border-[#35353F] rounded-[18px] px-1 py-1 text-[#788099] dark:text-white text-lg focus:outline-none ${errors.amount ? "border-red-500" : ""
@@ -566,18 +612,67 @@ const Withdraw = () => {
                 <div className="text-md font-bold mb-2 text-[#788099] dark:text-[#788099]">
                   2- Your Wallet Address
                 </div>
-                <div className="mb-2 border border-[#E8EFF5] dark:border-[#35353F] bg-white dark:bg-[#1A1A1F] p-3 rounded-[18px] shadow-sm">
+                <div className="mb-2 border border-[#E8EFF5] dark:border-[#35353F] bg-white dark:bg-[#1A1A1F] p-3 rounded-[18px] shadow-sm" id="walletAddress-section">
                   <label className="block text-[#A3A3A3] mb-1">
                     Wallet/Account Address
                   </label>
                   <div className="flex gap-2 mb-2">
-                    <div className="flex min-w-0 items-center dark:bg-(--bg-color) border border-[#E8EFF5] dark:border-[#35353F] rounded-[18px] px-4 py-2 flex-1 overflow-hidden">
+                    <div className="flex min-w-0 items-center dark:bg-(--bg-color) border border-[#E8EFF5] dark:border-[#35353F] rounded-[18px] px-4 py-2 flex-1 overflow-hidden relative">
                       <span className="text-[#1D8751] mr-2">📋</span>
                       <input
-                        className="bg-transparent text:dark:text-white text-sm sm:text-base lg:text-lg focus:outline-none"
+                        className="bg-transparent text:dark:text-white text-sm sm:text-base lg:text-lg focus:outline-none flex-1 min-w-0"
                         placeholder="Paste your crypto address"
                         value={walletAddress}
                         onChange={(e) => setWalletAddress(e.target.value)}
+                        onPaste={(e) => {
+                          e.preventDefault();
+                          const text = e.clipboardData.getData("text");
+                          setWalletAddress(text);
+                        }}
+                      />
+                      <span
+                        ref={bookmarkAnchorRef}
+                        className="ml-2 text-[#1D8751] cursor-pointer shrink-0 hover:opacity-80 transition-opacity"
+                        onClick={async () => {
+                          if (bookmarkOpen) {
+                            setBookmarkOpen(false);
+                            return;
+                          }
+                          setBookmarkOpen(true);
+                          await fetchBookmarks();
+                        }}
+                        title="Load from bookmarks"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                        </svg>
+                      </span>
+                      <BookmarkDropdown
+                        isOpen={bookmarkOpen}
+                        onClose={() => setBookmarkOpen(false)}
+                        bookmarks={bookmarks}
+                        loading={bookmarksLoading}
+                        saving={bookmarkSaving}
+                        currentAddress={walletAddress}
+                        onSelect={(addr) => {
+                          setWalletAddress(addr);
+                          if (addr.trim()) validateAddress(addr.trim(), "usdt", "bsc");
+                          else resetAddressValidation();
+                        }}
+                        onSaveCurrent={async () => {
+                          try {
+                            if (!walletAddress.trim()) return;
+                            await saveBookmark({
+                              address: walletAddress.trim(),
+                              label: "My USDT wallet",
+                              network: "bsc",
+                              asset: "usdt",
+                            });
+                          } catch { /* handled by hook */ }
+                        }}
+                        anchorRef={bookmarkAnchorRef}
+                        isDark={isDark}
+                        saveDisabled={isAddressValidating || !(addressValidationResult?.isValid)}
                       />
                     </div>
                     <button
@@ -588,12 +683,20 @@ const Withdraw = () => {
                       Paste
                     </button>
                   </div>
+                  {isAddressValidating && (
+                    <p className="text-xs text-[#788099] dark:text-[#A3A3A3] mb-1">Validating address...</p>
+                  )}
+                  {!isAddressValidating && addressValidationResult && (
+                    <p className={`text-xs mb-1 ${addressValidationResult.isValid ? "text-[#1D8751]" : "text-red-500"}`}>
+                      {addressValidationResult.isValid ? "✓ Valid address" : (addressValidationResult.message || "Invalid address")}
+                    </p>
+                  )}
                   {errors.walletAddress && (
                     <div className="text-red-500 text-xs mb-2 ml-2">
                       {errors.walletAddress}
                     </div>
                   )}
-                  <div className="flex items-start text-[#1D8751] text-xs mb-2">
+                  <div className="flex items-start text-[#1D8751] text-xs mb-2" id="confirmAddress-section">
                     <input
                       type="checkbox"
                       className="mr-2 mt-1 accent-[#1D8751] shrink-0"

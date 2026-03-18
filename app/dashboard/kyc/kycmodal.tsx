@@ -121,15 +121,18 @@ const KYCVerificationModal: React.FC = () => {
           if (parsed.user_id === user.user_id && parsed.status === 'pending') {
             // Fetch current KYC status from API
             dispatch(checkKYCStatus()).then((result: any) => {
-              const isVerified = (result.payload as any)?.is_verified;
+              const payload = result.payload as any;
+              const isVerified = payload?.is_verified;
+              const apiStatus = payload?.status;
               if (isVerified) {
                 // Verified! Clear localStorage
                 localStorage.removeItem('kyc_verification_status');
                 dispatch(closeKYCModal());
-              } else {
-                // Still pending, show pending modal
+              } else if (apiStatus === 'waiting_approval') {
+                // Documents submitted, under review - show pending modal
                 setShowPendingModal(true);
               }
+              // If status is "pending" (user must complete/submit KYC), show main KYC form, NOT pending modal
             });
           }
         } catch (error) {

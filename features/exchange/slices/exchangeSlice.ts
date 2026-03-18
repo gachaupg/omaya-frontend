@@ -21,13 +21,14 @@ import {
   Transaction,
   TransactionsResponse,
   DepositTransactionPayload,
-  ManageFavoritePayload,
   ManageFavoriteResponse,
   AssetsResponse,
   Asset,
   ExchangeStatistics,
   TransactionSearchParams,
   FavoriteAsset,
+  AddFavoritePayload,
+  RemoveFavoritePayload,
 } from "../types";
 
 interface ExchangeState {
@@ -193,15 +194,15 @@ export const fetchAssets = createAsyncThunk<AssetsResponse, boolean | undefined>
         // Fetch fresh data
         const response = await cachedGet<AssetsResponse>(endpoint, {
           timeout: 30000,
-          ttl: 2 * 60 * 60 * 1000, // 2 hours cache for assets
+          ttl: 60 * 60 * 1000, // 1 hour cache for assets
           cache: true
         });
         logger.debug('exchange', "✅ Force refresh API response received:", response?.data?.assets?.length || 0, "assets");
         // Cache the fresh data
-        await sliceCache.set('exchange', 'fetchAssets', response.data, undefined, 2 * 60 * 60 * 1000);
+        await sliceCache.set('exchange', 'fetchAssets', response.data, undefined, 60 * 60 * 1000);
         data = response.data;
       } else {
-        // Use cached data if available, otherwise fetch fresh
+        // Use cached data if available; only refetch after 1 hour to avoid refetching at all cost
         data = await sliceCache.getOrSet(
           'exchange',
           'fetchAssets',
@@ -209,14 +210,14 @@ export const fetchAssets = createAsyncThunk<AssetsResponse, boolean | undefined>
             logger.debug('exchange', "🔄 Cache miss - fetching exchange assets from API...");
             const response = await cachedGet<AssetsResponse>(endpoint, {
               timeout: 30000,
-              ttl: 2 * 60 * 60 * 1000, // 2 hours cache for assets
+              ttl: 60 * 60 * 1000, // 1 hour cache for assets
               cache: true
             });
             logger.debug('exchange', "✅ API response received:", response?.data?.assets?.length || 0, "assets");
             return response.data;
           },
           undefined, // no params
-          2 * 60 * 60 * 1000 // 2 hours cache
+          60 * 60 * 1000 // 1 hour cache – refetch only after TTL
         );
       }
 
@@ -253,7 +254,7 @@ export const getDeposits = createAsyncThunk<TransactionsResponse, void>(
 export const createDeposit = createAsyncThunk<
   Transaction,
   {
-    payload: FormData;
+    payload: FormData | Record<string, any>;
     config?: AxiosRequestConfig;
   }
 >(
@@ -351,11 +352,11 @@ export const getFavoriteAssets = createAsyncThunk<FavoriteAsset[], void>(
 
 export const addFavoriteAsset = createAsyncThunk<
   ManageFavoriteResponse,
-  ManageFavoritePayload
+  AddFavoritePayload
 >("exchange/addFavoriteAsset", async (payload, { rejectWithValue }) => {
   try {
     const response = await post<ManageFavoriteResponse>(
-      EXCHANGE_ENDPOINTS.FAVORITES,
+      EXCHANGE_ENDPOINTS.ADDFAVORITE,
       payload
     );
     return response.data;
@@ -366,11 +367,11 @@ export const addFavoriteAsset = createAsyncThunk<
 
 export const removeFavoriteAsset = createAsyncThunk<
   ManageFavoriteResponse,
-  ManageFavoritePayload
+  RemoveFavoritePayload
 >("exchange/removeFavoriteAsset", async (payload, { rejectWithValue }) => {
   try {
     const response = await del<ManageFavoriteResponse>(
-      EXCHANGE_ENDPOINTS.FAVORITES,
+      EXCHANGE_ENDPOINTS.REMOVEFAVORITE,
       { data: payload }
     );
     return response.data;

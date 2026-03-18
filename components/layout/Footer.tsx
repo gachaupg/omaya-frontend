@@ -126,7 +126,7 @@ export default function Footer() {
       ref={footerRef}
       className={`relative z-40 pt-6 sm:pt-8 md:pt-10 pb-4 text-gray-700 dark:text-[#788099] transition-colors duration-300 w-full max-w-full overflow-x-hidden ${isVisible
         ? "bg-white dark:bg-[#1D1D23]"
-        : "bg-[var(--bg-color)]"
+        : "bg-(--bg-color)"
         }`}
     >
       <div className="w-full max-w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-20 pt-8 sm:pt-12 pb-6 overflow-x-hidden">
@@ -136,7 +136,7 @@ export default function Footer() {
           <div className="space-y-5 col-span-2 md:col-span-1 lg:col-span-1">
             <Link href="/">
               <Image
-                src="https://res.cloudinary.com/pitz/image/upload/v1764572384/bad9edd9da5201cb8f8f9cea35bf46f4fb541bd6_lplbyc.png"
+                src="/images/logo.webp"
                 alt="OMAYA Exchange"
                 width={150}
                 height={40}
@@ -335,6 +335,15 @@ export default function Footer() {
               </li>
               <li>
                 <Link
+                  href="/legal/data-use-policy"
+                  className={`hover:text-[#1D8751] text-xs md:text-sm transition-colors ${isActive("/legal/data-use-policy") ? "text-[#1D8751]" : "text-gray-700 dark:text-white/80"
+                    }`}
+                >
+                  Data Use Policy
+                </Link>
+              </li>
+              <li>
+                <Link
                   href="/legal/disclaimer-policy"
                   className={`hover:text-[#1D8751] text-xs md:text-sm transition-colors ${isActive("/legal/disclaimer-policy") ? "text-[#1D8751]" : "text-gray-700 dark:text-white/80"
                     }`}
@@ -444,7 +453,7 @@ export default function Footer() {
             <div className="flex md:hidden flex-col gap-2 items-start">
               <div className="flex items-center gap-2">
                 <Image
-                  src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746539125/Appstore_nqe65y.png"
+                  src="/assets/Appstore_nqe65y.png"
                   alt="App Store"
                   width={60}
                   height={60}
@@ -452,7 +461,7 @@ export default function Footer() {
                   style={{ width: "60px", height: "60px" }}
                 />
                 <Image
-                  src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746551283/qr-code-bc94057f452f4806af70fd34540f72ad_3_jk8lq1.png"
+                  src="/assets/qr-code-bc94057f452f4806af70fd34540f72ad_3_jk8lq1.png"
                   alt="App Store QR Code"
                   width={60}
                   height={60}
@@ -463,7 +472,7 @@ export default function Footer() {
               </div>
               <div className="flex items-center gap-2">
                 <Image
-                  src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746539313/googleplay_1_w8djf0.png"
+                  src="/images/playstore.webp"
                   alt="Google Play"
                   width={60}
                   height={60}
@@ -471,7 +480,7 @@ export default function Footer() {
                   style={{ width: "60px", height: "60px" }}
                 />
                 <Image
-                  src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746551283/qr-code-bc94057f452f4806af70fd34540f72ad_3_jk8lq1.png"
+                  src="/assets/qr-code-bc94057f452f4806af70fd34540f72ad_3_jk8lq1.png"
                   alt="Google Play QR Code"
                   width={60}
                   height={60}
@@ -488,7 +497,7 @@ export default function Footer() {
                   <tr>
                     <td style={{ padding: 0, width: '70px', height: '70px' }} className="lg:w-[84px] lg:h-[84px]">
                       <Image
-                        src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746539125/Appstore_nqe65y.png"
+                        src="/assets/Appstore_nqe65y.png"
                         alt="App Store QR Code"
                         width={84}
                         height={84}
@@ -499,7 +508,7 @@ export default function Footer() {
                     <td style={{ padding: 0, paddingLeft: '8px' }} className="lg:pl-3">
                       <div style={{ width: '70px', height: '70px' }} className="lg:w-[84px] lg:h-[84px]">
                         <Image
-                          src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746551283/qr-code-bc94057f452f4806af70fd34540f72ad_3_jk8lq1.png"
+                          src="/assets/qr-code-bc94057f452f4806af70fd34540f72ad_3_jk8lq1.png"
                           alt="App Store QR Code"
                           width={84}
                           height={84}
@@ -521,7 +530,7 @@ export default function Footer() {
                   <tr>
                     <td style={{ padding: 0, width: '70px', height: '70px' }} className="lg:w-[84px] lg:h-[84px]">
                       <Image
-                        src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746539313/googleplay_1_w8djf0.png"
+                        src="/images/playstore.webp"
                         alt="Google Play QR Code"
                         width={84}
                         height={84}
@@ -532,7 +541,7 @@ export default function Footer() {
                     <td style={{ padding: 0, paddingLeft: '8px' }} className="lg:pl-3">
                       <div style={{ width: '70px', height: '70px' }} className="lg:w-[84px] lg:h-[84px]">
                         <Image
-                          src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746551283/qr-code-bc94057f452f4806af70fd34540f72ad_3_jk8lq1.png"
+                          src="/assets/qr-code-bc94057f452f4806af70fd34540f72ad_3_jk8lq1.png"
                           alt="Google Play QR Code"
                           width={84}
                           height={84}
@@ -555,7 +564,7 @@ export default function Footer() {
             <span className="text-xs text-gray-900 dark:text-white">Powered By:</span>
             <span className="flex flex-col items-center">
               <img
-                src="https://res.cloudinary.com/dmoqammol/image/upload/v1763650633/Group_34253_ysx2s5.png"
+                src="/assets/Group_34253_ysx2s5.png"
                 alt="OMAYA Technologies"
                 className="h-5 sm:h-6 w-auto"
               />

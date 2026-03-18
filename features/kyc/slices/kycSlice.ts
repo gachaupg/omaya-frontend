@@ -5,6 +5,7 @@ import { createSlice, PayloadAction, createAsyncThunk } from "@reduxjs/toolkit";
 import { API_CONFIG } from "@/lib/appConfig";
 import { get, post, put, AxiosError } from "@/lib/apiClient";
 import { logger } from '@/lib/utils/logger';
+import { getKYCContextData } from "@/features/settings/utils/sessionUtils";
 
 import {
   KYCStatusResponse,
@@ -119,6 +120,30 @@ export const verifyKYCStatus = createAsyncThunk<KYCVerificationResponse, KYCVeri
       });
       if (imageTypes.length > 0) {
         imageTypes.forEach((type) => formData.append("image_types", type));
+      }
+
+      // Append device/context data for KYC
+      try {
+        const kycContext = await getKYCContextData();
+        formData.append("device_type", String(kycContext.device_type ?? "Unknown"));
+        formData.append("device_model", String(kycContext.device_model ?? "Unknown"));
+        formData.append("browser_type", String(kycContext.browser_type ?? "Unknown"));
+        formData.append("screen_resolution", String(kycContext.screen_resolution ?? "Unknown"));
+        formData.append("device_timezone", String(kycContext.device_timezone ?? "Unknown"));
+        formData.append("ip_address", String(kycContext.ip_address ?? "Unknown"));
+        formData.append("ip_country", String(kycContext.ip_country ?? "Unknown"));
+        formData.append("ip_region", String(kycContext.ip_region ?? "Unknown"));
+        formData.append("ip_city", String(kycContext.ip_city ?? "Unknown"));
+        formData.append("is_vpn", String(kycContext.is_vpn ?? false));
+        formData.append("isp", String(kycContext.isp ?? "Unknown"));
+        formData.append("device_fingerprint", String(kycContext.device_fingerprint ?? "unknown"));
+        formData.append("unique_device_id", String(kycContext.unique_device_id ?? "unknown"));
+        formData.append("login_patterns", JSON.stringify(kycContext.login_patterns ?? {}));
+        formData.append("session_duration", String(kycContext.session_duration ?? 0));
+        formData.append("failed_login_attempts", String(kycContext.failed_login_attempts ?? 0));
+        formData.append("suspicious_behavior_detected", String(kycContext.suspicious_behavior_detected ?? false));
+      } catch (err) {
+        logger.warn('kyc', "Failed to collect KYC context data:", err);
       }
 
       const response = await put<any>(API_CONFIG.AUTH.KYC_SUBMIT, formData, {

@@ -17,6 +17,7 @@ import {
   fetchSwapEstimate,
 } from "@/features/swap/slices/swapSlice";
 import { API_CONFIG } from "@/lib/appConfig";
+import { withTimeout } from "@/lib/utils/fetchWithTimeout";
 
 // import { showToast } from "../../../../lib/utils/toast";
 import { DepositResponse } from "@/features/exchange/types";
@@ -28,11 +29,14 @@ import { useTheme } from "@/context/theme";
 import QRCode from "qrcode";
 import { useBookmarkedAddresses } from "@/features/express/hooks/useBookmarkedAddresses";
 import { BookmarkDropdown } from "@/features/express/components/forms/BookmarkDropdown";
+import { useValidateAddress } from "@/hooks/useValidateAddress";
 import { showToast } from "@/lib/utils/toast";
-import { createExpressDeposit, fetchCommission, getCommissionApiAsset } from "../../api";
+import { createExpressDeposit, fetchCommission, getCommissionApiAsset, fetchDepositStatus } from "../../api";
 import { ExpressDepositResponse } from "../../types";
 
 import { logger } from '@/lib/utils/logger';
+import { appendTokenToWebSocketUrl } from "@/lib/utils/websocketUtils";
+import { cookieUtils } from "@/lib/utils/cookieUtils";
 
 // Add UserPaymentDetail interface
 interface UserPaymentDetail {
@@ -70,6 +74,7 @@ interface DepositFormProps {
   balance?: number;
   skipAmountValidation?: boolean; // New prop to skip amount validation when posting ads
   onCancel?: () => void;
+  onBeforeLegalNavigate?: () => void;
 }
 
 export default function DepositForm({
@@ -79,10 +84,12 @@ export default function DepositForm({
   balance,
   skipAmountValidation = false,
   onCancel,
+  onBeforeLegalNavigate,
 }: DepositFormProps) {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
-  const { user } = useSelector((state: any) => state.auth);
+  const { user, tokens } = useSelector((state: any) => state.auth);
+  const token = tokens?.access ?? cookieUtils.getCookie("access_token") ?? (typeof window !== "undefined" ? localStorage.getItem("access_token") : null);
   const { adminPaymentDetails, userPaymentDetails, loading, error } = useSelector(
     (state: any) => state.payment
   );
@@ -113,7 +120,7 @@ export default function DepositForm({
       range_commissions: [{ commission: "2" }],
       commission: "2",
       fee_rate: "2",
-      image_url: "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png",
+      image_url: "/images/tether.svg",
       asset_id: "usdt-bsc-initial"
     };
   });
@@ -124,7 +131,7 @@ export default function DepositForm({
       network_type: "BSC",
       network: "BSC",
       name: "Binance Smart Chain BEP20",
-      icon: "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png",
+      icon: "/images/tether.svg",
       isDefault: true
     };
   });
@@ -142,7 +149,7 @@ export default function DepositForm({
       network_type: "BSC",
       network: "BSC",
       name: "Binance Smart Chain BEP20",
-      icon: "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png",
+      icon: "/images/tether.svg",
       isDefault: true
     }
   ];
@@ -157,6 +164,21 @@ export default function DepositForm({
     fetchBookmarks,
     saveBookmark,
   } = useBookmarkedAddresses(currentCurrency, currentNetwork);
+
+  const {
+    result: addressValidationResult,
+    isValidating: isAddressValidating,
+    validate: validateAddress,
+    reset: resetAddressValidation,
+  } = useValidateAddress({ currency: currentCurrency, network: currentNetwork, debounceMs: 500 });
+
+  useEffect(() => {
+    if (walletAddress.trim() && currentCurrency) {
+      validateAddress(walletAddress.trim(), currentCurrency, currentNetwork);
+    } else {
+      resetAddressValidation();
+    }
+  }, [walletAddress, currentCurrency, currentNetwork, validateAddress, resetAddressValidation]);
 
   const [forceUpdate, setForceUpdate] = useState(0);
   const [selectedPaymentDetail, setSelectedPaymentDetail] = useState<any>(null);
@@ -179,6 +201,7 @@ export default function DepositForm({
   const [isCodeCopied, setIsCodeCopied] = useState(false);
   const [isDepositAddressCopied, setIsDepositAddressCopied] = useState(false);
   const paymentDetailsRef = useRef<HTMLDivElement>(null);
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Commission from API for USDT, USDC, FX Primus (null = not yet fetched, 0 = API returned 0)
   const [apiCommission, setApiCommission] = useState<number | null>(null);
@@ -208,12 +231,11 @@ export default function DepositForm({
       logger.debug('p2p', "Current exchange assets:", assets);
       logger.debug('p2p', "Current swap assets:", swapAssets);
 
-      // Force refresh both asset types
       logger.debug('p2p', "🔄 Force refreshing exchange assets...");
-      await dispatch(fetchAssets(true)).unwrap();
+      await withTimeout(dispatch(fetchAssets(true)).unwrap(), 15_000);
 
       logger.debug('p2p', "🔄 Force refreshing swap assets...");
-      await dispatch(fetchSupportedAssets(true)).unwrap();
+      await withTimeout(dispatch(fetchSupportedAssets(true)).unwrap(), 15_000);
 
       logger.debug('p2p', "✅ Assets force refreshed");
     } catch (error) {
@@ -349,8 +371,9 @@ export default function DepositForm({
         return null;
       }
 
+      finalUrl = appendTokenToWebSocketUrl(finalUrl, token);
       logger.debug('p2p', `Attempting WebSocket connection to: ${finalUrl}${isRetry ? ' (retry attempt)' : ''}`);
-      console.log("[P2P Deposit] WebSocket URL:", finalUrl);
+      console.log("[P2P Deposit] Connecting WebSocket URL:", finalUrl);
 
       // Pre-connection validation and logging
       logger.debug('p2p', "WebSocket connection attempt details:", {
@@ -564,8 +587,52 @@ export default function DepositForm({
       if (websocket) {
         websocket.close();
       }
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
     };
   }, [websocket]);
+
+  // Fallback polling for deposit status when user sent funds before WebSocket connected
+  useEffect(() => {
+    const txId = depositResponse?.transaction_id;
+    if (!isTransactionSubmitted || !txId) return;
+
+    // Clear any existing interval
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+    }
+
+    const poll = async () => {
+      try {
+        const result = await fetchDepositStatus(txId);
+        if (result?.status) {
+          setTransactionStatus(result.status);
+          if (result.status === "completed") {
+            showToast.success("Deposit completed successfully!");
+            if (pollingIntervalRef.current) {
+              clearInterval(pollingIntervalRef.current);
+              pollingIntervalRef.current = null;
+            }
+          }
+        }
+      } catch {
+        // Silent – WebSocket may still deliver updates
+      }
+    };
+
+    // Run immediately in case status was already updated before opening this page
+    poll();
+    const interval = setInterval(poll, 3000);
+    pollingIntervalRef.current = interval;
+
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+    };
+  }, [isTransactionSubmitted, depositResponse?.transaction_id]);
 
 
   // Handle simple deposit submission
@@ -667,42 +734,34 @@ export default function DepositForm({
   }, [dispatch]);
 
   useEffect(() => {
-    // First try to get from cache, then force refresh if no data
-    dispatch(fetchAssets(false))
-      .unwrap()
+    withTimeout(dispatch(fetchAssets(false)).unwrap(), 15_000)
       .then((data) => {
         logger.debug('p2p', "DEBUG: Exchange assets loaded:", {
           hasAssets: !!data?.assets,
           assetsLength: data?.assets?.length || 0,
           totalBalance: data?.total_wallet_balance
         });
-
-        // If no assets in cache, force refresh
         if (!data?.assets || data.assets.length === 0) {
           logger.debug('p2p', "🔄 No assets in cache, forcing refresh...");
-          return dispatch(fetchAssets(true)).unwrap();
+          return withTimeout(dispatch(fetchAssets(true)).unwrap(), 15_000);
         }
         return data;
       })
       .catch((error: unknown) => {
         console.error("Failed to fetch assets from cache, trying force refresh:", error);
-        // If cache fetch fails, try force refresh
-        return dispatch(fetchAssets(true))
-          .unwrap()
-          .catch((refreshError: unknown) => {
+        return withTimeout(dispatch(fetchAssets(true)).unwrap(), 15_000).catch(
+          (refreshError: unknown) => {
             showToast.error(`Failed to fetch assets: ${refreshError}`);
             throw refreshError;
-          });
+          }
+        );
       });
   }, [dispatch]);
 
-  // Fetch user payment details
   useEffect(() => {
-    dispatch(fetchUserPaymentDetails())
-      .unwrap()
-      .catch((error: unknown) => {
-        showToast.error(`Failed to fetch user payment details: ${error}`);
-      });
+    withTimeout(dispatch(fetchUserPaymentDetails()).unwrap(), 15_000).catch((error: unknown) => {
+      showToast.error(`Failed to fetch user payment details: ${error}`);
+    });
   }, [dispatch]);
 
   // Fetch deposit address when asset and network are available
@@ -715,11 +774,15 @@ export default function DepositForm({
         .unwrap()
         .then((addressData) => {
           // Auto-fill the wallet address input with the deposit address
-          if (addressData && addressData.data && addressData.data.address) {
-            setWalletAddress(addressData.data.address);
+          // API returns data as array: [{ address, chain, network_name, ... }]
+          const data = addressData?.data;
+          const addressItem = Array.isArray(data) ? data[0] : data;
+          const address = addressItem?.address;
+          if (address) {
+            setWalletAddress(address);
             setWalletError(null); // Clear any existing errors
             // Generate QR code for the address
-            generateQRCode(addressData.data.address);
+            generateQRCode(address);
           }
         })
         .catch((error: unknown) => {
@@ -728,29 +791,23 @@ export default function DepositForm({
     }
   }, [dispatch, selectedAsset, selectedNetwork]);
 
-  // Fetch swap assets
   useEffect(() => {
-    dispatch(fetchSupportedAssets(false))
-      .unwrap()
+    withTimeout(dispatch(fetchSupportedAssets(false)).unwrap(), 15_000)
       .then((data) => {
         logger.debug('p2p', "DEBUG: Swap assets loaded:", {
           hasAssets: !!data,
           assetsLength: data?.length || 0
         });
-
-        // If no assets in cache, force refresh
         if (!data || data.length === 0) {
           logger.debug('p2p', "🔄 No swap assets in cache, forcing refresh...");
-          return dispatch(fetchSupportedAssets(true)).unwrap();
+          return withTimeout(dispatch(fetchSupportedAssets(true)).unwrap(), 15_000);
         }
         return data;
       })
       .catch((error: unknown) => {
         console.error("Failed to fetch swap assets from cache, trying force refresh:", error);
-        // If cache fetch fails, try force refresh
-        return dispatch(fetchSupportedAssets(true))
-          .unwrap()
-          .catch((refreshError: unknown) => {
+        return withTimeout(dispatch(fetchSupportedAssets(true)).unwrap(), 15_000).catch(
+          (refreshError: unknown) => {
             console.error("Failed to fetch swap assets even with force refresh:", refreshError);
 
             // Only show error if it's a network issue, not cache issues
@@ -775,7 +832,7 @@ export default function DepositForm({
                 range_commissions: [{ commission: "2" }],
                 commission: "2",
                 fee_rate: "2",
-                image_url: "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png",
+                image_url: "/images/tether.svg",
                 asset_id: "usdt-tether-bsc"
               }
             ];
@@ -826,7 +883,7 @@ export default function DepositForm({
         range_commissions: [{ commission: "2" }],
         commission: "2",
         fee_rate: "2",
-        image_url: "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png",
+        image_url: "/images/tether.svg",
         asset_id: "usdt-tether-bsc"
       };
 
@@ -837,7 +894,7 @@ export default function DepositForm({
         network_type: "BSC",
         network: "BSC",
         name: "Binance Smart Chain BEP20",
-        icon: "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png",
+        icon: "/images/tether.svg",
         isDefault: true
       });
     }
@@ -1159,7 +1216,7 @@ export default function DepositForm({
         range_commissions: [{ commission: "2" }],
         commission: "2",
         fee_rate: "2",
-        image_url: "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png",
+        image_url: "/images/tether.svg",
         asset_id: "usdt-tether-bsc"
       }
     ];
@@ -2088,11 +2145,11 @@ export default function DepositForm({
                       {selectedAsset ? (
                         <>
                           <img
-                            src={selectedAsset.image_url || selectedAsset.asset_image || "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"}
+                            src={selectedAsset.image_url || selectedAsset.asset_image || "/images/tether.svg"}
                             alt={selectedAsset.name || selectedAsset.ticker || "Asset"}
                             className="w-6 h-6 rounded-full object-cover"
                             onError={(e) => {
-                              e.currentTarget.src = "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                              e.currentTarget.src = "/images/tether.svg";
                             }}
                           />
                           <span className="text-[#35353e] dark:text-[#788099]">
@@ -2147,7 +2204,7 @@ export default function DepositForm({
                                   network_type: isUsdt ? "BSC" : asset.network,
                                   network: isUsdt ? "BSC" : asset.network,
                                   name: isUsdt ? "Binance Smart Chain BEP20" : asset.network,
-                                  icon: isUsdt ? "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png" : "https://cryptologos.cc/logos/ethereum-eth-logo.png",
+                                  icon: isUsdt ? "/images/tether.svg" : "https://cryptologos.cc/logos/ethereum-eth-logo.png",
                                   isDefault: isUsdt
                                 });
                                 setIsAssetDropdownOpen(false);
@@ -2155,11 +2212,11 @@ export default function DepositForm({
                               }}
                             >
                               <img
-                                src={asset.image_url || asset.asset_image || "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"}
+                                src={asset.image_url || asset.asset_image || "/images/tether.svg"}
                                 alt={asset.name || asset.ticker || "Asset"}
                                 className="w-6 h-6 rounded-full object-cover"
                                 onError={(e) => {
-                                  e.currentTarget.src = "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                                  e.currentTarget.src = "/images/tether.svg";
                                 }}
                               />
                               <div className="flex-1">
@@ -2381,10 +2438,10 @@ export default function DepositForm({
               <h2 className="text-lg sm:text-xl font-bold mb-2 text-[#788099]">
                 <span className="text-[#7e7e8f]">3-</span> Wallet Address
               </h2>
-              
+
               {/* Dynamic Crypto Warning Banner */}
-             
-              
+
+
               <div className="flex flex-col dark:bg-[var(--card-color)] border-2 border-[#35353E] rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-5 shadow-lg w-full mx-auto text-[#35353e] dark:text-[#788099] mb-4 sm:mb-6">
                 {/* Wallet/Account Address Label */}
                 <label className="block text-sm sm:text-[17px] text-[#7e7e8f] mb-2 font-semibold">
@@ -2495,19 +2552,22 @@ export default function DepositForm({
                       else setWalletError(null);
                     }}
                     onSaveCurrent={async () => {
-                      if (!walletAddress.trim() || !currentCurrency || !currentNetwork) {
-                        showToast.error("Enter address and select asset/network first");
-                        return;
-                      }
-                      await saveBookmark({
-                        address: walletAddress.trim(),
-                        label: `My ${currentCurrency} wallet`,
-                        network: currentNetwork,
-                        asset: currentCurrency,
-                      });
+                      try {
+                        if (!walletAddress.trim() || !currentCurrency || !currentNetwork) {
+                          showToast.error("Enter address and select asset/network first");
+                          return;
+                        }
+                        await saveBookmark({
+                          address: walletAddress.trim(),
+                          label: `My ${currentCurrency} wallet`,
+                          network: currentNetwork,
+                          asset: currentCurrency,
+                        });
+                      } catch { /* handled by hook */ }
                     }}
                     anchorRef={bookmarkAnchorRef}
                     isDark={isDark}
+                    saveDisabled={isAddressValidating || !(addressValidationResult?.isValid)}
                   />
                   {/* Copy button */}
                   <button
@@ -2517,7 +2577,7 @@ export default function DepositForm({
                       setTimeout(() => setIsAddressCopied(false), 1500);
                     }}
                     className="flex items-center gap-1 dark:bg-[var(--card-color)] border border-[#1D8751] text-[#1D8751] rounded-full px-3 sm:px-4 py-2 sm:py-1 ml-1 sm:ml-2 font-semibold text-sm sm:text-base hover:bg-[#1D8751] hover:text-white transition-colors min-h-[44px] sm:min-h-0 touch-manipulation shrink-0 disabled:cursor-not-allowed disabled:opacity-70                    "
-                  disabled={isAddressCopied}
+                    disabled={isAddressCopied}
                   >
                     <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
                       <rect
@@ -2597,6 +2657,7 @@ export default function DepositForm({
                 {/* Terms and Conditions Summary - same layout as swap */}
                 <TermsAndConditionsSummary
                   asset={selectedAsset?.ticker || selectedAsset?.symbol || "USDT"}
+                  onBeforeLegalNavigate={onBeforeLegalNavigate}
                 />
 
 
@@ -2781,7 +2842,7 @@ export default function DepositForm({
         )}
 
         {/* Submit Button for First Card - only show when user has checked "I confirm I sent payment" */}
-        {!isFirstCardSubmitted  && (
+        {!isFirstCardSubmitted && (
           <div className="mx-auto w-full px-2 mt-4 sm:mt-6">
             <div className="flex flex-col sm:flex-row gap-3">
               {onCancel && (

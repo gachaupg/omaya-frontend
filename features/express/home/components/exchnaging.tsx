@@ -6,9 +6,10 @@ import {
   TransactionStatusMessage,
 } from "../../websockets";
 import { API_CONFIG } from "@/lib/appConfig";
+import { cookieUtils } from "@/lib/utils/cookieUtils";
 import { useTheme } from "@/context/theme";
 import CopyButton from "@/components/ui/CopyButton";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "@/store/rootReducer";
 import { logger } from '@/lib/utils/logger';
 
@@ -16,6 +17,7 @@ import {
   cancelDepositTransaction,
   cancelWithdrawalTransaction,
 } from "../../slices/transactionSlice";
+import FailureStatusModal from "../../components/FailureStatusModal";
 
 interface ExchangingProps {
   transactionData?: {
@@ -54,6 +56,7 @@ interface ExchangingProps {
       estimated_amount?: number;
       changenow_id?: string;
     };
+    receiveAmount?: number; // Net amount user will receive (form's "You Receive")
     createdAt?: number;
   };
   isHomePage?: boolean;
@@ -64,6 +67,8 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const { isDark } = useTheme();
+  const { tokens } = useSelector((state: any) => state.auth);
+  const token = tokens?.access ?? cookieUtils.getCookie("access_token") ?? (typeof window !== "undefined" ? localStorage.getItem("access_token") : null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [currentStatus, setCurrentStatus] = useState<string>("pending");
   const [persistedTransactionData, setPersistedTransactionData] =
@@ -71,7 +76,9 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
   const [wsError, setWsError] = useState<string | null>(null);
   const [connectionAttempts, setConnectionAttempts] = useState<number>(0);
 
-  // Timer state - 15 minutes in seconds (will be updated when transaction data is loaded)
+  // Timer state - 15 minutes, wall-clock based (immune to tab throttling)
+  const TIMER_DURATION_SEC = 15 * 60;
+  const expiryTimestampRef = React.useRef<number | null>(null);
   const [timeRemaining, setTimeRemaining] = useState<number>(15 * 60);
   const [timerActive, setTimerActive] = useState<boolean>(true);
 
@@ -81,6 +88,8 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
   const [snapshotWebsocketData, setSnapshotWebsocketData] = useState<any>(null);
   const [liveAmount, setLiveAmount] = useState<number | null>(null);
   const [liveCurrency, setLiveCurrency] = useState<string | null>(null);
+  const [liveNetAmount, setLiveNetAmount] = useState<number | null>(null);
+  const [liveNetCurrency, setLiveNetCurrency] = useState<string | null>(null);
   const [liveTransactionId, setLiveTransactionId] = useState<string | null>(
     null
   );
@@ -93,6 +102,11 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
     null
   );
   const [expandedTerms, setExpandedTerms] = useState(false);
+  const [failureModal, setFailureModal] = useState<{
+    isOpen: boolean;
+    status: string;
+    message?: string;
+  }>({ isOpen: false, status: "", message: undefined });
 
   // Fallback polling function
   const startFallbackPolling = () => {
@@ -134,29 +148,73 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
     };
   }, [pollingInterval]);
 
-  // Timer countdown effect
+  // Compute remaining time from wall-clock (immune to tab throttling)
+  const computeTimeRemaining = React.useCallback(() => {
+    const expiry = expiryTimestampRef.current;
+    if (!expiry) return TIMER_DURATION_SEC;
+    return Math.max(0, Math.ceil((expiry - Date.now()) / 1000));
+  }, []);
+
+  // Initialize expiry timestamp when we have transaction data
+  const effectiveDataForTimer = transactionData || persistedTransactionData;
+  useEffect(() => {
+    if (!effectiveDataForTimer?.transactionId || !timerActive || showSuccess) return;
+    const storageKey = "express_transaction_expiry";
+    const txId = effectiveDataForTimer.transactionId;
+    if (!expiryTimestampRef.current) {
+      try {
+        const stored = localStorage.getItem(storageKey);
+        if (stored) {
+          const { transactionId, expiry } = JSON.parse(stored);
+          if (transactionId === txId) {
+            expiryTimestampRef.current = expiry;
+            if (expiry <= Date.now()) {
+              setTimeRemaining(0);
+              setTimerActive(false);
+              return;
+            }
+            setTimeRemaining(computeTimeRemaining());
+            return;
+          }
+        }
+      } catch {}
+      const expiry = Date.now() + TIMER_DURATION_SEC * 1000;
+      expiryTimestampRef.current = expiry;
+      localStorage.setItem(storageKey, JSON.stringify({ transactionId: txId, expiry }));
+    }
+    setTimeRemaining(computeTimeRemaining());
+  }, [effectiveDataForTimer?.transactionId, timerActive, showSuccess, computeTimeRemaining]);
+
+  // Timer: wall-clock + Page Visibility for tab-inactive accuracy
   useEffect(() => {
     if (!timerActive || showSuccess) return;
+    const tick = () => {
+      const remaining = computeTimeRemaining();
+      setTimeRemaining(remaining);
+      if (remaining <= 0) setTimerActive(false);
+    };
+    const interval = setInterval(tick, 1000);
+    tick();
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") tick();
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, [timerActive, showSuccess, computeTimeRemaining]);
 
-    const interval = setInterval(() => {
-      setTimeRemaining((prev) => {
-        if (prev <= 1) {
-          setTimerActive(false);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [timerActive, showSuccess]);
-
-  // Auto-cancel when timer expires
+  // Auto-cancel when timer expires (guard to prevent double redirect on tab switch/reload)
+  const hasRedirectedOnExpiry = React.useRef(false);
+  const effectiveDataForExpiry = transactionData || persistedTransactionData;
   useEffect(() => {
-    if (timeRemaining === 0 && effectiveTransactionData?.transactionId) {
-      handleCancelTransaction();
-    }
-  }, [timeRemaining]);
+    if (timeRemaining !== 0 || hasRedirectedOnExpiry.current) return;
+    const txId = effectiveDataForExpiry?.transactionId;
+    if (!txId) return;
+    hasRedirectedOnExpiry.current = true;
+    handleCancelTransaction();
+  }, [timeRemaining, effectiveDataForExpiry?.transactionId]);
 
   // Format time as MM:SS
   const formatTime = (seconds: number) => {
@@ -182,6 +240,7 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
 
       // Clear localStorage
       localStorage.removeItem("express_transaction_data");
+      localStorage.removeItem("express_transaction_expiry");
 
       // Redirect to home page
       router.push("/");
@@ -196,6 +255,7 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
   useEffect(() => {
     if (currentStatus === "completed" || showSuccess) {
       setTimerActive(false);
+      localStorage.removeItem("express_transaction_expiry");
     }
   }, [currentStatus, showSuccess]);
 
@@ -292,6 +352,24 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
     }
   }, [showSuccess]);
 
+  // Net amount from props (form's "You Receive")
+  useEffect(() => {
+    const recv = (effectiveTransactionData as any)?.receiveAmount;
+    if (recv != null) {
+      const parsed = parseFloat(String(recv));
+      if (!isNaN(parsed)) {
+        setLiveNetAmount(parsed);
+        setLiveNetCurrency(
+          effectiveTransactionData?.type === "deposit"
+            ? (effectiveTransactionData?.asset?.ticker ||
+                effectiveTransactionData?.asset?.symbol ||
+                "USDT")
+            : "USD"
+        );
+      }
+    }
+  }, [effectiveTransactionData]);
+
   // Use WebSocket for both deposit and withdrawal transactions
   const shouldUseWebSocket =
     effectiveTransactionData?.transactionId &&
@@ -335,6 +413,7 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
       effectiveTransactionData?.type || "withdrawal",
       finalWebsocketUrl,
       {
+        token: token ?? undefined,
         onMessage: (data: TransactionStatusMessage) => {
           // Clear any WebSocket errors when we receive a message
           setWsError(null);
@@ -390,18 +469,27 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
               }
             }
 
-            // Handle amount_to (what user receives) - for display purposes
+            // Handle amount_to (what user receives) - for display
             if (wsData.amount_to !== null && wsData.amount_to !== undefined) {
-              // Store the received amount for success page
-              setLiveAmount(parseFloat(wsData.amount_to));
-              setLiveCurrency(
-                wsData.to_currency?.toUpperCase() ||
+              const amountTo = parseFloat(wsData.amount_to);
+              if (!isNaN(amountTo)) {
+                setLiveNetAmount(amountTo);
+                setLiveNetCurrency(
+                  wsData.to_currency?.toUpperCase() ||
+                  (effectiveTransactionData?.type === "deposit"
+                    ? effectiveTransactionData?.asset?.ticker || "USDT"
+                    : "USD")
+                );
+                setLiveAmount(amountTo);
+                setLiveCurrency(
+                  wsData.to_currency?.toUpperCase() ||
                   (effectiveTransactionData?.type === "deposit"
                     ? "USD"
                     : effectiveTransactionData?.type === "withdrawal"
                       ? "USD"
                       : "USDT")
-              );
+                );
+              }
             }
 
             // Handle expected amounts if actual amounts are not available
@@ -539,6 +627,8 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
             "processing",
             "completed",
             "failed",
+            "rejected",
+            "stopped",
             "awaiting_payment",
             "exchanging",
             "sending",
@@ -552,7 +642,16 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
             "waiting", // ChangeNow status
           ];
 
-          if (status && validStatuses.includes(status)) {
+          // Show failure modal for failed, rejected, or stopped statuses
+          if (status && ["failed", "rejected", "stopped"].includes(status)) {
+            setFailureModal({
+              isOpen: true,
+              status,
+              message: message || undefined,
+            });
+            setCurrentStatus(status);
+            setTimerActive(false);
+          } else if (status && validStatuses.includes(status)) {
             // Map backend statuses to UI statuses for better user experience
             let uiStatus = status;
 
@@ -734,6 +833,12 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
     isConnected,
   ]);
 
+  const handleFailureModalClose = () => {
+    setFailureModal({ isOpen: false, status: "", message: undefined });
+    localStorage.removeItem("express_transaction_data");
+    window.location.reload();
+  };
+
   // If showing success page, render it with real transaction data and snapshot websocket data
   if (showSuccess) {
     return (
@@ -836,40 +941,29 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
         } border-2 rounded-2xl ${isHomePage ? 'p-2 sm:p-3' : 'p-4'} shadow-lg w-full ${isHomePage ? '' : 'max-w-4xl'} ${isHomePage ? 'mb-2 sm:mb-3' : 'mb-4'} ${isHomePage ? 'min-h-[120px] sm:min-h-[140px]' : 'min-h-[180px]'} overflow-hidden`}
       >
         <div className={`flex-1 flex flex-col justify-between ${isHomePage ? 'py-1 sm:py-2 pr-0 sm:pr-2' : 'py-2 pr-2'} min-w-0`}>
-          <div>
-            <div
-              className={`${
-                isDark ? "text-[#7B7B7B]" : "text-gray-600"
-              } text-xs font-semibold mb-0.5`}
-            >
-              Amount:
-            </div>
-            <div
-              className={`${
-                isDark ? "text-white" : "text-gray-900"
-              } text-base font-semibold mb-1 flex items-center gap-2`}
-            >
-              <span>
-                {liveAmount !== null
-                  ? liveAmount
-                  : effectiveTransactionData?.amount || 0}{" "}
-                {effectiveTransactionData?.type === "deposit" ? (
-                  "USD"
-                ) : (
-                  <span className="uppercase">
-                    {liveCurrency ||
-                      effectiveTransactionData?.asset?.ticker ||
-                      effectiveTransactionData?.asset?.symbol ||
-                      effectiveTransactionData?.asset?.name ||
-                      transactionData?.details?.to_currency ||
-                      (effectiveTransactionData?.type === "deposit"
-                        ? "USD"
-                        : effectiveTransactionData?.type === "withdrawal"
-                          ? "USD"
-                          : "USD")}
-                  </span>
-                )}
-              </span>
+          <div className="space-y-3 sm:space-y-4">
+            {/* Amount row */}
+            <div className="flex flex-wrap gap-4 sm:gap-6">
+              <div className="min-w-0">
+                <p className={`text-xs font-medium mb-0.5 ${isDark ? "text-[#7B7B7B]" : "text-gray-500"}`}>Amount</p>
+                <p className={`text-base font-semibold truncate ${isDark ? "text-white" : "text-gray-900"}`}>
+                  {liveAmount !== null ? liveAmount : effectiveTransactionData?.amount || 0}{" "}
+                  {effectiveTransactionData?.type === "deposit"
+                    ? "USD"
+                    : (liveCurrency || effectiveTransactionData?.asset?.ticker || effectiveTransactionData?.asset?.symbol || effectiveTransactionData?.asset?.name || transactionData?.details?.to_currency || "USD").toUpperCase()}
+                </p>
+              </div>
+              {(effectiveTransactionData as any)?.receiveAmount != null && (
+                <div className="min-w-0">
+                  <p className={`text-xs font-medium mb-0.5 ${isDark ? "text-[#7B7B7B]" : "text-gray-500"}`}>Net amount you&apos;ll receive</p>
+                  <p className="text-base font-semibold text-[#1D8751]">
+                    {((effectiveTransactionData as any)?.receiveAmount ?? liveNetAmount ?? 0).toFixed(8).replace(/\.?0+$/, "")}{" "}
+                    <span className="uppercase">
+                      {liveNetCurrency || (effectiveTransactionData?.type === "deposit" ? effectiveTransactionData?.asset?.ticker || effectiveTransactionData?.asset?.symbol || "USDT" : "USD")}
+                    </span>
+                  </p>
+                </div>
+              )}
             </div>
             {/* {liveAmount !== null &&
               liveAmount !== effectiveTransactionData?.amount && (
@@ -932,162 +1026,77 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
             {/* Deposit-specific information display */}
             {effectiveTransactionData?.type === "deposit" && (
               <>
-                {/* Deposit Code - Most important for deposits */}
-
-                {/* Asset and Network Information */}
-                <div
-                  className={`${
-                    isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                  } text-xs font-semibold mb-0.5 mt-3`}
-                >
-                  Asset & Network:
-                </div>
-                <div className="flex items-center mb-2">
-                  <img
-                    src={
-                      effectiveTransactionData?.asset?.icon ||
-                      effectiveTransactionData?.asset?.icon_url ||
-                      effectiveTransactionData?.asset?.image_url ||
-                      effectiveTransactionData?.asset?.image ||
-                      "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
-                    }
-                    alt={
-                      effectiveTransactionData?.asset?.ticker ||
-                      effectiveTransactionData?.asset?.symbol ||
-                      effectiveTransactionData?.asset?.name ||
-                      "Asset"
-                    }
-                    className="w-6 h-6 rounded-full mr-2"
-                    onError={(e) => {
-                      e.currentTarget.src =
-                        "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
-                    }}
-                  />
-                  <span
-                    className={`${
-                      isDark ? "text-white" : "text-gray-900"
-                    } text-sm font-semibold`}
-                  >
-                    {effectiveTransactionData?.asset?.ticker ||
-                      effectiveTransactionData?.asset?.symbol ||
-                      effectiveTransactionData?.asset?.name ||
-                      (effectiveTransactionData?.type === "deposit"
-                        ? "USD"
-                        : effectiveTransactionData?.type === "withdrawal"
-                          ? "USD"
-                          : "USDT")}
-                  </span>
-                  <span className="ml-2 bg-[#1D8751] text-white text-xs font-semibold px-2 py-0.5 rounded-full">
-                    {effectiveTransactionData?.asset?.network ||
-                      effectiveTransactionData?.network?.network_type ||
-                      "BSC"}
-                  </span>
+                {/* Asset and Network */}
+                <div className="pt-2 border-t border-gray-200 dark:border-[#35353E]">
+                  <p className={`text-xs font-medium mb-1.5 ${isDark ? "text-[#7B7B7B]" : "text-gray-500"}`}>Asset & Network</p>
+                  <div className="flex items-center gap-2">
+                    <img
+                      src={
+                        effectiveTransactionData?.asset?.icon ||
+                        effectiveTransactionData?.asset?.icon_url ||
+                        effectiveTransactionData?.asset?.image_url ||
+                        effectiveTransactionData?.asset?.image ||
+                        "/assets/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                      }
+                      alt={effectiveTransactionData?.asset?.ticker || effectiveTransactionData?.asset?.symbol || effectiveTransactionData?.asset?.name || "Asset"}
+                      className="w-5 h-5 rounded-full shrink-0"
+                      onError={(e) => {
+                        e.currentTarget.src = "/assets/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                      }}
+                    />
+                    <span className={`text-sm font-medium ${isDark ? "text-white" : "text-gray-900"}`}>
+                      {effectiveTransactionData?.asset?.ticker || effectiveTransactionData?.asset?.symbol || effectiveTransactionData?.asset?.name || "USDT"}
+                    </span>
+                    <span className="bg-[#1D8751] text-white text-xs font-medium px-2 py-0.5 rounded-full">{effectiveTransactionData?.asset?.network || effectiveTransactionData?.network?.network_type || "BSC"}</span>
+                  </div>
                 </div>
 
-                {/* Wallet Address (if provided) */}
+                {/* Wallet Address */}
                 {effectiveTransactionData?.walletAddress && (
-                  <>
-                    <div
-                      className={`${
-                        isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                      } text-xs font-semibold mb-0.5 mt-3`}
-                    >
-                      Wallet Address:
-                    </div>
-                    <div className="flex items-center mb-2">
-                      <span
-                        className={`${
-                          isDark ? "text-white" : "text-gray-900"
-                        } text-sm font-mono bg-gray-500/10 px-2 py-1 rounded text-xs break-all`}
-                      >
+                  <div className="pt-2 border-t border-gray-200 dark:border-[#35353E]">
+                    <p className={`text-xs font-medium mb-1.5 ${isDark ? "text-[#7B7B7B]" : "text-gray-500"}`}>Wallet Address</p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <code className={`text-sm font-mono break-all px-2 py-1 rounded-lg ${isDark ? "bg-[#2A2A30] text-white" : "bg-gray-100 text-gray-900"}`}>
                         {effectiveTransactionData.walletAddress}
-                      </span>
-                      <CopyButton
-                        value={effectiveTransactionData.walletAddress}
-                        className="ml-2"
-                      />
+                      </code>
+                      <CopyButton value={effectiveTransactionData.walletAddress} className="shrink-0" />
                     </div>
-                  </>
+                  </div>
                 )}
 
-                {/* Status from WebSocket */}
+                {/* Bank Information */}
+                {effectiveTransactionData?.paymentDetail && effectiveTransactionData.paymentDetail.provider_name !== "direct" && (
+                  <div className="pt-2 border-t border-gray-200 dark:border-[#35353E]">
+                    <p className={`text-xs font-medium mb-1.5 ${isDark ? "text-[#7B7B7B]" : "text-gray-500"}`}>Bank</p>
+                    <div className="flex items-center gap-2 mb-2">
+                      <img
+                        src="/assets/image_7_jijlik.png"
+                        alt={effectiveTransactionData.paymentDetail.provider_name}
+                        className="w-5 h-5 rounded-full shrink-0"
+                      />
+                      <span className={`text-sm font-medium ${isDark ? "text-white" : "text-gray-900"}`}>{effectiveTransactionData.paymentDetail.provider_name}</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <p className={`text-xs font-medium mb-0.5 ${isDark ? "text-[#7B7B7B]" : "text-gray-500"}`}>Account Name</p>
+                        <p className={`text-sm font-medium ${isDark ? "text-white" : "text-gray-900"}`}>{effectiveTransactionData.paymentDetail.account_name}</p>
+                      </div>
+                      <div>
+                        <p className={`text-xs font-medium mb-0.5 ${isDark ? "text-[#7B7B7B]" : "text-gray-500"}`}>Account Number</p>
+                        <p className={`text-sm font-mono font-medium ${isDark ? "text-white" : "text-gray-900"}`}>{effectiveTransactionData.paymentDetail.account_number}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </>
             )}
-
-            {/* Bank Information (for non-direct deposits) */}
-            {effectiveTransactionData?.type === "deposit" &&
-              effectiveTransactionData?.paymentDetail &&
-              effectiveTransactionData.paymentDetail.provider_name !==
-                "direct" && (
-                <>
-                  <div
-                    className={`${
-                      isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                    } text-xs font-semibold mb-0.5 mt-3`}
-                  >
-                    Bank:
-                  </div>
-                  <div className="flex items-center mb-1">
-                    <img
-                      src="https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
-                      alt={effectiveTransactionData.paymentDetail.provider_name}
-                      className="w-6 h-6 rounded-full mr-2"
-                    />
-                    <span
-                      className={`${
-                        isDark ? "text-white" : "text-gray-900"
-                      } text-sm font-semibold`}
-                    >
-                      {effectiveTransactionData.paymentDetail.provider_name}
-                    </span>
-                  </div>
-                  <div
-                    className={`${
-                      isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                    } text-xs font-semibold mb-0.5`}
-                  >
-                    Account Name:
-                  </div>
-                  <div
-                    className={`${
-                      isDark ? "text-white" : "text-gray-900"
-                    } text-sm mb-1`}
-                  >
-                    {effectiveTransactionData.paymentDetail.account_name}
-                  </div>
-                  <div
-                    className={`${
-                      isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                    } text-xs font-semibold mb-0.5`}
-                  >
-                    Account Number:
-                  </div>
-                  <div
-                    className={`${
-                      isDark ? "text-white" : "text-gray-900"
-                    } text-sm font-mono`}
-                  >
-                    {effectiveTransactionData.paymentDetail.account_number}
-                  </div>
-                </>
-              )}
-            {effectiveTransactionData?.type === "withdrawal" && (
-              <>
-                <div
-                  className={`${
-                    isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                  } text-xs font-semibold mb-0.5`}
-                >
-                  Wallet Address:
-                </div>
-                <div
-                  className={`${
-                    isDark ? "text-white" : "text-gray-900"
-                  } text-sm font-mono break-all`}
-                >
+            {effectiveTransactionData?.type === "withdrawal" && effectiveTransactionData?.walletAddress && (
+              <div className="pt-2 border-t border-gray-200 dark:border-[#35353E]">
+                <p className={`text-xs font-medium mb-1.5 ${isDark ? "text-[#7B7B7B]" : "text-gray-500"}`}>Wallet Address</p>
+                <code className={`text-sm font-mono break-all block px-2 py-1 rounded-lg ${isDark ? "bg-[#2A2A30] text-white" : "bg-gray-100 text-gray-900"}`}>
                   {effectiveTransactionData.walletAddress}
-                </div>
-              </>
+                </code>
+              </div>
             )}
           </div>
         </div>
@@ -1639,7 +1648,7 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
             effectiveTransactionData?.paymentDetail ? (
               <>
                 <img
-                  src="https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
+                  src="/assets/image_7_jijlik.png"
                   alt={effectiveTransactionData.paymentDetail.provider_name}
                   className="w-8 h-8 rounded-full flex-shrink-0 mt-0.5"
                 />
@@ -1668,7 +1677,7 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                     effectiveTransactionData?.asset?.icon_url ||
                     effectiveTransactionData?.asset?.image_url ||
                     effectiveTransactionData?.asset?.image ||
-                    "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                    "/assets/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
                   }
                   alt={
                     effectiveTransactionData?.asset?.symbol ||
@@ -1681,7 +1690,7 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                   className="w-8 h-8 rounded-full flex-shrink-0 mt-0.5"
                   onError={(e) => {
                     e.currentTarget.src =
-                      "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                      "/assets/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
                   }}
                 />
                 <div className="min-w-0 flex-1 space-y-0.5">
@@ -1721,7 +1730,7 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                     effectiveTransactionData?.asset?.icon_url ||
                     effectiveTransactionData?.asset?.image_url ||
                     effectiveTransactionData?.asset?.image ||
-                    "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                    "/assets/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
                   }
                   alt={
                     effectiveTransactionData?.asset?.symbol ||
@@ -1734,7 +1743,7 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                   className="w-8 h-8 rounded-full flex-shrink-0 mt-0.5"
                   onError={(e) => {
                     e.currentTarget.src =
-                      "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                      "/assets/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
                   }}
                 />
                 <div className="min-w-0 flex-1 space-y-0.5">
@@ -1774,7 +1783,7 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
             ) : (
               <>
                 <img
-                  src="https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
+                  src="/assets/image_7_jijlik.png"
                   alt="Bank"
                   className="w-8 h-8 rounded-full flex-shrink-0 mt-0.5"
                 />
@@ -1863,6 +1872,16 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
           </div>
         </div>
       </div>
+
+      {/* Failure Status Modal */}
+      <FailureStatusModal
+        isOpen={failureModal.isOpen}
+        status={failureModal.status}
+        message={failureModal.message}
+        onClose={() => setFailureModal({ isOpen: false, status: "", message: undefined })}
+        onBackToForm={handleFailureModalClose}
+        isDark={isDark}
+      />
     </div>
   );
 }

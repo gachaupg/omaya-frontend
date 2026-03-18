@@ -7,6 +7,7 @@ import { useTheme } from "@/context/theme";
 import {
   buildExpressRedirectPath,
   setAuthRedirectPath,
+  getExpressHomeFormState,
 } from "@/lib/utils/authRedirect";
 import Exchanging from "../components/exchnaging";
 import ExpressExchangeForm from "../components/ExpressExchangeForm";
@@ -31,10 +32,11 @@ const Express = ({ isHomePage = false }: ExpressProps) => {
   }, []);
 
   const handleModeToggle = () => {
-    // If on home page and not authenticated, navigate to login
+    // If on home page and not authenticated, navigate to login (include saved amount/asset)
     if (isHomePage && !isAuthenticated) {
       const nextMode = currentMode === "deposit" ? "withdrawal" : "deposit";
-      setAuthRedirectPath(buildExpressRedirectPath(nextMode));
+      const savedState = getExpressHomeFormState();
+      setAuthRedirectPath(buildExpressRedirectPath(nextMode, savedState || undefined));
       router.push("/auth/login");
       return;
     }
@@ -63,7 +65,7 @@ const Express = ({ isHomePage = false }: ExpressProps) => {
 
                     <img
                       className="mt-2"
-                      src="https://res.cloudinary.com/pitz/image/upload/v1752561097/Group_9_gen9av.png"
+                      src="/assets/Group_9_gen9av.png"
                       alt=""
                     />
                   </span>
@@ -77,7 +79,7 @@ const Express = ({ isHomePage = false }: ExpressProps) => {
 
                     <img
                       className="mt-2"
-                      src="https://res.cloudinary.com/pitz/image/upload/v1752561097/Group_9_gen9av.png"
+                      src="/assets/Group_9_gen9av.png"
                       alt=""
                     />
                   </span>

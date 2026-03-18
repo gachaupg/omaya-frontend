@@ -10,6 +10,7 @@ interface ExpressProps {
   balance?: number;
   skipAmountValidation?: boolean; // New prop to skip amount validation when posting ads
   onCancel?: () => void;
+  onBeforeLegalNavigate?: () => void;
 }
 
 const Express = ({
@@ -17,6 +18,7 @@ const Express = ({
   balance,
   skipAmountValidation = false,
   onCancel,
+  onBeforeLegalNavigate,
 }: ExpressProps) => {
   const [showExchanging, setShowExchanging] = useState(false);
   const [transactionData, setTransactionData] = useState<any>(null);
@@ -37,6 +39,7 @@ const Express = ({
           balance={balance}
           skipAmountValidation={skipAmountValidation}
           onCancel={onCancel}
+          onBeforeLegalNavigate={onBeforeLegalNavigate}
         />
       )}
        {/* <SuccessPage transactionData={transactionData} /> */}

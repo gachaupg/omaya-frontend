@@ -202,6 +202,14 @@ const ChatBox: React.FC<{
   const prevMessageCountRef = React.useRef(0);
   const [imageLoadingStates, setImageLoadingStates] = React.useState<Record<string, boolean>>({});
 
+  // Audio recording state (like P2P trading chat)
+  const [audioPreview, setAudioPreview] = useState<{ file: File; duration: number; url: string } | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const mediaRecorderRef = React.useRef<MediaRecorder | null>(null);
+  const audioChunksRef = React.useRef<Blob[]>([]);
+  const recordingStartRef = React.useRef<number>(0);
+
   // Track user scroll behavior
   const handleScroll = React.useCallback(() => {
     if (messagesListRef.current) {
@@ -230,6 +238,18 @@ const ChatBox: React.FC<{
       return () => container.removeEventListener('scroll', handleScroll);
     }
   }, [handleScroll]);
+
+  // Live seconds counter while recording audio
+  useEffect(() => {
+    if (!isRecording) {
+      setRecordingSeconds(0);
+      return;
+    }
+    const interval = setInterval(() => {
+      setRecordingSeconds(Math.floor((Date.now() - recordingStartRef.current) / 1000));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isRecording]);
 
   // Smart auto-scroll when messages update
   useEffect(() => {
@@ -360,6 +380,120 @@ const ChatBox: React.FC<{
   // Handle manual refresh
   const handleRefresh = () => {
     fetchMessages();
+  };
+
+  // Audio recording handlers (mirroring P2P trading chat)
+  const startRecording = async () => {
+    if (!isAuthenticated || !tradeId) return;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      recordingStartRef.current = Date.now();
+
+      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+        ? "audio/webm;codecs=opus"
+        : MediaRecorder.isTypeSupported("audio/webm")
+        ? "audio/webm"
+        : "audio/mp4";
+
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+      mediaRecorder.onstop = () => {
+        stream.getTracks().forEach((t) => t.stop());
+        const durationSeconds = Math.round(
+          (Date.now() - recordingStartRef.current) / 1000
+        );
+        const blob = new Blob(audioChunksRef.current, { type: mimeType });
+        const ext = mimeType.includes("webm") ? "webm" : "m4a";
+        const file = new File([blob], `voice-${Date.now()}.${ext}`, {
+          type: mimeType,
+        });
+        const url = URL.createObjectURL(blob);
+        mediaRecorderRef.current = null;
+        setIsRecording(false);
+        setAudioPreview({ file, duration: durationSeconds, url });
+      };
+      mediaRecorder.start(500);
+      setIsRecording(true);
+      setRecordingSeconds(0);
+    } catch (err) {
+      console.error("Failed to start recording:", err);
+      setIsRecording(false);
+      setRecordingSeconds(0);
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      mediaRecorderRef.current.stop();
+      mediaRecorderRef.current = null;
+      setIsRecording(false);
+    }
+  };
+
+  const handleSendAudioMessage = async (
+    audioFile: File,
+    durationSeconds: number = 0
+  ) => {
+    if (!tradeId) return;
+
+    const tempId = `temp-${Date.now()}-${Math.random()}`;
+    const optimisticMessage: any = {
+      id: tempId,
+      trade: parseInt(tradeId),
+      sender: currentUserEmail || "",
+      sender_name: currentUserEmail || "",
+      sender_username: userName || "",
+      message: "",
+      images: [],
+      audios: [
+        {
+          id: tempId,
+          audio_url: URL.createObjectURL(audioFile),
+          duration: durationSeconds,
+        },
+      ],
+      timestamp: new Date().toISOString(),
+      seller_photo: "",
+    };
+
+    const { addMessageFromWS } = await import("@/features/p2p/slices/messageSlice");
+    dispatch(addMessageFromWS({ tradeId, message: optimisticMessage }));
+
+    try {
+      await postTradeMessage(tradeId, {
+        message: "",
+        uploaded_images: [],
+        uploaded_audios: [audioFile],
+        duration: durationSeconds,
+        sender_name: currentUserEmail || "",
+      });
+
+      // Refresh messages to get real audio URLs/IDs
+      setTimeout(() => {
+        fetchMessages();
+      }, 500);
+    } catch (e) {
+      console.error("Failed to send voice message:", e);
+      // Let polling/WebSocket refresh correct the UI on failure
+      fetchMessages();
+    }
+  };
+
+  const handleSendAudioPreview = () => {
+    if (!audioPreview) return;
+    handleSendAudioMessage(audioPreview.file, audioPreview.duration);
+    URL.revokeObjectURL(audioPreview.url);
+    setAudioPreview(null);
+  };
+
+  const handleDiscardAudioPreview = () => {
+    if (!audioPreview) return;
+    URL.revokeObjectURL(audioPreview.url);
+    setAudioPreview(null);
   };
 
   // Handle image selection
@@ -643,6 +777,52 @@ const ChatBox: React.FC<{
                       </div>
                     </div>
                   )}
+                  {/* Voice/audio messages - API: audios: [{ id, audio_url, duration }], or legacy audio_url/audio */}
+                  {(() => {
+                    const anyMsg: any = msg;
+                    const audioList =
+                      Array.isArray(anyMsg.audios) && anyMsg.audios.length > 0
+                        ? anyMsg.audios
+                        : anyMsg.audio_url || anyMsg.audio
+                        ? [
+                            {
+                              id: anyMsg.id,
+                              audio_url: anyMsg.audio_url || anyMsg.audio,
+                              duration: 0,
+                            },
+                          ]
+                        : [];
+                    if (audioList.length === 0) return null;
+                    return (
+                      <div className="mt-1 flex flex-col gap-2">
+                        {audioList.map(
+                          (
+                            a: { id?: string; audio_url: string; duration?: number },
+                            idx: number
+                          ) => (
+                            <div
+                              key={a.id || `audio-${idx}`}
+                              className="flex items-center gap-2"
+                            >
+                              <audio
+                                controls
+                                className="max-w-full h-8 min-w-[180px]"
+                                src={a.audio_url}
+                                preload="metadata"
+                              >
+                                Your browser does not support audio playback.
+                              </audio>
+                              {typeof a.duration === "number" && a.duration > 0 && (
+                                <span className="text-[10px] opacity-75">
+                                  {a.duration}s
+                                </span>
+                              )}
+                            </div>
+                          )
+                        )}
+                      </div>
+                    );
+                  })()}
                   <div className={`text-xs mt-1 ${isSender ? "text-green-100" : "text-gray-500 dark:text-gray-400"}`}>
                     {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </div>
@@ -680,6 +860,35 @@ const ChatBox: React.FC<{
         )}
 
         <hr className="border-[#E8EFF5] dark:border-[#35353E] mt-2 flex-shrink-0" />
+        {/* Audio preview - listen before sending */}
+        {audioPreview && (
+          <div className="flex items-center gap-3 p-2 mt-2 rounded-lg bg-gray-100 dark:bg-[#1F2937] border border-gray-200 dark:border-[#374151] flex-shrink-0">
+            <audio
+              src={audioPreview.url}
+              controls
+              className="h-8 max-w-[160px]"
+            />
+            <span className="text-[11px] text-gray-600 dark:text-gray-400">
+              {audioPreview.duration}s
+            </span>
+            <div className="flex gap-2 ml-auto">
+              <button
+                type="button"
+                onClick={handleSendAudioPreview}
+                className="px-2.5 py-1 rounded-md bg-[#1D8751] text-white text-xs font-medium hover:bg-[#176b40]"
+              >
+                Send
+              </button>
+              <button
+                type="button"
+                onClick={handleDiscardAudioPreview}
+                className="px-2.5 py-1 rounded-md bg-gray-300 dark:bg-[#4B5563] text-gray-700 dark:text-gray-200 text-xs font-medium hover:bg-gray-400 dark:hover:bg-[#6B7280]"
+              >
+                Discard
+              </button>
+            </div>
+          </div>
+        )}
         <div className="flex gap-1.5 sm:gap-2 mt-2 flex-shrink-0">
           <input
             className="flex-1 min-w-0 rounded px-2 py-1.5 sm:py-1 text-xs sm:text-sm text-[#788099] dark:text-white border-none outline-none"
@@ -719,6 +928,43 @@ const ChatBox: React.FC<{
             multiple
             onChange={handleImageChange}
           />
+          {/* Audio recording - record voice message with seconds count */}
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            {isRecording && (
+              <span className="text-[10px] sm:text-xs font-medium text-red-500 tabular-nums min-w-[2ch]">
+                {recordingSeconds}s
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={isRecording ? stopRecording : startRecording}
+              disabled={!isAuthenticated || !!audioPreview}
+              className={`w-8 h-8 sm:w-9 sm:h-9 flex-shrink-0 rounded-md flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${
+                isRecording
+                  ? "bg-red-500 text-white hover:bg-red-600 animate-pulse"
+                  : "bg-gray-100 dark:bg-[#35353E] text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-[#4B5563]"
+              }`}
+              title={
+                audioPreview
+                  ? "Send or discard the current recording first"
+                  : isRecording
+                  ? "Click to stop recording"
+                  : "Record voice message"
+              }
+              aria-label={isRecording ? "Stop recording" : "Record voice message"}
+            >
+              {isRecording ? (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                  <rect x="7" y="7" width="10" height="10" rx="2" />
+                </svg>
+              ) : (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 3a4 4 0 00-4 4v5a4 4 0 108 0V7a4 4 0 00-4-4z" />
+                  <path d="M6 11a1 1 0 00-2 0 8 8 0 0014 5.291V15a1 1 0 10-2 0v1.291A6 6 0 016 11z" />
+                </svg>
+              )}
+            </button>
+          </div>
           <button
             onClick={handleSend}
             disabled={!message.trim() && uploaded_images.length === 0}

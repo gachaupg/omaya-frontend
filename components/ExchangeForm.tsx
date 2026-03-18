@@ -15,6 +15,7 @@ import {
   useAssetsDisplay,
   usePaymentMethodsDisplay,
 } from "@/features/express/hooks/useDataDisplay";
+import { withTimeout } from "@/lib/utils/fetchWithTimeout";
 import { FaSearch } from "react-icons/fa";
 import Express from "@/features/express/home/express/express";
 import SwapWidget from "@/features/express/home/swap copy/components/SwapWidget";
@@ -127,7 +128,7 @@ const getAssetImageUrl = (asset: Asset) => {
   }
 
   // Final fallback
-  return "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+  return "/images/tether.svg";
 };
 
 // Check if asset uses simple calculation (USDT on BSC, USDC on BSC) - only for Express Exchange
@@ -235,9 +236,7 @@ const calculateAmounts = (
           }
           setIsCalculating(false);
         })
-        .catch((error) => {
-          console.error("Failed to fetch swap estimate:", error);
-
+        .catch(() => {
           // Handle errors gracefully - fallback to percentage calculation
           const commissionRate = selectedAsset?.range_commissions?.[0]
             ?.commission
@@ -291,8 +290,7 @@ const calculateAmounts = (
         setPayAmountInput(calculatedAmount.toString());
       }
     }
-  } catch (error) {
-    console.error("Calculation error:", error);
+  } catch {
     setCalculationError("Calculation failed. Please try again.");
   } finally {
     setIsCalculating(false);
@@ -432,7 +430,7 @@ export default function ExchangeForm({
     if (provider?.provider_logo) {
       return provider.provider_logo;
     }
-    return "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+    return "/assets/image_7_jijlik.png";
   };
 
   // Get unique payment methods from normalized data
@@ -489,7 +487,6 @@ export default function ExchangeForm({
     }
 
     // Otherwise, use fallback methods
-    console.log("🔍 Using fallback payment methods:", fallbackPaymentMethods);
     return fallbackPaymentMethods;
   }, [validPaymentMethods]);
 
@@ -500,21 +497,7 @@ export default function ExchangeForm({
   const paymentMethodsError = isHomePage ? publicMethodsError : null;
 
   // Debug logging for data display
-  console.log("🔍 ExchangeForm Debug:", {
-    isHomePage,
-    isAuthenticated,
-    publicPaymentMethods: publicPaymentMethods,
-    processedPaymentMethods: processedPaymentMethods,
-    uniquePaymentMethods: uniquePaymentMethods,
-    validPaymentMethods: validPaymentMethods,
-    finalPaymentMethods: finalPaymentMethods,
-    publicMethodsLoading: publicMethodsLoading,
-    publicMethodsError: publicMethodsError,
-    paymentMethodsLoading: paymentMethodsLoading,
-    paymentMethodsError: paymentMethodsError,
-    finalPaymentMethodsLength: finalPaymentMethods.length,
-  });
-
+ 
   const presets: Record<Tab, Preset> = {
     express: {
       pay: { label: "Salam Bank", icon: "/images/salam.svg" },
@@ -537,87 +520,27 @@ export default function ExchangeForm({
   useEffect(() => {
     // Skip API calls on home page if user is not authenticated
     if (isHomePage && !isAuthenticated) {
-      console.log(
-        "Skipping asset fetch: isHomePage =",
-        isHomePage,
-        "isAuthenticated =",
-        isAuthenticated
-      );
       return;
     }
 
-    console.log(
-      "Fetching exchange assets: isHomePage =",
-      isHomePage,
-      "isAuthenticated =",
-      isAuthenticated
-    );
-    // Fetch assets
-    dispatch(fetchAssets(false))
-      .unwrap()
-      .then((result) => {
-        console.log("Exchange assets fetched successfully:", result);
-      })
-      .catch((error: unknown) => {
-        console.error("Failed to fetch exchange assets:", error);
-      });
+    withTimeout(dispatch(fetchAssets(false)).unwrap(), 15_000).catch(() => {});
   }, [dispatch, isHomePage, isAuthenticated]);
 
   useEffect(() => {
-    // Skip API calls on home page if user is not authenticated
     if (isHomePage && !isAuthenticated) {
       return;
     }
-
-    console.log(
-      "Fetching swap assets: isHomePage =",
-      isHomePage,
-      "isAuthenticated =",
-      isAuthenticated
-    );
-    // Fetch swap assets
-    dispatch(fetchSupportedAssets(false))
-      .unwrap()
-      .then((result) => {
-        console.log("Swap assets fetched successfully:", result);
-      })
-      .catch((error: unknown) => {
-        console.error("Failed to fetch swap assets:", error);
-      });
+    withTimeout(dispatch(fetchSupportedAssets(false)).unwrap(), 15_000).catch(() => {});
   }, [dispatch, isHomePage, isAuthenticated]);
 
   useEffect(() => {
-    console.log(
-      "Fetching payment methods: isHomePage =",
-      isHomePage,
-      "isAuthenticated =",
-      isAuthenticated
-    );
-
     if (isHomePage) {
-      // For home page, use public payment methods (no authentication required)
-      dispatch(fetchPublicPaymentMethods())
-        .unwrap()
-        .then((result) => {
-          console.log("Public payment methods fetched successfully:", result);
-        })
-        .catch((error: unknown) => {
-          console.error("Failed to fetch public payment methods:", error);
-        });
+      withTimeout(dispatch(fetchPublicPaymentMethods()).unwrap(), 15_000).catch(() => {});
     } else {
-      // For authenticated pages, use admin payment methods
       if (!isAuthenticated) {
         return;
       }
-
-      dispatch(fetchAdminPaymentDetails(false))
-        .unwrap()
-        .then((result) => {
-          console.log("Payment methods fetched successfully:", result);
-        })
-        .catch((error: unknown) => {
-          console.error("Failed to fetch payment details:", error);
-        });
+      withTimeout(dispatch(fetchAdminPaymentDetails(false)).unwrap(), 15_000).catch(() => {});
     }
   }, [dispatch, isHomePage, isAuthenticated]);
 
@@ -752,7 +675,7 @@ export default function ExchangeForm({
     setPaymentSearchTerm("");
 
     const providerName = provider.provider_name || provider.method_name || "Payment Method";
-    const providerLogo = provider.logo || "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+    const providerLogo = provider.logo || "/assets/image_7_jijlik.png";
 
     // Update currency display based on current mode
     if (mode === "deposit") {
@@ -782,7 +705,7 @@ export default function ExchangeForm({
       // For deposit: payment method -> asset
       if (selectedPaymentMethod) {
         const providerName = selectedPaymentMethod.provider_name || selectedPaymentMethod.method_name || "Payment Method";
-        const providerLogo = selectedPaymentMethod.logo || "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+        const providerLogo = selectedPaymentMethod.logo || "/assets/image_7_jijlik.png";
         setPayCurrency({
           label: providerName,
           sub: selectedPaymentMethod.method_display || selectedPaymentMethod.method_name || "Payment Method",
@@ -811,7 +734,7 @@ export default function ExchangeForm({
 
       if (selectedPaymentMethod) {
         const providerName = selectedPaymentMethod.provider_name || selectedPaymentMethod.method_name || "Payment Method";
-        const providerLogo = selectedPaymentMethod.logo || "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+        const providerLogo = selectedPaymentMethod.logo || "/assets/image_7_jijlik.png";
         setGetCurrency({
           label: providerName,
           sub: selectedPaymentMethod.method_display || selectedPaymentMethod.method_name || "Payment Method",
@@ -1032,15 +955,6 @@ export default function ExchangeForm({
         {/* Payment Providers List */}
         <div className="max-h-60 overflow-y-auto">
           {(() => {
-            console.log("🔍 Dropdown Render Debug:", {
-              isLoading: paymentMethodsLoading,
-              filteredLength: filteredPaymentProviders.length,
-              filteredProviders: filteredPaymentProviders,
-              paymentProviders: paymentProviders,
-              paymentProvidersLength: paymentProviders.length,
-              paymentSearchTerm: paymentSearchTerm,
-            });
-
             if (paymentMethodsLoading && paymentProviders.length === 0) {
               return (
                 <div className="p-4 text-center text-gray-500 dark:text-gray-400">
@@ -1050,9 +964,6 @@ export default function ExchangeForm({
             }
 
             if (filteredPaymentProviders.length === 0) {
-              console.log(
-                "🔍 No filtered payment providers - showing empty state"
-              );
               return (
                 <div className="p-4 text-center text-gray-500 dark:text-gray-400">
                   {paymentProviders.length === 0
@@ -1062,15 +973,10 @@ export default function ExchangeForm({
               );
             }
 
-            console.log(
-              "🔍 Rendering payment providers:",
-              filteredPaymentProviders
-            );
-
             return filteredPaymentProviders.map(
               (provider: any, index: number) => {
                 const isSelected = isProviderSelected(provider);
-                const fallbackLogo = "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+                const fallbackLogo = "/assets/image_7_jijlik.png";
 
                 return (
                   <div
@@ -1245,14 +1151,14 @@ export default function ExchangeForm({
     // Express / Exchange Icons (from Sidebar)
     // Light Mode / Inactive: Group_9 (Usually Dark/Grey X)
     // Dark Mode Active: Group_8 (Usually White/Green X)
-    const exchangeIconSrc1 = "https://res.cloudinary.com/pitz/image/upload/v1764698096/Group_9_momvgo.png";
-    const exchangeIconSrc2 = "https://res.cloudinary.com/pitz/image/upload/v1764698106/Group_8_hjhlxe.png";
+    const exchangeIconSrc1 = "/images/Group_9_momvgo.png";
+    const exchangeIconSrc2 = "/images/Group_5_gkxzdz.png";
 
     // MoneyX Icons (from Sidebar)
     // Light Mode / Inactive: Group_6 (Dark X)
     // Dark Mode Active: Group_7 (Green/White X)
-    const moneyXIconSrc1 = "https://res.cloudinary.com/pitz/image/upload/v1764661972/Group_6_ohph9q.png";
-    const moneyXIconSrc2 = "https://res.cloudinary.com/pitz/image/upload/v1764663236/Group_7_ichuyz.png";
+    const moneyXIconSrc1 = "/images/x.png";
+    const moneyXIconSrc2 = "/assets/Group_7_ichuyz.png";
 
     // Process label rendering
     const renderLabel = () => {
@@ -1481,7 +1387,7 @@ export default function ExchangeForm({
                   className="w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover flex-shrink-0"
                   onError={(e) => {
                     e.currentTarget.src =
-                      "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                      "/images/tether.svg";
                   }}
                 />
                 <div className="flex-1 min-w-0 pr-2">
@@ -1728,7 +1634,19 @@ export default function ExchangeForm({
           }`}>
         {renderTabs()}
         <div className="pt-2 sm:pt-3 px-3 sm:px-4 md:px-5 py-3 border-l border-r border-b border-border dark:border-accent rounded-b-2xl">
-          <MoneyX isHomePage={isHomePage} />
+          {/* Deposit / Withdrawal toggle for MoneyX (range-commissions API uses commission_type) */}
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-sm text-gray-600 dark:text-gray-400">Type:</span>
+            <button
+              type="button"
+              onClick={handleModeToggle}
+              className="flex rounded-lg border border-gray-300 dark:border-[#35353E] p-1 bg-gray-100 dark:bg-[#23232B]"
+            >
+              <span className={`px-2 py-1 rounded text-xs font-medium ${mode === "deposit" ? "bg-white dark:bg-[#35353E] text-[#1D8751] shadow-sm" : "text-gray-500 dark:text-gray-400"}`}>Deposit</span>
+              <span className={`px-2 py-1 rounded text-xs font-medium ${mode === "withdrawal" ? "bg-white dark:bg-[#35353E] text-[#1D8751] shadow-sm" : "text-gray-500 dark:text-gray-400"}`}>Withdrawal</span>
+            </button>
+          </div>
+          <MoneyX isHomePage={isHomePage} commissionType={mode} />
         </div>
       </div>
     );

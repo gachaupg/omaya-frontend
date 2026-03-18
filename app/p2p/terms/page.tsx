@@ -1,19 +1,28 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import { acceptTerms } from "@/features/p2p/api";
 
 const P2PTermsPage = () => {
   const router = useRouter();
+  const [isAccepting, setIsAccepting] = useState(false);
 
-  const handleAccept = () => {
-    // Store acceptance in localStorage - this persists even after logout
-    if (typeof window !== "undefined") {
+  const handleAccept = async () => {
+    if (typeof window === "undefined") return;
+    setIsAccepting(true);
+    try {
+      await acceptTerms();
       localStorage.setItem("p2p_terms_accepted", "true");
-      console.log("[P2P Terms] Terms accepted - saved to localStorage (persists across logouts)");
+      router.push("/dashboard/p2p?tab=chats");
+    } catch (err) {
+      console.error("[P2P Terms] Failed to accept:", err);
+      // Still save to localStorage so Chats can show instant on retry
+      localStorage.setItem("p2p_terms_accepted", "true");
+      router.push("/dashboard/p2p?tab=chats");
+    } finally {
+      setIsAccepting(false);
     }
-    // Navigate back to chats
-    router.push("/dashboard/p2p?tab=chats");
   };
 
   const handleClose = () => {
@@ -191,22 +200,35 @@ const P2PTermsPage = () => {
           </button>
           <button
             onClick={handleAccept}
-            className="px-6 py-2.5 rounded-lg bg-[#1D8751] text-white font-medium hover:bg-[#15803D] transition-colors flex items-center gap-2"
+            disabled={isAccepting}
+            className="px-6 py-2.5 rounded-lg bg-[#1D8751] text-white font-medium hover:bg-[#15803D] transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-            Accept
+            {isAccepting ? (
+              <>
+                <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                </svg>
+                Accepting...
+              </>
+            ) : (
+              <>
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+                Accept
+              </>
+            )}
           </button>
         </div>
       </div>

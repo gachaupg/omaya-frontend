@@ -20,7 +20,7 @@ import { showToast } from "@/lib/utils/toast";
 import { useBookmarkedAddresses } from "@/features/express/hooks/useBookmarkedAddresses";
 import { BookmarkDropdown } from "@/features/express/components/forms/BookmarkDropdown";
 import { usePaymentMethodsDisplay } from "@/features/express/hooks/useDataDisplay";
-import { setAuthRedirectPath } from "@/lib/utils/authRedirect";
+import { setAuthRedirectPath, buildMoneyXRedirectPath, setMoneyXPrefillState } from "@/lib/utils/authRedirect";
 import { openKYCModal, checkKYCStatus } from "@/features/auth/slices/authSlice";
 
 interface TransferFormProps {
@@ -34,9 +34,11 @@ interface TransferFormProps {
     moneyxTransactionId?: string;
     moneyXTransaction?: any;
   }) => void;
+  /** Used for range-commissions API: commission_type=deposit | withdrawal */
+  commissionType?: "deposit" | "withdrawal";
 }
 
-export default function TransferForm({ isHomePage = false, onTransfer }: TransferFormProps) {
+export default function TransferForm({ isHomePage = false, onTransfer, commissionType = "deposit" }: TransferFormProps) {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
   const { isDark } = useTheme();
@@ -201,40 +203,37 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
     }
   }, [bankAccountAddress, bankAddressError]);
 
-  // Amount for commission API - use pay when from pay, else approx send from receive (getAmount/0.98)
-  const commissionFetchAmount = isCalculatingFromPay ? payAmount : (getAmount > 0 ? getAmount / 0.98 : 0);
-
-  // Fetch commission from API when amount changes (API returns fixed amount e.g. {"commission":"120.00"})
+  // Fetch commission percentage from range-commissions API (no auth, returns percentage e.g. 3%)
   useEffect(() => {
-    const amount = commissionFetchAmount || payAmount || getAmount;
+    const amount = isCalculatingFromPay ? payAmount : getAmount;
     if (!amount || amount <= 0) {
       setApiCommission(null);
       return;
     }
     if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
     commissionFetchTimeoutRef.current = setTimeout(() => {
-      dispatch(fetchMoneyXCommission(amount))
+      dispatch(fetchMoneyXCommission({ amount, commissionType }))
         .unwrap()
-        .then((commissionStr) => {
-          const val = parseFloat(commissionStr) || 0;
-          setApiCommission(val);
+        .then((result) => {
+          setApiCommission(result.commission);
         })
         .catch(() => setApiCommission(null));
     }, 150);
     return () => {
       if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
     };
-  }, [payAmount, getAmount, isCalculatingFromPay, dispatch]);
+  }, [payAmount, getAmount, isCalculatingFromPay, commissionType, dispatch]);
 
-  // Recalculate the other field when apiCommission updates (commission = fixed amount: receive = send - commission, send = receive + commission)
+  // Recalculate the other field when apiCommission updates (commission is a percentage: receive = send - send*rate/100)
   useEffect(() => {
-    const commissionAmount = apiCommission ?? 0;
+    const rate = apiCommission ?? 0;
     if (isCalculatingFromPay && payAmount > 0) {
+      const commissionAmount = (payAmount * rate) / 100;
       const calculatedGetAmount = Math.max(0, payAmount - commissionAmount);
       setGetAmount(calculatedGetAmount);
       setGetAmountInput(calculatedGetAmount.toString());
     } else if (!isCalculatingFromPay && getAmount > 0) {
-      const calculatedPayAmount = getAmount + commissionAmount;
+      const calculatedPayAmount = rate >= 100 ? getAmount : getAmount / (1 - rate / 100);
       setPayAmount(calculatedPayAmount);
       setPayAmountInput(calculatedPayAmount.toString());
     }
@@ -593,7 +592,7 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
     };
   });
 
-  // Calculate receive/send using commission from API (commission = fixed amount: receive = send - commission, send = receive + commission)
+  // Calculate receive/send using commission percentage from API (receive = send - send*rate/100)
   const handleAmountChange = (value: string, isFromPay: boolean) => {
     if (value === "" || /^\d*\.?\d*$/.test(value)) {
       if (value.includes(".")) {
@@ -605,12 +604,13 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
       }
 
       const newAmount = parseFloat(value) || 0;
-      const commissionAmount = apiCommission ?? 0;
+      const rate = apiCommission ?? 0;
 
       if (isFromPay) {
         setPayAmountInput(value);
         setPayAmount(newAmount);
         setIsCalculatingFromPay(true);
+        const commissionAmount = (newAmount * rate) / 100;
         const calculatedGetAmount = Math.max(0, newAmount - commissionAmount);
         setGetAmount(calculatedGetAmount);
         setGetAmountInput(calculatedGetAmount.toString());
@@ -618,7 +618,7 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
         setGetAmountInput(value);
         setGetAmount(newAmount);
         setIsCalculatingFromPay(false);
-        const calculatedPayAmount = newAmount + commissionAmount;
+        const calculatedPayAmount = rate >= 100 ? newAmount : newAmount / (1 - rate / 100);
         setPayAmount(calculatedPayAmount);
         setPayAmountInput(calculatedPayAmount.toString());
       }
@@ -834,13 +834,13 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
             >
               {/* Light mode image */}
               <img
-                src="https://res.cloudinary.com/pitz/image/upload/v1756579504/Frame_36261_1_d9cnq1.png"
+                src="/assets/Frame_36261_1_d9cnq1.png"
                 alt="swap icon"
                 className="w-10 h-10 dark:hidden"
               />
               {/* Dark mode image */}
               <img
-                src="https://res.cloudinary.com/pitz/image/upload/v1755500509/Frame_36261_ledmyw.png"
+                src="/assets/Frame_36261_ledmyw.png"
                 alt="swap icon"
                 className="w-10 h-10 hidden dark:block"
               />
@@ -955,7 +955,7 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
         {!isFirstCardSubmitted && (
           <div className="mt-4 mb-3 flex items-center gap-3 p-3 rounded-2xl bg-transparent">
             <img
-              src="https://res.cloudinary.com/pitz/image/upload/v1765784047/alert-circle_1_ujybne.png"
+              src="/assets/alert-circle_1_ujybne.png"
               alt="Warning"
               className="w-5 h-5 flex-shrink-0"
             />
@@ -1034,7 +1034,8 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
                   </div>
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 border border-border dark:border-[#35353E] rounded-xl">
                     <span className="text-[#788099] text-sm">Account number</span>
-                    <div className="flex items-center gap-2 min-w-0">
+                    <div className="flex items-center justify-between gap-4 min-w-0 w-full">
+                      
                       <span className="text-[#35353e] dark:text-white font-medium text-sm truncate">
                         {accountNumber}
                       </span>
@@ -1165,16 +1166,19 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
                     setBankAddressError(null);
                   }}
                   onSaveCurrent={async () => {
-                    if (!bankAccountAddress.trim() || !currentBankAsset) return;
-                    await saveBookmark({
-                      address: bankAccountAddress.trim(),
-                      label: `My ${currentBankAsset} account`,
-                      network: "BANK",
-                      asset: currentBankAsset,
-                    });
+                    try {
+                      if (!bankAccountAddress.trim() || !currentBankAsset) return;
+                      await saveBookmark({
+                        address: bankAccountAddress.trim(),
+                        label: `My ${currentBankAsset} account`,
+                        network: "BANK",
+                        asset: currentBankAsset,
+                      });
+                    } catch { /* handled by hook */ }
                   }}
                   anchorRef={bookmarkAnchorRef}
                   isDark={isDark}
+                  saveDisabled={!!bankAddressError}
                 />
               </span>
               {/* Paste button */}
@@ -1317,7 +1321,11 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
             />
             <label htmlFor="moneyx-terms-accept" className={`text-sm cursor-pointer ${isDark ? "text-[#788099]" : "text-gray-700"}`}>
               I agree to the{" "}
-              <Link href="/legal/terms-of-service" target="_blank" className="text-[#1D8751] cursor-pointer hover:underline">
+              <Link
+                href="/legal/terms-of-service"
+                onClick={() => setIsTermsAccepted(true)}
+                className="text-[#1D8751] cursor-pointer hover:underline"
+              >
                 Terms of Use
               </Link>
             </label>
@@ -1326,7 +1334,7 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
           {/* Warning Message */}
           <div className="mt-4 mb-3 flex items-center gap-3 p-3 rounded-2xl bg-transparent">
             <img
-              src="https://res.cloudinary.com/pitz/image/upload/v1765784047/alert-circle_1_ujybne.png"
+              src="/assets/alert-circle_1_ujybne.png"
               alt="Warning"
               className="w-5 h-5 flex-shrink-0"
             />
@@ -1379,7 +1387,8 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
                     bankAccountAddress: bankAccountAddress.trim(),
                   };
                   localStorage.setItem("moneyx_form_state", JSON.stringify(state));
-                  setAuthRedirectPath("/dashboard/exchange?mode=moneyx&source=public-express");
+                  setAuthRedirectPath(buildMoneyXRedirectPath(state));
+                  setMoneyXPrefillState(state);
                   router.push("/auth/login");
                   return;
                 }

@@ -32,6 +32,7 @@ import { debugAssetFetching } from "@/lib/utils/debugAssets";
 import OTPModal from "./OTPModal";
 
 import { logger } from '@/lib/utils/logger';
+import { withTimeout } from "@/lib/utils/fetchWithTimeout";
 import { useExpressI18n } from "@/lib/useExpressI18n";
 import { useTheme } from "@/context/theme";
 import { TermsAndConditionsSummary } from "./TermsAndConditionsSummary";
@@ -232,6 +233,7 @@ interface DepositFormProps {
   balance?: number;
   isHomePage?: boolean;
   onCancel?: () => void;
+  onBeforeLegalNavigate?: () => void;
 }
 
 export default function WithdrawalForm({
@@ -241,6 +243,7 @@ export default function WithdrawalForm({
   balance,
   isHomePage = false,
   onCancel,
+  onBeforeLegalNavigate,
 }: DepositFormProps) {
   // Use available amount from transaction summary (same common source as Available.tsx / P2PDashboard)
   const summary = useSelector(selectTransactionSummary);
@@ -292,7 +295,7 @@ export default function WithdrawalForm({
   const handleForceRefreshAssets = async () => {
     try {
       logger.debug('p2p', "=== Force refreshing assets ===");
-      await dispatch(fetchSupportedAssets(true)).unwrap();
+      await withTimeout(dispatch(fetchSupportedAssets(true)).unwrap(), 15_000);
       logger.debug('p2p', "✅ Assets force refreshed");
     } catch (error) {
       console.error("❌ Force refresh failed:", error);
@@ -316,7 +319,7 @@ export default function WithdrawalForm({
       network_type: "BSC",
       network: "BSC",
       name: "Binance Smart Chain BEP20",
-      icon: "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png",
+      icon: "/images/tether.svg",
       isDefault: true,
     };
   });
@@ -332,7 +335,7 @@ export default function WithdrawalForm({
       network_type: "BSC",
       network: "BSC",
       name: "Binance Smart Chain BEP20",
-      icon: "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png",
+      icon: "/images/tether.svg",
       isDefault: true,
     },
   ];
@@ -412,6 +415,46 @@ export default function WithdrawalForm({
   const [apiCommission, setApiCommission] = useState<number | null>(null);
   const commissionFetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // P2P withdrawal commission (percentage from commission-lookup API, no auth)
+  const [p2pCommissionRate, setP2pCommissionRate] = useState<number>(0);
+  const [p2pReceiveAmount, setP2pReceiveAmount] = useState("");
+  const [isCalculatingFromReceive, setIsCalculatingFromReceive] = useState(false);
+  const p2pCommissionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Fetch withdrawal commission from no-auth endpoint (uses exchange feature for commission rates)
+  useEffect(() => {
+    const amount = payAmount || 0;
+    if (amount <= 0) {
+      setP2pCommissionRate(0);
+      setP2pReceiveAmount("");
+      return;
+    }
+    if (p2pCommissionTimeoutRef.current) clearTimeout(p2pCommissionTimeoutRef.current);
+    p2pCommissionTimeoutRef.current = setTimeout(async () => {
+      try {
+        const { API_BASE_URL } = await import("@/config/api");
+        const { default: axios } = await import("axios");
+        const url = `${API_BASE_URL}/administration/commission-lookup/?feature=exchange&commission_type=withdrawal&amount=${amount}`;
+        const res = await axios.get(url);
+        const data = res.data;
+        const rate = parseFloat(data?.commission_rate ?? data?.commission ?? "0") || 0;
+        const isPercentage = data?.is_percentage ?? true;
+        setP2pCommissionRate(isPercentage ? rate : 0);
+      } catch {
+        setP2pCommissionRate(0);
+      }
+    }, 300);
+    return () => { if (p2pCommissionTimeoutRef.current) clearTimeout(p2pCommissionTimeoutRef.current); };
+  }, [payAmount]);
+
+  // Recalculate "You Receive" when payAmount or commission changes (forward direction)
+  useEffect(() => {
+    if (isCalculatingFromReceive) return;
+    const fee = (payAmount * p2pCommissionRate) / 100;
+    const receive = Math.max(0, payAmount - fee);
+    setP2pReceiveAmount(payAmount > 0 ? receive.toFixed(2) : "");
+  }, [payAmount, p2pCommissionRate, isCalculatingFromReceive]);
+
   // OTP Modal Functions
   const handleOTPVerify = async (otp: string) => {
     setOtpLoading(true);
@@ -436,9 +479,14 @@ export default function WithdrawalForm({
       setOtpLoading(false);
       showToast.success("Withdrawal verified successfully!");
     } catch (error: any) {
-      setOtpError(error.message || "Failed to verify OTP. Please try again.");
+      const responseData = error?.response?.data;
+      const errorMessage =
+        (typeof responseData === "object" && (responseData?.error ?? responseData?.message ?? responseData?.detail)) ||
+        (typeof responseData === "string" ? responseData : null) ||
+        error?.message ||
+        "Failed to verify OTP. Please try again.";
+      setOtpError(errorMessage);
       setOtpLoading(false);
-      showToast.error("OTP verification failed");
     }
   };
 
@@ -459,7 +507,13 @@ export default function WithdrawalForm({
 
       showToast.success("New OTP sent successfully");
     } catch (error: any) {
-      setOtpError("Failed to resend OTP. Please try again.");
+      const responseData = error?.response?.data;
+      const errorMessage =
+        (typeof responseData === "object" && (responseData?.error ?? responseData?.message ?? responseData?.detail)) ||
+        (typeof responseData === "string" ? responseData : null) ||
+        error?.message ||
+        "Failed to resend OTP. Please try again.";
+      setOtpError(errorMessage);
       showToast.error("Failed to resend OTP");
     }
   };
@@ -1585,7 +1639,7 @@ export default function WithdrawalForm({
       commission: "2",
       fee_rate: "2",
       image_url:
-        "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png",
+        "/images/tether.svg",
       asset_id: "usdt-tether-bsc",
     },
   ];
@@ -2367,7 +2421,7 @@ export default function WithdrawalForm({
                             selectedAsset.asset_image ||
                             selectedAsset.icon_url ||
                             selectedAsset.image ||
-                            "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                            "/images/tether.svg"
                           }
                           alt={
                             selectedAsset.name ||
@@ -2381,7 +2435,7 @@ export default function WithdrawalForm({
                               selectedAsset
                             );
                             e.currentTarget.src =
-                              "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                              "/images/tether.svg";
                           }}
                         />
                         <span className="text-[#35353e] dark:text-[#788099]">
@@ -2399,7 +2453,7 @@ export default function WithdrawalForm({
                     ) : (
                       <>
                         <img
-                          src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                          src="/images/tether.svg"
                           alt="asset icon"
                           className="w-6 h-6"
                         />
@@ -2489,13 +2543,13 @@ export default function WithdrawalForm({
                               src={
                                 asset.image_url ||
                                 asset.asset_image ||
-                                "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                                "/images/tether.svg"
                               }
                               alt={asset.name}
                               className="w-6 h-6 rounded-full"
                               onError={(e) => {
                                 e.currentTarget.src =
-                                  "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                                  "/images/tether.svg";
                               }}
                             />
                             <div className="flex-1">
@@ -2636,10 +2690,10 @@ export default function WithdrawalForm({
             </div>
           </div>
 
-          {/* Amount and Wallet Address Row */}
+          {/* Amount and You Receive Row */}
           <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
-            {/* Amount Section */}
-            <div className="flex-1 sm:pr-4">
+            {/* Amount (You Send) Section */}
+            <div className="flex-1">
               <div className="flex items-center justify-between gap-2 mb-2">
                 <label className="text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] font-semibold flex items-center gap-2">
                   Amount
@@ -2662,7 +2716,6 @@ export default function WithdrawalForm({
                   onChange={(e) => {
                     let inputValue = e.target.value;
 
-                    // Strip leading zeros to avoid "0545" when typing (keep "0" or "0.5")
                     if (inputValue.length > 1) {
                       if (inputValue.startsWith("-")) {
                         const rest = inputValue.slice(1);
@@ -2673,9 +2726,7 @@ export default function WithdrawalForm({
                       }
                     }
 
-                    // Allow any numeric input including negative numbers and 0
                     if (inputValue === "" || /^-?\d*\.?\d*$/.test(inputValue)) {
-                      // Check for decimal places validation
                       if (inputValue.includes(".")) {
                         const decimalPart = inputValue.split(".")[1];
                         if (decimalPart && decimalPart.length > 8) {
@@ -2687,33 +2738,26 @@ export default function WithdrawalForm({
                       }
 
                       setPayAmountInput(inputValue);
+                      setIsCalculatingFromReceive(false);
 
-                      // Convert to number for calculations
                       const parsedValue =
                         inputValue === "" ? 0 : parseFloat(inputValue) || 0;
 
                       const newValue = parsedValue;
                       setPayAmount(newValue);
                       setIsCalculatingFromPay(true);
-
-                      // Mark that user has manually modified the amount
                       setIsUserModifiedAmount(true);
 
-                      // Validate amount is greater than 0
                       if (newValue <= 0) {
                         setBalanceError("Amount should be more than 0");
                       } else {
-                        // Validate balance in real-time
                         const balanceValidationError = validateBalance(newValue);
                         setBalanceError(balanceValidationError);
                       }
 
-                      // Clear any previous errors when user starts typing
                       setReceiveAmountError(null);
                       setApiValidationError(null);
                       setCalculationError(null);
-                      // Don't clear balanceError here - let it show if amount exceeds balance
-                      // Clear validation errors related to amount
                       setValidationErrors((prev) =>
                         prev.filter(
                           (error) =>
@@ -2741,6 +2785,7 @@ export default function WithdrawalForm({
                         setPayAmountInput(maxVal.toString());
                         setPayAmount(maxVal);
                         setIsCalculatingFromPay(true);
+                        setIsCalculatingFromReceive(false);
                         setIsUserModifiedAmount(true);
                         const err = validateBalance(maxVal);
                         setBalanceError(err);
@@ -2761,7 +2806,6 @@ export default function WithdrawalForm({
                   </span>
                 </div>
               </div>
-              {/* Display calculation error below Amount input */}
               {calculationError && (
                 <div className="mt-2 text-sm text-yellow-500 dark:text-yellow-400">
                   {calculationError}
@@ -2779,41 +2823,120 @@ export default function WithdrawalForm({
               )}
             </div>
 
-            {/* Wallet Address Section */}
-            <div className="flex-1 sm:pl-4 border-t sm:border-t-0 sm:border-l border-[#D1D2D4FF] dark:border-[#35353E] pt-4 sm:pt-0 sm:border-none">
-              <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
-                Wallet Address
-                <div className="w-2 h-2 opacity-0"></div>
-              </label>
+            {/* You Receive Section */}
+            <div className="flex-1">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <label className="text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] font-semibold flex items-center gap-2">
+                  You Receive
+                  <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
+                </label>
+                {p2pCommissionRate > 0 && (
+                  <span className="text-xs sm:text-sm text-[#F79330] font-medium">
+                    Fee: {p2pCommissionRate}%
+                  </span>
+                )}
+              </div>
               <div className="relative">
-                <FaWallet className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-[#7e7e8f] dark:text-[#788099] pointer-events-none z-10" />
                 <input
                   type="text"
-                  value={walletAddress}
-                  onChange={(e) => setWalletAddress(e.target.value)}
-                  onPaste={(e) => {
-                    e.preventDefault(); // Prevent default paste behavior
-                    const pastedText = e.clipboardData.getData("text");
-                    setWalletAddress(pastedText); // Set the pasted text directly
+                  inputMode="decimal"
+                  value={p2pReceiveAmount}
+                  onChange={(e) => {
+                    let inputValue = e.target.value;
+
+                    if (inputValue.length > 1) {
+                      if (inputValue.startsWith("0") && inputValue[1] !== ".") {
+                        inputValue = inputValue.replace(/^0+/, "") || "0";
+                      }
+                    }
+
+                    if (inputValue === "" || /^\d*\.?\d*$/.test(inputValue)) {
+                      if (inputValue.includes(".")) {
+                        const decimalPart = inputValue.split(".")[1];
+                        if (decimalPart && decimalPart.length > 8) return;
+                      }
+
+                      setP2pReceiveAmount(inputValue);
+                      setIsCalculatingFromReceive(true);
+
+                      const receiveVal = inputValue === "" ? 0 : parseFloat(inputValue) || 0;
+                      if (receiveVal > 0) {
+                        const sendAmount = p2pCommissionRate >= 100
+                          ? receiveVal
+                          : receiveVal / (1 - p2pCommissionRate / 100);
+                        setPayAmount(sendAmount);
+                        setPayAmountInput(sendAmount.toFixed(2));
+                        setIsUserModifiedAmount(true);
+
+                        const balanceValidationError = validateBalance(sendAmount);
+                        setBalanceError(balanceValidationError);
+                      } else {
+                        setPayAmount(0);
+                        setPayAmountInput("");
+                      }
+
+                      setReceiveAmountError(null);
+                      setApiValidationError(null);
+                      setCalculationError(null);
+                    }
                   }}
-                  placeholder="Enter BEP20 wallet address (0x...)"
-                  className={`w-full text-[#35353e] dark:bg-[var(--card-color)] dark:text-[#ffffff] rounded-xl sm:rounded-2xl px-8 sm:px-9 py-2.5 sm:py-2 text-sm sm:text-lg focus:outline-none border min-h-[44px] sm:min-h-0 ${walletError
-                    ? "border-red-500 focus:border-red-500"
-                    : walletAddress.trim() && !walletError
-                      ? "border-green-500"
-                      : "border-[#A2A4A9FF] dark:border-[#35353E]"
-                    }`}
+                  placeholder="Amount after fee"
+                  className={`w-full text-[#35353e] dark:bg-[var(--card-color)] dark:text-[#ffffff] rounded-xl sm:rounded-2xl px-3 sm:px-4 py-2.5 sm:py-2 pr-16 sm:pr-20 text-sm sm:text-lg focus:outline-none border appearance-none min-h-[44px] sm:min-h-0 border-[#A2A4A9FF] dark:border-[#35353E]`}
                 />
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                  <span className="text-[#35353e] dark:text-[#ffffff] text-sm font-medium">
+                    {selectedAsset
+                      ? (
+                        selectedAsset.ticker ||
+                        selectedAsset.symbol ||
+                        "USDT"
+                      ).toUpperCase()
+                      : "USDT"}
+                  </span>
+                </div>
               </div>
-              {walletError && (
-                <p className="text-red-500 text-sm mt-1">{walletError}</p>
-              )}
-              {walletAddress.trim() && !walletError && (
-                <p className="text-green-500 text-sm mt-1">
-                  ✅ Valid BEP20 address
-                </p>
+              {p2pCommissionRate > 0 && payAmount > 0 && (
+                <div className="mt-2 text-xs text-[#788099] dark:text-[#5A5A65]">
+                  Commission: {((payAmount * p2pCommissionRate) / 100).toFixed(2)} {(selectedAsset?.ticker || selectedAsset?.symbol || "USDT").toUpperCase()}
+                </div>
               )}
             </div>
+          </div>
+
+          {/* Wallet Address Section */}
+          <div className="mt-4">
+            <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
+              Wallet Address
+              <div className="w-2 h-2 opacity-0"></div>
+            </label>
+            <div className="relative">
+              <FaWallet className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-[#7e7e8f] dark:text-[#788099] pointer-events-none z-10" />
+              <input
+                type="text"
+                value={walletAddress}
+                onChange={(e) => setWalletAddress(e.target.value)}
+                onPaste={(e) => {
+                  e.preventDefault();
+                  const pastedText = e.clipboardData.getData("text");
+                  setWalletAddress(pastedText);
+                }}
+                placeholder="Enter BEP20 wallet address (0x...)"
+                className={`w-full text-[#35353e] dark:bg-[var(--card-color)] dark:text-[#ffffff] rounded-xl sm:rounded-2xl px-8 sm:px-9 py-2.5 sm:py-2 text-sm sm:text-lg focus:outline-none border min-h-[44px] sm:min-h-0 ${walletError
+                  ? "border-red-500 focus:border-red-500"
+                  : walletAddress.trim() && !walletError
+                    ? "border-green-500"
+                    : "border-[#A2A4A9FF] dark:border-[#35353E]"
+                  }`}
+              />
+            </div>
+            {walletError && (
+              <p className="text-red-500 text-sm mt-1">{walletError}</p>
+            )}
+            {walletAddress.trim() && !walletError && (
+              <p className="text-green-500 text-sm mt-1">
+                ✅ Valid BEP20 address
+              </p>
+            )}
           </div>
 
           {/* ----------------------------------------------------------------- */}
@@ -2823,7 +2946,7 @@ export default function WithdrawalForm({
               <h3 className="text-sm sm:text-base font-medium text-[#7e7e8f] dark:text-[#ffffff]">
                 Transfer Details
               </h3>
-              <img className="w-4 h-4" src="https://res.cloudinary.com/pitz/image/upload/v1764942946/alert-circle_llaycw.png" alt="alert-circle" />
+              <img className="w-4 h-4" src="/assets/alert-circle_llaycw.png" alt="alert-circle" />
             </div>
             <div className="bg-white dark:bg-[var(--card-color)] border border-[#1D8751] rounded-lg sm:rounded-xl p-4">
               <ul className="space-y-3">
@@ -3039,6 +3162,7 @@ export default function WithdrawalForm({
             {/* Terms and Conditions Summary - same layout as swap */}
             <TermsAndConditionsSummary
               asset={selectedAsset?.ticker || selectedAsset?.symbol || "USDT"}
+              onBeforeLegalNavigate={onBeforeLegalNavigate}
             />
 
             {/* Terms Checkbox */}

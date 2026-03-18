@@ -9,9 +9,10 @@ import {
   useMoneyXStatusWebSocket,
 } from "../websockets/moneyXStatusWebSocket";
 import { API_CONFIG } from "@/lib/appConfig";
+import { cookieUtils } from "@/lib/utils/cookieUtils";
 import { useTheme } from "@/context/theme";
 import CopyButton from "@/components/ui/CopyButton";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "@/store/rootReducer";
 import { logger } from '@/lib/utils/logger';
 
@@ -73,6 +74,8 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const { isDark } = useTheme();
+  const { tokens } = useSelector((state: any) => state.auth);
+  const token = tokens?.access ?? cookieUtils.getCookie("access_token") ?? (typeof window !== "undefined" ? localStorage.getItem("access_token") : null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [currentStatus, setCurrentStatus] = useState<string>("pending");
 
@@ -95,7 +98,9 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
   const [wsError, setWsError] = useState<string | null>(null);
   const [connectionAttempts, setConnectionAttempts] = useState<number>(0);
 
-  // Timer state - 15 minutes in seconds
+  // Timer state - 15 minutes, wall-clock based (immune to tab throttling)
+  const TIMER_DURATION_SEC = 15 * 60;
+  const expiryTimestampRef = React.useRef<number | null>(null);
   const [timeRemaining, setTimeRemaining] = useState<number>(15 * 60);
   const [timerActive, setTimerActive] = useState<boolean>(true);
 
@@ -160,29 +165,76 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
     };
   }, [pollingInterval]);
 
-  // Timer countdown effect
+  // Compute remaining time from wall-clock (immune to tab throttling)
+  const computeTimeRemaining = React.useCallback(() => {
+    const expiry = expiryTimestampRef.current;
+    if (!expiry) return TIMER_DURATION_SEC;
+    return Math.max(0, Math.ceil((expiry - Date.now()) / 1000));
+  }, []);
+
+  // Initialize expiry timestamp when we have transaction data
+  const effectiveDataForTimer = transactionData || persistedTransactionData;
+  useEffect(() => {
+    const txId = effectiveDataForTimer?.transactionId || effectiveDataForTimer?.moneyxTransactionId;
+    if (!txId || !timerActive || showSuccess) return;
+    const storageKey = "moneyx_transaction_expiry";
+    if (!expiryTimestampRef.current) {
+      try {
+        const stored = localStorage.getItem(storageKey);
+        if (stored) {
+          const { transactionId, expiry } = JSON.parse(stored);
+          if (transactionId === txId) {
+            expiryTimestampRef.current = expiry;
+            if (expiry <= Date.now()) {
+              setTimeRemaining(0);
+              setTimerActive(false);
+              return;
+            }
+            setTimeRemaining(computeTimeRemaining());
+            return;
+          }
+        }
+      } catch {}
+      const createdAt = effectiveDataForTimer.createdAt;
+      const expiry = (typeof createdAt === "number")
+        ? createdAt + TIMER_DURATION_SEC * 1000
+        : Date.now() + TIMER_DURATION_SEC * 1000;
+      expiryTimestampRef.current = expiry;
+      localStorage.setItem(storageKey, JSON.stringify({ transactionId: txId, expiry }));
+    }
+    setTimeRemaining(computeTimeRemaining());
+  }, [effectiveDataForTimer?.transactionId, effectiveDataForTimer?.moneyxTransactionId, effectiveDataForTimer?.createdAt, timerActive, showSuccess, computeTimeRemaining]);
+
+  // Timer: wall-clock + Page Visibility for tab-inactive accuracy
   useEffect(() => {
     if (!timerActive || showSuccess) return;
+    const tick = () => {
+      const remaining = computeTimeRemaining();
+      setTimeRemaining(remaining);
+      if (remaining <= 0) setTimerActive(false);
+    };
+    const interval = setInterval(tick, 1000);
+    tick();
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") tick();
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, [timerActive, showSuccess, computeTimeRemaining]);
 
-    const interval = setInterval(() => {
-      setTimeRemaining((prev) => {
-        if (prev <= 1) {
-          setTimerActive(false);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [timerActive, showSuccess]);
-
-  // Auto-cancel when timer expires
+  // Auto-cancel when timer expires (guard to prevent double redirect on tab switch/reload)
+  const hasRedirectedOnExpiry = React.useRef(false);
+  const effectiveDataForExpiry = transactionData || persistedTransactionData;
   useEffect(() => {
-    if (timeRemaining === 0 && effectiveTransactionData?.transactionId) {
-      handleCancelTransaction();
-    }
-  }, [timeRemaining]);
+    if (timeRemaining !== 0 || hasRedirectedOnExpiry.current) return;
+    const txId = effectiveDataForExpiry?.transactionId || effectiveDataForExpiry?.moneyxTransactionId;
+    if (!txId) return;
+    hasRedirectedOnExpiry.current = true;
+    handleCancelTransaction();
+  }, [timeRemaining, effectiveDataForExpiry?.transactionId, effectiveDataForExpiry?.moneyxTransactionId]);
 
   // Format time as MM:SS
   const formatTime = (seconds: number) => {
@@ -209,6 +261,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
       // Clear localStorage
       localStorage.removeItem("moneyx_transaction_data");
       localStorage.removeItem("express_transaction_data");
+      localStorage.removeItem("moneyx_transaction_expiry");
 
       // Use callback if provided (tab mode), otherwise use router (standalone mode)
       if (onBackToTransfer) {
@@ -231,6 +284,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
   useEffect(() => {
     if (currentStatus === "completed" || showSuccess) {
       setTimerActive(false);
+      localStorage.removeItem("moneyx_transaction_expiry");
     }
   }, [currentStatus, showSuccess]);
 
@@ -325,6 +379,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
     if (showSuccess) {
       localStorage.removeItem("moneyx_transaction_data");
       localStorage.removeItem("express_transaction_data");
+      localStorage.removeItem("moneyx_transaction_expiry");
     }
   }, [showSuccess]);
 
@@ -454,6 +509,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
     isMoneyXTransaction && moneyXTransactionId ? moneyXTransactionId : "",
     isMoneyXTransaction ? finalWebsocketUrl : undefined,
     {
+      token: token ?? undefined,
       onMessage: handleWebSocketMessage,
       onError: (error) => {
         setConnectionAttempts((prev) => prev + 1);
@@ -472,6 +528,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
     effectiveTransactionData?.type || "deposit",
     !isMoneyXTransaction ? finalWebsocketUrl : undefined,
     {
+      token: token ?? undefined,
       onMessage: (data: TransactionStatusMessage) => {
         setWsError(null);
         setConnectionAttempts(0);
@@ -892,7 +949,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                       className="w-5 h-5 sm:w-6 sm:h-6 rounded-md object-contain bg-white flex-shrink-0"
                       onError={(e) => {
                         e.currentTarget.src =
-                          "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+                          "/assets/image_7_jijlik.png";
                       }}
                     />
                   ) : null}
@@ -926,7 +983,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                       className="w-5 h-5 sm:w-6 sm:h-6 rounded-md object-contain bg-white flex-shrink-0"
                       onError={(e) => {
                         e.currentTarget.src =
-                          "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+                          "/assets/image_7_jijlik.png";
                       }}
                     />
                   ) : null}
@@ -1468,7 +1525,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                       className="w-6 h-6 sm:w-8 sm:h-8 rounded-md object-contain bg-white flex-shrink-0 mt-0.5"
                       onError={(e) => {
                         e.currentTarget.src =
-                          "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+                          "/assets/image_7_jijlik.png";
                       }}
                     />
                   )}
@@ -1513,7 +1570,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                       className="w-6 h-6 sm:w-8 sm:h-8 rounded-md object-contain bg-white flex-shrink-0 mt-0.5"
                       onError={(e) => {
                         e.currentTarget.src =
-                          "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+                          "/assets/image_7_jijlik.png";
                       }}
                     />
                   )}

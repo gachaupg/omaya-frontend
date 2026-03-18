@@ -36,12 +36,22 @@ import Select from "@/features/p2p/components/Common/Select";
 import {
   buildExpressRedirectPath,
   setAuthRedirectPath,
+  setExpressPrefillState,
 } from "@/lib/utils/authRedirect";
 import { useValidateAddress } from "@/hooks/useValidateAddress";
 import { openKYCModal, checkKYCStatus } from "@/features/auth/slices/authSlice";
 import { useBookmarkedAddresses } from "@/features/express/hooks/useBookmarkedAddresses";
 import { BookmarkDropdown } from "@/features/express/components/forms/BookmarkDropdown";
-import { fetchCommission, getCommissionApiAsset } from "@/features/express/api";
+import { bookmarkedAddressesApi } from "@/features/express/services/bookmarkedAddressesApi";
+import {
+  fetchCommission,
+  getCommissionApiAsset,
+  fetchExchangeCommissionLookup,
+  getExchangeLookupParams,
+  isExchangeCommissionLookupAsset,
+  type ExchangeCommissionLookupResponse,
+} from "@/features/express/api";
+import { withTimeout } from "@/features/express/utils/fetchWithTimeout";
 
 interface DepositFormProps {
   onExchange?: (transactionData: {
@@ -63,7 +73,34 @@ interface DepositFormProps {
   mode: "deposit" | "withdrawal";
   onModeChange?: (mode: "deposit" | "withdrawal") => void;
   isHomePage?: boolean;
+  initialState?: {
+    amountValue?: number;
+    amountInput?: string;
+    receiveAmountValue?: number;
+    receiveAmountInput?: string;
+    asset?: any;
+    payment?: any;
+    payBank?: string;
+    walletAddress?: string;
+  };
 }
+
+// Network aliases for whitelist matching
+const NETWORK_ALIASES: Record<string, string[]> = {
+  trc20: ["trx", "trc20"],
+  trx: ["trx", "trc20"],
+  erc20: ["eth", "erc20"],
+  eth: ["eth", "erc20"],
+  bep20: ["bsc", "bep20"],
+  bep2: ["bsc", "bep2"],
+  bsc: ["bsc", "bep20", "bep2"],
+  matic: ["matic", "polygon"],
+  polygon: ["matic", "polygon"],
+};
+const getNetworkMatchKeys = (network: string): string[] => {
+  const n = (network || "").toLowerCase();
+  return NETWORK_ALIASES[n] ? [...NETWORK_ALIASES[n], n] : [n];
+};
 
 // Network mapping function
 const getNetworkDisplayName = (network: string) => {
@@ -547,6 +584,7 @@ export default function DepositForm({
   const [bookmarkOpen, setBookmarkOpen] = useState(false);
   const bookmarkAnchorRef = useRef<HTMLSpanElement>(null);
   const [apiCommission, setApiCommission] = useState<number | null>(null);
+  const [exchangeLookupResponse, setExchangeLookupResponse] = useState<ExchangeCommissionLookupResponse | null>(null);
   const commissionFetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [isAddressConfirmed, setIsAddressConfirmed] = useState(false);
   const [forceUpdate, setForceUpdate] = useState(0);
@@ -564,6 +602,7 @@ export default function DepositForm({
   const [isAssetDropdownOpen, setIsAssetDropdownOpen] = useState(false);
   const [assetSearchTerm, setAssetSearchTerm] = useState("");
   const [assetFilterTab, setAssetFilterTab] = useState<"all" | "new" | "gainers" | "losers">("all");
+  const [whitelistBookmarks, setWhitelistBookmarks] = useState<Array<{ asset: string; network: string }>>([]);
   const assetDropdownRef = useRef<HTMLDivElement>(null);
   const assetDropdownContentRef = useRef<HTMLDivElement | null>(null);
   const [assetDropdownPosition, setAssetDropdownPosition] = useState({
@@ -612,6 +651,19 @@ export default function DepositForm({
       window.removeEventListener("scroll", handleReposition, true);
     };
   }, [isAssetDropdownOpen, updateAssetDropdownPosition]);
+
+  useEffect(() => {
+    if (!isAssetDropdownOpen) return;
+    bookmarkedAddressesApi
+      .list()
+      .then((list) => {
+        const pairs = Array.from(
+          new Map(list.map((b) => [`${b.asset.toLowerCase()}|${b.network.toLowerCase()}`, { asset: b.asset, network: b.network }])).values()
+        );
+        setWhitelistBookmarks(pairs);
+      })
+      .catch(() => setWhitelistBookmarks([]));
+  }, [isAssetDropdownOpen]);
 
   // Estimate calculation state
   const [estimate, setEstimate] = useState<any>(null);
@@ -849,26 +901,20 @@ export default function DepositForm({
       return;
     }
 
-    // First try to get from cache, then force refresh if no data
-    dispatch(fetchAssets(false))
-      .unwrap()
+    withTimeout(dispatch(fetchAssets(false)).unwrap(), 15_000)
       .then((data) => {
-
-
-        // If no assets in cache, force refresh
         if (!data?.assets || data.assets.length === 0) {
-          return dispatch(fetchAssets(true)).unwrap();
+          return withTimeout(dispatch(fetchAssets(true)).unwrap(), 15_000);
         }
         return data;
       })
       .catch((error: unknown) => {
-        // If cache fetch fails, try force refresh
-        return dispatch(fetchAssets(true))
-          .unwrap()
-          .catch((refreshError: unknown) => {
+        return withTimeout(dispatch(fetchAssets(true)).unwrap(), 15_000).catch(
+          (refreshError: unknown) => {
             showToast.error(`Failed to fetch assets: ${refreshError}`);
             throw refreshError;
-          });
+          }
+        );
       });
   }, [dispatch]);
 
@@ -879,34 +925,25 @@ export default function DepositForm({
       return;
     }
 
-    dispatch(fetchSupportedAssets(false))
-      .unwrap()
+    withTimeout(dispatch(fetchSupportedAssets(false)).unwrap(), 15_000)
       .then((data) => {
-        // If no assets in cache, force refresh
         if (!data || data.length === 0) {
-          return dispatch(fetchSupportedAssets(true)).unwrap();
+          return withTimeout(dispatch(fetchSupportedAssets(true)).unwrap(), 15_000);
         }
         return data;
       })
       .catch((error: unknown) => {
-        // If cache fetch fails, try force refresh
-        return dispatch(fetchSupportedAssets(true))
-          .unwrap()
-          .catch((refreshError: unknown) => {
-
-            // Only show error if it's a network issue, not cache issues
+        return withTimeout(dispatch(fetchSupportedAssets(true)).unwrap(), 15_000).catch(
+          (refreshError: unknown) => {
             if (refreshError instanceof Error) {
               if (refreshError.message.includes("Network Error") || refreshError.message.includes("Network connection issue")) {
                 showToast.warning("Network Issue", "Unable to fetch assets due to network problems. Using fallback data.");
               } else if (refreshError.message.includes("Server Error")) {
                 showToast.error("Server Error", "Unable to fetch assets from server. Please try again later.");
               } else if (!refreshError.message.includes("Cache")) {
-                // Only show error if it's not a cache-related issue
                 showToast.error("Asset Loading Error", `Failed to fetch swap assets: ${refreshError.message}`);
               }
             }
-
-            // Set fallback assets so the form can still work
             const fallbackAssets = [
               {
                 ticker: "USDT",
@@ -1017,15 +1054,13 @@ export default function DepositForm({
     };
   }, [isAssetDropdownOpen]);
 
-  // Check if asset is one of the first two direct assets (USDT on BSC or USDC on BSC)
   const isSimpleCalculationAsset = (asset: any) => {
     if (!asset) return false;
     const ticker = (asset?.ticker || asset?.symbol || "").toLowerCase();
     const network = (asset?.network || "").toLowerCase();
-
-    // First two assets: USDT on BSC and USDC on BSC
     return (ticker === "usdt" && network === "bsc") ||
-      (ticker === "usdc" && network === "bsc");
+      (ticker === "usdc" && network === "bsc") ||
+      isExchangeCommissionLookupAsset(asset);
   };
 
   // Check if asset is FXP (forex)
@@ -1041,47 +1076,85 @@ export default function DepositForm({
   const isCommissionApiAsset = (asset: any) => !!getCommissionApiAsset(asset?.ticker || asset?.symbol || "");
 
   useEffect(() => {
-    const apiAsset = selectedAsset ? getCommissionApiAsset(selectedAsset.ticker || selectedAsset.symbol || "") : null;
-    if (!apiAsset || !selectedAsset) {
+    if (!selectedAsset) {
       setApiCommission(null);
+      setExchangeLookupResponse(null);
       return;
     }
+    const params = getExchangeLookupParams(selectedAsset);
     const amount = isCalculatingFromPay
       ? (parseFloat(payAmountInput) || payAmount)
       : (parseFloat(getAmountInput) || getAmount);
     if (amount <= 0) {
-      setApiCommission(null);
+      if (params) setExchangeLookupResponse(null);
+      else setApiCommission(null);
       return;
     }
+    if (params) {
+      if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
+      commissionFetchTimeoutRef.current = setTimeout(() => {
+        // Home: deposit = crypto -> USD with network for USDT/USDC
+        fetchExchangeCommissionLookup(amount, "deposit", params.from_currency, "USD", params.from_network)
+          .then((res) => {
+            setExchangeLookupResponse(res);
+            setApiCommission(null);
+            if (isCalculatingFromPay && res.to_amount != null) {
+              const toAmount = parseFloat(res.to_amount);
+              if (!Number.isNaN(toAmount)) {
+                setGetAmount(toAmount);
+                setGetAmountInput(res.to_amount);
+              }
+            }
+          })
+          .catch(() => setExchangeLookupResponse(null));
+      }, 300);
+      return () => { if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current); };
+    }
+    const apiAsset = getCommissionApiAsset(selectedAsset.ticker || selectedAsset.symbol || "");
+    if (!apiAsset) { setApiCommission(null); return; }
     if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
     commissionFetchTimeoutRef.current = setTimeout(() => {
       fetchCommission(apiAsset, amount, "deposit")
-        .then((c) => setApiCommission(c))
+        .then((c) => { setApiCommission(c); setExchangeLookupResponse(null); })
         .catch(() => setApiCommission(null));
     }, 300);
-    return () => {
-      if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
-    };
+    return () => { if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current); };
   }, [selectedAsset, payAmountInput, getAmountInput, payAmount, getAmount, isCalculatingFromPay]);
 
-  // Recalculate receive amount when apiCommission arrives (was null during initial calculation)
   useEffect(() => {
-    if (selectedAsset && isCommissionApiAsset(selectedAsset) && apiCommission !== null) {
+    if (!selectedAsset || isExchangeCommissionLookupAsset(selectedAsset)) return;
+    if (isCommissionApiAsset(selectedAsset) && apiCommission !== null) {
       if (isCalculatingFromPay && payAmount > 0) {
-        // Forward: You Send -> You Receive
         const commissionAmount = (payAmount * apiCommission) / 100;
-        const calculatedGetAmount = Math.max(0, payAmount - commissionAmount);
-        setGetAmount(calculatedGetAmount);
-        setGetAmountInput(calculatedGetAmount.toString());
+        setGetAmount(Math.max(0, payAmount - commissionAmount));
+        setGetAmountInput((Math.max(0, payAmount - commissionAmount)).toString());
       } else if (!isCalculatingFromPay && getAmount > 0) {
-        // Reverse: You Receive -> You Send
-        const commissionRate = apiCommission;
-        const calculatedPayAmount = getAmount / (1 - commissionRate / 100);
+        const calculatedPayAmount = getAmount / (1 - apiCommission / 100);
         setPayAmount(calculatedPayAmount);
         setPayAmountInput(calculatedPayAmount.toString());
       }
     }
   }, [apiCommission, payAmount, getAmount, isCalculatingFromPay, selectedAsset]);
+
+  useEffect(() => {
+    if (!selectedAsset || !isExchangeCommissionLookupAsset(selectedAsset) || !exchangeLookupResponse?.local_commission || isCalculatingFromPay || getAmount <= 0) return;
+    const lc = exchangeLookupResponse.local_commission;
+    if (lc.commission_mode === "flat_fee" && lc.fee != null) {
+      const fee = parseFloat(lc.fee);
+      if (!Number.isNaN(fee)) {
+        const calculatedPay = getAmount + fee;
+        setPayAmount(calculatedPay);
+        setPayAmountInput(calculatedPay.toString());
+      }
+    } else if (lc.commission_mode === "percentage" && lc.rate != null) {
+      const rate = parseFloat(lc.rate);
+      if (!Number.isNaN(rate) && rate < 100) {
+        const calculatedPay = getAmount / (1 - rate / 100);
+        setPayAmount(calculatedPay);
+        setPayAmountInput(calculatedPay.toString());
+      }
+    }
+  }, [selectedAsset, exchangeLookupResponse, isCalculatingFromPay, getAmount]);
 
   // Fetch estimate for non-direct assets - debounced to avoid rapid API calls
   useEffect(() => {
@@ -1671,6 +1744,42 @@ export default function DepositForm({
     return 0;
   });
 
+  const whitelistKeys = useMemo(() => {
+    const keys = new Set<string>();
+    whitelistBookmarks.forEach((b) => {
+      const assetKey = b.asset.toLowerCase();
+      getNetworkMatchKeys(b.network).forEach((net) => keys.add(`${assetKey}|${net}`));
+    });
+    return keys;
+  }, [whitelistBookmarks]);
+
+  const whitelistAssets = useMemo(() => {
+    if (whitelistKeys.size === 0) return [];
+    const popularSlice = sortedSwapAssets.slice(0, 3);
+    const popularSet = new Set(
+      popularSlice.map((a) => `${(a?.ticker || a?.symbol || a?.name || "").toString().toLowerCase()}|${(a?.network || getAssetNetwork(a) || "").toString().toLowerCase()}`)
+    );
+    return sortedSwapAssets.filter((a) => {
+      const key = `${(a?.ticker || a?.symbol || a?.name || "").toString().toLowerCase()}|${(a?.network || getAssetNetwork(a) || "").toString().toLowerCase()}`;
+      return whitelistKeys.has(key) && !popularSet.has(key);
+    });
+  }, [sortedSwapAssets, whitelistKeys]);
+
+  const whitelistKeySet = useMemo(
+    () => new Set(whitelistAssets.map((a) => `${(a?.ticker || a?.symbol || a?.name || "").toString().toLowerCase()}|${(a?.network || getAssetNetwork(a) || "").toString().toLowerCase()}`)),
+    [whitelistAssets]
+  );
+
+  const allAssetsList = useMemo(() => {
+    if (assetSearchTerm) return sortedSwapAssets;
+    if (sortedSwapAssets.length <= 3) return sortedSwapAssets;
+    const excludePopular = sortedSwapAssets.slice(3);
+    return excludePopular.filter((a) => {
+      const key = `${(a?.ticker || a?.symbol || a?.name || "").toString().toLowerCase()}|${(a?.network || getAssetNetwork(a) || "").toString().toLowerCase()}`;
+      return !whitelistKeySet.has(key);
+    });
+  }, [assetSearchTerm, sortedSwapAssets, whitelistKeySet]);
+
   const renderAssetDropdown = () => {
     if (!isComponentMounted || !isAssetDropdownOpen) {
       return null;
@@ -1866,7 +1975,7 @@ export default function DepositForm({
                               asset?.image_url ||
                               asset?.asset_image ||
                               (asset as any)?.image ||
-                              "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                              "/images/tether.svg"
                             }
                             alt={
                               asset?.name ||
@@ -1877,7 +1986,7 @@ export default function DepositForm({
                             className="w-10 h-10 rounded-full object-cover"
                             onError={(e) => {
                               e.currentTarget.src =
-                                "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                                "/images/tether.svg";
                             }}
                           />
                           <div className="flex-1">
@@ -1922,14 +2031,54 @@ export default function DepositForm({
                         </div>
                       ))}
 
+                    {whitelistAssets.length > 0 && (
+                      <>
+                        <div className="px-3 sm:px-4 py-2 bg-[#F5F6F7] dark:bg-[#23232B]">
+                          <span className="text-xs font-semibold text-[#788099] uppercase tracking-wider">
+                            Whitelist
+                          </span>
+                        </div>
+                        {whitelistAssets.map((asset: SupportedAsset, index: number) => (
+                          <div
+                            key={`whitelist-${asset.asset_id || "asset"}-${asset.symbol || asset.ticker || asset.name}-${asset.network || "unknown"}-${index}`}
+                            className="flex items-center gap-4 p-4 sm:p-5 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer transition-colors duration-150"
+                            onClick={() => {
+                              handleAssetSelection(asset);
+                              setIsAssetDropdownOpen(false);
+                              setAssetSearchTerm("");
+                              if (isHomePage) setAssetFilterTab("all");
+                            }}
+                          >
+                            <img
+                              src={asset?.image_url || asset?.asset_image || (asset as any)?.image || "/images/tether.svg"}
+                              alt={asset?.name || asset?.ticker || asset?.symbol || "Asset"}
+                              className="w-10 h-10 rounded-full object-cover"
+                              onError={(e) => { e.currentTarget.src = "/images/tether.svg"; }}
+                            />
+                            <div className="flex-1">
+                              <div className={`font-medium text-base flex items-center gap-2 ${isDark ? "text-white" : "text-[#1F2937]"}`}>
+                                {(asset.ticker || asset.symbol || asset.name || "Unknown").toUpperCase()}
+                                <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-normal px-2 py-0.5 rounded-full">
+                                  {getNetworkDisplayName(getAssetNetwork(asset))}
+                                </span>
+                              </div>
+                              <div className={`text-sm text-gray-500 dark:text-gray-400`}>
+                                {asset.name || asset.ticker || asset.symbol || "Unknown Asset"}
+                              </div>
+                            </div>
+                            {selectedAsset?.asset_id === asset.asset_id && (
+                              <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
+                            )}
+                          </div>
+                        ))}
+                      </>
+                    )}
+
                     <div className="border-t-2 border-gray-200 dark:border-gray-600"></div>
                   </>
                 )}
 
-                {(assetSearchTerm
-                  ? sortedSwapAssets
-                  : sortedSwapAssets.slice(3)
-                ).map((asset: SupportedAsset, index: number) => (
+                {(assetSearchTerm ? sortedSwapAssets : allAssetsList).map((asset: SupportedAsset, index: number) => (
                   <div
                     key={`${asset.asset_id || "asset"}-${asset.symbol || asset.ticker || asset.name}-${asset.network || "unknown"}-${index}`}
                     className="flex items-center gap-4 p-4 sm:p-5 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer transition-colors duration-150"
@@ -1945,7 +2094,7 @@ export default function DepositForm({
                         asset?.image_url ||
                         asset?.asset_image ||
                         (asset as any)?.image ||
-                        "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                        "/images/tether.svg"
                       }
                       alt={
                         asset?.name ||
@@ -1956,7 +2105,7 @@ export default function DepositForm({
                       className="w-10 h-10 rounded-full object-cover"
                       onError={(e) => {
                         e.currentTarget.src =
-                          "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                          "/images/tether.svg";
                       }}
                     />
                     <div className="flex-1">
@@ -2013,16 +2162,17 @@ export default function DepositForm({
     );
   };
 
-  // Calculate fees and amounts - Network fee is always 0
   const networkFee = 0;
   let commissionAmount: number;
-  if (selectedAsset && isCommissionApiAsset(selectedAsset)) {
-    const rate = apiCommission ?? 2; // Default 2% while API loads
-    commissionAmount = (payAmount * rate) / 100;
+  if (selectedAsset && isExchangeCommissionLookupAsset(selectedAsset) && exchangeLookupResponse?.local_commission) {
+    const lc = exchangeLookupResponse.local_commission;
+    if (lc.commission_mode === "flat_fee" && lc.fee != null) commissionAmount = parseFloat(lc.fee) || 0;
+    else if (lc.commission_mode === "percentage" && lc.rate != null) commissionAmount = (payAmount * parseFloat(lc.rate)) / 100;
+    else commissionAmount = 0;
+  } else if (selectedAsset && isCommissionApiAsset(selectedAsset)) {
+    commissionAmount = (payAmount * (apiCommission ?? 2)) / 100;
   } else {
-    const commissionRate = selectedAsset?.range_commissions?.[0]?.commission
-      ? parseFloat(selectedAsset.range_commissions[0].commission)
-      : 2;
+    const commissionRate = selectedAsset?.range_commissions?.[0]?.commission ? parseFloat(selectedAsset.range_commissions[0].commission) : 2;
     commissionAmount = (payAmount * commissionRate) / 100;
   }
   const totalFees = networkFee + commissionAmount;
@@ -2054,12 +2204,14 @@ export default function DepositForm({
       return;
     }
 
-    // For direct assets (USDT on BSC, USDC on BSC), API commission is % e.g. {"commission":"2.00"} = 2%
     if (isSimpleCalculationAsset(selectedAsset)) {
+      if (isExchangeCommissionLookupAsset(selectedAsset)) {
+        setReceiveAmountError(null);
+        return;
+      }
       const commissionAmount = isCommissionApiAsset(selectedAsset)
         ? (fromAmount * (apiCommission ?? 2)) / 100
         : (fromAmount * (selectedAsset?.range_commissions?.[0]?.commission ? parseFloat(selectedAsset.range_commissions[0].commission) : 2)) / 100;
-
       if (fromPay) {
         const calculatedGetAmount = Math.max(0, fromAmount - commissionAmount);
         setGetAmount(calculatedGetAmount);
@@ -2070,10 +2222,7 @@ export default function DepositForm({
         setPayAmount(calculatedPayAmount);
         setPayAmountInput(calculatedPayAmount.toString());
       }
-
       setReceiveAmountError(null);
-
-      // For direct assets, no loading states needed - calculation is instant
       return;
     }
 
@@ -3047,16 +3196,15 @@ export default function DepositForm({
                           setIsInfoModalOpen(true);
                         }
 
-                        // For direct assets, calculate immediately (API commission is % e.g. 2 = 2%)
                         if (selectedAsset && newAmount > 0 && isSimpleCalculationAsset(selectedAsset)) {
-                          const commissionAmount = isCommissionApiAsset(selectedAsset)
-                            ? (newAmount * (apiCommission ?? 2)) / 100
-                            : (newAmount * (selectedAsset?.range_commissions?.[0]?.commission ? parseFloat(selectedAsset.range_commissions[0].commission) : 2)) / 100;
-                          const calculatedGetAmount = Math.max(0, newAmount - commissionAmount);
-                          setGetAmount(calculatedGetAmount);
-                          setGetAmountInput(calculatedGetAmount.toString());
-
-                          // Simple assets don't need loading states - calculation is instant
+                          if (!isExchangeCommissionLookupAsset(selectedAsset)) {
+                            const commissionAmount = isCommissionApiAsset(selectedAsset)
+                              ? (newAmount * (apiCommission ?? 2)) / 100
+                              : (newAmount * (selectedAsset?.range_commissions?.[0]?.commission ? parseFloat(selectedAsset.range_commissions[0].commission) : 2)) / 100;
+                            const calculatedGetAmount = Math.max(0, newAmount - commissionAmount);
+                            setGetAmount(calculatedGetAmount);
+                            setGetAmountInput(calculatedGetAmount.toString());
+                          }
                         } else if (selectedAsset && newAmount > 0 && isForexAsset(selectedAsset)) {
                           // For FXP, calculate immediately with 1.06 rate
                           const calculatedGetAmount = newAmount / FXP_EXCHANGE_RATE;
@@ -3136,32 +3284,9 @@ export default function DepositForm({
                         logoUrl = payment.logo.trim();
                       }
 
-                      if (index < 3) {
-                        console.log(`🔍 Payment Method Option ${index}:`, {
-                          isHomePage,
-                          provider_name: payment.provider_name,
-                          provider_logo: payment.provider_logo,
-                          logo: payment.logo,
-                          logoUrl: logoUrl,
-                          logoUrlType: typeof logoUrl,
-                          logoUrlIsValid: !!logoUrl && logoUrl.length > 0,
-                          payment_method: payment.payment_method,
-                          admin_payment_detail_id: payment.admin_payment_detail_id,
-                          allKeys: Object.keys(payment)
-                        });
-                      }
+                     
 
-                      if (!logoUrl && index < 3) {
-                        console.warn(`⚠️ No logo found for payment method ${index}: ${payment.provider_name}`, {
-                          paymentKeys: Object.keys(payment),
-                          hasProviderLogo: !!payment.provider_logo,
-                          hasLogo: !!payment.logo,
-                          providerLogoValue: payment.provider_logo,
-                          logoValue: payment.logo,
-                          providerLogoType: typeof payment.provider_logo,
-                          logoType: typeof payment.logo
-                        });
-                      }
+                     
 
                       const providerName = formatPaymentProviderLabel(payment);
                       const methodName = getPaymentMethodNameToStrip(payment);
@@ -3251,13 +3376,13 @@ export default function DepositForm({
             >
               {/* Light mode image */}
               <img
-                src="https://res.cloudinary.com/pitz/image/upload/v1756579504/Frame_36261_1_d9cnq1.png"
+                src="/assets/Frame_36261_1_d9cnq1.png"
                 alt="swap icon"
                 className="w-10 h-10 dark:hidden"
               />
               {/* Dark mode image */}
               <img
-                src="https://res.cloudinary.com/pitz/image/upload/v1755500509/Frame_36261_ledmyw.png"
+                src="/assets/Frame_36261_ledmyw.png"
                 alt="swap icon"
                 className="w-10 h-10 hidden dark:block"
               />
@@ -3323,14 +3448,13 @@ export default function DepositForm({
                         // Clear API validation error when user changes amount
                         setApiValidationError(null);
 
-                        // For direct assets, calculate immediately (API commission is % e.g. 2 = 2%)
                         if (selectedAsset && newAmount > 0 && isSimpleCalculationAsset(selectedAsset)) {
-                          const commissionRate = isCommissionApiAsset(selectedAsset) ? (apiCommission ?? 2) : (selectedAsset?.range_commissions?.[0]?.commission ? parseFloat(selectedAsset.range_commissions[0].commission) : 2);
-                          const calculatedPayAmount = newAmount / (1 - commissionRate / 100);
-                          setPayAmount(calculatedPayAmount);
-                          setPayAmountInput(calculatedPayAmount.toString());
-
-                          // Simple assets don't need loading states - calculation is instant
+                          if (!isExchangeCommissionLookupAsset(selectedAsset)) {
+                            const commissionRate = isCommissionApiAsset(selectedAsset) ? (apiCommission ?? 2) : (selectedAsset?.range_commissions?.[0]?.commission ? parseFloat(selectedAsset.range_commissions[0].commission) : 2);
+                            const calculatedPayAmount = newAmount / (1 - commissionRate / 100);
+                            setPayAmount(calculatedPayAmount);
+                            setPayAmountInput(calculatedPayAmount.toString());
+                          }
                         } else if (selectedAsset && newAmount > 0 && isForexAsset(selectedAsset)) {
                           // For FXP, calculate immediately with 1.06 rate (reverse)
                           const calculatedPayAmount = newAmount * FXP_EXCHANGE_RATE;
@@ -3447,13 +3571,13 @@ export default function DepositForm({
                             selectedAsset?.image_url ||
                             selectedAsset?.asset_image ||
                             (selectedAsset as any)?.image ||
-                            "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                            "/images/tether.svg"
                           }
                           alt={selectedAsset?.name || selectedAsset?.ticker || selectedAsset?.symbol || "Asset"}
                           className="w-6 h-6 rounded-full object-cover"
                           onError={(e) => {
                             e.currentTarget.src =
-                              "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                              "/images/tether.svg";
                           }}
                         />
                         <div className="flex flex-col">
@@ -3473,7 +3597,7 @@ export default function DepositForm({
                     ) : (
                       <>
                         <img
-                          src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                          src="/images/tether.svg"
                           alt="asset icon"
                           className="w-6 h-6"
                         />
@@ -3525,7 +3649,7 @@ export default function DepositForm({
             </span>
           </div>
           <img
-            src="https://res.cloudinary.com/pitz/image/upload/v1753424863/Screenshot_2025-07-25_092724_rjinec.png"
+            src="/assets/Screenshot_2025-07-25_092724_rjinec.png"
             alt=""
             style={{ cursor: "pointer" }}
             onClick={() =>
@@ -3541,7 +3665,7 @@ export default function DepositForm({
         {!isFirstCardSubmitted && !showForexForm && (
           <div className="mt-4 mb-3 flex items-center gap-3 p-3 rounded-2xl bg-transparent">
             <img
-              src="https://res.cloudinary.com/pitz/image/upload/v1765784047/alert-circle_1_ujybne.png"
+              src="/assets/alert-circle_1_ujybne.png"
               alt="Warning"
               className="w-5 h-5 flex-shrink-0 mt-1"
             />
@@ -3590,9 +3714,8 @@ export default function DepositForm({
                     payBank: payBank,
                     walletAddress,
                   };
-                  setAuthRedirectPath(
-                    buildExpressRedirectPath(mode, state)
-                  );
+                  setAuthRedirectPath(buildExpressRedirectPath(mode, state));
+                  setExpressPrefillState(state); // Fallback if URL params are lost
                   router.push("/auth/login");
                   return;
                 }
@@ -3659,7 +3782,7 @@ export default function DepositForm({
                   <span className="text-base font-semibold text-white">E</span>
                   <img
                     className="h-5 w-auto mt-2"
-                    src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
+                    src="/assets/Group_5_gkxzdz.png"
                     alt="Express icon"
                   />
                 </span>
@@ -3691,12 +3814,12 @@ export default function DepositForm({
                         src={
                           selectedPaymentDetail.provider_logo ||
                           selectedPaymentDetail.logo ||
-                          "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
+                          "/assets/image_7_jijlik.png"
                         }
                         alt={`${selectedPaymentDetail.provider_name || 'Bank'} Logo`}
                         className="w-8 h-8 rounded-full object-contain"
                         onError={(e) => {
-                          e.currentTarget.src = "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+                          e.currentTarget.src = "/assets/image_7_jijlik.png";
                         }}
                       />
                       <span className={`${isDark ? "text-[#D1D5DB]" : "text-[#1F2937]"} text-base font-semibold`}>
@@ -3893,12 +4016,12 @@ export default function DepositForm({
                     src={
                       selectedPaymentDetail.provider_logo ||
                       selectedPaymentDetail.logo ||
-                      "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
+                      "/assets/image_7_jijlik.png"
                     }
                     alt={`${selectedPaymentDetail.provider_name || 'Bank'} Logo`}
                     className="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-contain"
                     onError={(e) => {
-                      e.currentTarget.src = "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+                      e.currentTarget.src = "/assets/image_7_jijlik.png";
                     }}
                   />
                   <span className={`${isDark ? "text-[#D1D5DB]" : "text-[#1F2937]"} text-sm sm:text-base font-semibold truncate max-w-[150px] sm:max-w-none`}>
@@ -4081,7 +4204,7 @@ export default function DepositForm({
               <div className="flex items-start gap-2 sm:gap-3">
                 <span className="text-yellow-600 dark:text-yellow-500 mt-0.5 flex-shrink-0">
                   <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
-                    <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </span>
                 <p className="text-xs sm:text-sm text-yellow-800 dark:text-yellow-200 font-medium">
@@ -4101,7 +4224,7 @@ export default function DepositForm({
               Wallet/Account Address
             </label>
             {/* Input group */}
-            <div className="relative flex items-center bg-transparent dark:bg-transparent border border-[#39394a] dark:border-[#39394A] rounded-2xl px-2 sm:px-4 py-2 mb-4 gap-1 sm:gap-2 overflow-hidden">
+            <div className="relative flex items-center min-w-0 bg-transparent dark:bg-transparent border border-[#39394a] dark:border-[#39394A] rounded-2xl px-2 sm:px-4 py-2 mb-4 gap-1 sm:gap-2">
               {/* Left icon */}
               <span className="mr-2 text-[#1D8751]">
                 <svg width="22" height="22" fill="none" viewBox="0 0 24 24">
@@ -4146,7 +4269,7 @@ export default function DepositForm({
                   }
                 }}
                 placeholder={`Paste your ${(selectedAsset?.ticker || selectedAsset?.symbol || "crypto").toUpperCase()} address`}
-                className={`flex-1 bg-transparent border-none outline-none text-[#35353e] dark:text-[#788099] placeholder-[#788099] text-sm sm:text-base ${walletError
+                className={`flex-1 min-w-0 bg-transparent border-none outline-none text-[#35353e] dark:text-[#788099] placeholder-[#788099] text-sm sm:text-base ${walletError
                   ? "border-red-500"
                   : walletAddress.trim() && !walletError
                     ? "border-green-500"
@@ -4156,7 +4279,7 @@ export default function DepositForm({
               {/* Bookmark icon - clickable to load from bookmarks */}
               <span
                 ref={bookmarkAnchorRef}
-                className="mx-1 sm:mx-2 text-[#1D8751] cursor-pointer shrink-0 hover:opacity-80 transition-opacity"
+                className="relative mx-1 sm:mx-2 text-[#1D8751] cursor-pointer shrink-0 hover:opacity-80 transition-opacity"
                 onClick={async () => {
                   if (bookmarkOpen) {
                     setBookmarkOpen(false);
@@ -4170,36 +4293,37 @@ export default function DepositForm({
                 <svg width="18" height="18" className="sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
                 </svg>
+                <BookmarkDropdown
+                  isOpen={bookmarkOpen}
+                  onClose={() => setBookmarkOpen(false)}
+                  bookmarks={bookmarks}
+                  loading={bookmarksLoading}
+                  saving={bookmarkSaving}
+                  currentAddress={walletAddress}
+                  asset={currentCurrency}
+                  network={currentNetwork || undefined}
+                  onSelect={(addr) => {
+                    setWalletAddress(addr);
+                    if (addr.trim()) validateAddress(addr, currentCurrency, currentNetwork);
+                    else resetAddressValidation();
+                  }}
+                  onSaveCurrent={async () => {
+                    if (!walletAddress.trim() || !currentCurrency || !currentNetwork) {
+                      showToast.error("Enter address and select asset/network first");
+                      return;
+                    }
+                    await saveBookmark({
+                      address: walletAddress.trim(),
+                      label: `My ${currentCurrency} wallet`,
+                      network: currentNetwork,
+                      asset: currentCurrency,
+                    });
+                  }}
+                  anchorRef={bookmarkAnchorRef}
+                  isDark={isDark}
+                  saveDisabled={isAddressValidating || !(addressValidationResult?.isValid)}
+                />
               </span>
-              <BookmarkDropdown
-                isOpen={bookmarkOpen}
-                onClose={() => setBookmarkOpen(false)}
-                bookmarks={bookmarks}
-                loading={bookmarksLoading}
-                saving={bookmarkSaving}
-                currentAddress={walletAddress}
-                asset={currentCurrency}
-                network={currentNetwork || undefined}
-                onSelect={(addr) => {
-                  setWalletAddress(addr);
-                  if (addr.trim()) validateAddress(addr, currentCurrency, currentNetwork);
-                  else resetAddressValidation();
-                }}
-                onSaveCurrent={async () => {
-                  if (!walletAddress.trim() || !currentCurrency || !currentNetwork) {
-                    showToast.error("Enter address and select asset/network first");
-                    return;
-                  }
-                  await saveBookmark({
-                    address: walletAddress.trim(),
-                    label: `My ${currentCurrency} wallet`,
-                    network: currentNetwork,
-                    asset: currentCurrency,
-                  });
-                }}
-                anchorRef={bookmarkAnchorRef}
-                isDark={isDark}
-              />
               {/* Paste button */}
               <button
                 title="Paste"
@@ -4357,7 +4481,7 @@ export default function DepositForm({
                   E
                   <img
                     className="mt-2"
-                    src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
+                    src="/assets/Group_5_gkxzdz.png"
                     alt=""
                   />
                 </span>

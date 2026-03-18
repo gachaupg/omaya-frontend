@@ -3,27 +3,27 @@ import { TransactionType } from "@/features/p2p/types";
 export const navItems = [
   {
     labelKey: "navigation.dashboard",
-    icon: "https://res.cloudinary.com/pitz/image/upload/v1747237691/svgexport-54_1_ldjke6.png",
+    icon: "/assets/svgexport-54_1_ldjke6.png",
     href: "/dashboard/",
   },
   {
     labelKey: "navigation.express",
-    icon: "https://res.cloudinary.com/pitz/image/upload/v1752243765/Vector_2_xauedx.png",
+    icon: "/assets/Vector_2_xauedx.png",
     href: "/dashboard/express-exchange/",
   },
   {
     labelKey: "navigation.exchange",
-    icon: "https://res.cloudinary.com/pitz/image/upload/v1764568507/uil_exchange_1_okxkvb.png",
+    icon: "/assets/uil_exchange_1_okxkvb.png",
     href: "/dashboard/exchange/",
   },
   {
     labelKey: "navigation.p2pTrading",
-    icon: "https://res.cloudinary.com/pitz/image/upload/v1747237692/users-profiles-left_e2oejc.png",
+    icon: "/assets/users-profiles-left_e2oejc.png",
     href: "/dashboard/p2p/",
   },
   {
     labelKey: "navigation.swapCrypto",
-    icon: "https://res.cloudinary.com/pitz/image/upload/v1747237691/Group_164002_fgt2kf.png",
+    icon: "/assets/Group_164002_fgt2kf.png",
     href: "/dashboard/swap/",
   },
   // {
@@ -33,7 +33,7 @@ export const navItems = [
   // },
   {
     labelKey: "navigation.account",
-    icon: "https://res.cloudinary.com/pitz/image/upload/v1747237692/users-profiles-left_e2oejc.png",
+    icon: "/assets/users-profiles-left_e2oejc.png",
     href: "/dashboard/account/",
   },
   // {
@@ -55,7 +55,7 @@ export const transactions: (TransactionType & { when: string })[] = [
     status: "Completed",
     payment: {
       bank: "Salam Bank",
-      logo: "https://res.cloudinary.com/pitz/image/upload/v1746705424/1d80d34ccb0f17b03572fe01e820f090edc3e463_y13v5u.jpg",
+      logo: "/assets/1d80d34ccb0f17b03572fe01e820f090edc3e463_y13v5u.jpg",
     },
   },
   {
@@ -69,7 +69,7 @@ export const transactions: (TransactionType & { when: string })[] = [
     status: "Completed",
     payment: {
       bank: "Salam Bank",
-      logo: "https://res.cloudinary.com/pitz/image/upload/v1746705424/1d80d34ccb0f17b03572fe01e820f090edc3e463_y13v5u.jpg",
+      logo: "/assets/1d80d34ccb0f17b03572fe01e820f090edc3e463_y13v5u.jpg",
     },
   },
   {
@@ -83,7 +83,7 @@ export const transactions: (TransactionType & { when: string })[] = [
     status: "Completed",
     payment: {
       bank: "Salam Bank",
-      logo: "https://res.cloudinary.com/pitz/image/upload/v1746705424/1d80d34ccb0f17b03572fe01e820f090edc3e463_y13v5u.jpg",
+      logo: "/assets/1d80d34ccb0f17b03572fe01e820f090edc3e463_y13v5u.jpg",
     },
   },
   {
@@ -97,7 +97,7 @@ export const transactions: (TransactionType & { when: string })[] = [
     status: "Completed",
     payment: {
       bank: "Salam Bank",
-      logo: "https://res.cloudinary.com/pitz/image/upload/v1746705424/1d80d34ccb0f17b03572fe01e820f090edc3e463_y13v5u.jpg",
+      logo: "/assets/1d80d34ccb0f17b03572fe01e820f090edc3e463_y13v5u.jpg",
     },
   },
   {
@@ -111,7 +111,7 @@ export const transactions: (TransactionType & { when: string })[] = [
     status: "Completed",
     payment: {
       bank: "Salam Bank",
-      logo: "https://res.cloudinary.com/pitz/image/upload/v1746705424/1d80d34ccb0f17b03572fe01e820f090edc3e463_y13v5u.jpg",
+      logo: "/assets/1d80d34ccb0f17b03572fe01e820f090edc3e463_y13v5u.jpg",
     },
   },
   {
@@ -125,7 +125,7 @@ export const transactions: (TransactionType & { when: string })[] = [
     status: "Completed",
     payment: {
       bank: "Salam Bank",
-      logo: "https://res.cloudinary.com/pitz/image/upload/v1746705424/1d80d34ccb0f17b03572fe01e820f090edc3e463_y13v5u.jpg",
+      logo: "/assets/1d80d34ccb0f17b03572fe01e820f090edc3e463_y13v5u.jpg",
     },
   },
   {
@@ -139,7 +139,7 @@ export const transactions: (TransactionType & { when: string })[] = [
     status: "Completed",
     payment: {
       bank: "Salam Bank",
-      logo: "https://res.cloudinary.com/pitz/image/upload/v1746705424/1d80d34ccb0f17b03572fe01e820f090edc3e463_y13v5u.jpg",
+      logo: "/assets/1d80d34ccb0f17b03572fe01e820f090edc3e463_y13v5u.jpg",
     },
   },
   {
@@ -153,7 +153,7 @@ export const transactions: (TransactionType & { when: string })[] = [
     status: "Completed",
     payment: {
       bank: "Salam Bank",
-      logo: "https://res.cloudinary.com/pitz/image/upload/v1746705424/1d80d34ccb0f17b03572fe01e820f090edc3e463_y13v5u.jpg",
+      logo: "/assets/1d80d34ccb0f17b03572fe01e820f090edc3e463_y13v5u.jpg",
     },
   },
 ];

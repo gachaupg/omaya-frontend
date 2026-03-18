@@ -1,5 +1,7 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
+import { consumePaymentModalPrefill } from "@/lib/utils/authRedirect";
 import { AppDispatch } from "@/store";
 import { RootState } from "@/store/rootReducer";
 import {
@@ -7,7 +9,7 @@ import {
   fetchUserPaymentDetails,
   deleteUserPaymentDetail,
 } from "@/features/p2p/slices/paymentMethodsSlice";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp, CreditCard, Wallet } from "lucide-react";
 import {
   fetchP2PDepositAddresses,
   createP2PDepositAddress,
@@ -24,6 +26,62 @@ import PaymentMethodsModal from "@/features/p2p/components/ui/p2pdashboard/secti
 import AddWalletAddressModal from "./AddWalletAddressModal";
 import { showToast } from "@/lib/utils/toast";
 import CopyButton from "@/components/ui/CopyButton";
+import QRCode from "qrcode";
+
+const AddressQrImage: React.FC<{ value: string }> = ({ value }) => {
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const generate = async () => {
+      try {
+        setHasError(false);
+        const val = String(value || "").trim();
+        if (!val) {
+          setQrDataUrl(null);
+          return;
+        }
+
+        const dataUrl = await QRCode.toDataURL(val, {
+          width: 180,
+          margin: 1,
+          color: {
+            dark: "#000000",
+            light: "#FFFFFF",
+          },
+        });
+
+        if (!cancelled) {
+          setQrDataUrl(dataUrl);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          console.error("Failed to generate wallet QR:", err);
+          setHasError(true);
+          setQrDataUrl(null);
+        }
+      }
+    };
+
+    generate();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [value]);
+
+  if (!qrDataUrl || hasError) return null;
+
+  return (
+    <img
+      src={qrDataUrl}
+      alt="Wallet QR"
+      className="w-12 h-12 rounded-lg border border-[#E3E6F0] dark:border-[#2A2A35] bg-white object-contain"
+    />
+  );
+};
 
 const WalletAddressCard = ({
   addr,
@@ -50,7 +108,7 @@ const WalletAddressCard = ({
           <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-[#FF4D55] border-2 border-white dark:border-[#13131A]" />
         )}
       </div>
-      <div className="flex-1 flex items-center justify-between">
+      <div className="flex-1 flex items-center justify-between gap-3">
         <div>
           <p className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
             {addr.account_name || addr.label}
@@ -59,23 +117,26 @@ const WalletAddressCard = ({
             {addr.network} • {addr.asset} • {addr.status}
           </p>
         </div>
-        <button
-          className="text-[#1D8751] hover:text-red-500 transition-colors"
-          title="Delete"
-          disabled={isDeleting}
-          onClick={onDelete}
-        >
-          {isDeleting ? (
-            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="#1D8751" strokeWidth="4" fill="none" />
-              <path className="opacity-75" fill="#1D8751" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-            </svg>
-          ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 cursor-pointer" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2" />
-            </svg>
-          )}
-        </button>
+        <div className="flex items-center gap-2">
+          {!!addr.address && <AddressQrImage value={addr.address} />}
+          <button
+            className="text-[#1D8751] hover:text-red-500 transition-colors"
+            title="Delete"
+            disabled={isDeleting}
+            onClick={onDelete}
+          >
+            {isDeleting ? (
+              <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="#1D8751" strokeWidth="4" fill="none" />
+                <path className="opacity-75" fill="#1D8751" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 cursor-pointer" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2" />
+              </svg>
+            )}
+          </button>
+        </div>
       </div>
     </div>
     <div>
@@ -98,8 +159,12 @@ const WalletAddressCard = ({
 const ITEMS_PER_PAGE = 5;
 
 const PaymentMethods = () => {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const dispatch = useDispatch<AppDispatch>();
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const hasAppliedRedirectPrefill = useRef(false);
   const {
     userPaymentDetails,
     userDetailsLoading,
@@ -125,48 +190,68 @@ const PaymentMethods = () => {
     deleteLoading: userWalletDeleteLoading,
   } = useSelector((state: RootState) => state.userWalletAddresses);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [modalFilterProvider, setModalFilterProvider] = useState<string | undefined>();
   const [showAddWalletModal, setShowAddWalletModal] = useState(false);
   const [deletingMethodId, setDeletingMethodId] = useState<string | null>(null);
-  const [activeButton, setActiveButton] = useState("Approved");
+  const [mainSection, setMainSection] = useState<"payment-methods" | "omaya-wallets">("payment-methods");
+  const [bankTab, setBankTab] = useState<"pending" | "approved">("approved");
+  const [cryptoDropdownOpen, setCryptoDropdownOpen] = useState(false);
   const [paymentPage, setPaymentPage] = useState(1);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ type: 'payment' | 'wallet', id: string } | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [walletSearchQuery, setWalletSearchQuery] = useState("");
 
   const isCryptoWallet = (p: UserPaymentDetail) =>
     p?.payment_method_name?.toLowerCase() === "crypto" ||
     !!p?.wallet_address;
 
-  const filteredPayments = useMemo(
+  const isBankAccount = (p: UserPaymentDetail) => {
+    const name = (p?.payment_method_name || p?.payment_provider_name || "").toLowerCase();
+    return name.includes("bank");
+  };
+
+  // Normalize status: only "approved" (case-insensitive) goes to Approved tab; all else → Pending
+  const getStatusCategory = (p: UserPaymentDetail): "pending" | "approved" => {
+    const s = (p.status || "").toString().trim().toLowerCase();
+    return s === "approved" ? "approved" : "pending";
+  };
+
+  // All payment methods that support pending/approved (exclude pure crypto wallets for P2P)
+  const allPaymentMethodsWithStatus = useMemo(
     () =>
-      userPaymentDetails.filter((payment: UserPaymentDetail) => {
-        if (activeButton === "OMAYA Wallets") {
-          return isCryptoWallet(payment);
-        }
-        return payment.status?.toLowerCase() === activeButton.toLowerCase();
-      }),
-    [userPaymentDetails, activeButton]
+      userPaymentDetails.filter((p) => !isCryptoWallet(p)),
+    [userPaymentDetails]
   );
 
-  const totalPaymentPages = Math.max(1, Math.ceil(filteredPayments.length / ITEMS_PER_PAGE));
-  const paginatedPayments = useMemo(
+  const bankPending = useMemo(
+    () => allPaymentMethodsWithStatus.filter((p) => getStatusCategory(p) === "pending"),
+    [allPaymentMethodsWithStatus]
+  );
+  const bankApproved = useMemo(
+    () => allPaymentMethodsWithStatus.filter((p) => getStatusCategory(p) === "approved"),
+    [allPaymentMethodsWithStatus]
+  );
+
+  const bankByTab = bankTab === "pending" ? bankPending : bankApproved;
+  const totalPaymentPages = Math.max(1, Math.ceil(bankByTab.length / ITEMS_PER_PAGE));
+  const paginatedBankPayments = useMemo(
     () =>
-      filteredPayments.slice(
+      bankByTab.slice(
         (paymentPage - 1) * ITEMS_PER_PAGE,
         paymentPage * ITEMS_PER_PAGE
       ),
-    [filteredPayments, paymentPage]
+    [bankByTab, paymentPage]
   );
 
   useEffect(() => {
     setPaymentPage(1);
-  }, [activeButton]);
+  }, [bankTab]);
 
   useEffect(() => {
-    if (paymentPage > totalPaymentPages) {
-      setPaymentPage(totalPaymentPages);
-    }
-  }, [totalPaymentPages, paymentPage]);
+    const maxPage = Math.max(1, totalPaymentPages);
+    setPaymentPage((prev) => (prev > maxPage ? maxPage : prev));
+  }, [totalPaymentPages]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -175,12 +260,30 @@ const PaymentMethods = () => {
     }
   }, [dispatch, isAuthenticated]);
 
+  // Open add payment modal when returning from login redirect (from home withdrawal "Register Now")
   useEffect(() => {
-    if (isAuthenticated && activeButton === "OMAYA Wallets") {
+    if (!isAuthenticated || hasAppliedRedirectPrefill.current) return;
+    const openAdd = searchParams?.get("openAddModal") === "1";
+    if (!openAdd) return;
+    const prefillFromUrl = {
+      method: searchParams?.get("method") || undefined,
+      provider: searchParams?.get("provider") || undefined,
+    };
+    const prefill = (prefillFromUrl.method || prefillFromUrl.provider)
+      ? prefillFromUrl
+      : consumePaymentModalPrefill();
+    if (!prefill?.method && !prefill?.provider) return;
+    hasAppliedRedirectPrefill.current = true;
+    if (prefill.provider) setModalFilterProvider(prefill.provider);
+    setShowPaymentModal(true);
+  }, [isAuthenticated, searchParams]);
+
+  useEffect(() => {
+    if (isAuthenticated && mainSection === "omaya-wallets") {
       dispatch(fetchP2PDepositAddresses() as any);
       dispatch(fetchUserWalletAddresses() as any);
     }
-  }, [dispatch, isAuthenticated, activeButton]);
+  }, [dispatch, isAuthenticated, mainSection]);
 
   const handleGenerateAddress = () => {
     dispatch(createP2PDepositAddress({ asset: "USDT", network: "BSC" }) as any);
@@ -252,33 +355,31 @@ const PaymentMethods = () => {
 
   return (
     <div className="p-1 sm:p-2 md:p-4 dark:text-white text-gray-900 w-full">
-      {/* Top Header Section */}
+      {/* Top Header: Two main sections */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center w-full justify-between gap-2 sm:gap-3 mb-4">
-        <div>
-          <div className="text-sm sm:text-base font-semibold dark:text-white text-gray-900 mb-2">
-            Wallet Address
-          </div>
-          <div className="flex gap-2">
-            <button className={`px-3 py-1.5 rounded-full border border-[#1D8751] text-[#1D8751] text-xs sm:text-sm font-semibold focus:outline-none ${activeButton === "Approved" ? "bg-[#1D8751] text-white" : "bg-transparent"}`} onClick={() => setActiveButton("Approved")} >
-              Approved
-            </button>
-            <button className={`px-3 py-1.5 rounded-full border border-[#1D8751] text-[#1D8751] text-xs sm:text-sm font-semibold focus:outline-none ${activeButton === "Pending" ? "bg-[#1D8751] text-white" : "bg-transparent"}`} onClick={() => setActiveButton("Pending")}>
-              Pending
-            </button>
-            <button className={`px-3 py-1.5 rounded-full border border-[#1D8751] text-[#1D8751] text-xs sm:text-sm font-semibold focus:outline-none ${activeButton === "OMAYA Wallets" ? "bg-[#1D8751] text-white" : "bg-transparent"}`} onClick={() => setActiveButton("OMAYA Wallets")}>
-              OMAYA Wallets
-            </button>
-          </div>
+        <div className="flex gap-2">
+          <button
+            className={`px-4 py-2 rounded-full border text-xs sm:text-sm font-semibold focus:outline-none transition-colors ${mainSection === "payment-methods" ? "bg-[#1D8751] text-white border-[#1D8751]" : "border-[#1D8751] text-[#1D8751] bg-transparent hover:bg-[#1D8751]/10"}`}
+            onClick={() => setMainSection("payment-methods")}
+          >
+            Payment Methods
+          </button>
+          <button
+            className={`px-4 py-2 rounded-full border text-xs sm:text-sm font-semibold focus:outline-none transition-colors ${mainSection === "omaya-wallets" ? "bg-[#1D8751] text-white border-[#1D8751]" : "border-[#1D8751] text-[#1D8751] bg-transparent hover:bg-[#1D8751]/10"}`}
+            onClick={() => setMainSection("omaya-wallets")}
+          >
+            My Omaya Wallets
+          </button>
         </div>
-        <div className="flex items-center gap-3 self-start">
+        {mainSection === "payment-methods" && (
           <button
             className="flex items-center gap-1 text-xs sm:text-sm dark:text-white text-gray-900 font-medium hover:underline focus:outline-none"
             onClick={() => setShowPaymentModal(true)}
           >
-            Add Payment Method
+             New Payment Method
             <span className="text-lg leading-none">+</span>
           </button>
-        </div>
+        )}
       </div>
       <div className="flex w-full flex-col gap-3">
         <div className="flex items-center justify-between">
@@ -287,7 +388,7 @@ const PaymentMethods = () => {
           </p>
         </div>
         <div className="rounded-[32px] border border-[#20202A] dark:border-[#1E1E27] bg-white dark:bg-[var(--card-color)] p-2 sm:p-3 md:p-4 space-y-3">
-          {activeButton === "OMAYA Wallets" ? (
+          {mainSection === "omaya-wallets" ? (
             <>
               {(p2pAddressesLoading || userWalletAddressesLoading) ? (
                 <div className="rounded-2xl border border-dashed border-[#E3E6F0] dark:border-[#2A2A35] py-10 text-center text-sm text-gray-500 dark:text-[#7B819C]">
@@ -309,26 +410,38 @@ const PaymentMethods = () => {
                             key={addr.id}
                             className="flex flex-col gap-3 rounded-[28px] border border-[#E3E6F0] dark:border-[#2A2A35] bg-gray-50 dark:bg-[var(--card-color)] px-4 py-4"
                           >
-                            <div className="flex items-start gap-4">
-                              <div className="relative">
-                                <img
-                                  src="/images/tether.svg"
-                                  alt="USDT"
-                                  className="w-12 h-12 object-contain flex-shrink-0"
-                                  style={{ display: "block" }}
-                                  onError={(e) => {
-                                    e.currentTarget.src = "/default-provider-logo.svg";
-                                  }}
-                                />
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="flex items-start gap-4">
+                                <div className="relative">
+                                  <img
+                                    src="/images/tether.svg"
+                                    alt="USDT"
+                                    className="w-12 h-12 object-contain flex-shrink-0"
+                                    style={{ display: "block" }}
+                                    onError={(e) => {
+                                      e.currentTarget.src = "/default-provider-logo.svg";
+                                    }}
+                                  />
+                                </div>
+                                <div className="flex-1">
+                                  <p className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
+                                    OMAYA Wallet
+                                  </p>
+                                  <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                                    <span className="text-xs text-gray-500 dark:text-[#8B90A5]">
+                                      {addr.network_name || addr.chain}
+                                    </span>
+                                    {addr.address_type && (
+                                      <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-[#1D8751]/15 text-[#1D8751] dark:bg-[#1D8751]/25 dark:text-[#34D399] border border-[#1D8751]/30">
+                                        {addr.address_type}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
                               </div>
-                              <div className="flex-1">
-                                <p className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
-                                  OMAYA Wallet
-                                </p>
-                                <p className="text-xs text-gray-500 dark:text-[#8B90A5] mt-0.5">
-                                  {addr.network_name || addr.chain} • {addr.is_default ? "Default" : ""}
-                                </p>
-                              </div>
+                              {!!addr.address && (
+                                <AddressQrImage value={addr.address} />
+                              )}
                             </div>
                             <div>
                               <label className="text-xs font-medium text-gray-500 dark:text-[#8B90A5] mb-2 block">
@@ -364,8 +477,30 @@ const PaymentMethods = () => {
                         {userWalletCreateLoading ? "Adding..." : "+ Add New Address"}
                       </button>
                     </div>
+                    <div className="mt-1">
+                      <input
+                        type="text"
+                        value={walletSearchQuery}
+                        onChange={(e) => setWalletSearchQuery(e.target.value)}
+                        placeholder="Search address or label in your OMAYA wallets"
+                        className="w-full rounded-full border border-[#E3E6F0] dark:border-[#2A2A35] bg-white dark:bg-[var(--card-color)] px-4 py-2 text-xs sm:text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-[#5C6175] focus:outline-none"
+                      />
+                    </div>
                     {userWalletAddresses.length > 0 &&
-                      userWalletAddresses.map((addr: UserWalletAddress) => (
+                      userWalletAddresses
+                        .filter((addr: UserWalletAddress) => {
+                          if (!walletSearchQuery.trim()) return true;
+                          const q = walletSearchQuery.toLowerCase();
+                          const label =
+                            addr.account_name ||
+                            addr.label ||
+                            "";
+                          return (
+                            addr.address.toLowerCase().includes(q) ||
+                            label.toLowerCase().includes(q)
+                          );
+                        })
+                        .map((addr: UserWalletAddress) => (
                         <WalletAddressCard
                           key={addr.user_wallet_address_id}
                           addr={addr}
@@ -379,18 +514,25 @@ const PaymentMethods = () => {
             </>
           ) : (
             <>
-              {filteredPayments.length === 0 && (
+              {/* Bank accounts: Pending / Approved tabs */}
+              <div className="flex gap-2 mb-4">
+                <button className={`px-3 py-1.5 rounded-full border border-[#1D8751] text-[#1D8751] text-xs sm:text-sm font-semibold focus:outline-none ${bankTab === "approved" ? "bg-[#1D8751] text-white" : "bg-transparent"}`} onClick={() => setBankTab("approved")}>
+                  Approved
+                </button>
+                <button className={`px-3 py-1.5 rounded-full border border-[#1D8751] text-[#1D8751] text-xs sm:text-sm font-semibold focus:outline-none ${bankTab === "pending" ? "bg-[#1D8751] text-white" : "bg-transparent"}`} onClick={() => setBankTab("pending")}>
+                  Pending
+                </button>
+              </div>
+              {bankByTab.length === 0 && (
                 <div className="rounded-2xl border border-dashed border-[#E3E6F0] dark:border-[#2A2A35] py-10 text-center text-sm text-gray-500 dark:text-[#7B819C]">
-                  No payment methods in {activeButton.toLowerCase()} state yet.
+                  No payment methods yet. Add one via Linked Accounts.
                 </div>
               )}
-              {paginatedPayments.map((payment: UserPaymentDetail) => {
-                const isPending = payment.status?.toLowerCase() === "pending";
+              {paginatedBankPayments.map((payment: UserPaymentDetail) => {
+                const isPending = getStatusCategory(payment) === "pending";
                 const isBankMethod =
-                  payment?.payment_method_name
-                    ?.toLowerCase()
-                    .includes("bank") ||
-                  payment?.payment_provider_name?.toLowerCase().includes("bank");
+                  (payment?.payment_method_name || "").toLowerCase().includes("bank") ||
+                  (payment?.payment_provider_name || "").toLowerCase().includes("bank");
                 const inputLabel = isBankMethod ? "Bank Account" : "Wallet Address";
                 const placeholderText = isBankMethod
                   ? "Type in here your bank account number"
@@ -418,11 +560,22 @@ const PaymentMethods = () => {
                           <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-[#FF4D55] border-2 border-white dark:border-[#13131A]" />
                         )}
                       </div>
-                      <div className="flex-1 flex items-center justify-between">
+                      <div className="flex-1 flex items-center justify-between gap-2">
                         <div>
-                          <p className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
-                            {payment?.payment_method_name}
-                          </p>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
+                              {payment?.payment_method_name}
+                            </p>
+                            <span
+                              className={`inline-flex px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold capitalize ${
+                                isPending
+                                  ? "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/50"
+                                  : "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50"
+                              }`}
+                            >
+                              {isPending ? "Pending" : "Approved"}
+                            </span>
+                          </div>
                           <p className="text-xs text-gray-500 dark:text-[#8B90A5] mt-0.5">
                             {payment?.payment_provider_name}
                           </p>
@@ -486,11 +639,11 @@ const PaymentMethods = () => {
                   </div>
                 );
               })}
-              {filteredPayments.length > 0 && (
+              {bankByTab.length > 0 && (
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 mt-2 border-t border-[#E3E6F0] dark:border-[#2A2A35]">
                   <p className="text-xs sm:text-sm text-gray-500 dark:text-[#8B90A5]">
                     Showing {(paymentPage - 1) * ITEMS_PER_PAGE + 1}–
-                    {Math.min(paymentPage * ITEMS_PER_PAGE, filteredPayments.length)} of {filteredPayments.length}
+                    {Math.min(paymentPage * ITEMS_PER_PAGE, bankByTab.length)} of {bankByTab.length}
                   </p>
                   <div className="flex items-center gap-2">
                     <button
@@ -532,11 +685,31 @@ const PaymentMethods = () => {
           )}
         </div>
       </div>
-      <PaymentMethodsModal
-        open={showPaymentModal}
-        onClose={() => setShowPaymentModal(false)}
-        onAdd={() => dispatch(fetchUserPaymentDetails() as any)}
-      />
+      {showPaymentModal && (
+        <PaymentMethodsModal
+          key="add-payment-modal"
+          open={true}
+          onClose={() => {
+            setShowPaymentModal(false);
+            setModalFilterProvider(undefined);
+            const params = new URLSearchParams(searchParams?.toString() || "");
+            if (params.has("openAddModal") || params.has("method") || params.has("provider")) {
+              params.delete("openAddModal");
+              params.delete("method");
+              params.delete("provider");
+              const qs = params.toString();
+              router.replace(window.location.pathname + (qs ? `?${qs}` : ""));
+            }
+          }}
+          onAdd={() => dispatch(fetchUserPaymentDetails() as any)}
+          onAddSuccess={() => {
+            setShowPaymentModal(false);
+            setModalFilterProvider(undefined);
+            dispatch(fetchUserPaymentDetails() as any);
+          }}
+          filterByProviderName={modalFilterProvider}
+        />
+      )}
       <AddWalletAddressModal
         open={showAddWalletModal}
         onClose={() => setShowAddWalletModal(false)}

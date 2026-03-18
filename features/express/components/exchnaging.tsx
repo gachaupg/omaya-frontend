@@ -6,9 +6,10 @@ import {
   TransactionStatusMessage,
 } from "../websockets";
 import { API_CONFIG } from "@/lib/appConfig";
+import { cookieUtils } from "@/lib/utils/cookieUtils";
 import { useTheme } from "@/context/theme";
 import CopyButton from "@/components/ui/CopyButton";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "@/store/rootReducer";
 import { logger } from '@/lib/utils/logger';
 
@@ -16,6 +17,7 @@ import {
   cancelDepositTransaction,
   cancelWithdrawalTransaction,
 } from "../slices/transactionSlice";
+import FailureStatusModal from "./FailureStatusModal";
 
 interface ExchangingProps {
   transactionData?: {
@@ -63,6 +65,8 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const { isDark } = useTheme();
+  const { tokens } = useSelector((state: any) => state.auth);
+  const token = tokens?.access ?? cookieUtils.getCookie("access_token") ?? (typeof window !== "undefined" ? localStorage.getItem("access_token") : null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [currentStatus, setCurrentStatus] = useState<string>("pending");
   const [expandedTerms, setExpandedTerms] = useState(false);
@@ -71,7 +75,9 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
   const [wsError, setWsError] = useState<string | null>(null);
   const [connectionAttempts, setConnectionAttempts] = useState<number>(0);
 
-  // Timer state - 15 minutes in seconds
+  // Timer state - 15 minutes, wall-clock based (immune to tab throttling)
+  const TIMER_DURATION_SEC = 15 * 60;
+  const expiryTimestampRef = React.useRef<number | null>(null);
   const [timeRemaining, setTimeRemaining] = useState<number>(15 * 60);
   const [timerActive, setTimerActive] = useState<boolean>(true);
 
@@ -94,6 +100,11 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
   const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(
     null
   );
+  const [failureModal, setFailureModal] = useState<{
+    isOpen: boolean;
+    status: string;
+    message?: string;
+  }>({ isOpen: false, status: "", message: undefined });
 
   // Fallback polling function
   const startFallbackPolling = () => {
@@ -135,29 +146,73 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
     };
   }, [pollingInterval]);
 
-  // Timer countdown effect
+  // Compute remaining time from wall-clock (immune to tab throttling)
+  const computeTimeRemaining = React.useCallback(() => {
+    const expiry = expiryTimestampRef.current;
+    if (!expiry) return TIMER_DURATION_SEC;
+    return Math.max(0, Math.ceil((expiry - Date.now()) / 1000));
+  }, []);
+
+  // Initialize expiry timestamp when we have transaction data
+  const effectiveDataForTimer = transactionData || persistedTransactionData;
+  useEffect(() => {
+    if (!effectiveDataForTimer?.transactionId || !timerActive || showSuccess) return;
+    const storageKey = "express_transaction_expiry";
+    const txId = effectiveDataForTimer.transactionId;
+    if (!expiryTimestampRef.current) {
+      try {
+        const stored = localStorage.getItem(storageKey);
+        if (stored) {
+          const { transactionId, expiry } = JSON.parse(stored);
+          if (transactionId === txId) {
+            expiryTimestampRef.current = expiry;
+            if (expiry <= Date.now()) {
+              setTimeRemaining(0);
+              setTimerActive(false);
+              return;
+            }
+            setTimeRemaining(computeTimeRemaining());
+            return;
+          }
+        }
+      } catch {}
+      const expiry = Date.now() + TIMER_DURATION_SEC * 1000;
+      expiryTimestampRef.current = expiry;
+      localStorage.setItem(storageKey, JSON.stringify({ transactionId: txId, expiry }));
+    }
+    setTimeRemaining(computeTimeRemaining());
+  }, [effectiveDataForTimer?.transactionId, timerActive, showSuccess, computeTimeRemaining]);
+
+  // Timer: wall-clock + Page Visibility for tab-inactive accuracy
   useEffect(() => {
     if (!timerActive || showSuccess) return;
+    const tick = () => {
+      const remaining = computeTimeRemaining();
+      setTimeRemaining(remaining);
+      if (remaining <= 0) setTimerActive(false);
+    };
+    const interval = setInterval(tick, 1000);
+    tick();
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") tick();
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, [timerActive, showSuccess, computeTimeRemaining]);
 
-    const interval = setInterval(() => {
-      setTimeRemaining((prev) => {
-        if (prev <= 1) {
-          setTimerActive(false);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [timerActive, showSuccess]);
-
-  // Auto-cancel when timer expires
+  // Auto-cancel when timer expires (guard to prevent double redirect on tab switch/reload)
+  const hasRedirectedOnExpiry = React.useRef(false);
+  const effectiveDataForExpiry = transactionData || persistedTransactionData;
   useEffect(() => {
-    if (timeRemaining === 0 && effectiveTransactionData?.transactionId) {
-      handleCancelTransaction();
-    }
-  }, [timeRemaining]);
+    if (timeRemaining !== 0 || hasRedirectedOnExpiry.current) return;
+    const txId = effectiveDataForExpiry?.transactionId;
+    if (!txId) return;
+    hasRedirectedOnExpiry.current = true;
+    handleCancelTransaction();
+  }, [timeRemaining, effectiveDataForExpiry?.transactionId]);
 
   // Format time as MM:SS
   const formatTime = (seconds: number) => {
@@ -183,6 +238,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
 
       // Clear localStorage
       localStorage.removeItem("express_transaction_data");
+      localStorage.removeItem("express_transaction_expiry");
 
       // Redirect to home page
       router.push("/");
@@ -197,6 +253,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
   useEffect(() => {
     if (currentStatus === "completed" || showSuccess) {
       setTimerActive(false);
+      localStorage.removeItem("express_transaction_expiry");
     }
   }, [currentStatus, showSuccess]);
 
@@ -327,6 +384,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
       effectiveTransactionData?.type || "withdrawal",
       finalWebsocketUrl,
       {
+        token: token ?? undefined,
         onMessage: (data: TransactionStatusMessage) => {
           // Clear any WebSocket errors when we receive a message
           setWsError(null);
@@ -345,7 +403,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
           // Store websocket data for potential success page use
           setFinalWebsocketData(data);
 
-          // Check regular amount format
+          // Check regular amount format (amount + net_amount from socket)
           if (data.data?.amount) {
             const amount = parseFloat(data.data.amount);
             if (!isNaN(amount)) {
@@ -357,6 +415,19 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                   : effectiveTransactionData?.type === "withdrawal"
                     ? "USD"
                     : "USDT");
+            }
+          }
+          if (data.data?.net_amount != null && data.data?.net_amount !== undefined) {
+            const netAmt = parseFloat(String(data.data.net_amount));
+            const d = data.data as Record<string, unknown>;
+            if (!isNaN(netAmt)) {
+              setLiveNetAmount(netAmt);
+              setLiveNetCurrency(
+                (d.to_currency || d.currency || "")?.toString().toUpperCase() ||
+                (effectiveTransactionData?.type === "deposit"
+                  ? effectiveTransactionData?.asset?.ticker || "USDT"
+                  : "USD")
+              );
             }
           }
 
@@ -382,34 +453,29 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               }
             }
 
-            // Don't overwrite net amount when we have receiveAmount from props (form)
-            const hasReceiveAmountFromProps = (effectiveTransactionData as any)?.receiveAmount != null;
-            if (!hasReceiveAmountFromProps) {
-              // Handle amount_to (what user receives) - net amount for display
-              if (wsData.amount_to !== null && wsData.amount_to !== undefined) {
-                const amountTo = parseFloat(wsData.amount_to);
-                if (!isNaN(amountTo)) {
-                  setLiveNetAmount(amountTo);
-                  setLiveNetCurrency(
-                    wsData.to_currency?.toUpperCase() ||
-                    (effectiveTransactionData?.type === "deposit"
-                      ? effectiveTransactionData?.asset?.ticker || "USDT"
-                      : "USD")
-                  );
-                }
+            // Websocket can override net amount (before websocket, form's receiveAmount is shown)
+            if (wsData.amount_to !== null && wsData.amount_to !== undefined) {
+              const amountTo = parseFloat(wsData.amount_to);
+              if (!isNaN(amountTo)) {
+                setLiveNetAmount(amountTo);
+                setLiveNetCurrency(
+                  wsData.to_currency?.toUpperCase() ||
+                  (effectiveTransactionData?.type === "deposit"
+                    ? effectiveTransactionData?.asset?.ticker || "USDT"
+                    : "USD")
+                );
               }
-              // Also handle net_amount from websocket
-              if (wsData.net_amount !== null && wsData.net_amount !== undefined) {
-                const netAmt = parseFloat(wsData.net_amount);
-                if (!isNaN(netAmt)) {
-                  setLiveNetAmount(netAmt);
-                  setLiveNetCurrency(
-                    wsData.to_currency?.toUpperCase() ||
-                    (effectiveTransactionData?.type === "deposit"
-                      ? effectiveTransactionData?.asset?.ticker || "USDT"
-                      : "USD")
-                  );
-                }
+            }
+            if (wsData.net_amount !== null && wsData.net_amount !== undefined) {
+              const netAmt = parseFloat(wsData.net_amount);
+              if (!isNaN(netAmt)) {
+                setLiveNetAmount(netAmt);
+                setLiveNetCurrency(
+                  wsData.to_currency?.toUpperCase() ||
+                  (effectiveTransactionData?.type === "deposit"
+                    ? effectiveTransactionData?.asset?.ticker || "USDT"
+                    : "USD")
+                );
               }
             }
 
@@ -450,9 +516,8 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               }
             }
 
-            // Handle estimated_amount - only when we don't have receiveAmount from props
+            // Handle estimated_amount - websocket can override
             if (
-              !hasReceiveAmountFromProps &&
               wsData.estimated_amount !== null &&
               wsData.estimated_amount !== undefined
             ) {
@@ -547,6 +612,8 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
             "processing",
             "completed",
             "failed",
+            "rejected",
+            "stopped",
             "awaiting_payment",
             "exchanging",
             "sending",
@@ -560,7 +627,16 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
             "waiting", // ChangeNow status
           ];
 
-          if (status && validStatuses.includes(status)) {
+          // Show failure modal for failed, rejected, or stopped statuses
+          if (status && ["failed", "rejected", "stopped"].includes(status)) {
+            setFailureModal({
+              isOpen: true,
+              status,
+              message: message || undefined,
+            });
+            setCurrentStatus(status);
+            setTimerActive(false);
+          } else if (status && validStatuses.includes(status)) {
             // Map backend statuses to UI statuses for better user experience
             let uiStatus = status;
 
@@ -741,6 +817,12 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
     isConnected,
   ]);
 
+  const handleFailureModalClose = () => {
+    setFailureModal({ isOpen: false, status: "", message: undefined });
+    localStorage.removeItem("express_transaction_data");
+    window.location.reload();
+  };
+
   // If showing success page, render it with real transaction data and snapshot websocket data
   if (showSuccess) {
     return (
@@ -884,7 +966,11 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                     } text-base font-semibold flex items-center gap-2`}
                 >
                   <span>
-                    {(liveNetAmount ?? (effectiveTransactionData as any).receiveAmount)
+                    {(
+                      liveNetAmount ??
+                      (effectiveTransactionData as any)?.receiveAmount ??
+                      0
+                    )
                       .toFixed(8)
                       .replace(/\.?0+$/, "")}{" "}
                     <span className="uppercase">
@@ -974,7 +1060,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                       effectiveTransactionData?.asset?.icon_url ||
                       effectiveTransactionData?.asset?.image_url ||
                       effectiveTransactionData?.asset?.image ||
-                      "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                      "/assets/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
                     }
                     alt={
                       effectiveTransactionData?.asset?.ticker ||
@@ -985,7 +1071,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                     className="w-6 h-6 rounded-full mr-2"
                     onError={(e) => {
                       e.currentTarget.src =
-                        "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                        "/assets/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
                     }}
                   />
                   <span
@@ -1051,7 +1137,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                   </div>
                   <div className="flex items-center mb-1">
                     <img
-                      src={effectiveTransactionData.paymentDetail.logo_url || effectiveTransactionData.paymentDetail.logo || effectiveTransactionData.paymentDetail.provider_logo || "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"}
+                      src={effectiveTransactionData.paymentDetail.logo_url || effectiveTransactionData.paymentDetail.logo || effectiveTransactionData.paymentDetail.provider_logo || "/assets/image_7_jijlik.png"}
                       alt={effectiveTransactionData.paymentDetail.provider_name}
                       className="w-6 h-6 rounded-full mr-2"
                     />
@@ -1658,13 +1744,13 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                     effectiveTransactionData.paymentDetail.logo_url ||
                     effectiveTransactionData.paymentDetail.logo ||
                     effectiveTransactionData.paymentDetail.provider_logo ||
-                    "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
+                    "/assets/image_7_jijlik.png"
                   }
                   alt={effectiveTransactionData.paymentDetail.provider_name}
                   className="w-8 h-8 rounded-full flex-shrink-0 mt-0.5"
                   onError={(e) => {
                     e.currentTarget.src =
-                      "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+                      "/assets/image_7_jijlik.png";
                   }}
                 />
                 <div className="min-w-0 flex-1 space-y-0.5">
@@ -1693,7 +1779,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                     effectiveTransactionData?.asset?.icon_url ||
                     effectiveTransactionData?.asset?.image_url ||
                     effectiveTransactionData?.asset?.image ||
-                    "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                    "/assets/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
                   }
                   alt={
                     effectiveTransactionData?.asset?.symbol ||
@@ -1706,7 +1792,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                   className="w-8 h-8 rounded-full flex-shrink-0 mt-0.5"
                   onError={(e) => {
                     e.currentTarget.src =
-                      "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                      "/assets/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
                   }}
                 />
                 <div className="min-w-0 flex-1 space-y-0.5">
@@ -1755,7 +1841,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                     effectiveTransactionData?.asset?.icon_url ||
                     effectiveTransactionData?.asset?.image_url ||
                     effectiveTransactionData?.asset?.image ||
-                    "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                    "/assets/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
                   }
                   alt={
                     effectiveTransactionData?.asset?.symbol ||
@@ -1768,7 +1854,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                   className="w-8 h-8 rounded-full flex-shrink-0 mt-0.5"
                   onError={(e) => {
                     e.currentTarget.src =
-                      "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                      "/assets/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
                   }}
                 />
                 <div className="min-w-0 flex-1 space-y-0.5">
@@ -1808,7 +1894,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                     effectiveTransactionData?.paymentDetail?.logo_url ||
                     effectiveTransactionData?.paymentDetail?.logo ||
                     effectiveTransactionData?.paymentDetail?.provider_logo ||
-                    "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
+                    "/assets/image_7_jijlik.png"
                   }
                   alt={
                     effectiveTransactionData?.paymentDetails?.[0]?.provider_name ||
@@ -1818,7 +1904,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                   className="w-8 h-8 rounded-full flex-shrink-0 mt-0.5"
                   onError={(e) => {
                     e.currentTarget.src =
-                      "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+                      "/assets/image_7_jijlik.png";
                   }}
                 />
                 <div className="min-w-0 flex-1 space-y-0.5">
@@ -1903,7 +1989,16 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
           </div>
         </div>
       </div>
-     
+
+      {/* Failure Status Modal */}
+      <FailureStatusModal
+        isOpen={failureModal.isOpen}
+        status={failureModal.status}
+        message={failureModal.message}
+        onClose={() => setFailureModal({ isOpen: false, status: "", message: undefined })}
+        onBackToForm={handleFailureModalClose}
+        isDark={isDark}
+      />
     </div>
   );
 }

@@ -26,7 +26,7 @@ interface ApiClientConfig {
 }
 
 const DEFAULT_CONFIG: ApiClientConfig = {
-  timeout: 30000, // 30 seconds for financial operations
+  timeout: 20000, // 20s default so slow API doesn’t hang the app; critical ops use ENDPOINT_SPECIFIC_CONFIG
   retries: 3,
   retryDelay: 1000,
   retryCondition: (error: AxiosError) => {
@@ -46,11 +46,19 @@ const ENDPOINT_SPECIFIC_CONFIG: Record<string, Partial<ApiClientConfig>> = {
   "/trading_engine/p2p/trades/": { timeout: 45000, retries: 1 }, // Critical operations
   "/api/auth/login/": { timeout: 10000, retries: 1 }, // Faster login
   "/api/auth/register/": { timeout: 10000, retries: 1 }, // Faster registration
-  "/api/kyc/status/": { timeout: 15000, retries: 2 }, // KYC status check
+  "/api/kyc/status/": { timeout: 10000, retries: 1 }, // KYC status – fail fast so UI doesn’t hang
   "/api/kyc/verify/": { timeout: 30000, retries: 1 }, // KYC verification
   // Device session endpoints – keep under 15s overall to align with GlobalSession creation window
   "/api/devices/create/": { timeout: 12000, retries: 0 },
   "/api/device-sessions/": { timeout: 12000, retries: 0 },
+  // ChangeNOW create - no retries (400 = amount too small, fail fast)
+  "/api/changenow/create/": { timeout: 30000, retries: 0 },
+  // User payment details – avoid hanging when API is slow; allow navigation
+  "/payments/user-payment-details": { timeout: 15000, retries: 1 },
+  // Swap/asset selection – fail fast so user can click elsewhere
+  "/api/changenow/estimate": { timeout: 15000, retries: 1 },
+  "/api/changenow/public/estimate": { timeout: 15000, retries: 1 },
+  "api/changenow/supported-tokens": { timeout: 15000, retries: 1 },
 };
 
 const generateRequestId = (): string => {
@@ -95,7 +103,20 @@ const createAxiosInstance = (config: ApiClientConfig = DEFAULT_CONFIG): AxiosIns
   // Request interceptor with timeout override and CSRF token
   instance.interceptors.request.use((requestConfig) => {
     const endpoint = requestConfig.url || "";
-    const endpointConfig = ENDPOINT_SPECIFIC_CONFIG[endpoint];
+    
+    // For FormData, remove Content-Type so browser sets multipart/form-data with boundary
+    // (otherwise default application/json causes file uploads to fail - server receives {} for files)
+    if (requestConfig.data instanceof FormData) {
+      requestConfig.headers = requestConfig.headers || {};
+      const h = requestConfig.headers as Record<string, unknown>;
+      if (typeof (h as any).delete === 'function') {
+        (h as any).delete('Content-Type');
+        (h as any).delete('content-type');
+      } else {
+        delete h['Content-Type'];
+        delete h['content-type'];
+      }
+    }
     
     // Add CSRF token to all non-GET requests
     if (requestConfig.method && requestConfig.method.toLowerCase() !== 'get') {
@@ -103,6 +124,10 @@ const createAxiosInstance = (config: ApiClientConfig = DEFAULT_CONFIG): AxiosIns
       requestConfig.headers['X-CSRFToken'] = getCsrfToken() || '';
     }
 
+    // Match by prefix so paths with query params still get the right timeout
+    const endpointConfig = Object.entries(ENDPOINT_SPECIFIC_CONFIG).find(
+      ([path]) => endpoint.includes(path) || endpoint.startsWith(path)
+    )?.[1];
     if (endpointConfig) {
       requestConfig.timeout = endpointConfig.timeout || config.timeout;
     }
@@ -252,7 +277,11 @@ const addRetryInterceptor = (
         ApiHealthChecker.recordFailure(originalRequest.url, error);
       }
 
-      if (!originalRequest || originalRequest._retryCount >= config.retries) {
+      const endpoint = originalRequest?.url || "";
+      const endpointConfig = ENDPOINT_SPECIFIC_CONFIG[endpoint];
+      const maxRetries = endpointConfig?.retries ?? config.retries;
+
+      if (!originalRequest || originalRequest._retryCount >= maxRetries) {
         return Promise.reject(error);
       }
 

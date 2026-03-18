@@ -198,21 +198,14 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
          transactionData.details?.payout_address ||
          network);
     
-    // Get amounts - receiveAmount from props is highest priority (no API/websocket override)
+    // Get amounts - prefer websocket/socket data (actual processed amounts) over user-typed values
     let amount = transactionData.amount || 0;
-    const receiveAmountFromProps = transactionData.receiveAmount != null
-      ? parseFloat(String(transactionData.receiveAmount))
-      : null;
-    const hasReceiveAmountFromProps = receiveAmountFromProps != null && !isNaN(receiveAmountFromProps);
+    let estimatedAmount = transactionData.details?.estimated_amount ||
+      transactionData.totalAmountDue ||
+      amount;
 
-    let estimatedAmount = hasReceiveAmountFromProps
-      ? receiveAmountFromProps
-      : transactionData.details?.estimated_amount ||
-        transactionData.totalAmountDue ||
-        amount;
-
-    // Use websocket data for amounts only when we don't have receiveAmount from props
-    if (websocketData?.data && !hasReceiveAmountFromProps) {
+    // Use websocket data for amounts when available (actual processed amounts, not what user typed)
+    if (websocketData?.data) {
       const wsData = websocketData.data;
       
       // Check if this is a direct use flow (same currency) or conversion flow (different currencies)
@@ -319,11 +312,9 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
       return isNaN(num) ? "0" : num.toFixed(8).replace(/\.?0+$/, '');
     };
     
-    // Net amount: use receiveAmount from props when present, else websocket/estimatedAmount
-    let calculatedNetAmount = hasReceiveAmountFromProps
-      ? receiveAmountFromProps
-      : estimatedAmount;
-    if (!hasReceiveAmountFromProps && websocketData?.data) {
+    // Net amount: prefer websocket net_amount, else estimatedAmount (actual processed)
+    let calculatedNetAmount = estimatedAmount;
+    if (websocketData?.data) {
       const wsData = websocketData.data;
       if (wsData.from_currency && wsData.to_currency &&
           wsData.from_currency !== wsData.to_currency &&
@@ -392,7 +383,7 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
           <img 
             className="w-80 h-40 object-contain" 
             src={isDark 
-              ? "https://res.cloudinary.com/pitz/image/upload/v1756484286/Screenshot_2025-08-29_191548_two36s.png" 
+              ? "/assets/Screenshot_2025-08-29_191548_two36s.png" 
               : "/images/suc.png"
             } 
             alt="Success" 

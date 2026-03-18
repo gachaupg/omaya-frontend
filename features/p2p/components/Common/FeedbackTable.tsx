@@ -6,7 +6,7 @@ const COIN_ICONS: Record<string, string> = {
   USDT: "https://cryptologos.cc/logos/tether-usdt-logo.png",
   TRON: "https://cryptologos.cc/logos/tron-trx-logo.png",
   TRC20:
-    "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png",
+    "/images/tether.svg",
 };
 
 const BANK_ICONS: Record<string, string> = {
@@ -124,7 +124,7 @@ const FeedbackTable: React.FC<FeedbackTableProps> = ({ data, loading }) => {
                   {/* Coin */}
                   <td className="px-4 py-2 flex items-center gap-2">
                     <img
-                      src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                      src="/images/tether.svg"
                       alt={item.coin}
                       className="w-6 h-6 rounded-full"
                     />
@@ -223,7 +223,7 @@ const FeedbackTable: React.FC<FeedbackTableProps> = ({ data, loading }) => {
             <div className="flex items-center justify-between pb-2 border-b border-[#E8EFF5] dark:border-[#35354a]">
               <div className="flex items-center gap-2">
                 <img
-                  src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                  src="/images/tether.svg"
                   alt={item.coin}
                   className="w-6 h-6 rounded-full"
                 />
@@ -320,20 +320,19 @@ const FeedbackTable: React.FC<FeedbackTableProps> = ({ data, loading }) => {
       </div>
 
       {/* Pagination Controls */}
-      <div className="flex items-center justify-between px-4 py-3 dark:bg-[#23232b] bg-white rounded-lg">
-        <div className="dark:text-white text-gray-900">
-          Showing {startIndex + 1} to {Math.min(endIndex, data.length)} of{" "}
-          {data.length} entries
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 dark:bg-[#23232b] bg-white rounded-lg text-center sm:text-left">
+        <div className="dark:text-white text-gray-900 text-sm sm:text-base order-2 sm:order-1">
+          Showing {startIndex + 1} to {Math.min(endIndex, data.length)} of {data.length} entries
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2 order-1 sm:order-2 flex-wrap justify-center sm:justify-end">
           <button
             onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
             disabled={currentPage === 1}
-            className="px-3 py-1 rounded bg-gray-200 dark:bg-[#35354a] text-gray-700 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-300 dark:hover:bg-[#28293d]"
+            className="px-3 py-1.5 rounded bg-gray-200 dark:bg-[#35354a] text-gray-700 dark:text-white text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-300 dark:hover:bg-[#28293d]"
           >
             Previous
           </button>
-          <span className="px-3 py-1 text-gray-900 dark:text-white">
+          <span className="px-2 sm:px-3 py-1.5 text-gray-900 dark:text-white text-sm whitespace-nowrap">
             Page {currentPage} of {totalPages}
           </span>
           <button
@@ -341,7 +340,7 @@ const FeedbackTable: React.FC<FeedbackTableProps> = ({ data, loading }) => {
               setCurrentPage((prev) => Math.min(prev + 1, totalPages))
             }
             disabled={currentPage === totalPages}
-            className="px-3 py-1 rounded bg-gray-200 dark:bg-[#35354a] text-gray-700 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-300 dark:hover:bg-[#28293d]"
+            className="px-3 py-1.5 rounded bg-gray-200 dark:bg-[#35354a] text-gray-700 dark:text-white text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-300 dark:hover:bg-[#28293d]"
           >
             Next
           </button>

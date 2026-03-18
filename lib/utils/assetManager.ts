@@ -24,11 +24,14 @@ class AssetManager {
     return AssetManager.instance;
   }
 
+  /** 1 hour – refetch only after TTL to avoid refetching at all cost */
+  private static readonly ASSETS_CACHE_TTL_MS = 60 * 60 * 1000;
+
   /**
    * Get swap assets with intelligent caching
    */
   async getSwapAssets(options: AssetManagerOptions = {}): Promise<any[]> {
-    const { ttl = 2 * 60 * 60 * 1000, forceRefresh = false } = options;
+    const { ttl = AssetManager.ASSETS_CACHE_TTL_MS, forceRefresh = false } = options;
     const cacheKey = "swap_assets_global";
 
     // Check if request is already pending
@@ -52,7 +55,7 @@ class AssetManager {
    * Get exchange assets with intelligent caching
    */
   async getExchangeAssets(options: AssetManagerOptions = {}): Promise<any> {
-    const { ttl = 2 * 60 * 60 * 1000, forceRefresh = false } = options;
+    const { ttl = AssetManager.ASSETS_CACHE_TTL_MS, forceRefresh = false } = options;
     const cacheKey = 'exchange_assets_global';
 
     // Check if request is already pending
@@ -124,6 +127,7 @@ class AssetManager {
   async clearAssetCaches(): Promise<void> {
     await sliceCache.delete('swap', 'fetchSupportedAssets');
     await sliceCache.delete('exchange', 'fetchAssets');
+    await sliceCache.delete('p2pAssets', 'fetchAssets');
   }
 
   /**

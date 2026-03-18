@@ -12,7 +12,7 @@ const PdfTransactionReceipt: React.FC<PdfTransactionReceiptProps> = ({
   // Always use the provided TRC20 icon for Tron
   const assetIcon =
     transaction.asset === "Tron"
-      ? "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+      ? "/images/tether.svg"
       : "https://cryptologos.cc/logos/bitcoin-btc-logo.png";
 
   // Color for type
@@ -20,8 +20,8 @@ const PdfTransactionReceipt: React.FC<PdfTransactionReceiptProps> = ({
     transaction.type === "buy"
       ? "text-[#1D8751]"
       : transaction.type === "sell"
-      ? "text-[#FF4D4D]"
-      : "text-black";
+        ? "text-[#FF4D4D]"
+        : "text-black";
 
   return (
     <div className="w-full max-w-md mx-auto bg-white text-black rounded-xl shadow-lg p-8 font-sans">

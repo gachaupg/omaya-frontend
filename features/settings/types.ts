@@ -148,6 +148,14 @@ export interface CreateDeviceSessionPayload {
   user_agent: string;
   device_type: string;
   description?: string;
+  device_data?: Record<string, unknown>;
+  network_data?: Record<string, unknown>;
+  fingerprint_data?: Record<string, unknown>;
+  browser_capabilities?: Record<string, unknown>;
+  login_patterns?: Record<string, unknown>;
+  session_duration?: number;
+  failed_login_attempts?: number;
+  suspicious_behavior_detected?: boolean;
 }
 
 export interface DeviceSessionsResponse extends SettingsApiResponse {

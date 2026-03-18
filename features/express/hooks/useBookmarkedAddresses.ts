@@ -16,7 +16,14 @@ export function useBookmarkedAddresses(asset?: string, network?: string) {
       setBookmarks(list);
       return list;
     } catch (err: any) {
-      showToast.error(err?.message || "Failed to load bookmarks");
+      const data = err?.response?.data;
+      const msg =
+        (typeof data?.error === "object" && Array.isArray(data?.error?.__all__) && data.error.__all__[0]) ||
+        (typeof data?.error === "string" ? data.error : null) ||
+        data?.message ||
+        err?.message ||
+        "Failed to load bookmarks";
+      showToast.error(msg);
       setBookmarks([]);
       return [];
     } finally {
@@ -32,7 +39,14 @@ export function useBookmarkedAddresses(asset?: string, network?: string) {
       showToast.success("Address saved to bookmarks");
       return created;
     } catch (err: any) {
-      showToast.error(err?.response?.data?.message || err?.message || "Failed to save bookmark");
+      const data = err?.response?.data;
+      const msg =
+        (typeof data?.error === "object" && Array.isArray(data?.error?.__all__) && data.error.__all__[0]) ||
+        (typeof data?.error === "string" ? data.error : null) ||
+        data?.message ||
+        err?.message ||
+        "Failed to save bookmark";
+      showToast.error(msg);
       throw err;
     } finally {
       setSaving(false);
@@ -45,7 +59,14 @@ export function useBookmarkedAddresses(asset?: string, network?: string) {
       setBookmarks((prev) => prev.filter((b) => b.id !== bookmarkId));
       showToast.success("Bookmark removed");
     } catch (err: any) {
-      showToast.error(err?.message || "Failed to remove bookmark");
+      const data = err?.response?.data;
+      const msg =
+        (typeof data?.error === "object" && Array.isArray(data?.error?.__all__) && data.error.__all__[0]) ||
+        (typeof data?.error === "string" ? data.error : null) ||
+        data?.message ||
+        err?.message ||
+        "Failed to remove bookmark";
+      showToast.error(msg);
     }
   }, []);
 

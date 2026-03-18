@@ -44,11 +44,21 @@ const FavouriteAssets: React.FC = () => {
     setSearchTerm(""); // Clear search term when opening/closing
   };
 
-  const handleAddToFavorites = async (assetId: string) => {
+  const handleAddToFavorites = async (asset: Asset) => {
     try {
-      await dispatch(addFavoriteAsset({ asset_id: assetId })).unwrap();
+      await dispatch(
+        addFavoriteAsset({
+          asset_symbol: asset.symbol,
+          asset_name: asset.name,
+          asset_image: asset.asset_image || "",
+          network: asset.networks?.[0]?.network_type ?? asset.symbol.toLowerCase(),
+          percentage: "0.00",
+          price: "0",
+        })
+      ).unwrap();
       toast.success("Asset added to favorites!");
       setShowDropdown(false);
+      dispatch(getFavoriteAssets());
       dispatch(fetchAssets());
     } catch (error: any) {
       toast.error(
@@ -59,9 +69,9 @@ const FavouriteAssets: React.FC = () => {
     }
   };
 
-  const handleRemoveFromFavorites = async (assetId: string) => {
+  const handleRemoveFromFavorites = async (favoriteAssetId: string) => {
     try {
-      await dispatch(removeFavoriteAsset({ asset_id: assetId })).unwrap();
+      await dispatch(removeFavoriteAsset({ favorite_asset_id: favoriteAssetId })).unwrap();
       toast.success("Asset removed from favorites!");
       dispatch(getFavoriteAssets()); // Refresh the favorites list
     } catch (error: any) {
@@ -71,14 +81,6 @@ const FavouriteAssets: React.FC = () => {
         }`
       );
     }
-  };
-
-  // Helper function to find asset ID from asset name
-  const getAssetIdFromName = (assetName: string): string | null => {
-    const asset = allAvailableAssets?.assets?.find(
-      (asset: Asset) => asset.name === assetName || asset.symbol === assetName
-    );
-    return asset?.asset_id || null;
   };
 
   const filteredAvailableAssets =
@@ -117,7 +119,7 @@ const FavouriteAssets: React.FC = () => {
                   <li
                     key={asset.asset_id}
                     className="px-4 py-2 text-sm text-[#9CA3AF] hover:bg-[#35353E] cursor-pointer"
-                    onClick={() => handleAddToFavorites(asset.asset_id)}
+                    onClick={() => handleAddToFavorites(asset)}
                   >
                     <span className="text-white mr-2">{asset.symbol}</span>
                     {asset.name}
@@ -151,25 +153,17 @@ const FavouriteAssets: React.FC = () => {
           <div className="col-span-3 text-center text-white">Loading...</div>
         ) : (
           favoriteAssets?.slice(0, 3).map((asset: FavoriteAsset) => {
-            const dummyData = DUMMY_ASSET_DATA[asset.asset_symbol] || {
-              symbol: asset.asset_symbol.split(" ")[0],
-              price: 0,
-              change: "+0.00%",
-            };
+            const priceNum = asset.price != null ? parseFloat(asset.price) : 0;
+            const percentageNum = asset.percentage != null ? parseFloat(asset.percentage) : 0;
+            const changeStr = percentageNum >= 0 ? `+${percentageNum.toFixed(2)}%` : `${percentageNum.toFixed(2)}%`;
+            const symbolUpper = (asset.asset_symbol ?? "").toUpperCase();
             return (
               <div
                 key={asset.favorite_asset_id}
                 className="bg-[#1D1D23] rounded-2xl p-4 flex items-center gap-3 border border-[#35353E] relative"
               >
                 <button
-                  onClick={() => {
-                    const assetId = getAssetIdFromName(asset.asset_symbol);
-                    if (assetId) {
-                      handleRemoveFromFavorites(assetId);
-                    } else {
-                      toast.error("Could not find asset ID for removal");
-                    }
-                  }}
+                  onClick={() => handleRemoveFromFavorites(asset.favorite_asset_id)}
                   className="absolute top-2 right-2 p-1 rounded-full hover:bg-[#35353E] transition-colors"
                   title="Remove from favorites"
                 >
@@ -177,41 +171,39 @@ const FavouriteAssets: React.FC = () => {
                 </button>
                 <div
                   className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                    dummyData.symbol === "BTC"
+                    symbolUpper === "BTC"
                       ? "bg-orange-500"
-                      : dummyData.symbol === "ETH"
+                      : symbolUpper === "ETH"
                       ? "bg-blue-500"
                       : "bg-red-500"
                   }`}
                 >
                   <span className="text-white text-xs font-bold">
-                    {dummyData.symbol.charAt(0)}
+                    {symbolUpper.charAt(0)}
                   </span>
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="font-medium text-white truncate">
-                    {dummyData.symbol}
+                    {(asset.asset_symbol ?? "").toUpperCase()}
                   </div>
                   <div className="text-xs text-[#788099] truncate">
-                    {asset.asset_symbol}
+                    {asset.asset_name ?? asset.asset_symbol}
                   </div>
                 </div>
                 <div className="text-right flex-shrink-0">
                   <div className="font-bold text-white whitespace-nowrap">
                     $
-                    {dummyData.price.toLocaleString(undefined, {
+                    {priceNum.toLocaleString(undefined, {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 8,
                     })}
                   </div>
                   <div
                     className={`text-xs whitespace-nowrap ${
-                      dummyData.change.startsWith("+")
-                        ? "text-[#1D8751]"
-                        : "text-[#1D8751]"
+                      percentageNum >= 0 ? "text-[#1D8751]" : "text-[#FF6B6B]"
                     }`}
                   >
-                    {dummyData.change}
+                    {changeStr}
                   </div>
                 </div>
               </div>

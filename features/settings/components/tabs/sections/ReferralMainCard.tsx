@@ -78,6 +78,55 @@ const ReferralMainCard: React.FC<Props> = ({
   /* ───────────── render ───────────── */
   return (
     <>
+      {/* Referral Code QR Modal - on top of items */}
+      {showQRCode && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onClick={() => setShowQRCode(false)}
+        >
+          <div
+            className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-[#0B0F23]">
+                Referral Code QR
+              </h3>
+              <button
+                onClick={() => setShowQRCode(false)}
+                className="text-[#4C526A] hover:text-[#0B0F23] transition-colors"
+                aria-label="Close"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            {qrCodeDataUrl ? (
+              <div className="flex flex-col items-center">
+                <div className="bg-white p-4 rounded-lg border border-[#E2E8F0] mb-4">
+                  <img
+                    src={qrCodeDataUrl}
+                    alt="Referral Code QR Code"
+                    className="w-64 h-64"
+                  />
+                </div>
+                <p className="text-sm text-[#4C526A] text-center mb-2">
+                  Scan this QR code to share your referral code
+                </p>
+                <p className="text-xs text-[#4C526A] text-center font-mono">
+                  {referralCode}
+                </p>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center py-8">
+                <p className="text-sm text-[#4C526A]">
+                  Generating QR code...
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Single Card containing both sections */}
       <div
         className="w-full rounded-[26px] border border-[#E2E8F0] dark:border-[#35353e] bg-white dark:bg-[#1A1A1F] p-5 text-[#0B0F23] dark:text-white"
@@ -103,7 +152,7 @@ const ReferralMainCard: React.FC<Props> = ({
                          text-white font-semibold tracking-wide flex items-center justify-center gap-2"
             >
               <img
-                src="https://res.cloudinary.com/pitz/image/upload/v1763908134/Group_3_ocyc3p.png"
+                src="/assets/Group_3_ocyc3p.png"
                 alt="Withdraw icon"
                 width={22}
                 height={22}
@@ -250,54 +299,6 @@ const ReferralMainCard: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* QR Code Modal */}
-      {showQRCode && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4"
-          onClick={() => setShowQRCode(false)}
-        >
-          <div
-            className="bg-white dark:bg-[#1A1A1F] rounded-2xl p-6 max-w-sm w-full shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-[#0B0F23] dark:text-white">
-                Referral Code QR
-              </h3>
-              <button
-                onClick={() => setShowQRCode(false)}
-                className="text-[#4C526A] dark:text-[#A3AED0] hover:text-[#0B0F23] dark:hover:text-white transition-colors"
-                aria-label="Close"
-              >
-                <X size={20} />
-              </button>
-            </div>
-            {qrCodeDataUrl ? (
-              <div className="flex flex-col items-center">
-                <div className="bg-white p-4 rounded-lg border border-[#E2E8F0] dark:border-[#35353e] mb-4">
-                  <img
-                    src={qrCodeDataUrl}
-                    alt="Referral Code QR Code"
-                    className="w-64 h-64"
-                  />
-                </div>
-                <p className="text-sm text-[#4C526A] dark:text-[#A3AED0] text-center mb-2">
-                  Scan this QR code to share your referral code
-                </p>
-                <p className="text-xs text-[#4C526A] dark:text-[#A3AED0] text-center font-mono">
-                  {referralCode}
-                </p>
-              </div>
-            ) : (
-              <div className="flex items-center justify-center py-8">
-                <p className="text-sm text-[#4C526A] dark:text-[#A3AED0]">
-                  Generating QR code...
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </>
   );
 };

@@ -3,6 +3,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "@/store";
 import { fetchMyTransactions, setCurrentPage } from "@/features/p2p/slices/p2pWithdrawalDepositSlice";
+import { getMyTransactions } from "@/features/p2p/api";
 import { formatDistanceToNow } from "date-fns";
 import { NoDataFound } from "../ui/Transactions";
 import { useDashboardI18n } from "@/lib/useDashboardI18n";
@@ -23,6 +24,13 @@ interface RootState {
   };
 }
 
+type TransactionTypeFilter = "deposit" | "withdrawal" | "all";
+
+interface P2PWithdrawalDepositTransactionsProps {
+  /** Filter by transaction type - "deposit" | "withdrawal" | "all" */
+  filterByType?: TransactionTypeFilter;
+}
+
 const getAssetName = (symbol: string) => {
   switch (symbol) {
     case "BTC":
@@ -36,33 +44,14 @@ const getAssetName = (symbol: string) => {
   }
 };
 
-const getPaymentMethodInitials = (method: string | null): string => {
-  if (!method) return "PM";
-  const words = method.split(" ");
-  if (words.length >= 2) {
-    return (words[0][0] + words[1][0]).toUpperCase();
-  }
-  return method.substring(0, 2).toUpperCase();
+/** Display first 5 chars ... last 5 chars (full id in title for copy/hover) */
+const formatTransactionId = (id: string | null | undefined): string => {
+  if (!id) return "";
+  if (id.length <= 12) return id;
+  return `${id.slice(0, 5)}...${id.slice(-5)}`;
 };
 
-const extractPaymentInfo = (tx: any) => {
-  const providerName = tx?.payment_provider || null;
-  const methodLabel = tx?.payment_method || null;
-  // Try to get provider logo from transaction data
-  // If not available, we'll use initials
-  const providerLogo = tx?.provider_logo || tx?.logo || null;
-  const displayImage = providerLogo;
-  const initials = getPaymentMethodInitials(methodLabel);
-
-  return {
-    displayImage,
-    providerName,
-    methodLabel,
-    initials,
-  };
-};
-
-const P2PWithdrawalDepositTransactions = () => {
+const P2PWithdrawalDepositTransactions = ({ filterByType = "all" }: P2PWithdrawalDepositTransactionsProps) => {
   const dispatch = useDispatch<AppDispatch>();
   const { t } = useDashboardI18n();
   const { transactions, loading, error, currentPage } = useSelector(
@@ -70,14 +59,57 @@ const P2PWithdrawalDepositTransactions = () => {
   );
   const itemsPerPage = 10;
   const tableRef = useRef<HTMLDivElement>(null);
+  const [allFilteredData, setAllFilteredData] = useState<any[] | null>(null);
+  const [loadingFiltered, setLoadingFiltered] = useState(false);
+  const prevFilterRef = useRef(filterByType);
 
-  /* -------------------------- fetch data ----------------------------- */
+  /* When filter is deposit/withdrawal: fetch all pages and filter client-side for correct pagination */
   useEffect(() => {
-    dispatch(fetchMyTransactions(currentPage));
-  }, [dispatch, currentPage]);
+    if (filterByType === "all") {
+      setAllFilteredData(null);
+      return;
+    }
+    let cancelled = false;
+    setLoadingFiltered(true);
+    const loadAllFiltered = async () => {
+      const all: any[] = [];
+      let page = 1;
+      let hasMore = true;
+      while (hasMore && page <= 100) {
+        const resp = await getMyTransactions(page);
+        const results = resp?.results || [];
+        if (results.length === 0) break;
+        const filtered = results.filter(
+          (tx: any) => (tx.transaction_type || "").toLowerCase() === filterByType
+        );
+        all.push(...filtered);
+        hasMore = !!resp?.next;
+        page++;
+      }
+      if (!cancelled) {
+        setAllFilteredData(all);
+      }
+      setLoadingFiltered(false);
+    };
+    loadAllFiltered();
+    return () => { cancelled = true; };
+  }, [filterByType]);
+
+  /* Fetch data: when "all" use API pagination; when filter use allFilteredData (client-side) */
+  useEffect(() => {
+    const filterChanged = prevFilterRef.current !== filterByType;
+    if (filterChanged) {
+      prevFilterRef.current = filterByType;
+      dispatch(setCurrentPage(1));
+    }
+    if (filterByType === "all") {
+      const pageToFetch = filterChanged ? 1 : currentPage;
+      dispatch(fetchMyTransactions({ page: pageToFetch, transactionType: undefined }));
+    }
+  }, [dispatch, currentPage, filterByType]);
 
   /* --------------------------- loading / error ----------------------- */
-  if (loading) {
+  if (loading || (filterByType !== "all" && loadingFiltered)) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#1D8751]" />
@@ -93,11 +125,9 @@ const P2PWithdrawalDepositTransactions = () => {
     );
   }
 
-  if (
-    !transactions ||
-    !transactions.results ||
-    transactions.results.length === 0
-  ) {
+  const useFilteredMode = filterByType !== "all" && allFilteredData !== null;
+
+  if (!useFilteredMode && (!transactions || !transactions.results)) {
     return (
       <NoDataFound
         title={t(
@@ -112,17 +142,40 @@ const P2PWithdrawalDepositTransactions = () => {
     );
   }
 
-  // Sort transactions by timestamp (newest first)
-  const sortedResults = [...transactions.results].sort((a: any, b: any) => {
+  const baseResults = useFilteredMode
+    ? allFilteredData
+    : (transactions?.results || []);
+
+  const sortedResults = [...baseResults].sort((a: any, b: any) => {
     const dateA = new Date(a.timestamp).getTime();
     const dateB = new Date(b.timestamp).getTime();
-    return dateB - dateA; // Sort in descending order (newest first)
+    return dateB - dateA;
   });
 
-  const totalPages = Math.ceil(transactions.count / itemsPerPage);
+  const filteredCount = useFilteredMode ? sortedResults.length : transactions!.count;
+  const totalPages = Math.ceil(filteredCount / itemsPerPage);
+  const startIdx = (currentPage - 1) * itemsPerPage;
+  const paginatedResults = sortedResults.slice(startIdx, startIdx + itemsPerPage);
 
-  // Use the results directly from API (already paginated)
-  const paginatedResults = sortedResults;
+  // Show no data when filtered results are empty
+  if (paginatedResults.length === 0) {
+    return (
+      <NoDataFound
+        title={t(
+          "transactions.noWithdrawalDepositFound",
+          "No P2P Withdrawal/Deposit Transactions Found"
+        )}
+        message={
+          filterByType !== "all"
+            ? `No ${filterByType} transactions found.`
+            : t(
+                "transactions.noWithdrawalDepositMessage",
+                "There are currently no P2P withdrawal/deposit transactions to display. Please check back later or try adjusting your filters."
+              )
+        }
+      />
+    );
+  }
 
   const handlePageChange = (pageNumber: number, e?: React.MouseEvent) => {
     e?.preventDefault();
@@ -162,7 +215,7 @@ const P2PWithdrawalDepositTransactions = () => {
       <div className="flex flex-col items-center gap-3 sm:gap-4">
         {/* Show count info */}
         <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 text-center px-2">
-          {t("transactions.showing", "Showing")} {((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, transactions.count)} {t("transactions.of", "of")} {transactions.count} {t("transactions.transactions", "transactions")}
+          {t("transactions.showing", "Showing")} {filteredCount === 0 ? 0 : ((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, filteredCount)} {t("transactions.of", "of")} {filteredCount} {t("transactions.transactions", "transactions")}
         </div>
 
         {/* Pagination controls */}
@@ -215,10 +268,8 @@ const P2PWithdrawalDepositTransactions = () => {
   return (
     <div className="w-full" ref={tableRef}>
       {/* Mobile Card Layout */}
-      <div className="block sm:hidden space-y-3">
+      <div className="block sm:hidden space-y-3 px-4 pt-4 pb-2">
         {paginatedResults.map((tx: any, index: number) => {
-          const paymentInfo = extractPaymentInfo(tx);
-
           return (
             <div
               key={tx.transaction_id || `tx-${index}`}
@@ -258,6 +309,12 @@ const P2PWithdrawalDepositTransactions = () => {
               </div>
 
               <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="col-span-2">
+                  <div className="text-xs text-gray-500 dark:text-[#A0A3BC] mb-1">Transaction ID</div>
+                  <div className="font-mono font-medium text-xs text-gray-900 dark:text-white break-all" title={tx.transaction_id || ""}>
+                    {tx.transaction_id ? formatTransactionId(tx.transaction_id) : t("transactions.notAvailable", "N/A")}
+                  </div>
+                </div>
                 <div>
                   <div className="text-xs text-gray-500 dark:text-[#A0A3BC] mb-1">Type</div>
                   <div className="font-medium text-sm sm:text-base text-gray-500 dark:text-[#A0A3BC] capitalize">
@@ -276,40 +333,6 @@ const P2PWithdrawalDepositTransactions = () => {
                   </div>
                 </div>
                 <div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                    Payment
-                  </div>
-                  <div className="flex items-center gap-3">
-                    {paymentInfo.displayImage ? (
-                      <img
-                        src={paymentInfo.displayImage}
-                        alt={paymentInfo.providerName || "Payment method"}
-                        className="w-8 h-8 rounded-full border border-[#E8EFF5] dark:border-[#35353E] bg-white dark:bg-[#1D1D23]"
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                        }}
-                      />
-                    ) : (
-                      <div className="w-8 h-8 rounded-full border border-[#E8EFF5] dark:border-[#35353E] bg-[#1D8751] dark:bg-[#1D8751] flex items-center justify-center flex-shrink-0">
-                        <span className="text-white text-xs font-semibold">
-                          {paymentInfo.initials}
-                        </span>
-                      </div>
-                    )}
-                    <div className="flex flex-col min-w-0">
-                      <div className="font-medium text-gray-900 dark:text-white text-sm">
-                        {paymentInfo.methodLabel ||
-                          t("transactions.notAvailable", "N/A")}
-                      </div>
-                      {paymentInfo.providerName && (
-                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                          {paymentInfo.providerName}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <div>
                   <div className="text-xs text-gray-500 dark:text-[#A0A3BC] mb-1">When</div>
                   <div className="font-medium text-sm text-gray-500 dark:text-[#A0A3BC]">
                     {formatDistanceToNow(new Date(tx.timestamp), {
@@ -325,20 +348,20 @@ const P2PWithdrawalDepositTransactions = () => {
 
       {/* Desktop Table Layout */}
       <div className="hidden sm:block overflow-x-auto">
-        <table className="min-w-full divide-y divide-[#d1d5db] dark:divide-[#35353E]">
-          <thead className="bg-transparent">
+        <table className="min-w-full divide-y divide-gray-200 dark:divide-[#2A2A35]">
+          <thead className="bg-gray-50 dark:bg-[#35353E] rounded-t-[24px]">
             <tr className="border-b border-gray-200 dark:border-[#35353E]">
               {[
                 t("transactions.asset", "Asset"),
+                t("transactions.transactionId", "Transaction ID"),
                 t("transactions.transactionType", "Transaction Type"),
                 t("transactions.amount", "Amount"),
-                t("transactions.paymentMethod", "Payment Method"),
                 t("transactions.status", "Status"),
                 t("transactions.when", "When"),
               ].map((h) => (
                 <th
                   key={h}
-                  className="px-3 sm:px-4 lg:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-600 dark:text-[#788099]"
+                  className="px-3 sm:px-4 py-2 text-left text-xs sm:text-sm font-semibold text-gray-900 dark:text-white"
                 >
                   <span className="inline-flex items-center">
                     {h}
@@ -349,18 +372,16 @@ const P2PWithdrawalDepositTransactions = () => {
             </tr>
           </thead>
 
-          <tbody className="divide-y divide-[#d1d5db] dark:divide-[#35353E]">
+          <tbody className="divide-y divide-gray-200 dark:divide-[#2A2A35]">
             {paginatedResults.map((tx: any, index: number) => {
-              const paymentInfo = extractPaymentInfo(tx);
-
               return (
                 <tr
                   key={tx.transaction_id || `tx-${index}`}
                   className="hover:bg-gray-100 dark:hover:bg-[#23232A] transition-colors"
                 >
                   {/* Asset */}
-                  <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 whitespace-nowrap">
-                    <div className="flex items-center gap-2 sm:gap-3">
+                  <td className="px-3 sm:px-4 py-2 whitespace-nowrap">
+                    <div className="flex items-center gap-2">
                       <img
                         src={getHighResAssetIcon({ ticker: tx.currency || tx.asset_symbol })}
                         alt={tx.currency || tx.asset_symbol || "Asset"}
@@ -369,7 +390,7 @@ const P2PWithdrawalDepositTransactions = () => {
                           e.currentTarget.style.display = 'none';
                         }}
                       />
-                      <div className="flex flex-col min-w-0">
+                      <div className="flex flex-col min-w-0 leading-tight">
                         <span className="font-semibold uppercase tracking-wide text-xs sm:text-sm text-gray-700 dark:text-gray-200 truncate">
                           {tx.currency || tx.asset_symbol || "USDT"}
                         </span>
@@ -380,14 +401,21 @@ const P2PWithdrawalDepositTransactions = () => {
                     </div>
                   </td>
 
+                  {/* Transaction ID (second after Asset) */}
+                  <td className="px-3 sm:px-4 py-2 whitespace-nowrap">
+                    <span className="font-mono text-xs sm:text-sm text-gray-700 dark:text-gray-200 inline-block" title={tx.transaction_id || ""}>
+                      {tx.transaction_id ? formatTransactionId(tx.transaction_id) : t("transactions.notAvailable", "N/A")}
+                    </span>
+                  </td>
+
                   {/* Type */}
-                  <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E] text-sm sm:text-base text-gray-500 dark:text-[#A0A3BC] capitalize">
+                  <td className="px-3 sm:px-4 py-2 text-xs sm:text-sm text-gray-500 dark:text-[#A0A3BC] capitalize">
                     {tx.transaction_type}
                   </td>
 
                   {/* Amount */}
                   <td
-                    className={`px-3 sm:px-4 lg:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm lg:text-base font-semibold ${tx.transaction_type === "deposit"
+                    className={`px-3 sm:px-4 py-2 whitespace-nowrap text-xs sm:text-sm font-semibold ${tx.transaction_type === "deposit"
                       ? "text-[#1D8751]"
                       : "text-red-500 dark:text-red-400"
                       }`}
@@ -395,41 +423,8 @@ const P2PWithdrawalDepositTransactions = () => {
                     {tx.amount || tx.total_amount || "0.00"}
                   </td>
 
-                  {/* Payment Method */}
-                  <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 whitespace-nowrap">
-                    <div className="flex items-center gap-3 min-w-0">
-                      {paymentInfo.displayImage ? (
-                        <img
-                          src={paymentInfo.displayImage}
-                          alt={paymentInfo.providerName || "Payment method"}
-                          className="w-8 h-8 rounded-full border border-[#E8EFF5] dark:border-[#35353E] bg-white dark:bg-[#1D1D23] flex-shrink-0"
-                          onError={(e) => {
-                            e.currentTarget.style.display = 'none';
-                          }}
-                        />
-                      ) : (
-                        <div className="w-8 h-8 rounded-full border border-[#E8EFF5] dark:border-[#35353E] bg-[#1D8751] dark:bg-[#1D8751] flex items-center justify-center flex-shrink-0">
-                          <span className="text-white text-xs font-semibold">
-                            {paymentInfo.initials}
-                          </span>
-                        </div>
-                      )}
-                      <div className="flex flex-col min-w-0">
-                        <span className="font-medium text-xs sm:text-sm lg:text-base text-gray-700 dark:text-gray-200 truncate">
-                          {paymentInfo.methodLabel ||
-                            t("transactions.notAvailable", "N/A")}
-                        </span>
-                        {paymentInfo.providerName && (
-                          <span className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                            {paymentInfo.providerName}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </td>
-
                   {/* Status */}
-                  <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 whitespace-nowrap">
+                  <td className="px-3 sm:px-4 py-2 whitespace-nowrap">
                     <span
                       className={`px-2 py-1 rounded-full text-xs font-medium ${tx.status === "completed" || tx.status === "approved"
                         ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
@@ -445,7 +440,7 @@ const P2PWithdrawalDepositTransactions = () => {
                   </td>
 
                   {/* When */}
-                  <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E] text-sm sm:text-base text-gray-500 dark:text-[#A0A3BC]">
+                  <td className="px-3 sm:px-4 py-2 text-xs sm:text-sm text-gray-500 dark:text-[#A0A3BC]">
                     {formatDistanceToNow(new Date(tx.timestamp), {
                       addSuffix: true,
                     })}
@@ -458,7 +453,7 @@ const P2PWithdrawalDepositTransactions = () => {
       </div>
 
       {/* pagination */}
-      <div className="mt-4">{renderPagination()}</div>
+      <div className="mt-4 px-4 pb-4">{renderPagination()}</div>
     </div>
   );
 };

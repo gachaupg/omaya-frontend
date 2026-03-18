@@ -7,6 +7,8 @@ import {
   getPublicPaymentMethods,
   updateUserPaymentDetail,
   getUserPaymentDetail,
+  sendPaymentDetailAddOtp as apiSendPaymentDetailAddOtp,
+  verifyPaymentDetailAddOtp as apiVerifyPaymentDetailAddOtp,
   sendPaymentDetailEditOtp as apiSendPaymentDetailEditOtp,
   updatePaymentDetailWithOtp as apiUpdatePaymentDetailWithOtp,
 } from "../api";
@@ -111,6 +113,9 @@ export const postUserPaymentDetail = createAsyncThunk<
   }
 );
 
+// In-flight promise so multiple concurrent dispatches result in a single request
+let userPaymentDetailsInFlightP2P: Promise<P2PResponse[]> | null = null;
+
 export const fetchUserPaymentDetails = createAsyncThunk<
   P2PResponse[],
   void,
@@ -119,8 +124,16 @@ export const fetchUserPaymentDetails = createAsyncThunk<
   "paymentMethods/fetchUserPaymentDetails",
   async (_, { rejectWithValue }) => {
     try {
-      return await getUserPaymentDetails();
+      if (!userPaymentDetailsInFlightP2P) {
+        userPaymentDetailsInFlightP2P = getUserPaymentDetails().finally(
+          () => {
+            userPaymentDetailsInFlightP2P = null;
+          }
+        );
+      }
+      return await userPaymentDetailsInFlightP2P;
     } catch (err: any) {
+      userPaymentDetailsInFlightP2P = null;
       return rejectWithValue(
         err.message || "Failed to fetch user payment details"
       );
@@ -182,6 +195,38 @@ export const patchUserPaymentDetail = createAsyncThunk<
   async ({ id, data }, { rejectWithValue }) => {
     try {
       return await updateUserPaymentDetail(id, data);
+    } catch (err: any) {
+      return rejectWithValue(extractPaymentDetailError(err));
+    }
+  }
+);
+
+/** Send OTP for adding payment detail (required before postUserPaymentDetail). */
+export const sendPaymentDetailAddOtp = createAsyncThunk<
+  { message: string },
+  void,
+  { rejectValue: string }
+>(
+  "paymentMethods/sendPaymentDetailAddOtp",
+  async (_, { rejectWithValue }) => {
+    try {
+      return await apiSendPaymentDetailAddOtp();
+    } catch (err: any) {
+      return rejectWithValue(extractPaymentDetailError(err));
+    }
+  }
+);
+
+/** Verify OTP for adding payment detail (required before postUserPaymentDetail). */
+export const verifyPaymentDetailAddOtp = createAsyncThunk<
+  { message: string },
+  string,
+  { rejectValue: string }
+>(
+  "paymentMethods/verifyPaymentDetailAddOtp",
+  async (otp, { rejectWithValue }) => {
+    try {
+      return await apiVerifyPaymentDetailAddOtp(otp);
     } catch (err: any) {
       return rejectWithValue(extractPaymentDetailError(err));
     }

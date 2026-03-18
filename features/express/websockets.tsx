@@ -1,5 +1,6 @@
 import React from "react";
 import { API_CONFIG } from "@/lib/appConfig";
+import { appendTokenToWebSocketUrl } from "@/lib/utils/websocketUtils";
 
 export interface TransactionStatusMessage {
   type: "status_update" | "error" | "connection_established" | "final_status";
@@ -90,6 +91,7 @@ export class BaseTransactionStatusWebSocket {
       onError?: (error: Event) => void;
       onClose?: () => void;
       autoReconnect?: boolean;
+      token?: string;
     } = {}
   ) {
     this.onMessageCallback = options.onMessage;
@@ -114,9 +116,9 @@ export class BaseTransactionStatusWebSocket {
           return;
         }
 
-                
-        
-         this.ws = new WebSocket(this.wsUrl);
+        const finalUrl = appendTokenToWebSocketUrl(this.wsUrl, this.options.token);
+        console.log("[Exchange] Connecting WebSocket URL:", finalUrl);
+        this.ws = new WebSocket(finalUrl);
 
         // Add connection timeout
         const connectionTimeout = setTimeout(() => {
@@ -331,6 +333,7 @@ export const useTransactionStatusWebSocket = (
     onError?: (error: Event) => void;
     onClose?: () => void;
     autoReconnect?: boolean;
+    token?: string;
   } = {}
 ) => {
   const [isConnected, setIsConnected] = React.useState(false);

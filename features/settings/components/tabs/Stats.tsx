@@ -4,6 +4,7 @@ import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/rootReducer";
+import { API_BASE_URL } from "@/config/api";
 import { getP2PProfileThunk } from "@/features/p2p/slices/orderSlice";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/store";
@@ -22,6 +23,15 @@ import { useRouter } from "next/navigation";
 import VerifiedBadge from "@/components/ui/VerifiedBadge";
 
 import { logger } from "@/lib/utils/logger";
+
+// Resolve relative URLs (e.g. /media/...) to full API URL so images load
+const resolvePhotoUrl = (url: string | null | undefined): string => {
+  if (!url || typeof url !== "string" || !url.trim()) return "";
+  const u = url.trim();
+  if (u.startsWith("http://") || u.startsWith("https://") || u.startsWith("data:")) return u;
+  if (u.startsWith("/")) return `${API_BASE_URL.replace(/\/$/, "")}${u}`;
+  return u;
+};
 
 const DefaultProfileIcon = () => (
   <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center bg-gray-200 dark:bg-[#35353E] border-2 border-white dark:border-[var(--card-color)]">
@@ -55,7 +65,7 @@ interface StatsProps {
 const Stats = ({ onSupportClick }: StatsProps) => {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
-  const { user, isAuthenticated } = useSelector(
+  const { user, isAuthenticated, profile: userProfile } = useSelector(
     (state: RootState) => state.auth
   );
   const summary = useSelector(selectTransactionSummary);
@@ -76,14 +86,24 @@ const Stats = ({ onSupportClick }: StatsProps) => {
   const p2pProfile = useSelector((state: RootState) => state.p2pMarket?.getP2PProfile);
   const profileFetchRef = useRef<{ lastFetch: number; inProgress: boolean }>({ lastFetch: 0, inProgress: false });
 
+  // Use same displayImage pattern as P2pProfile/UserCard - updates when Redux p2pProfile or auth profile changes
+  const displayImage = profileImage || p2pProfile?.profile?.photo || userProfile?.photo || null;
+
+  // Load cached profile photo from localStorage on mount
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const cached = localStorage.getItem("profile_photo") || localStorage.getItem("p2p_profile_image");
+    if (cached && cached.trim()) {
+      setProfileImage(resolvePhotoUrl(cached));
+    }
+  }, []);
+
   useEffect(() => {
     if (user) {
-      // Use existing P2P profile if available
       if (p2pProfile?.profile?.photo) {
-        setProfileImage(p2pProfile.profile.photo);
+        setProfileImage(resolvePhotoUrl(p2pProfile.profile.photo));
         return;
       }
-      // Only fetch if not already fetched recently (within 30 seconds) and not in progress
       const now = Date.now();
       if (!profileFetchRef.current.inProgress && (now - profileFetchRef.current.lastFetch > 30000)) {
         profileFetchRef.current.inProgress = true;
@@ -92,7 +112,7 @@ const Stats = ({ onSupportClick }: StatsProps) => {
           .unwrap()
           .then((response) => {
             if (response?.profile?.photo) {
-              setProfileImage(response.profile.photo);
+              setProfileImage(resolvePhotoUrl(response.profile.photo));
             }
           })
           .catch((error) => {
@@ -112,11 +132,13 @@ const Stats = ({ onSupportClick }: StatsProps) => {
     const handleProfilePhotoUpdate = (event: CustomEvent) => {
       const newPhotoUrl = event.detail?.photoUrl;
       if (newPhotoUrl) {
-        // Add cache-busting parameter to force browser to reload the image
-        const photoWithTimestamp = newPhotoUrl.includes('?')
-          ? `${newPhotoUrl}&t=${Date.now()}`
-          : `${newPhotoUrl}?t=${Date.now()}`;
-        setProfileImage(photoWithTimestamp);
+        const resolved = resolvePhotoUrl(newPhotoUrl);
+        if (!resolved) return;
+        const url =
+          resolved.startsWith("data:") ? resolved
+          : resolved.includes("?") ? `${resolved}&t=${Date.now()}`
+          : `${resolved}?t=${Date.now()}`;
+        setProfileImage(url);
       }
     };
 
@@ -125,10 +147,13 @@ const Stats = ({ onSupportClick }: StatsProps) => {
     // Also check localStorage in case profile was updated in another tab
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'profile_photo' && e.newValue) {
-        const photoWithTimestamp = e.newValue.includes('?')
-          ? `${e.newValue}&t=${Date.now()}`
-          : `${e.newValue}?t=${Date.now()}`;
-        setProfileImage(photoWithTimestamp);
+        const resolved = resolvePhotoUrl(e.newValue);
+        if (!resolved) return;
+        const url =
+          resolved.startsWith("data:") ? resolved
+          : resolved.includes("?") ? `${resolved}&t=${Date.now()}`
+          : `${resolved}?t=${Date.now()}`;
+        setProfileImage(url);
       }
     };
 
@@ -162,19 +187,19 @@ const Stats = ({ onSupportClick }: StatsProps) => {
       {/* Header */}
       <div className="flex w-full flex-row items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
         <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-          {profileImage ? (
+          {displayImage ? (
             <div className="relative">
               <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full overflow-hidden">
                 <Image
-                  src={profileImage}
+                  src={resolvePhotoUrl(displayImage)}
                   alt="User avatar"
                   width={56}
                   height={56}
                   className="object-cover w-full h-full"
                   unoptimized={true}
+                  onError={() => setProfileImage("")}
                 />
               </div>
-
             </div>
           ) : (
             <div className="relative">

@@ -34,6 +34,7 @@ interface TransactionInfoStepProps {
   activeInputField?: "from" | "to";
   meetsMinimumAmount?: boolean;
   minSwapUsd?: number;
+  amountError?: string;
 }
 
 const strongBorder =
@@ -76,6 +77,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
     activeInputField,
     meetsMinimumAmount = true,
     minSwapUsd = 30,
+    amountError,
   } = props;
 
   const fromAssetDropdownRef = useRef<HTMLDivElement>(null);
@@ -330,14 +332,14 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
                         option.image ||
                         option.image_url ||
                         option.asset_image ||
-                        "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                        "/images/tether.svg"
                       }
                       alt={option.name || "Asset"}
                       className="w-6 h-6 rounded-full object-cover"
                       loading="lazy"
                       onError={(e) => {
                         e.currentTarget.src =
-                          "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                          "/images/tether.svg";
                       }}
                     />
                     <div className="flex-1 min-w-0">
@@ -395,14 +397,14 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
                 asset?.image ||
                 asset?.image_url ||
                 asset?.asset_image ||
-                "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                "/images/tether.svg"
               }
               alt={asset?.name || "asset icon"}
               className="w-5 h-5 sm:w-6 sm:h-6 rounded-full object-cover flex-shrink-0"
               loading="lazy"
               onError={(e) => {
                 e.currentTarget.src =
-                  "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                  "/images/tether.svg";
               }}
             />
             <p className="text-base sm:text-lg dark:text-white text-gray-900 font-semibold truncate">
@@ -434,7 +436,8 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
     onChange: (e: React.ChangeEvent<HTMLInputElement>) => void,
     asset: SupportedAsset | null,
     isActive: boolean,
-    isYouSend: boolean = false
+    isYouSend: boolean = false,
+    error?: string
   ) => {
     const inputClassName = isYouSend
       ? inputBase
@@ -472,6 +475,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
             </span>
           )}
         </div>
+        {error && <p className="text-red-600 dark:text-red-400 text-xs sm:text-sm mt-1">{error}</p>}
       </div>
     );
   };
@@ -501,7 +505,8 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
                 onFromAmountChange,
                 fromAsset,
                 activeInputField === "from",
-                true
+                true,
+                amountError
               )}
             </div>
             <div className="flex-1 min-w-0">
@@ -527,8 +532,8 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
             <img
               src={
                 isDark
-                  ? "https://res.cloudinary.com/pitz/image/upload/v1755500509/Frame_36261_ledmyw.png"
-                  : "https://res.cloudinary.com/pitz/image/upload/v1756579504/Frame_36261_1_d9cnq1.png"
+                  ? "/assets/Frame_36261_ledmyw.png"
+                  : "/assets/Frame_36261_1_d9cnq1.png"
               }
               alt="swap"
               className="w-11 h-11"
@@ -555,7 +560,9 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
                 toAmount,
                 onToAmountChange,
                 toAsset,
-                activeInputField === "to"
+                activeInputField === "to",
+                false,
+                amountError
               )}
             </div>
             <div className="flex-1 min-w-0">

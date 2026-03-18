@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState } from "react";
 import Image from "next/image";
 import { FaSearch, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import { useRouter } from "next/navigation";
-import { useBlog } from "../hooks/blog";
+import { useBlogsPaginated } from "../hooks/useBlogsPaginated";
 import { BlogPost } from "../types";
 import { useBlogsI18n } from "@/lib/useBlogsI18n";
 import { imageBuilder } from "@/sanity/lib/client";
@@ -53,42 +53,13 @@ const getCategoryColor = (category: string): string => {
 const BlogPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const { allPosts: allPostsFromHook, loading, error } = useBlog();
+  const { posts, totalCount, loading, error } = useBlogsPaginated({
+    page: currentPage,
+    limit: ITEMS_PER_PAGE,
+    searchTerm,
+  });
   const router = useRouter();
   const { t } = useBlogsI18n();
-
-  // Use all posts from hook (includes all categories) and sort by date (newest first)
-  const allPosts = useMemo(() => {
-    if (!allPostsFromHook || allPostsFromHook.length === 0) {
-      return [];
-    }
-    return [...allPostsFromHook].sort((a: BlogPost, b: BlogPost) => {
-      const dateA = new Date(a.created_at || a.createdAt || 0).getTime();
-      const dateB = new Date(b.created_at || b.createdAt || 0).getTime();
-      return dateB - dateA; // Newest first
-    });
-  }, [allPostsFromHook]);
-
-  // Filter posts based on search term
-  const filteredPosts = useMemo(() => {
-    if (!searchTerm.trim()) {
-      return allPosts;
-    }
-
-    const searchLower = searchTerm.toLowerCase();
-    return allPosts.filter(
-      (post: BlogPost) =>
-        post.title.toLowerCase().includes(searchLower) ||
-        post.description.toLowerCase().includes(searchLower) ||
-        (post.author_name &&
-          post.author_name.toLowerCase().includes(searchLower))
-    );
-  }, [allPosts, searchTerm]);
-
-  // Reset to page 1 when search term changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm]);
 
   const handlePageChange = (newPage: number | ((prev: number) => number)) => {
     setCurrentPage(newPage);
@@ -98,11 +69,10 @@ const BlogPage = () => {
     }, 10);
   };
 
-  // Calculate pagination
-  const totalPages = Math.ceil(filteredPosts.length / ITEMS_PER_PAGE);
-  const indexOfLastItem = currentPage * ITEMS_PER_PAGE;
-  const indexOfFirstItem = indexOfLastItem - ITEMS_PER_PAGE;
-  const paginatedPosts = filteredPosts.slice(indexOfFirstItem, indexOfLastItem);
+  // Pagination (server-side: posts are already the current page)
+  const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
+  const indexOfFirstItem = (currentPage - 1) * ITEMS_PER_PAGE;
+  const indexOfLastItem = Math.min(currentPage * ITEMS_PER_PAGE, totalCount);
 
   // Format date function
   const formatDate = (dateString: string) => {
@@ -216,14 +186,17 @@ const BlogPage = () => {
             <input
               type="search"
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
+              }}
               className="w-full md:w-72 bg-gray-50 dark:bg-[#161B22] border border-gray-300 dark:border-[#30363D] rounded-full py-2.5 pl-11 pr-4 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1D8751]"
               placeholder={t("blogs.search", "Search")}
             />
           </div>
         </div>
 
-        {filteredPosts.length === 0 ? (
+        {!loading && posts.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-600 dark:text-gray-400 text-lg">
               {searchTerm
@@ -248,7 +221,7 @@ const BlogPage = () => {
         ) : (
           <>
             <main className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {paginatedPosts.map((post: BlogPost) => (
+              {posts.map((post: BlogPost) => (
                 <article
                   key={getPostId(post)}
                   className="bg-gray-50 dark:bg-[#161B22] border border-gray-200 dark:border-[#30363D] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-[#1D87514f] transition-shadow duration-300 flex flex-col"
@@ -311,7 +284,7 @@ const BlogPage = () => {
             {totalPages > 1 && (
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8 pt-6 border-t border-gray-200 dark:border-[#30363D]">
                 <div className="text-sm text-gray-600 dark:text-gray-400">
-                  {t("blogs.pagination.showing", "Showing")} {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, filteredPosts.length)} {t("blogs.pagination.of", "of")} {filteredPosts.length} {t("blogs.pagination.posts", "posts")}
+                  {t("blogs.pagination.showing", "Showing")} {indexOfFirstItem + 1}-{indexOfLastItem} {t("blogs.pagination.of", "of")} {totalCount} {t("blogs.pagination.posts", "posts")}
                 </div>
                 <div className="flex items-center gap-2">
                   <button

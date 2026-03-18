@@ -8,6 +8,8 @@ import Footer from "@/components/layout/Footer";
 import Providers from "./providers";
 import { Toaster } from "@/components/ui/Toast";
 import GlobalSessionManager from "@/components/GlobalSessionManager";
+import FloatingChatButton from "@/components/ui/FloatingChatButton";
+import P2PRejectionModalRoot from "@/components/P2PRejectionModalRoot";
 
 // Load all three fonts from local assets for offline-friendly builds
 const geistSans = localFont({
@@ -57,18 +59,18 @@ export const metadata: Metadata = {
         type: "image/x-icon",
       },
       {
-        url: "https://res.cloudinary.com/pitz/image/upload/v1761576566/Omaya_green-logo_yva2ah_1_huqqlj.webp",
+        url: "/assets/Omaya_green-logo_yva2ah_1_huqqlj.webp",
         sizes: "32x32",
         type: "image/webp",
       },
       {
-        url: "https://res.cloudinary.com/pitz/image/upload/v1761576566/Omaya_green-logo_yva2ah_1_huqqlj.webp",
+        url: "/assets/Omaya_green-logo_yva2ah_1_huqqlj.webp",
         sizes: "16x16",
         type: "image/webp",
       },
     ],
     shortcut: "/favicon.ico",
-    apple: "https://res.cloudinary.com/pitz/image/upload/v1761576566/Omaya_green-logo_yva2ah_1_huqqlj.webp",
+    apple: "/assets/Omaya_green-logo_yva2ah_1_huqqlj.webp",
   },
 };
 
@@ -107,10 +109,12 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <Providers>
+          <P2PRejectionModalRoot />
           <GlobalSessionManager />
           <Navbar />
           {children}
           <Footer />
+          <FloatingChatButton />
           <Toaster />
         </Providers>
       </body>

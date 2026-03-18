@@ -120,7 +120,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
   // Create payment options from row payment details
   const paymentOptions = React.useMemo(() => {
     if (!paymentDetails || !Array.isArray(paymentDetails)) return [];
-    
+
     // Create options for each payment method from the row
     return paymentDetails.map((detail: any, index: number) => ({
       id: detail.id || index,
@@ -239,7 +239,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
       : fallbackWalletBalance;
   const handleSendAmountChange = (value: string) => {
     setActiveField("send");
-    
+
     if (!value) {
       setSendAmount("");
       setIsAmountValid(true);
@@ -255,13 +255,15 @@ const TradePreview: React.FC<TradePreviewProps> = ({
     }
 
     let numericAmount = parseFloat(value);
-    
+
     // Always set the input value (allow user to type anything)
     setSendAmount(value);
     setNumericAmount(numericAmount);
 
     // Only validate balance for sell orders
     if (tradeType === "sell") {
+      const availableAmount = advertiserData.availableAmount || 0;
+
       // Calculate receive amount first (always show it)
       const calculatedReceive = (numericAmount * commissionRate).toFixed(2);
       setReceiveAmount(calculatedReceive);
@@ -273,25 +275,35 @@ const TradePreview: React.FC<TradePreviewProps> = ({
         return;
       }
 
-      // Check min/max amounts (USDT)
-      if (numericAmount < minAmount) {
+      // When available < min, allow selling full available (range min cannot be met)
+      const effectiveMin = availableAmount < minAmount ? 0.01 : minAmount;
+      const effectiveMax = Math.min(maxAmount, availableAmount);
+
+      if (numericAmount < effectiveMin) {
         setIsAmountValid(false);
-        setErrorMessage(`Minimum amount is ${minAmount} USDT`);
+        setErrorMessage(`Minimum amount is ${effectiveMin.toFixed(2)} USDT`);
         return;
       }
 
-      if (numericAmount > maxAmount) {
+      if (numericAmount > effectiveMax) {
         setIsAmountValid(false);
-        setErrorMessage(`Maximum amount is ${maxAmount} USDT`);
+        setErrorMessage(`Maximum available is ${effectiveMax.toFixed(2)} USDT`);
         return;
       }
 
-      // Check available amount (though usually maxAmount covers this, double check against ad availability)
-      const availableAmount = advertiserData.availableAmount || 0;
-      if (numericAmount > availableAmount) {
-         setIsAmountValid(false);
-         setErrorMessage(`Maximum available is ${availableAmount.toFixed(2)} USDT`);
-         return;
+      // Ensure amount remaining (availableAmount - sendAmount) >= minAmount when available >= min
+      if (availableAmount >= minAmount) {
+        const amountRemaining = availableAmount - numericAmount;
+        if (amountRemaining < minAmount && amountRemaining >= 0) {
+          const maxAllowed = availableAmount - minAmount;
+          setIsAmountValid(false);
+          setErrorMessage(
+            maxAllowed >= minAmount
+              ? `Maximum allowed is ${maxAllowed.toFixed(2)} USDT (min ${minAmount} USDT must remain available)`
+              : `Only ${availableAmount.toFixed(2)} USDT available. Minimum order is ${minAmount} USDT.`
+          );
+          return;
+        }
       }
 
       // Validation passed
@@ -299,43 +311,35 @@ const TradePreview: React.FC<TradePreviewProps> = ({
       setErrorMessage("");
       return;
     } else {
-      // For buy orders, calculate receive amount first to validate against available amount
+      // For buy orders: send is in range currency (KES/USD), receive is USDT
+      // minAmount and maxAmount are in range currency (KES/USD) - same as send field
       if (isNaN(numericAmount)) {
         setReceiveAmount("");
         setIsAmountValid(true);
         setErrorMessage("");
         return;
       }
-      
-      const calculatedReceive = numericAmount / commissionRate;
+
       const availableAmount = advertiserData.availableAmount || 0;
+      const calculatedReceive = numericAmount / commissionRate;
       const maxSendAmount = availableAmount * commissionRate;
-      
-      // Validate against available amount (show error but don't cap input)
-      if (calculatedReceive > availableAmount) {
+
+      // When available < range min, allow buying full available (range min cannot be met)
+      const effectiveMin = maxSendAmount < minAmount ? 0.01 : minAmount;
+      const effectiveMax = Math.min(maxAmount, maxSendAmount);
+
+      if (numericAmount < effectiveMin) {
         setIsAmountValid(false);
-        setErrorMessage(`Maximum available is ${availableAmount.toFixed(2)} USDT (${maxSendAmount.toFixed(2)} USD)`);
-        setReceiveAmount("");
+        setErrorMessage(`Minimum amount is ${effectiveMin.toFixed(2)} ${rangeLimitSuffix}`);
         return;
       }
-      
-      // Check minimum amount (convert minAmount USD to USDT for comparison)
-      // For buy: send is USD, receive is USDT, minAmount and maxAmount are in USDT
-      // So we need to check if calculatedReceive (USDT) is within min/max
-      if (calculatedReceive < minAmount) {
+
+      if (numericAmount > effectiveMax) {
         setIsAmountValid(false);
-        setErrorMessage(`Minimum amount is ${minAmount} USDT (${(minAmount * commissionRate).toFixed(2)} USD)`);
-        setReceiveAmount("");
+        setErrorMessage(`Maximum available is ${availableAmount.toFixed(2)} USDT (${effectiveMax.toFixed(2)} ${rangeLimitSuffix})`);
         return;
       }
-      
-      if (calculatedReceive > maxAmount) {
-        setIsAmountValid(false);
-        setErrorMessage(`Maximum amount is ${maxAmount} USDT (${(maxAmount * commissionRate).toFixed(2)} USD)`);
-        setReceiveAmount("");
-        return;
-      }
-      
+
       // Validation passed - calculate and set receive amount
       setIsAmountValid(true);
       setErrorMessage("");
@@ -346,7 +350,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
 
   const handleReceiveAmountChange = (value: string) => {
     setActiveField("receive");
-    
+
     if (!value) {
       setReceiveAmount("");
       setIsAmountValid(true);
@@ -362,11 +366,11 @@ const TradePreview: React.FC<TradePreviewProps> = ({
     }
 
     let numericAmount = parseFloat(value);
-    
+
     // Always set the input value (allow user to type anything)
     setReceiveAmount(value);
     setNumericAmount(numericAmount);
-    
+
     // Handle invalid number input
     if (isNaN(numericAmount)) {
       setIsAmountValid(true);
@@ -374,17 +378,17 @@ const TradePreview: React.FC<TradePreviewProps> = ({
       setSendAmount("");
       return;
     }
-    
+
     const availableAmount = advertiserData.availableAmount || 0;
 
     if (tradeType === "sell") {
       // For sell: receiveAmount is USD, sendAmount is USDT.
-      // numericAmount is USD (what user typed)
+      // numericAmount is USD (what user typed), min/max are USDT
       const calculatedSendUsdt = numericAmount / commissionRate;
-      
+
       // Always show the calculated amount
       setSendAmount(calculatedSendUsdt.toFixed(2));
-      
+
       // Check balance first
       if (calculatedSendUsdt > walletBalance) {
         setIsAmountValid(false);
@@ -392,58 +396,76 @@ const TradePreview: React.FC<TradePreviewProps> = ({
         return;
       }
 
-      // Check min/max amounts in USD terms
-      const minUsd = minAmount * commissionRate;
-      const maxUsd = maxAmount * commissionRate;
+      // When available < min, allow selling full available
+      const effectiveMinUsdt = availableAmount < minAmount ? 0.01 : minAmount;
+      const effectiveMaxUsdt = Math.min(maxAmount, availableAmount);
+      const minUsd = effectiveMinUsdt * commissionRate;
+      const maxUsd = effectiveMaxUsdt * commissionRate;
 
       if (numericAmount < minUsd) {
         setIsAmountValid(false);
-        setErrorMessage(`Minimum receive amount is ${minUsd.toFixed(2)} USD`);
+        setErrorMessage(`Minimum receive amount is ${minUsd.toFixed(2)} ${rangeLimitSuffix}`);
         return;
       }
 
       if (numericAmount > maxUsd) {
-         setIsAmountValid(false);
-         setErrorMessage(`Maximum receive amount is ${maxUsd.toFixed(2)} USD`);
-         return;
+        setIsAmountValid(false);
+        setErrorMessage(`Maximum available is ${availableAmount.toFixed(2)} USDT (${maxUsd.toFixed(2)} ${rangeLimitSuffix})`);
+        return;
       }
 
-      // Check available amount
-      if (calculatedSendUsdt > availableAmount) {
-        setIsAmountValid(false);
-        setErrorMessage(`Maximum available is ${availableAmount.toFixed(2)} USDT (${(availableAmount * commissionRate).toFixed(2)} USD)`);
-        return;
+      // Ensure amount remaining >= minAmount when available >= min
+      if (availableAmount >= minAmount) {
+        const amountRemaining = availableAmount - calculatedSendUsdt;
+        if (amountRemaining < minAmount && amountRemaining >= 0) {
+          const maxAllowedUsdt = availableAmount - minAmount;
+          const maxAllowedUsd = maxAllowedUsdt * commissionRate;
+          setIsAmountValid(false);
+          setErrorMessage(
+            maxAllowedUsdt >= minAmount
+              ? `Maximum allowed is ${maxAllowedUsdt.toFixed(2)} USDT (${maxAllowedUsd.toFixed(2)} ${rangeLimitSuffix}) - min ${minAmount} USDT must remain`
+              : `Only ${availableAmount.toFixed(2)} USDT available. Minimum order is ${minAmount} USDT.`
+          );
+          return;
+        }
       }
 
       setIsAmountValid(true);
       setErrorMessage("");
     } else {
-      // For buy: receiveAmount is USDT, sendAmount is USD
-      // numericAmount is USDT (what user typed)
+      // For buy: receiveAmount is USDT, sendAmount is in range currency (KES/USD)
+      // numericAmount is USDT (what user typed), minAmount/maxAmount are in KES/USD
+      const calculatedSendKes = numericAmount * commissionRate;
+      const maxSendAmount = availableAmount * commissionRate;
+
       if (numericAmount > availableAmount) {
         setIsAmountValid(false);
-        setErrorMessage(`Amount cannot exceed available balance (${availableAmount.toFixed(2)} USDT)`);
+        setErrorMessage(`Amount cannot exceed available (${availableAmount.toFixed(2)} USDT)`);
         setSendAmount("");
         return;
       }
 
-      if (numericAmount < minAmount) {
+      // When available < range min, allow buying full available
+      const effectiveMin = maxSendAmount < minAmount ? 0.01 : minAmount;
+      const effectiveMax = Math.min(maxAmount, maxSendAmount);
+
+      if (calculatedSendKes < effectiveMin) {
         setIsAmountValid(false);
-        setErrorMessage(`Minimum amount is ${minAmount} USDT`);
+        setErrorMessage(`Minimum amount is ${effectiveMin.toFixed(2)} ${rangeLimitSuffix}`);
         setSendAmount("");
         return;
       }
 
-      if (numericAmount > maxAmount) {
+      if (calculatedSendKes > effectiveMax) {
         setIsAmountValid(false);
-        setErrorMessage(`Maximum amount is ${maxAmount} USDT`);
+        setErrorMessage(`Maximum available is ${availableAmount.toFixed(2)} USDT (${effectiveMax.toFixed(2)} ${rangeLimitSuffix})`);
         setSendAmount("");
         return;
       }
 
       setIsAmountValid(true);
       setErrorMessage("");
-      setSendAmount((numericAmount * commissionRate).toFixed(2));
+      setSendAmount(calculatedSendKes.toFixed(2));
     }
   };
 
@@ -486,8 +508,8 @@ const TradePreview: React.FC<TradePreviewProps> = ({
       }
 
       const response = await matchP2POrder(advertiserData.id, orderData);
-      
-      
+
+
       // Store trade_id in local storage
       let tradeIdFromResponse = null;
       if (response && 'trade_id' in response) {
@@ -495,7 +517,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
         localStorage.setItem('p2p_trade_id', tradeIdFromResponse);
       } else {
       }
-      
+
       // Navigate with state using URL search params
       const searchParams = new URLSearchParams();
       searchParams.set(
@@ -536,35 +558,35 @@ const TradePreview: React.FC<TradePreviewProps> = ({
         <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
           {/* Left Panel */}
           <div className="flex-1 flex flex-col gap-3">
-          {/* Advertiser Info */}
-          <div className="flex items-center gap-3 sm:gap-4">
-            {advertiserData.advertiser_photo && !imageError ? (
-              <img
-                src={advertiserData.advertiser_photo}
-                alt={advertiserData.advertiser}
-                className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover flex-shrink-0"
-                onError={() => setImageError(true)}
-              />
-            ) : (
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-xl sm:text-2xl font-bold bg-[#1D8751] text-white flex-shrink-0">
-                {advertiserData.advertiserInitials}
-              </div>
-            )}
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2 text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
-                <span className="truncate" title={advertiserData.advertiser}>
-                  {shortenLongName(advertiserData.advertiser)}
-                </span>
-                <div className="bg-[#E59906] text-base w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full flex-shrink-0"></div>
-              </div>
-              <div className="text-xs sm:text-sm font-medium flex items-center gap-1.5 sm:gap-2 text-[#1D8751] flex-wrap">
-                <span>{advertiserData.orders} Orders</span>
-                <span className="text-gray-400 dark:text-[#788099] hidden sm:inline">|</span>
-                <span>{advertiserData.completion} Completion</span>
-                <span className="text-[#1D8751]">👍 95%</span>
+            {/* Advertiser Info */}
+            <div className="flex items-center gap-3 sm:gap-4">
+              {advertiserData.advertiser_photo && !imageError ? (
+                <img
+                  src={advertiserData.advertiser_photo}
+                  alt={advertiserData.advertiser}
+                  className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover flex-shrink-0"
+                  onError={() => setImageError(true)}
+                />
+              ) : (
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-xl sm:text-2xl font-bold bg-[#1D8751] text-white flex-shrink-0">
+                  {advertiserData.advertiserInitials}
+                </div>
+              )}
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
+                  <span className="truncate" title={advertiserData.advertiser}>
+                    {shortenLongName(advertiserData.advertiser)}
+                  </span>
+                  <div className="bg-[#E59906] text-base w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full flex-shrink-0"></div>
+                </div>
+                <div className="text-xs sm:text-sm font-medium flex items-center gap-1.5 sm:gap-2 text-[#1D8751] flex-wrap">
+                  <span>{advertiserData.orders} Orders</span>
+                  <span className="text-gray-400 dark:text-[#788099] hidden sm:inline">|</span>
+                  <span>{advertiserData.completion} Completion</span>
+                  <span className="text-[#1D8751]">👍 95%</span>
+                </div>
               </div>
             </div>
-          </div>
             <div className="flex flex-wrap gap-4 sm:gap-6">
               <div className="flex-1 min-w-[80px]">
                 <div className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
@@ -593,21 +615,21 @@ const TradePreview: React.FC<TradePreviewProps> = ({
             </div>
             <div className="rounded-xl p-3 border border-gray-300 dark:border-[#35353E] bg-gray-100 dark:bg-transparent">
               <div className="flex items-start sm:items-center gap-2 mb-1 flex-wrap">
-                <svg 
-                 xmlns="http://www.w3.org/2000/svg" 
-                 width="18" 
-                 height="18" 
-                 viewBox="0 0 24 24" 
-                 fill="none" 
-                 stroke="currentColor" 
-                 strokeWidth="2" 
-                 strokeLinecap="round" 
-                 strokeLinejoin="round"
-                 className="text-[#E23D3A] flex-shrink-0 mt-0.5 sm:mt-0"
-                 >
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="12" x2="12" y1="8" y2="12"/>
-                <line x1="12" x2="12.01" y1="16" y2="16"/>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="text-[#E23D3A] flex-shrink-0 mt-0.5 sm:mt-0"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" x2="12" y1="8" y2="12" />
+                  <line x1="12" x2="12.01" y1="16" y2="16" />
                 </svg>
                 <span className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white">
                   Advertiser's Terms
@@ -624,7 +646,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
 
           {/* Right Panel */}
           <div className="flex-1 flex flex-col gap-3">
-              {/* Commission */}
+            {/* Commission */}
             <div className="text-left text-base sm:text-lg font-semibold text-gray-900 dark:text-white mt-0 lg:mt-4">
               Rate:{" "}
               <span className="text-[#1D8751]">{advertiserData.commission}</span>
@@ -643,16 +665,15 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                     </div>
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                       <span className="text-2xl sm:text-3xl text-[#1D8751] font-semibold flex-shrink-0">
-                        <img src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png" alt="USDT" className="w-6 h-6 sm:w-8 sm:h-8" />
+                        <img src="/images/tether.svg" alt="USDT" className="w-6 h-6 sm:w-8 sm:h-8" />
                       </span>
                       <input
                         type="number"
                         value={sendAmount}
                         onChange={(e) => handleSendAmountChange(e.target.value)}
                         placeholder="220"
-                        className={`flex-1 bg-transparent text-lg sm:text-xl font-semibold focus:outline-none rounded-xl px-3 sm:px-4 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-[#788099] ${
-                          !isAmountValid && sendAmount ? "border border-red-500" : ""
-                        }`}
+                        className={`flex-1 bg-transparent text-lg sm:text-xl font-semibold focus:outline-none rounded-xl px-3 sm:px-4 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-[#788099] ${!isAmountValid && sendAmount ? "border border-red-500" : ""
+                          }`}
                       />
                       <div className="relative w-full sm:w-auto">
                         <select
@@ -687,9 +708,8 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                         onChange={(e) => handleReceiveAmountChange(e.target.value)}
                         placeholder={`220 ${rangeLimitSuffix}`}
                         max={advertiserData.availableAmount || 0}
-                        className={`flex-1 bg-transparent text-lg sm:text-xl font-semibold focus:outline-none rounded-xl px-3 sm:px-4 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-[#788099] ${
-                          !isAmountValid && receiveAmount ? "border border-red-500" : ""
-                        }`}
+                        className={`flex-1 bg-transparent text-lg sm:text-xl font-semibold focus:outline-none rounded-xl px-3 sm:px-4 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-[#788099] ${!isAmountValid && receiveAmount ? "border border-red-500" : ""
+                          }`}
                       />
                       <div className="relative w-full sm:w-auto">
                         <select
@@ -734,9 +754,8 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                             ? (advertiserData.availableAmount || 0) * commissionRate
                             : undefined
                         }
-                        className={`flex-1 bg-transparent text-lg sm:text-xl font-semibold focus:outline-none rounded-xl px-3 sm:px-4 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-[#788099] ${
-                          !isAmountValid && sendAmount ? "border border-red-500" : ""
-                        }`}
+                        className={`flex-1 bg-transparent text-lg sm:text-xl font-semibold focus:outline-none rounded-xl px-3 sm:px-4 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-[#788099] ${!isAmountValid && sendAmount ? "border border-red-500" : ""
+                          }`}
                       />
                       <div className="relative w-full sm:w-auto">
                         <select
@@ -763,7 +782,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                   <div className="flex flex-col gap-2 sm:gap-2">
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                       <span className="text-2xl sm:text-3xl text-[#1D8751] font-semibold flex-shrink-0">
-                        <img src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png" alt="USDT" className="w-6 h-6 sm:w-8 sm:h-8" />
+                        <img src="/images/tether.svg" alt="USDT" className="w-6 h-6 sm:w-8 sm:h-8" />
                       </span>
                       <input
                         type="number"
@@ -771,9 +790,8 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                         onChange={(e) => handleReceiveAmountChange(e.target.value)}
                         placeholder="220 USDT"
                         max={advertiserData.availableAmount || 0}
-                        className={`flex-1 bg-transparent text-lg sm:text-xl font-semibold focus:outline-none rounded-xl px-3 sm:px-4 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-[#788099] ${
-                          !isAmountValid && receiveAmount ? "border border-red-500" : ""
-                        }`}
+                        className={`flex-1 bg-transparent text-lg sm:text-xl font-semibold focus:outline-none rounded-xl px-3 sm:px-4 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-[#788099] ${!isAmountValid && receiveAmount ? "border border-red-500" : ""
+                          }`}
                       />
                     </div>
                     {!isAmountValid && receiveAmount && (
@@ -801,9 +819,8 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                       {selectedPaymentSummary}
                     </span>
                     <svg
-                      className={`w-4 h-4 text-gray-500 dark:text-[#788099] transition-transform flex-shrink-0 ${
-                        isPaymentDropdownOpen ? "rotate-180" : ""
-                      }`}
+                      className={`w-4 h-4 text-gray-500 dark:text-[#788099] transition-transform flex-shrink-0 ${isPaymentDropdownOpen ? "rotate-180" : ""
+                        }`}
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -861,17 +878,15 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                                     setIsPaymentDropdownOpen(false);
                                     setPaymentSearchTerm("");
                                   }}
-                                  className={`w-full flex items-center gap-3 px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-[#35353E] ${
-                                    isSelected
+                                  className={`w-full flex items-center gap-3 px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-[#35353E] ${isSelected
                                       ? "text-gray-900 dark:text-white bg-gray-50 dark:bg-[#35353E]"
                                       : "text-gray-700 dark:text-[#C7CAD1]"
-                                  }`}
+                                    }`}
                                 >
-                                  <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                                    isSelected
+                                  <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${isSelected
                                       ? "border-[#1D8751] bg-[#1D8751]"
                                       : "border-gray-400 dark:border-[#788099]"
-                                  }`}>
+                                    }`}>
                                     {isSelected && (
                                       <div className="w-2 h-2 rounded-full bg-white"></div>
                                     )}
@@ -899,9 +914,8 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                       {selectedPaymentSummary}
                     </span>
                     <svg
-                      className={`w-4 h-4 text-gray-500 dark:text-[#788099] transition-transform ${
-                        isPaymentDropdownOpen ? "rotate-180" : ""
-                      }`}
+                      className={`w-4 h-4 text-gray-500 dark:text-[#788099] transition-transform ${isPaymentDropdownOpen ? "rotate-180" : ""
+                        }`}
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -959,17 +973,15 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                                     setIsPaymentDropdownOpen(false);
                                     setPaymentSearchTerm("");
                                   }}
-                                  className={`w-full flex items-center gap-3 px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-[#35353E] ${
-                                    isSelected
+                                  className={`w-full flex items-center gap-3 px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-[#35353E] ${isSelected
                                       ? "text-gray-900 dark:text-white bg-gray-50 dark:bg-[#35353E]"
                                       : "text-gray-700 dark:text-[#C7CAD1]"
-                                  }`}
+                                    }`}
                                 >
-                                  <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                                    isSelected
+                                  <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${isSelected
                                       ? "border-[#1D8751] bg-[#1D8751]"
                                       : "border-gray-400 dark:border-[#788099]"
-                                  }`}>
+                                    }`}>
                                     {isSelected && (
                                       <div className="w-2 h-2 rounded-full bg-white"></div>
                                     )}
@@ -1011,11 +1023,10 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                         return (
                           <div
                             key={detail.id}
-                            className={`flex items-center justify-between gap-2 p-2 rounded-lg border transition-colors ${
-                              isSelected
+                            className={`flex items-center justify-between gap-2 p-2 rounded-lg border transition-colors ${isSelected
                                 ? "border-[#1D8751] bg-[#1D8751]/10 dark:bg-[#1D8751]/20"
                                 : "border-gray-200 dark:border-[#35353E] hover:bg-gray-100 dark:hover:bg-[#23232B]"
-                            }`}
+                              }`}
                           >
                             <div className="flex items-center gap-2 min-w-0 flex-1">
                               {detail.provider_logo || detail.logo_url ? (
@@ -1045,13 +1056,12 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                               type="button"
                               onClick={() => !isPending && setSelectedUserPaymentDetail(isSelected ? null : detail)}
                               disabled={isPending}
-                              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition flex-shrink-0 ${
-                                isPending
+                              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition flex-shrink-0 ${isPending
                                   ? "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 cursor-not-allowed"
                                   : isSelected
                                     ? "bg-[#1D8751] text-white"
                                     : "border border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751] hover:text-white"
-                              }`}
+                                }`}
                             >
                               {isPending ? "Pending" : isSelected ? "Selected" : "Select"}
                             </button>
@@ -1095,15 +1105,13 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                 Close
               </button>
               <button
-                className={`w-full sm:flex-1 py-2.5 sm:py-2 rounded-lg font-semibold text-sm sm:text-base transition text-white ${
-                  tradeType === "sell"
+                className={`w-full sm:flex-1 py-2.5 sm:py-2 rounded-lg font-semibold text-sm sm:text-base transition text-white ${tradeType === "sell"
                     ? "bg-[#E23D3A] hover:bg-[#b71c1c]"
                     : "bg-[#1D8751] hover:bg-[#17643a]"
-                } ${
-                  !isFormValid() || isSubmitting
+                  } ${!isFormValid() || isSubmitting
                     ? "opacity-50 cursor-not-allowed"
                     : ""
-                }`}
+                  }`}
                 onClick={handleSubmit}
                 disabled={!isFormValid() || isSubmitting}
               >
@@ -1127,32 +1135,32 @@ const TradePreview: React.FC<TradePreviewProps> = ({
 
   return (
     <>
-    <div className="rounded-2xl p-3 sm:p-4 lg:p-6 w-full max-w-5xl mx-auto flex flex-col gap-3 sm:gap-4 border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] text-gray-900 dark:text-white">
-      {!isAuthenticated ? (
-        <div className="text-center py-4 text-red-500">
-          Please login to continue with the trade
-        </div>
-      ) : loading ? (
-        <Loader
-          size="md"
-          color="#1D8751"
-          showText={true}
-          text="Loading data..."
-          textColor="text-gray-500 dark:text-[#788099]"
-        />
-      ) : (
-        renderContent()
-      )}
-    </div>
+      <div className="rounded-2xl p-3 sm:p-4 lg:p-6 w-full max-w-5xl mx-auto flex flex-col gap-3 sm:gap-4 border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] text-gray-900 dark:text-white">
+        {!isAuthenticated ? (
+          <div className="text-center py-4 text-red-500">
+            Please login to continue with the trade
+          </div>
+        ) : loading ? (
+          <Loader
+            size="md"
+            color="#1D8751"
+            showText={true}
+            text="Loading data..."
+            textColor="text-gray-500 dark:text-[#788099]"
+          />
+        ) : (
+          renderContent()
+        )}
+      </div>
 
-    <PaymentMethodsModal
-      open={showAddPaymentModal}
-      onClose={() => setShowAddPaymentModal(false)}
-      onAdd={async () => {
-        await dispatch(fetchUserPaymentDetails() as any);
-      }}
-      filterByProviderName={tradeType === "sell" ? paymentMethod || undefined : undefined}
-    />
+      <PaymentMethodsModal
+        open={showAddPaymentModal}
+        onClose={() => setShowAddPaymentModal(false)}
+        onAdd={async () => {
+          await dispatch(fetchUserPaymentDetails() as any);
+        }}
+        filterByProviderName={tradeType === "sell" ? paymentMethod || undefined : undefined}
+      />
     </>
   );
 };

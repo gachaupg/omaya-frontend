@@ -55,6 +55,40 @@ const policyContent: Record<string, PolicyConfig> = {
       },
     ],
   },
+  terms: {
+    title: "Terms of Service",
+    description:
+      "These Terms of Service outline the rules and regulations for using OMAYA Exchange products and services.",
+    lastUpdated: "October 1, 2024",
+    sections: [
+      { heading: "Acceptance of Terms", body: "By creating an account or engaging with OMAYA Exchange services, you agree to comply with these terms and all applicable laws and regulations." },
+      { heading: "Eligible Users", body: "You must be at least 18 years old and legally permitted to use digital asset services in your jurisdiction. We may request verification documents at any time." },
+      { heading: "Account Responsibilities", body: "You are responsible for maintaining the confidentiality of your login credentials and for all activities that occur under your account." },
+    ],
+  },
+  "cookie-use": {
+    title: "Cookie Use",
+    description:
+      "This policy describes how OMAYA Exchange uses cookies and similar technologies on our digital channels.",
+    lastUpdated: "October 1, 2024",
+    sections: [
+      { heading: "What Are Cookies?", body: "Cookies are small text files stored on your device that help us remember your preferences and understand how you interact with our services." },
+      { heading: "Types of Cookies We Use", body: "We use essential cookies for authentication, analytical cookies to improve performance, and preference cookies to store settings like language." },
+      { heading: "Managing Cookies", body: "You can adjust your browser settings to refuse cookies or alert you when cookies are being sent. Some features may not function properly without cookies." },
+    ],
+  },
+  "data-use-policy": {
+    title: "Data Use Policy",
+    description:
+      "Our Data Use Policy explains how OMAYA Exchange collects, uses, stores, and protects your personal data.",
+    lastUpdated: "October 1, 2024",
+    sections: [
+      { heading: "Data We Collect", body: "We collect information you provide directly (contact details, identification documents, transaction information) and technical data such as IP address and device information." },
+      { heading: "How We Use Your Data", body: "Your data is used to deliver services, comply with legal obligations, enhance security, prevent fraud, and improve the customer experience." },
+      { heading: "Data Sharing", body: "We do not sell your personal data. We may share data with service providers, regulators, or law enforcement when required by law." },
+      { heading: "Data Security", body: "We implement technical and organizational measures to safeguard your data from unauthorized access, alteration, or disclosure." },
+    ],
+  },
   "cookies-policy": {
     title: "Cookies Policy",
     description:

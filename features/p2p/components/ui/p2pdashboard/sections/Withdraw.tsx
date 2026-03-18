@@ -41,7 +41,7 @@ const Withdraw: React.FC = () => {
     (state: RootState) => state.assets
   );
   const { validateTransaction } = useTransactionValidation();
-  
+
   // Get available balance, wallet balance, and locked amounts (all exportable from pending utility)
   const { total: pendingTotal, balance: walletBalance, availableBalance, totalLocked } = usePendingTotal();
 
@@ -147,7 +147,7 @@ const Withdraw: React.FC = () => {
     );
 
     // Additional validation: Check if withdrawal amount exceeds available balance
-    if (amount && Number(amount) >( availableBalance - totalLocked)) {
+    if (amount && Number(amount) > (availableBalance - totalLocked)) {
       validationErrors.push({
         field: "amount",
         message: `Insufficient balance. Available: ${(availableBalance - totalLocked).toFixed(3)} USDT`,
@@ -274,20 +274,20 @@ const Withdraw: React.FC = () => {
               </label>
               <div className="relative w-full">
                 <Select
-                options={networkOptions}
-                value={selectedNetworkId}
-                onChange={(e) => setSelectedNetworkId(e.target.value)}
-                placeholder="Select Network"
-                className="w-full h-[46px] rounded-[19px] pr-10"
-                style={{ minHeight: 46, appearance: "none", background: "transparent" }}
-                disabled={!selectedAssetId}
-              />
-                  {/* Custom filled arrow */}
-              <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 flex items-center">
-                <svg width="20" height="20" fill="#ACACAC" viewBox="0 0 24 24">
-                  <path d="M7 10l5 5 5-5" />
-                </svg>
-              </span>
+                  options={networkOptions}
+                  value={selectedNetworkId}
+                  onChange={(e) => setSelectedNetworkId(e.target.value)}
+                  placeholder="Select Network"
+                  className="w-full h-[46px] rounded-[19px] pr-10"
+                  style={{ minHeight: 46, appearance: "none", background: "transparent" }}
+                  disabled={!selectedAssetId}
+                />
+                {/* Custom filled arrow */}
+                <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 flex items-center">
+                  <svg width="20" height="20" fill="#ACACAC" viewBox="0 0 24 24">
+                    <path d="M7 10l5 5 5-5" />
+                  </svg>
+                </span>
 
               </div>
             </div>
@@ -297,7 +297,7 @@ const Withdraw: React.FC = () => {
           <div className="mb-2">
             <div className="flex items-center border border-[#1D8751] rounded-[12px] px-3 py-2 w-fit bg-gray-50 dark:bg-transparent">
               <img
-                src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                src="/images/tether.svg"
                 alt="USDT"
                 className="w-8 h-8 rounded-full mr-2"
               />
@@ -322,7 +322,7 @@ const Withdraw: React.FC = () => {
               >
                 <span className="text-[#1D8751] font-semibold mr-1">$</span>
                 <Input
-                  type="number"                  value={amount}
+                  type="number" value={amount}
                   onChange={(e) => {
                     let v = e.target.value;
                     // When value is "0" and user types a digit we get "06" etc. Strip leading zeros so it becomes "6".
@@ -338,13 +338,13 @@ const Withdraw: React.FC = () => {
                   disabled={!selectedAssetId || !selectedNetworkId}
                 />
                 <span className="ml-2 text-xs text-gray-500 dark:text-gray-400 flex flex-col sm:flex-row sm:items-center gap-1">
-                  <span 
+                  <span
                     className="text-[#1D8751] cursor-pointer hover:underline"
                     onClick={() => setAmount(availableBalance.toString())}
                     title={`Wallet: ${walletBalance.toFixed(3)} USDT\nLocked: ${totalLocked.toFixed(3)} USDT\nAvailable: ${availableBalance.toFixed(3)} USDT`}
                   >
                     Max.
-                  </span> 
+                  </span>
                   <span className="font-semibold text-[#1D8751]">{availableBalance.toFixed(3)} USDT</span>
                   <span className="text-[10px] text-gray-400">(Available)</span>
                 </span>
@@ -367,24 +367,24 @@ const Withdraw: React.FC = () => {
                   </span>
                 )}
               </label>
-                <div
+              <div
                 className="flex items-center h-[46px]
                         bg-gray-100 dark:bg-[#35353E]
                         border border-gray-300 dark:border-[#23232B]
                         rounded-[19px] px-4 justify-between relative"
-                >
+              >
                 <div className="relative">
                   <span className="text-[#1D8751] font-semibold mr-1">$</span>
                   <span>{receiveAmount}</span>
                   <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
-                  USDT
+                    USDT
                   </span>
                 </div>
                 <button
                   type="button"
                   onClick={(e) => {
-                  e.preventDefault();
-                  setShowInfoDropdown(!showInfoDropdown);
+                    e.preventDefault();
+                    setShowInfoDropdown(!showInfoDropdown);
                   }}
                   className="text-gray-500 hover:text-gray-700 focus:outline-none"
                 >
@@ -394,12 +394,12 @@ const Withdraw: React.FC = () => {
                   <div className="absolute bg-white dark:bg-[#35353E] border
                   border-gray-300 dark:border-[#1D8751] rounded-lg p-4 mt-1 shadow-lg z-30  right-2  top-12"
                   >
-                  <p className="text-xs text-gray-600 dark:text-white">
-                    A network fee will be deducted from withdrawals covering the cost of blockchain transaction.
-                  </p>
+                    <p className="text-xs text-gray-600 dark:text-white">
+                      A network fee will be deducted from withdrawals covering the cost of blockchain transaction.
+                    </p>
                   </div>
                 )}
-                </div>
+              </div>
             </div>
           </div>
 
@@ -419,15 +419,15 @@ const Withdraw: React.FC = () => {
                 <Input
                   type="text"
                   value={usdtAddress}
-                onChange={(e) => {
-                  setUsdtAddress(e.target.value);
-                  setErrors(
-                    errors.filter((er) => er.field !== "walletAddress")
-                  );
-                }}
-                placeholder="Paste your USDT address"
-                className="w-4/5 bg-transparent border-none focus:outline-none placeholder:text-gray-600 dark:placeholder:text-gray-400"
-              />
+                  onChange={(e) => {
+                    setUsdtAddress(e.target.value);
+                    setErrors(
+                      errors.filter((er) => er.field !== "walletAddress")
+                    );
+                  }}
+                  placeholder="Paste your USDT address"
+                  className="w-4/5 bg-transparent border-none focus:outline-none placeholder:text-gray-600 dark:placeholder:text-gray-400"
+                />
               </div>
               <button
                 type="button"
@@ -441,7 +441,7 @@ const Withdraw: React.FC = () => {
                   }
                 }}
               >
-                Paste 
+                Paste
                 <Copy className="w-4 h-4" />
               </button>
             </div>
@@ -470,16 +470,14 @@ const Withdraw: React.FC = () => {
                 setErrors(errors.filter((er) => er.field !== "confirmPayment"));
               }}
               className={`w-5 h-5 border-2 rounded
-                          ${
-                            confirmPayment
-                              ? "bg-[#1D8751] border-[#1D8751]"
-                              : "bg-transparent border-[#1D8751]"
-                          }
-                          ${
-                            getFieldError("confirmPayment", errors)
-                              ? "border-red-500"
-                              : ""
-                          }`}
+                          ${confirmPayment
+                  ? "bg-[#1D8751] border-[#1D8751]"
+                  : "bg-transparent border-[#1D8751]"
+                }
+                          ${getFieldError("confirmPayment", errors)
+                  ? "border-red-500"
+                  : ""
+                }`}
             />
             <label htmlFor="confirm" className="text-sm select-none">
               I confirm that I sent the payment

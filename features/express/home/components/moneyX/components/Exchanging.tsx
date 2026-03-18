@@ -9,9 +9,10 @@ import {
   useMoneyXStatusWebSocket,
 } from "../websockets/moneyXStatusWebSocket";
 import { API_CONFIG } from "@/lib/appConfig";
+import { cookieUtils } from "@/lib/utils/cookieUtils";
 import { useTheme } from "@/context/theme";
 import CopyButton from "@/components/ui/CopyButton";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "@/store/rootReducer";
 import { logger } from '@/lib/utils/logger';
 
@@ -19,6 +20,7 @@ import {
   cancelDepositTransaction,
   cancelWithdrawalTransaction,
 } from "@/features/express/slices/transactionSlice";
+import FailureStatusModal from "@/features/express/components/FailureStatusModal";
 
 interface ExchangingProps {
   transactionData?: {
@@ -75,6 +77,8 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const { isDark } = useTheme();
+  const { tokens } = useSelector((state: any) => state.auth);
+  const token = tokens?.access ?? cookieUtils.getCookie("access_token") ?? (typeof window !== "undefined" ? localStorage.getItem("access_token") : null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [currentStatus, setCurrentStatus] = useState<string>("pending");
   const [expandedTerms, setExpandedTerms] = useState(false);
@@ -98,7 +102,9 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
   const [wsError, setWsError] = useState<string | null>(null);
   const [connectionAttempts, setConnectionAttempts] = useState<number>(0);
 
-  // Timer state - 15 minutes in seconds
+  // Timer state - 15 minutes, wall-clock based (immune to tab throttling)
+  const TIMER_DURATION_SEC = 15 * 60;
+  const expiryTimestampRef = React.useRef<number | null>(null);
   const [timeRemaining, setTimeRemaining] = useState<number>(15 * 60);
   const [timerActive, setTimerActive] = useState<boolean>(true);
 
@@ -108,6 +114,8 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
   const [snapshotWebsocketData, setSnapshotWebsocketData] = useState<any>(null);
   const [liveAmount, setLiveAmount] = useState<number | null>(null);
   const [liveCurrency, setLiveCurrency] = useState<string | null>(null);
+  const [liveNetAmount, setLiveNetAmount] = useState<number | null>(null);
+  const [liveNetCurrency, setLiveNetCurrency] = useState<string | null>(null);
   const [liveTransactionId, setLiveTransactionId] = useState<string | null>(
     null
   );
@@ -119,6 +127,11 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
   const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(
     null
   );
+  const [failureModal, setFailureModal] = useState<{
+    isOpen: boolean;
+    status: string;
+    message?: string;
+  }>({ isOpen: false, status: "", message: undefined });
 
   // Fallback polling function
   const startFallbackPolling = () => {
@@ -160,29 +173,77 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
     };
   }, [pollingInterval]);
 
-  // Timer countdown effect
+  // Compute remaining time from wall-clock (immune to tab throttling)
+  const computeTimeRemaining = React.useCallback(() => {
+    const expiry = expiryTimestampRef.current;
+    if (!expiry) return TIMER_DURATION_SEC;
+    return Math.max(0, Math.ceil((expiry - Date.now()) / 1000));
+  }, []);
+
+  // Initialize expiry timestamp when we have transaction data
+  const effectiveDataForTimer = transactionData || persistedTransactionData;
+  useEffect(() => {
+    const txId = effectiveDataForTimer?.transactionId || effectiveDataForTimer?.moneyxTransactionId;
+    if (!txId || !timerActive || showSuccess) return;
+    const storageKey = "moneyx_transaction_expiry";
+    if (!expiryTimestampRef.current) {
+      try {
+        const stored = localStorage.getItem(storageKey);
+        if (stored) {
+          const { transactionId: storedTxId, expiry } = JSON.parse(stored);
+          const isMatch = storedTxId === txId || storedTxId === effectiveDataForTimer?.transactionId || storedTxId === effectiveDataForTimer?.moneyxTransactionId;
+          if (isMatch) {
+            expiryTimestampRef.current = expiry;
+            if (expiry <= Date.now()) {
+              setTimeRemaining(0);
+              setTimerActive(false);
+              return;
+            }
+            setTimeRemaining(computeTimeRemaining());
+            return;
+          }
+        }
+      } catch {}
+      const createdAt = effectiveDataForTimer.createdAt;
+      const expiry = (typeof createdAt === "number")
+        ? createdAt + TIMER_DURATION_SEC * 1000
+        : Date.now() + TIMER_DURATION_SEC * 1000;
+      expiryTimestampRef.current = expiry;
+      localStorage.setItem(storageKey, JSON.stringify({ transactionId: txId, expiry }));
+    }
+    setTimeRemaining(computeTimeRemaining());
+  }, [effectiveDataForTimer?.transactionId, effectiveDataForTimer?.moneyxTransactionId, effectiveDataForTimer?.createdAt, timerActive, showSuccess, computeTimeRemaining]);
+
+  // Timer: wall-clock + Page Visibility for tab-inactive accuracy
   useEffect(() => {
     if (!timerActive || showSuccess) return;
+    const tick = () => {
+      const remaining = computeTimeRemaining();
+      setTimeRemaining(remaining);
+      if (remaining <= 0) setTimerActive(false);
+    };
+    const interval = setInterval(tick, 1000);
+    tick();
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") tick();
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, [timerActive, showSuccess, computeTimeRemaining]);
 
-    const interval = setInterval(() => {
-      setTimeRemaining((prev) => {
-        if (prev <= 1) {
-          setTimerActive(false);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [timerActive, showSuccess]);
-
-  // Auto-cancel when timer expires
+  // Auto-cancel when timer expires (guard to prevent double redirect on tab switch/reload)
+  const hasRedirectedOnExpiry = React.useRef(false);
+  const effectiveDataForExpiry = transactionData || persistedTransactionData;
   useEffect(() => {
-    if (timeRemaining === 0 && effectiveTransactionData?.transactionId) {
-      handleCancelTransaction();
-    }
-  }, [timeRemaining]);
+    if (timeRemaining !== 0 || hasRedirectedOnExpiry.current) return;
+    const txId = effectiveDataForExpiry?.transactionId || effectiveDataForExpiry?.moneyxTransactionId;
+    if (!txId) return;
+    hasRedirectedOnExpiry.current = true;
+    handleCancelTransaction();
+  }, [timeRemaining, effectiveDataForExpiry?.transactionId, effectiveDataForExpiry?.moneyxTransactionId]);
 
   // Format time as MM:SS
   const formatTime = (seconds: number) => {
@@ -209,6 +270,7 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
       // Clear localStorage
       localStorage.removeItem("moneyx_transaction_data");
       localStorage.removeItem("express_transaction_data");
+      localStorage.removeItem("moneyx_transaction_expiry");
 
       // Use callback if provided (tab mode), otherwise use router (standalone mode)
       if (onBackToTransfer) {
@@ -231,6 +293,7 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
   useEffect(() => {
     if (currentStatus === "completed" || showSuccess) {
       setTimerActive(false);
+      localStorage.removeItem("moneyx_transaction_expiry");
     }
   }, [currentStatus, showSuccess]);
 
@@ -290,28 +353,6 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
   // Use persisted data if no transactionData is provided (page reload scenario)
   const effectiveTransactionData = transactionData || persistedTransactionData;
 
-  // Initialize timer based on transaction creation time
-  useEffect(() => {
-    if (effectiveTransactionData?.createdAt && typeof effectiveTransactionData.createdAt === 'number') {
-      const TIMER_DURATION = 15 * 60 * 1000; // 15 minutes in milliseconds
-      const elapsed = Date.now() - effectiveTransactionData.createdAt;
-      const remaining = Math.max(0, TIMER_DURATION - elapsed);
-      const remainingSeconds = Math.floor(remaining / 1000);
-      setTimeRemaining(remainingSeconds);
-      
-      // If timer has already expired, set to 0 and disable timer
-      if (remainingSeconds <= 0) {
-        setTimerActive(false);
-      } else {
-        setTimerActive(true);
-      }
-    } else {
-      // If no creation time, start with full 15 minutes
-      setTimeRemaining(15 * 60);
-      setTimerActive(true);
-    }
-  }, [effectiveTransactionData?.createdAt, effectiveTransactionData?.transactionId]);
-
   // Store transaction data in localStorage when it's provided (include createdAt if missing)
   useEffect(() => {
     if (transactionData && transactionData.transactionId) {
@@ -336,8 +377,27 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
     if (showSuccess) {
       localStorage.removeItem("moneyx_transaction_data");
       localStorage.removeItem("express_transaction_data");
+      localStorage.removeItem("moneyx_transaction_expiry");
     }
   }, [showSuccess]);
+
+  // Net amount from props (form's "You Receive") – display before websockets, then sockets can override
+  useEffect(() => {
+    const recv = (effectiveTransactionData as any)?.receiveAmount;
+    if (recv != null) {
+      const parsed = parseFloat(String(recv));
+      if (!isNaN(parsed)) {
+        setLiveNetAmount(parsed);
+        setLiveNetCurrency(
+          effectiveTransactionData?.type === "deposit"
+            ? (effectiveTransactionData?.asset?.ticker ||
+                effectiveTransactionData?.asset?.symbol ||
+                "USDT")
+            : "USD"
+        );
+      }
+    }
+  }, [effectiveTransactionData]);
 
   // Check if this is a MoneyX transaction
   const isMoneyXTransaction = effectiveTransactionData?.isMoneyX || 
@@ -417,6 +477,8 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
           "processing",
           "completed",
           "failed",
+          "rejected",
+          "stopped",
           "awaiting_payment",
           "exchanging",
           "sending",
@@ -430,6 +492,17 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
           "waiting",
           "approved",
         ];
+
+        // Show failure modal for failed, rejected, or stopped statuses
+        if (["failed", "rejected", "stopped"].includes(wsData.status)) {
+          setFailureModal({
+            isOpen: true,
+            status: wsData.status,
+            message: wsData.message,
+          });
+          setCurrentStatus(wsData.status);
+          return;
+        }
 
         if (validStatuses.includes(wsData.status)) {
           let uiStatus = wsData.status;
@@ -465,6 +538,7 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
     isMoneyXTransaction && moneyXTransactionId ? moneyXTransactionId : "",
     isMoneyXTransaction ? finalWebsocketUrl : undefined,
     {
+      token: token ?? undefined,
       onMessage: handleWebSocketMessage,
       onError: (error) => {
         setConnectionAttempts((prev) => prev + 1);
@@ -482,8 +556,9 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
     !isMoneyXTransaction && effectiveTransactionData?.transactionId ? effectiveTransactionData.transactionId : "",
     effectiveTransactionData?.type || "deposit",
     !isMoneyXTransaction ? finalWebsocketUrl : undefined,
-      {
-        onMessage: (data: TransactionStatusMessage) => {
+    {
+      token: token ?? undefined,
+      onMessage: (data: TransactionStatusMessage) => {
           setWsError(null);
           setConnectionAttempts(0);
 
@@ -526,10 +601,12 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
             }
 
             if (wsData.amount_to !== null && wsData.amount_to !== undefined) {
-              setLiveAmount(parseFloat(wsData.amount_to));
-              setLiveCurrency(
-                wsData.to_currency?.toUpperCase() || "USD"
-              );
+              const amountTo = parseFloat(wsData.amount_to);
+              setLiveAmount(amountTo);
+              setLiveCurrency(wsData.to_currency?.toUpperCase() || "USD");
+              // Let websocket override net amount
+              setLiveNetAmount(amountTo);
+              setLiveNetCurrency(wsData.to_currency?.toUpperCase() || "USD");
             }
           }
 
@@ -585,6 +662,8 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
             "processing",
             "completed",
             "failed",
+            "rejected",
+            "stopped",
             "awaiting_payment",
             "exchanging",
             "sending",
@@ -599,7 +678,15 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
             "approved",
           ];
 
-          if (status && validStatuses.includes(status)) {
+          // Show failure modal for failed, rejected, or stopped statuses
+          if (status && ["failed", "rejected", "stopped"].includes(status)) {
+            setFailureModal({
+              isOpen: true,
+              status,
+              message: message || undefined,
+            });
+            setCurrentStatus(status);
+          } else if (status && validStatuses.includes(status)) {
             let uiStatus = status;
 
             if (status === "pending_blockchain") {
@@ -724,6 +811,13 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
       }
     }
   }, [isLoadingData, effectiveTransactionData, router, onBackToTransfer]);
+
+  const handleFailureModalClose = () => {
+    setFailureModal({ isOpen: false, status: "", message: undefined });
+    localStorage.removeItem("moneyx_transaction_data");
+    localStorage.removeItem("express_transaction_data");
+    window.location.reload();
+  };
 
   // If showing success page, render it
   if (showSuccess) {
@@ -862,6 +956,38 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
                 USD
               </span>
             </div>
+            {(effectiveTransactionData as any)?.receiveAmount != null && (
+              <div>
+                <div
+                  className={`${
+                    isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                  } text-xs font-semibold mb-0.5`}
+                >
+                  Net amount you&apos;ll receive:
+                </div>
+                <div
+                  className={`${
+                    isDark ? "text-[#1D8751]" : "text-[#15803D]"
+                  } text-base font-semibold flex items-center gap-2`}
+                >
+                  <span>
+                    {(
+                      liveNetAmount ??
+                      (effectiveTransactionData as any)?.receiveAmount ??
+                      0
+                    )
+                      .toFixed(8)
+                      .replace(/\.?0+$/, "")}{" "}
+                    {liveNetCurrency ??
+                      (effectiveTransactionData?.type === "deposit"
+                        ? effectiveTransactionData?.asset?.ticker ||
+                          effectiveTransactionData?.asset?.symbol ||
+                          "USDT"
+                        : "USD")}
+                  </span>
+                </div>
+              </div>
+            )}
 
             {/* MoneyX specific: Show From and To payment methods */}
             {effectiveTransactionData?.fromPaymentMethod && (
@@ -885,7 +1011,7 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
                       className="w-6 h-6 mr-2 rounded-md object-contain bg-white flex-shrink-0"
                       onError={(e) => {
                         e.currentTarget.src =
-                          "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+                          "/assets/image_7_jijlik.png";
                       }}
                     />
                   ) : null}
@@ -921,7 +1047,7 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
                       className="w-6 h-6 mr-2 rounded-md object-contain bg-white flex-shrink-0"
                       onError={(e) => {
                         e.currentTarget.src =
-                          "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+                          "/assets/image_7_jijlik.png";
                       }}
                     />
                   ) : null}
@@ -1474,7 +1600,7 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
                     className="w-8 h-8 rounded-md object-contain bg-white flex-shrink-0 mt-0.5"
                     onError={(e) => {
                       e.currentTarget.src =
-                        "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+                        "/assets/image_7_jijlik.png";
                     }}
                   />
                 )}
@@ -1522,7 +1648,7 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
                     className="w-8 h-8 rounded-md object-contain bg-white flex-shrink-0 mt-0.5"
                     onError={(e) => {
                       e.currentTarget.src =
-                        "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+                        "/assets/image_7_jijlik.png";
                     }}
                   />
                 )}
@@ -1613,6 +1739,16 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
           </div>
         </div>
       </div>
+
+      {/* Failure Status Modal */}
+      <FailureStatusModal
+        isOpen={failureModal.isOpen}
+        status={failureModal.status}
+        message={failureModal.message}
+        onClose={() => setFailureModal({ isOpen: false, status: "", message: undefined })}
+        onBackToForm={handleFailureModalClose}
+        isDark={isDark}
+      />
     </div>
   );
 }

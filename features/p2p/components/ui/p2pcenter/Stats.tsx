@@ -9,7 +9,7 @@ const Stats = ({ summary }: { summary?: any }) => {
     { value: <><span>{safe.avg_release_time ?? "0"}</span></>, label: "Avg. release time" },
     { value: <><span>{safe.avg_payment_time ?? "0"}</span></>, label: "Avg. pay time" },
     { value: `${num(safe.rating) || 0}`, label: "Rating" },
-    { value: <><span>{(num(safe.total_volume) || 0).toLocaleString()}</span></>, label: "" },
+    { value: <><span>{(num(safe.escrow) || 0).toLocaleString()}</span></>, label: "In Escrow / Locked" },
   ];
 
   return (

@@ -18,9 +18,11 @@ interface MoneyXProps {
     moneyxTransactionId?: string;
     moneyXTransaction?: any;
   }) => void;
+  /** Used for range-commissions API: commission_type=deposit | withdrawal */
+  commissionType?: "deposit" | "withdrawal";
 }
 
-const MoneyX = ({ isHomePage = false, onTransferComplete }: MoneyXProps) => {
+const MoneyX = ({ isHomePage = false, onTransferComplete, commissionType = "deposit" }: MoneyXProps) => {
   const dispatch = useDispatch<AppDispatch>();
   const [showExchanging, setShowExchanging] = useState(false);
   const [transactionData, setTransactionData] = useState<any>(null);
@@ -97,7 +99,7 @@ const MoneyX = ({ isHomePage = false, onTransferComplete }: MoneyXProps) => {
   // Otherwise show the transfer form
   return (
     <div className="w-full pt-0 mb-0">
-      <TransferForm isHomePage={isHomePage} onTransfer={handleTransfer} />
+      <TransferForm isHomePage={isHomePage} onTransfer={handleTransfer} commissionType={commissionType} />
     </div>
   );
 };

@@ -35,6 +35,7 @@ import CustomSelect from "@/components/ui/CustomSelect";
 import {
   buildExpressRedirectPath,
   setAuthRedirectPath,
+  setExpressLegalReturnState,
 } from "@/lib/utils/authRedirect";
 import { useExpressI18n } from "@/lib/useExpressI18n";
 import {
@@ -48,7 +49,16 @@ import {
 import { useValidateAddress } from "@/hooks/useValidateAddress";
 import { useBookmarkedAddresses } from "../../hooks/useBookmarkedAddresses";
 import { BookmarkDropdown } from "./BookmarkDropdown";
-import { fetchCommission, getCommissionApiAsset } from "../../api";
+import { bookmarkedAddressesApi } from "../../services/bookmarkedAddressesApi";
+import {
+  fetchCommission,
+  getCommissionApiAsset,
+  fetchExchangeCommissionLookup,
+  getExchangeLookupParams,
+  isExchangeCommissionLookupAsset,
+  type ExchangeCommissionLookupResponse,
+} from "../../api";
+import { withTimeout } from "../../utils/fetchWithTimeout";
 
 interface DepositFormProps {
   onExchange?: (transactionData: {
@@ -93,6 +103,23 @@ const getNetworkDisplayName = (network: string) => {
   };
 
   return networkMap[network?.toLowerCase()] || network || "Unknown";
+};
+
+// Network aliases for whitelist matching (bookmark may use trc20, swap uses trx, etc.)
+const NETWORK_ALIASES: Record<string, string[]> = {
+  trc20: ["trx", "trc20"],
+  trx: ["trx", "trc20"],
+  erc20: ["eth", "erc20"],
+  eth: ["eth", "erc20"],
+  bep20: ["bsc", "bep20"],
+  bep2: ["bsc", "bep2"],
+  bsc: ["bsc", "bep20", "bep2"],
+  matic: ["matic", "polygon"],
+  polygon: ["matic", "polygon"],
+};
+const getNetworkMatchKeys = (network: string): string[] => {
+  const n = (network || "").toLowerCase();
+  return NETWORK_ALIASES[n] ? [...NETWORK_ALIASES[n], n] : [n];
 };
 
 // Helper function to get network value from asset (handles both Asset and SupportedAsset types)
@@ -648,6 +675,8 @@ export default function DepositForm({
   const [payAmountInput, setPayAmountInput] = useState(
     initialState?.amountInput ?? "100"
   );
+  const hasAppliedPrefillRef = useRef(false);
+
   const [payBank, setPayBank] = useState(
     initialState?.payBank ||
     initialState?.payment?.provider_name ||
@@ -676,6 +705,29 @@ export default function DepositForm({
     }
     return "98";
   });
+
+  // Restore amounts when initialState arrives async (e.g. prefill parsed after first render from login redirect)
+  useEffect(() => {
+    if (
+      !hasAppliedPrefillRef.current &&
+      initialState?.amountValue !== undefined &&
+      initialState?.amountValue !== null
+    ) {
+      hasAppliedPrefillRef.current = true;
+      setPayAmount(initialState.amountValue);
+      setPayAmountInput(
+        initialState.amountInput || String(initialState.amountValue)
+      );
+      if (initialState.receiveAmountValue !== undefined) {
+        setGetAmount(initialState.receiveAmountValue);
+        setGetAmountInput(
+          initialState.receiveAmountInput ||
+            String(initialState.receiveAmountValue)
+        );
+      }
+    }
+  }, [initialState?.amountValue, initialState?.amountInput, initialState?.receiveAmountValue, initialState?.receiveAmountInput]);
+
   // Don't set asset directly from initialState - let matching logic handle it
   const [selectedAsset, setSelectedAsset] = useState<any>(null);
   const [selectedNetwork, setSelectedNetwork] = useState<any>(null);
@@ -690,6 +742,8 @@ export default function DepositForm({
 
   // Commission from API for USDT, USDC, FX Primus (null = not yet fetched, 0 = API returned 0)
   const [apiCommission, setApiCommission] = useState<number | null>(null);
+  // Exchange commission-lookup response for first 3 assets only (USDT BEP20, BNB BSC, USDT ERC20)
+  const [exchangeLookupResponse, setExchangeLookupResponse] = useState<ExchangeCommissionLookupResponse | null>(null);
   const commissionFetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Get currency from selectedAsset for validation
@@ -805,36 +859,48 @@ export default function DepositForm({
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [hasAutoExpanded, setHasAutoExpanded] = useState(false);
   const [isRestoringFromInitialState, setIsRestoringFromInitialState] = useState(false);
-  // Auto-select the first payment method exactly like home page form
+  // Auto-select payment method - respect initialState from login redirect
   useEffect(() => {
     if (finalPaymentMethods.length === 0) {
       return;
     }
 
-    const hasSelected = finalPaymentMethods.some(
-      (method: any) => method?.provider_name === payBank
-    );
+    // When we have initialState.payment from login redirect, use it - don't overwrite with first method
+    if (initialState?.payment && selectedPaymentDetail) {
+      const savedProvider = initialState.payment.provider_name || initialState.payment.payment_provider_name || initialState.payBank;
+      const matchInList = finalPaymentMethods.some(
+        (m: any) =>
+          (m?.provider_name && savedProvider && String(m.provider_name).toLowerCase() === String(savedProvider).toLowerCase()) ||
+          (m?.payment_provider_name && savedProvider && String(m.payment_provider_name).toLowerCase() === String(savedProvider).toLowerCase()) ||
+          (m?.provider_id && initialState.payment?.provider_id && String(m.provider_id) === String(initialState.payment.provider_id))
+      );
+      if (matchInList) return; // Already matched, keep current
+      // No match in list but we have saved payment - keep it (already in selectedPaymentDetail)
+      return;
+    }
+
+    const matchProvider = (method: any, name: string) =>
+      (method?.provider_name && name && String(method.provider_name).toLowerCase().trim() === String(name).toLowerCase().trim()) ||
+      (method?.payment_provider_name && name && String(method.payment_provider_name).toLowerCase().trim() === String(name).toLowerCase().trim());
+
+    const hasSelected = finalPaymentMethods.some((method: any) => matchProvider(method, payBank));
 
     if (!payBank || !hasSelected) {
       const defaultMethod = finalPaymentMethods[0];
       setPayBank(defaultMethod.provider_name);
-      // Normalize payment details before setting
       const normalized = normalizePaymentDetails(defaultMethod);
       setSelectedPaymentDetail(normalized);
     } else if (!selectedPaymentDetail) {
-      const matchedMethod = finalPaymentMethods.find(
-        (method: any) => method?.provider_name === payBank
-      );
+      const matchedMethod = finalPaymentMethods.find((method: any) => matchProvider(method, payBank));
       if (matchedMethod) {
-        // Normalize payment details before setting
         const normalized = normalizePaymentDetails(matchedMethod);
         setSelectedPaymentDetail(normalized);
       }
     }
-  }, [finalPaymentMethods, payBank, selectedPaymentDetail]);
+  }, [finalPaymentMethods, payBank, selectedPaymentDetail, initialState]);
 
   // Add transaction code state
-  const [transactionCode, setTransactionCode] = useState<string>("");
+  const [transactionCode, setTransactionCode] = useState<string>(initialState?.transactionCode ?? "");
   const paymentDetailsRef = useRef<HTMLDivElement>(null);
   
   // Inline copy feedback state
@@ -843,6 +909,7 @@ export default function DepositForm({
   // Asset selection state for search functionality
   const [isAssetDropdownOpen, setIsAssetDropdownOpen] = useState(false);
   const [assetSearchTerm, setAssetSearchTerm] = useState("");
+  const [whitelistBookmarks, setWhitelistBookmarks] = useState<Array<{ asset: string; network: string }>>([]);
   const assetDropdownRef = useRef<HTMLDivElement>(null);
   const assetDropdownContentRef = useRef<HTMLDivElement | null>(null);
   const [assetDropdownPosition, setAssetDropdownPosition] = useState({
@@ -878,13 +945,26 @@ export default function DepositForm({
     };
   }, [isAssetDropdownOpen, updateAssetDropdownPosition]);
 
+  useEffect(() => {
+    if (!isAssetDropdownOpen) return;
+    bookmarkedAddressesApi
+      .list()
+      .then((list) => {
+        const pairs = Array.from(
+          new Map(list.map((b) => [`${b.asset.toLowerCase()}|${b.network.toLowerCase()}`, { asset: b.asset, network: b.network }])).values()
+        );
+        setWhitelistBookmarks(pairs);
+      })
+      .catch(() => setWhitelistBookmarks([]));
+  }, [isAssetDropdownOpen]);
+
   // Estimate calculation state
   const [estimate, setEstimate] = useState<any>(null);
   const [estimateLoading, setEstimateLoading] = useState(false);
   const [estimateError, setEstimateError] = useState<string | null>(null);
 
   // First card submission state
-  const [isFirstCardSubmitted, setIsFirstCardSubmitted] = useState(false);
+  const [isFirstCardSubmitted, setIsFirstCardSubmitted] = useState(!!initialState?.isFirstCardSubmitted);
 
   // Add loading state for "You Receive" calculation
   const [isCalculatingReceive, setIsCalculatingReceive] = useState(false);
@@ -899,7 +979,7 @@ export default function DepositForm({
   );
 
   // Add state to store API response
-  const [apiResponse, setApiResponse] = useState<any>(null);
+  const [apiResponse, setApiResponse] = useState<any>(initialState?.apiResponse ?? null);
   const [isUserModifiedAmount, setIsUserModifiedAmount] = useState(false);
 
   // Add InfoModal state
@@ -953,8 +1033,16 @@ export default function DepositForm({
     dispatch(fetchAdminPaymentMethods());
   }, [dispatch, isHomePage]);
 
+  // Skip reset when restoring from legal pages (user was on second step)
+  const hasRestoredFromLegalRef = useRef(!!initialState?.isFirstCardSubmitted);
   // Close expanded section when user changes payment method or asset (user must post again)
   useEffect(() => {
+    if (hasRestoredFromLegalRef.current) {
+      const t = setTimeout(() => {
+        hasRestoredFromLegalRef.current = false;
+      }, 600);
+      return () => clearTimeout(t);
+    }
     if (isFirstCardSubmitted) {
       setIsFirstCardSubmitted(false);
       setApiResponse(null);
@@ -973,24 +1061,21 @@ export default function DepositForm({
       return;
     }
 
-    // First try to get from cache, then force refresh if no data
-    dispatch(fetchAssets(false))
-      .unwrap()
+    // First try cache, then force refresh if no data; timeout so slow API doesn't freeze the form
+    withTimeout(dispatch(fetchAssets(false)).unwrap(), 15_000)
       .then((data) => {
-        // If no assets in cache, force refresh
         if (!data?.assets || data.assets.length === 0) {
-          return dispatch(fetchAssets(true)).unwrap();
+          return withTimeout(dispatch(fetchAssets(true)).unwrap(), 15_000);
         }
         return data;
       })
       .catch((error: unknown) => {
-        // If cache fetch fails, try force refresh
-        return dispatch(fetchAssets(true))
-          .unwrap()
-          .catch((refreshError: unknown) => {
+        return withTimeout(dispatch(fetchAssets(true)).unwrap(), 15_000).catch(
+          (refreshError: unknown) => {
             showToast.error(`Failed to fetch assets: ${refreshError}`);
             throw refreshError;
-          });
+          }
+        );
       });
   }, [dispatch]);
 
@@ -1001,20 +1086,16 @@ export default function DepositForm({
       return;
     }
 
-    dispatch(fetchSupportedAssets(false))
-      .unwrap()
+    withTimeout(dispatch(fetchSupportedAssets(false)).unwrap(), 15_000)
       .then((data) => {
-        // If no assets in cache, force refresh
         if (!data || data.length === 0) {
-          return dispatch(fetchSupportedAssets(true)).unwrap();
+          return withTimeout(dispatch(fetchSupportedAssets(true)).unwrap(), 15_000);
         }
         return data;
       })
       .catch((error: unknown) => {
-        // If cache fetch fails, try force refresh
-        return dispatch(fetchSupportedAssets(true))
-          .unwrap()
-          .catch((refreshError: unknown) => {
+        return withTimeout(dispatch(fetchSupportedAssets(true)).unwrap(), 15_000).catch(
+          (refreshError: unknown) => {
             // Only show error if it's a network issue, not cache issues
             if (refreshError instanceof Error) {
               if (
@@ -1074,13 +1155,17 @@ export default function DepositForm({
     const assetFromInitialState = initialState?.asset || initialState?.selectedAsset;
     if (assetFromInitialState && !selectedAsset) {
       const initialStateAsset = assetFromInitialState;
+      const savedTicker = (initialStateAsset.ticker || initialStateAsset.symbol || initialStateAsset.name || "").toString().toLowerCase().trim();
+      const savedNetwork = (initialStateAsset.network || getAssetNetwork(initialStateAsset) || "").toString().toLowerCase().trim();
 
-      // Try to find the exact asset in available assets by asset_id
+      // Try to find the exact asset: first by asset_id, then by ticker+network
       const matchingAsset = assetsDisplay.displayData.find((asset: any) => {
         if (initialStateAsset.asset_id && asset.asset_id) {
-          return String(initialStateAsset.asset_id).toLowerCase().trim() === String(asset.asset_id).toLowerCase().trim();
+          if (String(initialStateAsset.asset_id).toLowerCase().trim() === String(asset.asset_id).toLowerCase().trim()) return true;
         }
-        return false;
+        const assetTicker = (asset.ticker || asset.symbol || asset.name || "").toString().toLowerCase().trim();
+        const assetNetwork = (asset.network || getAssetNetwork(asset) || "").toString().toLowerCase().trim();
+        return savedTicker && assetTicker === savedTicker && (!savedNetwork || assetNetwork === savedNetwork);
       });
 
       // Use matched asset if found, otherwise use initialState asset directly
@@ -1228,16 +1313,17 @@ export default function DepositForm({
   }, [isAssetDropdownOpen]);
 
 
-  // Check if asset is one of the first two direct assets (USDT on BSC or USDC on BSC)
+  // Check if asset is one of the first two direct assets (USDT on BSC or USDC on BSC) or first three exchange-lookup assets (USDT BEP20, BNB BSC, USDT ERC20)
   const isSimpleCalculationAsset = (asset: any) => {
     if (!asset) return false;
     const ticker = (asset?.ticker || asset?.symbol || "").toLowerCase();
     const network = (asset?.network || "").toLowerCase();
 
-    // First two assets: USDT on BSC and USDC on BSC
+    // First two: USDT on BSC and USDC on BSC; first three (exchange lookup): USDT BEP20, BNB BSC, USDT ERC20
     return (
       (ticker === "usdt" && network === "bsc") ||
-      (ticker === "usdc" && network === "bsc")
+      (ticker === "usdc" && network === "bsc") ||
+      isExchangeCommissionLookupAsset(asset)
     );
   };
 
@@ -1251,24 +1337,58 @@ export default function DepositForm({
   // Check if asset uses commission API (USDT, USDC, FX Primus)
   const isCommissionApiAsset = (asset: any) => !!getCommissionApiAsset(asset?.ticker || asset?.symbol || "");
 
-  // Fetch commission from API for USDT, USDC, FX Primus - use input values so it triggers as user types
+  // Fetch commission: for first 3 assets use exchange commission-lookup (to_amount); for USDT/USDC/FXP use legacy percentage API
   useEffect(() => {
-    const apiAsset = selectedAsset ? getCommissionApiAsset(selectedAsset.ticker || selectedAsset.symbol || "") : null;
-    if (!apiAsset || !selectedAsset) {
+    if (!selectedAsset) {
       setApiCommission(null);
+      setExchangeLookupResponse(null);
       return;
     }
+    const params = getExchangeLookupParams(selectedAsset);
     const amount = isCalculatingFromPay
       ? (parseFloat(payAmountInput) || payAmount)
       : (parseFloat(getAmountInput) || getAmount);
     if (amount <= 0) {
+      if (params) setExchangeLookupResponse(null);
+      else setApiCommission(null);
+      return;
+    }
+
+    if (params) {
+      // First 3 assets only: crypto -> USD with network (USDT/USDC on BSC, etc.)
+      if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
+      commissionFetchTimeoutRef.current = setTimeout(() => {
+        fetchExchangeCommissionLookup(amount, "deposit", params.from_currency, "USD", params.from_network)
+          .then((res) => {
+            setExchangeLookupResponse(res);
+            setApiCommission(null);
+            if (isCalculatingFromPay && res.to_amount != null) {
+              const toAmount = parseFloat(res.to_amount);
+              if (!Number.isNaN(toAmount)) {
+                setGetAmount(toAmount);
+                setGetAmountInput(res.to_amount);
+              }
+            }
+          })
+          .catch(() => setExchangeLookupResponse(null));
+      }, 300);
+      return () => {
+        if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
+      };
+    }
+
+    const apiAsset = getCommissionApiAsset(selectedAsset.ticker || selectedAsset.symbol || "");
+    if (!apiAsset) {
       setApiCommission(null);
       return;
     }
     if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
     commissionFetchTimeoutRef.current = setTimeout(() => {
       fetchCommission(apiAsset, amount, "deposit")
-        .then((commission) => setApiCommission(commission))
+        .then((commission) => {
+          setApiCommission(commission);
+          setExchangeLookupResponse(null);
+        })
         .catch(() => setApiCommission(null));
     }, 300);
     return () => {
@@ -1276,17 +1396,16 @@ export default function DepositForm({
     };
   }, [selectedAsset, payAmountInput, getAmountInput, payAmount, getAmount, isCalculatingFromPay]);
 
-  // Recalculate receive amount when apiCommission arrives (was null during initial calculation)
+  // Recalculate when apiCommission arrives (legacy % API; not used for first 3 exchange-lookup assets)
   useEffect(() => {
-    if (selectedAsset && isCommissionApiAsset(selectedAsset) && apiCommission !== null) {
+    if (!selectedAsset || isExchangeCommissionLookupAsset(selectedAsset)) return;
+    if (isCommissionApiAsset(selectedAsset) && apiCommission !== null) {
       if (isCalculatingFromPay && payAmount > 0) {
-        // Forward: You Send -> You Receive
         const commissionAmount = (payAmount * apiCommission) / 100;
         const calculatedGetAmount = Math.max(0, payAmount - commissionAmount);
         setGetAmount(calculatedGetAmount);
         setGetAmountInput(calculatedGetAmount.toString());
       } else if (!isCalculatingFromPay && getAmount > 0) {
-        // Reverse: You Receive -> You Send
         const commissionRate = apiCommission;
         const calculatedPayAmount = getAmount / (1 - commissionRate / 100);
         setPayAmount(calculatedPayAmount);
@@ -1294,6 +1413,27 @@ export default function DepositForm({
       }
     }
   }, [apiCommission, payAmount, getAmount, isCalculatingFromPay, selectedAsset]);
+
+  // Reverse calculation for first 3 assets (You Receive -> You Send) using last exchange lookup local_commission
+  useEffect(() => {
+    if (!selectedAsset || !isExchangeCommissionLookupAsset(selectedAsset) || !exchangeLookupResponse?.local_commission || isCalculatingFromPay || getAmount <= 0) return;
+    const lc = exchangeLookupResponse.local_commission;
+    if (lc.commission_mode === "flat_fee" && lc.fee != null) {
+      const fee = parseFloat(lc.fee);
+      if (!Number.isNaN(fee)) {
+        const calculatedPay = getAmount + fee;
+        setPayAmount(calculatedPay);
+        setPayAmountInput(calculatedPay.toString());
+      }
+    } else if (lc.commission_mode === "percentage" && lc.rate != null) {
+      const rate = parseFloat(lc.rate);
+      if (!Number.isNaN(rate) && rate < 100) {
+        const calculatedPay = getAmount / (1 - rate / 100);
+        setPayAmount(calculatedPay);
+        setPayAmountInput(calculatedPay.toString());
+      }
+    }
+  }, [selectedAsset, exchangeLookupResponse, isCalculatingFromPay, getAmount]);
 
   // FXP uses manual calculation with fixed 1.06 rate
   const FXP_EXCHANGE_RATE = 1.06;
@@ -1823,6 +1963,41 @@ export default function DepositForm({
     return 0;
   });
 
+  const whitelistKeys = useMemo(() => {
+    const keys = new Set<string>();
+    whitelistBookmarks.forEach((b) => {
+      const assetKey = b.asset.toLowerCase();
+      getNetworkMatchKeys(b.network).forEach((net) => keys.add(`${assetKey}|${net}`));
+    });
+    return keys;
+  }, [whitelistBookmarks]);
+
+  const whitelistAssets = useMemo(() => {
+    if (whitelistKeys.size === 0) return [];
+    const popularSlice = sortedSwapAssets.slice(0, 3);
+    const popularSet = new Set(
+      popularSlice.map((a) => `${(a?.ticker || a?.symbol || a?.name || "").toString().toLowerCase()}|${(a?.network || getAssetNetwork(a) || "").toString().toLowerCase()}`)
+    );
+    return sortedSwapAssets.filter((a) => {
+      const key = `${(a?.ticker || a?.symbol || a?.name || "").toString().toLowerCase()}|${(a?.network || getAssetNetwork(a) || "").toString().toLowerCase()}`;
+      return whitelistKeys.has(key) && !popularSet.has(key);
+    });
+  }, [sortedSwapAssets, whitelistKeys]);
+
+  const whitelistKeySet = useMemo(
+    () => new Set(whitelistAssets.map((a) => `${(a?.ticker || a?.symbol || a?.name || "").toString().toLowerCase()}|${(a?.network || getAssetNetwork(a) || "").toString().toLowerCase()}`)),
+    [whitelistAssets]
+  );
+
+  const allAssetsList = useMemo(() => {
+    if (assetSearchTerm) return sortedSwapAssets;
+    const excludePopular = sortedSwapAssets.slice(3);
+    return excludePopular.filter((a) => {
+      const key = `${(a?.ticker || a?.symbol || a?.name || "").toString().toLowerCase()}|${(a?.network || getAssetNetwork(a) || "").toString().toLowerCase()}`;
+      return !whitelistKeySet.has(key);
+    });
+  }, [assetSearchTerm, sortedSwapAssets, whitelistKeySet]);
+
   const renderAssetDropdown = () => {
     if (!isComponentMounted || !isAssetDropdownOpen) {
       return null;
@@ -1928,6 +2103,56 @@ export default function DepositForm({
                         );
                       })}
 
+                    {whitelistAssets.length > 0 && (
+                      <>
+                        <div className="px-3 py-2 bg-[#F5F6F7] dark:bg-[#23232B] border-b border-[#A2A4A9FF] dark:border-[#35353E]">
+                          <span className="text-xs font-semibold text-[#788099] uppercase tracking-wider">
+                            Whitelist
+                          </span>
+                        </div>
+                        {whitelistAssets.map((asset: SupportedAsset, index: number) => {
+                          const isCurrentlySelected =
+                            selectedAsset?.ticker === asset.ticker &&
+                            selectedAsset?.network === asset.network;
+                          return (
+                            <div
+                              key={`whitelist-${asset.asset_id || "asset"}-${asset.symbol || asset.ticker || asset.name}-${asset.network || "unknown"}-${index}`}
+                              className={`flex items-center gap-3 p-3 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E] transition-colors duration-150 ${isCurrentlySelected ? "bg-blue-50 dark:bg-blue-900/20" : ""}`}
+                              onClick={() => {
+                                handleAssetSelection(asset);
+                                setIsAssetDropdownOpen(false);
+                                setAssetSearchTerm("");
+                              }}
+                            >
+                              <img
+                                src={getHighResAssetIcon(asset, ASSET_ICON_SIZE)}
+                                alt={asset?.name || asset?.ticker || asset?.symbol || "Asset"}
+                                className={`${ASSET_ICON_BASE_CLASS} w-9 h-9`}
+                                loading="lazy"
+                                onError={(e) => {
+                                  e.currentTarget.src = getHighResAssetIcon(null, ASSET_ICON_SIZE);
+                                }}
+                              />
+                              <div className="flex-1">
+                                <div className="text-[#35353e] dark:text-[#ffffff] font-medium flex items-center gap-2">
+                                  {(asset.ticker || asset.symbol || asset.name || "Unknown").toUpperCase()}
+                                  <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
+                                    {getNetworkDisplayName(getAssetNetwork(asset))}
+                                  </span>
+                                </div>
+                                <div className="text-[#35353e] dark:text-[#788099] text-sm">
+                                  {asset.name || asset.ticker || asset.symbol || "Unknown Asset"}
+                                </div>
+                              </div>
+                              {selectedAsset?.asset_id === asset.asset_id && (
+                                <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </>
+                    )}
+
                     <div className="border-t-2 border-[#D1D2D4FF] dark:border-[#35353E]"></div>
 
                     <div className="px-3 py-2 bg-[#F5F6F7] dark:bg-[#23232B] border-b border-[#A2A4A9FF] dark:border-[#35353E]">
@@ -1938,7 +2163,7 @@ export default function DepositForm({
                   </>
                 )}
 
-                {(assetSearchTerm ? sortedSwapAssets : sortedSwapAssets.slice(3)).map(
+                {allAssetsList.map(
                   (asset: SupportedAsset, index: number) => {
                     const isCurrentlySelected =
                       selectedAsset?.ticker === asset.ticker &&
@@ -2014,10 +2239,19 @@ export default function DepositForm({
 
   // Calculate fees and amounts - Network fee is always 0
   const networkFee = 0;
-  // Use commission from API for USDT/USDC/FX Primus, else default rate for swap assets
+  // First 3 assets: use exchange lookup local_commission; else USDT/USDC/FXP use API %; else range_commissions
   let commissionAmount: number;
-  if (selectedAsset && isCommissionApiAsset(selectedAsset)) {
-    const rate = apiCommission ?? 2; // Default 2% while API loads
+  if (selectedAsset && isExchangeCommissionLookupAsset(selectedAsset) && exchangeLookupResponse?.local_commission) {
+    const lc = exchangeLookupResponse.local_commission;
+    if (lc.commission_mode === "flat_fee" && lc.fee != null) {
+      commissionAmount = parseFloat(lc.fee) || 0;
+    } else if (lc.commission_mode === "percentage" && lc.rate != null) {
+      commissionAmount = (payAmount * parseFloat(lc.rate)) / 100;
+    } else {
+      commissionAmount = 0;
+    }
+  } else if (selectedAsset && isCommissionApiAsset(selectedAsset)) {
+    const rate = apiCommission ?? 2;
     commissionAmount = (payAmount * rate) / 100;
   } else {
     const commissionRate = selectedAsset?.range_commissions?.[0]?.commission
@@ -2053,8 +2287,13 @@ export default function DepositForm({
       return;
     }
 
-    // For direct assets (USDT on BSC, USDC on BSC), API commission is % e.g. {"commission":"2.00"} = 2%
+    // For direct assets; first 3 use exchange lookup (amounts set by useEffect), others use % or range_commissions
     if (isSimpleCalculationAsset(selectedAsset)) {
+      if (isExchangeCommissionLookupAsset(selectedAsset)) {
+        // Amounts are set by fetchExchangeCommissionLookup effect; avoid overwriting
+        setReceiveAmountError(null);
+        return;
+      }
       const commissionRate = isCommissionApiAsset(selectedAsset) ? (apiCommission ?? 2) : (() => {
         let r = 2;
         if (selectedAsset?.range_commissions?.length) r = parseFloat(selectedAsset.range_commissions[0]?.commission || "2");
@@ -2075,8 +2314,6 @@ export default function DepositForm({
       }
 
       setReceiveAmountError(null);
-
-      // For direct assets, no loading states needed - calculation is instant
       return;
     }
 
@@ -2256,7 +2493,7 @@ export default function DepositForm({
   }, []);
 
   // Terms & Conditions acceptance
-  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(!!initialState?.termsAccepted);
   const [expandedTerms, setExpandedTerms] = useState(false);
 
   const isProceedDisabled =
@@ -2266,6 +2503,39 @@ export default function DepositForm({
     !termsAccepted ||
     payAmount >= 15000 ||
     getAmount >= 15000;
+
+  // Save form state before navigating to legal pages so back button restores it
+  const handleBeforeLegalNavigate = useCallback(() => {
+    setExpressLegalReturnState({
+      payAmount,
+      payAmountInput,
+      getAmount,
+      getAmountInput,
+      payBank,
+      selectedPaymentDetail,
+      selectedAsset,
+      selectedNetwork,
+      walletAddress,
+      termsAccepted,
+      apiResponse,
+      transactionCode,
+      isFirstCardSubmitted,
+    });
+  }, [
+    payAmount,
+    payAmountInput,
+    getAmount,
+    getAmountInput,
+    payBank,
+    selectedPaymentDetail,
+    selectedAsset,
+    selectedNetwork,
+    walletAddress,
+    termsAccepted,
+    apiResponse,
+    transactionCode,
+    isFirstCardSubmitted,
+  ]);
 
   // Auto-validate receive amount whenever it changes
   useEffect(() => {
@@ -2307,47 +2577,30 @@ export default function DepositForm({
       setIsSubmitting(true);
 
       try {
-        // Create FormData for API submission
-        const depositPayload = new FormData();
-        // Validate and append required fields
-        if (!payAmount || payAmount <= 0) {
-          throw new Error("Invalid amount");
+        // Validate required fields
+        const safeAmount = parseFloat(String(payAmount));
+        if (!safeAmount || isNaN(safeAmount) || safeAmount <= 0) {
+          throw new Error("Invalid amount. Please enter a valid number greater than 0.");
         }
-        depositPayload.append("requested_amount", payAmount.toString());
 
-        // Use the selected payment method details
         if (!selectedPaymentDetail) {
           throw new Error("Please select a payment method");
         }
-
         if (!selectedPaymentDetail.provider_name) {
           throw new Error("Payment provider is missing");
         }
-        depositPayload.append(
-          "payment_provider",
-          selectedPaymentDetail.provider_name
-        );
-
         if (!selectedPaymentDetail.payment_method_type) {
           throw new Error("Payment method is missing");
         }
-        depositPayload.append(
-          "payment_method",
-          selectedPaymentDetail.payment_method_type
-        );
-        // Handle currency field - try multiple properties to get the currency value
-        let currencyValue = "";
-
-        // Ensure selectedAsset exists
         if (!selectedAsset) {
           throw new Error("No asset selected");
         }
 
-        // Try different properties in order of preference
+        // Resolve currency value
+        let currencyValue = "";
         if (selectedAsset.ticker) {
           currencyValue = selectedAsset.ticker;
         } else if (selectedAsset.symbol) {
-          // Handle special case for USDT Tether
           currencyValue =
             selectedAsset.symbol === "USDT Tether"
               ? "USDT"
@@ -2355,13 +2608,8 @@ export default function DepositForm({
         } else if (selectedAsset.name) {
           currencyValue = selectedAsset.name;
         }
-
-        // Clean up the currency value (remove any extra spaces, etc.)
         currencyValue = currencyValue?.trim();
-
-        // Fallback: if still no currency value, try to extract from any available property
         if (!currencyValue) {
-          // Try to get any string value from the asset object
           const assetKeys = Object.keys(selectedAsset);
           for (const key of assetKeys) {
             const value = selectedAsset[key];
@@ -2371,28 +2619,22 @@ export default function DepositForm({
             }
           }
         }
-
         if (!currencyValue) {
           throw new Error("Currency information is missing");
         }
-        depositPayload.append("currency", currencyValue);
 
-        // Handle network field more carefully
+        // Resolve network value
         const networkValue =
           selectedNetwork?.network_id || selectedNetwork?.network_type || "";
         if (!networkValue) {
           throw new Error("Network information is missing");
         }
-        depositPayload.append("network", networkValue);
 
-        // Handle asset field - use the asset ticker/symbol/name from the selected asset
+        // Resolve asset value
         let assetValue = "";
-
-        // Try different properties in order of preference
         if (selectedAsset.ticker) {
           assetValue = selectedAsset.ticker;
         } else if (selectedAsset.symbol) {
-          // Handle special case for USDT Tether
           assetValue =
             selectedAsset.symbol === "USDT Tether"
               ? "USDT"
@@ -2400,13 +2642,8 @@ export default function DepositForm({
         } else if (selectedAsset.name) {
           assetValue = selectedAsset.name;
         }
-
-        // Clean up the asset value (remove any extra spaces, etc.)
         assetValue = assetValue?.trim();
-
-        // Fallback: if still no asset value, try to extract from any available property
         if (!assetValue) {
-          // Try to get any string value from the asset object
           const assetKeys = Object.keys(selectedAsset);
           for (const key of assetKeys) {
             const value = selectedAsset[key];
@@ -2416,20 +2653,27 @@ export default function DepositForm({
             }
           }
         }
-
         if (!assetValue) {
           throw new Error("Asset information is missing");
         }
-        depositPayload.append("asset", assetValue);
-        // For direct crypto deposits, set minimal additional info
-        depositPayload.append("additional_info", "Direct crypto deposit");
 
-        // Submit to API - let axios set the correct Content-Type for FormData
+        // Build JSON payload — requested_amount sent as a number
+        const depositPayload = {
+          requested_amount: safeAmount,
+          payment_provider: selectedPaymentDetail.provider_name,
+          payment_method: selectedPaymentDetail.payment_method_type,
+          currency: currencyValue,
+          network: networkValue,
+          asset: assetValue,
+          additional_info: "Direct crypto deposit",
+        };
+
+        // Submit to API
         const depositResponse = (await dispatch(
           createDeposit({
             payload: depositPayload,
             config: {
-              // Don't set Content-Type manually for FormData - let axios handle it
+              headers: { "Content-Type": "application/json" },
             },
           })
         ).unwrap()) as unknown as DepositResponse;
@@ -2851,47 +3095,23 @@ export default function DepositForm({
     setIsSubmitting(true);
 
     try {
-      // Create FormData for API submission
-      const depositPayload = new FormData();
-
-      // Validate and append required fields
-      if (!payAmount || payAmount <= 0) {
-        throw new Error("Invalid amount");
+      // Validate required fields
+      const safeAmount = parseFloat(String(payAmount));
+      if (!safeAmount || isNaN(safeAmount) || safeAmount <= 0) {
+        throw new Error("Invalid amount. Please enter a valid number greater than 0.");
       }
-      depositPayload.append("requested_amount", payAmount.toString());
-
-      // Wallet address is optional for initial submission
-      if (walletAddress.trim()) {
-        depositPayload.append("deposit_address", walletAddress);
-      } else {
-        // Set empty value when wallet address is not provided
-        depositPayload.append("deposit_address", "");
-      }
-
       if (!selectedPaymentDetail.provider_name) {
         throw new Error("Payment provider is missing");
       }
-      depositPayload.append(
-        "payment_provider",
-        selectedPaymentDetail.provider_name
-      );
-
       if (!selectedPaymentDetail.payment_method_type) {
         throw new Error("Payment method is missing");
       }
-      depositPayload.append(
-        "payment_method",
-        selectedPaymentDetail.payment_method_type
-      );
 
-      // Handle currency field - use the asset ticker/symbol/name from the selected asset
+      // Resolve currency value
       let currencyValue = "";
-
-      // Try different properties in order of preference
       if (selectedAsset.ticker) {
         currencyValue = selectedAsset.ticker;
       } else if (selectedAsset.symbol) {
-        // Handle special case for USDT Tether
         currencyValue =
           selectedAsset.symbol === "USDT Tether"
             ? "USDT"
@@ -2899,13 +3119,8 @@ export default function DepositForm({
       } else if (selectedAsset.name) {
         currencyValue = selectedAsset.name;
       }
-
-      // Clean up the currency value (remove any extra spaces, etc.)
       currencyValue = currencyValue?.trim();
-
-      // Fallback: if still no currency value, try to extract from any available property
       if (!currencyValue) {
-        // Try to get any string value from the asset object
         const assetKeys = Object.keys(selectedAsset);
         for (const key of assetKeys) {
           const value = selectedAsset[key];
@@ -2915,56 +3130,39 @@ export default function DepositForm({
           }
         }
       }
-
       if (!currencyValue) {
         throw new Error("Currency information is missing");
       }
-      depositPayload.append("currency", currencyValue);
 
-      // Handle network field - use the network from selected asset or network
+      // Resolve network value
       let networkValue = "";
-
-      // Try to get network from selected network first
       if (selectedNetwork?.network_id) {
         networkValue = selectedNetwork.network_id;
       } else if (selectedNetwork?.network_type) {
         networkValue = selectedNetwork.network_type;
       } else if (selectedAsset) {
-        // Fallback to asset network
         networkValue = getAssetNetwork(selectedAsset);
       }
-
-      // Clean up the network value
       networkValue = networkValue?.trim();
-
-      // Fallback: if still no network value, try to extract from any available property
-      if (!networkValue) {
-        // Try to get any string value from the network object
-        if (selectedNetwork) {
-          const networkKeys = Object.keys(selectedNetwork);
-          for (const key of networkKeys) {
-            const value = selectedNetwork[key];
-            if (typeof value === "string" && value.trim()) {
-              networkValue = value.trim();
-              break;
-            }
+      if (!networkValue && selectedNetwork) {
+        const networkKeys = Object.keys(selectedNetwork);
+        for (const key of networkKeys) {
+          const value = selectedNetwork[key];
+          if (typeof value === "string" && value.trim()) {
+            networkValue = value.trim();
+            break;
           }
         }
       }
-
       if (!networkValue) {
         throw new Error("Network information is missing");
       }
-      depositPayload.append("network", networkValue);
 
-      // Handle asset field - use the asset ticker/symbol/name from the selected asset
+      // Resolve asset value
       let assetValue = "";
-
-      // Try different properties in order of preference
       if (selectedAsset.ticker) {
         assetValue = selectedAsset.ticker;
       } else if (selectedAsset.symbol) {
-        // Handle special case for USDT Tether
         assetValue =
           selectedAsset.symbol === "USDT Tether"
             ? "USDT"
@@ -2972,13 +3170,8 @@ export default function DepositForm({
       } else if (selectedAsset.name) {
         assetValue = selectedAsset.name;
       }
-
-      // Clean up the asset value (remove any extra spaces, etc.)
       assetValue = assetValue?.trim();
-
-      // Fallback: if still no asset value, try to extract from any available property
       if (!assetValue) {
-        // Try to get any string value from the asset object
         const assetKeys = Object.keys(selectedAsset);
         for (const key of assetKeys) {
           const value = selectedAsset[key];
@@ -2988,24 +3181,28 @@ export default function DepositForm({
           }
         }
       }
-
       if (!assetValue) {
         throw new Error("Asset information is missing");
       }
-      depositPayload.append("asset", assetValue);
 
-      // Add additional info
-      depositPayload.append(
-        "additional_info",
-        `Account: ${selectedPaymentDetail.account_name}, Account Number: ${selectedPaymentDetail.account_number}`
-      );
+      // Build JSON payload — requested_amount sent as a number
+      const depositPayload: Record<string, any> = {
+        requested_amount: safeAmount,
+        deposit_address: walletAddress.trim() || "",
+        payment_provider: selectedPaymentDetail.provider_name,
+        payment_method: selectedPaymentDetail.payment_method_type,
+        currency: currencyValue,
+        network: networkValue,
+        asset: assetValue,
+        additional_info: `Account: ${selectedPaymentDetail.account_name}, Account Number: ${selectedPaymentDetail.account_number}`,
+      };
 
-      // Submit to API - let axios set the correct Content-Type for FormData
+      // Submit to API
       const depositResponse = (await dispatch(
         createDeposit({
           payload: depositPayload,
           config: {
-            // Don't set Content-Type manually for FormData - let axios handle it
+            headers: { "Content-Type": "application/json" },
           },
         })
       ).unwrap()) as unknown as DepositResponse;
@@ -3210,20 +3407,22 @@ export default function DepositForm({
                           setIsInfoModalOpen(true);
                         }
 
-                        // For direct assets, calculate immediately
+                        // For direct assets, calculate immediately (first 3 use exchange lookup in useEffect)
                         if (
                           selectedAsset &&
                           newAmount > 0 &&
                           isSimpleCalculationAsset(selectedAsset)
                         ) {
-                          const commissionAmount = isCommissionApiAsset(selectedAsset)
-                            ? (newAmount * (apiCommission ?? 2)) / 100
-                            : (newAmount * (selectedAsset?.range_commissions?.[0]?.commission ? parseFloat(selectedAsset.range_commissions[0].commission) : 2)) / 100;
-                          const calculatedGetAmount = Math.max(0, newAmount - commissionAmount);
-                          setGetAmount(calculatedGetAmount);
-                          setGetAmountInput(calculatedGetAmount.toString());
-
-                          // Simple assets don't need loading states - calculation is instant
+                          if (isExchangeCommissionLookupAsset(selectedAsset)) {
+                            // getAmount set by fetchExchangeCommissionLookup effect
+                          } else {
+                            const commissionAmount = isCommissionApiAsset(selectedAsset)
+                              ? (newAmount * (apiCommission ?? 2)) / 100
+                              : (newAmount * (selectedAsset?.range_commissions?.[0]?.commission ? parseFloat(selectedAsset.range_commissions[0].commission) : 2)) / 100;
+                            const calculatedGetAmount = Math.max(0, newAmount - commissionAmount);
+                            setGetAmount(calculatedGetAmount);
+                            setGetAmountInput(calculatedGetAmount.toString());
+                          }
                         } else if (
                           selectedAsset &&
                           newAmount > 0 &&
@@ -3293,12 +3492,14 @@ export default function DepositForm({
                         if (newAmount > 15000) setIsInfoModalOpen(true);
 
                         if (selectedAsset && newAmount > 0 && isSimpleCalculationAsset(selectedAsset)) {
-                          const commissionAmount = isCommissionApiAsset(selectedAsset)
-                            ? (newAmount * (apiCommission ?? 2)) / 100
-                            : (newAmount * (selectedAsset?.range_commissions?.[0]?.commission ? parseFloat(selectedAsset.range_commissions[0].commission) : 2)) / 100;
-                          const calculatedGetAmount = Math.max(0, newAmount - commissionAmount);
-                          setGetAmount(calculatedGetAmount);
-                          setGetAmountInput(calculatedGetAmount.toString());
+                          if (!isExchangeCommissionLookupAsset(selectedAsset)) {
+                            const commissionAmount = isCommissionApiAsset(selectedAsset)
+                              ? (newAmount * (apiCommission ?? 2)) / 100
+                              : (newAmount * (selectedAsset?.range_commissions?.[0]?.commission ? parseFloat(selectedAsset.range_commissions[0].commission) : 2)) / 100;
+                            const calculatedGetAmount = Math.max(0, newAmount - commissionAmount);
+                            setGetAmount(calculatedGetAmount);
+                            setGetAmountInput(calculatedGetAmount.toString());
+                          }
                         } else if (
                           selectedAsset &&
                           newAmount > 0 &&
@@ -3426,44 +3627,9 @@ export default function DepositForm({
                           fallbackLogo
                         );
 
-                        if (index < 3) {
-                          console.log(`🔍 Payment Method Option ${index}:`, {
-                            isHomePage,
-                            provider_name: payment.provider_name,
-                            provider_logo: payment.provider_logo,
-                            logo: payment.logo,
-                            logo_url: payment.logo_url,
-                            detailLogo,
-                            logoUrl: logoUrl,
-                            rawLogo,
-                            logoUrlType: typeof logoUrl,
-                            rawLogoIsValid: !!rawLogo,
-                            payment_method: payment.payment_method,
-                            admin_payment_detail_id:
-                              payment.admin_payment_detail_id,
-                            allKeys: Object.keys(payment),
-                          });
-                        }
+                       
 
-                        if (!rawLogo && index < 3) {
-                          console.warn(
-                            `⚠️ No logo found for payment method ${index}: ${payment.provider_name}`,
-                            {
-                              paymentKeys: Object.keys(payment),
-                              hasProviderLogo: !!payment.provider_logo,
-                              hasLogo: !!payment.logo,
-                              hasLogoUrl: !!payment.logo_url,
-                              hasDetailLogo: !!detailLogo,
-                              providerLogoValue: payment.provider_logo,
-                              logoValue: payment.logo,
-                              logoUrlValue: payment.logo_url,
-                              detailLogo,
-                              providerLogoType: typeof payment.provider_logo,
-                              logoType: typeof payment.logo,
-                              logoUrlType: typeof payment.logo_url,
-                            }
-                          );
-                        }
+                       
 
                         return {
                           value: payment.provider_name,
@@ -3586,13 +3752,13 @@ export default function DepositForm({
               >
                 {/* Light mode image */}
                 <img
-                  src="https://res.cloudinary.com/pitz/image/upload/v1756579504/Frame_36261_1_d9cnq1.png"
+                  src="/assets/Frame_36261_1_d9cnq1.png"
                   alt="swap icon"
                   className="w-10 h-10 sm:w-10 sm:h-10 dark:hidden"
                 />
                 {/* Dark mode image */}
                 <img
-                  src="https://res.cloudinary.com/pitz/image/upload/v1755500509/Frame_36261_ledmyw.png"
+                  src="/assets/Frame_36261_ledmyw.png"
                   alt="swap icon"
                   className="w-10 h-10 sm:w-10 sm:h-10 hidden dark:block"
                 />
@@ -3652,18 +3818,18 @@ export default function DepositForm({
                         // Clear API validation error when user changes amount
                         setApiValidationError(null);
 
-                        // For direct assets, calculate immediately
+                        // For direct assets, reverse calculate (first 3 use exchange lookup in useEffect)
                         if (
                           selectedAsset &&
                           newAmount > 0 &&
                           isSimpleCalculationAsset(selectedAsset)
                         ) {
-                          const commissionRate = isCommissionApiAsset(selectedAsset) ? (apiCommission ?? 2) : (selectedAsset?.range_commissions?.[0]?.commission ? parseFloat(selectedAsset.range_commissions[0].commission) : 2);
-                          const calculatedPayAmount = newAmount / (1 - commissionRate / 100);
-                          setPayAmount(calculatedPayAmount);
-                          setPayAmountInput(calculatedPayAmount.toString());
-
-                          // Simple assets don't need loading states - calculation is instant
+                          if (!isExchangeCommissionLookupAsset(selectedAsset)) {
+                            const commissionRate = isCommissionApiAsset(selectedAsset) ? (apiCommission ?? 2) : (selectedAsset?.range_commissions?.[0]?.commission ? parseFloat(selectedAsset.range_commissions[0].commission) : 2);
+                            const calculatedPayAmount = newAmount / (1 - commissionRate / 100);
+                            setPayAmount(calculatedPayAmount);
+                            setPayAmountInput(calculatedPayAmount.toString());
+                          }
                         } else if (
                           selectedAsset &&
                           newAmount > 0 &&
@@ -3821,7 +3987,7 @@ export default function DepositForm({
             {/* Asset Section */}
             <div className="flex-1 w-full sm:min-w-0 sm:pl-4 border-t sm:border-t-0 sm:border-l border-[#35353E] dark:border-[#35353E] pt-3 sm:pt-0 sm:border-none">
               <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
-                {t("express.youGet", "You Get")}
+                {t("express.asset", "Asset")}
               </label>
               <div className="relative" ref={assetDropdownRef}>
                 <div
@@ -3933,7 +4099,7 @@ export default function DepositForm({
             </span>
           </div>
           <img
-            src="https://res.cloudinary.com/pitz/image/upload/v1753424863/Screenshot_2025-07-25_092724_rjinec.png"
+            src="/assets/Screenshot_2025-07-25_092724_rjinec.png"
             alt=""
             style={{ cursor: "pointer" }}
             onClick={() =>
@@ -4038,7 +4204,7 @@ export default function DepositForm({
                   </span>
                   <img
                     className="mt-2"
-                    src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
+                    src="/assets/Group_5_gkxzdz.png"
                     alt=""
                   />
                 </span>
@@ -4506,7 +4672,7 @@ export default function DepositForm({
                   </svg>
                 </span>
                 <p className="text-xs sm:text-sm text-yellow-800 dark:text-yellow-200 font-medium">
-                  <span className="font-bold">Important:</span> Please send only <span className="font-bold text-yellow-900 dark:text-yellow-100">{selectedAsset?.symbol || selectedAsset?.ticker || 'crypto'}</span> on <span className="font-bold text-yellow-900 dark:text-yellow-100">{currentNetwork || selectedAsset?.network || 'the selected network'}</span>. Any other Crypto or Network will be <span className="font-bold">lost Permanently</span>.
+                  <span className="font-bold">Important:</span> Ensure your wallet address is for <span className="font-bold text-yellow-900 dark:text-yellow-100">{selectedAsset?.symbol || selectedAsset?.ticker || 'the selected asset'}</span> on the <span className="font-bold text-yellow-900 dark:text-yellow-100">{currentNetwork || selectedAsset?.network || 'selected network'}</span> network. Providing an incorrect address or network may result in <span className="font-bold">permanent loss of funds</span>.
                 </p>
               </div>
             </div>
@@ -4586,36 +4752,37 @@ export default function DepositForm({
                   <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
                   </svg>
+                  <BookmarkDropdown
+                    isOpen={bookmarkOpen}
+                    onClose={() => setBookmarkOpen(false)}
+                    bookmarks={bookmarks}
+                    loading={bookmarksLoading}
+                    saving={bookmarkSaving}
+                    currentAddress={walletAddress}
+                    asset={currentCurrency}
+                    network={currentNetwork || undefined}
+                    onSelect={(addr) => {
+                      setWalletAddress(addr);
+                      if (addr.trim()) validateAddress(addr, currentCurrency, currentNetwork);
+                      else resetAddressValidation();
+                    }}
+                    onSaveCurrent={async () => {
+                      if (!walletAddress.trim() || !currentCurrency || !currentNetwork) {
+                        showToast.error("Enter address and select asset/network first");
+                        return;
+                      }
+                      await saveBookmark({
+                        address: walletAddress.trim(),
+                        label: `My ${currentCurrency} wallet`,
+                        network: currentNetwork,
+                        asset: currentCurrency,
+                      });
+                    }}
+                    anchorRef={bookmarkAnchorRef}
+                    isDark={isDark}
+                    saveDisabled={isAddressValidating || !(addressValidationResult?.isValid)}
+                  />
                 </span>
-                <BookmarkDropdown
-                  isOpen={bookmarkOpen}
-                  onClose={() => setBookmarkOpen(false)}
-                  bookmarks={bookmarks}
-                  loading={bookmarksLoading}
-                  saving={bookmarkSaving}
-                  currentAddress={walletAddress}
-                  asset={currentCurrency}
-                  network={currentNetwork || undefined}
-                  onSelect={(addr) => {
-                    setWalletAddress(addr);
-                    if (addr.trim()) validateAddress(addr, currentCurrency, currentNetwork);
-                    else resetAddressValidation();
-                  }}
-                  onSaveCurrent={async () => {
-                    if (!walletAddress.trim() || !currentCurrency || !currentNetwork) {
-                      showToast.error("Enter address and select asset/network first");
-                      return;
-                    }
-                    await saveBookmark({
-                      address: walletAddress.trim(),
-                      label: `My ${currentCurrency} wallet`,
-                      network: currentNetwork,
-                      asset: currentCurrency,
-                    });
-                  }}
-                  anchorRef={bookmarkAnchorRef}
-                  isDark={isDark}
-                />
               </div>
               <button
                 title="Paste"
@@ -4766,40 +4933,40 @@ export default function DepositForm({
                 I've read and agree to the OMAYA EXCHANGE{" "}
                 <Link
                   href="/legal/terms-of-service"
-                  target="_blank"
                   className="underline text-[#1D8751]"
+                  onClick={handleBeforeLegalNavigate}
                 >
                   Terms of Use
                 </Link>
                 ,{" "}
                 <Link
                   href="/legal/privacy-policy"
-                  target="_blank"
                   className="underline text-[#1D8751]"
+                  onClick={handleBeforeLegalNavigate}
                 >
                   Privacy Policy
                 </Link>
                 ,{" "}
                 <Link
                   href="/legal/payment-policy"
-                  target="_blank"
                   className="underline text-[#1D8751]"
+                  onClick={handleBeforeLegalNavigate}
                 >
                   Payment Policies
                 </Link>
                 ,{" "}
                 <Link
                   href="/legal/aml-policy"
-                  target="_blank"
                   className="underline text-[#1D8751]"
+                  onClick={handleBeforeLegalNavigate}
                 >
                   AML
                 </Link>
                 ,{" "}
                 <Link
                   href="/legal/risk-disclosure-statement"
-                  target="_blank"
                   className="underline text-[#1D8751]"
+                  onClick={handleBeforeLegalNavigate}
                 >
                   Risk Disclosure Statements
                 </Link>
@@ -4829,7 +4996,7 @@ export default function DepositForm({
                   </span>
                   <img
                     className="mt-2"
-                    src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
+                    src="/assets/Group_5_gkxzdz.png"
                     alt=""
                   />
                 </span>

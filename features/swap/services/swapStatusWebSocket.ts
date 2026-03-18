@@ -41,6 +41,7 @@ type OpenHandler = () => void;
  */
 export class SwapStatusWebSocket extends SingletonWebSocket<{
   swapId: string;
+  token?: string;
 }> {
   private lastSwapId: string = "";
   // Type-safe handler sets for Swap-specific messages
@@ -78,10 +79,12 @@ export class SwapStatusWebSocket extends SingletonWebSocket<{
   }
 
   /**
-   * Build WebSocket URL from swap ID
+   * Build WebSocket URL from swap ID and optional token
    */
-  protected buildUrl(params: { swapId: string }): string {
-    return API_CONFIG.SWAP.SWAP_STATUS_WS(params.swapId);
+  protected buildUrl(params: { swapId: string; token?: string }): string {
+    const url = API_CONFIG.SWAP.SWAP_STATUS_WS(params.swapId, params.token);
+    console.log("[Exchange/Swap] Connecting WebSocket URL:", url);
+    return url;
   }
 
   /**
@@ -109,21 +112,24 @@ export class SwapStatusWebSocket extends SingletonWebSocket<{
   /**
    * Connect method - accepts params object (base class signature)
    */
-  connect(params: { swapId: string }): void;
+  connect(params: { swapId: string; token?: string }): void;
   /**
-   * Backward compatible connect method - accepts swapId string directly
+   * Backward compatible connect method - accepts swapId string and optional token
    */
-  connect(swapId: string): void;
+  connect(swapId: string, token?: string): void;
   /**
    * Implementation
    */
-  connect(swapIdOrParams: string | { swapId: string }): void {
+  connect(swapIdOrParams: string | { swapId: string; token?: string }, token?: string): void {
     const swapId =
       typeof swapIdOrParams === "string"
         ? swapIdOrParams
         : swapIdOrParams.swapId;
+    const tokenParam = typeof swapIdOrParams === "object" && swapIdOrParams.token
+      ? swapIdOrParams.token
+      : token;
     this.lastSwapId = swapId;
-    super.connect({ swapId });
+    super.connect({ swapId, token: tokenParam });
   }
 
   // Override handler methods to use Swap-specific types
@@ -169,11 +175,13 @@ export function connectSwapStatusWebSocket(
     onOpen,
     onError,
     onClose,
+    token,
   }: {
     onMessage?: (event: MessageEvent) => void;
     onOpen?: (event: Event) => void;
     onError?: (event: Event) => void;
     onClose?: (event: CloseEvent) => void;
+    token?: string;
   } = {}
 ): any {
   const ws = getSwapStatusWebSocket(swapId);
@@ -264,7 +272,7 @@ export function connectSwapStatusWebSocket(
     });
   }
 
-  ws.connect(swapId);
+  ws.connect(swapId, token);
 
   return wrapper as WebSocket;
 }

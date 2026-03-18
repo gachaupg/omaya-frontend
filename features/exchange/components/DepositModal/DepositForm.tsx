@@ -111,7 +111,7 @@ const DepositForm: React.FC<DepositFormProps> = ({
             >
               <p className="text-[#1D8751]">Paste</p>
               <img
-                src="https://res.cloudinary.com/dam1sxczj/image/upload/v1748885082/Vector_se1lvr.png"
+                src="/assets/Vector_se1lvr.png"
                 alt=""
                 className="w-5 h-5"
               />

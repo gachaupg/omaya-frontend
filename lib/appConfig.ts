@@ -42,6 +42,19 @@ export const API_CONFIG = {
     COMMISSION: (asset: string, amount: number, type: "deposit" | "withdrawal") =>
       `/trading_engine/commission/?asset=${encodeURIComponent(asset)}&amount=${amount}&type=${type}`,
   },
+  COMMISSION_LOOKUP: (amount: number, type: "deposit" | "withdrawal", feature: string = "exchange") =>
+    `/administration/commission-lookup/?feature=${feature}&commission_type=${type}&amount=${amount}`,
+  /** Exchange estimate: from_currency, to_currency=USD, optional from_network (BEP20, BSC, ETH). Used for first 3 assets only. */
+  COMMISSION_LOOKUP_EXCHANGE: (
+    amount: number,
+    type: "deposit" | "withdrawal",
+    from_currency: string,
+    to_currency: string = "USD",
+    from_network?: string
+  ) => {
+    const base = `/administration/commission-lookup/?feature=exchange&commission_type=${type}&amount=${amount}&from_currency=${encodeURIComponent(from_currency)}&to_currency=${encodeURIComponent(to_currency)}`;
+    return from_network ? `${base}&from_network=${encodeURIComponent(from_network)}` : base;
+  },
   P2P: {
     BASE: "/trading_engine/p2p/",
     WALLETS: "api/wallet/wallets/",
@@ -85,6 +98,7 @@ export const API_CONFIG = {
     DELETE_PAYMENT_METHOD: "/payments/user-payment-details/",
     TRADE_MESSAGES: (tradeId: string) =>
       `/trading_engine/trades/${tradeId}/messages/`,
+    TERMS_ACCEPTED: "/api/terms-accepted/",
     REFERRAL_USERS: (code: string) => `/api/referred-users/${code}/`,
     REFERRAL_WALLET: "/api/wallet/referral-wallet/",
     REFERRAL_WITHDRAW: "/trading_engine/referral/withdraw/",
@@ -107,6 +121,8 @@ export const API_CONFIG = {
         `${getWebSocketBaseUrl()}/ws/p2p-orders/?token=${token}`,
       RECENT_MESSAGES: (token: string) =>
         `${getWebSocketBaseUrl()}/ws/messages/?token=${token}`,
+      P2P_WITHDRAWAL_STATUS: (token: string) =>
+        `${getWebSocketBaseUrl()}/ws/p2p-withdrawal-status/?token=${token}`,
     },
   },
   SWAP: {
@@ -117,8 +133,10 @@ export const API_CONFIG = {
     SWAP_STATUS: "/api/changenow/status/",
     SWAP_HISTORY: "/api/changenow/user/history/",
     VALIDATE_ADDRESS: "/api/changenow/validate-address/",
-    SWAP_STATUS_WS: (swapId: string) =>
-      `${getWebSocketBaseUrl()}/ws/changenow/status/${swapId}/`,
+    SWAP_STATUS_WS: (swapId: string, token?: string) => {
+      const base = `${getWebSocketBaseUrl()}/ws/changenow/status/${swapId}/`;
+      return token ? `${base}?token=${encodeURIComponent(token)}` : base;
+    },
   },
   RATES: {
     TRANSACTIONS: "/trading_engine/all-system-transactions/",
@@ -202,6 +220,8 @@ export const API_CONFIG = {
     BOOKMARKED_ADDRESS: (id: string) => `/api/wallet/bookmarked-addresses/${id}/`,
   },
   PAYMENTS: {
+    SEND_ADD_OTP: "/payments/user-payment-details/send-add-otp/",
+    VERIFY_ADD_OTP: "/payments/user-payment-details/verify-add-otp/",
     SEND_EDIT_OTP: "/payments/user-payment-details/send-edit-otp/",
     USER_PAYMENT_DETAIL: (id: string) => `/payments/user-payment-details/${id}/`,
     USER_WALLET_ADDRESSES: "/payments/user-wallet-addresses/",
@@ -216,6 +236,8 @@ export const API_CONFIG = {
     TRANSACTIONS: "/api/moneyx/transactions/",
     UPDATE_TRANSACTION: (transactionId: string) => `/api/moneyx/transactions/${transactionId}/`,
     COMMISSION: (amount: number) => `/api/moneyx/commission/?amount=${amount}`,
+    RANGE_COMMISSION: (amount: number, commissionType: string = "deposit") =>
+      `/administration/admin/range-commissions/?feature=moneyx&commission_type=${commissionType}&amount=${amount}`,
     SOCKETS: {
       STATUS: (transactionId: string) =>
         `${getWebSocketBaseUrl()}/ws/moneyx/status/${transactionId}/`,

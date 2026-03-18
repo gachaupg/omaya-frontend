@@ -425,7 +425,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                bg-card border border-gray-200 dark:border-[#35353E] rounded-[19px] px-2 py-2 min-h-[40px]"
                 >
                   <img
-                    src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                    src="/images/tether.svg"
                     alt="USDT"
                     className="w-6 h-6 rounded-full"
                   />
@@ -548,7 +548,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                 </label>
                 <div className="flex items-center bg-card border border-gray-200 dark:border-[#35353E] rounded-[19px] px-2 py-2 min-h-[40px]">
                   <img
-                    src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                    src="/images/tether.svg"
                     alt="USDT"
                     className="w-6 h-6 rounded-full mr-2"
                   />
@@ -1002,11 +1002,10 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
 
                               {/* Status Badge */}
                               <span
-                                className={`flex-shrink-0 px-2.5 py-1 rounded-md text-xs font-medium ${
-                                  isPending
+                                className={`flex-shrink-0 px-2.5 py-1 rounded-md text-xs font-medium ${isPending
                                     ? "bg-amber-500/20 dark:bg-amber-500/30 text-amber-700 dark:text-amber-400 border border-amber-500/40"
                                     : "bg-[#1D8751]/20 dark:bg-[#1D8751]/30 text-[#1D8751] border border-[#1D8751]/40"
-                                }`}
+                                  }`}
                               >
                                 {isPending ? "Pending" : "Approved"}
                               </span>
