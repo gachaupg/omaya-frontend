@@ -1699,7 +1699,7 @@ export default function WithdrawalForm({
       !isForexAsset(selectedAsset) && // Skip FXP - uses manual calculation
       payAmount &&
       payAmount > 0 &&
-      estimateRequestSeqRef.current > 0 // only after user explicitly triggered
+      isCalculatingFromPay // forward flow: "You Send" → estimate receive
     ) {
       const requestSeq = ++estimateRequestSeqRef.current;
 
