@@ -3,7 +3,13 @@
 import React, { useState, useEffect, useRef } from "react";
 import { X, Send, MessageCircle, Loader2 } from "lucide-react";
 import { useLiveChatWebSocket } from "../hooks/useLiveChatWebSocket";
-import { createChatSession, getChatMessages, ChatSession, ChatMessage } from "../services/liveChatApi";
+import {
+  createChatSession,
+  getChatMessages,
+  normalizeChatMessage,
+  ChatSession,
+  ChatMessage,
+} from "../services/liveChatApi";
 import { setAuthRedirectPath } from "@/lib/utils/authRedirect";
 import { logger } from "@/lib/utils/logger";
 import { useRouter } from "next/navigation";
@@ -106,7 +112,7 @@ const LiveChatModal: React.FC<LiveChatModalProps> = ({ isOpen, onClose }) => {
       
       // Set initial messages from API response
       if (response.messages && response.messages.length > 0) {
-        setInitialMessages(response.messages);
+        setInitialMessages(response.messages.map(normalizeChatMessage));
       }
     } catch (error: any) {
       logger.error("live-chat", "Failed to load chat history:", error);
@@ -213,7 +219,9 @@ const LiveChatModal: React.FC<LiveChatModalProps> = ({ isOpen, onClose }) => {
             </div>
           ) : (
             messages.map((message, index) => {
-              const isUser = message.sender_role === "user";
+              const isUser =
+                message.sender_role === "user" ||
+                message.sender_role === "customer";
               const isSystem = message.sender_name === "System";
 
               return (

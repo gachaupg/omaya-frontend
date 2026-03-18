@@ -1471,7 +1471,8 @@ export default function DepositForm({
           timeoutPromise,
         ])
           .then((result: any) => {
-            if (result.payload && (result.payload as any)?.estimated_amount) {
+            // Thunk always resolves; check fulfilled vs rejected
+            if (result?.meta?.requestStatus === "fulfilled" && result.payload && (result.payload as any)?.estimated_amount) {
               setEstimate(result.payload);
 
               // Update UI immediately instead of waiting for another useEffect
@@ -1484,58 +1485,144 @@ export default function DepositForm({
               }
             }
 
+            // Handle rejected thunk (validation errors like deposit_too_small)
+            if (result?.meta?.requestStatus === "rejected") {
+              const actionOrError: any = result;
+              const error = actionOrError?.payload ?? actionOrError;
+              const responseData = error?.response_data ?? actionOrError?.response_data;
+
+              let errorMessage = "";
+              let errorDetails = "";
+              if (responseData?.error) {
+                errorMessage = responseData.error;
+                errorDetails = responseData.message || "";
+              } else if (error?.error) {
+                errorMessage = typeof error.error === "string" ? error.error : "";
+                errorDetails = error.message || "";
+              } else if (error?.message) {
+                errorMessage = String(error.message);
+              }
+              if (errorMessage.includes("Exchange service error:")) {
+                errorMessage = errorMessage.replace("Exchange service error: ", "");
+              }
+
+              // Handle DRF-style field validation errors
+              const amountErrorsFromRoot =
+                (Array.isArray(error?.error?.amount) && error.error.amount) ||
+                (Array.isArray(responseData?.error?.amount) && responseData.error.amount);
+
+              if (amountErrorsFromRoot && amountErrorsFromRoot.length > 0) {
+                const firstMessage = String(amountErrorsFromRoot[0]);
+                setApiValidationError(firstMessage);
+                setEstimateError(null);
+                setPayAmount(0);
+                setPayAmountInput("0");
+                setIsCalculating(false);
+                setIsCalculatingReceive(false);
+                setEstimateLoading(false);
+                return;
+              }
+
+              // Always show deposit_too_small in red (min amount from API when present)
+              if (
+                errorMessage.includes("deposit_too_small") ||
+                errorDetails.includes("Out of min amount")
+              ) {
+                const minAmount = responseData?.payload?.range?.minAmount;
+                const errorText = minAmount != null && !isNaN(minAmount)
+                  ? `Amount entered is too small. Minimum amount is ${Number(minAmount).toFixed(8)}.`
+                  : "Amount entered is too small. Please enter a larger amount.";
+
+                setApiValidationError(errorText);
+                setEstimateError(null);
+                setGetAmount(0);
+                setGetAmountInput("0");
+                setIsCalculating(false);
+                setIsCalculatingReceive(false);
+                setEstimateLoading(false);
+                return;
+              }
+
+              // Handle other specific validation errors
+              if (
+                errorMessage.includes("deposit_too_large") ||
+                errorDetails.includes("Out of max amount")
+              ) {
+                const maxAmount = responseData?.payload?.range?.maxAmount;
+                const errorText = maxAmount
+                  ? `Amount entered is too large. Maximum amount is ${maxAmount.toFixed(8)}.`
+                  : "Amount entered is too large. Please enter a smaller amount.";
+
+                setApiValidationError(errorText);
+                setEstimateError(null);
+                setGetAmount(0);
+                setGetAmountInput("0");
+                setIsCalculating(false);
+                setIsCalculatingReceive(false);
+                setEstimateLoading(false);
+                return;
+              }
+            }
+
             // Clear loading states after successful calculation
             setIsCalculating(false);
             setIsCalculatingReceive(false);
           })
-          .catch((error) => {
-            console.error("Failed to fetch swap estimate:", error);
-            console.log("API Error caught:", error);
+          .catch((actionOrError: any) => {
+            console.log("[EXPRESS DASHBOARD DEPOSIT] ESTIMATE CATCH", { actionOrError });
+            const error = actionOrError?.payload ?? actionOrError;
+            const responseData = error?.response_data ?? actionOrError?.response_data;
+            console.log("[EXPRESS DASHBOARD DEPOSIT] PARSED ERROR", {
+              message: error?.message,
+              rawError: error,
+              responseData,
+            });
+            console.error("Failed to fetch swap estimate:", actionOrError);
 
-            // IMMEDIATELY clear all loading states to prevent stuck loading
             setIsCalculating(false);
             setIsCalculatingReceive(false);
             setEstimateLoading(false);
 
-            // Check for specific API validation errors - handle different error structures
             let errorMessage = "";
             let errorDetails = "";
-
-            // Handle the exact structure you provided
-            if (error?.response_data?.error) {
-              errorMessage = error.response_data.error;
-              errorDetails = error.response_data.message || "";
+            if (responseData?.error) {
+              errorMessage = responseData.error;
+              errorDetails = responseData.message || "";
             } else if (error?.error) {
-              errorMessage = error.error;
+              errorMessage = typeof error.error === "string" ? error.error : "";
               errorDetails = error.message || "";
             } else if (error?.message) {
-              errorMessage = error.message;
+              errorMessage = String(error.message);
             }
-
-            // Also check for the specific "Exchange service error" format
             if (errorMessage.includes("Exchange service error:")) {
-              const serviceError = errorMessage.replace(
-                "Exchange service error: ",
-                ""
-              );
-              errorMessage = serviceError;
+              errorMessage = errorMessage.replace("Exchange service error: ", "");
             }
 
-            console.log("Error parsing:", {
-              errorMessage,
-              errorDetails,
-              hasResponseData: !!error?.response_data,
-            });
+            // Handle DRF-style field validation errors
+            const amountErrorsFromRoot =
+              (Array.isArray(error?.error?.amount) && error.error.amount) ||
+              (Array.isArray(responseData?.error?.amount) && responseData.error.amount);
 
-            // Handle deposit_too_small error
+            if (amountErrorsFromRoot && amountErrorsFromRoot.length > 0) {
+              const firstMessage = String(amountErrorsFromRoot[0]);
+              setApiValidationError(firstMessage);
+              setEstimateError(null);
+              setPayAmount(0);
+              setPayAmountInput("0");
+              setIsCalculating(false);
+              setIsCalculatingReceive(false);
+              setEstimateLoading(false);
+              return;
+            }
+
+            // Always show deposit_too_small in red (min amount from API when present)
             if (
               errorMessage.includes("deposit_too_small") ||
               errorDetails.includes("Out of min amount")
             ) {
-              // Try to get minimum amount from error payload
-              const minAmount = error?.response_data?.payload?.range?.minAmount;
-              const errorText = minAmount
-                ? `Amount entered is too small. Minimum amount is ${minAmount.toFixed(8)}.`
+              const minAmount = responseData?.payload?.range?.minAmount;
+              const errorText = minAmount != null && !isNaN(minAmount)
+                ? `Amount entered is too small. Minimum amount is ${Number(minAmount).toFixed(8)}.`
                 : "Amount entered is too small. Please enter a larger amount.";
 
               setApiValidationError(errorText);
@@ -1553,8 +1640,7 @@ export default function DepositForm({
               errorMessage.includes("deposit_too_large") ||
               errorDetails.includes("Out of max amount")
             ) {
-              // Try to get maximum amount from error payload
-              const maxAmount = error?.response_data?.payload?.range?.maxAmount;
+              const maxAmount = responseData?.payload?.range?.maxAmount;
               const errorText = maxAmount
                 ? `Amount entered is too large. Maximum amount is ${maxAmount.toFixed(8)}.`
                 : "Amount entered is too large. Please enter a smaller amount.";
@@ -1665,79 +1751,94 @@ export default function DepositForm({
             setIsCalculating(false);
             setIsCalculatingReceive(false);
           })
-          .catch((error) => {
-            // Check for specific API validation errors - handle different error structures
+          .catch((actionOrError: any) => {
+            const error = actionOrError?.payload ?? actionOrError;
+            const responseData = error?.response_data ?? actionOrError?.response_data;
             let errorMessage = "";
             let errorDetails = "";
-
-            // Handle different error response structures
-            if (error?.response_data?.error) {
-              errorMessage = error.response_data.error;
-              errorDetails = error.response_data.message || "";
+            if (responseData?.error) {
+              errorMessage = responseData.error;
+              errorDetails = responseData.message || "";
             } else if (error?.error) {
-              errorMessage = error.error;
+              errorMessage = typeof error.error === "string" ? error.error : "";
               errorDetails = error.message || "";
             } else if (error?.message) {
               errorMessage = error.message;
             }
-
-            // Handle the specific structure you provided
-            if (error?.response_data && !errorMessage) {
-              errorMessage = error.response_data.error || "";
-              errorDetails = error.response_data.message || "";
+            if (errorMessage.includes("Exchange service error:")) {
+              errorMessage = errorMessage.replace("Exchange service error: ", "");
             }
 
-            console.log("API Error Debug (reverse):", {
-              error,
-              errorMessage,
-              errorDetails,
-            });
+            setIsCalculating(false);
+            setIsCalculatingReceive(false);
+            setEstimateLoading(false);
 
-            // Handle deposit_too_small error
+            // Handle DRF-style field validation errors
+            const amountErrorsFromRoot =
+              (Array.isArray(error?.error?.amount) && error.error.amount) ||
+              (Array.isArray(responseData?.error?.amount) && responseData.error.amount);
+
+            if (amountErrorsFromRoot && amountErrorsFromRoot.length > 0) {
+              const firstMessage = String(amountErrorsFromRoot[0]);
+              setApiValidationError(firstMessage);
+              setEstimateError(null);
+              setPayAmount(0);
+              setPayAmountInput("0");
+              setIsCalculating(false);
+              setIsCalculatingReceive(false);
+              setEstimateLoading(false);
+              return;
+            }
+
+            // Handle deposit_too_small error (show min amount from API)
             if (
               errorMessage.includes("deposit_too_small") ||
               errorDetails.includes("Out of min amount")
             ) {
-              setApiValidationError(
-                "Amount entered is too small. Please enter a larger amount."
-              );
+              const minAmount = responseData?.payload?.range?.minAmount;
+              const errorText = minAmount != null && !isNaN(minAmount)
+                ? `Amount entered is too small. Minimum amount is ${Number(minAmount).toFixed(8)}.`
+                : "Amount entered is too small. Please enter a larger amount.";
+              setApiValidationError(errorText);
               setEstimateError(null);
               setPayAmount(0);
               setPayAmountInput("0");
               setIsCalculating(false);
               setIsCalculatingReceive(false);
+              setEstimateLoading(false);
               return;
             }
 
-            // Handle other specific validation errors
             if (
               errorMessage.includes("deposit_too_large") ||
               errorDetails.includes("Out of max amount")
             ) {
-              setApiValidationError(
-                "Amount entered is too large. Please enter a smaller amount."
-              );
+              const maxAmount = responseData?.payload?.range?.maxAmount;
+              const errorText = maxAmount
+                ? `Amount entered is too large. Maximum amount is ${maxAmount.toFixed(8)}.`
+                : "Amount entered is too large. Please enter a smaller amount.";
+              setApiValidationError(errorText);
               setEstimateError(null);
               setPayAmount(0);
               setPayAmountInput("0");
               setIsCalculating(false);
               setIsCalculatingReceive(false);
+              setEstimateLoading(false);
               return;
             }
 
-            // Clear API validation errors for network/timeout issues
             setApiValidationError(null);
 
-            // Handle timeout - just clear error and allow retry
-            if (error.message?.includes("Request timeout")) {
+            const msg = error?.message || "";
+            if (msg.includes("Request timeout")) {
               setEstimateError(null);
             } else if (
-              error.message?.includes("Network Error") ||
-              error.code === "ECONNREFUSED" ||
-              error.code === "ENOTFOUND"
+              msg.includes("Network Error") ||
+              (actionOrError as any)?.code === "ECONNREFUSED" ||
+              (actionOrError as any)?.code === "ENOTFOUND"
             ) {
               setEstimateError(null);
-            } else if (error.message?.includes("Server Error")) {
+            } else if (msg.includes("Server Error")) {
               setEstimateError(null);
             } else {
               setEstimateError(null);
@@ -2373,10 +2474,10 @@ export default function DepositForm({
     }
   }, [selectedAsset, walletAddress]);
 
-  // Clear validation errors when amount is cleared or form is reset
+  // Clear calculation-only errors when amount is cleared or form is reset
   useEffect(() => {
     if (!payAmount || payAmount === 0 || payAmountInput === "" || payAmountInput === "0") {
-      setApiValidationError(null);
+      // Keep apiValidationError so backend min-amount / format errors stay visible
       setReceiveAmountError(null);
       setEstimateError(null);
     }
@@ -3230,10 +3331,20 @@ export default function DepositForm({
         {t("express.transactionInfo", "Transaction Info")}
       </h2>
 
-      {/* API Validation Error - Show as simple red text */}
+      {/* API Validation Error - Show in card */}
       {apiValidationError && (
-        <div className="mb-2 sm:mb-4 text-red-500 text-sm font-medium">
-          {apiValidationError}
+        <div
+          className="mb-2 sm:mb-4 flex items-start gap-3 rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-red-500/50 bg-red-950/20 dark:bg-red-950/30 shadow-sm"
+          role="alert"
+        >
+          <span className="flex-shrink-0 mt-0.5" aria-hidden>
+            <svg className="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+          </span>
+          <p className="text-sm font-medium text-red-400">
+            {apiValidationError}
+          </p>
         </div>
       )}
 
@@ -3269,9 +3380,9 @@ export default function DepositForm({
                       // Check for decimal places validation
                       if (value.includes(".")) {
                         const decimalPart = value.split(".")[1];
-                        if (decimalPart && decimalPart.length > 8) {
+                        if (decimalPart && decimalPart.length > 5) {
                           setApiValidationError(
-                            "Number cannot have more than 8 decimal places."
+                            "Number cannot have more than 5 decimal places."
                           );
                           return;
                         }
@@ -3363,8 +3474,8 @@ export default function DepositForm({
                     if (value === "" || /^\d*\.?\d*$/.test(value)) {
                       if (value.includes(".")) {
                         const decimalPart = value.split(".")[1];
-                        if (decimalPart && decimalPart.length > 8) {
-                          setApiValidationError("Number cannot have more than 8 decimal places.");
+                        if (decimalPart && decimalPart.length > 5) {
+                          setApiValidationError("Number cannot have more than 5 decimal places.");
                           return;
                         }
                       }
@@ -3434,6 +3545,7 @@ export default function DepositForm({
 
                 {/* Show info for non-direct assets when typing in You Send */}
                 {selectedAsset &&
+                  !apiValidationError &&
                   !isSimpleCalculationAsset(selectedAsset) &&
                   !isForexAsset(selectedAsset) &&
                   isCalculatingFromPay &&
@@ -3687,9 +3799,9 @@ export default function DepositForm({
                       // Check for decimal places validation
                       if (value.includes(".")) {
                         const decimalPart = value.split(".")[1];
-                        if (decimalPart && decimalPart.length > 8) {
+                        if (decimalPart && decimalPart.length > 5) {
                           setApiValidationError(
-                            "Number cannot have more than 8 decimal places."
+                            "Number cannot have more than 5 decimal places."
                           );
                           return;
                         }

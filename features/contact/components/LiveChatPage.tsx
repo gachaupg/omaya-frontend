@@ -1,10 +1,17 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
-import { ArrowLeft, Send, MessageCircle, Loader2 } from "lucide-react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { ArrowLeft, Send, MessageCircle, Loader2, RotateCcw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useLiveChatWebSocket } from "../hooks/useLiveChatWebSocket";
-import { createChatSession, getChatMessages, ChatSession, ChatMessage } from "../services/liveChatApi";
+import {
+  createChatSession,
+  getChatMessages,
+  reopenChatSession,
+  normalizeChatMessage,
+  isSessionChatClosed,
+  type ChatSession,
+} from "../services/liveChatApi";
 import { setAuthRedirectPath } from "@/lib/utils/authRedirect";
 import { logger } from "@/lib/utils/logger";
 
@@ -12,15 +19,19 @@ const LiveChatPage: React.FC = () => {
   const router = useRouter();
   const [session, setSession] = useState<ChatSession | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [wsConnectionKey, setWsConnectionKey] = useState(0);
   const [messageInput, setMessageInput] = useState("");
   const [isCreatingSession, setIsCreatingSession] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [isReopening, setIsReopening] = useState(false);
+  const [statusBanner, setStatusBanner] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const closedHistoryLoadedRef = useRef(false);
+
+  const sessionClosed = isSessionChatClosed(session);
 
   const {
     isConnected,
-    connectionFailed,
-    retryConnection,
     messages,
     isTyping,
     sendMessage,
@@ -28,18 +39,31 @@ const LiveChatPage: React.FC = () => {
     setInitialMessages,
   } = useLiveChatWebSocket({
     sessionId: sessionId || "",
-    enabled: !!sessionId,
+    connectionKey: wsConnectionKey,
+    enabled: !!sessionId && !sessionClosed,
     onMessage: (message) => {
       logger.debug("live-chat", "Message received:", message);
     },
     onChatHistory: (data) => {
       if (data.status) {
-        setSession((prev) => (prev ? { ...prev, status: data.status as "waiting" | "active" | "closed" } : prev));
+        setSession((prev) =>
+          prev ? { ...prev, status: data.status as ChatSession["status"] } : prev
+        );
       }
+    },
+    onChatClosed: () => {
+      setSession((prev) =>
+        prev
+          ? {
+              ...prev,
+              status: "closed",
+              closed_at: prev.closed_at || new Date().toISOString(),
+            }
+          : null
+      );
     },
     onError: (error) => {
       logger.debug("live-chat", "WebSocket error:", error);
-      // Don't show toast for connection errors - they're handled by auto-reconnect
     },
     onClose: () => {
       logger.debug("live-chat", "WebSocket closed");
@@ -47,12 +71,39 @@ const LiveChatPage: React.FC = () => {
     autoReconnect: true,
   });
 
-  // Scroll to bottom when messages change
+  const applySessionMessagesStable = useCallback(
+    (sess: ChatSession | null) => {
+      if (sess?.messages?.length) {
+        setTimeout(() => {
+          setInitialMessages(sess.messages!.map(normalizeChatMessage));
+        }, 0);
+      }
+    },
+    [setInitialMessages]
+  );
+
+  useEffect(() => {
+    if (!sessionClosed) closedHistoryLoadedRef.current = false;
+  }, [sessionClosed]);
+
+  useEffect(() => {
+    if (!sessionId || !sessionClosed || closedHistoryLoadedRef.current) return;
+    closedHistoryLoadedRef.current = true;
+    getChatMessages(sessionId)
+      .then((r) => {
+        if (r.messages?.length) {
+          setInitialMessages(r.messages.map(normalizeChatMessage));
+        }
+      })
+      .catch(() => {
+        closedHistoryLoadedRef.current = false;
+      });
+  }, [sessionId, sessionClosed, setInitialMessages]);
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Create session on mount
   useEffect(() => {
     if (!sessionId && !isCreatingSession) {
       handleCreateSession();
@@ -61,12 +112,11 @@ const LiveChatPage: React.FC = () => {
     return () => {
       disconnect();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Load chat history as fallback if WebSocket doesn't send it
   useEffect(() => {
     if (sessionId && isConnected && !isLoadingHistory) {
-      // Wait a bit for WebSocket to send history, then fallback to API if no messages
       const timer = setTimeout(() => {
         if (messages.length === 0) {
           loadChatHistory();
@@ -79,23 +129,17 @@ const LiveChatPage: React.FC = () => {
 
   const handleCreateSession = async () => {
     setIsCreatingSession(true);
+    setStatusBanner(null);
     try {
       const response = await createChatSession();
-      const sessionData = (response as any).session;
-      setSession(sessionData);
-      setSessionId(sessionData.session_id);
-      // Load existing messages from session if present (e.g. "already have session" response)
-      const existingMessages = (response as any).session?.messages;
-      if (Array.isArray(existingMessages) && existingMessages.length > 0) {
-        const mapped: ChatMessage[] = existingMessages.map((m: any) => ({
-          sender_name: m.is_system_message ? "System" : (m.sender_name || "Unknown"),
-          sender_role: (m.sender_role === "customer" ? "user" : m.sender_role === "admin" ? "agent" : m.sender_role || "agent") as "user" | "agent",
-          message: m.message || "",
-          timestamp: m.timestamp || new Date().toISOString(),
-        }));
-        setInitialMessages(mapped);
+      setSession(response.session);
+      setSessionId(response.session.session_id);
+      applySessionMessagesStable(response.session);
+      if (response.message) {
+        setStatusBanner(response.message);
+        setTimeout(() => setStatusBanner(null), 5000);
       }
-      logger.debug("live-chat", "Session ready:", sessionData);
+      logger.debug("live-chat", "Session ready:", response.session);
     } catch (error: any) {
       logger.error("live-chat", "Failed to create session:", error);
       setAuthRedirectPath("/live-chat");
@@ -111,18 +155,8 @@ const LiveChatPage: React.FC = () => {
     setIsLoadingHistory(true);
     try {
       const response = await getChatMessages(sessionId);
-      logger.debug("live-chat", "Chat history loaded:", response.messages);
-
-      // Normalize and set initial messages from API response
-      if (response.messages && response.messages.length > 0) {
-        const normalizedMessages: ChatMessage[] = response.messages.map((m: any) => ({
-          sender_name: m.is_system_message ? "System" : (m.sender_name || "Unknown"),
-          sender_role: (m.sender_role === "customer" ? "user" : m.sender_role === "admin" ? "agent" : m.sender_role || "agent") as "user" | "agent",
-          message: m.message || "",
-          timestamp: m.timestamp || new Date().toISOString(),
-        }));
-
-        setInitialMessages(normalizedMessages);
+      if (response.messages?.length) {
+        setInitialMessages(response.messages.map(normalizeChatMessage));
       }
     } catch (error: any) {
       logger.error("live-chat", "Failed to load chat history:", error);
@@ -131,14 +165,41 @@ const LiveChatPage: React.FC = () => {
     }
   };
 
+  const handleReopenChat = async () => {
+    if (!sessionId) return;
+    setIsReopening(true);
+    setStatusBanner(null);
+    try {
+      const res = await reopenChatSession(sessionId);
+      setSession(res.session);
+      setWsConnectionKey((k) => k + 1);
+      if (res.session.messages?.length) {
+        setTimeout(() => {
+          setInitialMessages(res.session.messages!.map(normalizeChatMessage));
+        }, 0);
+      } else {
+        loadChatHistory();
+      }
+      setStatusBanner(res.message || "Chat reopened");
+      setTimeout(() => setStatusBanner(null), 6000);
+    } catch (error: any) {
+      logger.error("live-chat", "Reopen failed:", error);
+      setStatusBanner(
+        error?.response?.data?.message || "Could not reopen chat. Try again."
+      );
+    } finally {
+      setIsReopening(false);
+    }
+  };
+
   const handleSendMessage = () => {
-    if (!messageInput.trim() || !isConnected) return;
+    if (!messageInput.trim() || !isConnected || sessionClosed) return;
 
     sendMessage(messageInput.trim());
     setMessageInput("");
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
@@ -162,44 +223,85 @@ const LiveChatPage: React.FC = () => {
     });
   };
 
+  const subtitle = sessionClosed
+    ? "Chat ended"
+    : session?.status === "waiting"
+      ? "Waiting for an agent…"
+      : session?.status === "active"
+        ? session.agent_name
+          ? `Agent: ${session.agent_name}`
+          : "Connected"
+        : isConnected
+          ? "Connected"
+          : "Connecting…";
+
   return (
     <div className="min-h-screen bg-white dark:bg-[var(--bg-color)] flex flex-col pt-16 md:pt-20">
-      {/* Chat Area - centered with margins */}
-      <div className="flex-1 flex flex-col max-w-4xl w-full mx-auto px-6 sm:px-8 md:px-10 lg:px-12">
-      {/* Header */}
-      <div className="flex items-center justify-between py-2 sm:py-2.5 px-4 sm:px-5 border-b border-gray-200 dark:border-[#35353E] bg-white dark:bg-[#1D1D23] sticky top-16 md:top-20 z-10">
-        <div className="flex items-center gap-2 sm:gap-3 w-full">
-          <button
-            onClick={() => router.back()}
-            className="p-1.5 hover:bg-gray-100 dark:hover:bg-[#2A2A2A] rounded-full transition-colors flex-shrink-0"
-          >
-            <ArrowLeft className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-          </button>
-          <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 flex-1">
-            <div className="w-8 h-8 sm:w-9 sm:h-9 bg-[#1D8751] rounded-full flex items-center justify-center flex-shrink-0">
-              <MessageCircle className="w-4 h-4 text-white" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <h2 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white truncate leading-tight">
-                Live Chat Support
-              </h2>
-              <div className="flex items-center gap-1.5 min-w-0 mt-0.5">
-                <div
-                  className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
-                    isConnected ? "bg-green-500" : "bg-gray-400"
-                  }`}
-                />
-               
+      <div className="w-full max-w-5xl mx-auto flex flex-col flex-1 px-3 sm:px-4 md:px-6">
+        <div className="flex items-center justify-between py-2 sm:py-2.5 border-b border-gray-200 dark:border-[#35353E] bg-white dark:bg-[#1D1D23] sticky top-16 md:top-20 z-10 -mx-3 sm:-mx-4 md:-mx-6 px-3 sm:px-4 md:px-6">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className="p-1.5 hover:bg-gray-100 dark:hover:bg-[#2A2A2A] rounded-full transition-colors flex-shrink-0"
+            >
+              <ArrowLeft className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+            </button>
+            <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 flex-1">
+              <div className="w-8 h-8 sm:w-9 sm:h-9 bg-[#1D8751] rounded-full flex items-center justify-center flex-shrink-0">
+                <MessageCircle className="w-4 h-4 text-white" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h2 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white truncate leading-tight">
+                  Live Chat Support
+                </h2>
+                <div className="flex items-center justify-between gap-3 min-w-0 mt-0.5">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <div
+                      className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
+                        sessionClosed
+                          ? "bg-gray-400"
+                          : isConnected
+                            ? "bg-green-500"
+                            : "bg-amber-500"
+                      }`}
+                    />
+                    <span className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                      {subtitle}
+                    </span>
+                  </div>
+                  {sessionId && (
+                    <button
+                      type="button"
+                      onClick={handleReopenChat}
+                      disabled={!sessionClosed || isReopening}
+                      className="inline-flex items-center justify-center gap-2 py-1.5 px-2.5 rounded-xl bg-[#1D8751] text-white text-xs font-medium hover:bg-[#166b42] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex-shrink-0"
+                    >
+                      {isReopening ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <RotateCcw className="w-3.5 h-3.5" />
+                      )}
+                      {isReopening ? "Reopening…" : "Reopen"}
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 sm:p-5 md:p-6 bg-gray-50 dark:bg-[#15161D] space-y-3">
-        {isCreatingSession && (
-          <div className="flex items-center justify-center h-full">
+        {statusBanner && (
+          <div className="py-2 bg-[#1D8751]/10 border-b border-[#1D8751]/20 text-sm text-[#166b42] dark:text-[#7dd89a] text-center -mx-3 sm:-mx-4 md:-mx-6 px-3 sm:px-4 md:px-6">
+            {statusBanner}
+          </div>
+        )}
+
+        {/* Reopen button is shown in header when closed */}
+
+        <div className="flex-1 overflow-y-auto py-3 sm:py-4 space-y-3 bg-gray-50 dark:bg-[#15161D] -mx-3 sm:-mx-4 md:-mx-6 px-3 sm:px-4 md:px-6 rounded-none">
+        {isCreatingSession ? (
+          <div className="flex items-center justify-center h-full min-h-[200px]">
             <div className="text-center">
               <Loader2 className="w-8 h-8 animate-spin text-[#1D8751] mx-auto mb-2" />
               <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -207,102 +309,99 @@ const LiveChatPage: React.FC = () => {
               </p>
             </div>
           </div>
-        )}
-
-        {!isCreatingSession && isLoadingHistory && (
-          <div className="flex items-center justify-center h-full">
+        ) : isLoadingHistory ? (
+          <div className="flex items-center justify-center h-full min-h-[200px]">
             <Loader2 className="w-6 h-6 animate-spin text-[#1D8751]" />
           </div>
-        )}
-
-        {!isCreatingSession && !isLoadingHistory && messages.length === 0 && (
-          <div className="flex items-center justify-center h-full">
+        ) : messages.length === 0 ? (
+          <div className="flex items-center justify-center h-full min-h-[200px]">
             <div className="text-center">
               <MessageCircle className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-3" />
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Start the conversation by sending a message
+                {sessionClosed
+                  ? "Reopen the chat to send new messages."
+                  : "Start the conversation by sending a message"}
               </p>
             </div>
           </div>
-        )}
+        ) : (
+          messages.map((message, index) => {
+            const isSystem =
+              message.sender_role === "system" ||
+              message.is_system_message === true ||
+              message.sender_name === "System";
+            const isCustomer =
+              !isSystem &&
+              (message.sender_role === "customer" ||
+                message.sender_role === "user");
+            const isSupport = !isSystem && !isCustomer;
 
-        {!isCreatingSession && !isLoadingHistory && messages.length > 0 && (
-          <>
-            {messages.map((message, index) => {
-              const isUser = message.sender_role === "user";
-              const isSystem = message.sender_name === "System";
-
-              return (
+            return (
+              <div
+                key={message.message_id || `${index}-${message.timestamp}`}
+                className={`flex ${
+                  isSystem ? "justify-center" : isCustomer ? "justify-end" : "justify-start"
+                }`}
+              >
                 <div
-                  key={index}
-                  className={`flex ${isUser ? "justify-end" : "justify-start"}`}
+                  className={`max-w-[85%] sm:max-w-[65%] rounded-2xl px-3 sm:px-4 py-2 ${
+                    isSystem
+                      ? "bg-amber-50 dark:bg-amber-900/25 text-amber-900 dark:text-amber-100 text-center border border-amber-200/60 dark:border-amber-800/40"
+                      : isCustomer
+                        ? "bg-[#1D8751] text-white rounded-br-md shadow-sm"
+                        : "bg-white dark:bg-[#2A3441] text-gray-900 dark:text-white border border-slate-200 dark:border-slate-600 rounded-bl-md shadow-sm"
+                  }`}
                 >
-                  <div
-                    className={`relative max-w-[80%] sm:max-w-[65%] rounded-2xl px-3.5 sm:px-4 py-2 sm:py-2.5 shadow-sm ${
-                      isSystem
-                        ? "bg-yellow-50 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200 mx-auto text-center border border-yellow-100/70 dark:border-yellow-800/40"
-                        : isUser
-                        ? "bg-[#1D8751] text-white shadow-md rounded-br-sm"
-                        : "bg-white dark:bg-[#2A2A2A] text-gray-900 dark:text-white border border-gray-200 dark:border-[#35353E] rounded-bl-sm"
-                    }`}
-                  >
-                    {!isSystem && (
-                      <div className="flex items-center justify-between gap-2 mb-1">
-                        <div
-                          className={`text-xs font-semibold truncate ${
-                            isUser
-                              ? "text-white/90"
-                              : "text-gray-600 dark:text-gray-300"
-                          }`}
-                        >
-                          {message.sender_name}
-                        </div>
-                        <div
-                          className={`text-[10px] sm:text-xs whitespace-nowrap ${
-                            isUser
-                              ? "text-white/60"
-                              : "text-gray-400 dark:text-gray-500"
-                          }`}
-                        >
-                          {formatTime(message.timestamp)}
-                        </div>
-                      </div>
-                    )}
+                  {!isSystem && (
                     <div
-                      className={`text-sm whitespace-pre-wrap break-words leading-relaxed ${
-                        isSystem ? "mt-0.5" : ""
+                      className={`text-[10px] sm:text-xs font-semibold uppercase tracking-wide mb-1 ${
+                        isCustomer
+                          ? "text-white/85 text-right"
+                          : "text-[#2563eb] dark:text-sky-400"
                       }`}
                     >
-                      {message.message}
+                      {isCustomer ? "You" : "Support"}
+                      {isSupport && message.sender_name && message.sender_name !== "Support" ? (
+                        <span className="font-normal normal-case text-gray-600 dark:text-gray-300 ml-1">
+                          · {message.sender_name}
+                        </span>
+                      ) : null}
                     </div>
-
-                    {isSystem && (
-                      <div className="text-[11px] mt-1.5 text-yellow-700 dark:text-yellow-300/90">
-                        {formatTime(message.timestamp)}
-                      </div>
-                    )}
+                  )}
+                  <div className="text-sm whitespace-pre-wrap break-words leading-relaxed">
+                    {message.message}
+                  </div>
+                  <div
+                    className={`text-[10px] sm:text-xs mt-1 ${
+                      isSystem
+                        ? "text-amber-700 dark:text-amber-300"
+                        : isCustomer
+                          ? "text-white/70 text-right"
+                          : "text-slate-500 dark:text-slate-400"
+                    }`}
+                  >
+                    {formatTime(message.timestamp)}
                   </div>
                 </div>
-              );
-            })}
-          </>
+              </div>
+            );
+          })
         )}
 
-        {/* Typing Indicator */}
-        {isTyping?.isTyping && (
+        {isTyping?.isTyping && !sessionClosed && (
           <div className="flex justify-start">
-            <div className="bg-white dark:bg-[#2A2A2A] rounded-xl px-3 py-1.5 border border-gray-200 dark:border-[#35353E]">
+            <div className="bg-white dark:bg-[#2A3441] rounded-xl px-3 py-1.5 border border-slate-200 dark:border-slate-600">
               <div className="flex items-center gap-1">
-                <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" />
+                <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" />
                 <div
-                  className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"
+                  className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce"
                   style={{ animationDelay: "0.1s" }}
                 />
                 <div
-                  className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"
+                  className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce"
                   style={{ animationDelay: "0.2s" }}
                 />
-                <span className="text-xs text-gray-500 dark:text-gray-400 ml-1.5">
+                <span className="text-xs text-slate-500 dark:text-slate-400 ml-1.5">
                   {isTyping.userName} is typing...
                 </span>
               </div>
@@ -311,46 +410,46 @@ const LiveChatPage: React.FC = () => {
         )}
 
         <div ref={messagesEndRef} />
-      </div>
+        </div>
 
-      {/* Input Area */}
-      <div className="border-t border-gray-200 dark:border-[#35353E] p-4 sm:p-5 md:p-6 bg-white dark:bg-[#1D1D23]">
-        {connectionFailed && (
-          <div className="flex items-center justify-between gap-3 mb-2 px-3 py-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50">
-            <p className="text-sm text-amber-800 dark:text-amber-200">Could not connect. Please try again.</p>
-            <button
-              type="button"
-              onClick={retryConnection}
-              className="shrink-0 px-3 py-1.5 text-sm font-medium text-amber-800 dark:text-amber-200 bg-amber-100 dark:bg-amber-900/40 hover:bg-amber-200 dark:hover:bg-amber-900/60 rounded-lg transition-colors"
-            >
-              Retry
-            </button>
-          </div>
-        )}
-        <div className="flex gap-2 w-full items-end">
+        <div className="border-t border-gray-200 dark:border-[#35353E] py-2.5 sm:py-3 bg-white dark:bg-[#1D1D23] sticky bottom-0 -mx-3 sm:-mx-4 md:-mx-6 px-3 sm:px-4 md:px-6">
+          <div className="flex gap-2 w-full items-end">
           <textarea
             value={messageInput}
             onChange={(e) => setMessageInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={isCreatingSession ? "Starting session..." : !isConnected ? "Connecting..." : "Type your message..."}
-            disabled={isCreatingSession}
+            onKeyDown={handleKeyPress}
+            placeholder={
+              sessionClosed
+                ? "Reopen chat to send messages…"
+                : "Type your message..."
+            }
+            disabled={!isConnected || isCreatingSession || sessionClosed}
             rows={1}
             className="flex-1 px-3 sm:px-4 py-2 border border-gray-300 dark:border-[#35353E] rounded-lg resize-none focus:ring-2 focus:ring-[#1D8751] focus:border-transparent outline-none bg-white dark:bg-[#2A2A2A] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base min-h-[40px] max-h-[120px] overflow-y-auto"
-            style={{ height: 'auto' }}
+            style={{ height: "auto" }}
             onInput={(e) => {
               const target = e.target as HTMLTextAreaElement;
-              target.style.height = 'auto';
+              target.style.height = "auto";
               target.style.height = `${Math.min(target.scrollHeight, 120)}px`;
             }}
           />
           <button
+            type="button"
             onClick={handleSendMessage}
-            disabled={!messageInput.trim() || !isConnected || isCreatingSession}
+            disabled={
+              !messageInput.trim() ||
+              !isConnected ||
+              isCreatingSession ||
+              sessionClosed
+            }
             className="px-3 sm:px-4 py-2 h-[40px] bg-[#1D8751] text-white rounded-lg hover:bg-[#166b42] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center flex-shrink-0"
-            aria-label={!isConnected ? "Connecting..." : "Send message"}
-            title={!isConnected ? "Waiting for connection" : "Send message"}
+            aria-label="Send message"
           >
-            <Send className="w-4 h-4 sm:w-5 sm:h-5" />
+            {isConnected && !sessionClosed ? (
+              <Send className="w-4 h-4 sm:w-5 sm:h-5" />
+            ) : (
+              <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin opacity-50" />
+            )}
           </button>
         </div>
       </div>
@@ -360,4 +459,3 @@ const LiveChatPage: React.FC = () => {
 };
 
 export default LiveChatPage;
-
