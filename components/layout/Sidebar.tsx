@@ -10,6 +10,7 @@ import Link from "next/link";
 import clsx from "clsx";
 import { navItems } from "@/utils/data";
 import { useTheme } from "@/context/theme";
+import { markExpressCancelled } from "@/features/express/utils/cancelExpressWork";
 
 const NAV_LABEL_FALLBACKS: Record<string, string> = {
   "navigation.dashboard": "DASHBOARD",
@@ -41,6 +42,8 @@ export default function Sidebar() {
   const { isDark } = useTheme();
 
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    // Immediately cancel any ongoing Express work (estimates, commissions, etc.)
+    markExpressCancelled();
     // Allow dashboard access for all users (verified and unverified)
     if (href === "/dashboard/" || href === "/dashboard") {
       return; // Allow navigation
@@ -81,7 +84,7 @@ export default function Sidebar() {
       return false;
     }
 
-    // Allow navigation for verified users, unauthenticated users, and users with undefined verification status
+    // Let Next.js / Link handle SPA navigation normally (no forced full reload here)
   };
 
   return (

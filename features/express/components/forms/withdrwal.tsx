@@ -64,6 +64,10 @@ import {
 import { openKYCModal, checkKYCStatus } from "@/features/auth/slices/authSlice";
 import { bookmarkedAddressesApi } from "@/features/express/services/bookmarkedAddressesApi";
 import { withTimeout } from "@/features/express/utils/fetchWithTimeout";
+import {
+  AssetDropdownVirtualized,
+  buildAssetDropdownRows,
+} from "./AssetDropdownVirtualized";
 
 // Add UserPaymentDetail interface
 interface UserPaymentDetail {
@@ -557,23 +561,6 @@ export default function WithdrawalForm({
   const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
 
 
-
-  // Debug function to test asset fetching
-  const handleDebugAssets = async () => {
-    try {
-      await withTimeout(dispatch(fetchAssets(true)).unwrap(), 15_000);
-      await withTimeout(dispatch(fetchSupportedAssets(true)).unwrap(), 15_000);
-    } catch (error) {
-    }
-  };
-
-  const handleForceRefreshAssets = async () => {
-    try {
-      await withTimeout(dispatch(fetchSupportedAssets(true)).unwrap(), 15_000);
-    } catch (error) {
-    }
-  };
-
   const [payAmount, setPayAmount] = useState(initialState?.amountValue ?? 100);
   const [payBank, setPayBank] = useState(
     initialState?.paymentDetails?.[0]?.payment_provider_name || ""
@@ -663,6 +650,7 @@ export default function WithdrawalForm({
   const [apiCommission, setApiCommission] = useState<number | null>(null);
   const [exchangeLookupResponse, setExchangeLookupResponse] = useState<ExchangeCommissionLookupResponse | null>(null);
   const commissionFetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isMountedRef = useRef(true);
 
   const updateAssetDropdownPosition = useCallback(() => {
     if (!assetDropdownRef.current) {
@@ -782,6 +770,7 @@ export default function WithdrawalForm({
   const [estimateCache, setEstimateCache] = useState<
     Map<string, { data: any; timestamp: number }>
   >(new Map());
+  const estimateRequestSeqRef = useRef(0);
 
   // Cache duration in milliseconds (5 minutes)
   const CACHE_DURATION = 5 * 60 * 1000;
@@ -1697,7 +1686,7 @@ export default function WithdrawalForm({
     return null; // No error
   };
 
-  // Fetch estimate for non-direct assets with debouncing for better performance
+  // Manual estimate trigger for non-direct assets (avoids blocking navigation on every keystroke)
   useEffect(() => {
     // Clear any existing estimate timeout
     if (estimateTimeout) {
@@ -1710,13 +1699,16 @@ export default function WithdrawalForm({
       !isForexAsset(selectedAsset) && // Skip FXP - uses manual calculation
       payAmount &&
       payAmount > 0 &&
-      isCalculatingFromPay // Only fetch estimate when calculating from pay amount
+      estimateRequestSeqRef.current > 0 // only after user explicitly triggered
     ) {
+      const requestSeq = ++estimateRequestSeqRef.current;
+
       // Check cache first - if found and valid, use immediately without any loading states
       const cacheKey = `${selectedAsset.ticker?.toUpperCase()}_${selectedAsset.network}_${payAmount}`;
       const cachedEntry = estimateCache.get(cacheKey);
 
       if (cachedEntry && isCacheValid(cachedEntry.timestamp)) {
+        if (!isMountedRef.current || requestSeq !== estimateRequestSeqRef.current) return;
         setEstimate(cachedEntry.data);
         setCalculationError(null); // Clear any previous errors
         setApiValidationError(null);
@@ -1724,39 +1716,14 @@ export default function WithdrawalForm({
         return;
       }
 
-      // Set loading state immediately for visual feedback (only if no API validation errors)
+      // Keep loading indicators minimal to avoid heavy re-renders while navigating
       if (!apiValidationError) {
         setEstimateLoading(true);
         setEstimateError(null);
-        setIsCalculating(true);
-        setIsCalculatingReceive(true);
-      }
-
-      // For non-simple assets, don't show fallback calculation - go directly to API
-      // Keep field empty during calculation - no intermediate values
-      setGetAmount(0);
-      setGetAmountInput("");
-      if (!apiValidationError) {
-        setReceiveAmountError("Calculating..."); // Show immediate feedback
       }
 
       // Minimal debounce to prevent rapid duplicate requests but keep UI responsive
       const debounceTimeout = setTimeout(() => {
-        // Set a timeout to prevent infinite loading
-        const timeoutId = setTimeout(() => {
-          setEstimateLoading(false);
-          setEstimateError("Request timed out");
-
-          // Keep loading state instead of showing fallback
-          setGetAmount(0);
-          setGetAmountInput("");
-          if (!apiValidationError) {
-            if (!apiValidationError) {
-              setReceiveAmountError("Calculating..."); // Show immediate feedback
-            }
-          }
-          // Keep loading states active
-        }, 1500); // Ultra-fast 1.5 second timeout for immediate response
         dispatch(
           fetchSwapEstimate({
             toCurrency: "USDT",
@@ -1768,7 +1735,7 @@ export default function WithdrawalForm({
           })
         )
           .then((result) => {
-            clearTimeout(timeoutId); // Clear timeout on success
+            if (!isMountedRef.current || requestSeq !== estimateRequestSeqRef.current) return;
             if (result.payload) {
               setEstimate(result.payload);
               setCalculationError(null); // Clear any previous errors
@@ -1797,7 +1764,7 @@ export default function WithdrawalForm({
             }
           })
           .catch((error) => {
-            clearTimeout(timeoutId); // Clear timeout on error
+            if (!isMountedRef.current || requestSeq !== estimateRequestSeqRef.current) return;
             // Handle API validation errors for receive amount
             if (
               error.response?.data?.error ||
@@ -1829,10 +1796,6 @@ export default function WithdrawalForm({
                   setReceiveAmountError(
                     "Ensure that there are no more than 8 decimal places."
                   );
-                  // Stop loading states and show error
-                  setEstimateLoading(false);
-                  setIsCalculating(false);
-                  setIsCalculatingReceive(false);
                   // Don't clear the input - let user see their value and fix it
                   return;
                 }
@@ -1847,10 +1810,6 @@ export default function WithdrawalForm({
                   setReceiveAmountError(
                     "Ensure that there are no more than 12 digits before the decimal point."
                   );
-                  // Stop loading states and show error
-                  setEstimateLoading(false);
-                  setIsCalculating(false);
-                  setIsCalculatingReceive(false);
                   // Don't clear the input - let user see their value and fix it
                   return;
                 }
@@ -1863,10 +1822,6 @@ export default function WithdrawalForm({
                   setReceiveAmountError(
                     "Amount is too small. Please enter a larger amount to proceed."
                   );
-                  // Stop loading states and show error
-                  setEstimateLoading(false);
-                  setIsCalculating(false);
-                  setIsCalculatingReceive(false);
                   // Don't clear the input - let user see their value and fix it
                   return;
                 }
@@ -1879,10 +1834,6 @@ export default function WithdrawalForm({
                   setReceiveAmountError(
                     "Amount is too large. Please decrease the amount."
                   );
-                  // Stop loading states and show error
-                  setEstimateLoading(false);
-                  setIsCalculating(false);
-                  setIsCalculatingReceive(false);
                   // Don't clear the input - let user see their value and fix it
                   return;
                 }
@@ -1972,9 +1923,7 @@ export default function WithdrawalForm({
             setEstimateError(errorMessage);
             setCalculationError(errorMessage); // Show error below "You Send" input
 
-            // Keep loading state instead of showing fallback
-            setGetAmount(0);
-            setGetAmountInput("");
+            // Keep loading state instead of showing fallback (don't clear inputs)
             if (!apiValidationError) {
               if (!apiValidationError) {
                 setReceiveAmountError("Calculating..."); // Show immediate feedback
@@ -1983,9 +1932,10 @@ export default function WithdrawalForm({
             // Keep loading states active
           })
           .finally(() => {
+            if (!isMountedRef.current || requestSeq !== estimateRequestSeqRef.current) return;
             setEstimateLoading(false);
           });
-      }, 50); // 50ms debounce for immediate response while preventing duplicate calls
+      }, 250); // reduce UI churn while typing
 
       setEstimateTimeout(debounceTimeout);
     } else if (
@@ -2337,23 +2287,23 @@ export default function WithdrawalForm({
     }
   }, [selectedAsset, getAmount, isCalculatingFromPay, apiValidationError]);
 
-  // Filter swap assets based on search term - search by ticker and name
-  const filteredSwapAssets =
-    assetsDisplay.displayData?.filter((asset: SupportedAsset) => {
+  // Filter + sort only when data or search changes (not on every keystroke elsewhere)
+  const filteredSwapAssets = useMemo(() => {
+    const data = assetsDisplay.displayData;
+    if (!data?.length) return [] as SupportedAsset[];
+    const term = assetSearchTerm.toUpperCase();
+    if (!term) return data as SupportedAsset[];
+    return (data as SupportedAsset[]).filter((asset: SupportedAsset) => {
       const ticker = asset?.ticker?.toUpperCase() || "";
       const name = asset?.name?.toUpperCase() || "";
       const symbol = asset?.symbol?.toUpperCase() || "";
-      const searchTerm = assetSearchTerm.toUpperCase();
-
       return (
-        ticker.includes(searchTerm) ||
-        name.includes(searchTerm) ||
-        symbol.includes(searchTerm)
+        ticker.includes(term) || name.includes(term) || symbol.includes(term)
       );
-    }) || [];
+    });
+  }, [assetsDisplay.displayData, assetSearchTerm]);
 
-  // Sort assets: USDT on BSC, USDC on BSC, fxprimus, then rest in original order
-  const sortedSwapAssets = [...filteredSwapAssets].sort((a, b) => {
+  const sortedSwapAssets = useMemo(() => [...filteredSwapAssets].sort((a, b) => {
     // Ensure tickers exist and are strings (using ticker as primary, fallback to symbol/name)
     const tickerA = (a?.ticker || a?.symbol || a?.name || "")
       .toString()
@@ -2412,7 +2362,7 @@ export default function WithdrawalForm({
 
     // Default: preserve original order (no change)
     return 0;
-  });
+  }), [filteredSwapAssets]);
 
   const whitelistKeys = useMemo(() => {
     const keys = new Set<string>();
@@ -2449,487 +2399,21 @@ export default function WithdrawalForm({
     });
   }, [assetSearchTerm, sortedSwapAssets, whitelistKeySet]);
 
-  const renderAssetDropdown = () => {
-    if (!isComponentMounted || !isAssetDropdownOpen) {
-      return null;
-    }
-
-    const assetDropdownElement = assetDropdownRef.current;
-    let dropdownStyle: React.CSSProperties;
-
-    // Use simple absolute positioning for dashboard (like deposit form)
-    // Use complex fixed positioning for home page
-    if (!isHomePage && assetDropdownElement) {
-      // Dashboard: Simple absolute positioning relative to dropdown element
-      dropdownStyle = {
-        position: "absolute",
-        top: assetDropdownPosition.top,
-        left: assetDropdownPosition.left,
-        width: assetDropdownPosition.width || assetDropdownElement.offsetWidth || undefined,
-      };
-    } else {
-      // Home page: Complex fixed positioning logic
-      const viewportWidth = typeof window !== "undefined" ? window.innerWidth : 0;
-      const minMargin = 16;
-      const minWidth = 280;
-      const maxWidth = 450;
-
-      // Find the card that contains the asset dropdown trigger
-      let currentCard: Element | null = null;
-
-      if (assetDropdownElement) {
-        // Traverse up the DOM to find the parent card
-        let parent = assetDropdownElement.parentElement;
-        while (parent) {
-          if (parent.hasAttribute('data-asset-card') || parent.hasAttribute('data-select-card')) {
-            currentCard = parent;
-            break;
-          }
-          parent = parent.parentElement;
-        }
-      }
-
-      // Fallback to first card if we can't find the current card
-      if (!currentCard) {
-        currentCard = document.querySelector("[data-select-card='true']") ||
-          document.querySelector("[data-asset-card='true']");
-      }
-
-      dropdownStyle = {
-        position: "fixed",
-        top: 200,
-        left: (viewportWidth - minWidth) / 2,
-        width: minWidth,
-      };
-
-      if (currentCard && assetDropdownElement) {
-        const cardRect = currentCard.getBoundingClientRect();
-        const dropdownRect = assetDropdownElement.getBoundingClientRect();
-
-        // Check if this is "You Send" section (has data-asset-card) or "You Receive" section
-        // "You Send" has both data-asset-card and data-select-card
-        // "You Receive" has only data-select-card
-        const isYouSend = currentCard.hasAttribute('data-asset-card');
-
-        // Calculate reduced width so dropdowns don't cover amount inputs (40% of card width)
-        let desiredWidth = Math.min(maxWidth, Math.max(minWidth, cardRect.width * 0.4));
-
-        // Position dropdown vertically based on section
-        let top = cardRect.top - 45; // default: above the card
-        if (isYouSend) {
-          top = cardRect.top + 1; // push "You Send" asset dropdown down a little more
-        } else {
-          // "You Receive" section - pushed down significantly below the card bottom
-          top = cardRect.bottom + 20; // Push "You Receive" dropdown down by 20px below card bottom
-        }
-
-        let left: number;
-
-        // Both "You Send" and "You Receive" - position from right side of card, pushed more right
-        // Position it very close to the right edge
-        left = cardRect.right - desiredWidth - 3; // 3px from right edge of card
-
-        // Push "You Send" dropdown further to the right
-        if (isYouSend) {
-          left += 18; // additional right offset for "You Send"
-        } else {
-          // Push "You Receive" dropdown to the right a little more
-          left += 40; // additional right offset for "You Receive"
-        }
-
-        // Ensure it doesn't go off the left edge
-        if (left < cardRect.left) {
-          left = cardRect.left;
-        }
-
-        // Ensure it doesn't go off screen on the right
-        if (left + desiredWidth > viewportWidth - minMargin) {
-          left = viewportWidth - desiredWidth - minMargin;
-        }
-
-        // Ensure it doesn't go off the left edge
-        if (left < minMargin) {
-          left = minMargin;
-        }
-
-        // If card is too narrow, center it
-        if (cardRect.width < desiredWidth + 16) {
-          left = cardRect.left + (cardRect.width - desiredWidth) / 2;
-        }
-
-        // Final boundary check to ensure it doesn't go off screen
-        if (left + desiredWidth > viewportWidth - minMargin) {
-          left = viewportWidth - desiredWidth - minMargin;
-        }
-
-        dropdownStyle = {
-          position: "fixed",
-          top,
-          left,
-          width: desiredWidth,
-        };
-      }
-    }
-
-    return createPortal(
-      (
-        <div
-          ref={assetDropdownContentRef}
-          className="mt-1 bg-[#ffffff] dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-2xl shadow-lg z-[1200]"
-          style={dropdownStyle}
-        >
-          {/* Search Input */}
-          <div className="p-3 border-b border-[#A2A4A9FF] dark:border-[#35353E]">
-            <div className="relative">
-              <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#7e7e8f] w-4 h-4" />
-              <input
-                type="text"
-                placeholder="Type a currency"
-                className="w-full text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 rounded-xl px-10 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400"
-                value={assetSearchTerm}
-                onChange={(e) => setAssetSearchTerm(e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div className="max-h-60 overflow-y-auto">
-            {sortedSwapAssets.length > 0 ? (
-              <>
-                {!assetSearchTerm && sortedSwapAssets.length > 3 && (
-                  <>
-                    <div className="px-3 py-2 bg-[#F5F6F7] dark:bg-[#23232B] border-b border-[#A2A4A9FF] dark:border-[#35353E]">
-                      <span className="text-xs font-semibold text-[#788099] uppercase tracking-wider">
-                        Popular
-                      </span>
-                    </div>
-                    {sortedSwapAssets
-                      .slice(0, 3)
-                      .map((asset: SupportedAsset, index: number) => {
-                        const handleAssetClick = () => {
-                          if (calculationTimeout) {
-                            clearTimeout(calculationTimeout);
-                          }
-                          if (estimateTimeout) {
-                            clearTimeout(estimateTimeout);
-                          }
-
-                          setEstimate(null);
-                          setEstimateError(null);
-                          setEstimateLoading(false);
-                          setCalculationError(null);
-                          setReceiveAmountError(null);
-                          setApiValidationError(null);
-                          setApiValidationError(null);
-
-                          setSelectedAsset(asset);
-                          setIsAssetDropdownOpen(false);
-                          setAssetSearchTerm("");
-
-                          if (isSimpleCalculationAsset(asset)) {
-                            setIsCalculatingFromPay(true);
-                            if (!isUserModifiedAmount) {
-                              const defaultAmount = getDefaultAmount(asset);
-                              setPayAmount(defaultAmount);
-                              setPayAmountInput(defaultAmount.toString());
-                              calculateAmounts(defaultAmount, true);
-                            } else {
-                              calculateAmounts(payAmount, true);
-                            }
-                          } else if (isForexAsset(asset)) {
-                            setIsCalculatingFromPay(true);
-                            if (!isUserModifiedAmount) {
-                              const defaultAmount = 1000;
-                              setPayAmount(defaultAmount);
-                              setPayAmountInput(defaultAmount.toString());
-                              calculateAmounts(defaultAmount, true);
-                            } else {
-                              calculateAmounts(payAmount, true);
-                            }
-                          } else {
-                            setIsCalculatingFromPay(true);
-                            setIsCalculating(true);
-                            setIsCalculatingReceive(true);
-                            setEstimateLoading(true);
-                            if (!isUserModifiedAmount) {
-                              const defaultAmount = getDefaultAmount(asset);
-                              setPayAmount(defaultAmount);
-                              setPayAmountInput(defaultAmount.toString());
-                            }
-                          }
-                        };
-
-                        return (
-                          <div
-                            key={`popular-${asset.asset_id}-${asset.ticker}-${asset.network}-${index}`}
-                            className={`flex items-center gap-3 p-3 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E] transition-colors duration-150 ${selectedAsset?.asset_id === asset.asset_id ? "bg-blue-50 dark:bg-blue-900/20" : ""}`}
-                            onClick={handleAssetClick}
-                          >
-                            <img
-                              src={
-                                asset?.image_url ||
-                                asset?.asset_image ||
-                                (asset as any)?.image ||
-                                "/images/tether.svg"
-                              }
-                              alt={
-                                asset?.name ||
-                                asset?.ticker ||
-                                asset?.symbol ||
-                                "Asset"
-                              }
-                              className="w-10 h-10 rounded-full object-cover"
-                              onError={(e) => {
-                                e.currentTarget.src =
-                                  "/images/tether.svg";
-                              }}
-                            />
-                            <div className="flex-1">
-                              <div className="text-[#1F2937] dark:text-[#ffffff] font-medium text-base flex items-center gap-2">
-                                {(asset.ticker ||
-                                  asset.symbol ||
-                                  asset.name ||
-                                  "Unknown"
-                                ).toUpperCase()}
-                                <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-normal px-2 py-0.5 rounded-full">
-                                  {getNetworkDisplayName(asset.network)}
-                                </span>
-                              </div>
-                              <div className="text-sm text-gray-500 dark:text-gray-400">
-                                {asset.name ||
-                                  (asset.ticker || "").toUpperCase() ||
-                                  (asset.symbol || "").toUpperCase() ||
-                                  "Unknown Asset"}
-                                {asset.legacy_ticker && (
-                                  <span className="text-xs text-[#f7c624] dark:text-[#f7c624] bg-[#f7c6241a] px-1 py-0.5 rounded-full">
-                                    {asset.legacy_ticker}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                            {selectedAsset?.asset_id === asset.asset_id && (
-                              <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
-                            )}
-                          </div>
-                        );
-                      })}
-
-                    {whitelistAssets.length > 0 && (
-                      <>
-                        <div className="px-3 py-2 bg-[#F5F6F7] dark:bg-[#23232B] border-b border-[#A2A4A9FF] dark:border-[#35353E]">
-                          <span className="text-xs font-semibold text-[#788099] uppercase tracking-wider">
-                            Whitelist
-                          </span>
-                        </div>
-                        {whitelistAssets.map((asset: SupportedAsset, index: number) => {
-                          const handleAssetClick = () => {
-                            if (calculationTimeout) clearTimeout(calculationTimeout);
-                            if (estimateTimeout) clearTimeout(estimateTimeout);
-                            setEstimate(null);
-                            setEstimateError(null);
-                            setEstimateLoading(false);
-                            setCalculationError(null);
-                            setReceiveAmountError(null);
-                            setApiValidationError(null);
-                            setSelectedAsset(asset);
-                            setIsAssetDropdownOpen(false);
-                            setAssetSearchTerm("");
-                            if (isSimpleCalculationAsset(asset)) {
-                              setIsCalculatingFromPay(true);
-                              if (!isUserModifiedAmount) {
-                                const defaultAmount = getDefaultAmount(asset);
-                                setPayAmount(defaultAmount);
-                                setPayAmountInput(defaultAmount.toString());
-                                calculateAmounts(defaultAmount, true);
-                              } else {
-                                calculateAmounts(payAmount, true);
-                              }
-                            } else if (isForexAsset(asset)) {
-                              setIsCalculatingFromPay(true);
-                              if (!isUserModifiedAmount) {
-                                const defaultAmount = 1000;
-                                setPayAmount(defaultAmount);
-                                setPayAmountInput(defaultAmount.toString());
-                                calculateAmounts(defaultAmount, true);
-                              } else {
-                                calculateAmounts(payAmount, true);
-                              }
-                            } else {
-                              setIsCalculatingFromPay(true);
-                              setIsCalculating(true);
-                              setIsCalculatingReceive(true);
-                              setEstimateLoading(true);
-                              if (!isUserModifiedAmount) {
-                                const defaultAmount = getDefaultAmount(asset);
-                                setPayAmount(defaultAmount);
-                                setPayAmountInput(defaultAmount.toString());
-                              }
-                            }
-                          };
-                          return (
-                            <div
-                              key={`whitelist-${asset.asset_id}-${asset.ticker}-${asset.network}-${index}`}
-                              className={`flex items-center gap-3 p-3 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E] transition-colors duration-150 ${selectedAsset?.asset_id === asset.asset_id ? "bg-blue-50 dark:bg-blue-900/20" : ""}`}
-                              onClick={handleAssetClick}
-                            >
-                              <img
-                                src={asset?.image_url || asset?.asset_image || (asset as any)?.image || "/images/tether.svg"}
-                                alt={asset?.name || asset?.ticker || asset?.symbol || "Asset"}
-                                className="w-10 h-10 rounded-full object-cover"
-                                onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/images/tether.svg"; }}
-                              />
-                              <div className="flex-1">
-                                <div className="text-[#1F2937] dark:text-[#ffffff] font-medium text-base flex items-center gap-2">
-                                  {(asset.ticker || asset.symbol || asset.name || "Unknown").toUpperCase()}
-                                  <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-normal px-2 py-0.5 rounded-full">
-                                    {getNetworkDisplayName(asset.network)}
-                                  </span>
-                                </div>
-                                <div className="text-sm text-gray-500 dark:text-gray-400">
-                                  {asset.name || (asset.ticker || "").toUpperCase() || (asset.symbol || "").toUpperCase() || "Unknown Asset"}
-                                  {asset.legacy_ticker && (
-                                    <span className="text-xs text-[#f7c624] dark:text-[#f7c624] bg-[#f7c6241a] px-1 py-0.5 rounded-full">
-                                      {asset.legacy_ticker}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                              {selectedAsset?.asset_id === asset.asset_id && (
-                                <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </>
-                    )}
-
-                    <div className="border-t-2 border-[#D1D2D4FF] dark:border-[#35353E]"></div>
-
-                    <div className="px-3 py-2 bg-[#F5F6F7] dark:bg-[#23232B] border-b border-[#A2A4A9FF] dark:border-[#35353E]">
-                      <span className="text-xs font-semibold text-[#788099] uppercase tracking-wider">
-                        All Assets
-                      </span>
-                    </div>
-                  </>
-                )}
-
-                {allAssetsList.map((asset: SupportedAsset, index: number) => {
-                  const isCurrentlySelected =
-                    selectedAsset?.ticker === asset.ticker &&
-                    selectedAsset?.network === asset.network;
-                  return (
-                    <div
-                      key={`${asset.asset_id}-${asset.ticker}-${asset.network}-${index}`}
-                      className={`flex items-center gap-3 p-3 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-b transition-all duration-150 last:border-b-0 ${isCurrentlySelected ? "bg-blue-50 dark:bg-blue-900/20" : ""}`}
-                      onClick={() => {
-                        if (calculationTimeout) {
-                          clearTimeout(calculationTimeout);
-                        }
-                        if (estimateTimeout) {
-                          clearTimeout(estimateTimeout);
-                        }
-
-                        setEstimate(null);
-                        setEstimateError(null);
-                        setEstimateLoading(false);
-                        setCalculationError(null);
-                        setReceiveAmountError(null);
-                        setApiValidationError(null);
-                        setApiValidationError(null);
-
-                        setSelectedAsset(asset);
-                        setIsAssetDropdownOpen(false);
-                        setAssetSearchTerm("");
-
-                        if (isSimpleCalculationAsset(asset)) {
-                          setIsCalculatingFromPay(true);
-                          if (!isUserModifiedAmount) {
-                            const defaultAmount = getDefaultAmount(asset);
-                            setPayAmount(defaultAmount);
-                            setPayAmountInput(defaultAmount.toString());
-                            calculateAmounts(defaultAmount, true);
-                          } else {
-                            calculateAmounts(payAmount, true);
-                          }
-                        } else if (isForexAsset(asset)) {
-                          setIsCalculatingFromPay(true);
-                          if (!isUserModifiedAmount) {
-                            const defaultAmount = 1000;
-                            setPayAmount(defaultAmount);
-                            setPayAmountInput(defaultAmount.toString());
-                            calculateAmounts(defaultAmount, true);
-                          } else {
-                            calculateAmounts(payAmount, true);
-                          }
-                        } else {
-                          setIsCalculatingFromPay(true);
-                          setIsCalculating(true);
-                          setIsCalculatingReceive(true);
-                          setEstimateLoading(true);
-                          if (!isUserModifiedAmount) {
-                            const defaultAmount = getDefaultAmount(asset);
-                            setPayAmount(defaultAmount);
-                            setPayAmountInput(defaultAmount.toString());
-                          }
-                        }
-                      }}
-                    >
-                      <img
-                        src={
-                          asset?.image_url ||
-                          asset?.asset_image ||
-                          (asset as any)?.image ||
-                          "/images/tether.svg"
-                        }
-                        alt={
-                          asset?.name || asset?.ticker || asset?.symbol || "Asset"
-                        }
-                        className="w-10 h-10 rounded-full object-cover"
-                        onError={(e) => {
-                          e.currentTarget.src =
-                            "/images/tether.svg";
-                        }}
-                      />
-                      <div className="flex-1">
-                        <div className="text-[#1F2937] dark:text-[#ffffff] font-medium text-base flex items-center gap-2">
-                          {(asset.ticker ||
-                            asset.symbol ||
-                            asset.name ||
-                            "Unknown"
-                          ).toUpperCase()}
-                          <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-normal px-2 py-0.5 rounded-full">
-                            {getNetworkDisplayName(asset.network)}
-                          </span>
-                        </div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">
-                          {asset.name ||
-                            (asset.ticker || "").toUpperCase() ||
-                            (asset.symbol || "").toUpperCase() ||
-                            "Unknown Asset"}
-                          {asset.legacy_ticker && (
-                            <span className="text-xs text-[#f7c624] dark:text-[#f7c624] bg-[#f7c6241a] px-1 py-0.5 rounded-full">
-                              {asset.legacy_ticker}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      {selectedAsset?.asset_id === asset.asset_id && (
-                        <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
-                      )}
-                    </div>
-                  );
-                })}
-              </>
-            ) : (
-              <div className="p-4 text-center text-[#7e7e8f] dark:text-[#788099]">
-                {assetSearchTerm ? "No assets found" : "No assets available"}
-              </div>
-            )}
-          </div>
-        </div>
+  const assetDropdownRows = useMemo(
+    () =>
+      buildAssetDropdownRows(
+        sortedSwapAssets,
+        assetSearchTerm,
+        whitelistAssets,
+        allAssetsList
       ),
-      document.body
-    );
-  };
+    [
+      sortedSwapAssets,
+      assetSearchTerm,
+      whitelistAssets,
+      allAssetsList,
+    ]
+  );
 
   // Calculate fees and amounts - Network fee is always 0 for BEP20
   const networkFee = 0;
@@ -3038,8 +2522,9 @@ export default function WithdrawalForm({
       setIsCalculatingReceive(true);
     }
 
-    // Debounce calculation to prevent rapid updates
+    // Debounce calculation to prevent rapid updates (avoid 1ms queues that can delay clicks/navigation)
     const timeout = setTimeout(() => {
+      if (!isMountedRef.current) return;
       if (!selectedAsset) {
         setIsCalculating(false);
         setIsCalculatingReceive(false);
@@ -3164,12 +2649,185 @@ export default function WithdrawalForm({
 
         // Reset completion status after a short delay
         setTimeout(() => {
-          setCalculationComplete(false);
+          if (isMountedRef.current) setCalculationComplete(false);
         }, 2000);
       }
-    }, 1); // Ultra-fast 1ms debounce for immediate response
+    }, 200); // 200ms debounce keeps UI responsive
 
     setCalculationTimeout(timeout);
+  };
+
+  const renderAssetDropdown = () => {
+    if (!isComponentMounted || !isAssetDropdownOpen) {
+      return null;
+    }
+
+    const assetDropdownElement = assetDropdownRef.current;
+    let dropdownStyle: React.CSSProperties;
+
+    if (!isHomePage && assetDropdownElement) {
+      dropdownStyle = {
+        position: "absolute",
+        top: assetDropdownPosition.top,
+        left: assetDropdownPosition.left,
+        width:
+          assetDropdownPosition.width ||
+          assetDropdownElement.offsetWidth ||
+          undefined,
+      };
+    } else {
+      const viewportWidth =
+        typeof window !== "undefined" ? window.innerWidth : 0;
+      const minMargin = 16;
+      const minWidth = 280;
+      const maxWidth = 450;
+
+      let currentCard: Element | null = null;
+      if (assetDropdownElement) {
+        let parent = assetDropdownElement.parentElement;
+        while (parent) {
+          if (
+            parent.hasAttribute("data-asset-card") ||
+            parent.hasAttribute("data-select-card")
+          ) {
+            currentCard = parent;
+            break;
+          }
+          parent = parent.parentElement;
+        }
+      }
+      if (!currentCard) {
+        currentCard =
+          document.querySelector("[data-select-card='true']") ||
+          document.querySelector("[data-asset-card='true']");
+      }
+
+      dropdownStyle = {
+        position: "fixed",
+        top: 200,
+        left: (viewportWidth - minWidth) / 2,
+        width: minWidth,
+      };
+
+      if (currentCard && assetDropdownElement) {
+        const cardRect = currentCard.getBoundingClientRect();
+        const isYouSend = currentCard.hasAttribute("data-asset-card");
+        let desiredWidth = Math.min(
+          maxWidth,
+          Math.max(minWidth, cardRect.width * 0.4)
+        );
+        let top = cardRect.top - 45;
+        if (isYouSend) {
+          top = cardRect.top + 1;
+        } else {
+          top = cardRect.bottom + 20;
+        }
+        let left = cardRect.right - desiredWidth - 3;
+        if (isYouSend) {
+          left += 18;
+        } else {
+          left += 40;
+        }
+        if (left < cardRect.left) left = cardRect.left;
+        if (left + desiredWidth > viewportWidth - minMargin) {
+          left = viewportWidth - desiredWidth - minMargin;
+        }
+        if (left < minMargin) left = minMargin;
+        if (cardRect.width < desiredWidth + 16) {
+          left = cardRect.left + (cardRect.width - desiredWidth) / 2;
+        }
+        if (left + desiredWidth > viewportWidth - minMargin) {
+          left = viewportWidth - desiredWidth - minMargin;
+        }
+        dropdownStyle = {
+          position: "fixed",
+          top,
+          left,
+          width: desiredWidth,
+        };
+      }
+    }
+
+    const handlePickAsset = (asset: SupportedAsset) => {
+      if (calculationTimeout) clearTimeout(calculationTimeout);
+      if (estimateTimeout) clearTimeout(estimateTimeout);
+      setEstimate(null);
+      setEstimateError(null);
+      setEstimateLoading(false);
+      setCalculationError(null);
+      setReceiveAmountError(null);
+      setApiValidationError(null);
+      setSelectedAsset(asset);
+      setIsAssetDropdownOpen(false);
+      setAssetSearchTerm("");
+
+      if (isSimpleCalculationAsset(asset)) {
+        setIsCalculatingFromPay(true);
+        if (!isUserModifiedAmount) {
+          const defaultAmount = getDefaultAmount(asset);
+          setPayAmount(defaultAmount);
+          setPayAmountInput(defaultAmount.toString());
+          calculateAmounts(defaultAmount, true);
+        } else {
+          calculateAmounts(payAmount, true);
+        }
+      } else if (isForexAsset(asset)) {
+        setIsCalculatingFromPay(true);
+        if (!isUserModifiedAmount) {
+          const defaultAmount = 1000;
+          setPayAmount(defaultAmount);
+          setPayAmountInput(defaultAmount.toString());
+          calculateAmounts(defaultAmount, true);
+        } else {
+          calculateAmounts(payAmount, true);
+        }
+      } else {
+        setIsCalculatingFromPay(true);
+        setIsCalculating(true);
+        setIsCalculatingReceive(true);
+        setEstimateLoading(true);
+        if (!isUserModifiedAmount) {
+          const defaultAmount = getDefaultAmount(asset);
+          setPayAmount(defaultAmount);
+          setPayAmountInput(defaultAmount.toString());
+        }
+      }
+    };
+
+    return createPortal(
+      (
+        <div
+          ref={assetDropdownContentRef}
+          className="mt-1 bg-[#ffffff] dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-2xl shadow-lg z-[1200]"
+          style={dropdownStyle}
+        >
+          <div className="p-3 border-b border-[#A2A4A9FF] dark:border-[#35353E]">
+            <div className="relative">
+              <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#7e7e8f] w-4 h-4" />
+              <input
+                type="text"
+                placeholder="Type a currency"
+                className="w-full text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 rounded-xl px-10 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400"
+                value={assetSearchTerm}
+                onChange={(e) => setAssetSearchTerm(e.target.value)}
+              />
+            </div>
+          </div>
+          {sortedSwapAssets.length === 0 ? (
+            <div className="p-4 text-center text-[#7e7e8f] dark:text-[#788099]">
+              {assetSearchTerm ? "No assets found" : "No assets available"}
+            </div>
+          ) : (
+            <AssetDropdownVirtualized
+              rows={assetDropdownRows}
+              selectedAsset={selectedAsset}
+              onAssetSelect={handlePickAsset}
+            />
+          )}
+        </div>
+      ),
+      document.body
+    );
   };
 
   // Auto-validate receive amount whenever it changes
@@ -3182,15 +2840,14 @@ export default function WithdrawalForm({
     }
   }, [getAmount, selectedAsset]);
 
-  // Cleanup timeouts on unmount
+  // Cleanup timeouts on unmount (prevents delayed navigation / late state updates)
   useEffect(() => {
+    isMountedRef.current = true;
     return () => {
-      if (calculationTimeout) {
-        clearTimeout(calculationTimeout);
-      }
-      if (estimateTimeout) {
-        clearTimeout(estimateTimeout);
-      }
+      isMountedRef.current = false;
+      if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
+      if (calculationTimeout) clearTimeout(calculationTimeout);
+      if (estimateTimeout) clearTimeout(estimateTimeout);
     };
   }, [calculationTimeout, estimateTimeout]);
 
