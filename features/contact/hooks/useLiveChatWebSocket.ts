@@ -3,7 +3,11 @@ import { API_CONFIG } from "@/lib/appConfig";
 import { cookieUtils } from "@/lib/utils/cookieUtils";
 import { storage } from "@/features/auth/utils/storage";
 import { logger } from "@/lib/utils/logger";
-import { ChatMessage } from "../services/liveChatApi";
+import {
+  ChatMessage,
+  normalizeChatMessage,
+  type ApiChatMessage,
+} from "../services/liveChatApi";
 
 export interface ChatHistoryMessage {
   message_id?: string;
@@ -34,9 +38,12 @@ export interface LiveChatWebSocketMessage {
 
 interface UseLiveChatWebSocketOptions {
   sessionId: string;
+  /** Increment to force a new WebSocket connection (e.g. after reopening a closed session) */
+  connectionKey?: number;
   enabled?: boolean;
   onMessage?: (message: LiveChatWebSocketMessage) => void;
   onChatHistory?: (data: { status?: string; messages: ChatHistoryMessage[] }) => void;
+  onChatClosed?: () => void;
   onError?: (error: Event) => void;
   onClose?: () => void;
   autoReconnect?: boolean;
@@ -44,15 +51,16 @@ interface UseLiveChatWebSocketOptions {
 
 export const useLiveChatWebSocket = ({
   sessionId,
+  connectionKey = 0,
   enabled = true,
   onMessage,
   onChatHistory,
+  onChatClosed,
   onError,
   onClose,
   autoReconnect = true,
 }: UseLiveChatWebSocketOptions) => {
   const [isConnected, setIsConnected] = useState(false);
-  const [connectionFailed, setConnectionFailed] = useState(false);
   const [lastMessage, setLastMessage] = useState<LiveChatWebSocketMessage | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isTyping, setIsTyping] = useState<{ userName: string; isTyping: boolean } | null>(null);
@@ -69,6 +77,7 @@ export const useLiveChatWebSocket = ({
   const onErrorRef = useRef(onError);
   const onCloseRef = useRef(onClose);
   const onChatHistoryRef = useRef(onChatHistory);
+  const onChatClosedRef = useRef(onChatClosed);
 
   // Update refs when callbacks change
   useEffect(() => {
@@ -76,20 +85,29 @@ export const useLiveChatWebSocket = ({
     onErrorRef.current = onError;
     onCloseRef.current = onClose;
     onChatHistoryRef.current = onChatHistory;
-  }, [onMessage, onError, onClose, onChatHistory]);
+    onChatClosedRef.current = onChatClosed;
+  }, [onMessage, onError, onClose, onChatHistory, onChatClosed]);
 
   const getAccessToken = useCallback((): string | null => {
-    // Use same token source as apiClient (storage profile)
-    let token = storage.getToken();
+    // Try to get token from cookie first
+    let token = cookieUtils.getCookie("access_token");
+    
     if (!token && typeof window !== "undefined") {
-      token = cookieUtils.getCookie("access_token") || localStorage.getItem("access_token") || null;
+      // Fallback to localStorage
+      token = localStorage.getItem("access_token");
     }
+
+    if (!token) {
+      // Try from storage
+      const profile = storage.getProfile();
+      token = profile?.tokens?.access || null;
+    }
+
     return token;
   }, []);
 
   const connect = useCallback(() => {
     if (!enabled || !sessionId) return;
-    setConnectionFailed(false);
 
     // Prevent multiple connections
     if (wsRef.current && wsRef.current.readyState === WebSocket.CONNECTING) {
@@ -115,7 +133,6 @@ export const useLiveChatWebSocket = ({
     const token = getAccessToken();
     if (!token) {
       logger.warn("live-chat", "No access token available for WebSocket connection");
-      setConnectionFailed(true);
       return;
     }
 
@@ -131,7 +148,6 @@ export const useLiveChatWebSocket = ({
       ws.onopen = () => {
         logger.debug("live-chat", "WebSocket connected");
         setIsConnected(true);
-        setConnectionFailed(false);
         reconnectAttemptsRef.current = 0;
         
         // Reset history loaded flag when reconnecting
@@ -150,52 +166,36 @@ export const useLiveChatWebSocket = ({
           
           // Handle different message types
           if (data.type === "chat_history" && Array.isArray(data.messages)) {
-            const chatMessages: ChatMessage[] = data.messages.map((m) => {
-              const rawRole = (m.sender_role || "").toLowerCase();
-              const normalizedRole =
-                rawRole === "customer"
-                  ? "user"
-                  : rawRole === "admin"
-                  ? "agent"
-                  : (rawRole as "user" | "agent") || "agent";
-
-              return {
-                sender_name: m.is_system_message ? "System" : (m.sender_name || "Unknown"),
-                sender_role: normalizedRole,
-                message: m.message || "",
-                timestamp: m.timestamp || new Date().toISOString(),
-              };
-            });
+            const chatMessages: ChatMessage[] = data.messages.map((m) =>
+              normalizeChatMessage(m as ApiChatMessage)
+            );
             setMessages(chatMessages);
             historyLoadedRef.current = true;
             onChatHistoryRef.current?.({ status: data.status, messages: data.messages });
             logger.debug("live-chat", "Chat history loaded from WebSocket:", chatMessages.length, "messages");
           } else if (data.type === "chat_message") {
-            // Support both { data: { message, sender_role, ... } } and { message } at top level
             const msgContent = (data.data?.message ?? data.message ?? "").trim();
-            const rawRole = (data.data?.sender_role || "user").toLowerCase();
-            const normalizedRole =
-              rawRole === "customer"
-                ? "user"
-                : rawRole === "admin"
-                ? "agent"
-                : (rawRole as "user" | "agent");
-
-            const chatMessage: ChatMessage = {
-              sender_name: data.data?.sender_name || "Unknown",
-              sender_role: normalizedRole,
+            const d = data.data as Record<string, unknown> | undefined;
+            const chatMessage = normalizeChatMessage({
+              sender_name: d?.sender_name as string | undefined,
+              sender_role: d?.sender_role as string | undefined,
+              sender_type: d?.sender_type as string | undefined,
               message: msgContent,
-              timestamp: data.data?.timestamp || new Date().toISOString(),
-            };
-            
-            // Skip server echo of our own message (server echoes with sender_role "user" or "admin")
-            const sentAt = pendingSentRef.current.get(msgContent);
-            const now = Date.now();
-            if (sentAt && now - sentAt < 5000) {
-              pendingSentRef.current.delete(msgContent);
-              logger.debug("live-chat", "Skipping server echo:", chatMessage.message);
-            } else if (rawRole === "user" || rawRole === "customer") {
-              logger.debug("live-chat", "Skipping user message from server:", chatMessage.message);
+              timestamp: (d?.timestamp as string) || new Date().toISOString(),
+              is_system_message: false,
+            });
+
+            const fromCustomer =
+              chatMessage.sender_role === "customer" ||
+              (d?.sender_role as string)?.toLowerCase() === "user";
+            if (fromCustomer) {
+              const sentAt = pendingSentRef.current.get(msgContent);
+              const now = Date.now();
+              if (sentAt && now - sentAt < 5000) {
+                pendingSentRef.current.delete(msgContent);
+                logger.debug("live-chat", "Skipping server echo:", msgContent);
+              }
+              // else: optimistic UI already has customer message
             } else {
               setMessages((prev) => [...prev, chatMessage]);
             }
@@ -214,29 +214,32 @@ export const useLiveChatWebSocket = ({
             // Add system message when agent joins
             const systemMessage: ChatMessage = {
               sender_name: "System",
-              sender_role: "agent",
+              sender_role: "system",
               message: data.message || `${data.agent_name || "Agent"} has joined the chat`,
               timestamp: new Date().toISOString(),
+              is_system_message: true,
             };
             setMessages((prev) => [...prev, systemMessage]);
           } else if (data.type === "chat_transferred") {
             // Add system message when chat is transferred
             const systemMessage: ChatMessage = {
               sender_name: "System",
-              sender_role: "agent",
+              sender_role: "system",
               message: data.message || "This chat has been transferred to another agent",
               timestamp: new Date().toISOString(),
+              is_system_message: true,
             };
             setMessages((prev) => [...prev, systemMessage]);
           } else if (data.type === "chat_closed") {
-            // Add system message when chat is closed
             const systemMessage: ChatMessage = {
               sender_name: "System",
-              sender_role: "agent",
+              sender_role: "system",
               message: data.message || `This chat has been closed${data.closed_by ? ` by ${data.closed_by}` : ""}`,
               timestamp: new Date().toISOString(),
+              is_system_message: true,
             };
             setMessages((prev) => [...prev, systemMessage]);
+            onChatClosedRef.current?.();
           }
 
           onMessageRef.current?.(data);
@@ -289,27 +292,18 @@ export const useLiveChatWebSocket = ({
               connect();
             }
           }, reconnectDelay * reconnectAttemptsRef.current);
-        } else if (enabled && sessionId) {
-          setConnectionFailed(true);
         }
       };
     } catch (error) {
       logger.error("live-chat", "Failed to create WebSocket:", error);
       setIsConnected(false);
-      setConnectionFailed(true);
       wsRef.current = null;
     }
   }, [sessionId, enabled, autoReconnect, getAccessToken]);
 
-  const retryConnection = useCallback(() => {
-    setConnectionFailed(false);
-    reconnectAttemptsRef.current = 0;
-    if (reconnectTimeoutRef.current) {
-      clearTimeout(reconnectTimeoutRef.current);
-      reconnectTimeoutRef.current = null;
-    }
-    connect();
-  }, [connect]);
+  useEffect(() => {
+    historyLoadedRef.current = false;
+  }, [connectionKey, sessionId]);
 
   useEffect(() => {
     if (!enabled || !sessionId) {
@@ -341,7 +335,7 @@ export const useLiveChatWebSocket = ({
       setIsConnected(false);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, sessionId]); // Only depend on enabled and sessionId, connect is stable via refs
+  }, [enabled, sessionId, connectionKey]);
 
   const sendMessage = useCallback((message: string) => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
@@ -362,7 +356,7 @@ export const useLiveChatWebSocket = ({
       
       const userMessage: ChatMessage = {
         sender_name: "You",
-        sender_role: "user",
+        sender_role: "customer",
         message: message,
         timestamp: new Date().toISOString(),
       };
@@ -397,8 +391,6 @@ export const useLiveChatWebSocket = ({
 
   return {
     isConnected,
-    connectionFailed,
-    retryConnection,
     lastMessage,
     messages,
     isTyping,

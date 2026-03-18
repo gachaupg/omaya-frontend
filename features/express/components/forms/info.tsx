@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { X } from 'lucide-react';
+import { createPortal } from 'react-dom';
 
 interface InfoModalProps {
   isOpen: boolean;
@@ -10,17 +10,13 @@ interface InfoModalProps {
 }
 
 const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose, onContactUs }) => {
-  if (!isOpen) return null;
-
   const handleContactUs = () => {
     onContactUs();
     onClose();
   };
 
-
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-3 sm:p-4">
+  const modalContent = (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-3 sm:p-4">
       <div className="relative w-full max-w-md">
         <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 sm:p-6 shadow-2xl border border-border max-h-[90vh] overflow-y-auto">
           {/* Title */}
@@ -68,6 +64,10 @@ const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose, onContactUs }) =
       </div>
     </div>
   );
+
+  if (!isOpen) return null;
+  if (typeof document === 'undefined') return null;
+  return createPortal(modalContent, document.body);
 };
 
 export default InfoModal;

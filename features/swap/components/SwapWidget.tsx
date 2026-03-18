@@ -14,6 +14,7 @@ import {
   fetchSupportedAssets,
   fetchSwapEstimate,
   clearEstimate,
+  clearEstimateError,
   createSwapTransaction,
   clearSwapResponse,
   resetErrorToastFlag,
@@ -26,13 +27,10 @@ import WalletAddressStep from "./WalletAddressStep";
 import CopyAddressStep from "./CopyAddressStep";
 import { SwapStep } from "./types";
 import { SupportedAsset, SwapEstimate } from "../types";
-import { showToast } from "@/lib/utils/toast";
-import { handleApiError } from "@/lib/utils/errorHandler";
 import SuccessPage from "@/features/express/components/success";
 import { SwapWidgetSkeleton } from "@/components/ui/Skeletons";
 
 import { logger } from "@/lib/utils/logger";
-import { withTimeout } from "@/lib/utils/fetchWithTimeout";
 
 // Minimum swap value in USD/USDT - smaller amounts can disappear due to fees
 const MIN_SWAP_USD = 30;
@@ -77,11 +75,7 @@ const SwapWidget = () => {
     swapError,
   } = useSelector((state: RootState) => state.swap);
 
-  const SWAP_STATE_KEY = "omaya_swap_wallet_step_state";
-  const RETURNING_FROM_LEGAL_KEY = "omaya_returning_from_legal";
-
   const [walletAddress, setWalletAddress] = React.useState("");
-  const [hasAcceptedTerms, setHasAcceptedTerms] = React.useState(false);
   const [isFromAssetOpen, setIsFromAssetOpen] = React.useState(false);
   const [isToAssetOpen, setIsToAssetOpen] = React.useState(false);
   const [searchTerm, setSearchTerm] = React.useState("");
@@ -132,33 +126,6 @@ const SwapWidget = () => {
     //   handleApiError(error);
     // });
   }, [dispatch]);
-
-  // Restore state when returning from legal pages (Terms, Privacy, etc.)
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      const returning = sessionStorage.getItem(RETURNING_FROM_LEGAL_KEY);
-      if (!returning) return;
-
-      const saved = sessionStorage.getItem(SWAP_STATE_KEY);
-      if (!saved) {
-        sessionStorage.removeItem(RETURNING_FROM_LEGAL_KEY);
-        return;
-      }
-
-      const state = JSON.parse(saved);
-      if (state.walletAddress !== undefined) setWalletAddress(state.walletAddress);
-      if (state.hasAcceptedTerms !== undefined) setHasAcceptedTerms(state.hasAcceptedTerms);
-      if (state.showWalletAddress) setShowWalletAddress(true);
-      if (state.currentStep) setCurrentStep(state.currentStep);
-
-      sessionStorage.removeItem(RETURNING_FROM_LEGAL_KEY);
-      sessionStorage.removeItem(SWAP_STATE_KEY);
-    } catch {
-      sessionStorage.removeItem(RETURNING_FROM_LEGAL_KEY);
-      sessionStorage.removeItem(SWAP_STATE_KEY);
-    }
-  }, []);
 
   // Restore state from URL prefill parameter (after login redirect)
   useEffect(() => {
@@ -369,12 +336,14 @@ const SwapWidget = () => {
               amount: amount,
             };
 
-      withTimeout(dispatch(fetchSwapEstimate(estimateParams)).unwrap(), 15_000).catch((error) => {
+      dispatch(fetchSwapEstimate(estimateParams)).catch((error) => {
         logger.error("swap", "Failed to fetch swap estimate:", error);
         logger.debug("swap", "Estimate params:", estimateParams);
         logger.debug("swap", "Active input field:", activeInputField);
+        // Don't show error toast for reverse calculation failures
+        // as they might be expected (unsupported pairs, etc.)
         if (activeInputField === "from") {
-          handleApiError(error);
+          logger.error("swap", "Swap estimate request failed:", error);
         } else {
           console.warn(
             "Reverse calculation failed, this might be expected:",
@@ -434,61 +403,74 @@ const SwapWidget = () => {
 
   // Handle estimate errors
   useEffect(() => {
-    if (estimateError) {
-      console.error("Swap estimate error:", estimateError);
-      logger.debug(
-        "swap",
-        "Active input field during error:",
-        activeInputField
+    if (estimateError == null) return;
+
+    // Stale/persisted state could hold an object ({}) — clear and skip noise
+    if (typeof estimateError === "object") {
+      dispatch(clearEstimateError());
+      return;
+    }
+
+    if (typeof estimateError !== "string" || !estimateError.trim()) {
+      dispatch(clearEstimateError());
+      return;
+    }
+
+    const errMsg = estimateError.trim();
+    const isValidationError =
+      /deposit_too_small|deposit_too_large|too small|too large|min amount|max amount/i.test(
+        errMsg
       );
 
-      // Only show error toast for forward calculation errors
-      // Reverse calculation errors might be expected (unsupported pairs)
-      if (activeInputField === "from") {
-        showToast.error("Estimate Error", estimateError);
-      } else {
-        console.warn(
-          "Reverse calculation error (might be expected):",
-          estimateError
-        );
+    if (!isValidationError) {
+      console.error("Swap estimate error:", errMsg);
+    }
+    logger.debug(
+      "swap",
+      "Active input field during error:",
+      activeInputField
+    );
 
-        // Try fallback calculation using last successful estimate
-        if (lastSuccessfulEstimate && debouncedToAmount) {
-          try {
-            const toAmount =
-              lastSuccessfulEstimate.raw_response?.toAmount ||
-              lastSuccessfulEstimate.toAmount ||
-              lastSuccessfulEstimate.estimated_amount;
-            const fromAmount =
-              lastSuccessfulEstimate.raw_response?.fromAmount ||
-              lastSuccessfulEstimate.fromAmount ||
-              lastSuccessfulEstimate.user_amount;
+    if (activeInputField !== "from" && !isValidationError) {
+      console.warn(
+        "Reverse calculation error (might be expected):",
+        errMsg
+      );
 
-            // Check if both amounts are valid numbers before calculating rate
-            if (
-              toAmount !== undefined &&
-              fromAmount !== undefined &&
-              toAmount > 0 &&
-              fromAmount > 0
-            ) {
-              const rate = toAmount / fromAmount;
-              const calculatedFromAmount = parseFloat(debouncedToAmount) / rate;
-              dispatch(setFromAmount(calculatedFromAmount.toString()));
-              logger.debug("swap", "Fallback calculation successful:", {
-                rate,
-                calculatedFromAmount,
-                toAmount,
-                fromAmount,
-              });
-            } else {
-              console.warn("Fallback calculation skipped: invalid amounts", {
-                toAmount,
-                fromAmount,
-              });
-            }
-          } catch (fallbackError) {
-            console.error("Fallback calculation failed:", fallbackError);
+      if (lastSuccessfulEstimate && debouncedToAmount) {
+        try {
+          const toAmount =
+            lastSuccessfulEstimate.raw_response?.toAmount ||
+            lastSuccessfulEstimate.toAmount ||
+            lastSuccessfulEstimate.estimated_amount;
+          const fromAmount =
+            lastSuccessfulEstimate.raw_response?.fromAmount ||
+            lastSuccessfulEstimate.fromAmount ||
+            lastSuccessfulEstimate.user_amount;
+
+          if (
+            toAmount !== undefined &&
+            fromAmount !== undefined &&
+            toAmount > 0 &&
+            fromAmount > 0
+          ) {
+            const rate = toAmount / fromAmount;
+            const calculatedFromAmount = parseFloat(debouncedToAmount) / rate;
+            dispatch(setFromAmount(calculatedFromAmount.toString()));
+            logger.debug("swap", "Fallback calculation successful:", {
+              rate,
+              calculatedFromAmount,
+              toAmount,
+              fromAmount,
+            });
+          } else {
+            console.warn("Fallback calculation skipped: invalid amounts", {
+              toAmount,
+              fromAmount,
+            });
           }
+        } catch (fallbackError) {
+          console.error("Fallback calculation failed:", fallbackError);
         }
       }
     }
@@ -500,46 +482,36 @@ const SwapWidget = () => {
     dispatch,
   ]);
 
-  // Handle swap errors (no toast for amount too small - shown inline above button)
-  const isAmountTooSmallError =
-    swapError === "Amount you entered is too small" ||
-    (swapError?.toLowerCase().includes("failed to create transaction") &&
-      (swapError?.includes("400") || swapError?.toLowerCase().includes("changenow")));
+  // Handle swap errors (inline only — no toasts)
   useEffect(() => {
-    if (swapError && !isAmountTooSmallError) {
+    if (swapError) {
       console.error("Swap error:", swapError);
-      showToast.error("Swap Error", swapError);
+      setLocalSwapError(
+        typeof swapError === "string" ? swapError : "Swap failed. Please try again."
+      );
     }
-  }, [swapError, isAmountTooSmallError]);
+  }, [swapError]);
 
   // Handle next step validation
   const handleNextStep = () => {
-    // Validate that we have all required fields
+    setLocalSwapError("");
     if (!fromAsset || !toAsset || !fromAmount || parseFloat(fromAmount) <= 0) {
-      showToast.error(
-        "Missing Required Fields",
-        "Please select assets and enter a valid amount"
-      );
+      setLocalSwapError("Please select assets and enter a valid amount.");
       return;
     }
 
     if (!estimate) {
-      showToast.error(
-        "No Estimate Available",
-        "Please wait for the swap estimate to load"
-      );
+      setLocalSwapError("Please wait for the swap estimate to load.");
       return;
     }
 
     if (!meetsMinimumSwap(fromAsset, toAsset, fromAmount, toAmount)) {
-      showToast.error(
-        "Minimum Amount Required",
+      setLocalSwapError(
         `Minimum swap value is ${MIN_SWAP_USD} USD/USDT. Smaller amounts can disappear due to fees.`
       );
       return;
     }
 
-    // Show wallet address form below
     setShowWalletAddress(true);
   };
 
@@ -547,10 +519,6 @@ const SwapWidget = () => {
     // Skip wallet address validation - proceed directly to swap creation
     if (!walletAddress.trim()) {
       setWalletValidationError("Wallet address is required");
-      showToast.error(
-        "Wallet Address Required",
-        "Please enter a wallet address"
-      );
       return;
     }
 
@@ -572,27 +540,25 @@ const SwapWidget = () => {
     }
   };
 
-  const [amountError, setAmountError] = React.useState("");
-
-  const validateAmount = (value: string): string | null => {
-    if (value === "" || value === ".") return null;
+  // Validate amount: max 12 digits before decimal point
+  const validateAmount = (value: string): boolean => {
+    if (value === "" || value === ".") return true;
     const parts = value.split(".");
     const integerPart = parts[0] || "";
-    const decimalPart = parts[1] || "";
-    if (integerPart.length > 12) return "Maximum 12 digits allowed before the decimal point.";
-    if (decimalPart.length > 4) return "Maximum 4 decimal places allowed.";
-    return null;
+    // Check if integer part has more than 12 digits
+    if (integerPart.length > 12) {
+      setLocalSwapError("Maximum 12 digits allowed before the decimal point.");
+      return false;
+    }
+    return true;
   };
 
   const handleFromAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
+    // Only allow numbers and decimals
     if (value === "" || /^\d*\.?\d*$/.test(value)) {
-      const err = validateAmount(value);
-      if (err) {
-        setAmountError(err);
-        return;
-      }
-      setAmountError("");
+      // Validate max 12 digits before decimal
+      if (!validateAmount(value)) return;
       setActiveInputField("from");
       dispatch(setFromAmount(value));
     }
@@ -600,13 +566,10 @@ const SwapWidget = () => {
 
   const handleToAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
+    // Only allow numbers and decimals
     if (value === "" || /^\d*\.?\d*$/.test(value)) {
-      const err = validateAmount(value);
-      if (err) {
-        setAmountError(err);
-        return;
-      }
-      setAmountError("");
+      // Validate max 12 digits before decimal
+      if (!validateAmount(value)) return;
       setActiveInputField("to");
       dispatch(setToAmount(value));
     }
@@ -619,38 +582,19 @@ const SwapWidget = () => {
     setWalletValidationError(""); // Clear error when user types
   };
 
-  const handleBeforeLegalNavigate = () => {
-    try {
-      sessionStorage.setItem(
-        SWAP_STATE_KEY,
-        JSON.stringify({
-          walletAddress,
-          hasAcceptedTerms,
-          showWalletAddress,
-          currentStep,
-        })
-      );
-      sessionStorage.setItem(RETURNING_FROM_LEGAL_KEY, "1");
-    } catch {
-      // Ignore storage errors
-    }
-  };
-
   const handleSubmit = async () => {
     logger.debug("swap", "handleSubmit called");
     if (!fromAsset || !toAsset || !walletAddress || !estimate) {
       console.error("Missing required fields");
-      showToast.error(
-        "Missing required fields",
-        "Please fill in all required information"
-      );
+      setLocalSwapError("Please fill in all required information.");
       return;
     }
 
     logger.debug("swap", "All fields present, creating swap...");
 
     try {
-      dispatch(resetErrorToastFlag()); // Reset error toast flag before creating swap
+      setLocalSwapError("");
+      dispatch(resetErrorToastFlag());
       await dispatch(
         createSwapTransaction({
           from_currency: fromAsset.ticker,
@@ -662,48 +606,17 @@ const SwapWidget = () => {
         })
       ).unwrap();
       logger.debug("swap", "Swap created successfully");
+      setLocalSwapError("");
       setCurrentStep("copy-address");
     } catch (error: any) {
       console.error("Failed to create swap:", error);
-      const errMsg = typeof error === "string" ? error : error?.message || "";
-      // Amount too small: shown inline above button, no toast
-      const isAmountTooSmall =
-        errMsg === "Amount you entered is too small" ||
-        (errMsg.toLowerCase().includes("failed to create transaction") &&
-          (errMsg.includes("400") || errMsg.toLowerCase().includes("changenow")));
-      if (isAmountTooSmall) return;
-
-      console.error("Error response:", error?.response?.data);
-      console.error("Error status:", error?.response?.status);
-
-      // Handle specific error cases
-      if (error?.response?.status === 500) {
-        showToast.error(
-          "Server Error",
-          "The server encountered an error. Please try again later."
-        );
-      } else if (error?.response?.status === 400) {
-        showToast.error(
-          "Invalid Request",
-          error.response?.data?.message ||
-            "Please check your input and try again"
-        );
-      } else if (error?.response?.status === 401) {
-        showToast.error("Authentication Required", "Please log in to continue");
-      } else if (error?.response?.status === 403) {
-        showToast.error(
-          "Access Denied",
-          "You don't have permission to perform this action"
-        );
-      } else if (error?.response?.status === 429) {
-        showToast.error(
-          "Too Many Requests",
-          "Please wait a moment before trying again"
-        );
-      } else {
-        // Use the general error handler for other cases
-        handleApiError(error);
-      }
+      const msg =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Could not create swap. Please try again.";
+      setLocalSwapError(
+        typeof msg === "string" ? msg : "Could not create swap. Please try again."
+      );
     }
   };
 
@@ -712,17 +625,12 @@ const SwapWidget = () => {
       await navigator.clipboard.writeText(swapResponse?.payinAddress || "");
       // Show success feedback
       setCopyMessage("Copied!");
-      showToast.success("Address copied to clipboard");
       setTimeout(() => {
         setCopyMessage("");
       }, 2000);
     } catch (err) {
       console.error("Failed to copy:", err);
-      setCopyMessage("Failed");
-      showToast.error(
-        "Failed to copy address",
-        "Please copy the address manually"
-      );
+      setCopyMessage("Failed — copy manually");
       setTimeout(() => {
         setCopyMessage("");
       }, 2000);
@@ -765,16 +673,16 @@ const SwapWidget = () => {
           "swap",
           "SwapWidget detected stale loading state. Forcing supported assets refresh."
         );
-        withTimeout(dispatch(fetchSupportedAssets(true)).unwrap(), 15_000).catch(() => {});
+        dispatch(fetchSupportedAssets(true));
       }
-    }, 8000);
+    }, 8000); // fallback after 8s
 
     return () => clearTimeout(staleLoadingTimer);
   }, [loading, supportedAssets.length, dispatch]);
 
   const handleSupportedAssetsRetry = useCallback(() => {
     setSkeletonTimeoutReached(false);
-    withTimeout(dispatch(fetchSupportedAssets(true)).unwrap(), 15_000).catch(() => {});
+    dispatch(fetchSupportedAssets(true));
   }, [dispatch]);
 
   // Show skeleton while loading initial data (supported assets)
@@ -877,7 +785,6 @@ const SwapWidget = () => {
             activeInputField={activeInputField}
             meetsMinimumAmount={meetsMinimumSwap(fromAsset, toAsset, fromAmount, toAmount)}
             minSwapUsd={MIN_SWAP_USD}
-            amountError={amountError}
           />
           {showWalletAddress && (
             <WalletAddressStep
@@ -887,11 +794,8 @@ const SwapWidget = () => {
               onNext={handleWalletAddressNext}
               fromAsset={fromAsset}
               toAsset={toAsset}
+              // Pass loading state to disable button
               isLoading={swapLoading}
-              hasAcceptedTerms={hasAcceptedTerms}
-              onHasAcceptedTermsChange={setHasAcceptedTerms}
-              onBeforeLegalNavigate={handleBeforeLegalNavigate}
-              createSwapError={swapError}
             />
           )}
         </>
