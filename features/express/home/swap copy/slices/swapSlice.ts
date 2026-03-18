@@ -10,8 +10,6 @@ import {
   CreateSwapResponse,
 } from "../types";
 import { getSupportedAssets, getEstimateSwap, getPublicEstimateSwap, createSwap } from "../api";
-import { showToast } from "@/lib/utils/toast";
-import { handleApiError } from "@/lib/utils/errorHandler";
 import { sliceCache } from "@/lib/utils/sliceCache";
 
 import { logger } from '@/lib/utils/logger';
@@ -67,7 +65,7 @@ export const fetchSupportedAssets = createAsyncThunk<SupportedAsset[], boolean |
         const response = await getSupportedAssets();
         logger.debug('swap', "✅ Force refresh API response received:", response?.length || 0, "assets");
         // Cache the fresh data
-        await sliceCache.set('swap', 'fetchSupportedAssets', response, undefined, 60 * 60 * 1000);
+        await sliceCache.set('swap', 'fetchSupportedAssets', response, undefined, 2 * 60 * 60 * 1000);
         data = response;
       } else {
         data = await sliceCache.getOrSet(
@@ -80,7 +78,7 @@ export const fetchSupportedAssets = createAsyncThunk<SupportedAsset[], boolean |
             return response;
           },
           undefined, // no params
-          60 * 60 * 1000 // 1 hour cache – refetch only after TTL to avoid refetching at all cost
+          2 * 60 * 60 * 1000 // 2 hours cache
         );
       }
       
@@ -136,16 +134,6 @@ export const fetchSupportedAssets = createAsyncThunk<SupportedAsset[], boolean |
       ];
       
       logger.debug('swap', "🔄 Using fallback assets:", fallbackAssets.length);
-      
-      // Only show toast if it's a network error or server error
-      if (error instanceof Error) {
-        if (
-          error.message.includes("Network error") ||
-          error.message.includes("Server Error")
-        ) {
-          handleApiError(error);
-        }
-      }
       
       // Return fallback assets instead of rejecting
       return fallbackAssets;
@@ -203,15 +191,6 @@ export const fetchSwapEstimate = createAsyncThunk(
       return data;
     } catch (error) {
       console.error("Failed to fetch swap estimate:", error);
-      // Only show toast for server errors or network issues
-      if (error instanceof Error) {
-        if (
-          error.message.includes("Server Error") ||
-          error.message.includes("Network error")
-        ) {
-          handleApiError(error);
-        }
-      }
       return rejectWithValue(
         error instanceof Error ? error.message : "Failed to fetch swap estimate"
       );
@@ -221,69 +200,12 @@ export const fetchSwapEstimate = createAsyncThunk(
 
 export const createSwapTransaction = createAsyncThunk(
   "swap/createSwapTransaction",
-  async (swapData: CreateSwapRequest, { rejectWithValue, getState }) => {
+  async (swapData: CreateSwapRequest, { rejectWithValue }) => {
     try {
       const response = await createSwap(swapData);
       return response;
     } catch (error) {
       console.error("Failed to create swap transaction:", error);
-
-      // Get current state to check if error toast has been shown
-      const state = getState() as { swap: SwapState };
-      const hasShownError = state.swap.hasShownErrorToast;
-
-      // Only show toast if we haven't shown one for this error yet
-      if (!hasShownError) {
-        if (error instanceof Error) {
-          if (
-            error.message.includes("500") ||
-            error.message.includes("Server Error")
-          ) {
-            showToast.error(
-              "Server Error",
-              "The server encountered an error. Please try again later."
-            );
-          } else if (error.message === "Amount you entered is too small") {
-            // Show inline above button, no toast
-          } else if (
-            error.message.includes("400") ||
-            error.message.includes("Bad Request")
-          ) {
-            showToast.error(
-              "Invalid Request",
-              "Please check your input and try again"
-            );
-          } else if (
-            error.message.includes("401") ||
-            error.message.includes("Unauthorized")
-          ) {
-            showToast.error(
-              "Authentication Required",
-              "Please log in to continue"
-            );
-          } else if (
-            error.message.includes("403") ||
-            error.message.includes("Forbidden")
-          ) {
-            showToast.error(
-              "Access Denied",
-              "You don't have permission to perform this action"
-            );
-          } else if (
-            error.message.includes("429") ||
-            error.message.includes("Too Many Requests")
-          ) {
-            showToast.error(
-              "Too Many Requests",
-              "Please wait a moment before trying again"
-            );
-          } else {
-            handleApiError(error);
-          }
-        } else {
-          handleApiError(error);
-        }
-      }
 
       return rejectWithValue(
         error instanceof Error
@@ -306,11 +228,9 @@ const swapSlice = createSlice({
     },
     setFromAmount: (state, action) => {
       state.fromAmount = action.payload;
-      state.swapError = null;
     },
     setToAmount: (state, action) => {
       state.toAmount = action.payload;
-      state.swapError = null;
     },
     swapAssets: (state) => {
       const temp = state.fromAsset;
@@ -392,7 +312,7 @@ const swapSlice = createSlice({
       .addCase(createSwapTransaction.rejected, (state, action) => {
         state.swapLoading = false;
         state.swapError =
-          (action.payload as string) || action.error?.message || "Failed to create swap transaction";
+          action.error.message || "Failed to create swap transaction";
         state.hasShownErrorToast = true; // Mark that error toast has been shown
       });
   },

@@ -10,11 +10,87 @@ import {
   CreateSwapResponse,
 } from "../types";
 import { getSupportedAssets, getEstimateSwap, getPublicEstimateSwap, createSwap } from "../api";
-import { showToast } from "@/lib/utils/toast";
-import { handleApiError } from "@/lib/utils/errorHandler";
 import { sliceCache } from "@/lib/utils/sliceCache";
 
 import { logger } from '@/lib/utils/logger';
+
+/** Backend validation (min/max amount, etc.) – not a real failure; avoid console noise */
+function isSwapEstimateValidationError(error: any): boolean {
+  const msg = String(error?.message ?? "");
+  if (/deposit_too_small|deposit_too_large|too small|too large/i.test(msg)) return true;
+  const rd =
+    error?.response_data ??
+    (error?.response?.data && typeof error.response.data === "object"
+      ? (error.response.data as any)?.response_data ?? error.response.data
+      : undefined);
+  const errVal = rd?.error;
+  if (typeof errVal === "string" && /deposit_too_small|deposit_too_large/i.test(errVal)) return true;
+  return false;
+}
+
+/** Always a non-empty string for Redux (payload from rejectWithValue can be odd shapes) */
+function estimateErrorStringFromRejectAction(action: {
+  payload: unknown;
+  error: { message?: string };
+}): string {
+  const p = action.payload as any;
+  const fromResponseData = (rd: unknown): string => {
+    if (!rd || typeof rd !== "object") return "";
+    const o = rd as Record<string, unknown>;
+    if (typeof o.message === "string" && o.message.trim()) return o.message.trim();
+    if (typeof o.error === "string" && o.error.trim()) return o.error.trim();
+    const range = (o.range ?? (o.payload as any)?.range) as
+      | { minAmount?: string; min_amount?: string }
+      | undefined;
+    const min = range?.minAmount ?? range?.min_amount;
+    const err = typeof o.error === "string" ? o.error : "";
+    if (min != null && String(min).trim() && /deposit_too_small|too_small/i.test(err))
+      return `Amount below minimum. Minimum: ${min}.`;
+    return "";
+  };
+
+  if (typeof p === "string" && p.trim()) {
+    if (/request failed with status code/i.test(p)) {
+      return "Could not get a swap estimate. Please adjust amount or pair.";
+    }
+    return p.trim();
+  }
+  if (p && typeof p === "object") {
+    const m = p.message;
+    if (typeof m === "string" && m.trim()) {
+      if (/request failed with status code/i.test(m)) {
+        const rd = p.response_data;
+        const alt = fromResponseData(rd);
+        if (alt) return alt;
+        return "Could not get a swap estimate. Please adjust amount or pair.";
+      }
+      return m.trim();
+    }
+    if (m != null && typeof m !== "object") return String(m).trim();
+    const rd = p.response_data;
+    if (rd && typeof rd === "object") {
+      const s = fromResponseData(rd);
+      if (s) return s;
+      if (typeof (rd as any).message === "string" && (rd as any).message.trim())
+        return (rd as any).message.trim();
+      if (typeof (rd as any).error === "string" && (rd as any).error.trim()) {
+        const e = (rd as any).error.trim();
+        const min =
+          (rd as any).range?.minAmount ?? (rd as any).range?.min_amount;
+        if (/deposit_too_small/i.test(e) && min != null)
+          return `Amount below minimum. Minimum: ${min}.`;
+        return e;
+      }
+    }
+  }
+  const em = action.error?.message;
+  if (typeof em === "string" && em.trim() && em !== "Rejected") {
+    if (/request failed with status code/i.test(em))
+      return "Could not get a swap estimate. Please adjust amount or pair.";
+    return em.trim();
+  }
+  return "Failed to fetch swap estimate";
+}
 
 interface SwapState {
   fromAsset: SupportedAsset | null;
@@ -67,7 +143,7 @@ export const fetchSupportedAssets = createAsyncThunk<SupportedAsset[], boolean |
         const response = await getSupportedAssets();
         logger.debug('swap', "✅ Force refresh API response received:", response?.length || 0, "assets");
         // Cache the fresh data
-        await sliceCache.set('swap', 'fetchSupportedAssets', response, undefined, 60 * 60 * 1000);
+        await sliceCache.set('swap', 'fetchSupportedAssets', response, undefined, 2 * 60 * 60 * 1000);
         data = response;
       } else {
         data = await sliceCache.getOrSet(
@@ -80,7 +156,7 @@ export const fetchSupportedAssets = createAsyncThunk<SupportedAsset[], boolean |
             return response;
           },
           undefined, // no params
-          60 * 60 * 1000 // 1 hour cache – refetch only after TTL to avoid refetching at all cost
+          2 * 60 * 60 * 1000 // 2 hours cache
         );
       }
       
@@ -137,16 +213,6 @@ export const fetchSupportedAssets = createAsyncThunk<SupportedAsset[], boolean |
       
       logger.debug('swap', "🔄 Using fallback assets:", fallbackAssets.length);
       
-      // Only show toast if it's a network error or server error
-      if (error instanceof Error) {
-        if (
-          error.message.includes("Network error") ||
-          error.message.includes("Server Error")
-        ) {
-          handleApiError(error);
-        }
-      }
-      
       // Return fallback assets instead of rejecting
       return fallbackAssets;
     }
@@ -201,93 +267,29 @@ export const fetchSwapEstimate = createAsyncThunk(
         5 * 60 * 1000 // 5 minutes cache for estimates (shorter TTL since they're more dynamic)
       );
       return data;
-    } catch (error) {
-      console.error("Failed to fetch swap estimate:", error);
-      // Only show toast for server errors or network issues
-      if (error instanceof Error) {
-        if (
-          error.message.includes("Server Error") ||
-          error.message.includes("Network error")
-        ) {
-          handleApiError(error);
-        }
+    } catch (error: any) {
+      if (!isSwapEstimateValidationError(error)) {
+        console.error("Failed to fetch swap estimate:", error);
       }
-      return rejectWithValue(
-        error instanceof Error ? error.message : "Failed to fetch swap estimate"
-      );
+      // Pass full error so UI can show response_data (e.g. minAmount for deposit_too_small)
+      const responseData = error?.response_data ?? (error?.response?.data && typeof error.response.data === "object" ? (error.response.data as any)?.response_data ?? error.response.data : undefined);
+      const payload =
+        error && typeof error === "object"
+          ? { message: error?.message || String(error), response_data: responseData }
+          : { message: String(error), response_data: undefined };
+      return rejectWithValue(payload);
     }
   }
 );
 
 export const createSwapTransaction = createAsyncThunk(
   "swap/createSwapTransaction",
-  async (swapData: CreateSwapRequest, { rejectWithValue, getState }) => {
+  async (swapData: CreateSwapRequest, { rejectWithValue }) => {
     try {
       const response = await createSwap(swapData);
       return response;
     } catch (error) {
       console.error("Failed to create swap transaction:", error);
-
-      // Get current state to check if error toast has been shown
-      const state = getState() as { swap: SwapState };
-      const hasShownError = state.swap.hasShownErrorToast;
-
-      // Only show toast if we haven't shown one for this error yet
-      if (!hasShownError) {
-        if (error instanceof Error) {
-          if (
-            error.message.includes("500") ||
-            error.message.includes("Server Error")
-          ) {
-            showToast.error(
-              "Server Error",
-              "The server encountered an error. Please try again later."
-            );
-          } else if (
-            error.message === "Amount you entered is too small" ||
-            (error.message?.toLowerCase().includes("failed to create transaction") &&
-              (error.message?.includes("400") || error.message?.toLowerCase().includes("changenow")))
-          ) {
-            // Show inline above button, no toast
-          } else if (
-            error.message.includes("400") ||
-            error.message.includes("Bad Request")
-          ) {
-            showToast.error(
-              "Invalid Request",
-              "Please check your input and try again"
-            );
-          } else if (
-            error.message.includes("401") ||
-            error.message.includes("Unauthorized")
-          ) {
-            showToast.error(
-              "Authentication Required",
-              "Please log in to continue"
-            );
-          } else if (
-            error.message.includes("403") ||
-            error.message.includes("Forbidden")
-          ) {
-            showToast.error(
-              "Access Denied",
-              "You don't have permission to perform this action"
-            );
-          } else if (
-            error.message.includes("429") ||
-            error.message.includes("Too Many Requests")
-          ) {
-            showToast.error(
-              "Too Many Requests",
-              "Please wait a moment before trying again"
-            );
-          } else {
-            handleApiError(error);
-          }
-        } else {
-          handleApiError(error);
-        }
-      }
 
       return rejectWithValue(
         error instanceof Error
@@ -310,11 +312,9 @@ const swapSlice = createSlice({
     },
     setFromAmount: (state, action) => {
       state.fromAmount = action.payload;
-      state.swapError = null; // Clear create error when amount changes
     },
     setToAmount: (state, action) => {
       state.toAmount = action.payload;
-      state.swapError = null; // Clear create error when amount changes
     },
     swapAssets: (state) => {
       const temp = state.fromAsset;
@@ -326,6 +326,9 @@ const swapSlice = createSlice({
     },
     clearEstimate: (state) => {
       state.estimate = null;
+      state.estimateError = null;
+    },
+    clearEstimateError: (state) => {
       state.estimateError = null;
     },
     clearSwapResponse: (state) => {
@@ -390,10 +393,8 @@ const swapSlice = createSlice({
       })
       .addCase(fetchSwapEstimate.rejected, (state, action) => {
         state.estimateLoading = false;
-        // Use action.payload (from rejectWithValue) first, then fallback to action.error.message
-        state.estimateError =
-          (action.payload as string) || action.error.message || "Failed to fetch swap estimate";
-        state.hasShownErrorToast = true; // Mark that error toast has been shown
+        state.estimateError = estimateErrorStringFromRejectAction(action);
+        state.hasShownErrorToast = true;
       })
       .addCase(createSwapTransaction.pending, (state) => {
         state.swapLoading = true;
@@ -406,9 +407,8 @@ const swapSlice = createSlice({
       })
       .addCase(createSwapTransaction.rejected, (state, action) => {
         state.swapLoading = false;
-        // rejectWithValue puts the error in payload, not action.error.message
         state.swapError =
-          (action.payload as string) || action.error?.message || "Failed to create swap transaction";
+          action.error.message || "Failed to create swap transaction";
         state.hasShownErrorToast = true; // Mark that error toast has been shown
       });
   },
@@ -421,6 +421,7 @@ export const {
   setToAmount,
   swapAssets,
   clearEstimate,
+  clearEstimateError,
   clearSwapResponse,
   resetErrorToastFlag,
 } = swapSlice.actions;

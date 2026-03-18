@@ -200,6 +200,8 @@ export const API_CONFIG = {
     BASE: "/api/live-chat/",
     CREATE_SESSION: "/api/live-chat/sessions/",
     GET_SESSION: (sessionId: string) => `/api/live-chat/sessions/${sessionId}/`,
+    REOPEN_SESSION: (sessionId: string) =>
+      `/api/live-chat/sessions/${sessionId}/reopen/`,
     GET_MESSAGES: (sessionId: string) => `/api/live-chat/sessions/${sessionId}/messages/`,
     QUEUE_STATUS: "/api/live-chat/queue/status/",
     SOCKETS: {
