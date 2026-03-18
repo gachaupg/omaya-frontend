@@ -1634,19 +1634,7 @@ export default function ExchangeForm({
           }`}>
         {renderTabs()}
         <div className="pt-2 sm:pt-3 px-3 sm:px-4 md:px-5 py-3 border-l border-r border-b border-border dark:border-accent rounded-b-2xl">
-          {/* Deposit / Withdrawal toggle for MoneyX (range-commissions API uses commission_type) */}
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-sm text-gray-600 dark:text-gray-400">Type:</span>
-            <button
-              type="button"
-              onClick={handleModeToggle}
-              className="flex rounded-lg border border-gray-300 dark:border-[#35353E] p-1 bg-gray-100 dark:bg-[#23232B]"
-            >
-              <span className={`px-2 py-1 rounded text-xs font-medium ${mode === "deposit" ? "bg-white dark:bg-[#35353E] text-[#1D8751] shadow-sm" : "text-gray-500 dark:text-gray-400"}`}>Deposit</span>
-              <span className={`px-2 py-1 rounded text-xs font-medium ${mode === "withdrawal" ? "bg-white dark:bg-[#35353E] text-[#1D8751] shadow-sm" : "text-gray-500 dark:text-gray-400"}`}>Withdrawal</span>
-            </button>
-          </div>
-          <MoneyX isHomePage={isHomePage} commissionType={mode} />
+          <MoneyX isHomePage={isHomePage} commissionType="deposit" />
         </div>
       </div>
     );

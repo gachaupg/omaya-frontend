@@ -57,6 +57,7 @@ interface UserPaymentDetail {
   provider_name?: string;
   provider_logo?: string;
   wallet_address?: string;
+  status?: string;
 }
 
 // Helper function to get network value from asset (handles both Asset and SupportedAsset types)
@@ -1823,6 +1824,18 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
       showToast.error("Please select your registered account");
       return;
     }
+
+    // Block pending payment methods before submitting (prevents backend error)
+    if (!isDepositMode && selectedPaymentDetails.length > 0) {
+      const status = (selectedPaymentDetails[0]?.status || "").toString().toLowerCase();
+      const isPending = status !== "" && status !== "approved" && status !== "verified";
+      if (isPending) {
+        const msg = "Selected payment method is pending verification";
+        setPaymentMethodError(msg);
+        showToast.error(msg);
+        return;
+      }
+    }
     if (isDepositMode && !selectedPaymentDetail) {
       showToast.error("Please select a payment method");
       return;
@@ -1932,11 +1945,21 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
       } else {
         // Withdrawal API structure - exact as express withdrawal.tsx
         const withdrawalDetail = selectedPaymentDetails[0];
+        const assetTicker = (
+          selectedAsset?.ticker ||
+          selectedAsset?.symbol ||
+          ""
+        ).toString().toLowerCase();
+        const isForexAsset =
+          assetTicker === "fxp" || assetTicker === "fxprimus";
         const withdrawalPayload: ExpressWithdrawalPayload = {
           asset: (selectedAsset.ticker?.toUpperCase() || selectedAsset.symbol?.toUpperCase()) as string,
           amount: amount,
           network: getAssetNetwork(selectedAsset),
-          user_payment_detail_id: withdrawalDetail?.user_payment_detail_id || String(withdrawalDetail?.id),
+          // Express: non-FXP uses registered account `id`; FXP uses `user_payment_detail_id`
+          user_payment_detail_id: isForexAsset
+            ? String(withdrawalDetail?.user_payment_detail_id ?? withdrawalDetail?.id)
+            : String(withdrawalDetail?.id),
         };
 
         logger.debug('general', "Submitting withdrawal request:", withdrawalPayload);
@@ -2265,9 +2288,41 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                   {/* Registered Account - withdrawal only, exact as express */}
                   {!isDepositMode && payBank && (
                     <div className="mt-3 w-full relative z-10">
-                      <label className={`block text-[17px] font-semibold mb-2 ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"}`}>
-                        {t("rates.registeredAccount", "Registered Account")}
-                      </label>
+                      <div className="flex items-center gap-2 mb-2">
+                        <label
+                          className={`block text-[17px] font-semibold ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"}`}
+                        >
+                          {t("rates.registeredAccount", "Registered Account")}
+                        </label>
+                        {(() => {
+                          const status = (
+                            selectedPaymentDetails[0]?.status || ""
+                          )
+                            .toString()
+                            .toLowerCase();
+                          const isPending =
+                            status !== "" &&
+                            status !== "approved" &&
+                            status !== "verified";
+                          if (!isPending) return null;
+
+                          const accountNumber =
+                            selectedPaymentDetails[0]?.account_number ||
+                            selectedPaymentDetails[0]?.wallet_address ||
+                            "";
+                          const accountName =
+                            selectedPaymentDetails[0]?.account_name || "";
+
+                          return (
+                            <span
+                              className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border border-[#F79330]/40 bg-[#F79330]/10 text-[#F79330]"
+                              title="Account pending approval"
+                            >
+                              {accountNumber} - {accountName} (Pending)
+                            </span>
+                          );
+                        })()}
+                      </div>
                       {(() => {
                         const allUserAccounts = userPaymentMethodsDisplay.displayData || effectiveUserPaymentMethods || [];
                         const hasAnyAccounts = allUserAccounts.length > 0;
@@ -2296,6 +2351,11 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                               </div>
                               <CustomSelect
                                 options={(enhancedFilteredUserPaymentDetails || []).map((detail: UserPaymentDetail) => {
+                                  const status = (detail?.status || "")
+                                    .toString()
+                                    .toLowerCase();
+                                  const isPending =
+                                    status !== "" && status !== "approved" && status !== "verified";
                                   let providerName = detail.payment_provider_name || detail.provider_name || "Unknown Provider";
                                   let providerLogo = detail.provider_logo;
                                   if (Array.isArray(publicMethodsData?.data?.providers)) {
@@ -2319,9 +2379,10 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                                   const displayLabel = `${accountNumber} - ${accountName}`;
                                   return {
                                     value: detail.id.toString(),
-                                    label: displayLabel,
+                                    label: isPending ? `${displayLabel} (Pending)` : displayLabel,
                                     logo: providerLogo || undefined,
                                     title: `Account Number: ${accountNumber} | Account Name: ${accountName}${providerName ? ` | Provider: ${providerName}` : ""}`,
+                                    disabled: isPending,
                                   };
                                 })}
                                 value={selectedPaymentDetails.length > 0 ? selectedPaymentDetails[0].id.toString() : ""}
@@ -2364,6 +2425,31 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                           );
                         }
                       })()}
+
+                      {!isFirstCardSubmitted &&
+                        selectedPaymentDetails.length > 0 &&
+                        (() => {
+                          const status = (selectedPaymentDetails[0]?.status || "")
+                            .toString()
+                            .toLowerCase();
+                          return (
+                            status !== "" &&
+                            status !== "approved" &&
+                            status !== "verified"
+                          );
+                        })() && (
+                          <div className="mb-3 flex items-start gap-3 p-4 rounded-2xl bg-[#F79330]/10 border border-[#F79330]/40">
+                            <svg className="w-5 h-5 text-[#F79330] flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                            <div className="flex-1">
+                              <p className="text-sm font-semibold text-[#F79330]">Account Pending Approval</p>
+                              <p className="text-xs text-[#F79330]/80 mt-1">
+                                Your account is pending approval. Please contact support to get it approved.
+                              </p>
+                            </div>
+                          </div>
+                        )}
                     </div>
                   )}
                 </div>
@@ -2788,14 +2874,18 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
       </div>
 
       {/* Estimated Price Warning */}
-      <div className={`flex items-start ${isDark ? "text-white" : "text-[#1F2937]"} text-xs sm:text-sm lg:text-sm mt-2 mb-4`}>
-        <AlertCircle className="w-4 h-4 text-[#E23D3A] mr-2 mt-0.5 flex-shrink-0" />
-        <span>
+      <div
+        className={`mb-4 flex items-start gap-3 p-4 rounded-2xl border ${isDark ? "bg-[#F79330]/10 border-[#F79330]/30" : "bg-[#F79330]/10 border-[#F79330]/40"} ${
+          isDark ? "text-white" : "text-[#1F2937]"
+        }`}
+      >
+        <AlertCircle className="w-5 h-5 text-[#F79330] flex-shrink-0 mt-0.5" />
+        <div className="text-xs sm:text-sm lg:text-sm">
           {t(
             "rates.alert.estimate",
             "This is only estimated price and its based on current Market Price. We will fix the price when we receive the funds."
           )}
-        </span>
+        </div>
       </div>
 
       {/* Amount & Fees */}
@@ -2870,7 +2960,20 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
       {!isFirstCardSubmitted && (
         <button
           onClick={handleSubmit}
-          disabled={isSubmitting || !isVerified}
+          disabled={
+            isSubmitting ||
+            !isVerified ||
+            (!isDepositMode &&
+              selectedPaymentDetails.length > 0 &&
+              (() => {
+                const status = (selectedPaymentDetails[0]?.status || "")
+                  .toString()
+                  .toLowerCase();
+                return (
+                  status !== "" && status !== "approved" && status !== "verified"
+                );
+              })())
+          }
           className={`w-full py-3 px-4 rounded-xl font-semibold text-white bg-[#1D8751] hover:bg-[#0f8f4d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${(isSubmitting || !isVerified) ? "opacity-50 cursor-not-allowed" : ""
             }`}
         >
@@ -2878,7 +2981,18 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
             ? t("rates.processing", "Processing...")
             : !isVerified
               ? t("rates.verifyToContinue", "Verify account to continue")
-              : t("rates.exchangeNow", "Exchange Now")}
+              : (!isDepositMode &&
+                  selectedPaymentDetails.length > 0 &&
+                  (() => {
+                    const status = (selectedPaymentDetails[0]?.status || "")
+                      .toString()
+                      .toLowerCase();
+                    return (
+                      status !== "" && status !== "approved" && status !== "verified"
+                    );
+                  })())
+                  ? "Pending approval"
+                  : t("rates.exchangeNow", "Exchange Now")}
         </button>
       )}
 

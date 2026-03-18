@@ -357,7 +357,7 @@ const LiveChatPage: React.FC = () => {
                       className={`text-[10px] sm:text-xs font-semibold uppercase tracking-wide mb-1 ${
                         isCustomer
                           ? "text-white/85 text-right"
-                          : "text-[#2563eb] dark:text-sky-400"
+                          : "text-[#1D8751] dark:text-[#7dd89a]"
                       }`}
                     >
                       {isCustomer ? "You" : "Support"}

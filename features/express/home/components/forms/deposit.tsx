@@ -1726,16 +1726,18 @@ export default function DepositForm({
       return 1;
     }
 
-    // Priority 3: FXPRIMUS (ticker: fxp)
+    // Priority 3: FXPRIMUS (ticker can be fxp or fxprimus)
+    const isFxpA = tickerA === "fxp" || tickerA === "fxprimus";
+    const isFxpB = tickerB === "fxp" || tickerB === "fxprimus";
     if (
-      tickerA === "fxp" &&
-      !(tickerB === "fxp")
+      isFxpA &&
+      !isFxpB
     ) {
       return -1;
     }
     if (
-      tickerB === "fxp" &&
-      !(tickerA === "fxp")
+      isFxpB &&
+      !isFxpA
     ) {
       return 1;
     }
@@ -1743,6 +1745,41 @@ export default function DepositForm({
     // Default: preserve original order (no change)
     return 0;
   });
+
+  const getAssetKeyForGrouping = (asset: any): string => {
+    return `${(asset?.ticker || asset?.symbol || asset?.name || "")
+      .toString()
+      .toLowerCase()}|${(asset?.network || getAssetNetwork(asset) || "")
+      .toString()
+      .toLowerCase()}`;
+  };
+
+  // Force "Popular" group to always be: USDT (BSC) and USDC (BSC)
+  // This avoids BTC (or other assets) accidentally landing inside Popular because of imperfect ticker/network sorting.
+  const popularAssets = useMemo(() => {
+    const normalizeCurrency = (asset: any): string =>
+      (getCurrencyFromAsset(asset) || "").toString().toLowerCase();
+
+    const isBscLike = (asset: any): boolean => {
+      const n = (getAssetNetwork(asset) || asset?.network || "").toString().toLowerCase();
+      return getNetworkMatchKeys(n).includes("bsc");
+    };
+
+    const usdtAsset = sortedSwapAssets.find(
+      (a) => normalizeCurrency(a) === "usdt" && isBscLike(a)
+    );
+    const usdcAsset = sortedSwapAssets.find(
+      (a) => normalizeCurrency(a) === "usdc" && isBscLike(a)
+    );
+
+    const selected: SupportedAsset[] = [usdtAsset, usdcAsset].filter(Boolean) as SupportedAsset[];
+    return selected;
+  }, [sortedSwapAssets, getCurrencyFromAsset]);
+
+  const popularKeySet = useMemo(
+    () => new Set(popularAssets.map((a) => getAssetKeyForGrouping(a))),
+    [popularAssets]
+  );
 
   const whitelistKeys = useMemo(() => {
     const keys = new Set<string>();
@@ -1755,15 +1792,11 @@ export default function DepositForm({
 
   const whitelistAssets = useMemo(() => {
     if (whitelistKeys.size === 0) return [];
-    const popularSlice = sortedSwapAssets.slice(0, 3);
-    const popularSet = new Set(
-      popularSlice.map((a) => `${(a?.ticker || a?.symbol || a?.name || "").toString().toLowerCase()}|${(a?.network || getAssetNetwork(a) || "").toString().toLowerCase()}`)
-    );
     return sortedSwapAssets.filter((a) => {
-      const key = `${(a?.ticker || a?.symbol || a?.name || "").toString().toLowerCase()}|${(a?.network || getAssetNetwork(a) || "").toString().toLowerCase()}`;
-      return whitelistKeys.has(key) && !popularSet.has(key);
+      const key = getAssetKeyForGrouping(a);
+      return whitelistKeys.has(key) && !popularKeySet.has(key);
     });
-  }, [sortedSwapAssets, whitelistKeys]);
+  }, [sortedSwapAssets, whitelistKeys, popularKeySet]);
 
   const whitelistKeySet = useMemo(
     () => new Set(whitelistAssets.map((a) => `${(a?.ticker || a?.symbol || a?.name || "").toString().toLowerCase()}|${(a?.network || getAssetNetwork(a) || "").toString().toLowerCase()}`)),
@@ -1773,12 +1806,11 @@ export default function DepositForm({
   const allAssetsList = useMemo(() => {
     if (assetSearchTerm) return sortedSwapAssets;
     if (sortedSwapAssets.length <= 3) return sortedSwapAssets;
-    const excludePopular = sortedSwapAssets.slice(3);
-    return excludePopular.filter((a) => {
-      const key = `${(a?.ticker || a?.symbol || a?.name || "").toString().toLowerCase()}|${(a?.network || getAssetNetwork(a) || "").toString().toLowerCase()}`;
-      return !whitelistKeySet.has(key);
+    return sortedSwapAssets.filter((a) => {
+      const key = getAssetKeyForGrouping(a);
+      return !popularKeySet.has(key) && !whitelistKeySet.has(key);
     });
-  }, [assetSearchTerm, sortedSwapAssets, whitelistKeySet]);
+  }, [assetSearchTerm, sortedSwapAssets, whitelistKeySet, popularKeySet]);
 
   const renderAssetDropdown = () => {
     if (!isComponentMounted || !isAssetDropdownOpen) {
@@ -1827,7 +1859,9 @@ export default function DepositForm({
       const isYouSend = currentCard.hasAttribute('data-select-card');
 
       // Width: match only the asset selector element (right column), not the full card
-      let desiredWidth = dropdownRect.width;
+      // Increase width so it expands more to the right side.
+      // Keep left anchored to the trigger so the panel grows rightwards.
+      let desiredWidth = Math.min(maxWidth, Math.max(minWidth, dropdownRect.width) * 1);
 
       // Position dropdown starting at the top of the card container
       let top = cardRect.top;
@@ -1835,15 +1869,14 @@ export default function DepositForm({
       // Left-align with the asset selector element's left edge
       let left = dropdownRect.left;
 
-      // Ensure it doesn't go off screen on the right
-      if (left + desiredWidth > viewportWidth - minMargin) {
-        left = viewportWidth - desiredWidth - minMargin;
-      }
-
       // Ensure it doesn't go off the left edge
       if (left < minMargin) {
         left = minMargin;
       }
+
+      // Ensure it doesn't go off screen on the right by shrinking width (not shifting left)
+      const maxAllowedWidth = viewportWidth - left - minMargin;
+      desiredWidth = Math.max(0, Math.min(desiredWidth, maxAllowedWidth));
 
       dropdownStyle = {
         position: "fixed",
@@ -1957,9 +1990,7 @@ export default function DepositForm({
                         Popular Currencies
                       </span>
                     </div>
-                    {sortedSwapAssets
-                      .slice(0, 3)
-                      .map((asset: SupportedAsset, index: number) => (
+                    {popularAssets.map((asset: SupportedAsset, index: number) => (
                         <div
                           key={`popular-${asset.asset_id || "asset"}-${asset.symbol || asset.ticker || asset.name}-${asset.network || "unknown"}-${index}`}
                           className="flex items-center gap-4 p-4 sm:p-5 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer transition-colors duration-150"
@@ -2075,6 +2106,12 @@ export default function DepositForm({
                     )}
 
                     <div className="border-t-2 border-gray-200 dark:border-gray-600"></div>
+
+                    <div className="px-3 sm:px-4 py-2 bg-[#F5F6F7] dark:bg-[#23232B] border-b border-gray-200 dark:border-gray-600">
+                      <span className="text-xs font-semibold text-[#788099] uppercase tracking-wider">
+                        All Assets
+                      </span>
+                    </div>
                   </>
                 )}
 
