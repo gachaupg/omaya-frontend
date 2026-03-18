@@ -218,6 +218,37 @@ export default function WithdrawalForm({
   const paymentDetailsRef = useRef<HTMLDivElement>(null);
   const assetDropdownRef = useRef<HTMLDivElement>(null);
   const assetDropdownContentRef = useRef<HTMLDivElement | null>(null);
+  const estimateTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const estimateRequestTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
+  const reverseRequestTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      if (estimateTimeoutRef.current) {
+        clearTimeout(estimateTimeoutRef.current);
+        estimateTimeoutRef.current = null;
+      }
+      if (estimateRequestTimeoutRef.current) {
+        clearTimeout(estimateRequestTimeoutRef.current);
+        estimateRequestTimeoutRef.current = null;
+      }
+      if (reverseRequestTimeoutRef.current) {
+        clearTimeout(reverseRequestTimeoutRef.current);
+        reverseRequestTimeoutRef.current = null;
+      }
+      if (commissionFetchTimeoutRef.current) {
+        clearTimeout(commissionFetchTimeoutRef.current);
+        commissionFetchTimeoutRef.current = null;
+      }
+    };
+  }, []);
 
   // Helper function to check if asset is FXP (forex) - defined early to avoid hoisting issues
   const isForexAsset = (asset: any) => {
@@ -560,6 +591,12 @@ export default function WithdrawalForm({
   const [getAmountInput, setGetAmountInput] = useState(
     initialState?.amountInput ?? "0"
   );
+
+  // Cap "You Receive" at $15,000; amounts above use OTC
+  const MAX_RECEIVE_AMOUNT_USD = 15000;
+  const capReceiveAmount = (value: number) =>
+    Math.min(Math.max(0, Number(value)), MAX_RECEIVE_AMOUNT_USD);
+
   const [selectedAsset, setSelectedAsset] = useState<any>(
     initialState?.asset || null
   );
@@ -671,9 +708,6 @@ export default function WithdrawalForm({
   const [calculationTimeout, setCalculationTimeout] =
     useState<NodeJS.Timeout | null>(null);
   const [calculationComplete, setCalculationComplete] = useState(false);
-  const [estimateTimeout, setEstimateTimeout] = useState<NodeJS.Timeout | null>(
-    null
-  );
   const [previousValidAmount, setPreviousValidAmount] = useState<string>("");
   const [isUserModifiedAmount, setIsUserModifiedAmount] = useState(false);
 
@@ -923,9 +957,11 @@ export default function WithdrawalForm({
     const fetchWithCache = async () => {
       try {
         const { sliceCache } = await import("@/lib/utils/sliceCache");
+        if (!isMountedRef.current) return;
 
         // Try to get from cache first
         const cachedData = await sliceCache.get<any[]>('payment', 'fetchAdminPaymentDetails');
+        if (!isMountedRef.current) return;
 
         if (cachedData && cachedData.length > 0) {
           // Update ref immediately
@@ -939,6 +975,7 @@ export default function WithdrawalForm({
         } else {
           // Fetch fresh data and cache it
           const data = await dispatch(fetchAdminPaymentDetails(true)).unwrap();
+          if (!isMountedRef.current) return;
           if (data && data.length > 0) {
             paymentMethodsRef.current = data.filter((p: any) =>
               p.is_active === undefined || p.is_active === null || p.is_active === true || p.is_active === 'true'
@@ -947,10 +984,12 @@ export default function WithdrawalForm({
           }
         }
       } catch (error) {
+        if (!isMountedRef.current) return;
         // If cache fails, just fetch normally
         dispatch(fetchAdminPaymentDetails(true))
           .unwrap()
           .then((data) => {
+            if (!isMountedRef.current) return;
             if (data && data.length > 0) {
               paymentMethodsRef.current = data.filter((p: any) =>
                 p.is_active === undefined || p.is_active === null || p.is_active === true || p.is_active === 'true'
@@ -983,9 +1022,11 @@ export default function WithdrawalForm({
     const fetchWithCache = async () => {
       try {
         const { sliceCache } = await import("@/lib/utils/sliceCache");
+        if (!isMountedRef.current) return;
 
         // Try to get from cache first
         const cachedData = await sliceCache.get<any>('payment', 'fetchAdminWalletList');
+        if (!isMountedRef.current) return;
 
         if (cachedData && cachedData.results && cachedData.results.length > 0) {
           setHasFetchedAdminWallet(true);
@@ -997,6 +1038,7 @@ export default function WithdrawalForm({
         } else {
           // Fetch fresh data and cache it
           const data = await dispatch(fetchAdminWalletList(true)).unwrap();
+          if (!isMountedRef.current) return;
           if (data && data.results && data.results.length > 0) {
             setHasFetchedAdminWallet(true);
             setAdminWalletRetryCount(0);
@@ -1004,6 +1046,7 @@ export default function WithdrawalForm({
           }
         }
       } catch (error: unknown) {
+        if (!isMountedRef.current) return;
         console.error(`❌ Failed to fetch admin wallet list (attempt ${adminWalletRetryCount + 1}/${MAX_RETRIES}):`, error);
         setAdminWalletRetryCount(prev => prev + 1);
 
@@ -1037,6 +1080,7 @@ export default function WithdrawalForm({
     dispatch(fetchAssets(false))
       .unwrap()
       .then((data) => {
+        if (!isMountedRef.current) return;
         console.log("✅ Assets fetched successfully");
         setHasFetchedAssets(true);
         setAssetsRetryCount(0); // Reset retry count on success
@@ -1046,14 +1090,17 @@ export default function WithdrawalForm({
           setAssetsRetryCount(1);
           dispatch(fetchAssets(true)).unwrap()
             .then(() => {
+              if (!isMountedRef.current) return;
               setHasFetchedAssets(true);
             })
             .catch(() => {
+              if (!isMountedRef.current) return;
               setHasFetchedAssets(true);
             });
         }
       })
       .catch((error: unknown) => {
+        if (!isMountedRef.current) return;
         console.error(`❌ Failed to fetch assets (attempt ${assetsRetryCount + 1}/${MAX_RETRIES}):`, error);
         setAssetsRetryCount(prev => prev + 1);
 
@@ -1085,6 +1132,7 @@ export default function WithdrawalForm({
     const fetchWithCache = async () => {
       try {
         const { sliceCache } = await import("@/lib/utils/sliceCache");
+        if (!isMountedRef.current) return;
 
         // If user just logged in, clear cache and force refresh
         if (justLoggedIn) {
@@ -1093,10 +1141,12 @@ export default function WithdrawalForm({
           await sliceCache.delete('payment', 'fetchAdminPaymentDetails');
           await sliceCache.delete('payment', 'fetchAdminWalletList');
         }
+        if (!isMountedRef.current) return;
 
         // Try to get from cache first (unless just logged in)
         if (!justLoggedIn) {
           const cachedData = await sliceCache.get<any[]>('payment', 'fetchUserPaymentDetails');
+          if (!isMountedRef.current) return;
           if (cachedData && cachedData.length > 0) {
             userPaymentMethodsRef.current = cachedData;
             dispatch({
@@ -1109,15 +1159,18 @@ export default function WithdrawalForm({
 
         // Fetch fresh data and cache it
         const data = await dispatch(fetchUserPaymentDetails(true)).unwrap();
+        if (!isMountedRef.current) return;
         if (data && data.length > 0) {
           userPaymentMethodsRef.current = data;
           await sliceCache.set('payment', 'fetchUserPaymentDetails', data, undefined, 60 * 60 * 1000); // 1 hour TTL
         }
       } catch (error) {
+        if (!isMountedRef.current) return;
         // If cache fails, just fetch normally
         dispatch(fetchUserPaymentDetails(true))
           .unwrap()
           .then((data) => {
+            if (!isMountedRef.current) return;
             if (data && data.length > 0) {
               userPaymentMethodsRef.current = data;
             }
@@ -1175,6 +1228,7 @@ export default function WithdrawalForm({
     dispatch(fetchSupportedAssets(false))
       .unwrap()
       .then((data) => {
+        if (!isMountedRef.current) return;
         console.log("✅ Swap assets fetched successfully");
         setHasFetchedSwapAssets(true);
         setSwapAssetsRetryCount(0); // Reset retry count on success
@@ -1184,14 +1238,17 @@ export default function WithdrawalForm({
           setSwapAssetsRetryCount(1);
           dispatch(fetchSupportedAssets(true)).unwrap()
             .then(() => {
+              if (!isMountedRef.current) return;
               setHasFetchedSwapAssets(true);
             })
             .catch(() => {
+              if (!isMountedRef.current) return;
               setHasFetchedSwapAssets(true);
             });
         }
       })
       .catch((error: unknown) => {
+        if (!isMountedRef.current) return;
         console.error(`❌ Failed to fetch swap assets (attempt ${swapAssetsRetryCount + 1}/${MAX_RETRIES}):`, error);
         setSwapAssetsRetryCount(prev => prev + 1);
 
@@ -1427,8 +1484,14 @@ export default function WithdrawalForm({
     if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
     commissionFetchTimeoutRef.current = setTimeout(() => {
       fetchCommission(apiAsset, amount, "withdrawal")
-        .then((commission) => setApiCommission(commission))
-        .catch(() => setApiCommission(null));
+        .then((commission) => {
+          if (!isMountedRef.current) return;
+          setApiCommission(commission);
+        })
+        .catch(() => {
+          if (!isMountedRef.current) return;
+          setApiCommission(null);
+        });
     }, 300);
     return () => {
       if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
@@ -1441,10 +1504,13 @@ export default function WithdrawalForm({
       if (isCalculatingFromPay && payAmount > 0) {
         // Forward: You Send -> You Receive
         const commissionAmount = (payAmount * apiCommission) / 100;
-        const calculatedGetAmount = Math.max(0, payAmount - commissionAmount);
+        const calculatedGetAmount = capReceiveAmount(Math.max(0, payAmount - commissionAmount));
         setGetAmount(calculatedGetAmount);
         setGetAmountInput(calculatedGetAmount.toString());
         setPreviousValidAmount(calculatedGetAmount.toString());
+        if (calculatedGetAmount >= MAX_RECEIVE_AMOUNT_USD) {
+          setIsInfoModalOpen(true);
+        }
       } else if (!isCalculatingFromPay && getAmount > 0) {
         // Reverse: You Receive -> You Send
         const commissionRate = apiCommission;
@@ -1498,7 +1564,7 @@ export default function WithdrawalForm({
           amountErrors.some((err: string) => err.includes("decimal places"))
         ) {
           setApiValidationError(
-            "Ensure that there are no more than 8 decimal places."
+            "Ensure that there are no more than 5 decimal places."
           );
           return;
         }
@@ -1563,9 +1629,14 @@ export default function WithdrawalForm({
 
   // Fetch estimate for non-direct assets with debouncing for better performance
   useEffect(() => {
-    // Clear any existing estimate timeout
-    if (estimateTimeout) {
-      clearTimeout(estimateTimeout);
+    // Clear any existing estimate timeout (ref avoids extra renders and ensures cleanup)
+    if (estimateTimeoutRef.current) {
+      clearTimeout(estimateTimeoutRef.current);
+      estimateTimeoutRef.current = null;
+    }
+    if (estimateRequestTimeoutRef.current) {
+      clearTimeout(estimateRequestTimeoutRef.current);
+      estimateRequestTimeoutRef.current = null;
     }
 
     if (
@@ -1607,7 +1678,8 @@ export default function WithdrawalForm({
       // Minimal debounce to prevent rapid duplicate requests but keep UI responsive
       const debounceTimeout = setTimeout(() => {
         // Set a timeout to prevent infinite loading
-        const timeoutId = setTimeout(() => {
+        estimateRequestTimeoutRef.current = setTimeout(() => {
+          if (!isMountedRef.current) return;
           setEstimateLoading(false);
           setEstimateError("Request timed out");
 
@@ -1621,56 +1693,15 @@ export default function WithdrawalForm({
           }
           // Keep loading states active
         }, 1500); // Ultra-fast 1.5 second timeout for immediate response
-        dispatch(
-          fetchSwapEstimate({
-            toCurrency: "USDT",
-            toNetwork: "BSC",
-            fromCurrency: selectedAsset.ticker?.toUpperCase(),
-            fromNetwork: selectedAsset.network,
-            amount: payAmount,
-            usePublicApi: !!isHomePage,
-          })
-        )
-          .then((result) => {
-            clearTimeout(timeoutId); // Clear timeout on success
-            if (result.payload) {
-              setEstimate(result.payload);
-              setCalculationError(null); // Clear any previous errors
-              setApiValidationError(null);
 
-              // Update UI immediately instead of waiting for another useEffect
-              const estimatedAmount = (result.payload as any)?.toAmount || (result.payload as any)?.estimated_amount;
-              if (estimatedAmount !== undefined && estimatedAmount !== null && !isNaN(estimatedAmount)) {
-                const finalAmount = Math.max(0, estimatedAmount);
-                setGetAmount(finalAmount);
-                setGetAmountInput(finalAmount.toString());
-                setReceiveAmountError(null);
+        const handleSwapEstimateApiFailure = (actionOrError: any) => {
+            if (!isMountedRef.current) return;
+            const error = actionOrError?.payload ?? actionOrError;
+            const responseData = error?.response_data ?? error?.response?.data?.response_data ?? error?.response?.data;
+            const errorData = responseData?.error ?? error?.response?.data?.error;
 
-                // Clear loading states immediately
-                setIsCalculating(false);
-                setIsCalculatingReceive(false);
-              }
-
-              // Cache the result with timestamp
-              setEstimateCache((prev) =>
-                new Map(prev).set(cacheKey, {
-                  data: result.payload,
-                  timestamp: Date.now(),
-                })
-              );
-            }
-          })
-          .catch((error) => {
-            clearTimeout(timeoutId); // Clear timeout on error
-            // Handle API validation errors for receive amount
-            if (
-              error.response?.data?.error ||
-              error.response?.data?.response_data?.error
-            ) {
-              const errorData =
-                error.response.data.error ||
-                error.response.data.response_data?.error;
-              const responseData = error.response.data.response_data;
+            if (responseData?.error || error?.response?.data?.error) {
+              const errorData = responseData?.error ?? error?.response?.data?.error;
 
 
               // Handle amount validation errors (decimal places, too small, etc.)
@@ -1688,10 +1719,10 @@ export default function WithdrawalForm({
                   )
                 ) {
                   setApiValidationError(
-                    "Ensure that there are no more than 8 decimal places."
+                    "Ensure that there are no more than 5 decimal places."
                   );
                   setReceiveAmountError(
-                    "Ensure that there are no more than 8 decimal places."
+                    "Ensure that there are no more than 5 decimal places."
                   );
                   // Stop loading states and show error
                   setEstimateLoading(false);
@@ -1760,20 +1791,23 @@ export default function WithdrawalForm({
                 return;
               }
 
-              // Handle deposit_too_small error
+              // Handle deposit_too_small error (show min amount from API to user)
+              // Backend can return 400 with body { error, response_data: { error, message, payload } } – use inner response_data for payload
               if (
                 errorData === "deposit_too_small" ||
                 errorData === "Exchange service error: deposit_too_small" ||
-                errorData?.error === "deposit_too_small" ||
+                (typeof errorData === "string" && errorData.includes("deposit_too_small")) ||
                 responseData?.error === "deposit_too_small"
               ) {
-                const errorMessage =
-                  responseData?.message ||
-                  "Amount is too small. Please enter a larger amount to proceed.";
-                setApiValidationError(errorMessage);
-                setReceiveAmountError(errorMessage);
-                setCalculationError(errorMessage); // Show error below "You Send" input
-                // Stop loading states and show error
+                const innerData = responseData?.response_data ?? responseData;
+                const minAmount = innerData?.payload?.range?.minAmount ?? responseData?.payload?.range?.minAmount;
+                const errorMessage = minAmount != null && !Number.isNaN(minAmount)
+                  ? `Amount entered is too small. Minimum amount is ${Number(minAmount).toFixed(8)}.`
+                  : (innerData?.message || responseData?.message || "Amount is too small. Please enter a larger amount to proceed.");
+                // Forward estimate: show once under You Send only (red), not banner / You Receive
+                setApiValidationError(null);
+                setReceiveAmountError(null);
+                setCalculationError(errorMessage);
                 setEstimateLoading(false);
                 setIsCalculating(false);
                 setIsCalculatingReceive(false);
@@ -1825,33 +1859,81 @@ export default function WithdrawalForm({
 
             setApiValidationError(fallbackErrorMessage);
             setReceiveAmountError(fallbackErrorMessage);
-            // Stop loading states and show error
             setEstimateLoading(false);
             setIsCalculating(false);
             setIsCalculatingReceive(false);
-            return;
+        };
 
-            // Handle other error types
-            const errorMessage = extractErrorMessage(error);
-            setEstimateError(errorMessage);
-            setCalculationError(errorMessage); // Show error below "You Send" input
-
-            // Keep loading state instead of showing fallback
-            setGetAmount(0);
-            setGetAmountInput("");
-            if (!apiValidationError) {
-              if (!apiValidationError) {
-                setReceiveAmountError("Calculating..."); // Show immediate feedback
-              }
+        dispatch(
+          fetchSwapEstimate({
+            toCurrency: "USDT",
+            toNetwork: "BSC",
+            fromCurrency: selectedAsset.ticker?.toUpperCase(),
+            fromNetwork: selectedAsset.network,
+            amount: payAmount,
+            usePublicApi: !!isHomePage,
+          })
+        )
+          .then((result: any) => {
+            if (estimateRequestTimeoutRef.current) {
+              clearTimeout(estimateRequestTimeoutRef.current);
+              estimateRequestTimeoutRef.current = null;
             }
-            // Keep loading states active
+            if (!isMountedRef.current) return;
+            // RTK 2: rejected thunks resolve the promise; .catch never runs
+            if (result?.meta?.requestStatus === "rejected") {
+              handleSwapEstimateApiFailure(result);
+              return;
+            }
+            if (result?.meta?.requestStatus !== "fulfilled" || !result.payload) {
+              return;
+            }
+            const payload = result.payload as any;
+            if (
+              payload?.response_data &&
+              payload?.estimated_amount == null &&
+              payload?.toAmount == null
+            ) {
+              handleSwapEstimateApiFailure({ payload });
+              return;
+            }
+            setEstimate(payload);
+            setCalculationError(null);
+            setApiValidationError(null);
+            const estimatedAmount = payload?.toAmount ?? payload?.estimated_amount;
+            if (estimatedAmount !== undefined && estimatedAmount !== null && !isNaN(estimatedAmount)) {
+              const finalAmount = capReceiveAmount(Math.max(0, estimatedAmount));
+              setGetAmount(finalAmount);
+              setGetAmountInput(finalAmount.toString());
+              setReceiveAmountError(null);
+              if (finalAmount >= MAX_RECEIVE_AMOUNT_USD) {
+                setIsInfoModalOpen(true);
+              }
+              setIsCalculating(false);
+              setIsCalculatingReceive(false);
+            }
+            setEstimateCache((prev) =>
+              new Map(prev).set(cacheKey, {
+                data: payload,
+                timestamp: Date.now(),
+              })
+            );
+          })
+          .catch((e: any) => {
+            if (estimateRequestTimeoutRef.current) {
+              clearTimeout(estimateRequestTimeoutRef.current);
+              estimateRequestTimeoutRef.current = null;
+            }
+            if (!isMountedRef.current) return;
+            handleSwapEstimateApiFailure(e);
           })
           .finally(() => {
+            if (!isMountedRef.current) return;
             setEstimateLoading(false);
           });
       }, 50); // 50ms debounce for immediate response while preventing duplicate calls
 
-      setEstimateTimeout(debounceTimeout);
+      estimateTimeoutRef.current = debounceTimeout;
     } else if (
       !isCalculatingFromPay &&
       selectedAsset &&
@@ -1861,6 +1943,16 @@ export default function WithdrawalForm({
       // The reverse calculation useEffect will handle the loading states and API call
       // Don't set loading states here to avoid conflicts
     }
+    return () => {
+      if (estimateTimeoutRef.current) {
+        clearTimeout(estimateTimeoutRef.current);
+        estimateTimeoutRef.current = null;
+      }
+      if (estimateRequestTimeoutRef.current) {
+        clearTimeout(estimateRequestTimeoutRef.current);
+        estimateRequestTimeoutRef.current = null;
+      }
+    };
   }, [selectedAsset, payAmount, isCalculatingFromPay]);
 
   // Reverse calculation effect for non-simple assets when user types in "You Receive"
@@ -1884,7 +1976,14 @@ export default function WithdrawalForm({
 
       // Add timeout to prevent hanging API calls
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error("Request timeout")), 12000); // 12 second timeout (10s API + 2s buffer)
+        if (reverseRequestTimeoutRef.current) {
+          clearTimeout(reverseRequestTimeoutRef.current);
+          reverseRequestTimeoutRef.current = null;
+        }
+        reverseRequestTimeoutRef.current = setTimeout(
+          () => reject(new Error("Request timeout")),
+          12000
+        ); // 12 second timeout (10s API + 2s buffer)
       });
 
       Promise.race([
@@ -1901,6 +2000,11 @@ export default function WithdrawalForm({
         timeoutPromise,
       ])
         .then((result: any) => {
+          if (reverseRequestTimeoutRef.current) {
+            clearTimeout(reverseRequestTimeoutRef.current);
+            reverseRequestTimeoutRef.current = null;
+          }
+          if (!isMountedRef.current) return;
           if (result.payload && (result.payload as any)?.estimated_amount) {
             // The API now returns how much USDT we need to get the desired amount
             const requiredUsdtAmount = (result.payload as any)
@@ -1926,6 +2030,11 @@ export default function WithdrawalForm({
           }
         })
         .catch((error) => {
+          if (reverseRequestTimeoutRef.current) {
+            clearTimeout(reverseRequestTimeoutRef.current);
+            reverseRequestTimeoutRef.current = null;
+          }
+          if (!isMountedRef.current) return;
           // IMMEDIATELY clear all loading states to prevent stuck loading
           setIsCalculating(false);
           setIsCalculatingReceive(false);
@@ -1956,10 +2065,10 @@ export default function WithdrawalForm({
                 )
               ) {
                 setApiValidationError(
-                  "Ensure that there are no more than 8 decimal places."
+                  "Ensure that there are no more than 5 decimal places."
                 );
                 setReceiveAmountError(
-                  "Ensure that there are no more than 8 decimal places."
+                  "Ensure that there are no more than 5 decimal places."
                 );
                 // Stop loading states and show error
                 setEstimateLoading(false);
@@ -2024,27 +2133,23 @@ export default function WithdrawalForm({
               return;
             }
 
-            // Handle deposit_too_small error
+            // Handle deposit_too_small error (support 400 body with response_data.payload.range.minAmount)
             if (
               errorData === "deposit_too_small" ||
               errorData === "Exchange service error: deposit_too_small" ||
+              (typeof errorData === "string" && errorData.includes("deposit_too_small")) ||
               errorData?.error === "deposit_too_small" ||
               responseData?.error === "deposit_too_small"
             ) {
-              const errorMessage =
-                responseData?.message ||
-                "Amount is too small. Please enter a larger amount to proceed.";
+              const innerData = responseData?.response_data ?? responseData;
+              const minAmount = innerData?.payload?.range?.minAmount ?? responseData?.payload?.range?.minAmount;
+              const errorMessage = minAmount != null && !Number.isNaN(minAmount)
+                ? `Amount entered is too small. Minimum amount is ${Number(minAmount).toFixed(8)}.`
+                : (innerData?.message || responseData?.message || "Amount is too small. Please enter a larger amount to proceed.");
+              // Reverse flow: show under You Receive only, not under You Send
+              setCalculationError(null);
               setApiValidationError(errorMessage);
               setReceiveAmountError(errorMessage);
-              setCalculationError(errorMessage); // Show error below "You Send" input
-              // Stop loading states and show error
-              setEstimateLoading(false);
-              setIsCalculating(false);
-              setIsCalculatingReceive(false);
-
-              setApiValidationError(errorMessage);
-              setReceiveAmountError(errorMessage);
-              // Stop loading states and show error
               setEstimateLoading(false);
               setIsCalculating(false);
               setIsCalculatingReceive(false);
@@ -2086,33 +2191,29 @@ export default function WithdrawalForm({
             return;
           }
 
-          // Check for specific API validation errors - handle different error structures
+          const err = error?.payload ?? error;
+          const resData = err?.response_data ?? err?.response?.data?.response_data ?? err?.response?.data;
           let errorMessage = "";
           let errorDetails = "";
-
-          // Handle the exact structure you provided
-          if (error?.response_data?.error) {
-            errorMessage = error.response_data.error;
-            errorDetails = error.response_data.message || "";
-          } else if (error?.error) {
-            errorMessage = error.error;
-            errorDetails = error.message || "";
-          } else if (error?.message) {
-            errorMessage = error.message;
+          if (resData?.error) {
+            errorMessage = resData.error;
+            errorDetails = resData.message || "";
+          } else if (err?.error) {
+            errorMessage = typeof err.error === "string" ? err.error : "";
+            errorDetails = err.message || "";
+          } else if (err?.message) {
+            errorMessage = err.message;
           }
-
-          // Also check for the specific "Exchange service error" format
           if (errorMessage.includes("Exchange service error:")) {
-            const serviceError = errorMessage.replace("Exchange service error: ", "");
-            errorMessage = serviceError;
+            errorMessage = errorMessage.replace("Exchange service error: ", "");
           }
 
-          console.log("Error parsing (withdrawal):", { errorMessage, errorDetails, hasResponseData: !!error?.response_data });
+          setIsCalculating(false);
+          setIsCalculatingReceive(false);
+          setEstimateLoading(false);
 
-          // Handle deposit_too_small error
           if (errorMessage.includes("deposit_too_small") || errorDetails.includes("Out of min amount")) {
-            // Try to get minimum amount from error payload
-            const minAmount = error?.response_data?.payload?.range?.minAmount;
+            const minAmount = resData?.payload?.range?.minAmount;
             const errorText = minAmount
               ? `Amount entered is too small. Minimum amount is ${minAmount.toFixed(8)}.`
               : "Amount entered is too small. Please enter a larger amount.";
@@ -2129,8 +2230,7 @@ export default function WithdrawalForm({
 
           // Handle other specific validation errors
           if (errorMessage.includes("deposit_too_large") || errorDetails.includes("Out of max amount")) {
-            // Try to get maximum amount from error payload
-            const maxAmount = error?.response_data?.payload?.range?.maxAmount;
+            const maxAmount = resData?.payload?.range?.maxAmount;
             const errorText = maxAmount
               ? `Amount entered is too large. Maximum amount is ${maxAmount.toFixed(8)}.`
               : "Amount entered is too large. Please enter a smaller amount.";
@@ -2148,16 +2248,16 @@ export default function WithdrawalForm({
           // Clear API validation errors for network/timeout issues
           setApiValidationError(null);
 
-          // Handle timeout - just clear error and allow retry
-          if (error.message?.includes("Request timeout")) {
+          const msg = err?.message || "";
+          if (msg.includes("Request timeout")) {
             setEstimateError(null);
           } else if (
-            error.message?.includes("Network Error") ||
-            error.code === "ECONNREFUSED" ||
-            error.code === "ENOTFOUND"
+            msg.includes("Network Error") ||
+            (error as any)?.code === "ECONNREFUSED" ||
+            (error as any)?.code === "ENOTFOUND"
           ) {
             setEstimateError(null);
-          } else if (error.message?.includes("Server Error")) {
+          } else if (msg.includes("Server Error")) {
             setEstimateError(null);
           } else {
             setEstimateError(null);
@@ -2201,23 +2301,25 @@ export default function WithdrawalForm({
     }
   }, [selectedAsset, getAmount, isCalculatingFromPay, apiValidationError]);
 
-  // Filter swap assets based on search term - search by ticker and name
-  const filteredSwapAssets =
-    assetsDisplay.displayData?.filter((asset: SupportedAsset) => {
-      const ticker = asset?.ticker?.toUpperCase() || "";
-      const name = asset?.name?.toUpperCase() || "";
-      const symbol = asset?.symbol?.toUpperCase() || "";
-      const searchTerm = assetSearchTerm.toUpperCase();
-
-      return (
-        ticker.includes(searchTerm) ||
-        name.includes(searchTerm) ||
-        symbol.includes(searchTerm)
-      );
-    }) || [];
+  // Filter swap assets based on search term - search by ticker and name (memoized to avoid re-running on every render)
+  const filteredSwapAssets = useMemo(
+    () =>
+      assetsDisplay.displayData?.filter((asset: SupportedAsset) => {
+        const ticker = asset?.ticker?.toUpperCase() || "";
+        const name = asset?.name?.toUpperCase() || "";
+        const symbol = asset?.symbol?.toUpperCase() || "";
+        const searchTerm = assetSearchTerm.toUpperCase();
+        return (
+          ticker.includes(searchTerm) ||
+          name.includes(searchTerm) ||
+          symbol.includes(searchTerm)
+        );
+      }) || [],
+    [assetsDisplay.displayData, assetSearchTerm]
+  );
 
   // Sort assets: USDT on BSC, USDC on BSC, fxprimus, then rest in original order
-  const sortedSwapAssets = [...filteredSwapAssets].sort((a, b) => {
+  const sortedSwapAssets = useMemo(() => [...filteredSwapAssets].sort((a, b) => {
     // Ensure tickers exist and are strings (using ticker as primary, fallback to symbol/name)
     const tickerA = (a?.ticker || a?.symbol || a?.name || "")
       .toString()
@@ -2276,7 +2378,7 @@ export default function WithdrawalForm({
 
     // Default: preserve original order (no change)
     return 0;
-  });
+  }), [filteredSwapAssets]);
 
   const renderAssetDropdown = () => {
     if (!isComponentMounted || !isAssetDropdownOpen) {
@@ -2435,36 +2537,37 @@ export default function WithdrawalForm({
                       .slice(0, 3)
                       .map((asset: SupportedAsset, index: number) => {
                         const handleAssetClick = () => {
-                          if (calculationTimeout) {
-                            clearTimeout(calculationTimeout);
+                        if (calculationTimeout) {
+                          clearTimeout(calculationTimeout);
+                        }
+                        if (estimateTimeoutRef.current) {
+                          clearTimeout(estimateTimeoutRef.current);
+                          estimateTimeoutRef.current = null;
+                        }
+
+                        setEstimate(null);
+                        setEstimateError(null);
+                        setEstimateLoading(false);
+                        setCalculationError(null);
+                        setReceiveAmountError(null);
+                        setApiValidationError(null);
+                        setApiValidationError(null);
+
+                        setSelectedAsset(asset);
+                        setIsAssetDropdownOpen(false);
+                        setAssetSearchTerm("");
+
+                        if (isSimpleCalculationAsset(asset)) {
+                          setIsCalculatingFromPay(true);
+                          if (!isUserModifiedAmount) {
+                            const defaultAmount = getDefaultAmount(asset);
+                            setPayAmount(defaultAmount);
+                            setPayAmountInput(defaultAmount.toString());
+                            calculateAmounts(defaultAmount, true);
+                          } else {
+                            calculateAmounts(payAmount, true);
                           }
-                          if (estimateTimeout) {
-                            clearTimeout(estimateTimeout);
-                          }
-
-                          setEstimate(null);
-                          setEstimateError(null);
-                          setEstimateLoading(false);
-                          setCalculationError(null);
-                          setReceiveAmountError(null);
-                          setApiValidationError(null);
-                          setApiValidationError(null);
-
-                          setSelectedAsset(asset);
-                          setIsAssetDropdownOpen(false);
-                          setAssetSearchTerm("");
-
-                          if (isSimpleCalculationAsset(asset)) {
-                            setIsCalculatingFromPay(true);
-                            if (!isUserModifiedAmount) {
-                              const defaultAmount = getDefaultAmount(asset);
-                              setPayAmount(defaultAmount);
-                              setPayAmountInput(defaultAmount.toString());
-                              calculateAmounts(defaultAmount, true);
-                            } else {
-                              calculateAmounts(payAmount, true);
-                            }
-                          } else if (isForexAsset(asset)) {
+                        } else if (isForexAsset(asset)) {
                             setIsCalculatingFromPay(true);
                             if (!isUserModifiedAmount) {
                               const defaultAmount = 1000;
@@ -2567,8 +2670,9 @@ export default function WithdrawalForm({
                         if (calculationTimeout) {
                           clearTimeout(calculationTimeout);
                         }
-                        if (estimateTimeout) {
-                          clearTimeout(estimateTimeout);
+                        if (estimateTimeoutRef.current) {
+                          clearTimeout(estimateTimeoutRef.current);
+                          estimateTimeoutRef.current = null;
                         }
 
                         setEstimate(null);
@@ -2709,7 +2813,7 @@ export default function WithdrawalForm({
       const commissionAmount = isCommissionApiAsset(selectedAsset)
         ? (fromAmount * (apiCommission ?? 2)) / 100
         : (fromAmount * (selectedAsset?.range_commissions?.[0]?.commission ? parseFloat(selectedAsset.range_commissions[0].commission) : 2)) / 100;
-      const calculatedGetAmount = Math.max(0, fromAmount - commissionAmount);
+      const calculatedGetAmount = capReceiveAmount(Math.max(0, fromAmount - commissionAmount));
 
       // Show result immediately
       setGetAmount(calculatedGetAmount);
@@ -2724,7 +2828,7 @@ export default function WithdrawalForm({
       setReceiveAmountError(validationError);
 
       // Show info modal if receive amount exceeds $15,000
-      if (calculatedGetAmount > 15000) {
+      if (calculatedGetAmount >= MAX_RECEIVE_AMOUNT_USD) {
         setIsInfoModalOpen(true);
       }
 
@@ -2737,7 +2841,7 @@ export default function WithdrawalForm({
     // For FXP (forex), use manual calculation with fixed rate
     if (fromPay && selectedAsset && isForexAsset(selectedAsset)) {
       // For withdrawal: FXP to USD (multiply by 1.1)
-      const calculatedGetAmount = fromAmount * FXP_TO_USD_RATE;
+      const calculatedGetAmount = capReceiveAmount(fromAmount * FXP_TO_USD_RATE);
 
       setGetAmount(calculatedGetAmount);
       setGetAmountInput(calculatedGetAmount.toFixed(2));
@@ -2751,7 +2855,7 @@ export default function WithdrawalForm({
       setReceiveAmountError(validationError);
 
       // Show info modal if receive amount exceeds $15,000
-      if (calculatedGetAmount > 15000) {
+      if (calculatedGetAmount >= MAX_RECEIVE_AMOUNT_USD) {
         setIsInfoModalOpen(true);
       }
 
@@ -2807,7 +2911,7 @@ export default function WithdrawalForm({
             const commissionAmount = isCommissionApiAsset(selectedAsset)
               ? (fromAmount * (apiCommission ?? 2)) / 100
               : (fromAmount * (selectedAsset?.range_commissions?.[0]?.commission ? parseFloat(selectedAsset.range_commissions[0].commission) : 2)) / 100;
-            const calculatedGetAmount = Math.max(0, fromAmount - commissionAmount);
+            const calculatedGetAmount = capReceiveAmount(Math.max(0, fromAmount - commissionAmount));
 
             // Only show calculated amount if it's meaningful (> 0.01), otherwise show empty
             if (calculatedGetAmount >= 0.01) {
@@ -2830,7 +2934,7 @@ export default function WithdrawalForm({
             setReceiveAmountError(validationError);
 
             // Show info modal if receive amount exceeds $15,000
-            if (calculatedGetAmount > 15000) {
+            if (calculatedGetAmount >= MAX_RECEIVE_AMOUNT_USD) {
               setIsInfoModalOpen(true);
             }
           } else {
@@ -2841,9 +2945,8 @@ export default function WithdrawalForm({
               (estimate.toAmount !== undefined ||
                 estimate.estimated_amount !== undefined)
             ) {
-              const finalAmount = Math.max(
-                0,
-                estimate.toAmount || estimate.estimated_amount
+              const finalAmount = capReceiveAmount(
+                Math.max(0, estimate.toAmount || estimate.estimated_amount)
               );
               setGetAmount(finalAmount);
               setGetAmountInput(finalAmount.toString());
@@ -2857,7 +2960,7 @@ export default function WithdrawalForm({
               );
               setReceiveAmountError(validationError);
 
-              if (finalAmount > 15000) {
+              if (finalAmount >= MAX_RECEIVE_AMOUNT_USD) {
                 setIsInfoModalOpen(true);
               }
             } else if (estimateLoading) {
@@ -2926,11 +3029,12 @@ export default function WithdrawalForm({
       if (calculationTimeout) {
         clearTimeout(calculationTimeout);
       }
-      if (estimateTimeout) {
-        clearTimeout(estimateTimeout);
+      if (estimateTimeoutRef.current) {
+        clearTimeout(estimateTimeoutRef.current);
+        estimateTimeoutRef.current = null;
       }
     };
-  }, [calculationTimeout, estimateTimeout]);
+  }, [calculationTimeout]);
 
   // Re-validate wallet address when asset changes (always BEP20)
   useEffect(() => {
@@ -2944,25 +3048,15 @@ export default function WithdrawalForm({
     }
   }, [selectedAsset, walletAddress]);
 
-  // Clear validation errors when amount is cleared or form is reset
+  // Clear calculation-only errors when amount is cleared or form is reset
   useEffect(() => {
     if (!payAmount || payAmount === 0 || payAmountInput === "" || payAmountInput === "0") {
-      setApiValidationError(null);
+      // Keep apiValidationError so backend min-amount / format errors stay visible
       setReceiveAmountError(null);
       setEstimateError(null);
       setCalculationError(null);
     }
   }, [payAmount, payAmountInput]);
-
-  // Clear validation errors on component unmount
-  useEffect(() => {
-    return () => {
-      setApiValidationError(null);
-      setReceiveAmountError(null);
-      setEstimateError(null);
-      setCalculationError(null);
-    };
-  }, []);
 
   // Validate first card data
   const validateFirstCard = () => {
@@ -3498,15 +3592,16 @@ export default function WithdrawalForm({
   };
 
   useEffect(() => {
-    if (selectedPaymentDetail && paymentDetailsRef.current) {
-      paymentDetailsRef.current.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-      setTimeout(() => {
-        window.scrollBy({ top: -80, left: 0, behavior: "smooth" });
-      }, 400);
-    }
+    if (!selectedPaymentDetail || !paymentDetailsRef.current) return;
+    paymentDetailsRef.current.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+    const t = setTimeout(() => {
+      if (!isMountedRef.current) return;
+      window.scrollBy({ top: -80, left: 0, behavior: "smooth" });
+    }, 400);
+    return () => clearTimeout(t);
   }, [selectedPaymentDetail]);
 
   return (
@@ -3524,13 +3619,6 @@ export default function WithdrawalForm({
           <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
             {/* <span className="text-[#7e7e8f] dark:text-[#788099]">1-</span> Transaction Info */}
           </h2>
-
-          {/* API Validation Error - Show as simple red text */}
-          {apiValidationError && (
-            <div className="mb-4 text-red-500 text-sm font-medium">
-              {apiValidationError}
-            </div>
-          )}
 
           <div className="w-full text-white">
             {/* Top Section - You Send and You Get in one card */}
@@ -3567,8 +3655,8 @@ export default function WithdrawalForm({
                           // Check for decimal places validation
                           if (inputValue.includes(".")) {
                             const decimalPart = inputValue.split(".")[1];
-                            if (decimalPart && decimalPart.length > 8) {
-                              setApiValidationError("Number cannot have more than 8 decimal places.");
+                            if (decimalPart && decimalPart.length > 5) {
+                              setApiValidationError("Number cannot have more than 5 decimal places.");
                               return;
                             }
                           }
@@ -3601,21 +3689,25 @@ export default function WithdrawalForm({
                                 const commissionAmount = isCommissionApiAsset(selectedAsset)
                                   ? (newValue * (apiCommission ?? 2)) / 100
                                   : (newValue * (selectedAsset?.range_commissions?.[0]?.commission ? parseFloat(selectedAsset.range_commissions[0].commission) : 2)) / 100;
-                                const calculatedGetAmount = Math.max(0, newValue - commissionAmount);
+                                const calculatedGetAmount = capReceiveAmount(Math.max(0, newValue - commissionAmount));
                                 setGetAmount(calculatedGetAmount);
                                 setGetAmountInput(calculatedGetAmount.toString());
                                 setPreviousValidAmount(calculatedGetAmount.toString());
-                                
+                                if (calculatedGetAmount >= MAX_RECEIVE_AMOUNT_USD) {
+                                  setIsInfoModalOpen(true);
+                                }
                                 // Clear loading states for simple assets - calculation is instant
                                 setIsCalculating(false);
                                 setIsCalculatingReceive(false);
                               } else if (isForexAsset(selectedAsset)) {
                                 // For FXP, calculate immediately without API
-                                const calculatedGetAmount = newValue / FXP_TO_USD_RATE;
+                                const calculatedGetAmount = capReceiveAmount(newValue / FXP_TO_USD_RATE);
                                 setGetAmount(calculatedGetAmount);
                                 setGetAmountInput(calculatedGetAmount.toFixed(2));
                                 setPreviousValidAmount(calculatedGetAmount.toFixed(2));
-                                
+                                if (calculatedGetAmount >= MAX_RECEIVE_AMOUNT_USD) {
+                                  setIsInfoModalOpen(true);
+                                }
                                 // Clear loading states for FXP - calculation is instant
                                 setIsCalculating(false);
                                 setIsCalculatingReceive(false);
@@ -3626,8 +3718,9 @@ export default function WithdrawalForm({
                                 if (calculationTimeout) {
                                   clearTimeout(calculationTimeout);
                                 }
-                                if (estimateTimeout) {
-                                  clearTimeout(estimateTimeout);
+                                if (estimateTimeoutRef.current) {
+                                  clearTimeout(estimateTimeoutRef.current);
+                                  estimateTimeoutRef.current = null;
                                 }
 
                                 // Clear previous calculation states
@@ -3696,7 +3789,7 @@ export default function WithdrawalForm({
                           ? "Calculating..."
                           : "Enter amount"
                       }
-                      className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${apiValidationError
+                      className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${apiValidationError || calculationError
                         ? "border-red-500"
                         : isCalculating || isCalculatingReceive
                           ? "border-[#1D8751]"
@@ -3717,12 +3810,13 @@ export default function WithdrawalForm({
                       </span>
                     </div>
                     {(isCalculatingReceive || isCalculating) &&
-                      !apiValidationError && (
+                      !apiValidationError &&
+                      !calculationError && (
                         <div className="absolute right-12 top-1/2 transform -translate-y-1/2">
                           <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#1D8751]"></div>
                         </div>
                       )}
-                    {apiValidationError && (
+                    {(apiValidationError || calculationError) && (
                       <div className="absolute right-12 top-1/2 transform -translate-y-1/2">
                         <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
                           <circle
@@ -3754,16 +3848,22 @@ export default function WithdrawalForm({
                       </div>
                     )}
                   </div>
-                  {/* Display calculation error below You Send input */}
-                  {calculationError && (
-                    <div className="mt-2 text-sm text-yellow-500 dark:text-yellow-400">
-                      {calculationError}
-                    </div>
-                  )}
-                  {apiValidationError && (
-                    <div className="mt-2 text-sm text-yellow-500 dark:text-yellow-400">
-                      {apiValidationError}
-                    </div>
+                  {/* All pay-side / API validation errors: single line below You Send only */}
+                  {(calculationError || apiValidationError) && (
+                    <p
+                      className={`mt-2 text-sm font-medium ${
+                        (calculationError || apiValidationError || "").includes(
+                          "Rough estimate"
+                        ) ||
+                        (calculationError || apiValidationError || "").includes(
+                          "Using estimated rate"
+                        )
+                          ? "text-[#F79330]"
+                          : "text-red-500 dark:text-red-400"
+                      }`}
+                    >
+                      {calculationError || apiValidationError}
+                    </p>
                   )}
                 </div>
 
@@ -3923,19 +4023,24 @@ export default function WithdrawalForm({
                           // Check for decimal places validation
                           if (value.includes(".")) {
                             const decimalPart = value.split(".")[1];
-                            if (decimalPart && decimalPart.length > 8) {
-                              setApiValidationError("Number cannot have more than 8 decimal places.");
+                            if (decimalPart && decimalPart.length > 5) {
+                              setApiValidationError("Number cannot have more than 5 decimal places.");
                               return;
                             }
                           }
 
-                          const newAmount = parseFloat(value) || 0;
+                          const newAmount = capReceiveAmount(parseFloat(value) || 0);
 
                           // Only update state and calculate if value actually changed
                           if (newAmount !== getAmount || value !== getAmountInput) {
-                            setGetAmountInput(value); // Store the string value for display
+                            setGetAmountInput(newAmount.toString()); // Store capped value for display
                             setGetAmount(newAmount);
                             setIsCalculatingFromPay(false);
+
+                            // If user-entered receive amount hits the cap, show OTC modal
+                            if (newAmount >= MAX_RECEIVE_AMOUNT_USD) {
+                              setIsInfoModalOpen(true);
+                            }
 
                             // Clear any previous errors when user starts typing
                             setReceiveAmountError(null);
@@ -3978,8 +4083,9 @@ export default function WithdrawalForm({
                                 if (calculationTimeout) {
                                   clearTimeout(calculationTimeout);
                                 }
-                                if (estimateTimeout) {
-                                  clearTimeout(estimateTimeout);
+                                if (estimateTimeoutRef.current) {
+                                  clearTimeout(estimateTimeoutRef.current);
+                                  estimateTimeoutRef.current = null;
                                 }
 
                                 // Clear previous calculation states
@@ -4052,7 +4158,12 @@ export default function WithdrawalForm({
                       }}
                       placeholder={
                         (isCalculating || isCalculatingReceive) &&
-                          !apiValidationError
+                          !apiValidationError &&
+                          !calculationError &&
+                          (!receiveAmountError ||
+                            receiveAmountError === "Calculating..." ||
+                            receiveAmountError.includes("Rough estimate") ||
+                            receiveAmountError.includes("Using estimated rate"))
                           ? "Calculating..."
                           : "Enter amount"
                       }
@@ -4087,15 +4198,19 @@ export default function WithdrawalForm({
                       </span>
                     </div>
                     {(isCalculatingReceive || isCalculating) &&
-                      !apiValidationError && (
+                      !apiValidationError &&
+                      !calculationError &&
+                      (!receiveAmountError ||
+                        receiveAmountError === "Calculating..." ||
+                        receiveAmountError.includes("Rough estimate") ||
+                        receiveAmountError.includes("Using estimated rate")) && (
                         <div className="absolute right-12 top-1/2 transform -translate-y-1/2">
                           <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#1D8751]"></div>
                         </div>
                       )}
-                    {((receiveAmountError &&
+                    {(receiveAmountError &&
                       !receiveAmountError.includes("Rough estimate") &&
-                      !receiveAmountError.includes("Using estimated rate")) ||
-                      apiValidationError) && (
+                      !receiveAmountError.includes("Using estimated rate")) && (
                         <div className="absolute right-16 top-1/2 transform -translate-y-1/2">
                           <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
                             <circle
@@ -4156,22 +4271,6 @@ export default function WithdrawalForm({
                         </div>
                       )}
                   </div>
-                  {receiveAmountError && (
-                    <p
-                      className={`text-sm mt-1 ${receiveAmountError.includes("Rough estimate") ||
-                        receiveAmountError.includes("Using estimated rate")
-                        ? "text-[#F79330]"
-                        : "text-red-500"
-                        }`}
-                    >
-                      {receiveAmountError}
-                    </p>
-                  )}
-                  {apiValidationError && (
-                    <p className="text-sm mt-1 text-yellow-500">
-                      {apiValidationError}
-                    </p>
-                  )}
                 </div>
 
                 {/* Payment Method Section */}
@@ -4846,8 +4945,7 @@ export default function WithdrawalForm({
                   <div className="flex items-center text-[#1D8751] text-[14px] font-medium bg-[#23232b] dark:bg-[#35353E] border border-[#1D8751] rounded-xl p-3">
                     <FaExclamationCircle className="mr-2 text-[#1D8751]" />
                     <span>
-                      Amount exceeds $15,000. Please reduce the amount or contact
-                      our OTC Desk for better rates.
+                      Anything above $15,000? Please contact our OTC Desk for better rates.
                     </span>
                   </div>
                 )}
@@ -4937,38 +5035,36 @@ export default function WithdrawalForm({
               }
             }}
           />
-
-          {/* InfoModal */}
-          <InfoModal
-            isOpen={isInfoModalOpen}
-            onClose={() => {
-              // When modal closes, reset amount to maximum allowed (15000)
-              if (payAmount > 15000) {
-                setPayAmount(15000);
-                setPayAmountInput("15000");
-              }
-              if (getAmount > 15000) {
-                setGetAmount(15000);
-                setGetAmountInput("15000");
-              }
-              setIsInfoModalOpen(false);
-            }}
-            onContactUs={() => {
-              setIsInfoModalOpen(false);
-              router.push("/contactUs");
-              // When modal closes, reset amount to maximum allowed (15000)
-              if (payAmount > 15000) {
-                setPayAmount(15000);
-                setPayAmountInput("15000");
-              }
-              if (getAmount > 15000) {
-                setGetAmount(15000);
-                setGetAmountInput("15000");
-              }
-            }}
-          />
         </>
       )}
+
+      {/* InfoModal - outside ternary so it's always mounted and visible in both crypto and forex */}
+      <InfoModal
+        isOpen={isInfoModalOpen}
+        onClose={() => {
+          if (payAmount > 15000) {
+            setPayAmount(15000);
+            setPayAmountInput("15000");
+          }
+          if (getAmount > 15000) {
+            setGetAmount(15000);
+            setGetAmountInput("15000");
+          }
+          setIsInfoModalOpen(false);
+        }}
+        onContactUs={() => {
+          setIsInfoModalOpen(false);
+          router.push("/contactUs");
+          if (payAmount > 15000) {
+            setPayAmount(15000);
+            setPayAmountInput("15000");
+          }
+          if (getAmount > 15000) {
+            setGetAmount(15000);
+            setGetAmountInput("15000");
+          }
+        }}
+      />
     </div>
   );
 }

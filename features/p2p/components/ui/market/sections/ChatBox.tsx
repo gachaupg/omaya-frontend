@@ -35,6 +35,8 @@ const ChatBox: React.FC<{
   buyer?: string;
   seller?: string;
   currentUserEmail?: string;
+  /** Order advertiser email — when set, peer photo: advertiser → buyer_photo, else seller_photo */
+  advertiserEmail?: string;
   owner: string;
   buyerName?: string;
   sellerName?: string;
@@ -42,10 +44,41 @@ const ChatBox: React.FC<{
   peerName?: string;
   supportMessages?: GroupedMessage[];
   onClose?: () => void;
-}> = ({ tradeId, userId, userName, autoreply, seller_photo, buyer_photo, buyer, seller, currentUserEmail, owner, buyerName, sellerName, messageType = 'p2p', peerName, supportMessages, onClose }) => {
+}> = ({ tradeId, userId, userName, autoreply, seller_photo, buyer_photo, buyer, seller, currentUserEmail, advertiserEmail, owner, buyerName, sellerName, messageType = 'p2p', peerName, supportMessages, onClose }) => {
+
+  const emailsEqual = (a?: string, b?: string) =>
+    !!a &&
+    !!b &&
+    String(a).trim().toLowerCase() === String(b).trim().toLowerCase();
 
   // Determine which photo and display name to show for the other person
   const otherPersonData = React.useMemo(() => {
+    const isLoggedInAdvertiser =
+      advertiserEmail &&
+      currentUserEmail &&
+      emailsEqual(currentUserEmail, advertiserEmail);
+
+    // Peer photo by advertiser rule (matches API: advertiser sees buyer_photo, buyer sees seller_photo)
+    if (advertiserEmail && currentUserEmail) {
+      const peerPhoto = isLoggedInAdvertiser ? buyer_photo : seller_photo;
+      const peerDisplay = isLoggedInAdvertiser
+        ? peerName || buyerName || buyer || "Buyer"
+        : peerName || sellerName || seller || userName || "Seller";
+
+      if (messageType === "p2p") {
+        return {
+          photo: peerPhoto,
+          displayName: peerDisplay,
+        };
+      }
+      if (messageType === "support") {
+        return {
+          photo: peerPhoto || seller_photo || buyer_photo,
+          displayName: peerName || "Support",
+        };
+      }
+    }
+
     // For P2P messages, use peerName from API if available, otherwise use existing logic
     if (messageType === 'p2p' && peerName) {
       if (currentUserEmail && owner) {
@@ -97,7 +130,7 @@ const ChatBox: React.FC<{
       photo: seller_photo || buyer_photo,
       displayName: userName || sellerName || buyerName || seller || buyer || "Unknown"
     };
-  }, [currentUserEmail, owner, seller_photo, buyer_photo, buyer, seller, buyerName, sellerName, userName, messageType, peerName]);
+  }, [currentUserEmail, advertiserEmail, owner, seller_photo, buyer_photo, buyer, seller, buyerName, sellerName, userName, messageType, peerName]);
   const dispatch = useDispatch();
   const message = useSelector((state: RootState) => state.message.message);
   const uploaded_images = useSelector(
@@ -487,8 +520,11 @@ const ChatBox: React.FC<{
               : "Unknown User";
 
             if (!isSender && msg.sender_name) {
-              // This is the other person's message - determine which photo to show
-              if (msg.sender_name === seller) {
+              if (advertiserEmail && emailsEqual(msg.sender_name, advertiserEmail)) {
+                messagePhoto = seller_photo;
+              } else if (advertiserEmail) {
+                messagePhoto = buyer_photo;
+              } else if (msg.sender_name === seller) {
                 messagePhoto = seller_photo;
               } else if (msg.sender_name === buyer) {
                 messagePhoto = buyer_photo;

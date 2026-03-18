@@ -636,6 +636,32 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
           </div>
         )}
 
+        {/* API / estimate error (400, min amount, etc.) */}
+        {estimateError && typeof estimateError === "string" && (
+          <div
+            className={`mt-4 rounded-2xl p-3 sm:p-4 flex items-start gap-2 border ${
+              isDark
+                ? "bg-red-950/40 border-red-500/40"
+                : "bg-red-500/10 border-red-500/30"
+            }`}
+          >
+            <div
+              className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                isDark ? "bg-red-500/25" : "bg-red-500/20"
+              }`}
+            >
+              <span className="text-red-500 text-xs font-bold">!</span>
+            </div>
+            <p
+              className={`text-sm flex-1 ${
+                isDark ? "text-red-300" : "text-red-600"
+              }`}
+            >
+              {estimateError}
+            </p>
+          </div>
+        )}
+
         {/* Submit Button */}
         {!hideContinueButton && (
           <div className="mt-4">
@@ -646,7 +672,8 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                   parseFloat(fromAmount) <= 0 ||
                   !estimate ||
                   estimateLoading ||
-                  swapLoading
+                  swapLoading ||
+                  !!estimateError
                   ? "bg-gray-500 cursor-not-allowed"
                   : "bg-[#1D8751] hover:bg-[#1D8751]/80"
                 }`}
@@ -658,7 +685,8 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                 parseFloat(fromAmount) <= 0 ||
                 !estimate ||
                 estimateLoading ||
-                swapLoading
+                swapLoading ||
+                !!estimateError
               }
             >
               {swapLoading ? (

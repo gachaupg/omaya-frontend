@@ -768,6 +768,11 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
             buyer={confirmOrder?.buyer || ""}
             seller={confirmOrder?.seller || ""}
             currentUserEmail={user?.email || ""}
+            advertiserEmail={
+              (singleOrder as { advertiser_email?: string })?.advertiser_email ||
+              (confirmOrder as { advertiser_email?: string })?.advertiser_email ||
+              (saveOrder as { advertiser_email?: string })?.advertiser_email
+            }
             owner={confirmOrder?.owner || ""}
             sellerName={
               singleOrder?.advertiser_first_name &&

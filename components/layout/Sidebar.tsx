@@ -75,9 +75,10 @@ export default function Sidebar() {
         router.push(href);
         return false;
       }
-      // If already on base route, force a reset by doing a hard navigation
+      // If already on the base route, avoid hard reload (it feels like lag).
+      // If you need to "reset" state, prefer a soft refresh.
       e.preventDefault();
-      window.location.href = href;
+      router.refresh();
       return false;
     }
     

@@ -10,8 +10,6 @@ import {
   CreateSwapResponse,
 } from "../types";
 import { getSupportedAssets, getEstimateSwap, getPublicEstimateSwap, createSwap } from "../api";
-import { showToast } from "@/lib/utils/toast";
-import { handleApiError } from "@/lib/utils/errorHandler";
 import { sliceCache } from "@/lib/utils/sliceCache";
 
 import { logger } from '@/lib/utils/logger';
@@ -137,16 +135,6 @@ export const fetchSupportedAssets = createAsyncThunk<SupportedAsset[], boolean |
       
       logger.debug('swap', "🔄 Using fallback assets:", fallbackAssets.length);
       
-      // Only show toast if it's a network error or server error
-      if (error instanceof Error) {
-        if (
-          error.message.includes("Network error") ||
-          error.message.includes("Server Error")
-        ) {
-          handleApiError(error);
-        }
-      }
-      
       // Return fallback assets instead of rejecting
       return fallbackAssets;
     }
@@ -203,15 +191,6 @@ export const fetchSwapEstimate = createAsyncThunk(
       return data;
     } catch (error) {
       console.error("Failed to fetch swap estimate:", error);
-      // Only show toast for server errors or network issues
-      if (error instanceof Error) {
-        if (
-          error.message.includes("Server Error") ||
-          error.message.includes("Network error")
-        ) {
-          handleApiError(error);
-        }
-      }
       return rejectWithValue(
         error instanceof Error ? error.message : "Failed to fetch swap estimate"
       );
@@ -221,67 +200,12 @@ export const fetchSwapEstimate = createAsyncThunk(
 
 export const createSwapTransaction = createAsyncThunk(
   "swap/createSwapTransaction",
-  async (swapData: CreateSwapRequest, { rejectWithValue, getState }) => {
+  async (swapData: CreateSwapRequest, { rejectWithValue }) => {
     try {
       const response = await createSwap(swapData);
       return response;
     } catch (error) {
       console.error("Failed to create swap transaction:", error);
-
-      // Get current state to check if error toast has been shown
-      const state = getState() as { swap: SwapState };
-      const hasShownError = state.swap.hasShownErrorToast;
-
-      // Only show toast if we haven't shown one for this error yet
-      if (!hasShownError) {
-        if (error instanceof Error) {
-          if (
-            error.message.includes("500") ||
-            error.message.includes("Server Error")
-          ) {
-            showToast.error(
-              "Server Error",
-              "The server encountered an error. Please try again later."
-            );
-          } else if (
-            error.message.includes("400") ||
-            error.message.includes("Bad Request")
-          ) {
-            showToast.error(
-              "Invalid Request",
-              "Please check your input and try again"
-            );
-          } else if (
-            error.message.includes("401") ||
-            error.message.includes("Unauthorized")
-          ) {
-            showToast.error(
-              "Authentication Required",
-              "Please log in to continue"
-            );
-          } else if (
-            error.message.includes("403") ||
-            error.message.includes("Forbidden")
-          ) {
-            showToast.error(
-              "Access Denied",
-              "You don't have permission to perform this action"
-            );
-          } else if (
-            error.message.includes("429") ||
-            error.message.includes("Too Many Requests")
-          ) {
-            showToast.error(
-              "Too Many Requests",
-              "Please wait a moment before trying again"
-            );
-          } else {
-            handleApiError(error);
-          }
-        } else {
-          handleApiError(error);
-        }
-      }
 
       return rejectWithValue(
         error instanceof Error

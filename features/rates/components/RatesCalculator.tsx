@@ -185,6 +185,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
   const [estimate, setEstimate] = useState<any>(null);
   const [estimateLoading, setEstimateLoading] = useState(false);
   const [estimateError, setEstimateError] = useState<string | null>(null);
+  const [apiValidationError, setApiValidationError] = useState<string | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
   const [isCalculatingReceive, setIsCalculatingReceive] = useState(false);
   const [isCalculatingFromPay, setIsCalculatingFromPay] = useState(true);
@@ -555,6 +556,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
 
       setEstimateLoading(true);
       setEstimateError(null);
+      setApiValidationError(null);
 
       estimateTimeoutRef.current = setTimeout(() => {
         estimateTimeoutRef.current = null;
@@ -594,15 +596,90 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
           })
           .catch((error) => {
             console.error("Failed to fetch swap estimate:", error);
+
+            let errorMessage = "";
+            let errorDetails = "";
+
+            if ((error as any)?.response_data?.error) {
+              errorMessage = (error as any).response_data.error;
+              errorDetails = (error as any).response_data.message || "";
+            } else if ((error as any)?.error && typeof (error as any).error === "string") {
+              errorMessage = (error as any).error;
+              errorDetails = (error as any).message || "";
+            } else if ((error as any)?.message) {
+              errorMessage = (error as any).message;
+            }
+
+            if (errorMessage.includes("Exchange service error:")) {
+              errorMessage = errorMessage.replace("Exchange service error: ", "");
+            }
+
+            const amountErrorsFromRoot =
+              (Array.isArray((error as any)?.error?.amount) && (error as any).error.amount) ||
+              (Array.isArray((error as any)?.response_data?.error?.amount) &&
+                (error as any).response_data.error.amount);
+
+            if (amountErrorsFromRoot && amountErrorsFromRoot.length > 0) {
+              const firstMessage = String(amountErrorsFromRoot[0]);
+              setApiValidationError(firstMessage);
+              setEstimateError(null);
+              setReceiveAmount("0");
+              setIsCalculating(false);
+              setIsCalculatingReceive(false);
+              setEstimateLoading(false);
+              return;
+            }
+
+            if (
+              errorMessage.includes("deposit_too_small") ||
+              errorDetails.includes("Out of min amount")
+            ) {
+              const minAmount =
+                (error as any)?.response_data?.payload?.range?.minAmount;
+              const text = minAmount
+                ? `Amount entered is too small. Minimum amount is ${Number(
+                    minAmount
+                  ).toFixed(8)}.`
+                : "Amount entered is too small. Please enter a larger amount.";
+              setApiValidationError(text);
+              setEstimateError(null);
+              setReceiveAmount("0");
+              setIsCalculating(false);
+              setIsCalculatingReceive(false);
+              setEstimateLoading(false);
+              return;
+            }
+
+            if (
+              errorMessage.includes("deposit_too_large") ||
+              errorDetails.includes("Out of max amount")
+            ) {
+              const maxAmount =
+                (error as any)?.response_data?.payload?.range?.maxAmount;
+              const text = maxAmount
+                ? `Amount entered is too large. Maximum amount is ${Number(
+                    maxAmount
+                  ).toFixed(8)}.`
+                : "Amount entered is too large. Please enter a smaller amount.";
+              setApiValidationError(text);
+              setEstimateError(null);
+              setReceiveAmount("0");
+              setIsCalculating(false);
+              setIsCalculatingReceive(false);
+              setEstimateLoading(false);
+              return;
+            }
+
             setEstimateError("Using fallback calculation");
-            const commissionRate = selectedAsset && isCommissionApiAsset(selectedAsset)
-              ? (apiCommission ?? 2)
-              : (() => {
-                  const rate = selectedAsset?.range_commissions?.[0]?.commission
-                    ? parseFloat(selectedAsset.range_commissions[0].commission)
-                    : 2;
-                  return rate;
-                })();
+            const commissionRate =
+              selectedAsset && isCommissionApiAsset(selectedAsset)
+                ? apiCommission ?? 2
+                : (() => {
+                    const rate = selectedAsset?.range_commissions?.[0]?.commission
+                      ? parseFloat(selectedAsset.range_commissions[0].commission)
+                      : 2;
+                    return rate;
+                  })();
             const commissionAmount = (parseFloat(amount) * commissionRate) / 100;
             setReceiveAmount((parseFloat(amount) - commissionAmount).toFixed(2));
             setIsCalculating(false);
@@ -652,6 +729,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
 
       setEstimateLoading(true);
       setEstimateError(null);
+      setApiValidationError(null);
 
       estimateTimeoutRef.current = setTimeout(() => {
         estimateTimeoutRef.current = null;
@@ -698,23 +776,100 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
           })
           .catch((error) => {
             console.error("Failed to fetch reverse estimate:", error);
+
+            let errorMessage = "";
+            let errorDetails = "";
+
+            if ((error as any)?.response_data?.error) {
+              errorMessage = (error as any).response_data.error;
+              errorDetails = (error as any).response_data.message || "";
+            } else if ((error as any)?.error && typeof (error as any).error === "string") {
+              errorMessage = (error as any).error;
+              errorDetails = (error as any).message || "";
+            } else if ((error as any)?.message) {
+              errorMessage = (error as any).message;
+            }
+
+            if (errorMessage.includes("Exchange service error:")) {
+              errorMessage = errorMessage.replace("Exchange service error: ", "");
+            }
+
+            const amountErrorsFromRoot =
+              (Array.isArray((error as any)?.error?.amount) && (error as any).error.amount) ||
+              (Array.isArray((error as any)?.response_data?.error?.amount) &&
+                (error as any).response_data.error.amount);
+
+            if (amountErrorsFromRoot && amountErrorsFromRoot.length > 0) {
+              const firstMessage = String(amountErrorsFromRoot[0]);
+              setApiValidationError(firstMessage);
+              setEstimateError(null);
+              setAmount("0");
+              setIsCalculating(false);
+              setIsCalculatingReceive(false);
+              setEstimateLoading(false);
+              return;
+            }
+
+            if (
+              errorMessage.includes("deposit_too_small") ||
+              errorDetails.includes("Out of min amount")
+            ) {
+              const minAmount =
+                (error as any)?.response_data?.payload?.range?.minAmount;
+              const text = minAmount
+                ? `Amount entered is too small. Minimum amount is ${Number(
+                    minAmount
+                  ).toFixed(8)}.`
+                : "Amount entered is too small. Please enter a larger amount.";
+              setApiValidationError(text);
+              setEstimateError(null);
+              setAmount("0");
+              setIsCalculating(false);
+              setIsCalculatingReceive(false);
+              setEstimateLoading(false);
+              return;
+            }
+
+            if (
+              errorMessage.includes("deposit_too_large") ||
+              errorDetails.includes("Out of max amount")
+            ) {
+              const maxAmount =
+                (error as any)?.response_data?.payload?.range?.maxAmount;
+              const text = maxAmount
+                ? `Amount entered is too large. Maximum amount is ${Number(
+                    maxAmount
+                  ).toFixed(8)}.`
+                : "Amount entered is too large. Please enter a smaller amount.";
+              setApiValidationError(text);
+              setEstimateError(null);
+              setAmount("0");
+              setIsCalculating(false);
+              setIsCalculatingReceive(false);
+              setEstimateLoading(false);
+              return;
+            }
+
             setEstimateError("Using fallback calculation");
             const recv = parseFloat(receiveAmount);
-            const fallbackAmount = selectedAsset && isCommissionApiAsset(selectedAsset)
-              ? recv / (1 - (apiCommission ?? 2) / 100)
-              : (() => {
-                  let commissionRate = 2;
-                  if (selectedAsset?.range_commissions?.length) {
-                    commissionRate = parseFloat(selectedAsset.range_commissions[0]?.commission || "2");
-                  } else if (selectedAsset?.commission) {
-                    commissionRate = parseFloat(selectedAsset.commission);
-                  } else if (selectedAsset?.fee_rate) {
-                    commissionRate = parseFloat(selectedAsset.fee_rate);
-                  }
-                  return isDepositMode
-                    ? recv * (1 + commissionRate / 100)
-                    : recv / (1 - commissionRate / 100);
-                })();
+            const fallbackAmount =
+              selectedAsset && isCommissionApiAsset(selectedAsset)
+                ? recv / (1 - (apiCommission ?? 2) / 100)
+                : (() => {
+                    let commissionRate = 2;
+                    if (selectedAsset?.range_commissions?.length) {
+                      commissionRate = parseFloat(
+                        selectedAsset.range_commissions[0]?.commission || "2"
+                      );
+                    } else if (selectedAsset?.commission) {
+                      commissionRate = parseFloat(selectedAsset.commission);
+                    } else if (selectedAsset?.fee_rate) {
+                      commissionRate = parseFloat(selectedAsset.fee_rate);
+                    }
+                    return isDepositMode
+                      ? recv * (1 + commissionRate / 100)
+                      : recv / (1 - commissionRate / 100);
+                  })();
             setAmount(fallbackAmount.toString());
             setIsCalculating(false);
             setIsCalculatingReceive(false);
@@ -1908,6 +2063,22 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
 
   return (
     <div className="bg-white dark:bg-[#18181D] p-3 sm:p-4 lg:p-6 rounded-xl sm:rounded-xl lg:rounded-2xl border-[1.5px] border-gray-200 dark:border-[#35353E] shadow-md container mx-auto">
+      {/* API Validation Error - show backend validation messages (no retries) */}
+      {apiValidationError && (
+        <div
+          className={`mb-4 flex items-start gap-3 rounded-2xl p-3 sm:p-4 border ${isDark ? "bg-red-950/20 border-red-500/50" : "bg-red-50 border-red-200"} shadow-sm`}
+          role="alert"
+        >
+          <span className="flex-shrink-0 mt-0.5" aria-hidden>
+            <svg className="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+          </span>
+          <p className={`text-sm font-medium ${isDark ? "text-red-400" : "text-red-700"}`}>
+            {apiValidationError}
+          </p>
+        </div>
+      )}
       <div className="mb-2" />
       <div className={`w-full ${isDark ? "text-white" : "text-[#1F2937]"}`}>
         {/* Top Section - You Send: Amount and Bank/Payment Method in one card */}
