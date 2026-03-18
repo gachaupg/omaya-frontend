@@ -64,7 +64,6 @@ export const isExchangeCommissionLookupAsset = (asset: {
 
   const isUsdt = ticker === "usdt";
   const isUsdc = ticker === "usdc";
-  const isBnb = ticker === "bnb";
   const isFxp = ticker === "fxp" || ticker === "fxprimus";
   const isBscLike = network === "bsc" || network === "bep20";
   const isEthLike = network === "eth" || network === "erc20";
@@ -72,7 +71,6 @@ export const isExchangeCommissionLookupAsset = (asset: {
   return (
     (isUsdt && isBscLike) || // USDT BSC/BEP20
     isUsdc ||                // Any USDC (we'll force BSC mapping below)
-    (isBnb && isBscLike) ||  // BNB BSC/BEP20
     (isUsdt && isEthLike) || // USDT ETH/ERC20
     isFxp                    // FXP / FXPRIMUS (FOREX, no network)
   );
