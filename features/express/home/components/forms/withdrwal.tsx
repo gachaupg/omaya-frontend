@@ -221,7 +221,7 @@ export default function WithdrawalForm({
   const isForexAsset = (asset: any) => {
     if (!asset) return false;
     const ticker = (asset?.ticker || asset?.symbol || "").toLowerCase();
-    return ticker === "fxp";
+    return ticker === "fxp" || ticker === "fxprimus";
   };
 
   const { adminPaymentDetails, adminWalletList, loading, error } = useSelector(
@@ -2281,16 +2281,16 @@ export default function WithdrawalForm({
       return 1;
     }
 
-    // Priority 3: FXPRIMUS (ticker: fxp)
+    // Priority 3: FXPRIMUS (ticker: fxp or fxprimus)
     if (
-      tickerA === "fxp" &&
-      !(tickerB === "fxp")
+      (tickerA === "fxp" || tickerA === "fxprimus") &&
+      !(tickerB === "fxp" || tickerB === "fxprimus")
     ) {
       return -1;
     }
     if (
-      tickerB === "fxp" &&
-      !(tickerA === "fxp")
+      (tickerB === "fxp" || tickerB === "fxprimus") &&
+      !(tickerA === "fxp" || tickerA === "fxprimus")
     ) {
       return 1;
     }
@@ -2298,6 +2298,56 @@ export default function WithdrawalForm({
     // Default: preserve original order (no change)
     return 0;
   }), [filteredSwapAssets]);
+
+  const getAssetKeyForGrouping = (asset: any): string => {
+    return `${(asset?.ticker || asset?.symbol || asset?.name || "")
+      .toString()
+      .toLowerCase()}|${(asset?.network || "")
+      .toString()
+      .toLowerCase()}`;
+  };
+
+  const getCurrencyLower = (asset: any): string => {
+    if (!asset) return "";
+    if (asset.ticker) return String(asset.ticker).toLowerCase();
+    if (asset.symbol) {
+      if (asset.symbol === "USDT Tether") return "usdt";
+      return String(asset.symbol).toLowerCase();
+    }
+    if (asset.name) return String(asset.name).toLowerCase();
+    return "";
+  };
+
+  // Force "Popular Currencies" to always be: USDT (BSC), USDC (BSC), FXPRIMUS.
+  // This prevents BTC (or others) from accidentally landing in Popular due to sorting quirks.
+  const popularAssets = useMemo(() => {
+    const usdtAsset = sortedSwapAssets.find(
+      (a) =>
+        getCurrencyLower(a) === "usdt" && String(a?.network || "").toLowerCase() === "bsc"
+    );
+    const usdcAsset = sortedSwapAssets.find(
+      (a) =>
+        getCurrencyLower(a) === "usdc" && String(a?.network || "").toLowerCase() === "bsc"
+    );
+    const fxprimusAsset = sortedSwapAssets.find(
+      (a) => {
+        const c = getCurrencyLower(a);
+        return c === "fxp" || c === "fxprimus";
+      }
+    );
+
+    return [usdtAsset, usdcAsset, fxprimusAsset].filter(Boolean) as SupportedAsset[];
+  }, [sortedSwapAssets]);
+
+  const popularKeySet = useMemo(
+    () => new Set(popularAssets.map((a) => getAssetKeyForGrouping(a))),
+    [popularAssets]
+  );
+
+  const allAssetsList = useMemo(() => {
+    if (assetSearchTerm) return sortedSwapAssets;
+    return sortedSwapAssets.filter((a) => !popularKeySet.has(getAssetKeyForGrouping(a)));
+  }, [assetSearchTerm, sortedSwapAssets, popularKeySet]);
 
   const renderAssetDropdown = () => {
     if (!isComponentMounted || !isAssetDropdownOpen) {
@@ -2347,8 +2397,11 @@ export default function WithdrawalForm({
       // "You Receive" has only data-select-card
       const isYouSend = currentCard.hasAttribute('data-asset-card');
 
-      // Width: match only the asset selector element (right column), not the full card
-      let desiredWidth = dropdownRect.width;
+      // Width: make the dropdown a bit wider and ensure it grows to the right.
+      let desiredWidth = Math.min(
+        maxWidth,
+        Math.max(minWidth, dropdownRect.width) * 1.12
+      );
 
       // Position dropdown starting at the top of the card container
       let top = cardRect.top;
@@ -2356,15 +2409,14 @@ export default function WithdrawalForm({
       // Left-align with the asset selector element's left edge
       let left = dropdownRect.left;
 
-      // Ensure it doesn't go off screen on the right
-      if (left + desiredWidth > viewportWidth - minMargin) {
-        left = viewportWidth - desiredWidth - minMargin;
-      }
-
       // Ensure it doesn't go off the left edge
       if (left < minMargin) {
         left = minMargin;
       }
+
+      // Ensure it doesn't go off screen on the right by shrinking width (not shifting left)
+      const maxAllowedWidth = viewportWidth - left - minMargin;
+      desiredWidth = Math.max(0, Math.min(desiredWidth, maxAllowedWidth));
 
       dropdownStyle = {
         position: "fixed",
@@ -2469,16 +2521,14 @@ export default function WithdrawalForm({
           <div ref={assetListRef} className="overflow-y-auto p-1 flex-1 min-h-0">
             {sortedSwapAssets.length > 0 ? (
               <>
-                {!assetSearchTerm && sortedSwapAssets.length > 3 && (
+                {!assetSearchTerm && popularAssets.length > 0 && (
                   <>
                     <div className="px-3 sm:px-4 py-2 bg-[#F5F6F7] dark:bg-[#23232B] border-b border-gray-200 dark:border-gray-600">
                       <span className="text-xs font-semibold text-[#788099] uppercase tracking-wider">
                         Popular Currencies
                       </span>
                     </div>
-                    {sortedSwapAssets
-                      .slice(0, 3)
-                      .map((asset: SupportedAsset, index: number) => {
+                    {popularAssets.map((asset: SupportedAsset, index: number) => {
                         const handleAssetClick = () => {
                           if (calculationTimeout) {
                             clearTimeout(calculationTimeout);
@@ -2595,7 +2645,7 @@ export default function WithdrawalForm({
 
                 {(assetSearchTerm
                   ? sortedSwapAssets
-                  : sortedSwapAssets.slice(3)
+                  : allAssetsList
                 ).map((asset: SupportedAsset, index: number) => (
                   <div
                     key={`${asset.asset_id}-${asset.ticker}-${asset.network}-${index}`}

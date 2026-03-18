@@ -429,7 +429,7 @@ const P2PCharts = () => {
                 Withdrawals
               </button>
             </div>
-            <div className="w-full border-2 border-gray-200 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] shadow-lg rounded-[24px] overflow-hidden">
+            <div className="w-full border-2 border-gray-200 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] shadow-lg rounded-[24px] overflow-x-auto">
               <P2PWithdrawalDepositTransactions filterByType={depositWithdrawTab} />
             </div>
           </div>

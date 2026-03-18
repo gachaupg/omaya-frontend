@@ -12,8 +12,8 @@ import {
 import {
   createMoneyXTransaction,
   updateMoneyXTransaction,
-  fetchMoneyXCommission,
 } from "../slices/moneyXSlice";
+import { fetchMoneyXCommission } from "@/features/moneyX/slices/moneyXSlice";
 import { useTheme } from "@/context/theme";
 import CustomSelect from "@/components/ui/HomeCommonSelect";
 import { showToast } from "@/lib/utils/toast";

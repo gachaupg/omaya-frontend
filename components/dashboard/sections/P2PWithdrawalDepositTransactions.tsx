@@ -333,11 +333,15 @@ const P2PWithdrawalDepositTransactions = ({ filterByType = "all" }: P2PWithdrawa
                   </div>
                 </div>
                 <div>
-                  <div className="text-xs text-gray-500 dark:text-[#A0A3BC] mb-1">When</div>
+                  {/* Hide the extra label so only the time value shows */}
                   <div className="font-medium text-sm text-gray-500 dark:text-[#A0A3BC]">
-                    {formatDistanceToNow(new Date(tx.timestamp), {
-                      addSuffix: true,
-                    })}
+                    {(() => {
+                      const v = formatDistanceToNow(new Date(tx.timestamp), {
+                        addSuffix: true,
+                      });
+                      // date-fns often returns: "about 2 hours ago" -> we want "2 hours ago"
+                      return v.replace(/^about\s+/i, "");
+                    })()}
                   </div>
                 </div>
               </div>
@@ -380,7 +384,7 @@ const P2PWithdrawalDepositTransactions = ({ filterByType = "all" }: P2PWithdrawa
                   className="hover:bg-gray-100 dark:hover:bg-[#23232A] transition-colors"
                 >
                   {/* Asset */}
-                  <td className="px-3 sm:px-4 py-2 whitespace-nowrap">
+                  <td className="px-3 sm:px-4 py-2 whitespace-normal break-words">
                     <div className="flex items-center gap-2">
                       <img
                         src={getHighResAssetIcon({ ticker: tx.currency || tx.asset_symbol })}
@@ -402,7 +406,7 @@ const P2PWithdrawalDepositTransactions = ({ filterByType = "all" }: P2PWithdrawa
                   </td>
 
                   {/* Transaction ID (second after Asset) */}
-                  <td className="px-3 sm:px-4 py-2 whitespace-nowrap">
+                  <td className="px-3 sm:px-4 py-2 whitespace-normal break-words">
                     <span className="font-mono text-xs sm:text-sm text-gray-700 dark:text-gray-200 inline-block" title={tx.transaction_id || ""}>
                       {tx.transaction_id ? formatTransactionId(tx.transaction_id) : t("transactions.notAvailable", "N/A")}
                     </span>
@@ -415,7 +419,7 @@ const P2PWithdrawalDepositTransactions = ({ filterByType = "all" }: P2PWithdrawa
 
                   {/* Amount */}
                   <td
-                    className={`px-3 sm:px-4 py-2 whitespace-nowrap text-xs sm:text-sm font-semibold ${tx.transaction_type === "deposit"
+                    className={`px-3 sm:px-4 py-2 whitespace-normal break-words text-xs sm:text-sm font-semibold ${tx.transaction_type === "deposit"
                       ? "text-[#1D8751]"
                       : "text-red-500 dark:text-red-400"
                       }`}
@@ -424,7 +428,7 @@ const P2PWithdrawalDepositTransactions = ({ filterByType = "all" }: P2PWithdrawa
                   </td>
 
                   {/* Status */}
-                  <td className="px-3 sm:px-4 py-2 whitespace-nowrap">
+                  <td className="px-3 sm:px-4 py-2 whitespace-normal break-words">
                     <span
                       className={`px-2 py-1 rounded-full text-xs font-medium ${tx.status === "completed" || tx.status === "approved"
                         ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
@@ -441,9 +445,12 @@ const P2PWithdrawalDepositTransactions = ({ filterByType = "all" }: P2PWithdrawa
 
                   {/* When */}
                   <td className="px-3 sm:px-4 py-2 text-xs sm:text-sm text-gray-500 dark:text-[#A0A3BC]">
-                    {formatDistanceToNow(new Date(tx.timestamp), {
-                      addSuffix: true,
-                    })}
+                    {(() => {
+                      const v = formatDistanceToNow(new Date(tx.timestamp), {
+                        addSuffix: true,
+                      });
+                      return v.replace(/^about\s+/i, "");
+                    })()}
                   </td>
                 </tr>
               );
