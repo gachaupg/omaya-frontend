@@ -236,8 +236,8 @@ export const API_CONFIG = {
     TRANSACTIONS: "/api/moneyx/transactions/",
     UPDATE_TRANSACTION: (transactionId: string) => `/api/moneyx/transactions/${transactionId}/`,
     COMMISSION: (amount: number) => `/api/moneyx/commission/?amount=${amount}`,
-    RANGE_COMMISSION: (amount: number, commissionType: string = "deposit") =>
-      `/administration/admin/range-commissions/?feature=moneyx&commission_type=${commissionType}&amount=${amount}`,
+    RANGE_COMMISSION: (amount: number, _commissionType: string = "deposit") =>
+      `/administration/admin/range-commissions/?feature=moneyx&amount=${amount}`,
     SOCKETS: {
       STATUS: (transactionId: string) =>
         `${getWebSocketBaseUrl()}/ws/moneyx/status/${transactionId}/`,
