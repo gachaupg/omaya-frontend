@@ -28,7 +28,12 @@ import { showToast } from "../../../../../lib/utils/toast";
 import { DepositResponse } from "../../../../exchange/types";
 import { SupportedAsset } from "../../../../swap/types";
 import { FaSearch } from "react-icons/fa";
-import { createExpressWithdrawal, fetchCommission, getCommissionApiAsset } from "../../../api";
+import {
+  createExpressWithdrawal,
+  fetchCommission,
+  getCommissionApiAsset,
+  isExchangeCommissionLookupAsset,
+} from "../../../api";
 import {
   ExpressWithdrawalPayload,
   ExpressWithdrawalResponse,
@@ -1523,14 +1528,18 @@ export default function WithdrawalForm({
   // Get minimum amount based on asset type
   const getMinimumAmount = (asset: any) => {
     if (!asset) return 10; // Default minimum
-    const ticker = (asset?.ticker || asset?.symbol || "").toLowerCase();
-    return ticker === "usdt" || ticker === "usdc" ? 2 : 10; // 2 for direct assets, 10 for others
+    // First 3 assets use exchange lookup: enforce minimum 10
+    if (isExchangeCommissionLookupAsset(asset)) return 10;
+    return 0; // No minimum for other assets
   };
 
-  // Validate receive amount - allow any amount for now
+  // Validate receive amount
   const validateReceiveAmount = (amount: number, asset: any) => {
-    // Allow any amount - no validation for now
-    return null; // No error
+    const minAmount = getMinimumAmount(asset);
+    if (minAmount > 0 && amount > 0 && amount < minAmount) {
+      return `Minimum amount for this asset is ${minAmount}.`;
+    }
+    return null;
   };
 
   // Fetch estimate for non-direct assets with debouncing for better performance

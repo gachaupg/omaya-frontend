@@ -2425,9 +2425,13 @@ export default function DepositForm({
 
   // Auto-validate receive amount whenever it changes
   useEffect(() => {
-    // Remove minimum amount validation - any amount is allowed
-    setReceiveAmountError(null);
-  }, [getAmount]);
+    // First 3 assets (exchange lookup) must be >= 10; validate live while typing/rate updates
+    if (selectedAsset && isExchangeCommissionLookupAsset(selectedAsset) && payAmount > 0 && payAmount < 10) {
+      setReceiveAmountError("Minimum amount for this asset is 10.");
+    } else {
+      setReceiveAmountError(null);
+    }
+  }, [getAmount, payAmount, selectedAsset]);
 
   // Validate first card data
   const validateFirstCard = () => {
@@ -2440,6 +2444,9 @@ export default function DepositForm({
     } else if (!payAmount || payAmount <= 0) {
       errors.push("Please enter a valid amount greater than 0");
       showToast.error("Please enter a valid amount greater than 0");
+    } else if (selectedAsset && isExchangeCommissionLookupAsset(selectedAsset) && payAmount < 10) {
+      errors.push("Minimum amount for this asset is 10.");
+      showToast.error("Minimum amount for this asset is 10.");
     }
 
     // Check if asset is selected
