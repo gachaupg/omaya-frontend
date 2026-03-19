@@ -1506,6 +1506,7 @@ export default function WithdrawalForm({
           .then((res) => {
             setExchangeLookupResponse(res);
             setApiCommission(null);
+            setApiValidationError(null);
             if (isCalculatingFromPay && res.to_amount != null) {
               const toAmount = parseFloat(res.to_amount);
               if (!Number.isNaN(toAmount)) {
@@ -1515,7 +1516,28 @@ export default function WithdrawalForm({
               }
             }
           })
-          .catch(() => setExchangeLookupResponse(null));
+          .catch((error: any) => {
+            setExchangeLookupResponse(null);
+            const responseData = error?.response?.data;
+            const responseInner = responseData?.response_data;
+            const rawMessage =
+              responseData?.error ||
+              responseData?.message ||
+              responseInner?.error ||
+              responseInner?.message ||
+              error?.message;
+            const backendMessage =
+              typeof rawMessage === "string"
+                ? rawMessage
+                : Array.isArray(rawMessage)
+                  ? rawMessage[0]
+                  : rawMessage && typeof rawMessage === "object"
+                    ? JSON.stringify(rawMessage)
+                    : null;
+            setApiValidationError(
+              String(backendMessage || "Failed to fetch exchange rate")
+            );
+          });
       }, 300);
       return () => {
         if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
@@ -3448,13 +3470,6 @@ export default function WithdrawalForm({
             {/* <span className="text-[#7e7e8f] dark:text-[#788099]">1-</span> Transaction Info */}
           </h2>
 
-          {/* API Validation Error - Show as simple red text */}
-          {apiValidationError && (
-            <div className="mb-4 text-red-500 text-sm font-medium">
-              {apiValidationError}
-            </div>
-          )}
-
           <div className="w-full text-white">
             {/* Top Section - You Send and You Get in one card */}
             <div className="relative mb-2 sm:mb-3 md:mb-4">
@@ -4088,11 +4103,6 @@ export default function WithdrawalForm({
                         }`}
                     >
                       {receiveAmountError}
-                    </p>
-                  )}
-                  {apiValidationError && (
-                    <p className="text-sm mt-1 text-yellow-500">
-                      {apiValidationError}
                     </p>
                   )}
                 </div>

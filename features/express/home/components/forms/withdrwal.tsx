@@ -31,7 +31,10 @@ import { FaSearch } from "react-icons/fa";
 import {
   createExpressWithdrawal,
   fetchCommission,
+  fetchExchangeCommissionLookup,
   getCommissionApiAsset,
+  getExchangeLookupParams,
+  type ExchangeCommissionLookupResponse,
   isExchangeCommissionLookupAsset,
 } from "../../../api";
 import {
@@ -704,6 +707,11 @@ export default function WithdrawalForm({
   const [apiValidationError, setApiValidationError] = useState<string | null>(null);
   const [apiCommission, setApiCommission] = useState<number | null>(null);
   const commissionFetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Exchange commission lookup for first assets (local_commission rules)
+  const [exchangeLookupResponse, setExchangeLookupResponse] =
+    useState<ExchangeCommissionLookupResponse | null>(null);
+  const exchangeLookupFetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Add calculation error state for display below "You Send" input
   const [calculationError, setCalculationError] = useState<string | null>(null);
@@ -1383,19 +1391,93 @@ export default function WithdrawalForm({
   const isCommissionApiAsset = (asset: any) => !!getCommissionApiAsset(asset?.ticker || asset?.symbol || "");
 
   useEffect(() => {
-    const apiAsset = selectedAsset ? getCommissionApiAsset(selectedAsset.ticker || selectedAsset.symbol || "") : null;
-    if (!apiAsset || !selectedAsset) {
-      setApiCommission(null);
-      return;
-    }
     const amount = isCalculatingFromPay
       ? (parseFloat(payAmountInput) || payAmount)
       : (parseFloat(getAmountInput) || getAmount);
-    if (amount <= 0) {
+
+    if (!selectedAsset) {
       setApiCommission(null);
+      setExchangeLookupResponse(null);
       return;
     }
-    if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
+
+    if (amount <= 0) {
+      setApiCommission(null);
+      setExchangeLookupResponse(null);
+      return;
+    }
+
+    // First assets use exchange commission lookup (local_commission rules)
+    if (isExchangeCommissionLookupAsset(selectedAsset)) {
+      const params = getExchangeLookupParams(selectedAsset);
+      if (!params) {
+        setExchangeLookupResponse(null);
+        setApiCommission(null);
+        return;
+      }
+
+      if (exchangeLookupFetchTimeoutRef.current)
+        clearTimeout(exchangeLookupFetchTimeoutRef.current);
+      exchangeLookupFetchTimeoutRef.current = setTimeout(() => {
+        fetchExchangeCommissionLookup(
+          amount,
+          "withdrawal",
+          params.from_currency,
+          "USD",
+          params.from_network
+        )
+          .then((res) => {
+            setExchangeLookupResponse(res);
+            setApiCommission(null);
+            setApiValidationError(null);
+          })
+          .catch((error: any) => {
+            setExchangeLookupResponse(null);
+            setApiCommission(null);
+
+            const responseData = error?.response?.data;
+            const responseInner = responseData?.response_data;
+            const rawMessage =
+              responseData?.error ||
+              responseData?.message ||
+              responseInner?.error ||
+              responseInner?.message ||
+              error?.message;
+
+            const backendMessage =
+              typeof rawMessage === "string"
+                ? rawMessage
+                : Array.isArray(rawMessage)
+                  ? rawMessage[0]
+                  : rawMessage && typeof rawMessage === "object"
+                    ? JSON.stringify(rawMessage)
+                    : null;
+
+            setApiValidationError(
+              String(backendMessage || "Failed to fetch exchange rate")
+            );
+          });
+      }, 300);
+
+      return () => {
+        if (exchangeLookupFetchTimeoutRef.current) {
+          clearTimeout(exchangeLookupFetchTimeoutRef.current);
+        }
+      };
+    }
+
+    // Legacy commission lookup for other assets
+    const apiAsset = getCommissionApiAsset(
+      selectedAsset.ticker || selectedAsset.symbol || ""
+    );
+    if (!apiAsset) {
+      setApiCommission(null);
+      setExchangeLookupResponse(null);
+      return;
+    }
+
+    if (commissionFetchTimeoutRef.current)
+      clearTimeout(commissionFetchTimeoutRef.current);
     commissionFetchTimeoutRef.current = setTimeout(() => {
       fetchCommission(apiAsset, amount, "withdrawal")
         .then((c) => setApiCommission(c))
@@ -1408,7 +1490,12 @@ export default function WithdrawalForm({
 
   // Recalculate receive amount when apiCommission arrives (was null during initial calculation)
   useEffect(() => {
-    if (selectedAsset && isCommissionApiAsset(selectedAsset) && apiCommission !== null) {
+    if (
+      selectedAsset &&
+      isCommissionApiAsset(selectedAsset) &&
+      !isExchangeCommissionLookupAsset(selectedAsset) &&
+      apiCommission !== null
+    ) {
       if (isCalculatingFromPay && payAmount > 0) {
         // Forward: You Send -> You Receive
         const commissionAmount = (payAmount * apiCommission) / 100;
@@ -1428,6 +1515,50 @@ export default function WithdrawalForm({
       }
     }
   }, [apiCommission, payAmount, getAmount, isCalculatingFromPay, selectedAsset]);
+
+  // Exchange-lookup recalc when local_commission arrives
+  useEffect(() => {
+    if (
+      !selectedAsset ||
+      !isExchangeCommissionLookupAsset(selectedAsset) ||
+      !exchangeLookupResponse?.local_commission
+    ) {
+      return;
+    }
+
+    const lc = exchangeLookupResponse.local_commission;
+
+    if (isCalculatingFromPay && payAmount > 0) {
+      const toAmountStr = exchangeLookupResponse.to_amount;
+      const toAmount = toAmountStr != null ? parseFloat(toAmountStr) : NaN;
+      if (!Number.isNaN(toAmount)) {
+        const calculatedGetAmount = capReceiveAmount(Math.max(0, toAmount));
+        setGetAmount(calculatedGetAmount);
+        setGetAmountInput(calculatedGetAmount.toString());
+        setPreviousValidAmount(calculatedGetAmount.toString());
+
+        if (calculatedGetAmount >= MAX_RECEIVE_AMOUNT_USD) {
+          setIsInfoModalOpen(true);
+        }
+      }
+    } else if (!isCalculatingFromPay && getAmount > 0) {
+      if (lc.commission_mode === "flat_fee" && lc.fee != null) {
+        const fee = parseFloat(lc.fee);
+        if (!Number.isNaN(fee)) {
+          const calculatedPayAmount = getAmount + fee;
+          setPayAmount(calculatedPayAmount);
+          setPayAmountInput(calculatedPayAmount.toString());
+        }
+      } else if (lc.commission_mode === "percentage" && lc.rate != null) {
+        const rate = parseFloat(lc.rate);
+        if (!Number.isNaN(rate) && rate < 100) {
+          const calculatedPayAmount = getAmount / (1 - rate / 100);
+          setPayAmount(calculatedPayAmount);
+          setPayAmountInput(calculatedPayAmount.toString());
+        }
+      }
+    }
+  }, [exchangeLookupResponse, selectedAsset, isCalculatingFromPay, payAmount, getAmount]);
 
   // FXP withdrawal rate: 1 FXP = 1.1 USD (user sends FXP, receives USD)
   const FXP_TO_USD_RATE = 1.1;
@@ -2152,7 +2283,27 @@ export default function WithdrawalForm({
           } else if (selectedAsset?.fee_rate) {
             commissionRate = parseFloat(selectedAsset.fee_rate);
           }
-          const fallbackPayAmount = getAmount / (1 - (selectedAsset && isCommissionApiAsset(selectedAsset) ? (apiCommission ?? 2) : commissionRate) / 100);
+          const fallbackPayAmount =
+            selectedAsset &&
+            isExchangeCommissionLookupAsset(selectedAsset) &&
+            exchangeLookupResponse?.local_commission
+              ? (() => {
+                  const lc = exchangeLookupResponse.local_commission;
+                  if (lc.commission_mode === "flat_fee") {
+                    const fee = lc.fee != null ? parseFloat(lc.fee) : NaN;
+                    return Number.isNaN(fee) ? getAmount : getAmount + fee;
+                  }
+                  const rate = lc.rate != null ? parseFloat(lc.rate) : NaN;
+                  return Number.isNaN(rate) || rate >= 100
+                    ? getAmount
+                    : getAmount / (1 - rate / 100);
+                })()
+              : getAmount /
+                  (1 -
+                    (selectedAsset && isCommissionApiAsset(selectedAsset)
+                      ? apiCommission ?? 2
+                      : commissionRate) /
+                      100);
           setPayAmount(fallbackPayAmount);
           setPayAmountInput(fallbackPayAmount.toString());
 
@@ -2191,11 +2342,41 @@ export default function WithdrawalForm({
       if (!matchesSearch) return false;
 
       // Apply filter tab (only for home page)
-      if (isHomePage) {
+      // Important: while the user is searching, do not apply tab filtering
+      // (otherwise non-featured assets like USDC can never appear).
+      if (isHomePage && !searchTerm) {
         switch (assetFilterTab) {
           case "new":
-            // Show featured assets or assets with is_changenow_asset as "new"
-            return asset.featured === true || asset.is_changenow_asset === true;
+            // Show featured/new assets, and always include USDC on BSC in Popular/New.
+            {
+              const tickerLower = (asset?.ticker || asset?.symbol || "").toString().toLowerCase();
+              const legacyLower = (
+                (asset as any)?.legacyTicker ||
+                (asset as any)?.legacy_ticker ||
+                (asset as any)?.original_ticker ||
+                (asset as any)?.change_now_ticker ||
+                ""
+              )
+                .toString()
+                .toLowerCase();
+              const networkLower = (
+                asset?.network ||
+                (asset as any)?.networks?.[0]?.network_type ||
+                (asset as any)?.networks?.[0]?.network_id ||
+                ""
+              )
+                .toString()
+                .toLowerCase();
+              const isUsdcBsc =
+                (tickerLower === "usdc" || legacyLower.includes("usdc")) &&
+                (networkLower === "bsc" || networkLower === "bep20");
+
+              return (
+                asset.featured === true ||
+                asset.is_changenow_asset === true ||
+                isUsdcBsc
+              );
+            }
           case "gainers":
             // For now, show all assets (can be enhanced with price data)
             // You can add price change logic here when available
@@ -2330,15 +2511,18 @@ export default function WithdrawalForm({
   // Force "Popular Currencies" to always be: USDT (BSC), USDC (BSC), FXPRIMUS.
   // This prevents BTC (or others) from accidentally landing in Popular due to sorting quirks.
   const popularAssets = useMemo(() => {
-    const usdtAsset = sortedSwapAssets.find(
+    const sourceAssets: SupportedAsset[] = (assetsDisplay.displayData ||
+      []) as SupportedAsset[];
+
+    const usdtAsset = sourceAssets.find(
       (a) =>
         getCurrencyLower(a) === "usdt" && String(a?.network || "").toLowerCase() === "bsc"
     );
-    const usdcAsset = sortedSwapAssets.find(
+    const usdcAsset = sourceAssets.find(
       (a) =>
         getCurrencyLower(a) === "usdc" && String(a?.network || "").toLowerCase() === "bsc"
     );
-    const fxprimusAsset = sortedSwapAssets.find(
+    const fxprimusAsset = sourceAssets.find(
       (a) => {
         const c = getCurrencyLower(a);
         return c === "fxp" || c === "fxprimus";
@@ -2346,7 +2530,7 @@ export default function WithdrawalForm({
     );
 
     return [usdtAsset, usdcAsset, fxprimusAsset].filter(Boolean) as SupportedAsset[];
-  }, [sortedSwapAssets]);
+  }, [assetsDisplay.displayData]);
 
   const popularKeySet = useMemo(
     () => new Set(popularAssets.map((a) => getAssetKeyForGrouping(a))),
@@ -2603,6 +2787,8 @@ export default function WithdrawalForm({
                               src={
                                 asset?.image_url ||
                                 asset?.asset_image ||
+                                (asset as any)?.icon_url ||
+                                (asset as any)?.icon ||
                                 (asset as any)?.image ||
                                 "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
                               }
@@ -2717,6 +2903,8 @@ export default function WithdrawalForm({
                       src={
                         asset?.image_url ||
                         asset?.asset_image ||
+                        (asset as any)?.icon_url ||
+                        (asset as any)?.icon ||
                         (asset as any)?.image ||
                         "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
                       }
@@ -2775,7 +2963,20 @@ export default function WithdrawalForm({
 
   // Use commission API for USDT/USDC/FX Primus - API returns % (e.g. {"commission":"2.00"} = 2%)
   let commissionAmount = 0;
-  if (selectedAsset && isSimpleCalculationAsset(selectedAsset)) {
+  if (
+    selectedAsset &&
+    isExchangeCommissionLookupAsset(selectedAsset) &&
+    exchangeLookupResponse?.local_commission
+  ) {
+    const lc = exchangeLookupResponse.local_commission;
+    if (lc.commission_mode === "flat_fee") {
+      const fee = lc.fee != null ? parseFloat(lc.fee) : NaN;
+      commissionAmount = Number.isNaN(fee) ? 0 : fee;
+    } else if (lc.commission_mode === "percentage") {
+      const rate = lc.rate != null ? parseFloat(lc.rate) : NaN;
+      commissionAmount = Number.isNaN(rate) ? 0 : (payAmount * rate) / 100;
+    }
+  } else if (selectedAsset && isSimpleCalculationAsset(selectedAsset)) {
     if (isCommissionApiAsset(selectedAsset)) {
       const rate = apiCommission ?? 2; // Default 2% while API loads
       commissionAmount = (payAmount * rate) / 100;
@@ -2902,9 +3103,26 @@ export default function WithdrawalForm({
         if (fromPay) {
           // Calculate from pay amount to receive amount (API commission is % e.g. 2 = 2%)
           if (isSimpleCalculationAsset(selectedAsset)) {
-            const commissionAmount = isCommissionApiAsset(selectedAsset)
-              ? (fromAmount * (apiCommission ?? 2)) / 100
-              : (fromAmount * (selectedAsset?.range_commissions?.[0]?.commission ? parseFloat(selectedAsset.range_commissions[0].commission) : 2)) / 100;
+            const commissionAmount =
+              selectedAsset &&
+              isExchangeCommissionLookupAsset(selectedAsset) &&
+              exchangeLookupResponse?.local_commission
+                ? (() => {
+                    const lc = exchangeLookupResponse.local_commission;
+                    if (lc.commission_mode === "flat_fee") {
+                      const fee = lc.fee != null ? parseFloat(lc.fee) : NaN;
+                      return Number.isNaN(fee) ? 0 : fee;
+                    }
+                    const rate = lc.rate != null ? parseFloat(lc.rate) : NaN;
+                    return Number.isNaN(rate) ? 0 : (fromAmount * rate) / 100;
+                  })()
+                : isCommissionApiAsset(selectedAsset)
+                  ? (fromAmount * (apiCommission ?? 2)) / 100
+                  : (fromAmount *
+                      (selectedAsset?.range_commissions?.[0]?.commission
+                        ? parseFloat(selectedAsset.range_commissions[0].commission)
+                        : 2)) /
+                    100;
             const calculatedGetAmount = capReceiveAmount(Math.max(0, fromAmount - commissionAmount));
 
             // Only show calculated amount if it's meaningful (> 0.01), otherwise show empty
@@ -2972,8 +3190,29 @@ export default function WithdrawalForm({
         } else {
           // Calculate from receive amount to pay amount (API commission is % e.g. 2 = 2%)
           if (isSimpleCalculationAsset(selectedAsset)) {
-            const commissionRate = isCommissionApiAsset(selectedAsset) ? (apiCommission ?? 2) : (selectedAsset?.range_commissions?.[0]?.commission ? parseFloat(selectedAsset.range_commissions[0].commission) : 2);
-            const newPayAmount = fromAmount / (1 - commissionRate / 100);
+            const newPayAmount =
+              selectedAsset &&
+              isExchangeCommissionLookupAsset(selectedAsset) &&
+              exchangeLookupResponse?.local_commission
+                ? (() => {
+                    const lc = exchangeLookupResponse.local_commission;
+                    if (lc.commission_mode === "flat_fee") {
+                      const fee = lc.fee != null ? parseFloat(lc.fee) : NaN;
+                      return Number.isNaN(fee) ? fromAmount : fromAmount + fee;
+                    }
+                    const rate = lc.rate != null ? parseFloat(lc.rate) : NaN;
+                    return Number.isNaN(rate) || rate >= 100
+                      ? fromAmount
+                      : fromAmount / (1 - rate / 100);
+                  })()
+                : (() => {
+                    const commissionRate = isCommissionApiAsset(selectedAsset)
+                      ? apiCommission ?? 2
+                      : selectedAsset?.range_commissions?.[0]?.commission
+                        ? parseFloat(selectedAsset.range_commissions[0].commission)
+                        : 2;
+                    return fromAmount / (1 - commissionRate / 100);
+                  })();
             setPayAmount(newPayAmount);
             setPayAmountInput(newPayAmount.toString());
 
@@ -3798,14 +4037,13 @@ export default function WithdrawalForm({
                           ? "Calculating..."
                           : "Enter amount"
                       }
-                      className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${apiValidationError || calculationError
-                        ? "border-red-500"
-                        : isCalculating || isCalculatingReceive
+                      className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${
+                        isCalculating || isCalculatingReceive
                           ? "border-[#1D8751]"
                           : isDark
                             ? "border-white/10 text-white font-normal"
                             : "border-gray-200 text-[#111827] font-bold"
-                        }`}
+                      }`}
                     />
                     <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
                       <span className={`${isDark ? "text-white" : "text-[#1F2937]"} text-sm font-medium`}>
@@ -3829,37 +4067,7 @@ export default function WithdrawalForm({
                           <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#1D8751]"></div>
                         </div>
                       )}
-                    {(apiValidationError || calculationError) && (
-                      <div className="absolute right-12 top-1/2 transform -translate-y-1/2">
-                        <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
-                          <circle
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            className="text-red-500"
-                          />
-                          <line
-                            x1="12"
-                            y1="8"
-                            x2="12"
-                            y2="12"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            className="text-red-500"
-                          />
-                          <circle
-                            cx="12"
-                            cy="16"
-                            r="1"
-                            fill="currentColor"
-                            className="text-red-500"
-                          />
-                        </svg>
-                      </div>
-                    )}
+                    {/* No input highlighting; message-only UX */}
                   </div>
                   {(calculationError || apiValidationError) && (
                     <p
@@ -4068,8 +4276,29 @@ export default function WithdrawalForm({
                             if (selectedAsset && newAmount >= 0) {
                               // Check asset type first and handle accordingly
                               if (isSimpleCalculationAsset(selectedAsset)) {
-                                const commissionRate = isCommissionApiAsset(selectedAsset) ? (apiCommission ?? 2) : (selectedAsset?.range_commissions?.[0]?.commission ? parseFloat(selectedAsset.range_commissions[0].commission) : 2);
-                                const calculatedPayAmount = newAmount / (1 - commissionRate / 100);
+                                const calculatedPayAmount =
+                                  selectedAsset &&
+                                  isExchangeCommissionLookupAsset(selectedAsset) &&
+                                  exchangeLookupResponse?.local_commission
+                                    ? (() => {
+                                        const lc = exchangeLookupResponse.local_commission;
+                                        if (lc.commission_mode === "flat_fee") {
+                                          const fee = lc.fee != null ? parseFloat(lc.fee) : NaN;
+                                          return Number.isNaN(fee) ? newAmount : newAmount + fee;
+                                        }
+                                        const rate = lc.rate != null ? parseFloat(lc.rate) : NaN;
+                                        return Number.isNaN(rate) || rate >= 100
+                                          ? newAmount
+                                          : newAmount / (1 - rate / 100);
+                                      })()
+                                    : (() => {
+                                        const commissionRate = isCommissionApiAsset(selectedAsset)
+                                          ? (apiCommission ?? 2)
+                                          : (selectedAsset?.range_commissions?.[0]?.commission
+                                              ? parseFloat(selectedAsset.range_commissions[0].commission)
+                                              : 2);
+                                        return newAmount / (1 - commissionRate / 100);
+                                      })();
                                 setPayAmount(calculatedPayAmount);
                                 setPayAmountInput(calculatedPayAmount.toString());
 
@@ -4176,30 +4405,13 @@ export default function WithdrawalForm({
                           ? "Calculating..."
                           : "Enter amount"
                       }
-                      className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${(receiveAmountError &&
-                        (receiveAmountError.includes("Rough estimate") ||
-                          receiveAmountError.includes("Using estimated rate"))) ||
-                        (apiValidationError &&
-                          (apiValidationError.includes("Rough estimate") ||
-                            apiValidationError.includes("Using estimated rate")))
-                        ? "border-[#F79330]"
-                        : (receiveAmountError &&
-                          !receiveAmountError.includes("Rough estimate") &&
-                          !receiveAmountError.includes(
-                            "Using estimated rate"
-                          )) ||
-                          (apiValidationError &&
-                            !apiValidationError.includes("Rough estimate") &&
-                            !apiValidationError.includes(
-                              "Using estimated rate"
-                            ))
-                          ? "border-red-500"
-                          : isCalculating || isCalculatingReceive
-                            ? "border-[#1D8751]"
-                            : isDark
-                              ? "border-white/10 text-white font-normal"
-                              : "border-gray-200 text-[#111827] font-extrabold"
-                        }`}
+                      className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${
+                        isCalculating || isCalculatingReceive
+                          ? "border-[#1D8751]"
+                          : isDark
+                            ? "border-white/10 text-white font-normal"
+                            : "border-gray-200 text-[#111827] font-extrabold"
+                      }`}
                     />
                     <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
                       <span className={`${isDark ? "text-white" : "text-[#1F2937]"} text-sm font-medium`}>
@@ -4217,68 +4429,8 @@ export default function WithdrawalForm({
                           <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#1D8751]"></div>
                         </div>
                       )}
-                    {(receiveAmountError &&
-                      !receiveAmountError.includes("Rough estimate") &&
-                      !receiveAmountError.includes("Using estimated rate")) && (
-                        <div className="absolute right-16 top-1/2 transform -translate-y-1/2">
-                          <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
-                            <circle
-                              cx="12"
-                              cy="12"
-                              r="10"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              className="text-red-500"
-                            />
-                            <line
-                              x1="12"
-                              y1="8"
-                              x2="12"
-                              y2="12"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              className="text-red-500"
-                            />
-                            <circle
-                              cx="12"
-                              cy="16"
-                              r="1"
-                              fill="currentColor"
-                              className="text-red-500"
-                            />
-                          </svg>
-                        </div>
-                      )}
-                    {((receiveAmountError &&
-                      (receiveAmountError.includes("Rough estimate") ||
-                        receiveAmountError.includes("Using estimated rate"))) ||
-                      (apiValidationError &&
-                        (apiValidationError.includes("Rough estimate") ||
-                          apiValidationError.includes(
-                            "Using estimated rate"
-                          )))) && (
-                        <div className="absolute right-16 top-1/2 transform -translate-y-1/2">
-                          <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
-                            <path
-                              d="M12 8v4m0 4h.01"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              className="text-[#F79330]"
-                            />
-                            <circle
-                              cx="12"
-                              cy="12"
-                              r="10"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              className="text-[#F79330]"
-                            />
-                          </svg>
-                        </div>
-                      )}
+                    {/* No input highlight; message-only UX */}
+                    {/* No input highlight; message-only UX */}
                   </div>
                 </div>
 
@@ -4350,8 +4502,7 @@ export default function WithdrawalForm({
                         <CustomSelect
                           options={paymentMethodOptions}
                           value={payBank}
-                          className={`w-full ${paymentMethodError ? "border-red-500 dark:border-red-500" : ""
-                            }`}
+                          className="w-full"
                           triggerClassName={`px-4 py-2 text-lg border rounded-2xl bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
                             }`}
                           placeholderClassName="text-white dark:text-white"
@@ -4524,10 +4675,7 @@ export default function WithdrawalForm({
                                   emptyText="No registered accounts available"
                                   searchable={true}
                                   dropdownTitle="Select a registered account from"
-                                  className={`w-full min-w-0 ${paymentMethodError
-                                    ? "border-red-500 dark:border-red-500"
-                                    : ""
-                                    }`}
+                                  className="w-full min-w-0"
                                   triggerClassName={`px-4 py-2 text-lg border rounded-2xl w-full min-w-0 bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
                                     }`}
                                   largeDropdownItems={true}

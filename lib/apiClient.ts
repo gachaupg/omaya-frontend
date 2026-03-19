@@ -58,12 +58,10 @@ const ENDPOINT_SPECIFIC_CONFIG: Record<string, Partial<ApiClientConfig>> = {
   // Swap/asset selection – fail fast so user can click elsewhere
   "/api/changenow/estimate": { timeout: 15000, retries: 1 },
   "/api/changenow/public/estimate": { timeout: 15000, retries: 1 },
-  "api/changenow/supported-tokens": { timeout: 15000, retries: 1 },
+  "/api/changenow/supported-tokens": { timeout: 15000, retries: 1 },
 };
 
-const generateRequestId = (): string => {
-  return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-};
+
 
 // Request deduplication tracking
 const pendingRequests = new Map<string, Promise<any>>();

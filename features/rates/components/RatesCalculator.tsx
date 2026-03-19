@@ -8,18 +8,24 @@ import { AppDispatch } from "../../../store";
 import { RootState } from "../../../store/rootReducer";
 import { setAuthRedirectPath } from "@/lib/utils/authRedirect";
 import {
-  fetchAssets,
   createDeposit,
   updateDepositAddress,
 } from "../../exchange/slices/exchangeSlice";
 import {
-  fetchSupportedAssets,
   fetchSwapEstimate,
 } from "../../swap/slices/swapSlice";
 import { fetchUserPaymentDetails, fetchPublicPaymentMethods } from "../../p2p/slices/paymentMethodsSlice";
 import { fetchAdminWalletList, fetchAdminPaymentDetails } from "../../exchange/slices/paymentSlice";
 import PaymentMethodsModal from "../../p2p/components/ui/p2pdashboard/sections/PaymentMethodsModal";
-import { createExpressWithdrawal, fetchCommission, getCommissionApiAsset } from "../../express/api";
+import {
+  createExpressWithdrawal,
+  fetchCommission,
+  fetchExchangeCommissionLookup,
+  getCommissionApiAsset,
+  getExchangeLookupParams,
+  isExchangeCommissionLookupAsset,
+  type ExchangeCommissionLookupResponse,
+} from "../../express/api";
 import { Asset, DepositResponse } from "../../exchange/types";
 import { SupportedAsset } from "../../swap/types";
 import { ExpressWithdrawalPayload } from "../../express/types";
@@ -46,6 +52,7 @@ import { ClipboardPaste } from "lucide-react";
 import CopyButton from "@/components/ui/CopyButton";
 
 import { logger } from '@/lib/utils/logger';
+import { useChangeNowAssets } from "@/features/express/home/hooks/useChangeNowAssets";
 
 interface UserPaymentDetail {
   id: number;
@@ -198,6 +205,8 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
   const estimateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [apiCommission, setApiCommission] = useState<number | null>(null);
   const commissionFetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [exchangeLookupResponse, setExchangeLookupResponse] = useState<ExchangeCommissionLookupResponse | null>(null);
+  const exchangeLookupFetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [estimateCache, setEstimateCache] = useState<
     Map<string, { data: any; timestamp: number }>
   >(new Map());
@@ -207,28 +216,21 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
 
   const dispatch = useDispatch<AppDispatch>();
 
-  // Exchange assets state
+  // Use the same public supported-tokens list as Home so Rates shows
+  // the full asset dropdown (USDC, FXPRIMUS, etc.).
   const {
-    assets: exchangeAssets,
-    loading: exchangeAssetsLoading,
-    error: exchangeAssetsError,
-  } = useSelector((state: RootState) => state.exchange);
+    assets: homeAssets,
+    loading: homeAssetsLoading,
+    error: homeAssetsError,
+  } = useChangeNowAssets(true);
 
-  // Swap assets state
-  const {
-    supportedAssets: swapAssets,
-    loading: swapAssetsLoading,
-    error: swapAssetsError,
-  } = useSelector((state: RootState) => state.swap);
-
-  // Use the data display hooks for consistent data handling
   const assetsDisplay = useAssetsDisplay(
-    exchangeAssets?.assets,
-    swapAssets,
-    exchangeAssetsLoading,
-    swapAssetsLoading,
-    exchangeAssetsError,
-    swapAssetsError
+    homeAssets,
+    [],
+    homeAssetsLoading,
+    false,
+    homeAssetsError,
+    null
   );
 
 
@@ -302,51 +304,6 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
   const methodDropdownContentRef = useRef<HTMLDivElement | null>(null)
   console.log('publicPaymentMethods', publicPaymentMethods);
   useEffect(() => {
-    // Fetch exchange assets
-    dispatch(fetchAssets(false))
-      .unwrap()
-      .then((data) => {
-        logger.debug('general', "DEBUG: Exchange assets loaded in rates calculator:", {
-          hasAssets: !!data?.assets,
-          assetsLength: data?.assets?.length || 0,
-          totalBalance: data?.total_wallet_balance,
-        });
-
-        // If no assets in cache, force refresh
-        if (!data?.assets || data.assets.length === 0) {
-          logger.debug('general', "🔄 No exchange assets in cache, forcing refresh...");
-          return dispatch(fetchAssets(true)).unwrap();
-        }
-        return data;
-      })
-      .catch((error: unknown) => {
-        console.error(
-          "Failed to fetch exchange assets from cache, trying force refresh:",
-          error
-        );
-        // If cache fetch fails, try force refresh
-        return dispatch(fetchAssets(true))
-          .unwrap()
-          .catch((refreshError: unknown) => {
-            console.error(`Failed to fetch assets: ${refreshError}`);
-            throw refreshError;
-          });
-      });
-
-    // Fetch swap assets
-    dispatch(fetchSupportedAssets(false))
-      .unwrap()
-      .catch((error: unknown) => {
-        console.error("Failed to fetch swap assets:", error);
-        // If cache fetch fails, try force refresh
-        return dispatch(fetchSupportedAssets(true))
-          .unwrap()
-          .catch((refreshError: unknown) => {
-            console.error(`Failed to fetch swap assets: ${refreshError}`);
-            throw refreshError;
-          });
-      });
-
     // Fetch user payment details
     dispatch(fetchUserPaymentDetails());
 
@@ -500,6 +457,11 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
       setApiCommission(null);
       return;
     }
+    // For first assets we use the exchange commission-lookup response (local_commission rules).
+    if (isExchangeCommissionLookupAsset(selectedAsset)) {
+      setApiCommission(null);
+      return;
+    }
     const amt = isCalculatingFromPay ? (parseFloat(amount) || 0) : (parseFloat(receiveAmount) || 0);
     if (amt <= 0) {
       setApiCommission(null);
@@ -515,6 +477,124 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
       if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
     };
   }, [selectedAsset, amount, receiveAmount, isCalculatingFromPay, isDepositMode]);
+
+  // Exchange commission-lookup for first assets (local_commission fee rules)
+  useEffect(() => {
+    if (!selectedAsset) {
+      setExchangeLookupResponse(null);
+      return;
+    }
+
+    if (!isExchangeCommissionLookupAsset(selectedAsset)) {
+      setExchangeLookupResponse(null);
+      return;
+    }
+
+    const params = getExchangeLookupParams(selectedAsset);
+    const amt = isCalculatingFromPay ? (parseFloat(amount) || 0) : (parseFloat(receiveAmount) || 0);
+    if (!params || amt <= 0) {
+      setExchangeLookupResponse(null);
+      return;
+    }
+
+    if (exchangeLookupFetchTimeoutRef.current) clearTimeout(exchangeLookupFetchTimeoutRef.current);
+    exchangeLookupFetchTimeoutRef.current = setTimeout(() => {
+      fetchExchangeCommissionLookup(
+        amt,
+        isDepositMode ? "deposit" : "withdrawal",
+        params.from_currency,
+        "USD",
+        params.from_network
+      )
+        .then((res) => {
+          setExchangeLookupResponse(res);
+          setApiCommission(null);
+          setApiValidationError(null);
+
+          // When calculating from "You Send", backend gives us to_amount directly.
+          if (isCalculatingFromPay && res.to_amount != null) {
+            const toAmount = parseFloat(res.to_amount);
+            if (!Number.isNaN(toAmount)) {
+              setReceiveAmount(toAmount.toFixed(2));
+            }
+          }
+        })
+        .catch((error: any) => {
+          setExchangeLookupResponse(null);
+
+          let errorMessage = "";
+          let errorDetails = "";
+          const responseData = error?.response?.data;
+          const responseInner = responseData?.response_data;
+          const rawMessage =
+            responseData?.error ||
+            responseData?.message ||
+            responseInner?.error ||
+            responseInner?.message ||
+            error?.message;
+
+          if (typeof rawMessage === "string") errorMessage = rawMessage;
+          if (typeof responseData?.payload === "object") {
+            errorDetails = responseData?.payload?.range?.minAmount ? String(responseData.payload.range.minAmount) : "";
+          }
+
+          if (errorMessage.includes("Exchange service error:")) {
+            errorMessage = errorMessage.replace("Exchange service error: ", "");
+          }
+
+          if (errorMessage.includes("deposit_too_small") || errorDetails.includes("Out of min amount")) {
+            const minAmount = responseInner?.payload?.range?.minAmount ?? responseData?.payload?.range?.minAmount;
+            setApiValidationError(
+              minAmount
+                ? `Amount entered is too small. Minimum amount is ${Number(minAmount).toFixed(8)}.`
+                : "Amount entered is too small. Please enter a larger amount."
+            );
+            setReceiveAmount("0");
+            return;
+          }
+
+          if (errorMessage.includes("deposit_too_large") || errorDetails.includes("Out of max amount")) {
+            const maxAmount = responseInner?.payload?.range?.maxAmount ?? responseData?.payload?.range?.maxAmount;
+            setApiValidationError(
+              maxAmount
+                ? `Amount entered is too large. Maximum amount is ${Number(maxAmount).toFixed(8)}.`
+                : "Amount entered is too large. Please enter a smaller amount."
+            );
+            setReceiveAmount("0");
+            return;
+          }
+
+          setApiValidationError(errorMessage || "Failed to fetch exchange rate");
+        });
+    }, 300);
+
+    return () => {
+      if (exchangeLookupFetchTimeoutRef.current) clearTimeout(exchangeLookupFetchTimeoutRef.current);
+    };
+  }, [selectedAsset, amount, receiveAmount, isCalculatingFromPay, isDepositMode]);
+
+  // Apply local_commission when calculating from "You Get" (reverse direction)
+  useEffect(() => {
+    if (!selectedAsset) return;
+    if (!isExchangeCommissionLookupAsset(selectedAsset)) return;
+    if (!exchangeLookupResponse?.local_commission) return;
+    if (isCalculatingFromPay) return;
+
+    const recv = parseFloat(receiveAmount) || 0;
+    if (recv <= 0) return;
+
+    const lc = exchangeLookupResponse.local_commission;
+    if (lc.commission_mode === "flat_fee" && lc.fee != null) {
+      const fee = parseFloat(lc.fee);
+      if (!Number.isNaN(fee)) setAmount((recv + fee).toFixed(2));
+    } else if (lc.commission_mode === "percentage" && lc.rate != null) {
+      const rate = parseFloat(lc.rate);
+      if (!Number.isNaN(rate) && rate < 100) {
+        const calculatedPayAmount = recv / (1 - rate / 100);
+        setAmount(calculatedPayAmount.toFixed(2));
+      }
+    }
+  }, [exchangeLookupResponse, selectedAsset, isCalculatingFromPay, receiveAmount]);
 
   // Recalculate receive/send when apiCommission arrives (was null during initial calculation)
   useEffect(() => {
@@ -541,6 +621,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
     if (
       selectedAsset &&
       !isSimpleCalculationAsset(selectedAsset) &&
+      !isExchangeCommissionLookupAsset(selectedAsset) &&
       parseFloat(amount) > 0 &&
       isCalculatingFromPay
     ) {
@@ -712,6 +793,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
     if (
       selectedAsset &&
       !isSimpleCalculationAsset(selectedAsset) &&
+      !isExchangeCommissionLookupAsset(selectedAsset) &&
       parseFloat(receiveAmount) > 0 &&
       !isCalculatingFromPay
     ) {
@@ -1424,6 +1506,12 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
     const tickerB = (b?.ticker || b?.symbol || b?.name || "")
       .toString()
       .toLowerCase();
+    const legacyA = (a?.legacyTicker || a?.legacy_ticker || a?.original_ticker || a?.change_now_ticker || "")
+      .toString()
+      .toLowerCase();
+    const legacyB = (b?.legacyTicker || b?.legacy_ticker || b?.original_ticker || b?.change_now_ticker || "")
+      .toString()
+      .toLowerCase();
     const networkA = (a?.network || "").toString().toLowerCase();
     const networkB = (b?.network || "").toString().toLowerCase();
 
@@ -1445,19 +1533,25 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
 
     // Priority 2: USDC on BSC
     if (
-      tickerA === "usdc" &&
+      (tickerA === "usdc" || legacyA.includes("usdc")) &&
       networkA === "bsc" &&
-      !(tickerB === "usdc" && networkB === "bsc")
+      !((tickerB === "usdc" || legacyB.includes("usdc")) && networkB === "bsc")
     ) {
       return -1;
     }
     if (
-      tickerB === "usdc" &&
+      (tickerB === "usdc" || legacyB.includes("usdc")) &&
       networkB === "bsc" &&
-      !(tickerA === "usdc" && networkA === "bsc")
+      !((tickerA === "usdc" || legacyA.includes("usdc")) && networkA === "bsc")
     ) {
       return 1;
     }
+
+    // Priority 3: FXP / FXPRIMUS (forex)
+    const isFxpA = tickerA === "fxp" || tickerA === "fxprimus";
+    const isFxpB = tickerB === "fxp" || tickerB === "fxprimus";
+    if (isFxpA && !isFxpB) return -1;
+    if (isFxpB && !isFxpA) return 1;
 
     // Default: preserve original order (no change)
     return 0;
@@ -1825,8 +1919,10 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
       return;
     }
 
-    // Block pending payment methods before submitting (prevents backend error)
-    if (!isDepositMode && selectedPaymentDetails.length > 0) {
+    // Block pending payment methods before submitting (withdrawal only).
+    // Deposit mode should not require/verify payment-method approval.
+    // We key off `isFieldsSwapped` because the UI (registered account) is rendered only for withdrawal.
+    if (isFieldsSwapped && selectedPaymentDetails.length > 0) {
       const status = (selectedPaymentDetails[0]?.status || "").toString().toLowerCase();
       const isPending = status !== "" && status !== "approved" && status !== "verified";
       if (isPending) {
@@ -2056,14 +2152,35 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
   let commissionAmount = 0;
   let commissionRate = 0;
 
-  if (selectedAsset && isSimpleCalculationAsset(selectedAsset)) {
-    commissionRate = isCommissionApiAsset(selectedAsset) ? (apiCommission ?? 2) : 2;
+  if (
+    selectedAsset &&
+    isExchangeCommissionLookupAsset(selectedAsset) &&
+    exchangeLookupResponse?.local_commission
+  ) {
+    const lc = exchangeLookupResponse.local_commission;
+    if (lc.commission_mode === "flat_fee") {
+      const fee = lc.fee != null ? parseFloat(lc.fee) : 0;
+      commissionAmount = Number.isNaN(fee) ? 0 : fee;
+      commissionRate = amountNum > 0 ? (commissionAmount / amountNum) * 100 : 0;
+    } else if (lc.commission_mode === "percentage") {
+      const rate = lc.rate != null ? parseFloat(lc.rate) : 0;
+      commissionRate = Number.isNaN(rate) ? 0 : rate;
+      commissionAmount = (amountNum * commissionRate) / 100;
+    }
+  } else if (selectedAsset && isCommissionApiAsset(selectedAsset)) {
+    commissionRate = apiCommission ?? 2;
     commissionAmount = (amountNum * commissionRate) / 100;
   } else {
-    // Use default commission rate for other assets
-    commissionRate = selectedAsset?.range_commissions?.[0]?.commission
-      ? parseFloat(selectedAsset.range_commissions[0].commission)
-      : 2; // Default 2% commission for other assets
+    // Fallback: try to use the asset-provided commission fields
+    const rateFromAsset =
+      selectedAsset?.range_commissions?.[0]?.commission
+        ? parseFloat(selectedAsset.range_commissions[0].commission)
+        : selectedAsset?.commission
+          ? parseFloat(selectedAsset.commission)
+          : selectedAsset?.fee_rate
+            ? parseFloat(selectedAsset.fee_rate)
+            : 2; // Default 2% commission for other assets
+    commissionRate = Number.isNaN(rateFromAsset) ? 2 : rateFromAsset;
     commissionAmount = (amountNum * commissionRate) / 100;
   }
 
@@ -2074,7 +2191,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
   // If MoneyX tab is active, render MoneyX rates component (check first, after all hooks)
   if (activeTab === 'moneyx') {
     console.log('Rendering MoneyXRates component, activeTab:', activeTab);
-    return <MoneyXRates />;
+    return <MoneyXRates commissionType={isDepositMode ? "deposit" : "withdrawal"} />;
   }
 
   console.log('Rendering Crypto calculator, activeTab:', activeTab);
@@ -2086,22 +2203,6 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
 
   return (
     <div className="bg-white dark:bg-[#18181D] p-3 sm:p-4 lg:p-6 rounded-xl sm:rounded-xl lg:rounded-2xl border-[1.5px] border-gray-200 dark:border-[#35353E] shadow-md container mx-auto">
-      {/* API Validation Error - show backend validation messages (no retries) */}
-      {apiValidationError && (
-        <div
-          className={`mb-4 flex items-start gap-3 rounded-2xl p-3 sm:p-4 border ${isDark ? "bg-red-950/20 border-red-500/50" : "bg-red-50 border-red-200"} shadow-sm`}
-          role="alert"
-        >
-          <span className="flex-shrink-0 mt-0.5" aria-hidden>
-            <svg className="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-            </svg>
-          </span>
-          <p className={`text-sm font-medium ${isDark ? "text-red-400" : "text-red-700"}`}>
-            {apiValidationError}
-          </p>
-        </div>
-      )}
       <div className="mb-2" />
       <div className={`w-full ${isDark ? "text-white" : "text-[#1F2937]"}`}>
         {/* Top Section - You Send: Amount and Bank/Payment Method in one card */}
@@ -2196,6 +2297,11 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                       </div>
                     )}
                 </div>
+                {apiValidationError && (
+                  <div className="mt-2 text-xs text-red-500">
+                    {apiValidationError}
+                  </div>
+                )}
               </div>
 
               {/* Conditionally render Payment Method or Asset based on isFieldsSwapped */}
@@ -2286,7 +2392,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                   {paymentMethodError && <p className="text-red-500 text-sm mt-1">{paymentMethodError}</p>}
 
                   {/* Registered Account - withdrawal only, exact as express */}
-                  {!isDepositMode && payBank && (
+                  {isFieldsSwapped && payBank && (
                     <div className="mt-3 w-full relative z-10">
                       <div className="flex items-center gap-2 mb-2">
                         <label
@@ -2426,7 +2532,8 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                         }
                       })()}
 
-                      {!isFirstCardSubmitted &&
+                      {isFieldsSwapped &&
+                        !isFirstCardSubmitted &&
                         selectedPaymentDetails.length > 0 &&
                         (() => {
                           const status = (selectedPaymentDetails[0]?.status || "")
@@ -2873,20 +2980,22 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
         </div>
       </div>
 
-      {/* Estimated Price Warning */}
-      <div
-        className={`mb-4 flex items-start gap-3 p-4 rounded-2xl border ${isDark ? "bg-[#F79330]/10 border-[#F79330]/30" : "bg-[#F79330]/10 border-[#F79330]/40"} ${
-          isDark ? "text-white" : "text-[#1F2937]"
-        }`}
-      >
-        <AlertCircle className="w-5 h-5 text-[#F79330] flex-shrink-0 mt-0.5" />
-        <div className="text-xs sm:text-sm lg:text-sm">
-          {t(
-            "rates.alert.estimate",
-            "This is only estimated price and its based on current Market Price. We will fix the price when we receive the funds."
-          )}
+      {/* Estimated Price Warning - hidden for deposit mode */}
+      {!isDepositMode && (
+        <div
+          className={`mb-4 flex items-start gap-3 p-4 rounded-2xl border ${isDark ? "bg-[#F79330]/10 border-[#F79330]/30" : "bg-[#F79330]/10 border-[#F79330]/40"} ${
+            isDark ? "text-white" : "text-[#1F2937]"
+          }`}
+        >
+          <AlertCircle className="w-5 h-5 text-[#F79330] flex-shrink-0 mt-0.5" />
+          <div className="text-xs sm:text-sm lg:text-sm">
+            {t(
+              "rates.alert.estimate",
+              "This is only estimated price and its based on current Market Price. We will fix the price when we receive the funds."
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Amount & Fees */}
       <div className={`border ${isDark ? "border-[#35353E]" : "border-[#E8EFF5]"} rounded-xl p-4 bg-transparent mb-4`}>
@@ -2962,26 +3071,9 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
           onClick={handleSubmit}
           disabled={
             isSubmitting ||
-            !isVerified ||
             (!isDepositMode &&
-              selectedPaymentDetails.length > 0 &&
-              (() => {
-                const status = (selectedPaymentDetails[0]?.status || "")
-                  .toString()
-                  .toLowerCase();
-                return (
-                  status !== "" && status !== "approved" && status !== "verified"
-                );
-              })())
-          }
-          className={`w-full py-3 px-4 rounded-xl font-semibold text-white bg-[#1D8751] hover:bg-[#0f8f4d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${(isSubmitting || !isVerified) ? "opacity-50 cursor-not-allowed" : ""
-            }`}
-        >
-          {isSubmitting
-            ? t("rates.processing", "Processing...")
-            : !isVerified
-              ? t("rates.verifyToContinue", "Verify account to continue")
-              : (!isDepositMode &&
+              (selectedPaymentDetails.length === 0 ||
+                (isFieldsSwapped &&
                   selectedPaymentDetails.length > 0 &&
                   (() => {
                     const status = (selectedPaymentDetails[0]?.status || "")
@@ -2990,9 +3082,14 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                     return (
                       status !== "" && status !== "approved" && status !== "verified"
                     );
-                  })())
-                  ? "Pending approval"
-                  : t("rates.exchangeNow", "Exchange Now")}
+                  })())))
+          }
+          className={`w-full py-3 px-4 rounded-xl font-semibold text-white bg-[#1D8751] hover:bg-[#0f8f4d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""
+            }`}
+        >
+          {isSubmitting
+            ? t("rates.processing", "Processing...")
+            : "Submit"}
         </button>
       )}
 
@@ -3175,14 +3272,20 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
             </span>
             {t("rates.walletAddress", "Wallet Address")}
           </h2>
-          <div className="flex flex-col dark:bg-[#1D1D23] border-2 border-border rounded-2xl p-5 shadow-lg w-full max-w-4xl mx-auto text-[#35353e] dark:text-[#788099] mb-6">
+          <div
+            className={`flex flex-col dark:bg-[#1D1D23] border-2 ${
+              isDepositMode
+                ? "border-[#E2E8F0] dark:border-[#35353E]"
+                : "border-border"
+            } rounded-2xl p-5 shadow-lg w-full max-w-4xl mx-auto text-[#35353e] dark:text-[#788099] mb-6`}
+          >
             {isDepositMode ? (
               // Deposit Mode: Input field for wallet address
               <>
                 <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
                   {t("rates.walletAccountAddress", "Wallet/Account Address")}
                 </label>
-                <div className="flex items-center dark:bg-[#1D1D23] border border-[#39394a] dark:border-[#35353E] rounded-2xl px-4 py-2 mb-4">
+                <div className="flex items-center dark:bg-[#1D1D23] border border-gray-200 dark:border-[#35353E] rounded-2xl px-4 py-2 mb-4">
 
                   <input
                     type="text"
@@ -3218,9 +3321,9 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                   <button
                     onClick={handleProceedToExchanging}
                     disabled={
-                      isSubmitting || !isVerified || !walletAddress.trim() || !!walletError
+                      isSubmitting || !walletAddress.trim() || !!walletError
                     }
-                    className={`flex-1 font-semibold py-2 sm:py-2 px-3 sm:px-4 rounded-lg transition-colors flex items-center justify-center text-sm sm:text-base ${isSubmitting || !isVerified || !walletAddress.trim() || !!walletError
+                    className={`flex-1 font-semibold py-2 sm:py-2 px-3 sm:px-4 rounded-lg transition-colors flex items-center justify-center text-sm sm:text-base ${isSubmitting || !walletAddress.trim() || !!walletError
                       ? "bg-gray-500 cursor-not-allowed text-white"
                       : "bg-[#1D8751] hover:bg-[#166b3f] text-white"
                       }`}

@@ -127,6 +127,8 @@ export const API_CONFIG = {
   },
   SWAP: {
     SUPPORTED_ASSETS: "api/changenow/supported-tokens/",
+    // Public ChangeNOW tokens list (used by frontend hooks)
+    SUPPORTED_ASSETS_PUBLIC: "/api/changenow/public/supported-tokens/",
     ESTIMATE_SWAP: "/api/changenow/estimate/",
     PUBLIC_ESTIMATE_SWAP: "/api/changenow/public/estimate/",
     CREATE_SWAP: "/api/changenow/create/",

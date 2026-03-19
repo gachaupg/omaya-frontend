@@ -2,13 +2,16 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-const CHANGE_NOW_API_URL =
-  "https://api.changenow.io/v1/currencies?active=true&fixedRate=true";
+import { API_CONFIG } from "@/lib/appConfig";
+
+const CHANGE_NOW_API_URL = `${API_CONFIG.BASE_URL}${API_CONFIG.SWAP.SUPPORTED_ASSETS_PUBLIC}`;
 
 interface ChangeNowApiAsset {
   ticker?: string;
   name?: string;
   image?: string;
+  network?: string;
+  legacyTicker?: string;
   hasExternalId?: boolean;
   isExtraIdSupported?: boolean;
   isFiat?: boolean;
@@ -37,6 +40,47 @@ export interface ChangeNowMappedAsset {
   original_ticker: string;
   change_now_ticker: string;
   featured?: boolean;
+}
+
+// Cache for public supported-tokens response.
+// This avoids refetching when the user revisits deposit/withdraw dropdowns.
+const PUBLIC_ASSETS_CACHE_KEY =
+  "omaya_changenow_public_supported_tokens_v2";
+const PUBLIC_ASSETS_CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes
+
+let inMemoryPublicAssetsCache:
+  | { ts: number; assets: ChangeNowMappedAsset[] }
+  | null = null;
+
+function readPublicAssetsCacheFromLocalStorage(): {
+  ts: number;
+  assets: ChangeNowMappedAsset[];
+} | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(PUBLIC_ASSETS_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as {
+      ts?: number;
+      assets?: ChangeNowMappedAsset[];
+    };
+    if (!parsed.ts || !Array.isArray(parsed.assets)) return null;
+    return { ts: parsed.ts, assets: parsed.assets };
+  } catch {
+    return null;
+  }
+}
+
+function writePublicAssetsCacheToLocalStorage(assets: ChangeNowMappedAsset[]) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(
+      PUBLIC_ASSETS_CACHE_KEY,
+      JSON.stringify({ ts: Date.now(), assets })
+    );
+  } catch {
+    // ignore cache write failures (quota, privacy mode, etc.)
+  }
 }
 
 const suffixToNetwork = [
@@ -165,15 +209,15 @@ const FALLBACK_ASSETS: ChangeNowMappedAsset[] = [
     featured: true,
   },
   {
-    asset_id: "usdc-matic",
+    asset_id: "usdc-bsc",
     ticker: "USDC",
     symbol: "USDC",
     name: "USD Coin",
-    network: "matic",
-    networks: [{ network_id: "matic", network_type: "matic" }],
+    network: "bsc",
+    networks: [{ network_id: "bsc", network_type: "bsc" }],
     image_url:
-      "https://content-api.changenow.io/uploads/usdcmatic_e5834ebb53.svg",
-    icon: "https://content-api.changenow.io/uploads/usdcmatic_e5834ebb53.svg",
+      "https://content-api.changenow.io/uploads/usdcbsc_397b9c0f7d.svg",
+    icon: "https://content-api.changenow.io/uploads/usdcbsc_397b9c0f7d.svg",
     is_stable: true,
     is_fiat: false,
     supportsFixedRate: true,
@@ -182,8 +226,8 @@ const FALLBACK_ASSETS: ChangeNowMappedAsset[] = [
     range_commissions: [{ commission: "2.0" }],
     commission: "2.0",
     fee_rate: "2.0",
-    original_ticker: "usdcmatic",
-    change_now_ticker: "usdcmatic",
+    original_ticker: "usdcbsc",
+    change_now_ticker: "usdcbsc",
   },
   {
     asset_id: "btc-btc",
@@ -239,6 +283,12 @@ const mapChangeNowAsset = (
     }
   }
 
+  // Prefer explicit network from API payload (e.g. { ticker: "usdc", network: "bsc" }).
+  if (!network && asset.network) {
+    const explicit = asset.network.toLowerCase();
+    network = networkNameMap[explicit] || explicit.replace(/[\s_-]/g, "");
+  }
+
   if (!network) {
     network = normalizeNetworkFromName(asset.name);
   }
@@ -259,6 +309,9 @@ const mapChangeNowAsset = (
     `https://cryptoicons.org/api/icon/${ticker.toLowerCase()}/200`;
   const displayName = cleanAssetName(asset.name, ticker, networkId);
 
+  const rawChangeNowTicker =
+    asset.legacyTicker?.trim().toLowerCase() || rawTicker;
+
   return {
     asset_id: `${ticker.toLowerCase()}-${networkId}`,
     ticker,
@@ -276,8 +329,8 @@ const mapChangeNowAsset = (
     range_commissions: [{ commission: commissionValue }],
     commission: commissionValue,
     fee_rate: commissionValue,
-    original_ticker: rawTicker,
-    change_now_ticker: rawTicker,
+    original_ticker: rawChangeNowTicker,
+    change_now_ticker: rawChangeNowTicker,
     featured: asset.featured,
   };
 };
@@ -293,6 +346,26 @@ export function useChangeNowAssets(shouldFetch: boolean) {
     }
 
     const controller = new AbortController();
+
+    // Serve cached data immediately (public assets are relatively stable).
+    // If cache is fresh, we don't refetch.
+    const now = Date.now();
+    const cached =
+      (inMemoryPublicAssetsCache &&
+        now - inMemoryPublicAssetsCache.ts < PUBLIC_ASSETS_CACHE_TTL_MS
+        ? inMemoryPublicAssetsCache
+        : null) ||
+      readPublicAssetsCacheFromLocalStorage();
+
+    const isFresh =
+      !!cached && now - cached.ts < PUBLIC_ASSETS_CACHE_TTL_MS;
+
+    if (isFresh) {
+      setAssets(cached!.assets);
+      setLoading(false);
+      setError(null);
+      return () => controller.abort();
+    }
 
     const fetchAssets = async () => {
       setLoading(true);
@@ -331,7 +404,12 @@ export function useChangeNowAssets(shouldFetch: boolean) {
 
         const mappedAssets = Array.from(uniqueAssets.values());
 
-        setAssets(mappedAssets.length ? mappedAssets : FALLBACK_ASSETS);
+        const finalAssets = mappedAssets.length ? mappedAssets : FALLBACK_ASSETS;
+        setAssets(finalAssets);
+
+        // Save cache after successful fetch.
+        inMemoryPublicAssetsCache = { ts: Date.now(), assets: finalAssets };
+        writePublicAssetsCacheToLocalStorage(finalAssets);
       } catch (err) {
         if ((err as { name?: string })?.name === "AbortError") {
           return;
@@ -354,16 +432,10 @@ export function useChangeNowAssets(shouldFetch: boolean) {
     return () => controller.abort();
   }, [shouldFetch]);
 
-  const limitedAssets = useMemo(() => {
-    if (!assets.length) {
-      return assets;
-    }
-
-    return assets.slice(0, 200);
-  }, [assets]);
-
   return {
-    assets: limitedAssets,
+    // IMPORTANT: return the full asset list so dropdown search can find
+    // assets that might otherwise fall outside an arbitrary slice window.
+    assets,
     loading,
     error,
   };

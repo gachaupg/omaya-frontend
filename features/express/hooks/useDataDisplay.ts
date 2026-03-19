@@ -33,7 +33,14 @@ export function useDataDisplay<T>({
 }: UseDataDisplayProps<T>): UseDataDisplayReturn<T> {
   return useMemo(() => {
     // Determine what data to display
-    const displayData = data || fallbackData;
+    // Important: `data` can be an empty array (`[]`), which is truthy.
+    // If we treat it as "real data", `displayData` becomes `[]` and we never show fallback assets.
+    // So: when `data` is an array but empty, use fallbackData instead.
+    const displayData = Array.isArray(data)
+      ? data.length
+        ? data
+        : fallbackData
+      : data || fallbackData;
     const hasData = displayData && displayData.length > 0;
     const hasError = !!error;
     const isEmpty = !hasData;

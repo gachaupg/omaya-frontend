@@ -506,7 +506,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
                 fromAsset,
                 activeInputField === "from",
                 true,
-                amountError
+                activeInputField === "from" || !activeInputField ? estimateError || amountError : undefined
               )}
             </div>
             <div className="flex-1 min-w-0">
@@ -562,7 +562,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
                 toAsset,
                 activeInputField === "to",
                 false,
-                amountError
+                activeInputField === "to" ? estimateError || amountError : undefined
               )}
             </div>
             <div className="flex-1 min-w-0">
@@ -590,17 +590,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
         </p>
       </div>
 
-      {/* Estimate Error - shown just above the button */}
-      {estimateError && (
-        <div className="mb-3 bg-red-500/10 border border-red-500/30 rounded-xl p-3 flex items-start gap-2">
-          <div className="w-5 h-5 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-            <span className="text-red-500 text-xs font-bold">!</span>
-          </div>
-          <p className="text-red-600 dark:text-red-400 text-xs sm:text-sm">
-            {estimateError}
-          </p>
-        </div>
-      )}
+      {/* estimateError is shown under the relevant input */}
 
       {!meetsMinimumAmount && fromAsset && toAsset && fromAmount && parseFloat(fromAmount) > 0 && toAmount && parseFloat(toAmount) > 0 && (
         <p className="text-amber-600 dark:text-amber-400 text-xs sm:text-sm mb-2">

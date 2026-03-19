@@ -29,7 +29,11 @@ import { AlertCircle } from "lucide-react";
 import { useRatesI18n } from "@/lib/useRatesI18n";
 import Exchanging from "@/features/moneyX/components/Exchanging";
 
-const MoneyXRates = () => {
+const MoneyXRates = ({
+  commissionType = "deposit",
+}: {
+  commissionType?: "deposit" | "withdrawal";
+}) => {
   console.log("MoneyXRates component rendering");
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
@@ -195,7 +199,7 @@ const MoneyXRates = () => {
     }
     if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
     commissionFetchTimeoutRef.current = setTimeout(() => {
-      dispatch(fetchMoneyXCommission({ amount, commissionType: "deposit" }))
+      dispatch(fetchMoneyXCommission({ amount, commissionType }))
         .unwrap()
         .then((result) => {
           setApiCommission(result.commission);
@@ -205,7 +209,7 @@ const MoneyXRates = () => {
     return () => {
       if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
     };
-  }, [payAmount, getAmount, isCalculatingFromPay, dispatch]);
+  }, [payAmount, getAmount, isCalculatingFromPay, commissionType, dispatch]);
 
   // Recalculate the other field when apiCommission updates (commission is a percentage: receive = send - send*rate/100)
   useEffect(() => {
