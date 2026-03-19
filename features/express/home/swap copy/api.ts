@@ -97,7 +97,28 @@ export const getEstimateSwap = async (
           "Server Error: Unable to calculate swap estimate. Please try again later."
         );
       } else if (error.response?.status === 400) {
-        throw new Error("Invalid swap parameters. Please check your input.");
+        const body = error.response?.data as any;
+        const rd = body?.response_data ?? body;
+        const errKey = rd?.error ?? body?.error ?? "";
+        const msg = rd?.message ?? body?.message ?? rd?.error ?? body?.error ?? "";
+
+        const range =
+          rd?.payload?.range ??
+          rd?.range ??
+          body?.payload?.range ??
+          body?.range;
+        const min = range?.minAmount ?? range?.min_amount ?? null;
+
+        const isDepositTooSmall = /deposit_too_small|too_small|too small|min amount/i.test(
+          String(errKey || msg || "")
+        );
+
+        if (isDepositTooSmall && min != null) {
+          const baseMsg = String(msg || "Amount is too small");
+          throw new Error(`${baseMsg} Minimum: ${min}.`);
+        }
+
+        throw new Error(String(msg || "Invalid swap parameters. Please check your input."));
       } else if (error.response?.status === 404) {
         throw new Error("Swap service not available. Please try again later.");
       }
@@ -138,7 +159,28 @@ export const getPublicEstimateSwap = async (
           "Server Error: Unable to calculate swap estimate. Please try again later."
         );
       } else if (error.response?.status === 400) {
-        throw new Error("Invalid swap parameters. Please check your input.");
+        const body = error.response?.data as any;
+        const rd = body?.response_data ?? body;
+        const errKey = rd?.error ?? body?.error ?? "";
+        const msg = rd?.message ?? body?.message ?? rd?.error ?? body?.error ?? "";
+
+        const range =
+          rd?.payload?.range ??
+          rd?.range ??
+          body?.payload?.range ??
+          body?.range;
+        const min = range?.minAmount ?? range?.min_amount ?? null;
+
+        const isDepositTooSmall = /deposit_too_small|too_small|too small|min amount/i.test(
+          String(errKey || msg || "")
+        );
+
+        if (isDepositTooSmall && min != null) {
+          const baseMsg = String(msg || "Amount is too small");
+          throw new Error(`${baseMsg} Minimum: ${min}.`);
+        }
+
+        throw new Error(String(msg || "Invalid swap parameters. Please check your input."));
       } else if (error.response?.status === 404) {
         throw new Error("Swap service not available. Please try again later.");
       }

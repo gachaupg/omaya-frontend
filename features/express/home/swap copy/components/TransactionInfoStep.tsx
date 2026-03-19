@@ -392,6 +392,12 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                   </span>
                 </div>
               </div>
+              {/* Backend estimate error under input */}
+              {estimateError && typeof estimateError === "string" && (activeInputField === "from" || !activeInputField) && (
+                <p className={`mt-2 text-sm ${isDark ? "text-red-300" : "text-red-600"}`}>
+                  {estimateError}
+                </p>
+              )}
             </div>
 
             {/* You Get Section */}
@@ -542,6 +548,12 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                   </div>
                 )}
               </div>
+              {/* Backend estimate error under input */}
+              {estimateError && typeof estimateError === "string" && activeInputField === "to" && (
+                <p className={`mt-2 text-sm ${isDark ? "text-red-300" : "text-red-600"}`}>
+                  {estimateError}
+                </p>
+              )}
             </div>
 
             {/* Asset Section */}
@@ -636,31 +648,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
           </div>
         )}
 
-        {/* API / estimate error (400, min amount, etc.) */}
-        {estimateError && typeof estimateError === "string" && (
-          <div
-            className={`mt-4 rounded-2xl p-3 sm:p-4 flex items-start gap-2 border ${
-              isDark
-                ? "bg-red-950/40 border-red-500/40"
-                : "bg-red-500/10 border-red-500/30"
-            }`}
-          >
-            <div
-              className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                isDark ? "bg-red-500/25" : "bg-red-500/20"
-              }`}
-            >
-              <span className="text-red-500 text-xs font-bold">!</span>
-            </div>
-            <p
-              className={`text-sm flex-1 ${
-                isDark ? "text-red-300" : "text-red-600"
-              }`}
-            >
-              {estimateError}
-            </p>
-          </div>
-        )}
+        {/* estimateError is shown under the relevant input */}
 
         {/* Submit Button */}
         {!hideContinueButton && (

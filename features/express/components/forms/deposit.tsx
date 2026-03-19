@@ -1362,6 +1362,7 @@ export default function DepositForm({
           .then((res) => {
             setExchangeLookupResponse(res);
             setApiCommission(null);
+            setApiValidationError(null);
             if (isCalculatingFromPay && res.to_amount != null) {
               const toAmount = parseFloat(res.to_amount);
               if (!Number.isNaN(toAmount)) {
@@ -1370,7 +1371,28 @@ export default function DepositForm({
               }
             }
           })
-          .catch(() => setExchangeLookupResponse(null));
+          .catch((error: any) => {
+            setExchangeLookupResponse(null);
+            const responseData = error?.response?.data;
+            const responseInner = responseData?.response_data;
+            const rawMessage =
+              responseData?.error ||
+              responseData?.message ||
+              responseInner?.error ||
+              responseInner?.message ||
+              error?.message;
+            const backendMessage =
+              typeof rawMessage === "string"
+                ? rawMessage
+                : Array.isArray(rawMessage)
+                  ? rawMessage[0]
+                  : rawMessage && typeof rawMessage === "object"
+                    ? JSON.stringify(rawMessage)
+                    : null;
+            setApiValidationError(
+              String(backendMessage || "Failed to fetch exchange rate")
+            );
+          });
       }, 300);
       return () => {
         if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
@@ -3338,23 +3360,6 @@ export default function DepositForm({
         {t("express.transactionInfo", "Transaction Info")}
       </h2>
 
-      {/* API Validation Error - Show in card */}
-      {apiValidationError && (
-        <div
-          className="mb-2 sm:mb-4 flex items-start gap-3 rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-red-500/50 bg-red-950/20 dark:bg-red-950/30 shadow-sm"
-          role="alert"
-        >
-          <span className="flex-shrink-0 mt-0.5" aria-hidden>
-            <svg className="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-            </svg>
-          </span>
-          <p className="text-sm font-medium text-red-400">
-            {apiValidationError}
-          </p>
-        </div>
-      )}
-
       <div className="w-full text-white">
         {/* Top Section - Amount and Bank/Payment Method in one card */}
         <div className="relative mb-2 sm:mb-3 md:mb-4">
@@ -3539,6 +3544,12 @@ export default function DepositForm({
                     }`}
                 />
 
+
+                {apiValidationError && (
+                  <div className="mt-2 text-xs text-red-500">
+                    {apiValidationError}
+                  </div>
+                )}
 
                 {/* Show loading spinner when calculating "You Receive" from "You Send" */}
                 {(isCalculating || isCalculatingReceive) &&

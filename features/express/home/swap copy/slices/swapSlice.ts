@@ -297,7 +297,9 @@ const swapSlice = createSlice({
       .addCase(fetchSwapEstimate.rejected, (state, action) => {
         state.estimateLoading = false;
         state.estimateError =
-          action.error.message || "Failed to fetch swap estimate";
+          typeof action.payload === "string" && action.payload.trim()
+            ? action.payload
+            : action.error.message || "Failed to fetch swap estimate";
         state.hasShownErrorToast = true; // Mark that error toast has been shown
       })
       .addCase(createSwapTransaction.pending, (state) => {

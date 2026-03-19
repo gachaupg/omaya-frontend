@@ -102,6 +102,10 @@ const getNetworkMatchKeys = (network: string): string[] => {
   return NETWORK_ALIASES[n] ? [...NETWORK_ALIASES[n], n] : [n];
 };
 
+// Use the same placeholder used by RatesCalculator/withdrwal when an asset has no image.
+const ASSET_ICON_FALLBACK_URL =
+  "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+
 // Network mapping function
 const getNetworkDisplayName = (network: string) => {
   const networkMap: { [key: string]: string } = {
@@ -1098,6 +1102,7 @@ export default function DepositForm({
           .then((res) => {
             setExchangeLookupResponse(res);
             setApiCommission(null);
+            setApiValidationError(null);
             if (isCalculatingFromPay && res.to_amount != null) {
               const toAmount = parseFloat(res.to_amount);
               if (!Number.isNaN(toAmount)) {
@@ -1106,7 +1111,28 @@ export default function DepositForm({
               }
             }
           })
-          .catch(() => setExchangeLookupResponse(null));
+          .catch((error: any) => {
+            setExchangeLookupResponse(null);
+            const responseData = error?.response?.data;
+            const responseInner = responseData?.response_data;
+            const rawMessage =
+              responseData?.error ||
+              responseData?.message ||
+              responseInner?.error ||
+              responseInner?.message ||
+              error?.message;
+            const backendMessage =
+              typeof rawMessage === "string"
+                ? rawMessage
+                : Array.isArray(rawMessage)
+                  ? rawMessage[0]
+                  : rawMessage && typeof rawMessage === "object"
+                    ? JSON.stringify(rawMessage)
+                    : null;
+            setApiValidationError(
+              String(backendMessage || "Failed to fetch exchange rate")
+            );
+          });
       }, 300);
       return () => { if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current); };
     }
@@ -1629,11 +1655,34 @@ export default function DepositForm({
       if (!matchesSearch) return false;
 
       // Apply filter tab (only for home page)
-      if (isHomePage) {
+      // Important: while the user is searching, do not apply tab filtering
+      // (otherwise non-featured assets like USDC can never appear).
+      if (isHomePage && !searchTerm) {
         switch (assetFilterTab) {
           case "new":
-            // Show featured assets or assets with is_changenow_asset as "new"
-            return asset.featured === true || asset.is_changenow_asset === true;
+            // Show featured/new assets, and always include USDC on BSC in Popular/New.
+            {
+              const tickerLower = (asset?.ticker || asset?.symbol || "").toString().toLowerCase();
+              const legacyLower = (
+                (asset as any)?.legacyTicker ||
+                (asset as any)?.legacy_ticker ||
+                (asset as any)?.original_ticker ||
+                (asset as any)?.change_now_ticker ||
+                ""
+              )
+                .toString()
+                .toLowerCase();
+              const networkLower = (getAssetNetwork(asset) || asset?.network || "").toString().toLowerCase();
+              const isUsdcBsc =
+                (tickerLower === "usdc" || legacyLower.includes("usdc")) &&
+                (networkLower === "bsc" || networkLower === "bep20");
+
+              return (
+                asset.featured === true ||
+                asset.is_changenow_asset === true ||
+                isUsdcBsc
+              );
+            }
           case "gainers":
             // For now, show all assets (can be enhanced with price data)
             return true;
@@ -1757,6 +1806,9 @@ export default function DepositForm({
   // Force "Popular" group to always be: USDT (BSC) and USDC (BSC)
   // This avoids BTC (or other assets) accidentally landing inside Popular because of imperfect ticker/network sorting.
   const popularAssets = useMemo(() => {
+    const sourceAssets: SupportedAsset[] = (assetsDisplay.displayData ||
+      []) as SupportedAsset[];
+
     const normalizeCurrency = (asset: any): string =>
       (getCurrencyFromAsset(asset) || "").toString().toLowerCase();
 
@@ -1765,16 +1817,23 @@ export default function DepositForm({
       return getNetworkMatchKeys(n).includes("bsc");
     };
 
-    const usdtAsset = sortedSwapAssets.find(
+    const usdtAsset = sourceAssets.find(
       (a) => normalizeCurrency(a) === "usdt" && isBscLike(a)
     );
-    const usdcAsset = sortedSwapAssets.find(
+    const usdcAsset = sourceAssets.find(
       (a) => normalizeCurrency(a) === "usdc" && isBscLike(a)
     );
 
-    const selected: SupportedAsset[] = [usdtAsset, usdcAsset].filter(Boolean) as SupportedAsset[];
+    const fxprimusAsset = sourceAssets.find(
+      (a) =>
+        normalizeCurrency(a) === "fxp" || normalizeCurrency(a) === "fxprimus"
+    );
+
+    const selected: SupportedAsset[] = [usdtAsset, usdcAsset, fxprimusAsset].filter(
+      Boolean
+    ) as SupportedAsset[];
     return selected;
-  }, [sortedSwapAssets, getCurrencyFromAsset]);
+  }, [assetsDisplay.displayData, getCurrencyFromAsset]);
 
   const popularKeySet = useMemo(
     () => new Set(popularAssets.map((a) => getAssetKeyForGrouping(a))),
@@ -2006,7 +2065,7 @@ export default function DepositForm({
                               asset?.image_url ||
                               asset?.asset_image ||
                               (asset as any)?.image ||
-                              "/images/tether.svg"
+                              ASSET_ICON_FALLBACK_URL
                             }
                             alt={
                               asset?.name ||
@@ -2016,8 +2075,12 @@ export default function DepositForm({
                             }
                             className="w-10 h-10 rounded-full object-cover"
                             onError={(e) => {
+                              console.log(
+                                "Image failed to load for asset:",
+                                asset
+                              );
                               e.currentTarget.src =
-                                "/images/tether.svg";
+                                ASSET_ICON_FALLBACK_URL;
                             }}
                           />
                           <div className="flex-1">
@@ -2081,10 +2144,21 @@ export default function DepositForm({
                             }}
                           >
                             <img
-                              src={asset?.image_url || asset?.asset_image || (asset as any)?.image || "/images/tether.svg"}
+                              src={
+                                asset?.image_url ||
+                                asset?.asset_image ||
+                                (asset as any)?.image ||
+                                ASSET_ICON_FALLBACK_URL
+                              }
                               alt={asset?.name || asset?.ticker || asset?.symbol || "Asset"}
                               className="w-10 h-10 rounded-full object-cover"
-                              onError={(e) => { e.currentTarget.src = "/images/tether.svg"; }}
+                              onError={(e) => {
+                                console.log(
+                                  "Image failed to load for asset:",
+                                  asset
+                                );
+                                e.currentTarget.src = ASSET_ICON_FALLBACK_URL;
+                              }}
                             />
                             <div className="flex-1">
                               <div className={`font-medium text-base flex items-center gap-2 ${isDark ? "text-white" : "text-[#1F2937]"}`}>
@@ -2131,7 +2205,7 @@ export default function DepositForm({
                         asset?.image_url ||
                         asset?.asset_image ||
                         (asset as any)?.image ||
-                        "/images/tether.svg"
+                        ASSET_ICON_FALLBACK_URL
                       }
                       alt={
                         asset?.name ||
@@ -2141,8 +2215,11 @@ export default function DepositForm({
                       }
                       className="w-10 h-10 rounded-full object-cover"
                       onError={(e) => {
-                        e.currentTarget.src =
-                          "/images/tether.svg";
+                        console.log(
+                          "Image failed to load for asset:",
+                          asset
+                        );
+                        e.currentTarget.src = ASSET_ICON_FALLBACK_URL;
                       }}
                     />
                     <div className="flex-1">
@@ -3153,24 +3230,6 @@ export default function DepositForm({
     <div className="w-full flex flex-col dark:bg-[#18181D]  ">
       <div className="mb-2" />
 
-      {/* API Validation Error - Show in card */}
-      {apiValidationError && (
-        <div
-          className={`mb-4 flex items-start gap-3 rounded-2xl p-3 sm:p-4 border ${isDark ? "bg-red-950/20 border-red-500/50" : "bg-red-50 border-red-200"} shadow-sm`}
-          role="alert"
-        >
-          <span className="flex-shrink-0 mt-0.5" aria-hidden>
-            <svg className="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-            </svg>
-          </span>
-          <p className={`text-sm font-medium ${isDark ? "text-red-400" : "text-red-700"}`}>
-            {apiValidationError}
-          </p>
-        </div>
-      )}
-
-
       <div className={`w-full ${isDark ? "text-white" : "text-[#1F2937]"}`}>
         {/* Top Section - Amount and Bank/Payment Method in one card */}
         <div className="relative mb-4">
@@ -3285,6 +3344,12 @@ export default function DepositForm({
                     }`}
                 />
 
+
+                {apiValidationError && (
+                  <div className="mt-2 text-xs text-red-500">
+                    {apiValidationError}
+                  </div>
+                )}
 
                 {/* Show loading spinner when calculating "You Receive" from "You Send" */}
                 {(isCalculating || isCalculatingReceive) && isCalculatingFromPay && selectedAsset && !isForexAsset(selectedAsset) && (
@@ -3615,13 +3680,16 @@ export default function DepositForm({
                             selectedAsset?.image_url ||
                             selectedAsset?.asset_image ||
                             (selectedAsset as any)?.image ||
-                            "/images/tether.svg"
+                            ASSET_ICON_FALLBACK_URL
                           }
                           alt={selectedAsset?.name || selectedAsset?.ticker || selectedAsset?.symbol || "Asset"}
                           className="w-6 h-6 rounded-full object-cover"
                           onError={(e) => {
-                            e.currentTarget.src =
-                              "/images/tether.svg";
+                            console.log(
+                              "Image failed to load for asset:",
+                              selectedAsset
+                            );
+                            e.currentTarget.src = ASSET_ICON_FALLBACK_URL;
                           }}
                         />
                         <div className="flex flex-col">
@@ -3641,7 +3709,7 @@ export default function DepositForm({
                     ) : (
                       <>
                         <img
-                          src="/images/tether.svg"
+                          src={ASSET_ICON_FALLBACK_URL}
                           alt="asset icon"
                           className="w-6 h-6"
                         />
