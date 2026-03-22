@@ -305,6 +305,8 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
     saving: bookmarkSaving,
     fetchBookmarks,
     saveBookmark,
+    saveBookmarkError,
+    clearSaveBookmarkError,
   } = useBookmarkedAddresses(currentBankAsset || "BANK", "BANK");
 
   // Helper function to check if a payment method is a bank
@@ -1413,6 +1415,7 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
                 value={bankAccountAddress}
                 onChange={(e) => {
                   const value = e.target.value;
+                  clearSaveBookmarkError();
                   setBankAccountAddress(value);
                   setIsAddressConfirmed(false);
                   setBankAddressError(null);
@@ -1458,6 +1461,7 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
                   asset={currentBankAsset || "BANK"}
                   network="BANK"
                   onSelect={(addr) => {
+                    clearSaveBookmarkError();
                     setBankAccountAddress(addr);
                     setBankAddressError(null);
                   }}
@@ -1482,6 +1486,7 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
                 onClick={async () => {
                   try {
                     const text = await navigator.clipboard.readText();
+                    clearSaveBookmarkError();
                     setBankAccountAddress(text);
                   } catch (err) {
                     console.error("Failed to read clipboard:", err);
@@ -1508,6 +1513,12 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
             {bankAddressError && (
               <p className="text-red-500 text-sm mt-2 font-medium">
                 ❌ {bankAddressError}
+              </p>
+            )}
+
+            {saveBookmarkError && (
+              <p className="text-red-500 text-sm mt-2 font-medium">
+                ❌ {saveBookmarkError}
               </p>
             )}
 

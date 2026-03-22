@@ -36,6 +36,10 @@ import {
   setAuthRedirectPath,
 } from "@/lib/utils/authRedirect";
 import { openKYCModal, checkKYCStatus } from "@/features/auth/slices/authSlice";
+import {
+  swapAmountToInputString,
+  isBadPersistedSwapSendAmount,
+} from "@/lib/utils/swapAmountInput";
 
 interface SwapWidgetProps {
   usePublicApi?: boolean;
@@ -156,6 +160,32 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
     return () => clearTimeout(timer);
   }, [toAmount]);
 
+  // Clear stale estimate errors when user clears the active field or enters 0 (avoids race with in-flight requests)
+  useEffect(() => {
+    if (estimateError == null || estimateError === "") return;
+    if (typeof estimateError !== "string") return;
+    if (activeInputField === "from") {
+      const n = parseFloat(fromAmount);
+      if (fromAmount === "" || Number.isNaN(n) || n <= 0) {
+        dispatch(clearEstimateError());
+      }
+    } else {
+      const n = parseFloat(toAmount);
+      if (toAmount === "" || Number.isNaN(n) || n <= 0) {
+        dispatch(clearEstimateError());
+      }
+    }
+  }, [fromAmount, toAmount, activeInputField, estimateError, dispatch]);
+
+  // Reload / rehydrate can leave "0.0" or 0 in You Send — reset until user touches the form
+  useEffect(() => {
+    if (hasUserInteracted) return;
+    if (!isBadPersistedSwapSendAmount(fromAmount)) return;
+    dispatch(setFromAmount("0.01"));
+    dispatch(setToAmount("0"));
+    dispatch(clearEstimate());
+  }, [fromAmount, hasUserInteracted, dispatch]);
+
   useEffect(() => {
     dispatch(resetErrorToastFlag());
     // ✅ Data fetching moved to SwapDataProvider (parent component)
@@ -166,12 +196,8 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
     // });
   }, [dispatch]);
 
-  // Fetch swap estimate when assets or amount changes
+  // Fetch swap estimate when assets or amount changes (runs on load for default amount — no need to wait for user tap)
   useEffect(() => {
-    if (!hasUserInteracted) {
-      return;
-    }
-
     if (!isAuthenticated && !usePublicApi) {
       return;
     }
@@ -241,7 +267,6 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
     debouncedFromAmount,
     debouncedToAmount,
     activeInputField,
-    hasUserInteracted,
     isAuthenticated,
     usePublicApi,
   ]);
@@ -259,6 +284,11 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
       setLastSuccessfulEstimate(estimate);
 
       if (activeInputField === "from") {
+        // Don't apply stale fulfilled estimates while You Send is empty / zero (user typing "0")
+        const p = parseFloat(fromAmount);
+        if (fromAmount === "" || Number.isNaN(p) || p <= 0) {
+          return;
+        }
         // User typed in "from" field, update "to" amount (normal flow)
         // Use toAmount from raw_response if available, otherwise fall back to estimated_amount
         const toAmount =
@@ -266,22 +296,26 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
           estimate.toAmount ||
           estimate.estimated_amount;
         if (toAmount !== undefined) {
-          dispatch(setToAmount(toAmount.toString()));
+          dispatch(setToAmount(swapAmountToInputString(toAmount)));
         }
       } else if (activeInputField === "to") {
+        const p = parseFloat(toAmount);
+        if (toAmount === "" || Number.isNaN(p) || p <= 0) {
+          return;
+        }
         // User typed in "to" field, update "from" amount (reverse flow)
         // Since we swapped the currencies in the API call, the estimate.toAmount
         // now represents what the user should send (because we swapped from/to in the API call)
-        const fromAmount =
+        const fromAmt =
           estimate.raw_response?.toAmount ||
           estimate.toAmount ||
           estimate.estimated_amount;
-        if (fromAmount !== undefined) {
-          dispatch(setFromAmount(fromAmount.toString()));
+        if (fromAmt !== undefined) {
+          dispatch(setFromAmount(swapAmountToInputString(fromAmt)));
         }
       }
     }
-  }, [estimate, estimateLoading, dispatch, activeInputField]);
+  }, [estimate, estimateLoading, dispatch, activeInputField, fromAmount, toAmount]);
 
   // Handle estimate errors (align with main SwapWidget — never pass objects to toast)
   useEffect(() => {
@@ -337,7 +371,9 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
           ) {
             const rate = toAmount / fromAmount;
             const calculatedFromAmount = parseFloat(debouncedToAmount) / rate;
-            dispatch(setFromAmount(calculatedFromAmount.toString()));
+            dispatch(
+              setFromAmount(swapAmountToInputString(calculatedFromAmount))
+            );
             logger.debug("swap", "Fallback calculation successful:", {
               rate,
               calculatedFromAmount,

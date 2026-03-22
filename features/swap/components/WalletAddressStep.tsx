@@ -79,6 +79,8 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
     saving: bookmarkSaving,
     fetchBookmarks,
     saveBookmark,
+    saveBookmarkError,
+    clearSaveBookmarkError,
   } = useBookmarkedAddresses(currentCurrency, currentNetwork || undefined);
 
   // Address validation hook - only API validation, no manual checks
@@ -239,6 +241,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                       type="text"
                       value={walletAddress}
                       onChange={(e) => {
+                        clearSaveBookmarkError();
                         onWalletAddressChange(e);
                         if (e.target.value.trim() === "") {
                           resetAddressValidation();
@@ -290,6 +293,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                         asset={currentCurrency}
                         network={currentNetwork}
                         onSelect={(addr) => {
+                          clearSaveBookmarkError();
                           const syntheticEvent = {
                             target: { value: addr },
                           } as React.ChangeEvent<HTMLInputElement>;
@@ -354,6 +358,20 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <span>{walletError}</span>
+                </p>
+              )}
+
+              {saveBookmarkError && (
+                <p className="mt-1 mb-0 text-red-500 text-xs sm:text-sm font-medium flex items-center gap-2 break-all">
+                  <svg
+                    className="w-4 h-4 shrink-0"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>{saveBookmarkError}</span>
                 </p>
               )}
 

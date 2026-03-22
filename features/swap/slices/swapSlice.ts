@@ -279,6 +279,13 @@ export const fetchSwapEstimate = createAsyncThunk(
           : { message: String(error), response_data: undefined };
       return rejectWithValue(payload);
     }
+  },
+  {
+    // Avoid hitting the API with 0 / NaN (and skip duplicate pending noise)
+    condition: (arg) => {
+      const n = typeof arg.amount === "number" ? arg.amount : Number(arg.amount);
+      return Number.isFinite(n) && n > 0;
+    },
   }
 );
 
@@ -311,10 +318,14 @@ const swapSlice = createSlice({
       state.toAsset = action.payload;
     },
     setFromAmount: (state, action) => {
-      state.fromAmount = action.payload;
+      const v = action.payload;
+      state.fromAmount =
+        v == null ? "" : typeof v === "string" ? v : String(v);
     },
     setToAmount: (state, action) => {
-      state.toAmount = action.payload;
+      const v = action.payload;
+      state.toAmount =
+        v == null ? "" : typeof v === "string" ? v : String(v);
     },
     swapAssets: (state) => {
       const temp = state.fromAsset;

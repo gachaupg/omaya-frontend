@@ -64,8 +64,15 @@ const Withdraw = () => {
   // Bookmarked addresses
   const [bookmarkOpen, setBookmarkOpen] = useState(false);
   const bookmarkAnchorRef = useRef<HTMLSpanElement>(null);
-  const { bookmarks, loading: bookmarksLoading, saving: bookmarkSaving, fetchBookmarks, saveBookmark } =
-    useBookmarkedAddresses("usdt", "bsc");
+  const {
+    bookmarks,
+    loading: bookmarksLoading,
+    saving: bookmarkSaving,
+    fetchBookmarks,
+    saveBookmark,
+    saveBookmarkError,
+    clearSaveBookmarkError,
+  } = useBookmarkedAddresses("usdt", "bsc");
 
   // Validate address when wallet address changes
   useEffect(() => {
@@ -80,6 +87,7 @@ const Withdraw = () => {
   const handlePaste = async () => {
     try {
       const text = await navigator.clipboard.readText();
+      clearSaveBookmarkError();
       setWalletAddress(text);
     } catch (err) {
       // Optionally handle error (e.g., show a toast)
@@ -623,10 +631,14 @@ const Withdraw = () => {
                         className="bg-transparent text:dark:text-white text-sm sm:text-base lg:text-lg focus:outline-none flex-1 min-w-0"
                         placeholder="Paste your crypto address"
                         value={walletAddress}
-                        onChange={(e) => setWalletAddress(e.target.value)}
+                        onChange={(e) => {
+                          clearSaveBookmarkError();
+                          setWalletAddress(e.target.value);
+                        }}
                         onPaste={(e) => {
                           e.preventDefault();
                           const text = e.clipboardData.getData("text");
+                          clearSaveBookmarkError();
                           setWalletAddress(text);
                         }}
                       />
@@ -655,6 +667,7 @@ const Withdraw = () => {
                         saving={bookmarkSaving}
                         currentAddress={walletAddress}
                         onSelect={(addr) => {
+                          clearSaveBookmarkError();
                           setWalletAddress(addr);
                           if (addr.trim()) validateAddress(addr.trim(), "usdt", "bsc");
                           else resetAddressValidation();
@@ -694,6 +707,11 @@ const Withdraw = () => {
                   {errors.walletAddress && (
                     <div className="text-red-500 text-xs mb-2 ml-2">
                       {errors.walletAddress}
+                    </div>
+                  )}
+                  {saveBookmarkError && (
+                    <div className="text-red-500 text-xs mb-2 ml-2 font-medium">
+                      {saveBookmarkError}
                     </div>
                   )}
                   <div className="flex items-start text-[#1D8751] text-xs mb-2" id="confirmAddress-section">
