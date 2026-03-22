@@ -6,6 +6,10 @@ import { SupportedAsset, SwapEstimate } from "../types";
 import { useTheme } from "@/context/theme";
 import SuccessPage from "./success";
 import { FaSearch } from "react-icons/fa";
+import { isNonEmptyInvalidZeroSwapAmount } from "@/lib/utils/swapAmountInput";
+
+const ZERO_AMOUNT_INVALID_MSG =
+  "0 is not a valid amount input. Enter an amount greater than zero.";
 
 interface TransactionInfoStepProps {
   fromAsset: SupportedAsset | null;
@@ -36,6 +40,12 @@ interface TransactionInfoStepProps {
   activeInputField?: "from" | "to";
 }
 
+/** Allow typing "0" without showing stale estimate errors */
+const hasPositiveAmount = (s: string) => {
+  const n = parseFloat(s);
+  return s !== "" && !Number.isNaN(n) && n > 0;
+};
+
 const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
   fromAsset,
   toAsset,
@@ -65,6 +75,18 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
   activeInputField,
 }) => {
   const { isDark } = useTheme();
+
+  const estimateErrorBlocksSubmit =
+    typeof estimateError === "string" &&
+    estimateError.trim() !== "" &&
+    (activeInputField !== "to"
+      ? hasPositiveAmount(fromAmount)
+      : hasPositiveAmount(toAmount));
+
+  const invalidZeroFrom = isNonEmptyInvalidZeroSwapAmount(fromAmount);
+  const invalidZeroTo = isNonEmptyInvalidZeroSwapAmount(toAmount);
+  const invalidZeroBlocksSubmit = invalidZeroFrom || invalidZeroTo;
+
   const fromAssetDropdownRef = useRef<HTMLDivElement>(null);
   const fromAssetDropdownContentRef = useRef<HTMLDivElement | null>(null);
   const toAssetDropdownRef = useRef<HTMLDivElement>(null);
@@ -392,8 +414,17 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                   </span>
                 </div>
               </div>
+              {invalidZeroFrom && (
+                <p className={`mt-2 text-sm ${isDark ? "text-red-300" : "text-red-600"}`}>
+                  {ZERO_AMOUNT_INVALID_MSG}
+                </p>
+              )}
               {/* Backend estimate error under input */}
-              {estimateError && typeof estimateError === "string" && (activeInputField === "from" || !activeInputField) && (
+              {!invalidZeroFrom &&
+                estimateError &&
+                typeof estimateError === "string" &&
+                hasPositiveAmount(fromAmount) &&
+                (activeInputField === "from" || !activeInputField) && (
                 <p className={`mt-2 text-sm ${isDark ? "text-red-300" : "text-red-600"}`}>
                   {estimateError}
                 </p>
@@ -548,8 +579,17 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                   </div>
                 )}
               </div>
+              {invalidZeroTo && (
+                <p className={`mt-2 text-sm ${isDark ? "text-red-300" : "text-red-600"}`}>
+                  {ZERO_AMOUNT_INVALID_MSG}
+                </p>
+              )}
               {/* Backend estimate error under input */}
-              {estimateError && typeof estimateError === "string" && activeInputField === "to" && (
+              {!invalidZeroTo &&
+                estimateError &&
+                typeof estimateError === "string" &&
+                hasPositiveAmount(toAmount) &&
+                activeInputField === "to" && (
                 <p className={`mt-2 text-sm ${isDark ? "text-red-300" : "text-red-600"}`}>
                   {estimateError}
                 </p>
@@ -658,10 +698,11 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                   !toAsset ||
                   !fromAmount ||
                   parseFloat(fromAmount) <= 0 ||
+                  invalidZeroBlocksSubmit ||
                   !estimate ||
                   estimateLoading ||
                   swapLoading ||
-                  !!estimateError
+                  estimateErrorBlocksSubmit
                   ? "bg-gray-500 cursor-not-allowed"
                   : "bg-[#1D8751] hover:bg-[#1D8751]/80"
                 }`}
@@ -671,10 +712,11 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                 !toAsset ||
                 !fromAmount ||
                 parseFloat(fromAmount) <= 0 ||
+                invalidZeroBlocksSubmit ||
                 !estimate ||
                 estimateLoading ||
                 swapLoading ||
-                !!estimateError
+                estimateErrorBlocksSubmit
               }
             >
               {swapLoading ? (

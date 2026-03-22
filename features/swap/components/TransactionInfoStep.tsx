@@ -4,6 +4,7 @@ import { SupportedAsset, SwapEstimate } from "../types";
 import { useTheme } from "@/context/theme";
 import { FaSearch } from "react-icons/fa";
 import { useSwapI18n } from "@/lib/useSwapI18n";
+import { isNonEmptyInvalidZeroSwapAmount } from "@/lib/utils/swapAmountInput";
 
 interface TransactionInfoStepProps {
   fromAsset: SupportedAsset | null;
@@ -42,6 +43,13 @@ const strongBorder =
 const baseCard =
   `rounded-2xl ${strongBorder} bg-white dark:bg-[#18181D] dark:text-white text-gray-900`;
 const labelCopy = "text-[12px] tracking-wide dark:text-[#7d7f95] text-gray-600";
+
+/** User may type "0" while editing — don't show estimate API errors until amount is positive */
+const hasPositiveAmount = (s: string) => {
+  const n = parseFloat(s);
+  return s !== "" && !Number.isNaN(n) && n > 0;
+};
+
 const inputBase =
   `rounded-lg sm:rounded-xl md:rounded-2xl bg-transparent dark:bg-transparent ${strongBorder} dark:text-white text-[#35353e] px-2 sm:px-3 md:px-4 py-2 w-full text-sm sm:text-base md:text-lg dark:placeholder:text-[#5f6070] placeholder:text-gray-400 focus:outline-none h-[42px] sm:h-[46px] md:h-[48px]`;
 
@@ -79,6 +87,45 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
     minSwapUsd = 30,
     amountError,
   } = props;
+
+  /** Don't block the form on stale API errors while amount is 0 / empty */
+  const estimateErrorBlocksSubmit =
+    typeof estimateError === "string" &&
+    estimateError.trim() !== "" &&
+    (activeInputField !== "to"
+      ? hasPositiveAmount(fromAmount)
+      : hasPositiveAmount(toAmount));
+
+  const invalidZeroBlocksSubmit =
+    isNonEmptyInvalidZeroSwapAmount(fromAmount) ||
+    isNonEmptyInvalidZeroSwapAmount(toAmount);
+
+  const zeroAmountMsg = t(
+    "swap.zeroAmountInvalid",
+    "0 is not a valid amount input. Enter an amount greater than zero."
+  );
+
+  const fromInputError =
+    activeInputField === "from" || !activeInputField
+      ? isNonEmptyInvalidZeroSwapAmount(fromAmount)
+        ? zeroAmountMsg
+        : (hasPositiveAmount(fromAmount) &&
+            typeof estimateError === "string" &&
+            estimateError
+            ? estimateError
+            : undefined) || amountError
+      : undefined;
+
+  const toInputError =
+    activeInputField === "to"
+      ? isNonEmptyInvalidZeroSwapAmount(toAmount)
+        ? zeroAmountMsg
+        : (hasPositiveAmount(toAmount) &&
+            typeof estimateError === "string" &&
+            estimateError
+            ? estimateError
+            : undefined) || amountError
+      : undefined;
 
   const fromAssetDropdownRef = useRef<HTMLDivElement>(null);
   const fromAssetDropdownContentRef = useRef<HTMLDivElement | null>(null);
@@ -458,7 +505,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
           <input
             type="text"
             inputMode="decimal"
-            value={showLoader ? "" : value}
+            value={value}
             onChange={onChange}
             placeholder={showLoader ? t("swap.calculating", "Calculating...") : t("swap.enterAmount", "Enter amount")}
             className={`${inputClassName} ${showLoader ? "opacity-70" : ""}`}
@@ -506,7 +553,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
                 fromAsset,
                 activeInputField === "from",
                 true,
-                activeInputField === "from" || !activeInputField ? estimateError || amountError : undefined
+                fromInputError
               )}
             </div>
             <div className="flex-1 min-w-0">
@@ -562,7 +609,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
                 toAsset,
                 activeInputField === "to",
                 false,
-                activeInputField === "to" ? estimateError || amountError : undefined
+                toInputError
               )}
             </div>
             <div className="flex-1 min-w-0">
@@ -606,20 +653,22 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
             !toAsset ||
             !fromAmount ||
             parseFloat(fromAmount) <= 0 ||
+            invalidZeroBlocksSubmit ||
             !estimate ||
             estimateLoading ||
             swapLoading ||
-            !!estimateError ||
+            estimateErrorBlocksSubmit ||
             !meetsMinimumAmount
           }
           className={`w-full text-white text-sm sm:text-base font-medium py-3 sm:py-2.5 rounded-3xl flex items-center justify-center gap-2 transition-colors min-h-[48px] mb-2 ${!fromAsset ||
             !toAsset ||
             !fromAmount ||
             parseFloat(fromAmount) <= 0 ||
+            invalidZeroBlocksSubmit ||
             !estimate ||
             estimateLoading ||
             swapLoading ||
-            !!estimateError ||
+            estimateErrorBlocksSubmit ||
             !meetsMinimumAmount
             ? "bg-gray-500 cursor-not-allowed"
             : "bg-[#1D8751] hover:bg-[#147043]"

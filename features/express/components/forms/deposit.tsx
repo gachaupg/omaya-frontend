@@ -784,6 +784,8 @@ export default function DepositForm({
     saving: bookmarkSaving,
     fetchBookmarks,
     saveBookmark,
+    saveBookmarkError,
+    clearSaveBookmarkError,
   } = useBookmarkedAddresses(currentCurrency, currentNetwork || undefined);
 
   // Address validation hook
@@ -4732,6 +4734,7 @@ export default function DepositForm({
                   value={walletAddress}
                   onChange={(e) => {
                     const value = e.target.value;
+                    clearSaveBookmarkError();
                     setWalletAddress(value);
                     setWalletError(null); // Clear error immediately for better UX
 
@@ -4780,6 +4783,7 @@ export default function DepositForm({
                     asset={currentCurrency}
                     network={currentNetwork || undefined}
                     onSelect={(addr) => {
+                      clearSaveBookmarkError();
                       setWalletAddress(addr);
                       if (addr.trim()) validateAddress(addr, currentCurrency, currentNetwork);
                       else resetAddressValidation();
@@ -4807,6 +4811,7 @@ export default function DepositForm({
                 onClick={async () => {
                   try {
                     const text = await navigator.clipboard.readText();
+                    clearSaveBookmarkError();
                     setWalletAddress(text);
                     // Trigger validation after pasting
                     if (text.trim()) {
@@ -4865,6 +4870,16 @@ export default function DepositForm({
             {walletError && !currentCurrency && walletAddress.trim() && (
               <p className="text-red-500 text-sm mt-2 font-medium">
                 ❌ {walletError}
+              </p>
+            )}
+
+            {saveBookmarkError && (
+              <p className="text-red-500 text-sm mt-2 font-medium flex items-center gap-2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+                  <path d="M12 8v4M12 16h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+                {saveBookmarkError}
               </p>
             )}
 

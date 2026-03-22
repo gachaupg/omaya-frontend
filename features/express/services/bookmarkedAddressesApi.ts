@@ -17,6 +17,33 @@ export interface CreateBookmarkPayload {
   asset: string;
 }
 
+/** DRF-style `{ "detail": "..." }` or string detail */
+export function getBookmarkApiErrorMessage(err: unknown): string | null {
+  const e = err as { response?: { data?: unknown }; message?: string };
+  const data = e?.response?.data as Record<string, unknown> | string | undefined;
+  if (data && typeof data === "object" && !Array.isArray(data)) {
+    const d = data.detail;
+    if (typeof d === "string" && d.trim()) return d.trim();
+    if (Array.isArray(d) && typeof d[0] === "string") return d[0].trim();
+    const msg = data.message;
+    if (typeof msg === "string" && msg.trim()) return msg.trim();
+  }
+  if (typeof e?.message === "string" && e.message.trim()) return e.message.trim();
+  return null;
+}
+
+export function isBookmarkAuthError(err: unknown): boolean {
+  const e = err as { response?: { status?: number } };
+  const status = e?.response?.status;
+  if (status === 401 || status === 403) return true;
+  const msg = (getBookmarkApiErrorMessage(err) || "").toLowerCase();
+  return (
+    msg.includes("authentication credentials were not provided") ||
+    msg.includes("not authenticated") ||
+    msg.includes("credentials were not provided")
+  );
+}
+
 export const bookmarkedAddressesApi = {
   list: async (params?: { asset?: string; network?: string }): Promise<BookmarkedAddress[]> => {
     const searchParams = new URLSearchParams();

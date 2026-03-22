@@ -31,6 +31,7 @@ import SuccessPage from "@/features/express/components/success";
 import { SwapWidgetSkeleton } from "@/components/ui/Skeletons";
 
 import { logger } from "@/lib/utils/logger";
+import { swapAmountToInputString } from "@/lib/utils/swapAmountInput";
 
 // Minimum swap value in USD/USDT - smaller amounts can disappear due to fees
 const MIN_SWAP_USD = 30;
@@ -116,6 +117,23 @@ const SwapWidget = () => {
 
     return () => clearTimeout(timer);
   }, [toAmount]);
+
+  // Clear stale estimate errors when user clears the active field or enters 0 (avoids race with in-flight requests)
+  useEffect(() => {
+    if (estimateError == null || estimateError === "") return;
+    if (typeof estimateError !== "string") return;
+    if (activeInputField === "from") {
+      const n = parseFloat(fromAmount);
+      if (fromAmount === "" || Number.isNaN(n) || n <= 0) {
+        dispatch(clearEstimateError());
+      }
+    } else {
+      const n = parseFloat(toAmount);
+      if (toAmount === "" || Number.isNaN(n) || n <= 0) {
+        dispatch(clearEstimateError());
+      }
+    }
+  }, [fromAmount, toAmount, activeInputField, estimateError, dispatch]);
 
   useEffect(() => {
     dispatch(resetErrorToastFlag());
@@ -377,6 +395,10 @@ const SwapWidget = () => {
       setLastSuccessfulEstimate(estimate);
 
       if (activeInputField === "from") {
+        const p = parseFloat(fromAmount);
+        if (fromAmount === "" || Number.isNaN(p) || p <= 0) {
+          return;
+        }
         // User typed in "from" field, update "to" amount (normal flow)
         // Use toAmount from raw_response if available, otherwise fall back to estimated_amount
         const toAmount =
@@ -384,22 +406,26 @@ const SwapWidget = () => {
           estimate.toAmount ||
           estimate.estimated_amount;
         if (toAmount !== undefined) {
-          dispatch(setToAmount(toAmount.toString()));
+          dispatch(setToAmount(swapAmountToInputString(toAmount)));
         }
       } else if (activeInputField === "to") {
+        const p = parseFloat(toAmount);
+        if (toAmount === "" || Number.isNaN(p) || p <= 0) {
+          return;
+        }
         // User typed in "to" field, update "from" amount (reverse flow)
         // Since we swapped the currencies in the API call, the estimate.toAmount
         // now represents what the user should send (because we swapped from/to in the API call)
-        const fromAmount =
+        const fromAmt =
           estimate.raw_response?.toAmount ||
           estimate.toAmount ||
           estimate.estimated_amount;
-        if (fromAmount !== undefined) {
-          dispatch(setFromAmount(fromAmount.toString()));
+        if (fromAmt !== undefined) {
+          dispatch(setFromAmount(swapAmountToInputString(fromAmt)));
         }
       }
     }
-  }, [estimate, estimateLoading, dispatch, activeInputField]);
+  }, [estimate, estimateLoading, dispatch, activeInputField, fromAmount, toAmount]);
 
   // Handle estimate errors
   useEffect(() => {
@@ -456,7 +482,9 @@ const SwapWidget = () => {
           ) {
             const rate = toAmount / fromAmount;
             const calculatedFromAmount = parseFloat(debouncedToAmount) / rate;
-            dispatch(setFromAmount(calculatedFromAmount.toString()));
+            dispatch(
+              setFromAmount(swapAmountToInputString(calculatedFromAmount))
+            );
             logger.debug("swap", "Fallback calculation successful:", {
               rate,
               calculatedFromAmount,

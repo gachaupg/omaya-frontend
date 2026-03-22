@@ -163,6 +163,8 @@ export default function DepositForm({
     saving: bookmarkSaving,
     fetchBookmarks,
     saveBookmark,
+    saveBookmarkError,
+    clearSaveBookmarkError,
   } = useBookmarkedAddresses(currentCurrency, currentNetwork);
 
   const {
@@ -2490,6 +2492,7 @@ export default function DepositForm({
                     value={walletAddress}
                     readOnly={isFirstCardSubmitted}
                     onChange={(e) => {
+                      clearSaveBookmarkError();
                       if (!isFirstCardSubmitted) {
                         const value = e.target.value;
                         setWalletAddress(value);
@@ -2547,6 +2550,7 @@ export default function DepositForm({
                     asset={currentCurrency}
                     network={currentNetwork}
                     onSelect={(addr) => {
+                      clearSaveBookmarkError();
                       setWalletAddress(addr);
                       if (addr.trim().length < 10) setWalletError("Address seems too short");
                       else setWalletError(null);
@@ -2607,6 +2611,12 @@ export default function DepositForm({
                 {walletError && (
                   <p className="text-red-500 text-sm mt-2 font-medium">
                     ❌ {walletError}
+                  </p>
+                )}
+
+                {saveBookmarkError && (
+                  <p className="text-red-500 text-sm mt-2 font-medium">
+                    ❌ {saveBookmarkError}
                   </p>
                 )}
 

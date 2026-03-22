@@ -17,57 +17,40 @@ import rootReducer, { RootState } from "./rootReducer";
 import {
   persistStore,
   persistReducer,
-  createTransform,
   FLUSH,
   REHYDRATE,
   PAUSE,
   PERSIST,
   PURGE,
   REGISTER,
+  type PersistConfig,
+  type PersistState,
 } from "redux-persist";
 import storage from "redux-persist/lib/storage"; // defaults to localStorage for web
 
-/** Old persisted swap.estimateError could be { message, response_data } — breaks toasts / React children */
-const sanitizeSwapPersist = createTransform<
-  Record<string, unknown> | undefined,
-  Record<string, unknown> | undefined,
-  RootState
->(
-  (state) => state,
-  (state) => {
-    if (!state || typeof state !== "object") return state;
-    const ee = state.estimateError as unknown;
-    if (ee != null && typeof ee === "object" && !Array.isArray(ee)) {
-      const p = ee as {
-        message?: unknown;
-        response_data?: { message?: string; error?: string };
-      };
-      let s =
-        typeof p.message === "string"
-          ? p.message.trim()
-          : p.message != null && typeof p.message !== "object"
-            ? String(p.message).trim()
-            : "";
-      const rd = p.response_data;
-      if (!s && rd && typeof rd === "object") {
-        if (typeof rd.message === "string" && rd.message.trim())
-          s = rd.message.trim();
-        else if (typeof rd.error === "string" && rd.error.trim())
-          s = rd.error.trim();
-      }
-      return { ...state, estimateError: s || null };
-    }
-    return state;
-  },
-  { whitelist: ["swap"] }
-);
+/** Persisted root blob includes redux-persist’s own slice (migrate must not strip it). */
+type PersistedRootState = RootState & { _persist: PersistState };
 
 // Configure which slices to persist
-const persistConfig = {
+const persistConfig: PersistConfig<RootState> = {
   key: "omaya_root",
-  version: 1,
+  version: 2,
   storage,
-  transforms: [sanitizeSwapPersist],
+  // Drop legacy `swap` from any stored blob so old localStorage cannot rehydrate stale swap UI
+  migrate: async (state) => {
+    if (state == null || typeof state !== "object") {
+      return state as PersistedRootState | undefined;
+    }
+    const s = state as Record<string, unknown>;
+    if (!("swap" in s)) {
+      return state as PersistedRootState;
+    }
+    const { swap: _strip, ...rest } = s;
+    // `_persist` stays on `rest` when present; cast satisfies redux-persist’s PersistedState
+    return rest as PersistedRootState;
+  },
+  // Swap is intentionally NOT persisted: full page reload should show default amounts/pair,
+  // and stale estimate / "0.0" send amounts were sticking in localStorage.
   // Whitelist: slices to persist (keep between page refreshes)
   whitelist: [
     "auth", // User authentication state
@@ -75,7 +58,6 @@ const persistConfig = {
     "matchedTrades", // P2P matched trades
     "transactionSummary", // Transaction summary
     "exchange", // Exchange data
-    "swap", // Swap assets
     "settings", // User settings
     "p2pMarket", // P2P market orders
   ],
