@@ -70,6 +70,8 @@ const LiveChatPage: React.FC = () => {
     },
     autoReconnect: true,
   });
+  const isChatOpenForMessaging =
+    !sessionClosed && session?.status === "active" && isConnected;
 
   const applySessionMessagesStable = useCallback(
     (sess: ChatSession | null) => {
@@ -193,7 +195,7 @@ const LiveChatPage: React.FC = () => {
   };
 
   const handleSendMessage = () => {
-    if (!messageInput.trim() || !isConnected || sessionClosed) return;
+    if (!messageInput.trim() || !isChatOpenForMessaging) return;
 
     sendMessage(messageInput.trim());
     setMessageInput("");
@@ -421,9 +423,11 @@ const LiveChatPage: React.FC = () => {
             placeholder={
               sessionClosed
                 ? "Reopen chat to send messages…"
+                : session?.status !== "active"
+                  ? "Wait for an agent to open the chat…"
                 : "Type your message..."
             }
-            disabled={!isConnected || isCreatingSession || sessionClosed}
+            disabled={!isChatOpenForMessaging || isCreatingSession}
             rows={1}
             className="flex-1 px-3 sm:px-4 py-2 border border-gray-300 dark:border-[#35353E] rounded-lg resize-none focus:ring-2 focus:ring-[#1D8751] focus:border-transparent outline-none bg-white dark:bg-[#2A2A2A] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base min-h-[40px] max-h-[120px] overflow-y-auto"
             style={{ height: "auto" }}
@@ -438,17 +442,17 @@ const LiveChatPage: React.FC = () => {
             onClick={handleSendMessage}
             disabled={
               !messageInput.trim() ||
-              !isConnected ||
+              !isChatOpenForMessaging ||
               isCreatingSession ||
               sessionClosed
             }
             className="px-3 sm:px-4 py-2 h-[40px] bg-[#1D8751] text-white rounded-lg hover:bg-[#166b42] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center flex-shrink-0"
             aria-label="Send message"
           >
-            {isConnected && !sessionClosed ? (
+            {isChatOpenForMessaging ? (
               <Send className="w-4 h-4 sm:w-5 sm:h-5" />
             ) : (
-              <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin opacity-50" />
+              <Send className="w-4 h-4 sm:w-5 sm:h-5 opacity-50" />
             )}
           </button>
         </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import Image from "next/image";
 import { FaSearch, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import { useRouter } from "next/navigation";
@@ -56,10 +56,17 @@ const BlogPage = () => {
   const { posts, totalCount, loading, error } = useBlogsPaginated({
     page: currentPage,
     limit: ITEMS_PER_PAGE,
-    searchTerm,
   });
   const router = useRouter();
   const { t } = useBlogsI18n();
+
+  const normalizedSearchTerm = searchTerm.trim().toLowerCase();
+  const displayedPosts = useMemo(() => {
+    if (!normalizedSearchTerm) return posts;
+    return posts.filter((post) =>
+      (post.title || "").toLowerCase().includes(normalizedSearchTerm)
+    );
+  }, [posts, normalizedSearchTerm]);
 
   const handlePageChange = (newPage: number | ((prev: number) => number)) => {
     setCurrentPage(newPage);
@@ -196,7 +203,7 @@ const BlogPage = () => {
           </div>
         </div>
 
-        {!loading && posts.length === 0 ? (
+        {!loading && displayedPosts.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-600 dark:text-gray-400 text-lg">
               {searchTerm
@@ -221,7 +228,7 @@ const BlogPage = () => {
         ) : (
           <>
             <main className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {posts.map((post: BlogPost) => (
+              {displayedPosts.map((post: BlogPost) => (
                 <article
                   key={getPostId(post)}
                   className="bg-gray-50 dark:bg-[#161B22] border border-gray-200 dark:border-[#30363D] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-[#1D87514f] transition-shadow duration-300 flex flex-col"
@@ -281,7 +288,7 @@ const BlogPage = () => {
             </main>
 
             {/* Pagination */}
-            {totalPages > 1 && (
+            {!searchTerm.trim() && totalPages > 1 && (
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8 pt-6 border-t border-gray-200 dark:border-[#30363D]">
                 <div className="text-sm text-gray-600 dark:text-gray-400">
                   {t("blogs.pagination.showing", "Showing")} {indexOfFirstItem + 1}-{indexOfLastItem} {t("blogs.pagination.of", "of")} {totalCount} {t("blogs.pagination.posts", "posts")}
