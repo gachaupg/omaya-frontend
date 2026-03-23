@@ -20,6 +20,7 @@ import { RootState } from "@/store";
 import { fetchReferralWallet } from "@/features/settings/slices/referralWalletSlice";
 import { storage } from "@/features/auth/utils/storage";
 import { useTheme } from "@/context/theme";
+import { fetchAllUserTransactions } from "@/features/transactions/slices/allTransactionsSlice";
 
 const months = [
   "JAN",
@@ -596,7 +597,6 @@ const LineCharts = React.memo(
     const [activeTab, setActiveTab] = useState<
       "exchange" | "p2p" | "swap" | "buy"
     >("exchange");
-    const [userEmail, setUserEmail] = useState<string | null>(null);
     const [chartData, setChartData] = useState<{
       depositData: LineChartData;
       withdrawalData: LineChartData;
@@ -624,15 +624,11 @@ const LineCharts = React.memo(
       },
     });
 
-    // Get user email from storage
-    useEffect(() => {
-      const profile = storage.getProfile();
-      const email = profile?.user?.email || "";
-      setUserEmail(email);
-    }, []);
-
     const { transactions: p2pTransactions } = useSelector(
       (state: any) => state.p2pTransactions
+    );
+    const allTransactions = useSelector(
+      (state: any) => state.allTransactions?.data?.results || []
     );
     const userTrades = useSelector((state: any) => state.userTrades.trades);
 
@@ -640,35 +636,63 @@ const LineCharts = React.memo(
     useEffect(() => {
       dispatch(loadAllP2PTransactions());
       dispatch(fetchUserTrades({ page: 1, currency: "usdt" }));
+      dispatch(
+        fetchAllUserTransactions({ type: "exchange", page: 1, page_size: 500 })
+      );
     }, [dispatch]);
 
     // Process exchange transactions for Exchange Overview
     useEffect(() => {
-      if (p2pTransactions?.results && userEmail) {
+      if (allTransactions?.length) {
         const depositData = Array(12).fill(0);
         const withdrawalData = Array(12).fill(0);
         const currentDate = new Date();
+        const terminalStatuses = new Set(["approved", "completed"]);
 
-        // Show all transactions (no filtering by user)
-        const allTransactions = p2pTransactions.results;
+        const parseUsdtAmount = (transaction: any): number => {
+          const currency = String(transaction?.currency || "").toUpperCase();
+          const asset = String(transaction?.asset || "").toUpperCase();
+          const toCurrency = String(transaction?.to_currency || "").toUpperCase();
+          const netAmount = parseFloat(String(transaction?.net_amount || "0"));
+          const amount = parseFloat(String(transaction?.amount || "0"));
+          const toAmount = parseFloat(String(transaction?.to_amount || "0"));
+
+          // Prefer explicit USDT-valued fields to avoid mixing fiat into USDT chart.
+          if (currency === "USDT" && !Number.isNaN(amount)) return amount;
+          if (asset === "USDT" && !Number.isNaN(amount)) return amount;
+          if (toCurrency === "USDT" && !Number.isNaN(toAmount)) return toAmount;
+          if (
+            (currency === "USDT" || asset === "USDT" || toCurrency === "USDT") &&
+            !Number.isNaN(netAmount)
+          ) {
+            return netAmount;
+          }
+
+          return 0;
+        };
 
         allTransactions.forEach((transaction: any) => {
-          const transactionDate = new Date(transaction.timestamp);
+          if (transaction?.type !== "exchange") return;
+          const status = String(transaction?.status || "").toLowerCase();
+          if (!terminalStatuses.has(status)) return;
+          const transactionDate = new Date(
+            transaction.created_at || transaction.timestamp
+          );
+          if (Number.isNaN(transactionDate.getTime())) return;
           const monthDiff =
             (currentDate.getFullYear() - transactionDate.getFullYear()) * 12 +
             (currentDate.getMonth() - transactionDate.getMonth());
           if (monthDiff < 12) {
             const monthIndex = 11 - monthDiff;
-            const amount = parseFloat(
-              transaction.amount ||
-              transaction.requested_amount ||
-              transaction.total_amount_due ||
-              "0"
-            );
+            const amount = parseUsdtAmount(transaction);
+            if (Number.isNaN(amount)) return;
 
-            if (transaction.transaction_type === "deposit") {
+            const subType = String(
+              transaction.sub_type || transaction.transaction_type || ""
+            ).toLowerCase();
+            if (subType === "deposit") {
               depositData[monthIndex] += amount;
-            } else if (transaction.transaction_type === "withdrawal") {
+            } else if (subType === "withdrawal") {
               withdrawalData[monthIndex] += amount;
             }
           }
@@ -684,8 +708,13 @@ const LineCharts = React.memo(
             data: withdrawalData,
           },
         });
+      } else {
+        setChartData({
+          depositData: { label: "Deposits", data: Array(12).fill(0) },
+          withdrawalData: { label: "Withdrawals", data: Array(12).fill(0) },
+        });
       }
-    }, [p2pTransactions, userEmail]);
+    }, [allTransactions]);
 
     // Process P2P transactions for P2P Overview
     useEffect(() => {

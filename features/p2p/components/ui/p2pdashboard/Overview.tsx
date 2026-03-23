@@ -37,7 +37,7 @@ const Overview = () => {
     (Number(summary?.total_pending_p2p_withdrawals) || 0);
   const p2p = Number(summary?.total_approved_p2p_volume ?? summary?.total_p2p_orders ?? 0) || 0;
   const chartTotal = deposits + withdrawals + inProgress + p2p; // for pie segments
-  const centerTotal = deposits + withdrawals + p2p; // Sum of Deposits + Withdrawals + P2P (excl. Pending)
+  const centerTotal = p2p; // Use API total_approved_p2p_volume in center
   const totalVolume = summary?.total_approved_volume ?? parseTotalVolume(summary?.total_volume) ?? 0;
   const circumference = 2 * Math.PI * 90;
   // Order: Pending, Deposits, Withdrawals, P2P
