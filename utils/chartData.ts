@@ -98,21 +98,23 @@ export const overviewTotalData = (
     ];
   }
   if (type === "moneyx") {
-    // MoneyX transactions - use exchange data as fallback since moneyx may share similar structure
+    const moneyxStatus = (transactionSummary as any).total_moneyx_by_status || {};
+    const completedLike =
+      (moneyxStatus.approved || 0) +
+      (moneyxStatus.completed || 0) +
+      (moneyxStatus.agent_approved || 0) +
+      (moneyxStatus.reviewer_approved || 0);
+    const failedAmount = moneyxStatus.failed || 0;
+
     return [
       {
         label: "Completed",
-        value: (transactionSummary as any).total_completed_moneyx || transactionSummary.total_approved_exchange_deposits || 0,
+        value: Math.abs(completedLike),
         color: "#1D8751",
       },
       {
-        label: "Pending",
-        value: (transactionSummary as any).total_pending_moneyx || transactionSummary.total_pending_exchange_deposits || 0,
-        color: "#facc15",
-      },
-      {
         label: "Failed",
-        value: (transactionSummary as any).total_failed_moneyx || 0,
+        value: Math.abs(failedAmount),
         color: "#ef4444",
       },
     ];
@@ -138,7 +140,11 @@ export const overviewTotalData = (
     },
     {
       label: "Exchange",
-      value: Math.abs(transactionSummary.total_approved_exchange_net || transactionSummary.total_approved_exchange_combined || 0),
+      value: Math.abs(
+        transactionSummary.total_approved_exchange_net ??
+          transactionSummary.total_approved_exchange_combined ??
+          0
+      ),
       color: "#386AB5",
     },
   ];
@@ -244,24 +250,28 @@ export const overviewTotalSummary = (
     };
   }
   if (type === "moneyx") {
-    const completed = Math.abs((transactionSummary as any).total_completed_moneyx || transactionSummary.total_approved_exchange_deposits || 0);
-    const pending = Math.abs((transactionSummary as any).total_pending_moneyx || transactionSummary.total_pending_exchange_deposits || 0);
-    const failed = Math.abs((transactionSummary as any).total_failed_moneyx || 0);
+    const moneyxStatus = (transactionSummary as any).total_moneyx_by_status || {};
+    const completed = Math.abs(
+      (moneyxStatus.approved || 0) +
+        (moneyxStatus.completed || 0) +
+        (moneyxStatus.agent_approved || 0) +
+        (moneyxStatus.reviewer_approved || 0)
+    );
+    const failed = Math.abs(moneyxStatus.failed || 0);
     return {
-      total: completed + pending + failed,
+      // Pending/rejected intentionally excluded from center total per UX requirement.
+      total: completed + failed,
       currency: "USD",
     };
   }
-  // Calculate total as the sum of all segment values (deposits + withdrawals + in progress + exchange)
-  // Use Math.abs for all values to prevent negative totals in the donut chart
-  const exchangeNet = Math.abs(transactionSummary.total_approved_exchange_net || transactionSummary.total_approved_exchange_combined || 0);
+  // For Exchange Overview center value, show the approved exchange net amount from API.
+  const exchangeNet = Math.abs(
+    transactionSummary.total_approved_exchange_net ??
+      transactionSummary.total_approved_exchange_combined ??
+      0
+  );
   return {
-    total:
-      Math.abs(transactionSummary.total_approved_exchange_deposits || 0) +
-      Math.abs(transactionSummary.total_approved_exchange_withdrawals || 0) +
-      Math.abs(transactionSummary.total_pending_exchange_deposits || 0) +
-      Math.abs(transactionSummary.total_pending_exchange_withdrawals || 0) +
-      exchangeNet,
+    total: exchangeNet,
     currency: "USD",
   };
 };

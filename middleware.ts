@@ -34,7 +34,10 @@ export function middleware(request: NextRequest) {
 
   // If user tries to access dashboard and has no token, redirect to login
   if (isDashboardRoute && !token) {
-    return NextResponse.redirect(new URL("/auth/login", request.url));
+    const loginUrl = new URL("/auth/login", request.url);
+    const attemptedPath = `${pathname}${request.nextUrl.search || ""}`;
+    loginUrl.searchParams.set("redirect", attemptedPath);
+    return NextResponse.redirect(loginUrl);
   }
 
   // If user is on auth page, do not auto-redirect to dashboard based on cookie alone.

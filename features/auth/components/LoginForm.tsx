@@ -6,7 +6,7 @@ import Image from "next/image";
 import { useDispatch, useSelector } from "react-redux";
 import { loginUser } from "@/features/auth/slices/authSlice";
 import { AppDispatch, RootState } from "@/features/auth/store";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import GoogleAuthButton from "./GoogleAuthButton";
 import FacebookAuthButton from "@/features/auth/components/FacebookAuthButton";
 import { useI18n } from "@/lib/useI18n";
@@ -38,18 +38,34 @@ export default function LoginPage() {
 
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
+
+  const normalizeRedirectPath = (rawPath: string | null): string | null => {
+    if (!rawPath) return null;
+    const path = rawPath.trim();
+    if (!path.startsWith("/")) return null;
+    // Prevent protocol-relative / external redirects
+    if (path.startsWith("//")) return null;
+    return path;
+  };
 
   // Watch for successful authentication (including 2FA)
   useEffect(() => {
     if (isAuthenticated) {
-      const redirectPath = consumeAuthRedirectPath() || "/dashboard";
+      const redirectFromQuery = normalizeRedirectPath(
+        searchParams?.get("redirect") ?? null
+      );
+      const redirectPath =
+        redirectFromQuery ||
+        normalizeRedirectPath(consumeAuthRedirectPath()) ||
+        "/dashboard";
       // Use hard navigation to ensure cookies/middleware run
       setTimeout(() => {
         window.location.href = redirectPath;
       }, 100);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, searchParams]);
 
   const handleGoogleSuccess = (userData: any) => {
     logger.debug('auth', "Google authentication successful:", userData);
