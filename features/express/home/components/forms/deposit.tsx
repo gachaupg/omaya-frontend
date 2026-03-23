@@ -581,8 +581,8 @@ export default function DepositForm({
   const [payAmount, setPayAmount] = useState(100); // Set default amount to $100
   const [payAmountInput, setPayAmountInput] = useState("100"); // String value for input display
   const [payBank, setPayBank] = useState("");
-  const [getAmount, setGetAmount] = useState(98); // Default amount after 2% commission (100 - 2 = 98)
-  const [getAmountInput, setGetAmountInput] = useState("98"); // String value for input display
+  const [getAmount, setGetAmount] = useState(0); // Start empty; fill after calculation
+  const [getAmountInput, setGetAmountInput] = useState(""); // Don't show placeholder value before calculation
   const [selectedAsset, setSelectedAsset] = useState<any>(null);
   const [selectedNetwork, setSelectedNetwork] = useState<any>(null);
   const [isCalculatingFromPay, setIsCalculatingFromPay] = useState(true);
@@ -3370,7 +3370,7 @@ export default function DepositForm({
                 {/* Show loading spinner when calculating "You Receive" from "You Send" */}
                 {(isCalculating || isCalculatingReceive) && isCalculatingFromPay && selectedAsset && !isForexAsset(selectedAsset) && (
                   <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#1D8751]"></div>
+                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-[#1D8751]"></div>
                   </div>
                 )}
 

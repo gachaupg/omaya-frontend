@@ -35,6 +35,9 @@ import MoneyX from "@/features/express/home/components/moneyX/components/MoneyX"
 
 type Tab = "express" | "moneyx" | "swap";
 type Mode = "deposit" | "withdrawal";
+const RETURNING_FROM_LEGAL_KEY = "omaya_returning_from_legal";
+const MONEYX_LEGAL_RETURN_STATE_KEY = "omaya_moneyx_legal_return_state";
+const SWAP_LEGAL_RETURN_STATE_KEY = "omaya_swap_legal_return_state";
 
 interface Currency {
   label: string;
@@ -515,6 +518,31 @@ export default function ExchangeForm({
 
   const [payCurrency, setPayCurrency] = useState<Currency>(presets.express.pay);
   const [getCurrency, setGetCurrency] = useState<Currency>(presets.express.get);
+
+  // If user is returning from Terms/Privacy from MoneyX form, reopen MoneyX tab first.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const returningFromLegal = sessionStorage.getItem(RETURNING_FROM_LEGAL_KEY);
+      const hasSwapLegalState = sessionStorage.getItem(SWAP_LEGAL_RETURN_STATE_KEY);
+      const hasMoneyXLegalState = sessionStorage.getItem(MONEYX_LEGAL_RETURN_STATE_KEY);
+      const hasMoneyXLocalState =
+        localStorage.getItem("moneyx_form_state") ||
+        localStorage.getItem("moneyx_restore_from") ||
+        localStorage.getItem("moneyx_restore_to");
+
+      if (returningFromLegal && hasSwapLegalState) {
+        setActiveTab("swap");
+        return;
+      }
+
+      if (returningFromLegal && (hasMoneyXLegalState || hasMoneyXLocalState)) {
+        setActiveTab("moneyx");
+      }
+    } catch {
+      // Ignore storage read errors
+    }
+  }, []);
 
   /* ------------------- Data Fetching ------------------- */
   useEffect(() => {

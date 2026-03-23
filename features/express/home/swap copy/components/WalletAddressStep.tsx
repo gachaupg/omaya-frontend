@@ -20,6 +20,8 @@ interface WalletAddressStepProps {
 
 const strongBorder =
   "border-[1.5px] border-gray-200 dark:border-[#35353E]";
+const SWAP_LEGAL_RETURN_STATE_KEY = "omaya_swap_legal_return_state";
+const RETURNING_FROM_LEGAL_KEY = "omaya_returning_from_legal";
 
 const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
   walletAddress,
@@ -143,6 +145,69 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
     if (!hasAcceptedTerms) return;
     await onNext();
   };
+
+  const handleBeforeLegalNavigate = useCallback(() => {
+    // Keep terms section open when coming back from legal page.
+    setExpandedTerms(true);
+
+    if (typeof window === "undefined") return;
+    try {
+      sessionStorage.setItem(
+        SWAP_LEGAL_RETURN_STATE_KEY,
+        JSON.stringify({
+          walletAddress,
+          hasAcceptedTerms,
+          expandedTerms: true,
+        })
+      );
+      sessionStorage.setItem(RETURNING_FROM_LEGAL_KEY, "1");
+    } catch {
+      // Ignore storage errors
+    }
+  }, [walletAddress, hasAcceptedTerms]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const returning = sessionStorage.getItem(RETURNING_FROM_LEGAL_KEY);
+      if (!returning) {
+        // Clear stale swap legal state so checkbox doesn't get auto-restored unexpectedly.
+        sessionStorage.removeItem(SWAP_LEGAL_RETURN_STATE_KEY);
+        return;
+      }
+
+      const saved = sessionStorage.getItem(SWAP_LEGAL_RETURN_STATE_KEY);
+      if (!saved) {
+        sessionStorage.removeItem(RETURNING_FROM_LEGAL_KEY);
+        return;
+      }
+
+      const state = JSON.parse(saved) as {
+        walletAddress?: string;
+        hasAcceptedTerms?: boolean;
+        expandedTerms?: boolean;
+      };
+
+      if (typeof state.walletAddress === "string") {
+        const syntheticEvent = {
+          target: { value: state.walletAddress },
+        } as React.ChangeEvent<HTMLInputElement>;
+        onWalletAddressChange(syntheticEvent);
+        if (state.walletAddress.trim() && currentCurrency) {
+          validateAddress(state.walletAddress, currentCurrency, currentNetwork);
+        }
+      }
+      // Returning from legal page: reopen terms, preserve actual acceptance state.
+      setExpandedTerms(true);
+      setHasAcceptedTerms(Boolean(state.hasAcceptedTerms));
+
+      sessionStorage.removeItem(RETURNING_FROM_LEGAL_KEY);
+      sessionStorage.removeItem(SWAP_LEGAL_RETURN_STATE_KEY);
+    } catch {
+      sessionStorage.removeItem(RETURNING_FROM_LEGAL_KEY);
+      sessionStorage.removeItem(SWAP_LEGAL_RETURN_STATE_KEY);
+    }
+  }, [onWalletAddressChange, currentCurrency, currentNetwork, validateAddress]);
 
   const trimmedWalletAddress = walletAddress.trim();
   const hasWalletInput = trimmedWalletAddress.length > 0;
@@ -422,7 +487,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                         </p>
                         <ul className={`text-xs sm:text-sm space-y-1.5 ml-3 mt-2 ${isDark ? "text-[#788099]" : "text-gray-900"}`}>
                           <li>• all the terms and conditions listed above, and</li>
-                          <li>• our full <Link href="/legal/terms-of-service" target="_blank" rel="noopener noreferrer" className="text-[#1D8751] underline font-medium hover:text-[#166b3e]">Terms of Service</Link></li>
+                          <li>• our full <Link href="/legal/terms-of-service" className="text-[#1D8751] underline font-medium hover:text-[#166b3e]" onClick={handleBeforeLegalNavigate}>Terms of Service</Link></li>
                         </ul>
                       </div>
                     </div>
@@ -483,28 +548,12 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                   checked={hasAcceptedTerms}
                   onChange={(e) => setHasAcceptedTerms(e.target.checked)}
                   disabled={isLoading}
-                  className="mt-0.5 w-4 h-4 sm:w-5 sm:h-5 rounded border-2 border-[#1D8751] text-[#1D8751] focus:ring-[#1D8751] focus:ring-offset-0 cursor-pointer"
+                  className="mt-0.5 w-4 h-4 sm:w-5 sm:h-5 rounded border-2 border-[#1D8751] focus:ring-[#1D8751] focus:ring-offset-0 cursor-pointer appearance-none bg-transparent checked:bg-[#1D8751] checked:border-[#1D8751] relative after:content-[''] after:absolute after:w-1.5 after:h-2.5 after:border-white after:border-r-2 after:border-b-2 after:rotate-45 after:opacity-0 checked:after:opacity-100 after:left-[5px] after:top-[1px]"
                 />
                 <span className={`text-xs sm:text-sm ${isDark ? "text-[#788099]" : "text-[#475569]"}`}>
                   I have read and agreed to Omaya Exchange{" "}
-                  <Link href="/legal/terms-of-service" target="_blank" rel="noopener noreferrer" className="text-[#1D8751] underline font-medium hover:text-[#166b3e]">
+                  <Link href="/legal/terms-of-service" className="text-[#1D8751] underline font-medium hover:text-[#166b3e]" onClick={handleBeforeLegalNavigate}>
                     Terms of Use
-                  </Link>
-                  ,{" "}
-                  <Link href="/legal/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-[#1D8751] underline font-medium hover:text-[#166b3e]">
-                    Privacy Policy
-                  </Link>
-                  ,{" "}
-                  <Link href="/legal/payment-policy" target="_blank" rel="noopener noreferrer" className="text-[#1D8751] underline font-medium hover:text-[#166b3e]">
-                    Payment Policies
-                  </Link>
-                  ,{" "}
-                  <Link href="/legal/aml-policy" target="_blank" rel="noopener noreferrer" className="text-[#1D8751] font-medium underline hover:text-[#166b3e]">
-                    AML
-                  </Link>
-                  ,{" "}
-                  <Link href="/legal/risk-disclosure-statement" target="_blank" rel="noopener noreferrer" className="text-[#1D8751] font-medium underline hover:text-[#166b3e]">
-                    Risk Disclosure Statement
                   </Link>
                 </span>
               </label>

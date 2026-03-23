@@ -4,6 +4,10 @@ import Link from "next/link";
 import RatesCalculator from "./RatesCalculator";
 import RatesTransactionHistory from "./RatesTransactionHistory";
 import { useRatesI18n } from "@/lib/useRatesI18n";
+
+const RATES_ACTIVE_TAB_KEY = "rates_active_tab";
+const RATES_MONEYX_FORM_STATE_KEY = "rates_moneyx_form_state";
+
 const Rates = () => {
   const [activeTab, setActiveTab] = React.useState<'crypto' | 'moneyx'>('crypto');
   const { t } = useRatesI18n();
@@ -12,6 +16,26 @@ const Rates = () => {
   const handleMoneyXClick = () => {
     setActiveTab('moneyx');
   };
+
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const savedTab = window.localStorage.getItem(RATES_ACTIVE_TAB_KEY);
+      const savedMoneyXState = window.localStorage.getItem(RATES_MONEYX_FORM_STATE_KEY);
+      if (savedTab === "moneyx" || savedMoneyXState) {
+        setActiveTab("moneyx");
+      } else if (savedTab === "crypto") {
+        setActiveTab("crypto");
+      }
+    } catch {
+      // ignore storage read issues
+    }
+  }, []);
+
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(RATES_ACTIVE_TAB_KEY, activeTab);
+  }, [activeTab]);
 
   // Debug
   React.useEffect(() => {
@@ -76,7 +100,7 @@ const Rates = () => {
         </button>
       </div>
 
-      <RatesCalculator key={activeTab} activeTab={activeTab} />
+      <RatesCalculator activeTab={activeTab} />
 
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mt-8 sm:mt-10 lg:mt-12 mb-3 sm:mb-4 lg:mb-4">
         <h2 className="text-xl sm:text-2xl lg:text-2xl font-bold">

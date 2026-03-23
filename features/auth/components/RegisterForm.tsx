@@ -20,6 +20,50 @@ const FacebookAuthButton = React.lazy(() => import("./FacebookAuthButton"));
 import { useI18n } from "@/lib/useI18n";
 import { countries } from "./countries";
 
+const REGISTER_FORM_DRAFT_KEY = "registerFormDraft";
+
+type RegisterFormDraft = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  password: string;
+  confirmPassword: string;
+  referralCode: string;
+  agreeToTerms: boolean;
+  selectedCountry: string;
+};
+
+const readRegisterDraft = (): RegisterFormDraft | null => {
+  if (typeof window === "undefined") return null;
+
+  const fromSession = window.sessionStorage.getItem(REGISTER_FORM_DRAFT_KEY);
+  const fromLocal = window.localStorage.getItem(REGISTER_FORM_DRAFT_KEY);
+  const rawDraft = fromSession || fromLocal;
+  if (!rawDraft) return null;
+
+  try {
+    return JSON.parse(rawDraft) as RegisterFormDraft;
+  } catch {
+    window.sessionStorage.removeItem(REGISTER_FORM_DRAFT_KEY);
+    window.localStorage.removeItem(REGISTER_FORM_DRAFT_KEY);
+    return null;
+  }
+};
+
+const writeRegisterDraft = (draft: RegisterFormDraft) => {
+  if (typeof window === "undefined") return;
+  const serialized = JSON.stringify(draft);
+  window.sessionStorage.setItem(REGISTER_FORM_DRAFT_KEY, serialized);
+  window.localStorage.setItem(REGISTER_FORM_DRAFT_KEY, serialized);
+};
+
+const clearRegisterDraft = () => {
+  if (typeof window === "undefined") return;
+  window.sessionStorage.removeItem(REGISTER_FORM_DRAFT_KEY);
+  window.localStorage.removeItem(REGISTER_FORM_DRAFT_KEY);
+};
+
 /** Expected national number length (digits only) by country code for phone validation */
 const PHONE_LENGTH_BY_COUNTRY: Record<string, { min: number; max: number }> = {
   SO: { min: 8, max: 9 },   // Somalia
@@ -392,6 +436,7 @@ export default function RegistrationPage() {
   const [countryDropdownRect, setCountryDropdownRect] = useState({ top: 0, left: 0, width: 240 });
   const [showReferralTooltip, setShowReferralTooltip] = useState(false);
   const [formErrors, setFormErrors] = useState<string[]>([]);
+  const [isDraftHydrated, setIsDraftHydrated] = useState(false);
   const referralTooltipRef = React.useRef<HTMLDivElement | null>(null);
   const referralTooltipButtonRef = React.useRef<HTMLButtonElement | null>(null);
   const errorBannerRef = React.useRef<HTMLDivElement | null>(null);
@@ -505,6 +550,69 @@ export default function RegistrationPage() {
     confirmPassword: "",
     terms: "",
   });
+
+  useEffect(() => {
+    const draft = readRegisterDraft();
+    if (!draft) {
+      setIsDraftHydrated(true);
+      return;
+    }
+    setFirstName(draft.firstName ?? "");
+    setLastName(draft.lastName ?? "");
+    setEmail(draft.email ?? "");
+    setPhone(draft.phone ?? "");
+    setPassword(draft.password ?? "");
+    setConfirmPassword(draft.confirmPassword ?? "");
+    setReferralCode(draft.referralCode ?? refCodeFromUrl);
+    setAgreeToTerms(Boolean(draft.agreeToTerms));
+    setSelectedCountry(draft.selectedCountry ?? "SO");
+    setIsDraftHydrated(true);
+  }, [refCodeFromUrl]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!isDraftHydrated) return;
+
+    const draft: RegisterFormDraft = {
+      firstName,
+      lastName,
+      email,
+      phone,
+      password,
+      confirmPassword,
+      referralCode,
+      agreeToTerms,
+      selectedCountry,
+    };
+
+    writeRegisterDraft(draft);
+  }, [
+    firstName,
+    lastName,
+    email,
+    phone,
+    password,
+    confirmPassword,
+    referralCode,
+    agreeToTerms,
+    selectedCountry,
+    isDraftHydrated,
+  ]);
+
+  const persistRegisterDraft = () => {
+    const draft: RegisterFormDraft = {
+      firstName,
+      lastName,
+      email,
+      phone,
+      password,
+      confirmPassword,
+      referralCode,
+      agreeToTerms,
+      selectedCountry,
+    };
+    writeRegisterDraft(draft);
+  };
 
   const parseApiErrors = (errorData: unknown): string[] => {
     if (
@@ -766,6 +874,7 @@ export default function RegistrationPage() {
       );
 
       if (verifyOTP.fulfilled.match(result)) {
+        clearRegisterDraft();
         setShowVerificationModal(false);
         router.push("/auth/login");
       } else if (verifyOTP.rejected.match(result)) {
@@ -1646,11 +1755,11 @@ export default function RegistrationPage() {
                       "By clicking Register, you agree to our Terms of Services and that you have read our Data Use Policy, including our Cookie Use"
                     ).split(/(Terms of Services|Data Use Policy|Cookie Use)/).map((part, i) =>
                       part === "Terms of Services" ? (
-                        <Link key={i} href="/legal/terms-of-service" className="text-[#1D8751] hover:underline">{part}</Link>
+                        <Link key={i} href="/legal/terms-of-service" className="text-[#1D8751] hover:underline" onClick={persistRegisterDraft}>{part}</Link>
                       ) : part === "Data Use Policy" ? (
-                        <Link key={i} href="/legal/data-use-policy" className="text-[#1D8751] hover:underline">{part}</Link>
+                        <Link key={i} href="/legal/data-use-policy" className="text-[#1D8751] hover:underline" onClick={persistRegisterDraft}>{part}</Link>
                       ) : part === "Cookie Use" ? (
-                        <Link key={i} href="/legal/cookies-policy" className="text-[#1D8751] hover:underline">{part}</Link>
+                        <Link key={i} href="/legal/cookies-policy" className="text-[#1D8751] hover:underline" onClick={persistRegisterDraft}>{part}</Link>
                       ) : (
                         part
                       )

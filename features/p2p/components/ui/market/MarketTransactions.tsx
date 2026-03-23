@@ -243,6 +243,19 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
     }
   }, [dispatch, isAuthenticated]);
 
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const refetchMarketData = () => {
+      // Skip background tabs; refetch when user returns to this tab.
+      if (typeof document !== "undefined" && document.hidden) return;
+      dispatch(fetchAllP2PBuyandSell(currentPage) as any);
+    };
+
+    const intervalId = window.setInterval(refetchMarketData, 10000);
+    return () => window.clearInterval(intervalId);
+  }, [dispatch, isAuthenticated, currentPage]);
+
 
   const providerOptions = useMemo(() => getProviderOptions(orders), [orders]);
   const paymentMethodOptions = useMemo(

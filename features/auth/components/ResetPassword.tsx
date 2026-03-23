@@ -33,6 +33,7 @@ const ResetPassword = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [submitAttempted, setSubmitAttempted] = useState(false);
 
   const hasMinChars = PASSWORD_REQUIREMENTS[0].test(password);
   const hasNumberOrSymbol = PASSWORD_REQUIREMENTS[1].test(password);
@@ -40,6 +41,7 @@ const ResetPassword = () => {
 
   const handleResetSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitAttempted(true);
     setResetError("");
     if (!password) {
       setResetError("Password is required");
@@ -317,13 +319,24 @@ const ResetPassword = () => {
               </div>
             </div>
             {/* Password requirements */}
-            <div className="flex flex-col space-y-1 ml-1 mt-2">
+            <div className="flex flex-col space-y-1 ml-1 mt-2 text-sm">
               <div className="flex items-center space-x-2">
                 <div
-                  className={`h-2 w-2 rounded-full ${hasMinChars ? "bg-[#1D8751]" : "bg-[#1D8751]"
+                  className={`h-2 w-2 rounded-full flex-shrink-0 ${hasMinChars
+                    ? "bg-[#1D8751]"
+                    : submitAttempted
+                    ? "bg-red-500"
+                    : "border border-gray-400 dark:border-[#6B7280] bg-transparent"
                     }`}
                 ></div>
-                <span className="text-sm text-white">
+                <span
+                  className={`${hasMinChars
+                    ? "text-[#1D8751]"
+                    : submitAttempted
+                    ? "text-red-500"
+                    : "text-gray-600 dark:text-[#9CA3AF]"
+                    }`}
+                >
                   {t(
                     "auth.register.requirements.8chars",
                     "At least 8 characters"
@@ -332,10 +345,21 @@ const ResetPassword = () => {
               </div>
               <div className="flex items-center space-x-2">
                 <div
-                  className={`h-2 w-2 rounded-full ${hasNumberOrSymbol ? "bg-[#1D8751]" : "bg-[#1D8751]"
+                  className={`h-2 w-2 rounded-full flex-shrink-0 ${hasNumberOrSymbol
+                    ? "bg-[#1D8751]"
+                    : submitAttempted
+                    ? "bg-red-500"
+                    : "border border-gray-400 dark:border-[#6B7280] bg-transparent"
                     }`}
                 ></div>
-                <span className="text-sm text-white">
+                <span
+                  className={`${hasNumberOrSymbol
+                    ? "text-[#1D8751]"
+                    : submitAttempted
+                    ? "text-red-500"
+                    : "text-gray-600 dark:text-[#9CA3AF]"
+                    }`}
+                >
                   {t(
                     "auth.register.requirements.numberSymbol",
                     "At least one number or symbol"
@@ -344,10 +368,21 @@ const ResetPassword = () => {
               </div>
               <div className="flex items-center space-x-2">
                 <div
-                  className={`h-2 w-2 rounded-full ${hasMixedCase ? "bg-[#1D8751]" : "bg-[#1D8751]"
+                  className={`h-2 w-2 rounded-full flex-shrink-0 ${hasMixedCase
+                    ? "bg-[#1D8751]"
+                    : submitAttempted
+                    ? "bg-red-500"
+                    : "border border-gray-400 dark:border-[#6B7280] bg-transparent"
                     }`}
                 ></div>
-                <span className="text-sm text-white">
+                <span
+                  className={`${hasMixedCase
+                    ? "text-[#1D8751]"
+                    : submitAttempted
+                    ? "text-red-500"
+                    : "text-gray-600 dark:text-[#9CA3AF]"
+                    }`}
+                >
                   {t(
                     "auth.register.requirements.mixedCase",
                     "Both uppercase and lowercase letters"
