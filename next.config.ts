@@ -22,6 +22,23 @@ const nextConfig: NextConfig = {
   output: 'standalone',
   trailingSlash: true,
   reactStrictMode: true,
+  async headers() {
+    // Prevent document caching on auth/protected routes.
+    // This avoids serving cached RSC flight payloads as full HTML pages on back/forward.
+    const noStoreHeaders = [
+      { key: "Cache-Control", value: "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0" },
+      { key: "Pragma", value: "no-cache" },
+      { key: "Expires", value: "0" },
+      { key: "Surrogate-Control", value: "no-store" },
+    ];
+
+    return [
+      { source: "/auth/:path*", headers: noStoreHeaders },
+      { source: "/dashboard/:path*", headers: noStoreHeaders },
+      { source: "/live-chat/:path*", headers: noStoreHeaders },
+      { source: "/contactUs/:path*", headers: noStoreHeaders },
+    ];
+  },
   // Fix vendor-chunks/@sanity.js module resolution - keep Sanity packages external
   serverExternalPackages: ['@sanity/client', '@sanity/image-url', 'next-sanity', 'sanity'],
   
