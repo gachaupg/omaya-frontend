@@ -29,6 +29,8 @@ import { AlertCircle } from "lucide-react";
 import { useRatesI18n } from "@/lib/useRatesI18n";
 import Exchanging from "@/features/moneyX/components/Exchanging";
 
+const RATES_MONEYX_FORM_STATE_KEY = "rates_moneyx_form_state";
+
 const MoneyXRates = ({
   commissionType = "deposit",
 }: {
@@ -187,8 +189,74 @@ const MoneyXRates = ({
   const [apiCommission, setApiCommission] = useState<number | null>(null);
   const [accountNumberCopied, setAccountNumberCopied] = useState(false);
   const [isCalculatingFromPay, setIsCalculatingFromPay] = useState(true);
+  const [isStateHydrated, setIsStateHydrated] = useState(false);
   const commissionFetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const paymentDetailsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const saved =
+        window.localStorage.getItem(RATES_MONEYX_FORM_STATE_KEY) ||
+        window.localStorage.getItem("moneyx_form_state");
+      if (!saved) {
+        setIsStateHydrated(true);
+        return;
+      }
+      const state = JSON.parse(saved);
+
+      if (state?.amountInput != null) setPayAmountInput(String(state.amountInput));
+      if (state?.amountValue != null && !Number.isNaN(Number(state.amountValue))) {
+        setPayAmount(Number(state.amountValue));
+      }
+
+      if (state?.receiveAmountInput != null) setGetAmountInput(String(state.receiveAmountInput));
+      if (
+        state?.receiveAmountValue != null &&
+        !Number.isNaN(Number(state.receiveAmountValue))
+      ) {
+        setGetAmount(Number(state.receiveAmountValue));
+      }
+
+      if (state?.fromPaymentMethod) setFromPaymentMethod(String(state.fromPaymentMethod));
+      if (state?.toPaymentMethod) setToPaymentMethod(String(state.toPaymentMethod));
+      if (state?.fromPaymentDetail) setSelectedFromPaymentDetail(state.fromPaymentDetail);
+      if (state?.toPaymentDetail) setSelectedToPaymentDetail(state.toPaymentDetail);
+    } catch {
+      window.localStorage.removeItem(RATES_MONEYX_FORM_STATE_KEY);
+      window.localStorage.removeItem("moneyx_form_state");
+    } finally {
+      setIsStateHydrated(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!isStateHydrated) return;
+    const state = {
+      mode: "moneyx",
+      amountInput: payAmountInput,
+      amountValue: payAmount,
+      receiveAmountInput: getAmountInput,
+      receiveAmountValue: getAmount,
+      fromPaymentMethod,
+      toPaymentMethod,
+      fromPaymentDetail: selectedFromPaymentDetail ? { ...selectedFromPaymentDetail } : null,
+      toPaymentDetail: selectedToPaymentDetail ? { ...selectedToPaymentDetail } : null,
+    };
+    window.localStorage.setItem(RATES_MONEYX_FORM_STATE_KEY, JSON.stringify(state));
+    window.localStorage.setItem("moneyx_form_state", JSON.stringify(state));
+  }, [
+    payAmountInput,
+    payAmount,
+    getAmountInput,
+    getAmount,
+    fromPaymentMethod,
+    toPaymentMethod,
+    selectedFromPaymentDetail,
+    selectedToPaymentDetail,
+    isStateHydrated,
+  ]);
 
   // Fetch commission percentage from range-commissions API (no auth, returns percentage e.g. 3%)
   useEffect(() => {
@@ -524,9 +592,10 @@ const MoneyXRates = ({
 
       // Save to localStorage
       localStorage.setItem("moneyx_form_state", JSON.stringify(state));
+      localStorage.setItem(RATES_MONEYX_FORM_STATE_KEY, JSON.stringify(state));
 
-      // Set redirect path - redirect to moneyX in dashboard
-      const redirectPath = `/dashboard/exchange?mode=moneyx&source=public-rates`;
+      // Set redirect path - return to public rates page
+      const redirectPath = `/rates`;
       setAuthRedirectPath(redirectPath);
 
       // Redirect to login

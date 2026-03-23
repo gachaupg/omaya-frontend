@@ -194,7 +194,7 @@ const PaymentMethods = () => {
   const [showAddWalletModal, setShowAddWalletModal] = useState(false);
   const [deletingMethodId, setDeletingMethodId] = useState<string | null>(null);
   const [mainSection, setMainSection] = useState<"payment-methods" | "omaya-wallets">("payment-methods");
-  const [bankTab, setBankTab] = useState<"pending" | "approved">("approved");
+  const [bankTab, setBankTab] = useState<"pending" | "approved" | "rejected">("approved");
   const [cryptoDropdownOpen, setCryptoDropdownOpen] = useState(false);
   const [paymentPage, setPaymentPage] = useState(1);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -211,10 +211,12 @@ const PaymentMethods = () => {
     return name.includes("bank");
   };
 
-  // Normalize status: only "approved" (case-insensitive) goes to Approved tab; all else → Pending
-  const getStatusCategory = (p: UserPaymentDetail): "pending" | "approved" => {
+  // Normalize status into explicit buckets.
+  const getStatusCategory = (p: UserPaymentDetail): "pending" | "approved" | "rejected" => {
     const s = (p.status || "").toString().trim().toLowerCase();
-    return s === "approved" ? "approved" : "pending";
+    if (s === "approved") return "approved";
+    if (s === "rejected") return "rejected";
+    return "pending";
   };
 
   // All payment methods that support pending/approved (exclude pure crypto wallets for P2P)
@@ -232,8 +234,17 @@ const PaymentMethods = () => {
     () => allPaymentMethodsWithStatus.filter((p) => getStatusCategory(p) === "approved"),
     [allPaymentMethodsWithStatus]
   );
+  const bankRejected = useMemo(
+    () => allPaymentMethodsWithStatus.filter((p) => getStatusCategory(p) === "rejected"),
+    [allPaymentMethodsWithStatus]
+  );
 
-  const bankByTab = bankTab === "pending" ? bankPending : bankApproved;
+  const bankByTab =
+    bankTab === "pending"
+      ? bankPending
+      : bankTab === "rejected"
+      ? bankRejected
+      : bankApproved;
   const totalPaymentPages = Math.max(1, Math.ceil(bankByTab.length / ITEMS_PER_PAGE));
   const paginatedBankPayments = useMemo(
     () =>
@@ -522,6 +533,9 @@ const PaymentMethods = () => {
                 <button className={`px-3 py-1.5 rounded-full border border-[#1D8751] text-[#1D8751] text-xs sm:text-sm font-semibold focus:outline-none ${bankTab === "pending" ? "bg-[#1D8751] text-white" : "bg-transparent"}`} onClick={() => setBankTab("pending")}>
                   Pending
                 </button>
+                <button className={`px-3 py-1.5 rounded-full border border-[#1D8751] text-[#1D8751] text-xs sm:text-sm font-semibold focus:outline-none ${bankTab === "rejected" ? "bg-[#1D8751] text-white" : "bg-transparent"}`} onClick={() => setBankTab("rejected")}>
+                  Rejected
+                </button>
               </div>
               {bankByTab.length === 0 && (
                 <div className="rounded-2xl border border-dashed border-[#E3E6F0] dark:border-[#2A2A35] py-10 text-center text-sm text-gray-500 dark:text-[#7B819C]">
@@ -529,7 +543,9 @@ const PaymentMethods = () => {
                 </div>
               )}
               {paginatedBankPayments.map((payment: UserPaymentDetail) => {
-                const isPending = getStatusCategory(payment) === "pending";
+                const statusCategory = getStatusCategory(payment);
+                const isPending = statusCategory === "pending";
+                const isRejected = statusCategory === "rejected";
                 const isBankMethod =
                   (payment?.payment_method_name || "").toLowerCase().includes("bank") ||
                   (payment?.payment_provider_name || "").toLowerCase().includes("bank");
@@ -570,10 +586,12 @@ const PaymentMethods = () => {
                               className={`inline-flex px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold capitalize ${
                                 isPending
                                   ? "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/50"
+                                  : isRejected
+                                  ? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800/50"
                                   : "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50"
                               }`}
                             >
-                              {isPending ? "Pending" : "Approved"}
+                              {isPending ? "Pending" : isRejected ? "Rejected" : "Approved"}
                             </span>
                           </div>
                           <p className="text-xs text-gray-500 dark:text-[#8B90A5] mt-0.5">

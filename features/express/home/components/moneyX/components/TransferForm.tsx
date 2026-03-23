@@ -193,6 +193,8 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
   const [accountNumberCopied, setAccountNumberCopied] = useState(false);
   const commissionFetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const paymentDetailsRef = useRef<HTMLDivElement>(null);
+  const MONEYX_LEGAL_RETURN_STATE_KEY = "omaya_moneyx_legal_return_state";
+  const RETURNING_FROM_LEGAL_KEY = "omaya_returning_from_legal";
 
   // Auto-confirm bank address when it's non-empty and has no validation error (so the second-step submit can enable)
   useEffect(() => {
@@ -244,9 +246,13 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
   const fromKey = selectedFromPaymentDetail?.id ?? selectedFromPaymentDetail?.provider_id ?? fromPaymentMethod ?? "";
   const toKey = selectedToPaymentDetail?.id ?? selectedToPaymentDetail?.provider_id ?? toPaymentMethod ?? "";
   const isRestoringRef = useRef(false);
+  const hasRestoredFromLegalRef = useRef(false);
   useEffect(() => {
     if (isRestoringRef.current) {
       isRestoringRef.current = false;
+      return;
+    }
+    if (hasRestoredFromLegalRef.current) {
       return;
     }
     setIsFirstCardSubmitted(false);
@@ -362,15 +368,15 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
 
     if (restoreFrom || restoreTo) {
       console.log("Restoring payment methods - From:", restoreFrom, "To:", restoreTo);
-      paymentMethodRestoreAttempted.current = true;
 
       // Prevent minimise effect from collapsing when we set selected payment details
       isRestoringRef.current = true;
+      let matchedFromMethod: any = null;
+      let matchedToMethod: any = null;
 
       // Restore "from" payment method
       if (restoreFrom) {
         const savedFromDetail = localStorage.getItem("moneyx_restore_from_detail");
-        let matchedFromMethod = null;
 
         if (savedFromDetail) {
           try {
@@ -405,7 +411,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
 
         if (matchedFromMethod) {
           console.log("Matched from payment method:", matchedFromMethod);
-          setFromPaymentMethod(restoreFrom);
+          setFromPaymentMethod(getProviderName(matchedFromMethod) || restoreFrom);
           setSelectedFromPaymentDetail(matchedFromMethod);
         } else {
           console.warn("Could not match from payment method:", restoreFrom);
@@ -415,7 +421,6 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
       // Restore "to" payment method
       if (restoreTo) {
         const savedToDetail = localStorage.getItem("moneyx_restore_to_detail");
-        let matchedToMethod = null;
 
         if (savedToDetail) {
           try {
@@ -450,18 +455,27 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
 
         if (matchedToMethod) {
           console.log("Matched to payment method:", matchedToMethod);
-          setToPaymentMethod(restoreTo);
+          setToPaymentMethod(getProviderName(matchedToMethod) || restoreTo);
           setSelectedToPaymentDetail(matchedToMethod);
         } else {
           console.warn("Could not match to payment method:", restoreTo);
         }
       }
 
-      // Clear restoration keys after attempting restoration
-      localStorage.removeItem("moneyx_restore_from");
-      localStorage.removeItem("moneyx_restore_to");
-      localStorage.removeItem("moneyx_restore_from_detail");
-      localStorage.removeItem("moneyx_restore_to_detail");
+      const restoredFrom = !restoreFrom || !!matchedFromMethod;
+      const restoredTo = !restoreTo || !!matchedToMethod;
+
+      // Keep the form expanded when returning from legal pages and restoration is in progress/completed.
+      setIsFirstCardSubmitted(true);
+
+      // Only clear restore keys once matching is successful.
+      if (restoredFrom && restoredTo) {
+        paymentMethodRestoreAttempted.current = true;
+        localStorage.removeItem("moneyx_restore_from");
+        localStorage.removeItem("moneyx_restore_to");
+        localStorage.removeItem("moneyx_restore_from_detail");
+        localStorage.removeItem("moneyx_restore_to_detail");
+      }
     }
   }, [finalPaymentMethods, isHomePage, isAuthenticated, getProviderName]);
 
@@ -471,9 +485,8 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
       return;
     }
 
-    // Skip auto-selection if we're restoring state or if restoration was attempted
-    const isRestoring = localStorage.getItem("moneyx_restore_from") || localStorage.getItem("moneyx_restore_to");
-    if (isRestoring || paymentMethodRestoreAttempted.current) {
+    // Skip only after successful explicit restoration.
+    if (paymentMethodRestoreAttempted.current) {
       return;
     }
 
@@ -501,27 +514,36 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
   }, [finalPaymentMethods, fromPaymentMethod, isBankMethod, getProviderName]);
 
 
-  // Auto-select second payment method for "to"
+  // Auto-select/repair "to" payment method for You Receive
   useEffect(() => {
-    // Skip auto-selection if we're restoring state or if restoration was attempted
-    const isRestoring = localStorage.getItem("moneyx_restore_from") || localStorage.getItem("moneyx_restore_to");
-    if (isRestoring || paymentMethodRestoreAttempted.current) {
+    // Skip only after successful explicit restoration.
+    if (paymentMethodRestoreAttempted.current) {
       return;
     }
 
-    // Only run if we have payment methods, "from" is selected, and "to" is not selected
+    // Only run when methods are available and "from" exists
     const methodsToCheck = Array.isArray(finalPaymentMethods) && finalPaymentMethods.length > 0
       ? finalPaymentMethods
       : (Array.isArray(stablePaymentMethods) && stablePaymentMethods.length > 0
         ? stablePaymentMethods
         : null);
 
-    if (methodsToCheck && methodsToCheck.length > 1 && fromPaymentMethod && !toPaymentMethod) {
+    if (methodsToCheck && methodsToCheck.length > 1 && fromPaymentMethod) {
+      const hasValidToSelection = methodsToCheck.some(
+        (method) => getProviderName(method) === toPaymentMethod
+      );
+      const needsAutoSelect =
+        !toPaymentMethod ||
+        !hasValidToSelection ||
+        toPaymentMethod === fromPaymentMethod;
+
+      if (!needsAutoSelect) return;
+
       // Filter for banks first
       const bankMethods = methodsToCheck.filter(isBankMethod);
 
       // Select the second bank (index 1) if it exists, otherwise select the second method overall
-      let methodToSelect;
+      let methodToSelect: any;
       if (bankMethods.length > 1) {
         // Select the second bank in the array (index 1)
         methodToSelect = bankMethods[1];
@@ -716,6 +738,116 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
     )) ||
     // Always prevent same-method transfers when both are selected
     (fromPaymentMethod && toPaymentMethod && fromPaymentMethod === toPaymentMethod);
+
+  const handleBeforeLegalNavigate = useCallback(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const fromName = selectedFromPaymentDetail
+        ? getProviderName(selectedFromPaymentDetail)
+        : fromPaymentMethod;
+      const toName = selectedToPaymentDetail
+        ? getProviderName(selectedToPaymentDetail)
+        : toPaymentMethod;
+
+      sessionStorage.setItem(
+        MONEYX_LEGAL_RETURN_STATE_KEY,
+        JSON.stringify({
+          isFirstCardSubmitted: true,
+          payAmount,
+          payAmountInput,
+          getAmount,
+          getAmountInput,
+          bankAccountAddress,
+          isAddressConfirmed,
+          fromPaymentMethod: fromName,
+          toPaymentMethod: toName,
+          fromProviderBase: fromName,
+          toProviderBase: toName,
+          fromPaymentDetail: selectedFromPaymentDetail,
+          toPaymentDetail: selectedToPaymentDetail,
+          // Keep terms block open and accepted after returning
+          expandedTerms: true,
+          isTermsAccepted: true,
+        })
+      );
+      sessionStorage.setItem(RETURNING_FROM_LEGAL_KEY, "1");
+    } catch {
+      // Ignore storage errors
+    }
+  }, [
+    payAmount,
+    payAmountInput,
+    getAmount,
+    getAmountInput,
+    bankAccountAddress,
+    isAddressConfirmed,
+    fromPaymentMethod,
+    toPaymentMethod,
+    selectedFromPaymentDetail,
+    selectedToPaymentDetail,
+    getProviderName,
+  ]);
+
+  // Restore state when returning from legal pages (Terms, Privacy, etc.)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const returning = sessionStorage.getItem(RETURNING_FROM_LEGAL_KEY);
+      if (!returning) return;
+
+      const saved = sessionStorage.getItem(MONEYX_LEGAL_RETURN_STATE_KEY);
+      if (!saved) {
+        sessionStorage.removeItem(RETURNING_FROM_LEGAL_KEY);
+        return;
+      }
+
+      const state = JSON.parse(saved);
+      isRestoringRef.current = true;
+
+      if (state.payAmountInput !== undefined && state.payAmountInput !== null) {
+        setPayAmountInput(state.payAmountInput);
+        setPayAmount(state.payAmount ?? (parseFloat(state.payAmountInput) || 0));
+      }
+      if (state.getAmountInput !== undefined && state.getAmountInput !== null) {
+        setGetAmountInput(state.getAmountInput);
+        setGetAmount(state.getAmount ?? (parseFloat(state.getAmountInput) || 0));
+      }
+      if (state.bankAccountAddress !== undefined) {
+        setBankAccountAddress(state.bankAccountAddress || "");
+      }
+      if (state.isAddressConfirmed !== undefined) {
+        setIsAddressConfirmed(Boolean(state.isAddressConfirmed));
+      }
+
+      // Ensure user returns to expanded step with terms visible and checked.
+      setIsFirstCardSubmitted(
+        state.isFirstCardSubmitted === undefined ? true : Boolean(state.isFirstCardSubmitted)
+      );
+      hasRestoredFromLegalRef.current = true;
+      setExpandedTerms(Boolean(state.expandedTerms));
+      setIsTermsAccepted(Boolean(state.isTermsAccepted));
+
+      if (state.fromPaymentMethod || state.toPaymentMethod) {
+        const fromName = state.fromProviderBase || state.fromPaymentMethod || "";
+        const toName = state.toProviderBase || state.toPaymentMethod || "";
+        localStorage.setItem("moneyx_restore_from", fromName);
+        localStorage.setItem("moneyx_restore_to", toName);
+        if (state.fromPaymentDetail) {
+          localStorage.setItem("moneyx_restore_from_detail", JSON.stringify(state.fromPaymentDetail));
+        }
+        if (state.toPaymentDetail) {
+          localStorage.setItem("moneyx_restore_to_detail", JSON.stringify(state.toPaymentDetail));
+        }
+      }
+
+      sessionStorage.removeItem(RETURNING_FROM_LEGAL_KEY);
+      sessionStorage.removeItem(MONEYX_LEGAL_RETURN_STATE_KEY);
+      hasRestoredState.current = true;
+    } catch {
+      sessionStorage.removeItem(RETURNING_FROM_LEGAL_KEY);
+      sessionStorage.removeItem(MONEYX_LEGAL_RETURN_STATE_KEY);
+    }
+  }, []);
 
   return (
     <div className="w-full flex flex-col dark:bg-[#18181D]">
@@ -1334,7 +1466,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
               I agree to the{" "}
               <Link
                 href="/legal/terms-of-service"
-                onClick={() => setIsTermsAccepted(true)}
+                onClick={handleBeforeLegalNavigate}
                 className="text-[#1D8751] cursor-pointer hover:underline"
               >
                 Terms of Use
@@ -1425,7 +1557,9 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
                 setIsUpdatingTransaction(true);
 
                 try {
-                  let transactionId = moneyXTransaction?.moneyx_transaction_id;
+                  // Always create a fresh transaction for a new submit flow.
+                  // Do not reuse stale Redux transaction IDs from previous runs.
+                  let transactionId: string | undefined;
 
                   // Create transaction on last submit if not already created (post happens here, not on first button)
                   if (!transactionId) {

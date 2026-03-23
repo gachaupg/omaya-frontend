@@ -1646,7 +1646,9 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
                 setIsUpdatingTransaction(true);
 
                 try {
-                  let transactionId = moneyXTransaction?.moneyx_transaction_id;
+                  // Always create a fresh transaction for a new submit flow.
+                  // Do not reuse stale Redux transaction IDs from previous runs.
+                  let transactionId: string | undefined;
 
                   // Create transaction on last submit if not already created (post happens here, not on first button)
                   if (!transactionId) {
