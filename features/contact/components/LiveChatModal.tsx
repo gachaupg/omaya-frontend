@@ -7,6 +7,7 @@ import {
   createChatSession,
   getChatMessages,
   normalizeChatMessage,
+  isSessionChatClosed,
   ChatSession,
   ChatMessage,
 } from "../services/liveChatApi";
@@ -27,6 +28,7 @@ const LiveChatModal: React.FC<LiveChatModalProps> = ({ isOpen, onClose }) => {
   const [isCreatingSession, setIsCreatingSession] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const sessionClosed = isSessionChatClosed(session);
 
   const {
     isConnected,
@@ -37,7 +39,7 @@ const LiveChatModal: React.FC<LiveChatModalProps> = ({ isOpen, onClose }) => {
     setInitialMessages,
   } = useLiveChatWebSocket({
     sessionId: sessionId || "",
-    enabled: isOpen && !!sessionId,
+    enabled: isOpen && !!sessionId && !sessionClosed,
     onMessage: (message) => {
       logger.debug("live-chat", "Message received:", message);
     },
@@ -48,8 +50,21 @@ const LiveChatModal: React.FC<LiveChatModalProps> = ({ isOpen, onClose }) => {
     onClose: () => {
       logger.debug("live-chat", "WebSocket closed");
     },
+    onChatClosed: () => {
+      setSession((prev) =>
+        prev
+          ? {
+              ...prev,
+              status: "closed",
+              closed_at: prev.closed_at || new Date().toISOString(),
+            }
+          : prev
+      );
+    },
     autoReconnect: true,
   });
+  const isChatOpenForMessaging =
+    !sessionClosed && session?.status === "active" && isConnected;
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -122,7 +137,7 @@ const LiveChatModal: React.FC<LiveChatModalProps> = ({ isOpen, onClose }) => {
   };
 
   const handleSendMessage = () => {
-    if (!messageInput.trim() || !isConnected) return;
+    if (!messageInput.trim() || !isChatOpenForMessaging) return;
 
     sendMessage(messageInput.trim());
     setMessageInput("");
@@ -301,20 +316,26 @@ const LiveChatModal: React.FC<LiveChatModalProps> = ({ isOpen, onClose }) => {
               value={messageInput}
               onChange={(e) => setMessageInput(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Type your message..."
-              disabled={!isConnected || isCreatingSession}
+              placeholder={
+                sessionClosed
+                  ? "Reopen chat to send messages…"
+                  : session?.status !== "active"
+                    ? "Wait for an agent to open the chat…"
+                    : "Type your message..."
+              }
+              disabled={!isChatOpenForMessaging || isCreatingSession}
               rows={2}
               className="flex-1 px-4 py-2 border border-gray-300 dark:border-[#35353E] rounded-xl resize-none focus:ring-2 focus:ring-[#1D8751] focus:border-transparent outline-none bg-white dark:bg-[#2A2A2A] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
             />
             <button
               onClick={handleSendMessage}
-              disabled={!messageInput.trim() || !isConnected || isCreatingSession}
+              disabled={!messageInput.trim() || !isChatOpenForMessaging || isCreatingSession}
               className="px-4 sm:px-6 py-2 bg-[#1D8751] text-white rounded-xl hover:bg-[#166b42] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center min-w-[50px]"
             >
-              {isConnected ? (
+              {isChatOpenForMessaging ? (
                 <Send className="w-5 h-5" />
               ) : (
-                <Loader2 className="w-5 h-5 animate-spin" />
+                <Send className="w-5 h-5 opacity-50" />
               )}
             </button>
           </div>

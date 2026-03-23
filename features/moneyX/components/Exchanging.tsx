@@ -20,6 +20,7 @@ import {
   cancelDepositTransaction,
   cancelWithdrawalTransaction,
 } from "@/features/express/slices/transactionSlice";
+import FailureStatusModal from "@/features/express/components/FailureStatusModal";
 
 interface ExchangingProps {
   transactionData?: {
@@ -124,6 +125,24 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
   const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(
     null
   );
+  const [failureModal, setFailureModal] = useState<{
+    isOpen: boolean;
+    status: string;
+    message?: string;
+  }>({ isOpen: false, status: "", message: undefined });
+
+  const getFailureMessage = (wsData: any): string => {
+    const reason =
+      wsData?.reason ||
+      wsData?.error_message ||
+      wsData?.comment_text ||
+      wsData?.message;
+    if (typeof reason === "string" && reason.trim()) return reason.trim();
+    if (wsData?.assign_to_name && wsData?.status === "rejected") {
+      return `Rejected by ${wsData.assign_to_name}`;
+    }
+    return "Your transaction could not be completed.";
+  };
 
   // Fallback polling function
   const startFallbackPolling = () => {
@@ -461,6 +480,8 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
           "processing",
           "completed",
           "failed",
+          "rejected",
+          "stopped",
           "awaiting_payment",
           "exchanging",
           "sending",
@@ -474,6 +495,16 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
           "waiting",
           "approved",
         ];
+
+        if (["failed", "rejected", "stopped"].includes(wsData.status)) {
+          setFailureModal({
+            isOpen: true,
+            status: wsData.status,
+            message: getFailureMessage(wsData),
+          });
+          setCurrentStatus(wsData.status);
+          return;
+        }
 
         if (validStatuses.includes(wsData.status)) {
           let uiStatus = wsData.status;
@@ -631,6 +662,8 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
           "processing",
           "completed",
           "failed",
+          "rejected",
+          "stopped",
           "awaiting_payment",
           "exchanging",
           "sending",
@@ -644,6 +677,17 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
           "waiting",
           "approved",
         ];
+
+        if (status && ["failed", "rejected", "stopped"].includes(status)) {
+          const wsData = data.data as any;
+          setFailureModal({
+            isOpen: true,
+            status,
+            message: getFailureMessage({ ...wsData, message }),
+          });
+          setCurrentStatus(status);
+          return;
+        }
 
         if (status && validStatuses.includes(status)) {
           let uiStatus = status;
@@ -812,6 +856,17 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
 
   const ussdAmount = liveAmount ?? effectiveTransactionData?.amount ?? 0;
   const ussdCode = `*789*75466*${ussdAmount}#`;
+  const handleFailureModalClose = () => {
+    setFailureModal({ isOpen: false, status: "", message: undefined });
+    localStorage.removeItem("moneyx_transaction_data");
+    localStorage.removeItem("express_transaction_data");
+    localStorage.removeItem("moneyx_transaction_expiry");
+    if (onBackToTransfer) {
+      onBackToTransfer();
+    } else {
+      router.push("/dashboard/exchange/");
+    }
+  };
 
   return (
     <div className={`w-full min-h-screen flex flex-col pt-0 sm:pt-1 md:pt-2 pl-0 sm:pl-4 pr-2 sm:pr-0 max-w-full overflow-x-hidden box-border`}>
@@ -1658,7 +1713,18 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
           </div>
         </div>
       </div>
-      
+
+      <FailureStatusModal
+        isOpen={failureModal.isOpen}
+        status={failureModal.status}
+        message={failureModal.message}
+        onClose={() =>
+          setFailureModal({ isOpen: false, status: "", message: undefined })
+        }
+        onBackToForm={handleFailureModalClose}
+        isDark={isDark}
+      />
+
     </div>
   );
 }

@@ -132,6 +132,18 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
     status: string;
     message?: string;
   }>({ isOpen: false, status: "", message: undefined });
+  const getFailureMessage = (wsData: any): string => {
+    const reason =
+      wsData?.reason ||
+      wsData?.error_message ||
+      wsData?.comment_text ||
+      wsData?.message;
+    if (typeof reason === "string" && reason.trim()) return reason.trim();
+    if (wsData?.assign_to_name && wsData?.status === "rejected") {
+      return `Rejected by ${wsData.assign_to_name}`;
+    }
+    return "Your transaction could not be completed.";
+  };
 
   // Fallback polling function
   const startFallbackPolling = () => {
@@ -498,7 +510,7 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
           setFailureModal({
             isOpen: true,
             status: wsData.status,
-            message: wsData.message,
+            message: getFailureMessage(wsData),
           });
           setCurrentStatus(wsData.status);
           return;
@@ -680,10 +692,11 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
 
           // Show failure modal for failed, rejected, or stopped statuses
           if (status && ["failed", "rejected", "stopped"].includes(status)) {
+            const wsData = data.data as any;
             setFailureModal({
               isOpen: true,
               status,
-              message: message || undefined,
+              message: getFailureMessage({ ...wsData, message }),
             });
             setCurrentStatus(status);
           } else if (status && validStatuses.includes(status)) {

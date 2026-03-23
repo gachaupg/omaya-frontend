@@ -91,6 +91,18 @@ const TradePreview: React.FC<TradePreviewProps> = ({
   const minAmount = advertiserData.minAmount;
   const maxAmount = advertiserData.maxAmount;
   const rangeLimitSuffix = advertiserData.range_currency?.toUpperCase() === "KES" ? "KES" : "USD";
+  const availableAmount = advertiserData.availableAmount || 0;
+  const effectiveSellMinUsdt = availableAmount < minAmount ? 0.01 : minAmount;
+  const effectiveSellMaxUsdt = (() => {
+    const cappedByAd = Math.min(maxAmount, availableAmount);
+    if (availableAmount < minAmount) return cappedByAd;
+    // Keep at least minAmount available after a sell.
+    return Math.max(0, Math.min(cappedByAd, availableAmount - minAmount));
+  })();
+  const displayedAvailableAssets =
+    tradeType === "sell"
+      ? `${availableAmount.toFixed(2)} USDT`
+      : advertiserData.available;
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -606,11 +618,16 @@ const TradePreview: React.FC<TradePreviewProps> = ({
               </div>
               <div className="flex-1 min-w-[80px]">
                 <div className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
-                  {advertiserData.available}
+                  {displayedAvailableAssets}
                 </div>
                 <div className="text-xs text-gray-500 dark:text-[#788099]">
                   Available assets
                 </div>
+                {tradeType === "sell" && availableAmount >= minAmount && (
+                  <div className="text-xs text-[#1D8751] mt-0.5">
+                    Tradable now: {effectiveSellMaxUsdt.toFixed(2)} USDT
+                  </div>
+                )}
               </div>
             </div>
             <div className="rounded-xl p-3 border border-gray-300 dark:border-[#35353E] bg-gray-100 dark:bg-transparent">
@@ -661,7 +678,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                   </div>
                   <div className="flex flex-col gap-2 sm:gap-2">
                     <div className="text-sm text-gray-500 dark:text-[#788099] pl-0 sm:pl-2 font-medium">
-                      Range: {minAmount}-{maxAmount} {rangeLimitSuffix}
+                      Range: {effectiveSellMinUsdt.toFixed(2)}-{effectiveSellMaxUsdt.toFixed(2)} USDT
                     </div>
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                       <span className="text-2xl sm:text-3xl text-[#1D8751] font-semibold flex-shrink-0">

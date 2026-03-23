@@ -117,6 +117,9 @@ const NETWORK_ALIASES: Record<string, string[]> = {
   matic: ["matic", "polygon"],
   polygon: ["matic", "polygon"],
 };
+
+const MISSING_USDT_USD_RATE_ERROR =
+  "No exchange rate configured for USDT to USD";
 const getNetworkMatchKeys = (network: string): string[] => {
   const n = (network || "").toLowerCase();
   return NETWORK_ALIASES[n] ? [...NETWORK_ALIASES[n], n] : [n];
@@ -986,6 +989,7 @@ export default function DepositForm({
 
   // Add InfoModal state
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
+  const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
 
   // Add validation state for minimum receive amount
   const [receiveAmountError, setReceiveAmountError] = useState<string | null>(
@@ -1391,8 +1395,18 @@ export default function DepositForm({
                   : rawMessage && typeof rawMessage === "object"
                     ? JSON.stringify(rawMessage)
                     : null;
+            const normalizedMessage = String(
+              backendMessage || "Failed to fetch exchange rate"
+            );
+            if (normalizedMessage.includes(MISSING_USDT_USD_RATE_ERROR)) {
+              setApiValidationError(
+                "Exchange rate is currently unavailable. Please contact support."
+              );
+              setIsSupportModalOpen(true);
+              return;
+            }
             setApiValidationError(
-              String(backendMessage || "Failed to fetch exchange rate")
+              normalizedMessage
             );
           });
       }, 300);
@@ -5068,6 +5082,37 @@ export default function DepositForm({
           }
         }}
       />
+
+      {isSupportModalOpen && (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-2xl border border-border bg-white p-6 shadow-2xl dark:bg-gray-900">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Exchange Rate Unavailable
+            </h2>
+            <p className="mt-3 text-sm leading-relaxed text-gray-600 dark:text-gray-300">
+              We could not get the required exchange rate for this transaction.
+              Please contact support and our team will help you.
+            </p>
+            <div className="mt-6 flex flex-col gap-3">
+              <button
+                onClick={() => {
+                  setIsSupportModalOpen(false);
+                  router.push("/contactUs");
+                }}
+                className="w-full rounded-lg bg-[#1d8751] px-4 py-3 font-medium text-white transition-colors hover:bg-[#166b3e]"
+              >
+                Contact Support
+              </button>
+              <button
+                onClick={() => setIsSupportModalOpen(false)}
+                className="w-full rounded-lg border border-border px-4 py-3 font-medium text-gray-600 transition-colors hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
