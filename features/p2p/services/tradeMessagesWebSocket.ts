@@ -14,8 +14,22 @@ export interface TradeMessage {
 }
 
 export interface WebSocketMessage {
-  type: "connection_established" | "message_received" | "new_message" | "messages_list" | "initial_messages" | "recent_messages" | "error" | "pong";
-  data: any;
+  type:
+    | "connection_established"
+    | "message_received"
+    | "new_message"
+    | "messages_list"
+    | "initial_messages"
+    | "recent_messages"
+    | "error"
+    | "pong"
+    | "status_update";
+  data?: any;
+  /** Flat payloads on the same socket (e.g. trade canceled) */
+  status?: string;
+  trade_id?: string;
+  message?: string;
+  [key: string]: unknown;
 }
 
 type MessageHandler = (message: WebSocketMessage) => void;
@@ -101,12 +115,17 @@ export class TradeMessagesWebSocket {
 
       this.ws.onmessage = (event) => {
         try {
-          const message: WebSocketMessage = JSON.parse(event.data);
-          // Silent message handling - only log errors
+          const rawStr = typeof event.data === "string" ? event.data : String(event.data);
+          console.log("[P2P trade-messages WS] RAW:", rawStr.length > 800 ? `${rawStr.slice(0, 800)}…` : rawStr);
+          const message: WebSocketMessage = JSON.parse(rawStr) as WebSocketMessage;
+          console.log(
+            "[P2P trade-messages WS] PARSED type=%s keys=%s",
+            (message as any)?.type,
+            message && typeof message === "object" ? Object.keys(message as object).join(",") : ""
+          );
           this.messageHandlers.forEach((handler) => handler(message));
         } catch (error) {
-          // Only log parse errors as they indicate real issues
-          console.warn("⚠️ Failed to parse WebSocket message:", error);
+          console.warn("⚠️ Failed to parse Trade Messages WebSocket payload:", error);
         }
       };
 

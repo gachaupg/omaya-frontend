@@ -62,6 +62,12 @@ export interface TransactionStatusMessage {
     updated_at?: string;
     // Final status indicator
     is_final?: boolean;
+    rejection_reason?: string | null;
+    failure_reason?: string | null;
+    notification?: {
+      message?: string;
+      reason?: string;
+    };
   };
   // Legacy fields for backward compatibility
   tx_hash?: string;

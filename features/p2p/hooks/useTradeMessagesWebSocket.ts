@@ -15,25 +15,33 @@ import type { WebSocketMessage } from "../services/tradeMessagesWebSocket";
 import { cookieUtils } from "@/lib/utils/cookieUtils";
 
 import { logger } from '@/lib/utils/logger';
+import { parseTradeMessagesCancelPayload } from "../utils/tradeMessagesCancelDetection";
+import { P2P_TRADE_CANCELED_EVENT } from "../constants/tradeSocketEvents";
 
 interface UseTradeMessagesWebSocketOptions {
   tradeId: string;
   enabled?: boolean;
+  /** Fired when the trade-messages socket pushes `status_update` with canceled/cancelled. */
+  onTradeCanceled?: (info: { message?: string; status?: string }) => void;
 }
 
 export const useTradeMessagesWebSocket = (options: UseTradeMessagesWebSocketOptions) => {
   const { tradeId, enabled = true } = options;
+  const onTradeCanceledRef = useRef(options.onTradeCanceled);
+  onTradeCanceledRef.current = options.onTradeCanceled;
   const dispatch = useDispatch<AppDispatch>();
   const mountedRef = useRef(true);
   const [isConnected, setIsConnected] = useState(false);
   const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  
+  const cancelModalFiredRef = useRef(false);
+
   // Get or create WebSocket instance when tradeId changes
   const wsRef = useRef(getTradeMessagesWebSocket(tradeId));
-  
+
   // Update wsRef when tradeId changes
   useEffect(() => {
     wsRef.current = getTradeMessagesWebSocket(tradeId);
+    cancelModalFiredRef.current = false;
   }, [tradeId]);
 
   useEffect(() => {
@@ -88,6 +96,8 @@ export const useTradeMessagesWebSocket = (options: UseTradeMessagesWebSocketOpti
       return;
     }
 
+    cancelModalFiredRef.current = false;
+
     const getAccessToken = (): string | null => {
       // First try to get from cookies (primary storage)
       const cookieToken = cookieUtils.getCookie("access_token");
@@ -124,6 +134,32 @@ export const useTradeMessagesWebSocket = (options: UseTradeMessagesWebSocketOpti
       if (!mountedRef.current) return;
 
       try {
+        const msgAny = message as Record<string, unknown>;
+        console.log("[P2P trade-messages WS] handler tradeId=%s payload=", tradeId, msgAny);
+
+        const { shouldNotify, status: statusRaw, message: detail } =
+          parseTradeMessagesCancelPayload(msgAny, tradeId);
+        if (shouldNotify && tradeId?.trim()) {
+          if (cancelModalFiredRef.current) {
+            console.log("[P2P trade-messages WS] skip duplicate cancel modal for trade", tradeId);
+          } else {
+            cancelModalFiredRef.current = true;
+            console.log("[P2P trade-messages WS] trade canceled → modal + event", {
+              tradeId,
+              statusRaw,
+              detail,
+            });
+            onTradeCanceledRef.current?.({ status: statusRaw, message: detail });
+            if (typeof window !== "undefined") {
+              window.dispatchEvent(
+                new CustomEvent(P2P_TRADE_CANCELED_EVENT, {
+                  detail: { tradeId, message: detail, source: "trade-messages-ws" },
+                })
+              );
+            }
+          }
+        }
+
         switch (message.type) {
           case "connection_established":
             // Silent - connection established
@@ -205,13 +241,17 @@ export const useTradeMessagesWebSocket = (options: UseTradeMessagesWebSocketOpti
             console.warn("⚠️ WebSocket error message:", message.data);
             break;
 
+          case "status_update":
+            // Handled above (canceled → callback). No-op here for chat message types.
+            break;
+
           default:
             // Log unknown message types for debugging
             logger.debug('p2p', "❓ Unknown WebSocket message type:", message.type, message.data);
             break;
         }
       } catch (error) {
-        // Silent error handling
+        console.error("[P2P trade-messages WS] onMessage handler error:", error);
       }
     });
 

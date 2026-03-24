@@ -635,11 +635,6 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                 <div className="text-xs text-gray-500 dark:text-[#788099]">
                   Available assets
                 </div>
-                {tradeType === "sell" && availableAmount >= minAmount && (
-                  <div className="text-xs text-[#1D8751] mt-0.5">
-                    Tradable now: {effectiveSellMaxUsdt.toFixed(2)} USDT
-                  </div>
-                )}
               </div>
             </div>
             <div className="rounded-xl p-3 border border-gray-300 dark:border-[#35353E] bg-gray-100 dark:bg-transparent">

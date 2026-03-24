@@ -17,6 +17,8 @@ import {
 } from "@/features/express/slices/transactionSlice";
 import { fetchDepositStatus } from "../api";
 import SuccessPage from "./success";
+import FailureStatusModal from "@/features/express/components/FailureStatusModal";
+import { resolveExpressTransactionFailureMessage } from "@/lib/utils/websocketUtils";
 
 interface ExchangingProps {
   transactionData?: {
@@ -93,6 +95,18 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
     null
   );
   const pollingIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  const [failureModal, setFailureModal] = useState<{
+    isOpen: boolean;
+    status: string;
+    message?: string;
+  }>({ isOpen: false, status: "", message: undefined });
+
+  const handleFailureModalClose = () => {
+    setFailureModal({ isOpen: false, status: "", message: undefined });
+    localStorage.removeItem("express_transaction_data");
+    window.location.reload();
+  };
 
   const stopFallbackPolling = () => {
     if (pollingIntervalRef.current) {
@@ -560,6 +574,25 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
             message = (data as any).message;
           }
 
+          if (status && ["failed", "rejected", "stopped"].includes(status)) {
+            let failureMessage =
+              resolveExpressTransactionFailureMessage(data) ?? message;
+            if (
+              !failureMessage &&
+              status === "rejected" &&
+              (data.data as any)?.assign_to_name
+            ) {
+              failureMessage = `Rejected by ${(data.data as any).assign_to_name}`;
+            }
+            setFailureModal({
+              isOpen: true,
+              status,
+              message: failureMessage || undefined,
+            });
+            setCurrentStatus(status);
+            setTimerActive(false);
+            return;
+          }
 
           // Process statuses for both deposit and withdrawal
           const validStatuses = [
@@ -567,7 +600,6 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
             "pending_blockchain",
             "processing",
             "completed",
-            "failed",
             "awaiting_payment",
             "exchanging",
             "sending",
@@ -1662,6 +1694,17 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
           </ul>
         </div>
       </div>
+
+      <FailureStatusModal
+        isOpen={failureModal.isOpen}
+        status={failureModal.status}
+        message={failureModal.message}
+        onClose={() =>
+          setFailureModal({ isOpen: false, status: "", message: undefined })
+        }
+        onBackToForm={handleFailureModalClose}
+        isDark={isDark}
+      />
     </div>
   );
 }

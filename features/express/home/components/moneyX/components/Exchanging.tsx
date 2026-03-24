@@ -21,6 +21,7 @@ import {
   cancelWithdrawalTransaction,
 } from "@/features/express/slices/transactionSlice";
 import FailureStatusModal from "@/features/express/components/FailureStatusModal";
+import { resolveExpressTransactionFailureMessage } from "@/lib/utils/websocketUtils";
 
 interface ExchangingProps {
   transactionData?: {
@@ -133,6 +134,8 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
     message?: string;
   }>({ isOpen: false, status: "", message: undefined });
   const getFailureMessage = (wsData: any): string => {
+    const fromResolver = resolveExpressTransactionFailureMessage({ data: wsData });
+    if (fromResolver) return fromResolver;
     const reason =
       wsData?.reason ||
       wsData?.error_message ||
@@ -510,7 +513,9 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
           setFailureModal({
             isOpen: true,
             status: wsData.status,
-            message: getFailureMessage(wsData),
+            message:
+              resolveExpressTransactionFailureMessage(data) ||
+              getFailureMessage(wsData),
           });
           setCurrentStatus(wsData.status);
           return;
@@ -696,7 +701,9 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
             setFailureModal({
               isOpen: true,
               status,
-              message: getFailureMessage({ ...wsData, message }),
+              message:
+                resolveExpressTransactionFailureMessage(data) ||
+                getFailureMessage({ ...wsData, message }),
             });
             setCurrentStatus(status);
           } else if (status && validStatuses.includes(status)) {

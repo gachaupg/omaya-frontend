@@ -18,6 +18,7 @@ import {
   cancelWithdrawalTransaction,
 } from "../../slices/transactionSlice";
 import FailureStatusModal from "../../components/FailureStatusModal";
+import { resolveExpressTransactionFailureMessage } from "@/lib/utils/websocketUtils";
 
 interface ExchangingProps {
   transactionData?: {
@@ -644,10 +645,19 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
 
           // Show failure modal for failed, rejected, or stopped statuses
           if (status && ["failed", "rejected", "stopped"].includes(status)) {
+            let failureMessage =
+              resolveExpressTransactionFailureMessage(data) ?? message;
+            if (
+              !failureMessage &&
+              status === "rejected" &&
+              (data.data as any)?.assign_to_name
+            ) {
+              failureMessage = `Rejected by ${(data.data as any).assign_to_name}`;
+            }
             setFailureModal({
               isOpen: true,
               status,
-              message: message || undefined,
+              message: failureMessage || undefined,
             });
             setCurrentStatus(status);
             setTimerActive(false);

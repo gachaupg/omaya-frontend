@@ -61,6 +61,14 @@ export interface TransactionStatusMessage {
     updated_at?: string;
     // Final status indicator
     is_final?: boolean;
+    /** Human-readable rejection explanation from backend (may be used instead of message) */
+    rejection_reason?: string | null;
+    failure_reason?: string | null;
+    /** Rejected/canceled flows often send detail here */
+    notification?: {
+      message?: string;
+      reason?: string;
+    };
   };
   // Legacy fields for backward compatibility
   tx_hash?: string;
