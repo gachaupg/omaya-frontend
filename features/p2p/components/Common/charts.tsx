@@ -153,7 +153,11 @@ const Charts: React.FC<ChartProps> = ({
         const monthDate = new Date(now.getFullYear(), now.getMonth() - (slots - 1 - i), 1);
         const lastDay = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
         const monthName = months[monthDate.getMonth()];
-        const day = lastDay.getDate();
+        const isCurrentMonth =
+          monthDate.getFullYear() === now.getFullYear() &&
+          monthDate.getMonth() === now.getMonth();
+        // Do not project the current month to month-end; cap at today's date.
+        const day = isCurrentMonth ? now.getDate() : lastDay.getDate();
         const isDifferentYear = monthDate.getFullYear() !== now.getFullYear();
         const label = isDifferentYear
           ? `${monthName} ${day}, '${String(monthDate.getFullYear()).slice(-2)}`
@@ -177,24 +181,35 @@ const Charts: React.FC<ChartProps> = ({
   }, [data, trades, selectedTimeFilter]);
 
   /* ------------------- Tooltip ----------------------------- */
-  const CustomTooltip = ({ active, payload, label }: any) =>
-    active && payload?.length ? (
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (!active || !Array.isArray(payload) || payload.length === 0) return null;
+
+    const buyPoint = payload.find((p: any) => p?.dataKey === "buyValue");
+    const sellPoint = payload.find((p: any) => p?.dataKey === "sellValue");
+
+    const buyValue =
+      typeof buyPoint?.value === "number"
+        ? buyPoint.value
+        : Number(buyPoint?.value || 0);
+    const sellValue =
+      typeof sellPoint?.value === "number"
+        ? sellPoint.value
+        : Number(sellPoint?.value || 0);
+
+    return (
       <div
         className="rounded-lg border p-2 bg-white border-gray-200 text-gray-800 dark:bg-[#18181D] dark:border-[#35353E] dark:text-white"
       >
         <p className="font-medium">{label}</p>
         {filter !== "Sells" && (
-          <p className="text-[#1D8751]">{`Buys: ${payload[0].value.toLocaleString()} USD`}</p>
+          <p className="text-[#1D8751]">{`Buys: ${buyValue.toLocaleString()} USD`}</p>
         )}
         {filter !== "Buys" && (
-          <p className="text-[#FF4D4D]">
-            {`${filter === "All" ? "Sells" : "Sells"}: ${payload[
-              filter === "All" ? 1 : 0
-            ].value.toLocaleString()} USD`}
-          </p>
+          <p className="text-[#FF4D4D]">{`Sells: ${sellValue.toLocaleString()} USD`}</p>
         )}
       </div>
-    ) : null;
+    );
+  };
 
   /* ------------------- Time filter dropdown ---------------- */
   const timeFilterOptions: TimeFilter[] = [

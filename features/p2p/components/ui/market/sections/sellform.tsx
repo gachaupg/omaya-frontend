@@ -341,9 +341,6 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
         .then(() => {
           showToast.success("Money Sent successfully!");
           dispatch(fetchConfirmOrder(confirmOrder.id));
-          setTimeout(() => {
-            router.push("/dashboard/p2p");
-          }, 2000);
         })
         .catch((error) => {
           showToast.error(

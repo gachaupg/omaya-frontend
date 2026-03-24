@@ -181,6 +181,7 @@ const MoneyXRates = ({
   const [bankAccountAddress, setBankAccountAddress] = useState<string>("");
   const [bankAddressError, setBankAddressError] = useState<string | null>(null);
   const [isAddressConfirmed, setIsAddressConfirmed] = useState(false);
+  const [legalModalType, setLegalModalType] = useState<"terms" | "privacy" | null>(null);
   const [isUpdatingTransaction, setIsUpdatingTransaction] = useState(false);
   const [moneyXTransactionResult, setMoneyXTransactionResult] =
     useState<any>(null);
@@ -756,6 +757,38 @@ const MoneyXRates = ({
       </div>
     );
   }
+
+  const legalModalTitle =
+    legalModalType === "terms"
+      ? "Terms of Use"
+      : legalModalType === "privacy"
+        ? "Privacy Policy"
+        : "";
+
+  const legalModalParagraphs =
+    legalModalType === "terms"
+      ? [
+          "You confirm that the bank account details and beneficiary details you provide are accurate and belong to you.",
+          "You agree to include the required transaction reference when sending funds so that processing is not delayed.",
+          "Transactions submitted with incorrect details may be delayed, rejected, or returned after verification and compliance checks.",
+          "Omaya Exchange may pause, review, or request additional information to comply with security and regulatory obligations.",
+          "You understand exchange rates and processing times can change based on market conditions, liquidity, and partner availability.",
+          "You accept responsibility for selecting the correct payment method, account details, and transfer amount before submission.",
+          "If funds are sent from third-party accounts or with missing references, additional checks may apply before release or refund.",
+          "Completed and validated transactions may not be reversible once funds are processed to the designated destination account.",
+        ]
+      : legalModalType === "privacy"
+        ? [
+            "Omaya Exchange collects the minimum personal and transaction information required to process your transfer.",
+            "Your data is used for transaction execution, fraud prevention, customer support, and legal compliance purposes only.",
+            "We apply technical and organizational safeguards to protect your information from unauthorized access.",
+            "By continuing, you acknowledge this processing and agree to our privacy practices for MoneyX transactions.",
+            "We may share required transaction metadata with regulated payment providers and compliance partners for processing purposes.",
+            "Your account and transaction records may be retained for legally required periods under applicable financial regulations.",
+            "You can request assistance for data-related inquiries through official Omaya Exchange support channels.",
+            "We continuously monitor and improve security controls, but no online system can be guaranteed as fully risk-free.",
+          ]
+        : [];
 
   return (
     <div className="bg-white dark:bg-[#18181D] p-3 sm:p-4 lg:p-6 rounded-xl sm:rounded-xl lg:rounded-2xl border-[1.5px] border-gray-200 dark:border-[#35353E] shadow-md container mx-auto">
@@ -1434,7 +1467,24 @@ const MoneyXRates = ({
                     />
                   </svg>
                 </div>
-                <span>I have read and agreed to Omaya Exchange <a href="/terms" className="text-[#1D8751] underline">Terms of Use</a>, <a href="/privacy" className="text-[#1D8751] underline">Privacy Policy</a></span>
+                <span>
+                  I have read and agreed to Omaya Exchange{" "}
+                  <button
+                    type="button"
+                    onClick={() => setLegalModalType("terms")}
+                    className="text-[#1D8751] underline"
+                  >
+                    Terms of Use
+                  </button>
+                  ,{" "}
+                  <button
+                    type="button"
+                    onClick={() => setLegalModalType("privacy")}
+                    className="text-[#1D8751] underline"
+                  >
+                    Privacy Policy
+                  </button>
+                </span>
               </label>
             </div>
 
@@ -1471,6 +1521,51 @@ const MoneyXRates = ({
           </>
         )}
       </div>
+
+      {legalModalType && (
+        <div
+          className="fixed inset-0 z-[9990] bg-black/60 flex items-center justify-center p-4"
+          onClick={() => setLegalModalType(null)}
+        >
+          <div
+            className={`w-full max-w-4xl h-[80vh] rounded-2xl border ${isDark ? "bg-[#1D1D23] border-[#35353E]" : "bg-white border-[#E2E8F0]"} p-6 sm:p-7`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <h3 className={`text-lg font-semibold ${isDark ? "text-white" : "text-[#111827]"}`}>
+                {legalModalTitle}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setLegalModalType(null)}
+                className={`${isDark ? "text-[#788099] hover:text-white" : "text-gray-500 hover:text-gray-900"} text-xl leading-none`}
+                aria-label="Close modal"
+              >
+                ×
+              </button>
+            </div>
+            <div className="space-y-3 h-[calc(80vh-120px)] overflow-y-auto pr-2">
+              {legalModalParagraphs.map((paragraph, index) => (
+                <p
+                  key={`${legalModalType}-${index}`}
+                  className={`text-sm leading-relaxed ${isDark ? "text-[#788099]" : "text-[#475569]"}`}
+                >
+                  {index + 1}. {paragraph}
+                </p>
+              ))}
+            </div>
+            <div className="mt-4 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setLegalModalType(null)}
+                className="px-4 py-2 rounded-lg bg-[#1D8751] hover:bg-[#166b3e] text-white text-sm font-medium"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

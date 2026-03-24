@@ -63,14 +63,13 @@ const Overview = () => {
     return Math.max(0, 173 - (value / safeTotal) * 691);
   };
 
-  // Buy order totals from summary (total_buy_orders_by_status) - Completed + Pending only
-  const buyByStatus = (summary as any)?.total_buy_orders_by_status || {};
+  // API type mapping is reversed; swap buy/sell sources for correct UI labels
+  const buyByStatus = (summary as any)?.total_sell_orders_by_status || {};
   const buyCompleted = Number(buyByStatus.completed) || 0;
   const buyPending = Number(buyByStatus.pending) || 0;
   const buyTotal = buyCompleted + buyPending;
 
-  // Sell order totals from summary (total_sell_orders_by_status) - Completed + Pending only
-  const sellByStatus = (summary as any)?.total_sell_orders_by_status || {};
+  const sellByStatus = (summary as any)?.total_buy_orders_by_status || {};
   const sellCompleted = Number(sellByStatus.completed) || 0;
   const sellPending = Number(sellByStatus.pending) || 0;
   const sellTotal = sellCompleted + sellPending;

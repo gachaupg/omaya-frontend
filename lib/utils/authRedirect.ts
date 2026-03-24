@@ -68,10 +68,12 @@ export const consumeExpressLegalReturnState = (): Record<string, any> | null => 
     const paymentDetail = state.selectedPaymentDetail;
     const paymentDetails = state.selectedPaymentDetails ?? (paymentDetail ? [paymentDetail] : undefined);
     return {
+      mode: state.mode,
       amountValue: state.payAmount,
       amountInput: state.payAmountInput,
       receiveAmountValue: state.getAmount,
       receiveAmountInput: state.getAmountInput,
+      scrollY: state.scrollY,
       payBank: state.payBank,
       payment: paymentDetail,
       paymentDetails,

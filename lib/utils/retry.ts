@@ -8,7 +8,7 @@ interface RetryConfig {
 }
 
 const defaultConfig: RetryConfig = {
-  maxRetries: 3,
+  maxRetries: 2, // Total attempts (initial + retries)
   initialDelay: 1000, // 1 second
   maxDelay: 10000, // 10 seconds
   backoffFactor: 2,
@@ -35,7 +35,8 @@ export const withRetry = async <T>(
   let lastError: Error | null = null;
   let delay = finalConfig.initialDelay!;
 
-  for (let attempt = 0; attempt <= finalConfig.maxRetries!; attempt++) {
+  const maxAttempts = Math.max(1, finalConfig.maxRetries!);
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       return await fn();
     } catch (error) {
@@ -43,7 +44,7 @@ export const withRetry = async <T>(
 
       if (
         !shouldRetry(error as AxiosError) ||
-        attempt === finalConfig.maxRetries
+        attempt === maxAttempts
       ) {
         throw error;
       }
