@@ -567,7 +567,7 @@ export default function WithdrawalForm({
     initialState?.amountInput ?? "100"
   );
   const [getAmountInput, setGetAmountInput] = useState(
-    initialState?.amountInput ?? "0"
+    initialState?.amountInput ?? ""
   );
 
   // Cap "You Receive" at $15,000; amounts above use OTC
@@ -730,7 +730,7 @@ export default function WithdrawalForm({
   const [hasFetchedAdminWallet, setHasFetchedAdminWallet] = useState(false);
   const [hasFetchedAssets, setHasFetchedAssets] = useState(false);
   const [hasFetchedSwapAssets, setHasFetchedSwapAssets] = useState(false);
-  const MAX_RETRIES = 3;
+  const MAX_RETRIES = 2;
 
   // Filter user payment details based on selected provider
   // Match payment_provider_name from user payment details with provider_name from admin
@@ -956,22 +956,7 @@ export default function WithdrawalForm({
         return data;
       })
       .catch((error: unknown) => {
-        // If cache fetch fails, try force refresh
-        return dispatch(fetchAdminPaymentDetails(true))
-          .unwrap()
-          .then((data) => {
-            // Update ref immediately
-            if (data && data.length > 0) {
-              paymentMethodsRef.current = data.filter((p: any) =>
-                p.is_active === undefined || p.is_active === null || p.is_active === true || p.is_active === 'true'
-              );
-            }
-            return data;
-          })
-          .catch((refreshError: unknown) => {
-            console.error('❌ Force refresh also failed:', refreshError);
-            // Don't show toast error - the UI will handle the loading/error state gracefully
-          });
+        console.error("❌ Failed to fetch admin payment details:", error);
       });
   }, [dispatch, isHomePage]);
 
@@ -1102,20 +1087,7 @@ export default function WithdrawalForm({
         return data;
       })
       .catch((error: unknown) => {
-        // If cache fetch fails, try force refresh
-        return dispatch(fetchUserPaymentDetails(true))
-          .unwrap()
-          .then((data) => {
-            // Update ref immediately
-            if (data && data.length > 0) {
-              userPaymentMethodsRef.current = data;
-            }
-            return data;
-          })
-          .catch((refreshError: unknown) => {
-            // Don't show toast error - the UI will handle the loading/error state gracefully
-            throw refreshError;
-          });
+        console.error("❌ Failed to fetch user payment details:", error);
       });
   }, [dispatch, isHomePage, isAuthenticated]);
 

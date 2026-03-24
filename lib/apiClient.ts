@@ -27,7 +27,7 @@ interface ApiClientConfig {
 
 const DEFAULT_CONFIG: ApiClientConfig = {
   timeout: 20000, // 20s default so slow API doesn’t hang the app; critical ops use ENDPOINT_SPECIFIC_CONFIG
-  retries: 3,
+  retries: 2, // Total attempts (initial + retries)
   retryDelay: 1000,
   retryCondition: (error: AxiosError) => {
     // Retry on network errors and 5xx server errors
@@ -276,10 +276,13 @@ const addRetryInterceptor = (
       }
 
       const endpoint = originalRequest?.url || "";
-      const endpointConfig = ENDPOINT_SPECIFIC_CONFIG[endpoint];
-      const maxRetries = endpointConfig?.retries ?? config.retries;
+      const endpointConfig = Object.entries(ENDPOINT_SPECIFIC_CONFIG).find(
+        ([path]) => endpoint.includes(path) || endpoint.startsWith(path)
+      )?.[1];
+      const maxAttempts = endpointConfig?.retries ?? config.retries;
+      const maxAdditionalRetries = Math.max(0, maxAttempts - 1);
 
-      if (!originalRequest || originalRequest._retryCount >= maxRetries) {
+      if (!originalRequest || (originalRequest._retryCount || 0) >= maxAdditionalRetries) {
         return Promise.reject(error);
       }
 

@@ -12,10 +12,10 @@ import { getHighResAssetIcon } from "@/features/express/utils/imageHelpers";
 import type { AllTransactionItem } from "@/features/transactions/api";
 
 const formatAmount = (amount: string | number | undefined | null): string => {
-  if (amount === undefined || amount === null || amount === "") return "0.00";
+  if (amount === undefined || amount === null || amount === "") return "0.0000";
   const numAmount = typeof amount === "string" ? parseFloat(amount) : amount;
-  if (isNaN(numAmount)) return "0.00";
-  return numAmount.toFixed(2);
+  if (isNaN(numAmount)) return "0.0000";
+  return numAmount.toFixed(4);
 };
 
 const getAssetName = (symbol: string) => {

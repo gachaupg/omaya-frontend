@@ -30,7 +30,7 @@ const P2PTransactions = () => {
   const { trades, loading, error, currentPage } = useSelector(
     (state: RootState) => state.userTrades
   );
-  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
   const [page, setPage] = useState(1);
   const itemsPerPage = 8;
   // Ensure trades.results is an array
@@ -58,6 +58,21 @@ const P2PTransactions = () => {
   };
 
   const transformedData: TransactionType[] = paginatedData.map((trade) => {
+    const currentUserEmail = String(user?.email || "").toLowerCase();
+    const tradeOwnerEmail = String(trade?.owner || "").toLowerCase();
+    const rawOrderType =
+      typeof trade.order_type === "string"
+        ? trade.order_type.toLowerCase()
+        : "";
+    const normalizedOrderType =
+      tradeOwnerEmail && currentUserEmail && tradeOwnerEmail !== currentUserEmail
+        ? rawOrderType === "buy"
+          ? "sell"
+          : rawOrderType === "sell"
+            ? "buy"
+            : rawOrderType
+        : rawOrderType;
+
     let assetSymbol =
       typeof trade.currency === "string" ? trade.currency : "USDT";
     let asset = typeof trade.currency === "string" ? trade.currency : "USDT";
@@ -70,12 +85,9 @@ const P2PTransactions = () => {
     }
     return {
       id: trade.id,
-      type:
-        typeof trade.order_type === "string"
-          ? trade.order_type.toLowerCase()
-          : "",
+      type: normalizedOrderType,
       date: trade.timestamp,
-      amount: parseFloat(trade.amount).toFixed(2),
+      amount: parseFloat(trade.amount).toFixed(4),
       status:
         typeof trade.status === "string" ? trade.status.toLowerCase() : "",
       asset,

@@ -89,12 +89,32 @@ const ExpressExchangeForm: React.FC<ExpressExchangeFormProps> = ({
     setMode(initialMode);
   }, [initialMode]);
 
+  // When returning from legal pages, restore the exact mode (deposit/withdrawal)
+  useEffect(() => {
+    const legalMode = legalReturnState?.mode;
+    if (legalMode === "deposit" || legalMode === "withdrawal") {
+      setMode(legalMode);
+    }
+  }, [legalReturnState]);
+
   // Fallback: consume prefill from sessionStorage when URL has no prefill (e.g. truncated)
   useEffect(() => {
     if (prefillState) return;
     const fromStorage = consumeExpressPrefillState();
     if (fromStorage) setPrefillState(fromStorage);
   }, [prefillState]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const savedScrollY = legalReturnState?.scrollY;
+    if (typeof savedScrollY !== "number" || Number.isNaN(savedScrollY)) return;
+
+    const restoreTimer = window.setTimeout(() => {
+      window.scrollTo({ top: Math.max(0, savedScrollY), behavior: "auto" });
+    }, 0);
+
+    return () => window.clearTimeout(restoreTimer);
+  }, [legalReturnState]);
 
   return (
     <div className="w-full mt-0">

@@ -16,7 +16,7 @@ export function useApi<T>(
   apiCall: () => Promise<T>,
   options: UseApiOptions = {}
 ) {
-  const { maxRetries = 3, retryDelay = 1000 } = options;
+  const { maxRetries = 2, retryDelay = 1000 } = options; // Total attempts
   const [state, setState] = useState<ApiState<T>>({
     data: null,
     isLoading: false,
@@ -25,15 +25,16 @@ export function useApi<T>(
 
   const execute = useCallback(async () => {
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
-    let retries = 0;
+    const maxAttempts = Math.max(1, maxRetries);
+    let attempt = 1;
 
-    while (retries <= maxRetries) {
+    while (attempt <= maxAttempts) {
       try {
         const data = await apiCall();
         setState({ data, isLoading: false, error: null });
         return data;
       } catch (error) {
-        if (retries === maxRetries) {
+        if (attempt === maxAttempts) {
           try {
             handleApiError(error);
           } catch (handledError) {
@@ -49,9 +50,9 @@ export function useApi<T>(
             throw errorObj;
           }
         }
-        retries++;
+        attempt++;
         await new Promise((resolve) =>
-          setTimeout(resolve, retryDelay * retries)
+          setTimeout(resolve, retryDelay * (attempt - 1))
         );
       }
     }

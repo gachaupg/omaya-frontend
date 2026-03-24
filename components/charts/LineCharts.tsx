@@ -587,8 +587,8 @@ const LineCharts = React.memo(
     const [filter, setFilter] = useState<"All" | "Deposits" | "Withdrawals">(
       "Deposits"
     );
-    const [p2pFilter, setP2pFilter] = useState<"All" | "Sells" | "Buys">(
-      "Sells"
+    const [p2pFilter, setP2pFilter] = useState<"All" | "Sell Orders" | "Buy Orders">(
+      "Sell Orders"
     );
     const [period, setPeriod] = useState("Month");
     const [exchangeTimePeriod, setExchangeTimePeriod] = useState("All");
@@ -615,11 +615,11 @@ const LineCharts = React.memo(
       sellData: LineChartData;
     }>({
       buyData: {
-        label: "P2P Buys",
+        label: "Buy Orders",
         data: Array(12).fill(0),
       },
       sellData: {
-        label: "P2P Sells",
+        label: "Sell Orders",
         data: Array(12).fill(0),
       },
     });
@@ -627,10 +627,13 @@ const LineCharts = React.memo(
     const { transactions: p2pTransactions } = useSelector(
       (state: any) => state.p2pTransactions
     );
-    const allTransactions = useSelector(
-      (state: any) => state.allTransactions?.data?.results || []
+    const allTransactionsRaw = useSelector(
+      (state: any) => state.allTransactions?.data?.results
     );
     const userTrades = useSelector((state: any) => state.userTrades.trades);
+    const { user, isAuthenticated } = useSelector(
+      (state: RootState) => state.auth
+    );
 
     // Fetch all transactions on mount
     useEffect(() => {
@@ -643,6 +646,9 @@ const LineCharts = React.memo(
 
     // Process exchange transactions for Exchange Overview
     useEffect(() => {
+      const allTransactions = Array.isArray(allTransactionsRaw)
+        ? allTransactionsRaw
+        : [];
       if (allTransactions?.length) {
         const depositData = Array(12).fill(0);
         const withdrawalData = Array(12).fill(0);
@@ -714,7 +720,7 @@ const LineCharts = React.memo(
           withdrawalData: { label: "Withdrawals", data: Array(12).fill(0) },
         });
       }
-    }, [allTransactions]);
+    }, [allTransactionsRaw]);
 
     // Process P2P transactions for P2P Overview
     useEffect(() => {
@@ -722,6 +728,7 @@ const LineCharts = React.memo(
         const buyData = Array(12).fill(0);
         const sellData = Array(12).fill(0);
         const currentDate = new Date();
+        const currentUserEmail = String(user?.email || "").toLowerCase();
 
         userTrades.results.forEach((trade: any) => {
           const tradeDate = new Date(trade.timestamp);
@@ -730,9 +737,20 @@ const LineCharts = React.memo(
             (currentDate.getMonth() - tradeDate.getMonth());
           if (monthDiff < 12) {
             const monthIndex = 11 - monthDiff;
-            if (trade.order_type === "buy") {
+            const tradeOwnerEmail = String(trade?.owner || "").toLowerCase();
+            const rawOrderType = String(trade?.order_type || "").toLowerCase();
+            const normalizedOrderType =
+              tradeOwnerEmail && currentUserEmail && tradeOwnerEmail !== currentUserEmail
+                ? rawOrderType === "buy"
+                  ? "sell"
+                  : rawOrderType === "sell"
+                    ? "buy"
+                    : rawOrderType
+                : rawOrderType;
+
+            if (normalizedOrderType === "buy") {
               buyData[monthIndex] += parseFloat(trade.amount);
-            } else if (trade.order_type === "sell") {
+            } else if (normalizedOrderType === "sell") {
               sellData[monthIndex] += parseFloat(trade.amount);
             }
           }
@@ -740,25 +758,27 @@ const LineCharts = React.memo(
 
         setP2pChartData({
           buyData: {
-            label: "P2P Buys",
+            label: "Buy Orders",
             data: buyData,
           },
           sellData: {
-            label: "P2P Sells",
+            label: "Sell Orders",
             data: sellData,
           },
         });
+
+        console.log("[P2P Overview] Current user:", currentUserEmail);
+        console.log("[P2P Overview] Buy Orders:", buyData);
+        console.log("[P2P Overview] Sell Orders:", sellData);
+        console.log("[P2P Overview] Raw trades:", userTrades.results);
       }
-    }, [userTrades]);
+    }, [userTrades, user?.email]);
 
     const {
       data: walletData,
       loading: walletLoading,
       error: walletError,
     } = useSelector((state: RootState) => state.referralWallet);
-    const { user, isAuthenticated } = useSelector(
-      (state: RootState) => state.auth
-    );
 
     const rollingMonthLabels = React.useMemo(() => {
       const labels: string[] = [];
@@ -862,6 +882,15 @@ const LineCharts = React.memo(
       };
     }, [p2pChartData.buyData, p2pChartData.sellData, p2pTimePeriod, getFilteredDataset]);
 
+    const overviewCenterTotal = React.useMemo(() => {
+      if (activeTab === "exchange") {
+        return Number(
+          (transactionSummary as any)?.total_approved_exchange_volume ?? 0
+        );
+      }
+      return overviewTotalSummary(transactionSummary, activeTab).total;
+    }, [activeTab, transactionSummary]);
+
     useEffect(() => {
       const fetchData = async () => {
         if (user?.referral_code && isAuthenticated) {
@@ -945,19 +974,19 @@ const LineCharts = React.memo(
               </Button>
               <Button
                 size="sm"
-                variant={p2pFilter === "Sells" ? "primary" : "outline"}
-                onClick={() => setP2pFilter("Sells")}
+                variant={p2pFilter === "Sell Orders" ? "primary" : "outline"}
+                onClick={() => setP2pFilter("Sell Orders")}
                 className="whitespace-nowrap rounded-3xl text-xs sm:text-sm flex-shrink-0"
               >
-                Sells
+                Sell Orders
               </Button>
               <Button
                 size="sm"
-                variant={p2pFilter === "Buys" ? "primary" : "outline"}
-                onClick={() => setP2pFilter("Buys")}
+                variant={p2pFilter === "Buy Orders" ? "primary" : "outline"}
+                onClick={() => setP2pFilter("Buy Orders")}
                 className="whitespace-nowrap rounded-3xl text-xs sm:text-sm flex-shrink-0"
               >
-                Buys
+                Buy Orders
               </Button>
               <div className="ml-1 sm:ml-4 flex-shrink-0 min-w-0 w-[80px] sm:w-auto">
                 <Dropdown
@@ -972,8 +1001,8 @@ const LineCharts = React.memo(
                 data1={p2pSeries.buys}
                 data2={p2pSeries.sells}
                 labels={p2pSeries.labels}
-                showData1={p2pFilter === "All" || p2pFilter === "Buys"}
-                showData2={p2pFilter === "All" || p2pFilter === "Sells"}
+                showData1={p2pFilter === "All" || p2pFilter === "Buy Orders"}
+                showData2={p2pFilter === "All" || p2pFilter === "Sell Orders"}
               />
             </div>
           </Card>
@@ -1014,7 +1043,7 @@ const LineCharts = React.memo(
               <div className="flex-1 flex justify-center items-end">
                 <DonutChartWithCenter
                   data={overviewTotalData(transactionSummary, activeTab)}
-                  total={overviewTotalSummary(transactionSummary, activeTab).total}
+                  total={overviewCenterTotal}
                   label={
                     activeTab === "swap"
                       ? "Transactions"

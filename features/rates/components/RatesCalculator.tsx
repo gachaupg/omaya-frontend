@@ -50,6 +50,7 @@ import { useTheme } from "@/context/theme";
 import MoneyXRates from "./MoneyXRates";
 import { ClipboardPaste } from "lucide-react";
 import CopyButton from "@/components/ui/CopyButton";
+import { API_CONFIG } from "@/lib/appConfig";
 
 import { logger } from '@/lib/utils/logger';
 import { useChangeNowAssets } from "@/features/express/home/hooks/useChangeNowAssets";
@@ -170,14 +171,68 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
   const [forceUpdate, setForceUpdate] = useState(0);
   const [walletAddress, setWalletAddress] = useState<string>("");
   const [walletError, setWalletError] = useState<string>("");
+  const [isWalletValidating, setIsWalletValidating] = useState(false);
   const [isPasted, setIsPasted] = useState(false);
+  const walletValidationRequestIdRef = useRef(0);
+
+  const getValidationCurrency = (asset: any): string => {
+    const ticker = String(asset?.ticker || asset?.symbol || asset?.name || "").trim();
+    if (!ticker) return "usdt";
+    return ticker === "USDT Tether" ? "usdt" : ticker.toLowerCase();
+  };
+
+  const validateWalletAddressInput = async (address: string) => {
+    const value = address.trim();
+    const requestId = ++walletValidationRequestIdRef.current;
+    if (!value) {
+      setWalletError("");
+      setIsWalletValidating(false);
+      return true;
+    }
+    setIsWalletValidating(true);
+    try {
+      const currency = getValidationCurrency(selectedAsset);
+      const network = String(getAssetNetwork(selectedAsset) || "bsc").toLowerCase();
+      const endpoint = API_CONFIG.SWAP.VALIDATE_ADDRESS;
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          currency,
+          address: value,
+          network,
+        }),
+      });
+      const data = await response.json().catch(() => ({} as any));
+      if (requestId !== walletValidationRequestIdRef.current) {
+        return false;
+      }
+      const isValid = data?.valid === true;
+      setWalletError(
+        isValid ? "" : data?.message || "Invalid wallet/account address"
+      );
+      setIsWalletValidating(false);
+      return isValid;
+    } catch (error: any) {
+      if (requestId !== walletValidationRequestIdRef.current) {
+        return false;
+      }
+      const errorMessage =
+        error?.response?.data?.message ||
+        "Unable to validate address. Please try again.";
+      setWalletError(errorMessage);
+      setIsWalletValidating(false);
+      return false;
+    }
+  };
 
   const handlePaste = async () => {
     try {
       const text = await navigator.clipboard.readText();
       if (text) {
         setWalletAddress(text);
-        setWalletError("");
+        void validateWalletAddressInput(text);
         setIsPasted(true);
         setTimeout(() => setIsPasted(false), 2000);
       }
@@ -1134,6 +1189,11 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
       return;
     }
 
+    if (isDepositMode && !(await validateWalletAddressInput(walletAddress))) {
+      showToast.error("Please enter a valid wallet/account address");
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -2076,16 +2136,30 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
         setIsFirstCardSubmitted(true);
         setForceUpdate((prev) => prev + 1);
 
-        // Extract addresses from response (similar to withdrawal.tsx)
-        if (responseData.withdrawal_address) {
-          setWithdrawalAddress(responseData.withdrawal_address);
-        }
-        if (responseData.payout_address) {
-          setPayoutAddress(responseData.payout_address);
-        }
-        if (responseData.qr_code_url) {
-          setQrCodeUrl(responseData.qr_code_url);
-        }
+        // Extract addresses from response (support nested payload shapes)
+        const nextWithdrawalAddress =
+          responseData?.withdrawal_address ||
+          responseData?.details?.withdrawal_address ||
+          responseData?.data?.withdrawal_address ||
+          "";
+        const nextPayoutAddress =
+          responseData?.payout_address ||
+          responseData?.details?.payout_address ||
+          responseData?.data?.payout_address ||
+          "";
+        const nextQrCodeUrl =
+          responseData?.qr_code_url ||
+          responseData?.details?.qr_code_url ||
+          responseData?.data?.qr_code_url ||
+          (nextWithdrawalAddress
+            ? `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
+                nextWithdrawalAddress
+              )}`
+            : "");
+
+        setWithdrawalAddress(nextWithdrawalAddress);
+        setPayoutAddress(nextPayoutAddress);
+        setQrCodeUrl(nextQrCodeUrl);
 
         showToast.success("Withdrawal transaction submitted successfully!");
       }
@@ -3094,65 +3168,69 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
       )}
 
       {/* Expanded Pages - shown after first card submission */}
-      {selectedPaymentDetail && isFirstCardSubmitted && (
+      {isFirstCardSubmitted && (
         <>
           {/* Payment Details Card */}
-          <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
-            <span className="text-[#7e7e8f] dark:text-[#788099]">2-</span>{" "}
-            {t("rates.paymentDetails", "Payment Details")}
-          </h2>
-          <div className="mt-1 mb-2 w-full flex flex-col gap-3 max-w-4xl mx-auto px-2">
-            <div className="flex-1 dark:bg-[#1D1D23] rounded-2xl border border-[#39394a] dark:border-[#35353E] flex flex-col justify-between p-3 sm:p-5 relative min-h-[120px]">
-              {/* Bank and logo */}
-              <div className="flex items-center justify-between mb-4 gap-2">
-                <span className="text-[#7e7e8f] dark:text-[#788099] text-sm sm:text-base font-semibold flex-shrink-0">
-                  {t("rates.bankLabel", "Bank:")}
-                </span>
-                <div className="flex items-center gap-2 min-w-0">
-                  <img
-                    src={
-                      selectedPaymentDetail.logo ||
-                      selectedPaymentDetail.provider_logo ||
-                      "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
-                    }
-                    alt="Bank Logo"
-                    className="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-contain flex-shrink-0"
-                  />
-                  <span className="text-[#35353e] dark:text-[#788099] text-sm sm:text-base font-semibold truncate">
-                    {selectedPaymentDetail.provider_name || selectedPaymentDetail.payment_provider_name}
-                  </span>
+          {selectedPaymentDetail && (
+            <>
+              <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
+                <span className="text-[#7e7e8f] dark:text-[#788099]">2-</span>{" "}
+                {t("rates.paymentDetails", "Payment Details")}
+              </h2>
+              <div className="mt-1 mb-2 w-full flex flex-col gap-3 max-w-4xl mx-auto px-2">
+                <div className="flex-1 dark:bg-[#1D1D23] rounded-2xl border border-[#39394a] dark:border-[#35353E] flex flex-col justify-between p-3 sm:p-5 relative min-h-[120px]">
+                  {/* Bank and logo */}
+                  <div className="flex items-center justify-between mb-4 gap-2">
+                    <span className="text-[#7e7e8f] dark:text-[#788099] text-sm sm:text-base font-semibold flex-shrink-0">
+                      {t("rates.bankLabel", "Bank:")}
+                    </span>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <img
+                        src={
+                          selectedPaymentDetail.logo ||
+                          selectedPaymentDetail.provider_logo ||
+                          "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
+                        }
+                        alt="Bank Logo"
+                        className="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-contain flex-shrink-0"
+                      />
+                      <span className="text-[#35353e] dark:text-[#788099] text-sm sm:text-base font-semibold truncate">
+                        {selectedPaymentDetail.provider_name || selectedPaymentDetail.payment_provider_name}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="border-t border-dashed border-[#39394a] mb-2"></div>
+                  {/* Account Name */}
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2 gap-1">
+                    <span className="text-[#7e7e8f] dark:text-[#788099] text-sm sm:text-base font-medium flex-shrink-0">
+                      {t("rates.accountNameLabel", "Account Name :")}
+                    </span>
+                    <span className="text-[#35353e] dark:text-[#788099] text-sm sm:text-base font-medium break-all">
+                      {selectedPaymentDetail.payment_details?.[0]?.account_name || selectedPaymentDetail.account_name || "-"}
+                    </span>
+                  </div>
+                  <div className="border-t border-dashed border-[#39394a] mb-2"></div>
+                  {/* Account Number */}
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                    <span className="text-[#7e7e8f] dark:text-[#788099] text-sm sm:text-base font-medium flex-shrink-0">
+                      {t("rates.accountNumberLabel", "Account Number :")}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[#35353e] dark:text-[#788099] text-sm sm:text-base font-medium break-all">
+                        {selectedPaymentDetail.payment_details?.[0]?.account_number || selectedPaymentDetail.account_number || "-"}
+                      </span>
+                      <CopyButton
+                        value={selectedPaymentDetail.payment_details?.[0]?.account_number || selectedPaymentDetail.account_number || ""}
+                        className="text-warning hover:text-[#1D8751] transition-colors p-1 rounded"
+                        showIcon={true}
+                        showInlineMessage={true}
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div className="border-t border-dashed border-[#39394a] mb-2"></div>
-              {/* Account Name */}
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2 gap-1">
-                <span className="text-[#7e7e8f] dark:text-[#788099] text-sm sm:text-base font-medium flex-shrink-0">
-                  {t("rates.accountNameLabel", "Account Name :")}
-                </span>
-                <span className="text-[#35353e] dark:text-[#788099] text-sm sm:text-base font-medium break-all">
-                  {selectedPaymentDetail.payment_details?.[0]?.account_name || selectedPaymentDetail.account_name || "-"}
-                </span>
-              </div>
-              <div className="border-t border-dashed border-[#39394a] mb-2"></div>
-              {/* Account Number */}
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-                <span className="text-[#7e7e8f] dark:text-[#788099] text-sm sm:text-base font-medium flex-shrink-0">
-                  {t("rates.accountNumberLabel", "Account Number :")}
-                </span>
-                <div className="flex items-center gap-2">
-                  <span className="text-[#35353e] dark:text-[#788099] text-sm sm:text-base font-medium break-all">
-                    {selectedPaymentDetail.payment_details?.[0]?.account_number || selectedPaymentDetail.account_number || "-"}
-                  </span>
-                  <CopyButton
-                    value={selectedPaymentDetail.payment_details?.[0]?.account_number || selectedPaymentDetail.account_number || ""}
-                    className="text-warning hover:text-[#1D8751] transition-colors p-1 rounded"
-                    showIcon={true}
-                    showInlineMessage={true}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
+            </>
+          )}
 
           {/* Transaction Code Card - for deposit mode */}
           {isDepositMode && responseData && responseData.deposit_code && (
@@ -3276,7 +3354,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
             className={`flex flex-col dark:bg-[#1D1D23] border-2 ${
               isDepositMode
                 ? "border-[#E2E8F0] dark:border-[#35353E]"
-                : "border-border"
+                : "border-[#E2E8F0] dark:border-[#35353E]"
             } rounded-2xl p-5 shadow-lg w-full max-w-4xl mx-auto text-[#35353e] dark:text-[#788099] mb-6`}
           >
             {isDepositMode ? (
@@ -3291,8 +3369,9 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                     type="text"
                     value={walletAddress}
                     onChange={(e) => {
-                      setWalletAddress(e.target.value);
-                      setWalletError("");
+                      const value = e.target.value;
+                      setWalletAddress(value);
+                      void validateWalletAddressInput(value);
                     }}
                     placeholder={t("rates.enterWalletAddressPlaceholder", "Enter your wallet address")}
                     className="flex-1 bg-transparent text-[#35353e] dark:text-[#788099] placeholder-[#7e7e8f] focus:outline-none min-w-0"
@@ -3308,6 +3387,9 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                     </span>
                   </button>
                 </div>
+                {walletAddress.trim() && isWalletValidating && (
+                  <p className="text-[#1D8751] text-sm mb-2">Validating address...</p>
+                )}
                 {walletError && (
                   <p className="text-red-500 text-sm mb-4">{walletError}</p>
                 )}
@@ -3347,35 +3429,72 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                 </div>
               </>
             ) : (
-              // Withdrawal Mode: Only transaction details and proceed button
-              <div className="mt-6 p-1 bg-[#1D8751] bg-opacity-10 border border-[#1D8751] rounded-xl">
-                <button
-                  onClick={handleProceedToExchanging}
-                  disabled={isSubmitting || !isVerified}
-                  className={`w-full font-semibold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 ${(isSubmitting || !isVerified)
-                    ? "bg-gray-500 cursor-not-allowed text-white"
-                    : "bg-[#1D8751] hover:bg-[#166b3f] text-white"
-                    }`}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                      <span>{t("rates.processing", "Processing...")}</span>
-                    </>
-                  ) : (
-                    <>
-                      <img
-                        src="https://res.cloudinary.com/pitz/image/upload/v1752429993/Express_1_ggdxth.png"
-                        alt=""
-                      />
-                      <img
-                        className="mt-2"
-                        src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
-                        alt=""
-                      />
-                    </>
-                  )}
-                </button>
+              // Withdrawal Mode: Show destination address + QR after submission
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-sm sm:text-base text-[#35353e] dark:text-[#788099] font-semibold mb-2">
+                    USDT Wallet Address
+                  </h3>
+                  <div className="border border-[#1D8751] rounded-xl p-3 sm:p-4">
+                    {withdrawalAddress ? (
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-[#35353e] dark:text-[#788099] text-xs sm:text-sm font-mono break-all">
+                          {withdrawalAddress}
+                        </span>
+                        <CopyButton
+                          value={withdrawalAddress}
+                          className="text-warning hover:text-[#1D8751] transition-colors p-1 rounded"
+                          showIcon={true}
+                          showInlineMessage={true}
+                        />
+                      </div>
+                    ) : (
+                      <p className="text-[#1D8751] text-sm">
+                        Transaction submitted successfully. Waiting for address...
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="border border-[#A2A4A9FF] dark:border-[#35353E] rounded-xl p-4 flex justify-center">
+                    {qrCodeUrl ? (
+                      <img src={qrCodeUrl} alt="QR Code" className="w-44 h-44 sm:w-48 sm:h-48" />
+                    ) : (
+                      <p className="text-[#7e7e8f] dark:text-[#788099] text-sm">QR Code not available</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="mt-2 p-1 bg-[#1D8751] bg-opacity-10 border border-[#1D8751] rounded-xl">
+                  <button
+                    onClick={handleProceedToExchanging}
+                    disabled={isSubmitting || !isVerified}
+                    className={`w-full font-semibold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 ${(isSubmitting || !isVerified)
+                      ? "bg-gray-500 cursor-not-allowed text-white"
+                      : "bg-[#1D8751] hover:bg-[#166b3f] text-white"
+                      }`}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                        <span>{t("rates.processing", "Processing...")}</span>
+                      </>
+                    ) : (
+                      <>
+                        <img
+                          src="https://res.cloudinary.com/pitz/image/upload/v1752429993/Express_1_ggdxth.png"
+                          alt=""
+                        />
+                        <img
+                          className="mt-2"
+                          src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
+                          alt=""
+                        />
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             )}
           </div>

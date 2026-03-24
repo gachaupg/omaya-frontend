@@ -694,7 +694,7 @@ export default function DepositForm({
     if (initialState?.amountValue) {
       return Math.max(0, initialState.amountValue - 2);
     }
-    return 98;
+    return 0;
   });
   const [getAmountInput, setGetAmountInput] = useState(() => {
     if (initialState?.receiveAmountInput) {
@@ -706,7 +706,7 @@ export default function DepositForm({
     if (initialState?.amountValue) {
       return Math.max(0, initialState.amountValue - 2).toString();
     }
-    return "98";
+    return "";
   });
 
   // Restore amounts when initialState arrives async (e.g. prefill parsed after first render from login redirect)
@@ -801,8 +801,8 @@ export default function DepositForm({
   } = useValidateAddress({
     currency: currentCurrency,
     network: currentNetwork,
-    debounceMs: 500,
-    minLength: 10,
+    debounceMs: 0,
+    minLength: 1,
     validateEmpty: false,
   });
 
@@ -2534,21 +2534,39 @@ export default function DepositForm({
   const [termsAccepted, setTermsAccepted] = useState(!!initialState?.termsAccepted);
   const [expandedTerms, setExpandedTerms] = useState(false);
 
+  const hasMoreThanFiveDecimals = (value: string) => {
+    if (!value.includes(".")) return false;
+    const decimalPart = value.split(".")[1];
+    return !!decimalPart && decimalPart.length > 5;
+  };
+  const normalizeToFiveDecimals = (value: string) => {
+    if (!value.includes(".")) return value;
+    const [whole, decimal = ""] = value.split(".");
+    if (decimal.length <= 5) return value;
+    return `${whole}.${decimal.slice(0, 5)}`;
+  };
+  const exceedsDecimalPrecisionLimit =
+    hasMoreThanFiveDecimals(payAmountInput) ||
+    hasMoreThanFiveDecimals(getAmountInput);
+
   const isProceedDisabled =
     isSubmitting ||
     !walletAddress.trim() ||
     !!walletError ||
     !termsAccepted ||
+    exceedsDecimalPrecisionLimit ||
     payAmount >= 15000 ||
     getAmount >= 15000;
 
   // Save form state before navigating to legal pages so back button restores it
   const handleBeforeLegalNavigate = useCallback(() => {
     setExpressLegalReturnState({
+      mode: "deposit",
       payAmount,
       payAmountInput,
       getAmount,
       getAmountInput,
+      scrollY: typeof window !== "undefined" ? window.scrollY : 0,
       payBank,
       selectedPaymentDetail,
       selectedAsset,
@@ -2618,6 +2636,10 @@ export default function DepositForm({
   };
 
   const handleFirstCardSubmit = async () => {
+    if (exceedsDecimalPrecisionLimit) {
+      showToast.error("Number cannot have more than 5 decimal places.");
+      return;
+    }
     if (validateFirstCard()) {
       setIsSubmitting(true);
 
@@ -2908,6 +2930,10 @@ export default function DepositForm({
    * The second response should be used for the final transaction data.
    */
   const handleProceedToNext = async () => {
+    if (exceedsDecimalPrecisionLimit) {
+      showToast.error("Number cannot have more than 5 decimal places.");
+      return;
+    }
     if (!apiResponse?.transaction_id) {
       showToast.error("No transaction ID available");
       return;
@@ -3499,19 +3525,23 @@ export default function DepositForm({
 
                     if (value === payAmountInput) return;
 
-                    if (value === "" || /^\d*\.?\d*$/.test(value)) {
-                      if (value.includes(".")) {
-                        const decimalPart = value.split(".")[1];
+                    const normalizedValue = normalizeToFiveDecimals(value);
+                    if (normalizedValue === "" || /^\d*\.?\d*$/.test(normalizedValue)) {
+                      if (value !== normalizedValue) {
+                        setApiValidationError("Number cannot have more than 5 decimal places.");
+                      }
+                      if (normalizedValue.includes(".")) {
+                        const decimalPart = normalizedValue.split(".")[1];
                         if (decimalPart && decimalPart.length > 5) {
                           setApiValidationError("Number cannot have more than 5 decimal places.");
                           return;
                         }
                       }
 
-                      const newAmount = parseFloat(value) || 0;
+                      const newAmount = parseFloat(normalizedValue) || 0;
 
-                      if (newAmount !== payAmount || value !== payAmountInput) {
-                        setPayAmountInput(value);
+                      if (newAmount !== payAmount || normalizedValue !== payAmountInput) {
+                        setPayAmountInput(normalizedValue);
                         setPayAmount(newAmount);
                         setIsCalculatingFromPay(true);
                         setApiValidationError(null);
@@ -3829,10 +3859,16 @@ export default function DepositForm({
                     }
 
                     // Only allow numbers and decimals (including 0.006 format)
-                    if (value === "" || /^\d*\.?\d*$/.test(value)) {
+                    const normalizedValue = normalizeToFiveDecimals(value);
+                    if (normalizedValue === "" || /^\d*\.?\d*$/.test(normalizedValue)) {
+                      if (value !== normalizedValue) {
+                        setApiValidationError(
+                          "Number cannot have more than 5 decimal places."
+                        );
+                      }
                       // Check for decimal places validation
-                      if (value.includes(".")) {
-                        const decimalPart = value.split(".")[1];
+                      if (normalizedValue.includes(".")) {
+                        const decimalPart = normalizedValue.split(".")[1];
                         if (decimalPart && decimalPart.length > 5) {
                           setApiValidationError(
                             "Number cannot have more than 5 decimal places."
@@ -3841,11 +3877,11 @@ export default function DepositForm({
                         }
                       }
 
-                      const newAmount = parseFloat(value) || 0;
+                      const newAmount = parseFloat(normalizedValue) || 0;
 
                       // Only update and calculate if the numeric value actually changed
-                      if (newAmount !== getAmount || value !== getAmountInput) {
-                        setGetAmountInput(value); // Store the string value for display
+                      if (newAmount !== getAmount || normalizedValue !== getAmountInput) {
+                        setGetAmountInput(normalizedValue); // Store the string value for display
                         setGetAmount(newAmount);
                         setIsCalculatingFromPay(false);
 
@@ -3914,6 +3950,14 @@ export default function DepositForm({
                   !isForexAsset(selectedAsset) && (
                     <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                       <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#1D8751]"></div>
+                    </div>
+                  )}
+                {(isCalculating || isCalculatingReceive || estimateLoading) &&
+                  isCalculatingFromPay &&
+                  selectedAsset &&
+                  !isForexAsset(selectedAsset) && (
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#1D8751]"></div>
                     </div>
                   )}
                 {receiveAmountError && (
@@ -4176,12 +4220,13 @@ export default function DepositForm({
                   : "bg-[#1D8751] hover:bg-[#166b3e]"
                 }`}
               disabled={isHomePage
-                ? payAmount >= 15000 || getAmount >= 15000
+                ? payAmount >= 15000 || getAmount >= 15000 || exceedsDecimalPrecisionLimit
                 : isSubmitting ||
                 !selectedAsset ||
                 !payBank ||
                 payAmount >= 15000 ||
                 getAmount >= 15000 ||
+                exceedsDecimalPrecisionLimit ||
                 (selectedAsset &&
                   !isSimpleCalculationAsset(selectedAsset) &&
                   !isForexAsset(selectedAsset) &&
@@ -4189,6 +4234,11 @@ export default function DepositForm({
               }
               onClick={() => {
                 // Prevent submission if amount is >= 15000
+                if (exceedsDecimalPrecisionLimit) {
+                  showToast.error("Number cannot have more than 5 decimal places.");
+                  return;
+                }
+
                 if (payAmount >= 15000 || getAmount >= 15000) {
                   showToast.error("Amount cannot exceed $15,000. Please contact OTC Desk for larger amounts.");
                   return;

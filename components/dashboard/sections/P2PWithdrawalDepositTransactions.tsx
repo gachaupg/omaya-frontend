@@ -51,6 +51,13 @@ const formatTransactionId = (id: string | null | undefined): string => {
   return `${id.slice(0, 5)}...${id.slice(-5)}`;
 };
 
+const formatAmount = (amount: string | number | undefined | null): string => {
+  if (amount === undefined || amount === null || amount === "") return "0.0000";
+  const numAmount = typeof amount === "string" ? parseFloat(amount) : amount;
+  if (isNaN(numAmount)) return "0.0000";
+  return numAmount.toFixed(4);
+};
+
 const P2PWithdrawalDepositTransactions = ({ filterByType = "all" }: P2PWithdrawalDepositTransactionsProps) => {
   const dispatch = useDispatch<AppDispatch>();
   const { t } = useDashboardI18n();
@@ -329,7 +336,7 @@ const P2PWithdrawalDepositTransactions = ({ filterByType = "all" }: P2PWithdrawa
                       : "text-red-500 dark:text-red-400"
                       }`}
                   >
-                    {tx.amount || tx.total_amount || "0.00"}
+                    {formatAmount(tx.amount || tx.total_amount)}
                   </div>
                 </div>
                 <div>
@@ -424,7 +431,7 @@ const P2PWithdrawalDepositTransactions = ({ filterByType = "all" }: P2PWithdrawa
                       : "text-red-500 dark:text-red-400"
                       }`}
                   >
-                    {tx.amount || tx.total_amount || "0.00"}
+                    {formatAmount(tx.amount || tx.total_amount)}
                   </td>
 
                   {/* Status */}

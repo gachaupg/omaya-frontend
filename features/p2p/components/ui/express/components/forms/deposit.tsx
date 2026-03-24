@@ -172,7 +172,7 @@ export default function DepositForm({
     isValidating: isAddressValidating,
     validate: validateAddress,
     reset: resetAddressValidation,
-  } = useValidateAddress({ currency: currentCurrency, network: currentNetwork, debounceMs: 500 });
+  } = useValidateAddress({ currency: currentCurrency, network: currentNetwork, debounceMs: 0, minLength: 1 });
 
   useEffect(() => {
     if (walletAddress.trim() && currentCurrency) {
