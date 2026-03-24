@@ -12,6 +12,9 @@ import {
 import { getTradeMessages, postTradeMessage, GroupedMessage } from "@/features/p2p/api";
 import { MdAccountCircle } from "react-icons/md";
 import { useTradeMessagesWebSocket } from "@/features/p2p/hooks/useTradeMessagesWebSocket";
+import P2PTradeCanceledModal from "./P2PTradeCanceledModal";
+import { useTheme } from "@/context/theme";
+import { P2P_TRADE_CANCELED_EVENT } from "@/features/p2p/constants/tradeSocketEvents";
 import { Copy, RefreshCw } from "lucide-react";
 
 interface MessageImage {
@@ -172,6 +175,11 @@ const ChatBox: React.FC<{
 
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [copiedChatId, setCopiedChatId] = useState(false);
+  const [tradeCanceledModal, setTradeCanceledModal] = useState<{
+    open: boolean;
+    message?: string;
+  }>({ open: false });
+  const { isDark } = useTheme();
 
   const handleCopyChatId = () => {
     if (tradeId) {
@@ -192,7 +200,30 @@ const ChatBox: React.FC<{
   const { isConnected: wsConnected } = useTradeMessagesWebSocket({
     tradeId,
     enabled: isAuthenticated && messageType === 'p2p', // Only enable WebSocket for P2P messages
+    onTradeCanceled: ({ message: cancelMsg }) => {
+      setTradeCanceledModal((prev) =>
+        prev.open ? prev : { open: true, message: cancelMsg }
+      );
+    },
   });
+
+  useEffect(() => {
+    setTradeCanceledModal({ open: false, message: undefined });
+  }, [tradeId]);
+
+  useEffect(() => {
+    if (!tradeId || messageType !== "p2p") return;
+    const onCanceled = (e: Event) => {
+      const d = (e as CustomEvent<{ tradeId?: string; message?: string }>).detail;
+      if (d?.tradeId == null || String(d.tradeId) !== String(tradeId)) return;
+      console.log("[P2P ChatBox] P2P_TRADE_CANCELED_EVENT for this trade", d);
+      setTradeCanceledModal((prev) =>
+        prev.open ? prev : { open: true, message: d.message }
+      );
+    };
+    window.addEventListener(P2P_TRADE_CANCELED_EVENT, onCanceled);
+    return () => window.removeEventListener(P2P_TRADE_CANCELED_EVENT, onCanceled);
+  }, [tradeId, messageType]);
 
   // Ref for auto-scroll
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
@@ -566,6 +597,7 @@ const ChatBox: React.FC<{
   };
 
   return (
+    <>
     <div>
       <div className="flex items-center justify-between gap-2 text-xs mb-2">
         <span className="truncate">Chat with {otherPersonData.displayName}</span>
@@ -1016,6 +1048,13 @@ const ChatBox: React.FC<{
         )}
       </div>
     </div>
+    <P2PTradeCanceledModal
+      isOpen={tradeCanceledModal.open}
+      message={tradeCanceledModal.message}
+      onClose={() => setTradeCanceledModal({ open: false })}
+      isDark={isDark}
+    />
+    </>
   );
 };
 

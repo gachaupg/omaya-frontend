@@ -16,6 +16,8 @@ import type { WebSocketMessage } from "../services/tradeStatusWebSocket";
 import { cookieUtils } from "@/lib/utils/cookieUtils";
 
 import { logger } from '@/lib/utils/logger';
+import { normalizeP2PTradeStatus } from "../utils/normalizeP2PTradeStatus";
+import { P2P_TRADE_CANCELED_EVENT } from "../constants/tradeSocketEvents";
 
 interface UseTradeStatusWebSocketOptions {
   tradeId: string;
@@ -28,6 +30,7 @@ export const useTradeStatusWebSocket = (options: UseTradeStatusWebSocketOptions)
   const dispatch = useDispatch<AppDispatch>();
   const wsRef = useRef(getTradeStatusWebSocket(tradeId));
   const mountedRef = useRef(true);
+  const cancelEventFiredRef = useRef(false);
   // Keep latest callback in a ref so effect only depends on tradeId/enabled (avoids reconnect loops when callback reference changes)
   const onStatusUpdateRef = useRef(onStatusUpdate);
   onStatusUpdateRef.current = onStatusUpdate;
@@ -60,12 +63,17 @@ export const useTradeStatusWebSocket = (options: UseTradeStatusWebSocketOptions)
     const token = getAccessToken();
     if (!token || !token.includes('.')) return;
 
+    cancelEventFiredRef.current = false;
+
     const ws = wsRef.current;
 
     const unsubscribeMessage = ws.onMessage((message: WebSocketMessage) => {
       if (!mountedRef.current) return;
 
       try {
+        const msgAny = message as Record<string, unknown>;
+        console.log("[P2P trade-status WS] handler tradeId=%s payload=", tradeId, msgAny);
+
         switch (message.type) {
           case "connection_established":
             logger.debug('p2p', "✅ Trade status connection established");
@@ -75,14 +83,48 @@ export const useTradeStatusWebSocket = (options: UseTradeStatusWebSocketOptions)
           case "trade_update": {
             const data = message.data || message;
             if (data && data.status) {
+              const normalized = normalizeP2PTradeStatus(String(data.status));
               const tradeStatus: TradeStatus = {
                 id: data.id || data.trade_id || tradeId,
-                status: data.status,
+                status: (normalized ?? data.status) as TradeStatus["status"],
                 amount: data.amount,
                 buyer: data.buyer || data.buyer_id,
                 seller: data.seller || data.seller_id,
                 ...data,
               };
+              const payloadTradeId = (data as { trade_id?: string; tradeId?: string }).trade_id
+                ?? (data as { tradeId?: string }).tradeId;
+              const tradeIdsAlign =
+                payloadTradeId == null ||
+                String(payloadTradeId).trim() === String(tradeId).trim();
+
+              if (
+                normalized === "cancelled" &&
+                !cancelEventFiredRef.current &&
+                tradeIdsAlign &&
+                tradeId?.trim()
+              ) {
+                cancelEventFiredRef.current = true;
+                const detailMsg =
+                  typeof (data as { message?: string }).message === "string"
+                    ? (data as { message: string }).message
+                    : undefined;
+                console.log("[P2P trade-status WS] trade canceled → event", {
+                  tradeId,
+                  detailMsg,
+                });
+                if (typeof window !== "undefined") {
+                  window.dispatchEvent(
+                    new CustomEvent(P2P_TRADE_CANCELED_EVENT, {
+                      detail: {
+                        tradeId,
+                        message: detailMsg,
+                        source: "trade-status-ws",
+                      },
+                    })
+                  );
+                }
+              }
               const cb = onStatusUpdateRef.current;
               if (cb) cb(tradeStatus);
               else console.warn("⚠️ onStatusUpdate callback not provided!");
