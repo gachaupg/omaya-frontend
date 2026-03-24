@@ -40,7 +40,19 @@ const shortenLongName = (name: string | undefined | null, maxLength = 25): strin
   return first === last ? first : `${first} ${last}`;
 };
 
-
+/** Rate label without trailing currency (e.g. "1.00 USD" → "1.00"). */
+const formatRateWithoutCurrency = (raw: string | undefined | null): string => {
+  if (raw == null || raw === "") return "—";
+  const s = String(raw).trim().replace(/,/g, "");
+  const n = parseFloat(s);
+  if (Number.isFinite(n)) return n.toFixed(2);
+  const noSuffix = s.replace(
+    /\s*(USD|USDT|KES|EUR|GBP|UGX|TZS|NGN|ZAR|CNY)\s*$/i,
+    ""
+  ).trim();
+  const n2 = parseFloat(noSuffix);
+  return Number.isFinite(n2) ? n2.toFixed(2) : noSuffix || "—";
+};
 
 const TradePreview: React.FC<TradePreviewProps> = ({
   advertiserData,
@@ -666,7 +678,9 @@ const TradePreview: React.FC<TradePreviewProps> = ({
             {/* Commission */}
             <div className="text-left text-base sm:text-lg font-semibold text-gray-900 dark:text-white mt-0 lg:mt-4">
               Rate:{" "}
-              <span className="text-[#1D8751]">{advertiserData.commission}</span>
+              <span className="text-[#1D8751]">
+                {formatRateWithoutCurrency(advertiserData.commission)}
+              </span>
             </div>
             {/* For Sell: I Want to Sell (USDT) first, I Want to Receive (USD) second. For Buy: I Want to Send (USD) first, I Want to Receive (USDT) second. */}
             {tradeType === "sell" ? (
