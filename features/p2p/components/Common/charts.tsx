@@ -97,7 +97,12 @@ const Charts: React.FC<ChartProps> = ({
 
   /* ------------------- Build chart data -------------------- */
   useEffect(() => {
-    const src = data?.length ? data : trades?.results || [];
+    const raw = data?.length ? data : trades?.results || [];
+    // Graph only completed trades; exclude cancelled, pending, etc.
+    const src = raw.filter((item: any) => {
+      const s = String(item?.status ?? "").toLowerCase().trim();
+      return s === "completed";
+    });
     if (!src.length) {
       setChartData([]);
       return;
