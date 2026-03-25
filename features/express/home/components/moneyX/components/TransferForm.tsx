@@ -765,9 +765,10 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
           toProviderBase: toName,
           fromPaymentDetail: selectedFromPaymentDetail,
           toPaymentDetail: selectedToPaymentDetail,
-          // Keep terms block open and accepted after returning
+          // Keep terms block open after returning from legal pages
           expandedTerms: true,
-          isTermsAccepted: true,
+          // Preserve current checkbox state across legal-page navigation.
+          isTermsAccepted,
         })
       );
       sessionStorage.setItem(RETURNING_FROM_LEGAL_KEY, "1");
@@ -781,6 +782,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
     getAmountInput,
     bankAccountAddress,
     isAddressConfirmed,
+    isTermsAccepted,
     fromPaymentMethod,
     toPaymentMethod,
     selectedFromPaymentDetail,
@@ -819,12 +821,13 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
         setIsAddressConfirmed(Boolean(state.isAddressConfirmed));
       }
 
-      // Ensure user returns to expanded step with terms visible and checked.
+      // Ensure user returns to expanded step with terms visible.
       setIsFirstCardSubmitted(
         state.isFirstCardSubmitted === undefined ? true : Boolean(state.isFirstCardSubmitted)
       );
       hasRestoredFromLegalRef.current = true;
       setExpandedTerms(Boolean(state.expandedTerms));
+      // Restore exactly what user had before navigating.
       setIsTermsAccepted(Boolean(state.isTermsAccepted));
 
       if (state.fromPaymentMethod || state.toPaymentMethod) {
@@ -1462,16 +1465,21 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
               checked={isTermsAccepted}
               onChange={(e) => setIsTermsAccepted(e.target.checked)}
             />
-            <label htmlFor="moneyx-terms-accept" className={`text-sm cursor-pointer ${isDark ? "text-[#788099]" : "text-gray-700"}`}>
-              I agree to the{" "}
+            <div className="flex items-center gap-1 whitespace-nowrap">
+              <label
+                htmlFor="moneyx-terms-accept"
+                className={`text-sm cursor-pointer ${isDark ? "text-[#788099]" : "text-gray-700"}`}
+              >
+                I agree to the
+              </label>
               <Link
                 href="/legal/terms-of-service"
                 onClick={handleBeforeLegalNavigate}
-                className="text-[#1D8751] cursor-pointer hover:underline"
+                className="text-[#1D8751] text-sm cursor-pointer hover:underline"
               >
                 Terms of Use
               </Link>
-            </label>
+            </div>
           </div>
 
           {/* Warning Message */}
