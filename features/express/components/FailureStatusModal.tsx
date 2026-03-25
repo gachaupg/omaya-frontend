@@ -20,7 +20,7 @@ const DEFAULT_BODY =
 const getStatusLabel = (status: string): string => {
   const labels: Record<string, string> = {
     failed: 'Transaction Failed',
-    rejected: 'Transaction Rejected',
+    rejected: 'Your has been Transaction Rejected',
     stopped: 'Transaction Stopped',
   };
   return labels[status?.toLowerCase()] || `Transaction ${status}`;
