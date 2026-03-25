@@ -51,6 +51,7 @@ import MoneyXRates from "./MoneyXRates";
 import { ClipboardPaste } from "lucide-react";
 import CopyButton from "@/components/ui/CopyButton";
 import { API_CONFIG } from "@/lib/appConfig";
+import { useValidateAddress } from "@/hooks/useValidateAddress";
 
 import { logger } from '@/lib/utils/logger';
 import { useChangeNowAssets } from "@/features/express/home/hooks/useChangeNowAssets";
@@ -70,14 +71,23 @@ interface UserPaymentDetail {
 
 // Helper function to get network value from asset (handles both Asset and SupportedAsset types)
 const getAssetNetwork = (asset: any): string => {
+  if (!asset) return "";
+
+  // Prefer canonical ids/types from selected asset first.
+  if (asset.network_id) return String(asset.network_id);
+  if (asset.network_type) return String(asset.network_type);
+
   // For SupportedAsset (swap assets) - has network property
   if (asset.network) {
-    return asset.network;
+    return String(asset.network);
   }
 
   // For Asset (exchange assets) - has networks array
   if (asset.networks && asset.networks.length > 0) {
-    return asset.networks[0].network_type || asset.networks[0].network_id || "";
+    return (
+      String(asset.networks[0].network_id || "") ||
+      String(asset.networks[0].network_type || "")
+    );
   }
 
   return "";
@@ -173,7 +183,6 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
   const [walletError, setWalletError] = useState<string>("");
   const [isWalletValidating, setIsWalletValidating] = useState(false);
   const [isPasted, setIsPasted] = useState(false);
-  const walletValidationRequestIdRef = useRef(0);
 
   const getValidationCurrency = (asset: any): string => {
     const ticker = String(asset?.ticker || asset?.symbol || asset?.name || "").trim();
@@ -181,58 +190,80 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
     return ticker === "USDT Tether" ? "usdt" : ticker.toLowerCase();
   };
 
-  const validateWalletAddressInput = async (address: string) => {
-    const value = address.trim();
-    const requestId = ++walletValidationRequestIdRef.current;
-    if (!value) {
+  const validationCurrency = selectedAsset ? getValidationCurrency(selectedAsset) : undefined;
+  const validationNetwork = selectedAsset
+    ? String(getAssetNetwork(selectedAsset) || "bsc").toLowerCase()
+    : undefined;
+
+  // Shared address validation (same API + messages as other pages).
+  const {
+    result: addressValidationResult,
+    isValidating: isAddressValidating,
+    error: addressValidationError,
+    validate: validateAddress,
+    reset: resetAddressValidation,
+  } = useValidateAddress({
+    currency: validationCurrency,
+    network: validationNetwork,
+    debounceMs: 500,
+    minLength: 0, // Let API handle real validation
+    validateEmpty: false,
+  });
+
+  // Mirror hook state into existing local UI state.
+  useEffect(() => {
+    setIsWalletValidating(isAddressValidating);
+  }, [isAddressValidating]);
+
+  useEffect(() => {
+    const trimmed = walletAddress.trim();
+    if (!trimmed) {
       setWalletError("");
-      setIsWalletValidating(false);
-      return true;
+      return;
     }
-    setIsWalletValidating(true);
-    try {
-      const currency = getValidationCurrency(selectedAsset);
-      const network = String(getAssetNetwork(selectedAsset) || "bsc").toLowerCase();
-      const endpoint = API_CONFIG.SWAP.VALIDATE_ADDRESS;
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          currency,
-          address: value,
-          network,
-        }),
-      });
-      const data = await response.json().catch(() => ({} as any));
-      if (requestId !== walletValidationRequestIdRef.current) {
-        return false;
-      }
-      const isValid = data?.valid === true;
+
+    if (isAddressValidating) return;
+
+    if (addressValidationResult) {
       setWalletError(
-        isValid ? "" : data?.message || "Invalid wallet/account address"
+        addressValidationResult.isValid
+          ? ""
+          : addressValidationResult.message ||
+              addressValidationResult.error ||
+              "Invalid wallet/account address"
       );
-      setIsWalletValidating(false);
-      return isValid;
-    } catch (error: any) {
-      if (requestId !== walletValidationRequestIdRef.current) {
-        return false;
-      }
-      const errorMessage =
-        error?.response?.data?.message ||
-        "Unable to validate address. Please try again.";
-      setWalletError(errorMessage);
-      setIsWalletValidating(false);
-      return false;
+    } else if (addressValidationError) {
+      setWalletError(addressValidationError);
     }
-  };
+  }, [
+    addressValidationResult,
+    addressValidationError,
+    isAddressValidating,
+    walletAddress,
+  ]);
+
+  // Reset + re-validate when asset/network changes.
+  useEffect(() => {
+    const trimmed = walletAddress.trim();
+    if (!trimmed) return;
+    if (!validationCurrency) return;
+    resetAddressValidation();
+    void validateAddress(trimmed, validationCurrency, validationNetwork);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [validationCurrency, validationNetwork]);
 
   const handlePaste = async () => {
     try {
       const text = await navigator.clipboard.readText();
       if (text) {
         setWalletAddress(text);
-        void validateWalletAddressInput(text);
+        const trimmed = text.trim();
+        if (trimmed && validationCurrency) {
+          void validateAddress(trimmed, validationCurrency, validationNetwork);
+        } else {
+          setWalletError("");
+          resetAddressValidation();
+        }
         setIsPasted(true);
         setTimeout(() => setIsPasted(false), 2000);
       }
@@ -1189,9 +1220,20 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
       return;
     }
 
-    if (isDepositMode && !(await validateWalletAddressInput(walletAddress))) {
-      showToast.error("Please enter a valid wallet/account address");
-      return;
+    if (isDepositMode) {
+      const trimmed = walletAddress.trim();
+      if (!trimmed) {
+        showToast.error("Please enter a valid wallet/account address");
+        return;
+      }
+      if (isWalletValidating) {
+        showToast.error("Validating address...");
+        return;
+      }
+      if (walletError) {
+        showToast.error(walletError);
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -3371,7 +3413,13 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                     onChange={(e) => {
                       const value = e.target.value;
                       setWalletAddress(value);
-                      void validateWalletAddressInput(value);
+                      const trimmed = value.trim();
+                      if (trimmed && validationCurrency) {
+                        void validateAddress(trimmed, validationCurrency, validationNetwork);
+                      } else {
+                        setWalletError("");
+                        resetAddressValidation();
+                      }
                     }}
                     placeholder={t("rates.enterWalletAddressPlaceholder", "Enter your wallet address")}
                     className="flex-1 bg-transparent text-[#35353e] dark:text-[#788099] placeholder-[#7e7e8f] focus:outline-none min-w-0"
@@ -3390,6 +3438,9 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                 {walletAddress.trim() && isWalletValidating && (
                   <p className="text-[#1D8751] text-sm mb-2">Validating address...</p>
                 )}
+                {walletAddress.trim() && !isWalletValidating && !walletError && (
+                  <p className="text-[#1D8751] text-sm mb-2">Wallet address is valid.</p>
+                )}
                 {walletError && (
                   <p className="text-red-500 text-sm mb-4">{walletError}</p>
                 )}
@@ -3403,7 +3454,10 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                   <button
                     onClick={handleProceedToExchanging}
                     disabled={
-                      isSubmitting || !walletAddress.trim() || !!walletError
+                      isSubmitting ||
+                      !walletAddress.trim() ||
+                      !!walletError ||
+                      isWalletValidating
                     }
                     className={`flex-1 font-semibold py-2 sm:py-2 px-3 sm:px-4 rounded-lg transition-colors flex items-center justify-center text-sm sm:text-base ${isSubmitting || !walletAddress.trim() || !!walletError
                       ? "bg-gray-500 cursor-not-allowed text-white"

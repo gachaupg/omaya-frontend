@@ -630,8 +630,13 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
 
           // Show failure modal for failed, rejected, or stopped statuses
           if (status && ["failed", "rejected", "stopped"].includes(status)) {
+            // Some backends put the rejection payload directly under `data.data`,
+            // so try both wrapper and inner payload shapes.
             let failureMessage =
-              resolveExpressTransactionFailureMessage(data) ?? message;
+              resolveExpressTransactionFailureMessage(data) ??
+              resolveExpressTransactionFailureMessage((data as any)?.data) ??
+              resolveExpressTransactionFailureMessage({ data: (data as any)?.data }) ??
+              message;
             if (
               !failureMessage &&
               status === "rejected" &&

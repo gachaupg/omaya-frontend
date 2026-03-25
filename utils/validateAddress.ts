@@ -44,14 +44,18 @@ function normalizeNetwork(network: string | undefined | null): string {
   // Map common network names to standard format
   const networkMap: { [key: string]: string } = {
     "bsc": "bsc",
+    "bep20": "bsc",
     "binance smart chain": "bsc",
     "binance": "bsc",
     "eth": "eth",
+    "erc20": "eth",
     "ethereum": "eth",
     "polygon": "polygon",
+    "polygon pos": "polygon",
     "matic": "polygon",
     "polygon network": "polygon",
     "trx": "trx",
+    "trc20": "trx",
     "tron": "trx",
     "tron network": "trx",
     "arbitrum": "arbitrum",

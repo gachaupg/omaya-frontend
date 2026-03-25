@@ -627,7 +627,7 @@ export default function WithdrawalForm({
       "[data-asset-card='true']"
     ) as HTMLElement | null;
     const cardRect = cardElement?.getBoundingClientRect();
-    setAssetDropdownPosition({
+    const next = {
       top: rect.bottom + window.scrollY,
       left: rect.left + window.scrollX,
       width: rect.width,
@@ -638,6 +638,16 @@ export default function WithdrawalForm({
         ? cardRect.top + window.scrollY
         : rect.top + window.scrollY,
       cardWidth: cardRect ? cardRect.width : rect.width,
+    };
+    setAssetDropdownPosition((prev) => {
+      const unchanged =
+        Math.abs(prev.top - next.top) < 0.5 &&
+        Math.abs(prev.left - next.left) < 0.5 &&
+        Math.abs(prev.width - next.width) < 0.5 &&
+        Math.abs(prev.cardLeft - next.cardLeft) < 0.5 &&
+        Math.abs(prev.cardTop - next.cardTop) < 0.5 &&
+        Math.abs(prev.cardWidth - next.cardWidth) < 0.5;
+      return unchanged ? prev : next;
     });
   }, []);
 
@@ -651,7 +661,17 @@ export default function WithdrawalForm({
     }
 
     updateAssetDropdownPosition();
-    const handleReposition = () => updateAssetDropdownPosition();
+    const handleReposition = (event: Event) => {
+      const target = event.target;
+      if (
+        event.type === "scroll" &&
+        target instanceof Node &&
+        assetDropdownContentRef.current?.contains(target)
+      ) {
+        return;
+      }
+      updateAssetDropdownPosition();
+    };
 
     window.addEventListener("resize", handleReposition);
     window.addEventListener("scroll", handleReposition, true);
@@ -1334,6 +1354,13 @@ export default function WithdrawalForm({
         assetDropdownContentRef.current &&
         target &&
         assetDropdownContentRef.current.contains(target)
+      ) {
+        return;
+      }
+      if (
+        assetDropdownRef.current &&
+        target &&
+        assetDropdownRef.current.contains(target)
       ) {
         return;
       }

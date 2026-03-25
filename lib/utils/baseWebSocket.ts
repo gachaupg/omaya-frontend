@@ -345,12 +345,23 @@ export abstract class BaseWebSocket<TParams = any> {
     this.stopPingInterval();
 
     if (this.ws) {
-      // Close with normal closure code
-      if (
-        this.ws.readyState === WebSocket.OPEN ||
-        this.ws.readyState === WebSocket.CONNECTING
-      ) {
-        this.ws.close(1000, "Client disconnect");
+      const ws = this.ws;
+      // In React StrictMode (dev), effects mount/unmount quickly.
+      // Closing while CONNECTING triggers noisy browser warnings.
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.close(1000, "Client disconnect");
+      } else if (ws.readyState === WebSocket.CONNECTING) {
+        // Defer close until open to avoid "closed before established" warning.
+        ws.onopen = () => {
+          try {
+            ws.close(1000, "Client disconnect");
+          } catch {
+            // ignore
+          }
+        };
+        ws.onmessage = null;
+        ws.onerror = null;
+        ws.onclose = null;
       }
       this.ws = null;
     }

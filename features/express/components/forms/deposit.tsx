@@ -927,10 +927,17 @@ export default function DepositForm({
   const updateAssetDropdownPosition = useCallback(() => {
     if (!assetDropdownRef.current) return;
     const rect = assetDropdownRef.current.getBoundingClientRect();
-    setAssetDropdownPosition({
+    const next = {
       top: rect.bottom + window.scrollY,
       left: rect.left + window.scrollX,
       width: rect.width,
+    };
+    setAssetDropdownPosition((prev) => {
+      const unchanged =
+        Math.abs(prev.top - next.top) < 0.5 &&
+        Math.abs(prev.left - next.left) < 0.5 &&
+        Math.abs(prev.width - next.width) < 0.5;
+      return unchanged ? prev : next;
     });
   }, []);
 
@@ -941,7 +948,17 @@ export default function DepositForm({
   useEffect(() => {
     if (!isAssetDropdownOpen) return;
     updateAssetDropdownPosition();
-    const handleReposition = () => updateAssetDropdownPosition();
+    const handleReposition = (event: Event) => {
+      const target = event.target;
+      if (
+        event.type === "scroll" &&
+        target instanceof Node &&
+        assetDropdownContentRef.current?.contains(target)
+      ) {
+        return;
+      }
+      updateAssetDropdownPosition();
+    };
     window.addEventListener("resize", handleReposition);
     window.addEventListener("scroll", handleReposition, true);
     return () => {
@@ -2045,7 +2062,7 @@ export default function DepositForm({
       (
         <div
           ref={assetDropdownContentRef}
-          className="mt-1 bg-[#ffffff] dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-2xl shadow-lg z-[1200]"
+          className="mt-1 bg-[#ffffff] dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-2xl shadow-lg z-40"
           style={{
             position: "absolute",
             top: assetDropdownPosition.top,

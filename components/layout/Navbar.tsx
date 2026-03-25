@@ -576,12 +576,9 @@ export default function Navbar() {
     : (user?.is_verified ?? false);
 
   useEffect(() => {
+    // Initialize auth once on mount.
     dispatch(initializeAuth());
-    // Fetch KYC status to know if user is verified
-    if (isAuthenticated) {
-      dispatch(checkKYCStatus());
-    }
-  }, [dispatch, isAuthenticated]);
+  }, [dispatch]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -819,23 +816,36 @@ export default function Navbar() {
 
   useEffect(() => {
     let ticking = false;
+    let rafId: number | null = null;
+    let mounted = true;
+    let lastScrolled = window.scrollY > 0;
+
+    // Sync initial value once on mount.
+    setScrolled(lastScrolled);
 
     const handleScroll = () => {
-      if (!ticking) {
-        requestAnimationFrame(() => {
-          const isScrolled = window.scrollY > 0;
-          setScrolled((prev) => (prev !== isScrolled ? isScrolled : prev));
-          ticking = false;
-        });
-        ticking = true;
-      }
+      if (ticking || !mounted) return;
+      ticking = true;
+
+      rafId = window.requestAnimationFrame(() => {
+        if (!mounted) return;
+        const isScrolled = window.scrollY > 0;
+        if (isScrolled !== lastScrolled) {
+          lastScrolled = isScrolled;
+          setScrolled(isScrolled);
+        }
+        ticking = false;
+      });
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });
 
-    // Clean up the event listener on component unmount
     return () => {
+      mounted = false;
       window.removeEventListener("scroll", handleScroll);
+      if (rafId !== null) {
+        window.cancelAnimationFrame(rafId);
+      }
     };
   }, []);
 

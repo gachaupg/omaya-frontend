@@ -59,6 +59,10 @@ import {
   buildExpressRedirectPath,
   setAuthRedirectPath,
 } from "@/lib/utils/authRedirect";
+import {
+  clearExpressCancelled,
+  isExpressCancelled,
+} from "@/features/express/utils/cancelExpressWork";
 import { openKYCModal, checkKYCStatus } from "@/features/auth/slices/authSlice";
 import { bookmarkedAddressesApi } from "@/features/express/services/bookmarkedAddressesApi";
 import { withTimeout } from "@/features/express/utils/fetchWithTimeout";
@@ -647,6 +651,11 @@ export default function WithdrawalForm({
   });
   const [isComponentMounted, setIsComponentMounted] = useState(false);
 
+  useEffect(() => {
+    // Reset the navigation-cancel flag whenever this form mounts.
+    clearExpressCancelled();
+  }, []);
+
   // Commission from API for USDT, USDC, FX Primus (null = not yet fetched, 0 = API returned 0)
   const [apiCommission, setApiCommission] = useState<number | null>(null);
   const [exchangeLookupResponse, setExchangeLookupResponse] = useState<ExchangeCommissionLookupResponse | null>(null);
@@ -662,7 +671,7 @@ export default function WithdrawalForm({
       "[data-asset-card='true']"
     ) as HTMLElement | null;
     const cardRect = cardElement?.getBoundingClientRect();
-    setAssetDropdownPosition({
+    const next = {
       top: rect.bottom + window.scrollY,
       left: rect.left + window.scrollX,
       width: rect.width,
@@ -673,6 +682,16 @@ export default function WithdrawalForm({
         ? cardRect.top + window.scrollY
         : rect.top + window.scrollY,
       cardWidth: cardRect ? cardRect.width : rect.width,
+    };
+    setAssetDropdownPosition((prev) => {
+      const unchanged =
+        Math.abs(prev.top - next.top) < 0.5 &&
+        Math.abs(prev.left - next.left) < 0.5 &&
+        Math.abs(prev.width - next.width) < 0.5 &&
+        Math.abs(prev.cardLeft - next.cardLeft) < 0.5 &&
+        Math.abs(prev.cardTop - next.cardTop) < 0.5 &&
+        Math.abs(prev.cardWidth - next.cardWidth) < 0.5;
+      return unchanged ? prev : next;
     });
   }, []);
 
@@ -686,7 +705,17 @@ export default function WithdrawalForm({
     }
 
     updateAssetDropdownPosition();
-    const handleReposition = () => updateAssetDropdownPosition();
+    const handleReposition = (event: Event) => {
+      const target = event.target;
+      if (
+        event.type === "scroll" &&
+        target instanceof Node &&
+        assetDropdownContentRef.current?.contains(target)
+      ) {
+        return;
+      }
+      updateAssetDropdownPosition();
+    };
 
     window.addEventListener("resize", handleReposition);
     window.addEventListener("scroll", handleReposition, true);
@@ -991,7 +1020,17 @@ export default function WithdrawalForm({
     const freshDetail = enhancedFilteredUserPaymentDetails.find(
       (d: any) => d.id === selectedId || String(d.id) === String(selectedId)
     );
-    if (freshDetail) {
+    const current = selectedPaymentDetails[0];
+    const hasMeaningfulChange =
+      !!freshDetail &&
+      (
+        String(current?.id) !== String(freshDetail.id) ||
+        (current?.status ?? "") !== (freshDetail.status ?? "") ||
+        (current?.account_name ?? "") !== (freshDetail.account_name ?? "") ||
+        (current?.account_number ?? "") !== (freshDetail.account_number ?? "") ||
+        (current?.wallet_address ?? "") !== (freshDetail.wallet_address ?? "")
+      );
+    if (hasMeaningfulChange) {
       setSelectedPaymentDetails([freshDetail]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only sync when source data changes
@@ -1418,6 +1457,13 @@ export default function WithdrawalForm({
       ) {
         return;
       }
+      if (
+        assetDropdownRef.current &&
+        target &&
+        assetDropdownRef.current.contains(target)
+      ) {
+        return;
+      }
       if (isAssetDropdownOpen) {
         setIsAssetDropdownOpen(false);
       }
@@ -1452,6 +1498,7 @@ export default function WithdrawalForm({
 
   // Fetch commission: first 3 assets use exchange commission-lookup; else USDT/USDC/FXP use legacy % API
   useEffect(() => {
+    if (isExpressCancelled()) return;
     if (!selectedAsset) {
       setApiCommission(null);
       setExchangeLookupResponse(null);
@@ -1469,8 +1516,10 @@ export default function WithdrawalForm({
     if (params) {
       if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
       commissionFetchTimeoutRef.current = setTimeout(() => {
+        if (isExpressCancelled()) return;
         fetchExchangeCommissionLookup(amount, "withdrawal", params.from_currency, "USD", params.from_network)
           .then((res) => {
+            if (isExpressCancelled()) return;
             setExchangeLookupResponse(res);
             setApiCommission(null);
             setApiValidationError(null);
@@ -1484,6 +1533,7 @@ export default function WithdrawalForm({
             }
           })
           .catch((error: any) => {
+            if (isExpressCancelled()) return;
             setExchangeLookupResponse(null);
             const responseData = error?.response?.data;
             const responseInner = responseData?.response_data;
@@ -1527,8 +1577,10 @@ export default function WithdrawalForm({
     }
     if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
     commissionFetchTimeoutRef.current = setTimeout(() => {
+      if (isExpressCancelled()) return;
       fetchCommission(apiAsset, amount, "withdrawal")
         .then((commission) => {
+          if (isExpressCancelled()) return;
           setApiCommission(commission);
           setExchangeLookupResponse(null);
         })
@@ -1691,6 +1743,7 @@ export default function WithdrawalForm({
 
   // Manual estimate trigger for non-direct assets (avoids blocking navigation on every keystroke)
   useEffect(() => {
+    if (isExpressCancelled()) return;
     // Clear any existing estimate timeout
     if (estimateTimeout) {
       clearTimeout(estimateTimeout);
@@ -1727,6 +1780,7 @@ export default function WithdrawalForm({
 
       // Minimal debounce to prevent rapid duplicate requests but keep UI responsive
       const debounceTimeout = setTimeout(() => {
+        if (isExpressCancelled()) return;
         dispatch(
           fetchSwapEstimate({
             toCurrency: "USDT",
@@ -1738,6 +1792,7 @@ export default function WithdrawalForm({
           })
         )
           .then((result) => {
+            if (isExpressCancelled()) return;
             if (!isMountedRef.current || requestSeq !== estimateRequestSeqRef.current) return;
             if (result.payload) {
               setEstimate(result.payload);
@@ -1767,6 +1822,7 @@ export default function WithdrawalForm({
             }
           })
           .catch((error) => {
+            if (isExpressCancelled()) return;
             if (!isMountedRef.current || requestSeq !== estimateRequestSeqRef.current) return;
             // Handle API validation errors for receive amount
             if (
@@ -1935,6 +1991,7 @@ export default function WithdrawalForm({
             // Keep loading states active
           })
           .finally(() => {
+            if (isExpressCancelled()) return;
             if (!isMountedRef.current || requestSeq !== estimateRequestSeqRef.current) return;
             setEstimateLoading(false);
           });
@@ -1954,6 +2011,7 @@ export default function WithdrawalForm({
 
   // Reverse calculation effect for non-simple assets when user types in "You Receive"
   useEffect(() => {
+    if (isExpressCancelled()) return;
 
 
     if (
@@ -1990,6 +2048,7 @@ export default function WithdrawalForm({
         timeoutPromise,
       ])
         .then((result: any) => {
+          if (isExpressCancelled()) return;
           if (result.payload && (result.payload as any)?.estimated_amount) {
             // The API now returns how much USDT we need to get the desired amount
             const requiredUsdtAmount = (result.payload as any)
@@ -2015,6 +2074,7 @@ export default function WithdrawalForm({
           }
         })
         .catch((error) => {
+          if (isExpressCancelled()) return;
           // IMMEDIATELY clear all loading states to prevent stuck loading
           setIsCalculating(false);
           setIsCalculatingReceive(false);
@@ -2801,7 +2861,7 @@ export default function WithdrawalForm({
       (
         <div
           ref={assetDropdownContentRef}
-          className="mt-1 bg-[#ffffff] dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-2xl shadow-lg z-[1200]"
+          className="mt-1 bg-[#ffffff] dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-2xl shadow-lg z-40"
           style={dropdownStyle}
         >
           <div className="p-3 border-b border-[#A2A4A9FF] dark:border-[#35353E]">
@@ -2875,16 +2935,6 @@ export default function WithdrawalForm({
       setCalculationError(null);
     }
   }, [payAmount, payAmountInput]);
-
-  // Clear validation errors on component unmount
-  useEffect(() => {
-    return () => {
-      setApiValidationError(null);
-      setReceiveAmountError(null);
-      setEstimateError(null);
-      setCalculationError(null);
-    };
-  }, []);
 
   // Validate first card data
   const validateFirstCard = () => {

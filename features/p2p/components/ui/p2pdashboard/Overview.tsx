@@ -63,16 +63,19 @@ const Overview = () => {
     return Math.max(0, 173 - (value / safeTotal) * 691);
   };
 
-  // API type mapping is reversed; swap buy/sell sources for correct UI labels
-  const buyByStatus = (summary as any)?.total_sell_orders_by_status || {};
+  const buyByStatus = (summary as any)?.total_buy_trades_by_status || {};
   const buyCompleted = Number(buyByStatus.completed) || 0;
   const buyPending = Number(buyByStatus.pending) || 0;
-  const buyTotal = buyCompleted + buyPending;
+  const buyCanceled = Number(buyByStatus.canceled) || 0;
+  const buyOffline = Number(buyByStatus.offline) || 0;
+  const buyTotal = buyCompleted + buyPending + buyCanceled + buyOffline;
 
-  const sellByStatus = (summary as any)?.total_buy_orders_by_status || {};
+  const sellByStatus = (summary as any)?.total_sell_trades_by_status || {};
   const sellCompleted = Number(sellByStatus.completed) || 0;
   const sellPending = Number(sellByStatus.pending) || 0;
-  const sellTotal = sellCompleted + sellPending;
+  const sellCanceled = Number(sellByStatus.canceled) || 0;
+  const sellOffline = Number(sellByStatus.offline) || 0;
+  const sellTotal = sellCompleted + sellPending + sellCanceled + sellOffline;
 
   const buyProgressPercentage = buyTotal > 0 ? (buyCompleted / buyTotal) * 100 : 0;
   const sellProgressPercentage = sellTotal > 0 ? (sellCompleted / sellTotal) * 100 : 0;
@@ -84,7 +87,7 @@ const Overview = () => {
     <div className="w-full">
 
       <h3 className="dark:text-white text-[#0D0D0D] mb-2 text-xs sm:text-sm font-medium">
-        Overview Total
+        Overview jjjTotal
       </h3>
       <Card
         borderColor="border-[#E8EFF5] dark:border-[#35353E]"
