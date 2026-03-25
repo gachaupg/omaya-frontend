@@ -6,6 +6,7 @@ import { fetchTransactionSummary } from "@/features/p2p/slices/transactionSummar
 import { formatCurrency } from "@/lib/globalFormatter";
 import { fetchWallets } from "@/features/p2p/slices/walletSlice";
 import { selectP2PWalletAmounts, selectTransactionSummary } from "@/features/p2p/selectors";
+import { useP2PWalletBalanceWebSocket } from "@/features/p2p/hooks/useP2PWalletBalanceWebSocket";
 
 const USDT_ICON =
   "/images/tether.svg";
@@ -15,8 +16,13 @@ const Available = () => {
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
   const summary = useSelector(selectTransactionSummary);
   const { availableAmount, escrow } = useSelector(selectP2PWalletAmounts);
-  const availableBalance = summary != null ? availableAmount : 0;
-  const totalLocked = summary != null ? escrow : 0;
+  const wsWallet = useP2PWalletBalanceWebSocket(isAuthenticated);
+  const availableBalance =
+    wsWallet.available ??
+    (summary != null ? availableAmount : 0);
+  const totalLocked =
+    wsWallet.escrow ??
+    (summary != null ? escrow : 0);
 
   useEffect(() => {
     if (isAuthenticated) {

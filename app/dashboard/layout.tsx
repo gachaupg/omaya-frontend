@@ -27,7 +27,7 @@ export default function DashboardLayout({
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.3 }}
-        className="md:hidden sticky top-16 sm:top-20 left-0 right-0 z-40 bg-white dark:bg-[var(--bg-color)]"
+        className="md:hidden sticky top-16 sm:top-20 left-0 right-0 z-50 bg-white dark:bg-[var(--bg-color)]"
       >
         <Sidebar />
       </motion.div>
@@ -38,7 +38,7 @@ export default function DashboardLayout({
           initial={{ x: -20, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           transition={{ duration: 0.3 }}
-          className="fixed top-28 left-0 z-30 h-[calc(100vh-7rem)] overflow-y-auto overflow-x-hidden md:w-48 lg:w-56 xl:w-[222.28px] pr-2"
+          className="fixed top-28 left-0 z-50 h-[calc(100vh-7rem)] overflow-y-auto overflow-x-hidden md:w-48 lg:w-56 xl:w-[222.28px] pr-2"
         >
           <Sidebar />
         </motion.div>

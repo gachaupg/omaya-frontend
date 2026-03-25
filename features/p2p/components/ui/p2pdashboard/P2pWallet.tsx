@@ -17,6 +17,7 @@ import {
   selectP2PWalletAmounts,
   selectTransactionSummary,
 } from "@/features/p2p/selectors";
+import { useP2PWalletBalanceWebSocket } from "@/features/p2p/hooks/useP2PWalletBalanceWebSocket";
 
 import { logger } from "@/lib/utils/logger";
 
@@ -64,9 +65,12 @@ const P2pWallet = memo(
     );
     const summaryLoading = transactionSummaryState.loading;
     const { isAuthenticated } = useSelector((state: RootState) => state.auth);
+    const wsWallet = useP2PWalletBalanceWebSocket(isAuthenticated);
 
     // Use transaction summary total_balance when summary is loaded
-    const balance = summary != null ? summaryBalance : walletBalance;
+    const balance =
+      wsWallet.balance ??
+      (summary != null ? summaryBalance : walletBalance);
 
     logger.debug("p2p", "P2pWallet render", { balance, currency, loading });
 

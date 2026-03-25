@@ -115,6 +115,14 @@ const TradePreview: React.FC<TradePreviewProps> = ({
     tradeType === "sell"
       ? `${availableAmount.toFixed(2)} USDT`
       : advertiserData.available;
+  // Keep buy preview range identical to table "Limit" text.
+  const displayedLimitRange =
+    advertiserData.limit || `${minAmount.toFixed(2)} - ${maxAmount.toFixed(2)} ${rangeLimitSuffix}`;
+  // Sell input is USDT while table limits are KES/USD; show a USDT-converted range here.
+  const sellRangeMinUsdt =
+    commissionRate > 0 ? minAmount / commissionRate : effectiveSellMinUsdt;
+  const sellRangeMaxUsdt =
+    commissionRate > 0 ? maxAmount / commissionRate : effectiveSellMaxUsdt;
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -687,7 +695,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                   </div>
                   <div className="flex flex-col gap-2 sm:gap-2">
                     <div className="text-sm text-gray-500 dark:text-[#788099] pl-0 sm:pl-2 font-medium">
-                      Range: {effectiveSellMinUsdt.toFixed(2)}-{effectiveSellMaxUsdt.toFixed(2)} USDT
+                      Range: {sellRangeMinUsdt.toFixed(2)}-{sellRangeMaxUsdt.toFixed(2)} USDT
                     </div>
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                       <span className="text-2xl sm:text-3xl text-[#1D8751] font-semibold flex-shrink-0">
@@ -764,7 +772,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                   </div>
                   <div className="flex flex-col gap-2 sm:gap-2">
                     <div className="text-sm text-gray-500 dark:text-[#788099] pl-0 sm:pl-2 font-medium">
-                      Range: {minAmount}-{maxAmount} {rangeLimitSuffix}
+                      Range: {displayedLimitRange}
                     </div>
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                       <span className="text-2xl sm:text-3xl text-[#1D8751] font-semibold flex-shrink-0">

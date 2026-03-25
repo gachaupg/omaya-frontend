@@ -123,6 +123,8 @@ export const API_CONFIG = {
         `${getWebSocketBaseUrl()}/ws/messages/?token=${token}`,
       P2P_WITHDRAWAL_STATUS: (token: string) =>
         `${getWebSocketBaseUrl()}/ws/p2p-withdrawal-status/?token=${token}`,
+      WALLET_BALANCE: (token: string) =>
+        `${getWebSocketBaseUrl()}/ws/wallet-balance/?token=${encodeURIComponent(token)}`,
     },
   },
   SWAP: {

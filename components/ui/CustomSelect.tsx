@@ -160,6 +160,20 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   }, [isOpen]);
 
 
+  const commitDropdownStyles = (next: {
+    top: number;
+    left: number;
+    width: number;
+  }) => {
+    setDropdownStyles((prev) => {
+      const unchanged =
+        Math.abs(prev.top - next.top) < 0.5 &&
+        Math.abs(prev.left - next.left) < 0.5 &&
+        Math.abs((prev.width || 0) - next.width) < 0.5;
+      return unchanged ? prev : next;
+    });
+  };
+
   const updateDropdownPosition = () => {
     if (typeof window === "undefined") return;
     const triggerElement = triggerRef.current;
@@ -191,7 +205,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
       let top = Math.min(topOffset, Math.max(minMargin, viewportHeight - minMargin));
       top = Math.max(minMargin, Math.min(top + verticalOffset, viewportHeight - minMargin));
 
-      setDropdownStyles({
+      commitDropdownStyles({
         top,
         left,
         width: desiredWidth,
@@ -245,7 +259,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
         topPosition = rect.bottom + 4 + verticalOffset;
       }
 
-      setDropdownStyles({
+      commitDropdownStyles({
         top: topPosition,
         left: leftPosition,
         width: dropdownWidth, // Match trigger width exactly - never bigger
@@ -274,7 +288,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
       Math.max(minMargin, viewportWidth - desiredWidth - minMargin)
     );
 
-    setDropdownStyles({
+    commitDropdownStyles({
       top: rect.bottom + 4 + verticalOffset,
       left,
       width: desiredWidth,
@@ -288,7 +302,18 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
 
     updateDropdownPosition();
 
-    const handleReposition = () => updateDropdownPosition();
+    const handleReposition = (event: Event) => {
+      const target = event.target;
+      if (
+        event.type === "scroll" &&
+        target instanceof Node &&
+        (dropdownContentRef.current?.contains(target) ||
+          triggerRef.current?.contains(target))
+      ) {
+        return;
+      }
+      updateDropdownPosition();
+    };
 
     window.addEventListener("resize", handleReposition);
     window.addEventListener("scroll", handleReposition, true);
@@ -418,7 +443,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
           <div
             id={dropdownId}
             ref={dropdownContentRef}
-            className="z-45 bg-white dark:bg-[#1D1D23] border border-border dark:border-accent rounded-2xl shadow-xl overflow-hidden"
+            className="z-40 bg-white dark:bg-[#1D1D23] border border-border dark:border-accent rounded-2xl shadow-xl overflow-hidden"
             role="listbox"
             style={{
               position: "fixed",

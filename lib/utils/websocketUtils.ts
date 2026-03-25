@@ -28,6 +28,43 @@ function asUserText(v: unknown): string {
   return "";
 }
 
+function isGenericFailureText(text: string): boolean {
+  const t = text.trim().toLowerCase();
+  return (
+    t.includes("your transaction could not be completed") ||
+    t.includes("please try again or contact support")
+  );
+}
+
+function deepFindFirstText(
+  value: unknown,
+  preferredKeys: string[],
+  maxDepth = 8
+): string | undefined {
+  const queue: Array<{ node: unknown; depth: number }> = [{ node: value, depth: 0 }];
+  const seen = new Set<unknown>();
+
+  while (queue.length > 0) {
+    const { node, depth } = queue.shift()!;
+    if (!node || typeof node !== "object" || seen.has(node)) continue;
+    seen.add(node);
+
+    const obj = node as Record<string, unknown>;
+
+    for (const key of preferredKeys) {
+      const txt = asUserText(obj[key]);
+      if (txt) return txt;
+    }
+
+    if (depth >= maxDepth) continue;
+    for (const v of Object.values(obj)) {
+      if (v && typeof v === "object") queue.push({ node: v, depth: depth + 1 });
+    }
+  }
+
+  return undefined;
+}
+
 /**
  * Parse `notification` when backend sends a JSON string, or use object as-is.
  */
@@ -89,6 +126,11 @@ function collectPayloadLayers(raw: Record<string, unknown>): Record<string, unkn
     push(inner);
     const innerData = (inner as Record<string, unknown>).data;
     if (innerData && typeof innerData === "object") push(innerData);
+    const innerPayload = (inner as Record<string, unknown>).payload;
+    if (innerPayload && typeof innerPayload === "object") push(innerPayload);
+    const innerDataPayload = (innerData as Record<string, unknown> | undefined)?.payload;
+    if (innerDataPayload && typeof innerDataPayload === "object")
+      push(innerDataPayload);
   }
   const payload = raw.payload;
   if (payload && typeof payload === "object") push(payload);
@@ -104,33 +146,79 @@ export function resolveExpressTransactionFailureMessage(raw: unknown): string | 
   if (!raw || typeof raw !== "object") return undefined;
   const r = raw as Record<string, unknown>;
 
+  let bestReason: string | undefined;
+  let bestMessage: string | undefined;
+
   for (const layer of collectPayloadLayers(r)) {
     const fromNotify = resolveNotificationBlock(layer);
     if (fromNotify) return fromNotify;
   }
 
   for (const layer of collectPayloadLayers(r)) {
-    const candidates: unknown[] = [
+    const reasonCandidates: unknown[] = [
       layer.rejection_reason,
       layer.failure_reason,
-      layer.message,
       layer.reason,
+      (layer as { rejected_reason?: unknown }).rejected_reason,
+      (layer as { rejectionReason?: unknown }).rejectionReason,
+    ];
+    const messageCandidates: unknown[] = [
+      layer.message,
       layer.error_message,
       layer.comment_text,
       layer.error,
     ];
 
-    for (const c of candidates) {
+    for (const c of reasonCandidates) {
       const t = asUserText(c);
-      if (t) return t;
+      if (t) {
+        bestReason = t;
+        break;
+      }
+    }
+    for (const c of messageCandidates) {
+      const t = asUserText(c);
+      if (t) {
+        if (!bestMessage || (isGenericFailureText(bestMessage) && !isGenericFailureText(t))) {
+          bestMessage = t;
+        }
+      }
+    }
+
+    // Last-resort deep search for nested reason-like keys.
+    if (!bestReason) {
+      const nestedReason = deepFindFirstText(layer, [
+        "rejection_reason",
+        "failure_reason",
+        "reason",
+        "rejected_reason",
+        "rejectionReason",
+      ]);
+      if (nestedReason) bestReason = nestedReason;
+    }
+    if (!bestMessage) {
+      const nestedMessage = deepFindFirstText(layer, [
+        "message",
+        "error_message",
+        "comment_text",
+        "error",
+        "detail",
+      ]);
+      if (nestedMessage) bestMessage = nestedMessage;
     }
   }
 
-  const rootCandidates: unknown[] = [r.message, r.rejection_reason, r.error];
-  for (const c of rootCandidates) {
+  const rootReason = asUserText(r.rejection_reason ?? (r as { reason?: unknown }).reason);
+  if (!bestReason && rootReason) bestReason = rootReason;
+
+  const rootMessageCandidates: unknown[] = [r.message, r.error];
+  for (const c of rootMessageCandidates) {
     const t = asUserText(c);
-    if (t) return t;
+    if (!t) continue;
+    if (!bestMessage || (isGenericFailureText(bestMessage) && !isGenericFailureText(t))) {
+      bestMessage = t;
+    }
   }
 
-  return undefined;
+  return bestReason || bestMessage || undefined;
 }
