@@ -766,6 +766,26 @@ const MoneyXRates = ({
   };
 
   // If showing exchanging component, render it
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.dispatchEvent(
+      new CustomEvent("rates-flow-visibility", {
+        detail: { active: showExchanging && !!transactionData },
+      })
+    );
+    // Clear persisted moneyx form state once transaction flow starts,
+    // so old form progress is not replayed after completion.
+    if (showExchanging && transactionData) {
+      localStorage.removeItem("moneyx_form_state");
+      localStorage.removeItem(RATES_MONEYX_FORM_STATE_KEY);
+    }
+    return () => {
+      window.dispatchEvent(
+        new CustomEvent("rates-flow-visibility", { detail: { active: false } })
+      );
+    };
+  }, [showExchanging, transactionData]);
+
   if (showExchanging && transactionData) {
     return (
       <div className="bg-white dark:bg-[#18181D] p-3 sm:p-4 lg:p-6 rounded-xl sm:rounded-xl lg:rounded-2xl border-[1.5px] border-gray-200 dark:border-[#35353E] shadow-md container mx-auto">
@@ -774,9 +794,15 @@ const MoneyXRates = ({
           onBackToTransfer={() => {
             setShowExchanging(false);
             setTransactionData(null);
+            setIsFirstCardSubmitted(false);
+            setMoneyXTransactionResult(null);
+            setBankAccountAddress("");
+            setIsAddressConfirmed(false);
             // Clear localStorage when going back
             localStorage.removeItem("moneyx_transaction_data");
             localStorage.removeItem("express_transaction_data");
+            localStorage.removeItem("moneyx_form_state");
+            localStorage.removeItem(RATES_MONEYX_FORM_STATE_KEY);
           }}
         />
       </div>

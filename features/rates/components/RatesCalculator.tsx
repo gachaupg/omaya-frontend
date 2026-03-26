@@ -2343,6 +2343,20 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
 
   const assetAmount = amountNum + totalFees;
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.dispatchEvent(
+      new CustomEvent("rates-flow-visibility", {
+        detail: { active: showExchanging && !!exchangingData },
+      })
+    );
+    return () => {
+      window.dispatchEvent(
+        new CustomEvent("rates-flow-visibility", { detail: { active: false } })
+      );
+    };
+  }, [showExchanging, exchangingData]);
+
   // If MoneyX tab is active, render MoneyX rates component (check first, after all hooks)
   if (activeTab === 'moneyx') {
     console.log('Rendering MoneyXRates component, activeTab:', activeTab);

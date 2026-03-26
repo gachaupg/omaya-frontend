@@ -48,8 +48,14 @@ const KYCVerificationModal: React.FC = () => {
   const [documentBackPreview, setDocumentBackPreview] = useState<string | null>(null);
   const [facePreview, setFacePreview] = useState<string | null>(null);
   const [kycSubmitMessage, setKycSubmitMessage] = useState<string | null>(null);
+  const normalizedKycStatus = String(kycStatus?.status || "")
+    .trim()
+    .toLowerCase();
   const isWaitingApproval =
-    kycStatus?.status === "waiting_approval" && kycStatus?.is_verified === false;
+    (normalizedKycStatus === "waiting_approval" ||
+      normalizedKycStatus === "under_review" ||
+      normalizedKycStatus === "under review") &&
+    kycStatus?.is_verified === false;
 
   useEffect(() => {
     // Update email when user changes
@@ -128,7 +134,11 @@ const KYCVerificationModal: React.FC = () => {
                 // Verified! Clear localStorage
                 localStorage.removeItem('kyc_verification_status');
                 dispatch(closeKYCModal());
-              } else if (apiStatus === 'waiting_approval') {
+              } else if (
+                String(apiStatus || "").toLowerCase() === "waiting_approval" ||
+                String(apiStatus || "").toLowerCase() === "under_review" ||
+                String(apiStatus || "").toLowerCase() === "under review"
+              ) {
                 // Documents submitted, under review - show pending modal
                 setShowPendingModal(true);
               }
@@ -1087,7 +1097,9 @@ const KYCVerificationModal: React.FC = () => {
       {!showManualVerification && !showSuccessModal && !showPendingModal && (
         <div className="bg-white dark:bg-[#1A1A1A] rounded-lg p-6 max-w-md w-full mx-4 border border-gray-200 dark:border-[#35353E] shadow-xl">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Identity Verification Required</h2>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+              {isWaitingApproval ? "Verification Under Review" : "Identity Verification Required"}
+            </h2>
             <button
               onClick={handleClose}
               className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
@@ -1111,19 +1123,31 @@ const KYCVerificationModal: React.FC = () => {
           </div>
           
             <div className="text-gray-700 dark:text-gray-300 space-y-4">
-              <p>
-              Please verify your identity by providing your personal information and 
-              document details for manual verification.
-            </p>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              This process helps us ensure the security of your account and comply 
-              with regulatory requirements.
-            </p>
+              {isWaitingApproval ? (
+                <>
+                  <p>
+                    Your identity verification documents were submitted successfully and are currently under review.
+                  </p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Our compliance team is reviewing your submission. Use the button below to check the latest status.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p>
+                    Please verify your identity by providing your personal information and
+                    document details for manual verification.
+                  </p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    This process helps us ensure the security of your account and comply
+                    with regulatory requirements.
+                  </p>
+                </>
+              )}
 
             {isWaitingApproval && (
               <div className="bg-green-50 dark:bg-green-900/20 border border-green-400 dark:border-green-500 text-green-700 dark:text-green-300 p-3 rounded-lg text-sm">
-                {kycStatus?.message ??
-                  "Your KYC is under verification. Please wait for admin approval."}
+                {"Your KYC is under review. Please wait for admin approval."}
               </div>
             )}
               
