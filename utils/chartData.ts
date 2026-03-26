@@ -33,8 +33,18 @@ export const overviewTotalData = (
   transactionSummary: TransactionSummary,
   type: "exchange" | "p2p" | "swap" | "buy" | "moneyx" = "exchange"
 ): DonutChartData[] => {
+  const getStatusValue = (obj: any, key: "completed" | "pending" | "canceled" | "offline") => {
+    if (!obj) return 0;
+    if (key === "canceled") {
+      return Number(obj.canceled ?? obj.cancelled) || 0;
+    }
+    return Number(obj[key]) || 0;
+  };
+
   if (type === "buy") {
-    const status = transactionSummary.total_buy_orders_by_status || {
+    const status =
+      (transactionSummary as any).total_buy_trades_by_status ||
+      transactionSummary.total_buy_orders_by_status || {
       pending: 0,
       completed: 0,
       canceled: 0,
@@ -44,46 +54,59 @@ export const overviewTotalData = (
     return [
       {
         label: "Completed",
-        value: status.completed || 0,
+        value: getStatusValue(status, "completed"),
         color: "#1D8751",
       },
       {
         label: "Pending",
-        value: status.pending || 0,
+        value: getStatusValue(status, "pending"),
         color: "#facc15",
       },
       {
         label: "Canceled",
-        value: status.canceled || 0,
+        value: getStatusValue(status, "canceled"),
         color: "#ef4444",
       },
       {
         label: "Offline",
-        value: status.offline || 0,
+        value: getStatusValue(status, "offline"),
         color: "#64748b",
       },
     ];
   }
 
   if (type === "p2p") {
+    const buyStatus = (transactionSummary as any).total_buy_trades_by_status || {};
+    const sellStatus = (transactionSummary as any).total_sell_trades_by_status || {};
+
     return [
       {
-        label: "Deposits",
-        value: Math.abs(transactionSummary.total_approved_p2p_deposits || 0),
+        label: "Completed",
+        value: Math.abs(
+          getStatusValue(buyStatus, "completed") + getStatusValue(sellStatus, "completed")
+        ),
         color: "#1D8751",
       },
       {
-        label: "Withdrawals",
-        value: Math.abs(transactionSummary.total_approved_p2p_withdrawals || 0),
+        label: "Pending",
+        value: Math.abs(
+          getStatusValue(buyStatus, "pending") + getStatusValue(sellStatus, "pending")
+        ),
+        color: "#facc15",
+      },
+      {
+        label: "Canceled",
+        value: Math.abs(
+          getStatusValue(buyStatus, "canceled") + getStatusValue(sellStatus, "canceled")
+        ),
         color: "#ef4444",
       },
       {
-        label: "In Progress",
+        label: "Offline",
         value: Math.abs(
-          (transactionSummary.total_pending_p2p_deposits || 0) +
-          (transactionSummary.total_pending_p2p_withdrawals || 0)
+          getStatusValue(buyStatus, "offline") + getStatusValue(sellStatus, "offline")
         ),
-        color: "#facc15",
+        color: "#64748b",
       },
     ];
   }
@@ -230,8 +253,15 @@ export const overviewTotalSummary = (
   type: "exchange" | "p2p" | "swap" | "buy" | "moneyx" = "exchange"
 ) => {
   if (type === "p2p") {
-    // Use Math.abs to prevent negative display values
-    const netValue = transactionSummary.total_approved_p2p_net || transactionSummary.total_approved_p2p_combined || 0;
+    const buyStatus = (transactionSummary as any).total_buy_trades_by_status || {};
+    const sellStatus = (transactionSummary as any).total_sell_trades_by_status || {};
+    const completed = Number(buyStatus.completed || 0) + Number(sellStatus.completed || 0);
+    const pending = Number(buyStatus.pending || 0) + Number(sellStatus.pending || 0);
+    const canceled =
+      Number(buyStatus.canceled ?? buyStatus.cancelled ?? 0) +
+      Number(sellStatus.canceled ?? sellStatus.cancelled ?? 0);
+    const offline = Number(buyStatus.offline || 0) + Number(sellStatus.offline || 0);
+    const netValue = completed + pending + canceled + offline;
     return {
       total: Math.abs(netValue),
       currency: "USD",
@@ -244,8 +274,17 @@ export const overviewTotalSummary = (
     };
   }
   if (type === "buy") {
+    const buyStatus =
+      (transactionSummary as any).total_buy_trades_by_status ||
+      transactionSummary.total_buy_orders_by_status ||
+      {};
+    const buyTotal =
+      Number(buyStatus.completed || 0) +
+      Number(buyStatus.pending || 0) +
+      Number(buyStatus.canceled ?? buyStatus.cancelled ?? 0) +
+      Number(buyStatus.offline || 0);
     return {
-      total: Math.abs(transactionSummary.total_buy_orders || 0),
+      total: Math.abs(buyTotal || transactionSummary.total_buy_orders || 0),
       currency: "USD",
     };
   }

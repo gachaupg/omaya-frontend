@@ -60,6 +60,13 @@ const AppealModal: React.FC<AppealModalProps> = ({
     onClose();
   };
 
+  // Auto-close modal immediately after successful appeal submission.
+  useEffect(() => {
+    if (!open || !success) return;
+    dispatch(resetAppealState());
+    onClose();
+  }, [success, open, dispatch, onClose]);
+
   // Reset form when modal opens/closes
   useEffect(() => {
     if (!open) {

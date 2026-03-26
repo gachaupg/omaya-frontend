@@ -2563,8 +2563,7 @@ export default function DepositForm({
     return `${whole}.${decimal.slice(0, 5)}`;
   };
   const exceedsDecimalPrecisionLimit =
-    hasMoreThanFiveDecimals(payAmountInput) ||
-    hasMoreThanFiveDecimals(getAmountInput);
+    hasMoreThanFiveDecimals(payAmountInput);
 
   const isProceedDisabled =
     isSubmitting ||
@@ -3875,30 +3874,13 @@ export default function DepositForm({
                       return;
                     }
 
-                    // Only allow numbers and decimals (including 0.006 format)
-                    const normalizedValue = normalizeToFiveDecimals(value);
-                    if (normalizedValue === "" || /^\d*\.?\d*$/.test(normalizedValue)) {
-                      if (value !== normalizedValue) {
-                        setApiValidationError(
-                          "Number cannot have more than 5 decimal places."
-                        );
-                      }
-                      // Check for decimal places validation
-                      if (normalizedValue.includes(".")) {
-                        const decimalPart = normalizedValue.split(".")[1];
-                        if (decimalPart && decimalPart.length > 5) {
-                          setApiValidationError(
-                            "Number cannot have more than 5 decimal places."
-                          );
-                          return;
-                        }
-                      }
-
-                      const newAmount = parseFloat(normalizedValue) || 0;
+                    // You Receive supports high precision decimals.
+                    if (value === "" || /^\d*\.?\d*$/.test(value)) {
+                      const newAmount = parseFloat(value) || 0;
 
                       // Only update and calculate if the numeric value actually changed
-                      if (newAmount !== getAmount || normalizedValue !== getAmountInput) {
-                        setGetAmountInput(normalizedValue); // Store the string value for display
+                      if (newAmount !== getAmount || value !== getAmountInput) {
+                        setGetAmountInput(value); // Store raw string for display
                         setGetAmount(newAmount);
                         setIsCalculatingFromPay(false);
 
@@ -4221,33 +4203,16 @@ export default function DepositForm({
           <div className="mt-2 sm:mt-3 md:mt-4 relative">
             <button
               className={`w-full text-white dark:text-white text-sm sm:text-base font-medium py-3 sm:py-2 rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 transition-colors min-h-[44px] sm:min-h-0 ${isHomePage
-                ? payAmount >= 15000 || getAmount >= 15000
+                ? isSubmitting
                   ? "bg-gray-500 cursor-not-allowed"
                   : "bg-[#1D8751] hover:bg-[#166b3e] cursor-pointer"
-                : isSubmitting ||
-                  !selectedAsset ||
-                  !payBank ||
-                  payAmount >= 15000 ||
-                  getAmount >= 15000 ||
-                  (selectedAsset &&
-                    !isSimpleCalculationAsset(selectedAsset) &&
-                    !isForexAsset(selectedAsset) &&
-                    estimateLoading)
+                : isSubmitting
                   ? "bg-gray-500 cursor-not-allowed"
                   : "bg-[#1D8751] hover:bg-[#166b3e]"
                 }`}
               disabled={isHomePage
-                ? payAmount >= 15000 || getAmount >= 15000 || exceedsDecimalPrecisionLimit
-                : isSubmitting ||
-                !selectedAsset ||
-                !payBank ||
-                payAmount >= 15000 ||
-                getAmount >= 15000 ||
-                exceedsDecimalPrecisionLimit ||
-                (selectedAsset &&
-                  !isSimpleCalculationAsset(selectedAsset) &&
-                  !isForexAsset(selectedAsset) &&
-                  estimateLoading)
+                ? isSubmitting
+                : isSubmitting
               }
               onClick={() => {
                 // Prevent submission if amount is >= 15000

@@ -429,8 +429,8 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
     setLocalSwapError(desc);
   }, [swapError]);
 
-  // Handle next step validation - first button: expand only (login redirect happens on wallet step)
-  const handleNextStep = () => {
+  // Handle next step validation - first button
+  const handleNextStep = async () => {
     if (!hasUserInteracted) {
       setHasUserInteracted(true);
     }
@@ -444,6 +444,23 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
     if (!estimate) {
       setLocalSwapError("Please wait for the swap estimate to load.");
       return;
+    }
+
+    // Block unverified users at the first button and open KYC modal.
+    if (isAuthenticated && user) {
+      try {
+        const kycResult = await dispatch(checkKYCStatus()).unwrap();
+        const kycStatus = kycResult as any;
+        if (kycStatus && kycStatus.is_verified === false) {
+          dispatch(openKYCModal());
+          return;
+        }
+      } catch (error) {
+        if (user.is_verified === false) {
+          dispatch(openKYCModal());
+          return;
+        }
+      }
     }
 
     // Show wallet address form below
