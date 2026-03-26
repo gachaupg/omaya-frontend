@@ -10,6 +10,7 @@ const RATES_MONEYX_FORM_STATE_KEY = "rates_moneyx_form_state";
 
 const Rates = () => {
   const [activeTab, setActiveTab] = React.useState<'crypto' | 'moneyx'>('crypto');
+  const [isRatesFlowActive, setIsRatesFlowActive] = React.useState(false);
   const { t } = useRatesI18n();
 
   // Allow selecting Money X tab (logged in or out). KYC can be required when user tries to perform a transaction inside the calculator.
@@ -36,6 +37,32 @@ const Rates = () => {
     if (typeof window === "undefined") return;
     window.localStorage.setItem(RATES_ACTIVE_TAB_KEY, activeTab);
   }, [activeTab]);
+
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handleFlowVisibility = (event: Event) => {
+      const detail = (event as CustomEvent<{ active?: boolean }>).detail;
+      setIsRatesFlowActive(Boolean(detail?.active));
+    };
+    window.addEventListener("rates-flow-visibility", handleFlowVisibility as EventListener);
+    return () =>
+      window.removeEventListener("rates-flow-visibility", handleFlowVisibility as EventListener);
+  }, []);
+
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+    // If no active transaction flow, clear stale persisted form states.
+    const hasActiveTx =
+      !!window.localStorage.getItem("express_transaction_data") ||
+      !!window.localStorage.getItem("moneyx_transaction_data");
+    if (!hasActiveTx) {
+      window.localStorage.removeItem("moneyx_form_state");
+      window.localStorage.removeItem(RATES_MONEYX_FORM_STATE_KEY);
+      window.localStorage.removeItem("rates_calculator_state");
+      window.localStorage.removeItem("rates_calculator_asset");
+      window.localStorage.removeItem("rates_calculator_payment_detail");
+    }
+  }, []);
 
   // Debug
   React.useEffect(() => {
@@ -65,6 +92,7 @@ const Rates = () => {
       </p>
 
       {/* Tab System */}
+      {!isRatesFlowActive && (
       <div className="flex p-1 rounded-xl border-2 border-[#1D8751] w-fit bg-transparent mb-2 sm:mb-4 lg:mb-6">
         {/* Crypto */}
         <button
@@ -99,6 +127,7 @@ const Rates = () => {
           />
         </button>
       </div>
+      )}
 
       <RatesCalculator activeTab={activeTab} />
 
