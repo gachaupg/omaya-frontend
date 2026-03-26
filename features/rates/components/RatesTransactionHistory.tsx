@@ -195,8 +195,8 @@ const RatesTransactionHistory = () => {
 
   // Calculate pagination values
   const totalPages = Math.ceil(count / ITEMS_PER_PAGE);
-  // With server-side pagination, transactions in store are already for the current page
-  const paginatedTransactions = transactions;
+  // Keep table view capped to one page size (10 rows).
+  const paginatedTransactions = transactions.slice(0, ITEMS_PER_PAGE);
 
   // Handle page change
   const handlePageChange = (newPage: number) => {
@@ -216,7 +216,7 @@ const RatesTransactionHistory = () => {
       try {
         if (message.type === "initial" && Array.isArray(message.data?.transactions)) {
           const mapped = (message.data.transactions as any[]).map(mapWsDataToTransaction);
-          dispatch(setTransactionsFromWebSocket(mapped.slice(0, 100)));
+          dispatch(setTransactionsFromWebSocket(mapped.slice(0, ITEMS_PER_PAGE)));
           return;
         }
         if (message.type === "transaction" || message.type === "new_transaction") {

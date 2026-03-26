@@ -561,6 +561,17 @@ export default function Navbar() {
     profile: userProfile,
     user,
   } = useSelector((state: RootState) => state.auth);
+  const formatEmailPreview = (email?: string | null) => {
+    if (!email) return "";
+    const trimmed = String(email).trim();
+    const atIndex = trimmed.indexOf("@");
+    if (atIndex <= 0) {
+      return trimmed.length > 5 ? `${trimmed.slice(0, 5)}...` : trimmed;
+    }
+    const localPart = trimmed.slice(0, atIndex);
+    const domainPart = trimmed.slice(atIndex + 1);
+    return `${localPart.slice(0, 5)}...@${domainPart}`;
+  };
   const kycState = useSelector((state: RootState) => state.kyc);
   const p2pProfile = useSelector((state: RootState) => state.p2pMarket?.getP2PProfile);
   const dispatch = useDispatch<AppDispatch>();
@@ -1318,12 +1329,15 @@ export default function Navbar() {
                             )}
                           </button>
                         </div>
-                        <div>
-                          <h4 className="dark:text-white text-gray-800 font-medium text-sm">
+                        <div className="min-w-0 max-w-[190px]">
+                          <h4 className="dark:text-white text-gray-800 font-medium text-sm truncate">
                             {user?.first_name} {user?.last_name}
                           </h4>
-                          <p className="dark:text-gray-400 text-gray-600 text-xs">
-                            {user?.email}
+                          <p
+                            className="dark:text-gray-400 text-gray-600 text-xs truncate"
+                            title={user?.email || ""}
+                          >
+                            {formatEmailPreview(user?.email)}
                           </p>
                         </div>
                       </div>
@@ -1671,7 +1685,9 @@ export default function Navbar() {
                         </span>
                       )}
                     </div>
-                    <p className="text-muted-foreground text-xs truncate">{user?.email}</p>
+                    <p className="text-muted-foreground text-xs truncate" title={user?.email || ""}>
+                      {formatEmailPreview(user?.email)}
+                    </p>
                   </div>
                 </button>
               </div>

@@ -456,7 +456,7 @@ function DonutChartWithCenter({
         y={center - 2}
         textAnchor="middle"
         fill="currentColor"
-        fontSize="14"
+        fontSize="12"
         fontWeight="600"
         className="dark:fill-white fill-black"
         style={{ textRendering: "geometricPrecision" }}
@@ -557,7 +557,7 @@ const Legend = ({ data, hideCurrency }: { data: DonutChartData[]; hideCurrency?:
     {data.map((d) => (
       <div
         key={d.label}
-        className="flex items-center gap-2 sm:gap-3 text-[11px] sm:text-sm md:text-base"
+        className="flex items-center gap-2 sm:gap-3 text-[10px] sm:text-xs md:text-sm"
         style={{ textRendering: "optimizeLegibility" }}
       >
         <span
@@ -569,10 +569,10 @@ const Legend = ({ data, hideCurrency }: { data: DonutChartData[]; hideCurrency?:
           }}
           className="rounded-sm block"
         ></span>
-        <span className="text-muted-foreground font-medium flex-1 min-w-0 break-normal sm:text-sm md:text-base">
+        <span className="text-muted-foreground font-medium flex-1 min-w-0 break-normal sm:text-xs md:text-sm">
           {d.label}
         </span>
-        <span className="dark:text-white text-[#051015] font-medium ml-auto min-w-[60px] sm:min-w-[60px] text-right tracking-tight shrink-0 text-[11px] md:text-sm lg:text-base">
+        <span className="dark:text-white text-[#051015] font-medium ml-auto min-w-[56px] sm:min-w-[56px] text-right tracking-tight shrink-0 text-[10px] md:text-xs lg:text-sm">
           {formatLargeNumber(d.value)}{hideCurrency ? "" : " USDT"}
         </span>
       </div>

@@ -66,14 +66,14 @@ const Overview = () => {
   const buyByStatus = (summary as any)?.total_buy_trades_by_status || {};
   const buyCompleted = Number(buyByStatus.completed) || 0;
   const buyPending = Number(buyByStatus.pending) || 0;
-  const buyCanceled = Number(buyByStatus.canceled) || 0;
+  const buyCanceled = Number(buyByStatus.canceled ?? buyByStatus.cancelled) || 0;
   const buyOffline = Number(buyByStatus.offline) || 0;
   const buyTotal = buyCompleted + buyPending + buyCanceled + buyOffline;
 
   const sellByStatus = (summary as any)?.total_sell_trades_by_status || {};
   const sellCompleted = Number(sellByStatus.completed) || 0;
   const sellPending = Number(sellByStatus.pending) || 0;
-  const sellCanceled = Number(sellByStatus.canceled) || 0;
+  const sellCanceled = Number(sellByStatus.canceled ?? sellByStatus.cancelled) || 0;
   const sellOffline = Number(sellByStatus.offline) || 0;
   const sellTotal = sellCompleted + sellPending + sellCanceled + sellOffline;
 
@@ -87,7 +87,7 @@ const Overview = () => {
     <div className="w-full">
 
       <h3 className="dark:text-white text-[#0D0D0D] mb-2 text-xs sm:text-sm font-medium">
-        Overview jjjTotal
+        Overview Total
       </h3>
       <Card
         borderColor="border-[#E8EFF5] dark:border-[#35353E]"
@@ -275,6 +275,26 @@ const Overview = () => {
                 </span>
               </div>
 
+              <div className="flex items-center justify-between gap-1.5 sm:gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 rounded-sm bg-[#E23D3A]" />
+                  <span className="text-[10px] sm:text-xs dark:text-[#A0A0A0] text-[#788099]">Canceled:</span>
+                </div>
+                <span className="text-[11px] sm:text-xs md:text-sm dark:text-white/80 text-muted-foreground">
+                  {buyCanceled.toLocaleString()}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between gap-1.5 sm:gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 rounded-sm bg-[#788099]" />
+                  <span className="text-[10px] sm:text-xs dark:text-[#A0A0A0] text-[#788099]">Offline:</span>
+                </div>
+                <span className="text-[11px] sm:text-xs md:text-sm dark:text-white/80 text-muted-foreground">
+                  {buyOffline.toLocaleString()}
+                </span>
+              </div>
+
             </div>
 
           </div>
@@ -375,6 +395,30 @@ const Overview = () => {
                 </div>
                 <span className="text-[11px] sm:text-xs md:text-sm dark:text-white/80 text-muted-foreground">
                   {sellPending.toLocaleString()}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between gap-1.5 sm:gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 rounded-sm bg-[#E23D3A]" />
+                  <span className="text-[10px] sm:text-xs dark:text-[#A0A0A0] text-[#788099]">
+                    Canceled:
+                  </span>
+                </div>
+                <span className="text-[11px] sm:text-xs md:text-sm dark:text-white/80 text-muted-foreground">
+                  {sellCanceled.toLocaleString()}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between gap-1.5 sm:gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 rounded-sm bg-[#788099]" />
+                  <span className="text-[10px] sm:text-xs dark:text-[#A0A0A0] text-[#788099]">
+                    Offline:
+                  </span>
+                </div>
+                <span className="text-[11px] sm:text-xs md:text-sm dark:text-white/80 text-muted-foreground">
+                  {sellOffline.toLocaleString()}
                 </span>
               </div>
 

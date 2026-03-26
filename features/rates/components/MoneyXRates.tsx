@@ -28,6 +28,7 @@ import { FiChevronDown, FiInfo } from "react-icons/fi";
 import { AlertCircle } from "lucide-react";
 import { useRatesI18n } from "@/lib/useRatesI18n";
 import Exchanging from "@/features/moneyX/components/Exchanging";
+import { checkKYCStatus, openKYCModal } from "@/features/auth/slices/authSlice";
 
 const RATES_MONEYX_FORM_STATE_KEY = "rates_moneyx_form_state";
 
@@ -520,39 +521,6 @@ const MoneyXRates = ({
   }, []);
 
   const handleExchange = async () => {
-    // Clear previous errors
-    setValidationErrors([]);
-
-    // Validation
-    const errors: string[] = [];
-
-    if (
-      !payAmountInput ||
-      payAmountInput.trim() === "" ||
-      !payAmount ||
-      payAmount <= 0
-    ) {
-      errors.push("Please enter a valid amount");
-    }
-
-    if (!fromPaymentMethod || !selectedFromPaymentDetail) {
-      errors.push("Please select a 'From' payment method");
-    }
-
-    if (!toPaymentMethod || !selectedToPaymentDetail) {
-      errors.push("Please select a 'To' payment method");
-    }
-
-    if (fromPaymentMethod === toPaymentMethod) {
-      errors.push("From and To payment methods cannot be the same");
-    }
-
-    if (errors.length > 0) {
-      setValidationErrors(errors);
-      errors.forEach((error) => showToast.error(error));
-      return;
-    }
-
     // Check if user needs to login first
     if (!isAuthenticated) {
       // Save state to localStorage for restoration after login
@@ -587,10 +555,6 @@ const MoneyXRates = ({
           : null,
       };
 
-      console.log("💾 [Rates] Saving moneyx form state before login:", state);
-      console.log("💾 [Rates] From payment detail:", selectedFromPaymentDetail);
-      console.log("💾 [Rates] To payment detail:", selectedToPaymentDetail);
-
       // Save to localStorage
       localStorage.setItem("moneyx_form_state", JSON.stringify(state));
       localStorage.setItem(RATES_MONEYX_FORM_STATE_KEY, JSON.stringify(state));
@@ -601,6 +565,52 @@ const MoneyXRates = ({
 
       // Redirect to login
       router.push("/auth/login");
+      return;
+    }
+
+    // Strict KYC gate for rates moneyX submit.
+    try {
+      const kycResult = await dispatch(checkKYCStatus()).unwrap();
+      const kycStatus = kycResult as any;
+      if (!kycStatus || kycStatus.is_verified !== true) {
+        dispatch(openKYCModal());
+        return;
+      }
+    } catch {
+      dispatch(openKYCModal());
+      return;
+    }
+
+    // Clear previous errors
+    setValidationErrors([]);
+
+    // Validation
+    const errors: string[] = [];
+
+    if (
+      !payAmountInput ||
+      payAmountInput.trim() === "" ||
+      !payAmount ||
+      payAmount <= 0
+    ) {
+      errors.push("Please enter a valid amount");
+    }
+
+    if (!fromPaymentMethod || !selectedFromPaymentDetail) {
+      errors.push("Please select a 'From' payment method");
+    }
+
+    if (!toPaymentMethod || !selectedToPaymentDetail) {
+      errors.push("Please select a 'To' payment method");
+    }
+
+    if (fromPaymentMethod === toPaymentMethod) {
+      errors.push("From and To payment methods cannot be the same");
+    }
+
+    if (errors.length > 0) {
+      setValidationErrors(errors);
+      errors.forEach((error) => showToast.error(error));
       return;
     }
 
@@ -658,6 +668,21 @@ const MoneyXRates = ({
 
   // Handle bank account address update and proceed to exchanging
   const handleBankAccountSubmit = async () => {
+    // Strict KYC gate for final submit.
+    if (isAuthenticated) {
+      try {
+        const kycResult = await dispatch(checkKYCStatus()).unwrap();
+        const kycStatus = kycResult as any;
+        if (!kycStatus || kycStatus.is_verified !== true) {
+          dispatch(openKYCModal());
+          return;
+        }
+      } catch {
+        dispatch(openKYCModal());
+        return;
+      }
+    }
+
     if (!bankAccountAddress.trim()) {
       showToast.error("Please enter a bank account address");
       return;
@@ -1493,8 +1518,7 @@ const MoneyXRates = ({
               className={`w-full text-base font-medium py-3 rounded-xl flex items-center justify-center gap-2 transition-colors text-white ${!bankAccountAddress.trim() ||
                 bankAddressError ||
                 !isAddressConfirmed ||
-                isUpdatingTransaction ||
-                !user?.is_verified
+                isUpdatingTransaction
                 ? "bg-gray-500 cursor-not-allowed"
                 : "bg-[#1D8751] hover:bg-[#166b3e]"
                 }`}
@@ -1503,8 +1527,7 @@ const MoneyXRates = ({
                 !bankAccountAddress.trim() ||
                 !!bankAddressError ||
                 !isAddressConfirmed ||
-                isUpdatingTransaction ||
-                !user?.is_verified
+                isUpdatingTransaction
               }
             >
               {isUpdatingTransaction ? (

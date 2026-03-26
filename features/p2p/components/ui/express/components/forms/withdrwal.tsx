@@ -245,6 +245,7 @@ export default function WithdrawalForm({
   onCancel,
   onBeforeLegalNavigate,
 }: DepositFormProps) {
+  const MIN_WITHDRAWAL_AMOUNT = 10;
   // Use available amount from transaction summary (same common source as Available.tsx / P2PDashboard)
   const summary = useSelector(selectTransactionSummary);
   const { availableAmount } = useSelector(selectP2PWalletAmounts);
@@ -417,6 +418,8 @@ export default function WithdrawalForm({
 
   // P2P withdrawal commission (percentage from commission-lookup API, no auth)
   const [p2pCommissionRate, setP2pCommissionRate] = useState<number>(0);
+  const [p2pCommissionIsPercentage, setP2pCommissionIsPercentage] = useState<boolean>(true);
+  const [p2pFixedCommissionFee, setP2pFixedCommissionFee] = useState<number>(0);
   const [p2pReceiveAmount, setP2pReceiveAmount] = useState("");
   const [isCalculatingFromReceive, setIsCalculatingFromReceive] = useState(false);
   const p2pCommissionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -426,6 +429,8 @@ export default function WithdrawalForm({
     const amount = payAmount || 0;
     if (amount <= 0) {
       setP2pCommissionRate(0);
+      setP2pCommissionIsPercentage(true);
+      setP2pFixedCommissionFee(0);
       setP2pReceiveAmount("");
       return;
     }
@@ -439,9 +444,14 @@ export default function WithdrawalForm({
         const data = res.data;
         const rate = parseFloat(data?.commission_rate ?? data?.commission ?? "0") || 0;
         const isPercentage = data?.is_percentage ?? true;
-        setP2pCommissionRate(isPercentage ? rate : 0);
+        const calculatedFee = parseFloat(data?.calculated_fee ?? "0") || 0;
+        setP2pCommissionRate(rate);
+        setP2pCommissionIsPercentage(Boolean(isPercentage));
+        setP2pFixedCommissionFee(isPercentage ? 0 : calculatedFee);
       } catch {
         setP2pCommissionRate(0);
+        setP2pCommissionIsPercentage(true);
+        setP2pFixedCommissionFee(0);
       }
     }, 300);
     return () => { if (p2pCommissionTimeoutRef.current) clearTimeout(p2pCommissionTimeoutRef.current); };
@@ -450,10 +460,12 @@ export default function WithdrawalForm({
   // Recalculate "You Receive" when payAmount or commission changes (forward direction)
   useEffect(() => {
     if (isCalculatingFromReceive) return;
-    const fee = (payAmount * p2pCommissionRate) / 100;
+    const fee = p2pCommissionIsPercentage
+      ? (payAmount * p2pCommissionRate) / 100
+      : p2pFixedCommissionFee;
     const receive = Math.max(0, payAmount - fee);
     setP2pReceiveAmount(payAmount > 0 ? receive.toFixed(2) : "");
-  }, [payAmount, p2pCommissionRate, isCalculatingFromReceive]);
+  }, [payAmount, p2pCommissionRate, p2pCommissionIsPercentage, p2pFixedCommissionFee, isCalculatingFromReceive]);
 
   // OTP Modal Functions
   const handleOTPVerify = async (otp: string) => {
@@ -946,6 +958,9 @@ export default function WithdrawalForm({
 
   // Validate balance - check if amount exceeds available balance
   const validateBalance = (amount: number) => {
+    if (amount > 0 && amount < MIN_WITHDRAWAL_AMOUNT) {
+      return `Minimum withdrawal amount is ${MIN_WITHDRAWAL_AMOUNT}`;
+    }
     if (balance !== undefined && amount > balance) {
       return `Insufficient balance. Available: ${formatBalance(balance)}`;
     }
@@ -1986,6 +2001,11 @@ export default function WithdrawalForm({
       return false;
     }
 
+    // Enforce minimum withdrawal amount
+    if (payAmount < MIN_WITHDRAWAL_AMOUNT) {
+      return false;
+    }
+
     // Check if amount exceeds available balance
     if (effectiveBalance !== undefined && payAmount > effectiveBalance) {
       return false;
@@ -2019,6 +2039,13 @@ export default function WithdrawalForm({
     if (!payAmount || payAmount <= 0) {
       setBalanceError("Amount should be more than 0");
       showToast.error("Validation Error", "Amount should be more than 0");
+      return;
+    }
+
+    if (payAmount < MIN_WITHDRAWAL_AMOUNT) {
+      const msg = `Minimum withdrawal amount is ${MIN_WITHDRAWAL_AMOUNT}`;
+      setBalanceError(msg);
+      showToast.error("Validation Error", msg);
       return;
     }
 
@@ -2750,6 +2777,8 @@ export default function WithdrawalForm({
 
                       if (newValue <= 0) {
                         setBalanceError("Amount should be more than 0");
+                      } else if (newValue < MIN_WITHDRAWAL_AMOUNT) {
+                        setBalanceError(`Minimum withdrawal amount is ${MIN_WITHDRAWAL_AMOUNT}`);
                       } else {
                         const balanceValidationError = validateBalance(newValue);
                         setBalanceError(balanceValidationError);
@@ -2830,9 +2859,15 @@ export default function WithdrawalForm({
                   You Receive
                   <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
                 </label>
-                {p2pCommissionRate > 0 && (
+                {(p2pCommissionRate > 0 || p2pFixedCommissionFee > 0) && (
                   <span className="text-xs sm:text-sm text-[#F79330] font-medium">
-                    Fee: {p2pCommissionRate}%
+                    Fee: {p2pCommissionIsPercentage
+                      ? `${p2pCommissionRate}%`
+                      : `${p2pFixedCommissionFee.toFixed(2)} ${(
+                        selectedAsset?.ticker ||
+                        selectedAsset?.symbol ||
+                        "USDT"
+                      ).toUpperCase()}`}
                   </span>
                 )}
               </div>
@@ -2861,9 +2896,11 @@ export default function WithdrawalForm({
 
                       const receiveVal = inputValue === "" ? 0 : parseFloat(inputValue) || 0;
                       if (receiveVal > 0) {
-                        const sendAmount = p2pCommissionRate >= 100
-                          ? receiveVal
-                          : receiveVal / (1 - p2pCommissionRate / 100);
+                        const sendAmount = p2pCommissionIsPercentage
+                          ? (p2pCommissionRate >= 100
+                            ? receiveVal
+                            : receiveVal / (1 - p2pCommissionRate / 100))
+                          : (receiveVal + p2pFixedCommissionFee);
                         setPayAmount(sendAmount);
                         setPayAmountInput(sendAmount.toFixed(2));
                         setIsUserModifiedAmount(true);
@@ -2895,9 +2932,12 @@ export default function WithdrawalForm({
                   </span>
                 </div>
               </div>
-              {p2pCommissionRate > 0 && payAmount > 0 && (
+              {(p2pCommissionRate > 0 || p2pFixedCommissionFee > 0) && payAmount > 0 && (
                 <div className="mt-2 text-xs text-[#788099] dark:text-[#5A5A65]">
-                  Commission: {((payAmount * p2pCommissionRate) / 100).toFixed(2)} {(selectedAsset?.ticker || selectedAsset?.symbol || "USDT").toUpperCase()}
+                  Commission: {(p2pCommissionIsPercentage
+                    ? ((payAmount * p2pCommissionRate) / 100)
+                    : p2pFixedCommissionFee
+                  ).toFixed(2)} {(selectedAsset?.ticker || selectedAsset?.symbol || "USDT").toUpperCase()}
                 </div>
               )}
             </div>

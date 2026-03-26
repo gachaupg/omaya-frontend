@@ -693,21 +693,15 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
         const kycResult = await dispatch(checkKYCStatus()).unwrap();
         const kycStatus = kycResult as any;
 
-        // Only open modal if API confirms user is NOT verified
-        if (kycStatus && kycStatus.is_verified === false) {
+        // Strict KYC gate: only explicit verified=true can proceed.
+        if (!kycStatus || kycStatus.is_verified !== true) {
           dispatch(openKYCModal());
           return;
         }
-        // If verified (is_verified === true), continue with the flow
       } catch (error) {
-        // If API check fails, fallback to user.is_verified
-        // But only open modal if explicitly false (not undefined/null)
-        if (user.is_verified === false) {
-          dispatch(openKYCModal());
-          return;
-        }
-        // If verification status is unknown, allow the action to proceed
-        console.warn("KYC status check failed, proceeding with caution:", error);
+        // On verification check failure, block progression and show KYC modal.
+        dispatch(openKYCModal());
+        return;
       }
     }
 
@@ -1549,16 +1543,13 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
                   try {
                     const kycResult = await dispatch(checkKYCStatus()).unwrap();
                     const kycStatus = kycResult as any;
-                    if (kycStatus && kycStatus.is_verified === false) {
+                    if (!kycStatus || kycStatus.is_verified !== true) {
                       dispatch(openKYCModal());
                       return;
                     }
                   } catch (error) {
-                    if (user.is_verified === false) {
-                      dispatch(openKYCModal());
-                      return;
-                    }
-                    console.warn("KYC status check failed, proceeding with caution:", error);
+                    dispatch(openKYCModal());
+                    return;
                   }
                 }
 

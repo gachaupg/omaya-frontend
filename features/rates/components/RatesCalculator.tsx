@@ -44,7 +44,7 @@ import {
 import { useRatesI18n } from "@/lib/useRatesI18n";
 import { FaSearch } from "react-icons/fa";
 import { showToast } from "@/lib/utils/toast";
-import { openKYCModal } from "@/features/auth/slices/authSlice";
+import { openKYCModal, checkKYCStatus } from "@/features/auth/slices/authSlice";
 import Exchanging from "../../express/components/exchnaging";
 import { useTheme } from "@/context/theme";
 import MoneyXRates from "./MoneyXRates";
@@ -130,7 +130,6 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
 
   // Get authentication state and user (for verification check)
   const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
-  const isVerified = user?.is_verified === true;
 
   // Network mapping function
   const getNetworkDisplayName = (network: string) => {
@@ -1220,6 +1219,26 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
       return;
     }
 
+    // Strict KYC gate on final proceed as well.
+    // Use local auth state first for immediate UX, then verify with API.
+    if (isAuthenticated) {
+      if (user?.is_verified === false) {
+        dispatch(openKYCModal());
+        return;
+      }
+      try {
+        const kycResult = await dispatch(checkKYCStatus()).unwrap();
+        const kycStatus = kycResult as any;
+        if (!kycStatus || kycStatus.is_verified !== true) {
+          dispatch(openKYCModal());
+          return;
+        }
+      } catch {
+        dispatch(openKYCModal());
+        return;
+      }
+    }
+
     if (isDepositMode) {
       const trimmed = walletAddress.trim();
       if (!trimmed) {
@@ -2009,6 +2028,26 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
       // Redirect to login page
       router.push("/auth/login");
       return;
+    }
+
+    // Strict KYC gate for rates submit (both deposit/withdrawal).
+    // Use local auth state first for immediate UX, then verify with API.
+    if (isAuthenticated) {
+      if (user?.is_verified === false) {
+        dispatch(openKYCModal());
+        return;
+      }
+      try {
+        const kycResult = await dispatch(checkKYCStatus()).unwrap();
+        const kycStatus = kycResult as any;
+        if (!kycStatus || kycStatus.is_verified !== true) {
+          dispatch(openKYCModal());
+          return;
+        }
+      } catch {
+        dispatch(openKYCModal());
+        return;
+      }
     }
 
     if (!selectedAsset || !selectedPaymentMethod) {
@@ -3185,21 +3224,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
       {!isFirstCardSubmitted && (
         <button
           onClick={handleSubmit}
-          disabled={
-            isSubmitting ||
-            (!isDepositMode &&
-              (selectedPaymentDetails.length === 0 ||
-                (isFieldsSwapped &&
-                  selectedPaymentDetails.length > 0 &&
-                  (() => {
-                    const status = (selectedPaymentDetails[0]?.status || "")
-                      .toString()
-                      .toLowerCase();
-                    return (
-                      status !== "" && status !== "approved" && status !== "verified"
-                    );
-                  })())))
-          }
+          disabled={isSubmitting}
           className={`w-full py-3 px-4 rounded-xl font-semibold text-white bg-[#1D8751] hover:bg-[#0f8f4d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""
             }`}
         >
@@ -3523,8 +3548,8 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                 <div className="mt-2 p-1 bg-[#1D8751] bg-opacity-10 border border-[#1D8751] rounded-xl">
                   <button
                     onClick={handleProceedToExchanging}
-                    disabled={isSubmitting || !isVerified}
-                    className={`w-full font-semibold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 ${(isSubmitting || !isVerified)
+                    disabled={isSubmitting}
+                    className={`w-full font-semibold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 ${(isSubmitting)
                       ? "bg-gray-500 cursor-not-allowed text-white"
                       : "bg-[#1D8751] hover:bg-[#166b3f] text-white"
                       }`}

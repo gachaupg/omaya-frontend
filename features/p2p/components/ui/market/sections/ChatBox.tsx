@@ -147,7 +147,20 @@ const ChatBox: React.FC<{
 
   // Sort messages by timestamp and filter out duplicate optimistic messages
   const sortedMessages = React.useMemo(() => {
-    const messages = [...messagesFromRedux];
+    const numericTradeId = Number(tradeId);
+    const canMatchNumericTrade = Number.isFinite(numericTradeId) && tradeId.trim() !== "";
+    const messages = [...messagesFromRedux].filter((msg: any) => {
+      // If backend provides explicit trade_id (string/uuid), use it.
+      if (msg?.trade_id != null) {
+        return String(msg.trade_id) === String(tradeId);
+      }
+      // If this chat uses numeric trade IDs, match by numeric `trade`.
+      if (canMatchNumericTrade && msg?.trade != null) {
+        return Number(msg.trade) === numericTradeId;
+      }
+      // Otherwise keep message (prevents hiding optimistic/WS messages on uuid trades).
+      return true;
+    });
 
     // Separate temp messages from real messages
     const tempMessages = messages.filter(msg => msg.id.toString().startsWith('temp-'));
@@ -168,10 +181,19 @@ const ChatBox: React.FC<{
     });
 
     // Combine and sort
-    return [...realMessages, ...filteredTempMessages].sort((a, b) => {
+    const combined = [...realMessages, ...filteredTempMessages].sort((a, b) => {
       return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
     });
-  }, [messagesFromRedux]);
+
+    // Final dedupe pass for near-identical messages from WS + API races.
+    const seen = new Set<string>();
+    return combined.filter((msg) => {
+      const key = `${msg.sender_name || ""}|${msg.message || ""}|${new Date(msg.timestamp).getTime()}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [messagesFromRedux, tradeId]);
 
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [copiedChatId, setCopiedChatId] = useState(false);
@@ -323,6 +345,13 @@ const ChatBox: React.FC<{
   // Polling interval for support messages (API-based)
   const pollingIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
 
+  // On trade change, clear current trade message list immediately to avoid
+  // briefly showing stale messages from a previously open chat.
+  useEffect(() => {
+    if (!tradeId) return;
+    dispatch(setMessages({ tradeId, messages: [] }));
+  }, [tradeId, dispatch]);
+
   useEffect(() => {
     // If support messages are passed as props, use them directly (don't fetch)
     if (messageType === 'support' && supportMessages && supportMessages.length > 0) {
@@ -382,11 +411,10 @@ const ChatBox: React.FC<{
       if (latestMessage.id !== lastMessageIdRef.current) {
         lastMessageIdRef.current = latestMessage.id;
 
-        // Only refresh for temporary messages or if images are completely missing
+        // Only refresh for temporary optimistic messages.
         const hasTemporaryId = latestMessage.id && latestMessage.id.toString().startsWith('temp-');
-        const hasNoImages = !latestMessage.images || latestMessage.images.length === 0;
 
-        if (hasTemporaryId || hasNoImages) {
+        if (hasTemporaryId) {
           // Clear any existing timeout
           if (refreshTimeoutRef.current) {
             clearTimeout(refreshTimeoutRef.current);
@@ -721,7 +749,7 @@ const ChatBox: React.FC<{
                   className={
                     isSender
                       ? "bg-[#1D8751] text-white rounded-lg p-2 sm:p-3 max-w-[85%] sm:max-w-xs min-w-[100px] sm:min-w-[120px]"
-                      : "dark:bg-[var(--card-color)] bg-gray-200 dark:text-white text-gray-900 rounded-lg p-2 sm:p-3 max-w-[85%] sm:max-w-xs min-w-[100px] sm:min-w-[120px]"
+                      : "bg-gray-200 dark:bg-[#35353E] dark:text-white text-gray-900 rounded-lg p-2 sm:p-3 max-w-[85%] sm:max-w-xs min-w-[100px] sm:min-w-[120px]"
                   }
                 >
                   {/* Show sender username - "You" for own messages, username for their messages */}
