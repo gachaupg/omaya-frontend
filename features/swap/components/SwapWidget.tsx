@@ -35,6 +35,8 @@ import { swapAmountToInputString } from "@/lib/utils/swapAmountInput";
 
 // Minimum swap value in USD/USDT - smaller amounts can disappear due to fees
 const MIN_SWAP_USD = 30;
+const RETURNING_FROM_LEGAL_KEY = "omaya_returning_from_legal";
+const SWAP_LEGAL_RETURN_STATE_KEY = "omaya_swap_legal_return_state";
 
 const meetsMinimumSwap = (
   fromAsset: SupportedAsset | null,
@@ -85,6 +87,7 @@ const SwapWidget = () => {
   const [walletValidationError, setWalletValidationError] = React.useState("");
   const [copyMessage, setCopyMessage] = React.useState("");
   const [localSwapError, setLocalSwapError] = React.useState("");
+  const [hasAcceptedTerms, setHasAcceptedTerms] = React.useState(false);
   const [activeInputField, setActiveInputField] = React.useState<"from" | "to">(
     "from"
   );
@@ -96,6 +99,55 @@ const SwapWidget = () => {
     React.useState<SwapStep>("transaction-info");
   const [showWalletAddress, setShowWalletAddress] = React.useState(false);
   const [hasRestoredState, setHasRestoredState] = React.useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    try {
+      const returning = sessionStorage.getItem(RETURNING_FROM_LEGAL_KEY);
+      if (!returning) {
+        sessionStorage.removeItem(SWAP_LEGAL_RETURN_STATE_KEY);
+        return;
+      }
+
+      const saved = sessionStorage.getItem(SWAP_LEGAL_RETURN_STATE_KEY);
+      if (!saved) {
+        sessionStorage.removeItem(RETURNING_FROM_LEGAL_KEY);
+        return;
+      }
+
+      const state = JSON.parse(saved) as {
+        walletAddress?: string;
+        showWalletAddress?: boolean;
+        hasAcceptedTerms?: boolean;
+        scrollY?: number;
+      };
+
+      if (typeof state.walletAddress === "string") {
+        setWalletAddress(state.walletAddress);
+      }
+      if (typeof state.showWalletAddress === "boolean") {
+        setShowWalletAddress(state.showWalletAddress);
+      }
+      if (typeof state.hasAcceptedTerms === "boolean") {
+        setHasAcceptedTerms(state.hasAcceptedTerms);
+      }
+
+      if (typeof state.scrollY === "number" && !Number.isNaN(state.scrollY)) {
+        window.setTimeout(() => {
+          window.scrollTo({ top: Math.max(0, state.scrollY || 0), behavior: "auto" });
+        }, 0);
+      }
+
+      sessionStorage.removeItem(RETURNING_FROM_LEGAL_KEY);
+      sessionStorage.removeItem(SWAP_LEGAL_RETURN_STATE_KEY);
+    } catch {
+      sessionStorage.removeItem(RETURNING_FROM_LEGAL_KEY);
+      sessionStorage.removeItem(SWAP_LEGAL_RETURN_STATE_KEY);
+    }
+  }, []);
 
   // Simple debounce implementation
   const [debouncedFromAmount, setDebouncedFromAmount] =
@@ -610,6 +662,27 @@ const SwapWidget = () => {
     setWalletValidationError(""); // Clear error when user types
   };
 
+  const handleBeforeLegalNavigate = useCallback(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    try {
+      sessionStorage.setItem(
+        SWAP_LEGAL_RETURN_STATE_KEY,
+        JSON.stringify({
+          walletAddress,
+          showWalletAddress,
+          hasAcceptedTerms,
+          scrollY: window.scrollY,
+        })
+      );
+      sessionStorage.setItem(RETURNING_FROM_LEGAL_KEY, "1");
+    } catch {
+      // Ignore storage errors and let navigation continue.
+    }
+  }, [walletAddress, showWalletAddress, hasAcceptedTerms]);
+
   const handleSubmit = async () => {
     logger.debug("swap", "handleSubmit called");
     if (!fromAsset || !toAsset || !walletAddress || !estimate) {
@@ -822,6 +895,9 @@ const SwapWidget = () => {
               onNext={handleWalletAddressNext}
               fromAsset={fromAsset}
               toAsset={toAsset}
+              hasAcceptedTerms={hasAcceptedTerms}
+              onHasAcceptedTermsChange={setHasAcceptedTerms}
+              onBeforeLegalNavigate={handleBeforeLegalNavigate}
               // Pass loading state to disable button
               isLoading={swapLoading}
             />
