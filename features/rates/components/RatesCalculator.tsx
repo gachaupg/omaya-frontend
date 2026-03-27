@@ -30,7 +30,6 @@ import { Asset, DepositResponse } from "../../exchange/types";
 import { SupportedAsset } from "../../swap/types";
 import { ExpressWithdrawalPayload } from "../../express/types";
 import { useAssetsDisplay, usePaymentMethodsDisplay } from "../../express/hooks/useDataDisplay";
-import { AlertCircle } from "lucide-react";
 import CustomSelect from "@/components/ui/CustomSelect";
 import {
   PAYMENT_LOGO_BASE_CLASS,
@@ -3100,9 +3099,32 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                   </div>
                   {!isDepositMode && payBank && (
                     <div className="mt-3 w-full">
-                      <label className={`block text-sm mb-2 font-semibold ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"}`}>
-                        {t("rates.registeredAccount", "Registered Account")}
-                      </label>
+                      <div className="flex items-center gap-2 mb-2">
+                        <label className={`block text-sm font-semibold ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"}`}>
+                          {t("rates.registeredAccount", "Registered Account")}
+                        </label>
+                        {(() => {
+                          const status = (
+                            selectedPaymentDetails[0]?.status || ""
+                          )
+                            .toString()
+                            .toLowerCase();
+                          const isPending =
+                            status !== "" &&
+                            status !== "approved" &&
+                            status !== "verified";
+                          if (!isPending) return null;
+
+                          return (
+                            <span
+                              className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border border-[#F79330]/40 bg-[#F79330]/10 text-[#F79330]"
+                              title="Account pending approval"
+                            >
+                              Pending Registered Account
+                            </span>
+                          );
+                        })()}
+                      </div>
                       {enhancedFilteredUserPaymentDetails.length > 0 ? (
                         <CustomSelect
                           options={enhancedFilteredUserPaymentDetails.map((detail: UserPaymentDetail) => {
@@ -3149,22 +3171,6 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
         </div>
       </div>
 
-      {/* Estimated Price Warning - hidden for deposit mode */}
-      {!isDepositMode && (
-        <div
-          className={`mb-4 flex items-start gap-3 p-4 rounded-2xl border ${isDark ? "bg-[#F79330]/10 border-[#F79330]/30" : "bg-[#F79330]/10 border-[#F79330]/40"} ${
-            isDark ? "text-white" : "text-[#1F2937]"
-          }`}
-        >
-          <AlertCircle className="w-5 h-5 text-[#F79330] flex-shrink-0 mt-0.5" />
-          <div className="text-xs sm:text-sm lg:text-sm">
-            {t(
-              "rates.alert.estimate",
-              "This is only estimated price and its based on current Market Price. We will fix the price when we receive the funds."
-            )}
-          </div>
-        </div>
-      )}
 
       {/* Amount & Fees */}
       <div className={`border ${isDark ? "border-[#35353E]" : "border-[#E8EFF5]"} rounded-xl p-4 bg-transparent mb-4`}>
@@ -3251,8 +3257,8 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
       {/* Expanded Pages - shown after first card submission */}
       {isFirstCardSubmitted && (
         <>
-          {/* Payment Details Card */}
-          {selectedPaymentDetail && (
+          {/* Payment Details Card - deposit only */}
+          {isDepositMode && selectedPaymentDetail && (
             <>
               <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
                 <span className="text-[#7e7e8f] dark:text-[#788099]">2-</span>{" "}
@@ -3260,7 +3266,6 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
               </h2>
               <div className="mt-1 mb-2 w-full flex flex-col gap-3 max-w-4xl mx-auto px-2">
                 <div className="flex-1 dark:bg-[#1D1D23] rounded-2xl border border-[#39394a] dark:border-[#35353E] flex flex-col justify-between p-3 sm:p-5 relative min-h-[120px]">
-                  {/* Bank and logo */}
                   <div className="flex items-center justify-between mb-4 gap-2">
                     <span className="text-[#7e7e8f] dark:text-[#788099] text-sm sm:text-base font-semibold flex-shrink-0">
                       {t("rates.bankLabel", "Bank:")}
@@ -3281,7 +3286,6 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                     </div>
                   </div>
                   <div className="border-t border-dashed border-[#39394a] mb-2"></div>
-                  {/* Account Name */}
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2 gap-1">
                     <span className="text-[#7e7e8f] dark:text-[#788099] text-sm sm:text-base font-medium flex-shrink-0">
                       {t("rates.accountNameLabel", "Account Name :")}
@@ -3291,7 +3295,6 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                     </span>
                   </div>
                   <div className="border-t border-dashed border-[#39394a] mb-2"></div>
-                  {/* Account Number */}
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
                     <span className="text-[#7e7e8f] dark:text-[#788099] text-sm sm:text-base font-medium flex-shrink-0">
                       {t("rates.accountNumberLabel", "Account Number :")}

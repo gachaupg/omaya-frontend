@@ -1225,7 +1225,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
               Bank Account Address
             </label>
             {/* Input group */}
-            <div className="flex items-center dark:bg-[#1D1D23] border border-[#39394a] dark:border-[#35353E] rounded-2xl px-2 sm:px-4 py-2 mb-0 overflow-hidden gap-1 sm:gap-2">
+            <div className="flex items-center dark:bg-[#1D1D23] border border-[#39394a] dark:border-[#35353E] rounded-2xl px-2 sm:px-4 py-2 mb-0 overflow-visible gap-1 sm:gap-2">
               {/* Left icon */}
               <span className="text-[#1D8751] flex-shrink-0">
                 <svg width="22" height="22" fill="none" viewBox="0 0 24 24" className="w-5 h-5 sm:w-[22px] sm:h-[22px]">

@@ -632,13 +632,24 @@ const MoneyXRates = ({
         throw new Error("Provider IDs not found in payment methods");
       }
 
+      const recipientName =
+        (user as any)?.full_name ||
+        [((user as any)?.first_name || "").trim(), ((user as any)?.last_name || "").trim()]
+          .filter(Boolean)
+          .join(" ")
+          .trim() ||
+        (user as any)?.name ||
+        (user as any)?.username ||
+        (user as any)?.email ||
+        "Unknown User";
+
       // Create MoneyX transaction
       const result = await dispatch(
         createMoneyXTransaction({
           amount: payAmount.toFixed(2),
           sender_provider: senderProviderId,
           receiver_provider: receiverProviderId,
-          recipient_name: "John Doe", // TODO: Add recipient name input field if needed
+          recipient_name: recipientName,
         })
       ).unwrap();
 
