@@ -136,6 +136,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
     const fromResolver = resolveExpressTransactionFailureMessage({ data: wsData });
     if (fromResolver) return fromResolver;
     const reason =
+      wsData?.notification?.reason ||
       wsData?.reason ||
       wsData?.error_message ||
       wsData?.comment_text ||

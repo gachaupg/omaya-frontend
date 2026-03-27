@@ -645,7 +645,28 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
 
           // Show failure modal for failed, rejected, or stopped statuses
           if (status && ["failed", "rejected", "stopped"].includes(status)) {
+            const rawNotification =
+              (data as any)?.data?.notification ??
+              (data as any)?.notification;
+            let wsNotificationReason: unknown =
+              (data as any)?.data?.notification?.reason ??
+              (data as any)?.notification?.reason;
+            if (!wsNotificationReason && typeof rawNotification === "string") {
+              try {
+                const parsed = JSON.parse(rawNotification) as { reason?: unknown };
+                wsNotificationReason = parsed?.reason;
+              } catch {
+                // Keep existing value if notification is not valid JSON.
+              }
+            }
+            const wsNotificationReasonText =
+              typeof wsNotificationReason === "string"
+                ? wsNotificationReason.trim()
+                : typeof wsNotificationReason === "number"
+                  ? String(wsNotificationReason)
+                  : "";
             let failureMessage =
+              (wsNotificationReasonText || undefined) ??
               resolveExpressTransactionFailureMessage(data) ?? message;
             if (
               !failureMessage &&
