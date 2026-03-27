@@ -20,10 +20,17 @@ const DEFAULT_BODY =
 const getStatusLabel = (status: string): string => {
   const labels: Record<string, string> = {
     failed: 'Transaction Failed',
-    rejected: 'Your has been Transaction Rejected',
+    rejected: 'Transaction Rejected',
     stopped: 'Transaction Stopped',
   };
   return labels[status?.toLowerCase()] || `Transaction ${status}`;
+};
+
+const getStatusBody = (status: string): string => {
+  const bodies: Record<string, string> = {
+    rejected: "Your transaction has been rejected. Try again later.",
+  };
+  return bodies[status?.toLowerCase()] || DEFAULT_BODY;
 };
 
 /** Splits resolver output "reason\n\ndetail" into two parts. */
@@ -119,7 +126,9 @@ const FailureStatusModal: React.FC<FailureStatusModalProps> = ({
                 ) : null}
               </div>
             ) : (
-              <p className={`whitespace-pre-line text-sm leading-relaxed ${muted}`}>{DEFAULT_BODY}</p>
+              <p className={`whitespace-pre-line text-sm leading-relaxed ${muted}`}>
+                {getStatusBody(status)}
+              </p>
             )}
           </div>
 

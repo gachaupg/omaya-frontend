@@ -630,9 +630,30 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
 
           // Show failure modal for failed, rejected, or stopped statuses
           if (status && ["failed", "rejected", "stopped"].includes(status)) {
+            const rawNotification =
+              (data as any)?.data?.notification ??
+              (data as any)?.notification;
+            let wsNotificationReason: unknown =
+              (data as any)?.data?.notification?.reason ??
+              (data as any)?.notification?.reason;
+            if (!wsNotificationReason && typeof rawNotification === "string") {
+              try {
+                const parsed = JSON.parse(rawNotification) as { reason?: unknown };
+                wsNotificationReason = parsed?.reason;
+              } catch {
+                // Keep existing value if notification is not valid JSON.
+              }
+            }
+            const wsNotificationReasonText =
+              typeof wsNotificationReason === "string"
+                ? wsNotificationReason.trim()
+                : typeof wsNotificationReason === "number"
+                  ? String(wsNotificationReason)
+                  : "";
             // Some backends put the rejection payload directly under `data.data`,
             // so try both wrapper and inner payload shapes.
             let failureMessage =
+              (wsNotificationReasonText || undefined) ??
               resolveExpressTransactionFailureMessage(data) ??
               resolveExpressTransactionFailureMessage((data as any)?.data) ??
               resolveExpressTransactionFailureMessage({ data: (data as any)?.data }) ??
