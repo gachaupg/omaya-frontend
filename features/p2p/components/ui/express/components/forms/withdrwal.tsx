@@ -424,7 +424,7 @@ export default function WithdrawalForm({
   const [isCalculatingFromReceive, setIsCalculatingFromReceive] = useState(false);
   const p2pCommissionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Fetch withdrawal commission from no-auth endpoint (uses exchange feature for commission rates)
+  // Fetch withdrawal commission from no-auth endpoint (uses p2p feature for commission rates)
   useEffect(() => {
     const amount = payAmount || 0;
     if (amount <= 0) {
@@ -439,15 +439,24 @@ export default function WithdrawalForm({
       try {
         const { API_BASE_URL } = await import("@/config/api");
         const { default: axios } = await import("axios");
-        const url = `${API_BASE_URL}/administration/commission-lookup/?feature=exchange&commission_type=withdrawal&amount=${amount}`;
+        const url = `${API_BASE_URL}/administration/commission-lookup/?feature=p2p&commission_type=withdrawal&amount=${amount}`;
         const res = await axios.get(url);
         const data = res.data;
         const rate = parseFloat(data?.commission_rate ?? data?.commission ?? "0") || 0;
-        const isPercentage = data?.is_percentage ?? true;
+        const rawIsPercentage = data?.is_percentage;
+        const isPercentage =
+          typeof rawIsPercentage === "boolean"
+            ? rawIsPercentage
+            : typeof rawIsPercentage === "string"
+              ? rawIsPercentage.toLowerCase() === "true"
+              : typeof rawIsPercentage === "number"
+                ? rawIsPercentage === 1
+                : true;
         const calculatedFee = parseFloat(data?.calculated_fee ?? "0") || 0;
+        const fixedFee = calculatedFee > 0 ? calculatedFee : rate;
         setP2pCommissionRate(rate);
-        setP2pCommissionIsPercentage(Boolean(isPercentage));
-        setP2pFixedCommissionFee(isPercentage ? 0 : calculatedFee);
+        setP2pCommissionIsPercentage(isPercentage);
+        setP2pFixedCommissionFee(isPercentage ? 0 : fixedFee);
       } catch {
         setP2pCommissionRate(0);
         setP2pCommissionIsPercentage(true);

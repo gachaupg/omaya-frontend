@@ -1004,15 +1004,6 @@ const MoneyXRates = ({
 
                 setToPaymentMethod(tempPaymentMethod);
                 setSelectedToPaymentDetail(tempPaymentDetail);
-
-                // Swap the amounts
-                const tempPayAmount = payAmountInput;
-                const tempPay = payAmount;
-                setPayAmountInput(getAmountInput);
-                setPayAmount(getAmount);
-                setGetAmountInput(tempPayAmount);
-                setGetAmount(tempPay);
-                setIsCalculatingFromPay((prev) => !prev);
               }}
               className="flex items-center justify-center p-0 bg-transparent border-none shadow-none"
             >
