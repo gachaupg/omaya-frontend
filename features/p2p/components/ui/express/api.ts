@@ -21,13 +21,13 @@ interface CommissionLookupResponse {
   range_max: string;
 }
 
-// Commission lookup API (no auth required) — returns percentage rate
+// Commission lookup API (no auth required) for P2P flow
 export const fetchCommission = async (
   _asset: string,
   amount: number,
   type: "deposit" | "withdrawal"
 ): Promise<number> => {
-  const url = `${API_BASE_URL}${API_CONFIG.COMMISSION_LOOKUP(amount, type)}`;
+  const url = `${API_BASE_URL}${API_CONFIG.COMMISSION_LOOKUP(amount, type, "p2p")}`;
   const response = await axios.get<CommissionLookupResponse>(url);
   const rate = response.data?.commission_rate;
   return typeof rate === "number" ? rate : parseFloat(String(rate)) || 0;
