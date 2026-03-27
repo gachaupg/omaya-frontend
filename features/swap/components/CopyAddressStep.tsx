@@ -6,6 +6,7 @@ import { cookieUtils } from "@/lib/utils/cookieUtils";
 import { API_CONFIG } from "@/lib/appConfig";
 import SuccessPage from "./success";
 import { Copy } from "lucide-react";
+import QRCode from "qrcode";
 
 import { logger } from '@/lib/utils/logger';
 
@@ -105,8 +106,25 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
   const [statusObj, setStatusObj] = useState<any>(null);
   const [wsConnected, setWsConnected] = useState<boolean>(false);
   const [reconnectAttempts, setReconnectAttempts] = useState(0);
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>("");
   const maxReconnectAttempts = 5;
   const reconnectDelay = 3000; // 3 seconds
+  const payinAddress =
+    swapResponse?.payinAddress ||
+    (swapResponse as any)?.payin_address ||
+    statusObj?.payinAddress ||
+    statusObj?.payin_address ||
+    "";
+
+  useEffect(() => {
+    if (!payinAddress) {
+      setQrCodeDataUrl("");
+      return;
+    }
+    QRCode.toDataURL(payinAddress, { width: 180, margin: 1 })
+      .then((url) => setQrCodeDataUrl(url))
+      .catch(() => setQrCodeDataUrl(""));
+  }, [payinAddress]);
 
   // Map backend status to stepper status for the stepper UI (case-insensitive)
   function mapBackendStatusToStepperStatus(status: string) {
@@ -265,7 +283,7 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
                 </div>
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-[#1D8751] dark:text-[#1D8751] font-mono text-xs sm:text-base break-all flex-1 min-w-0">
-                  {swapResponse.payinAddress}
+                  {payinAddress}
                 </span>
                 <button
                   className="bg-[#1D8751] hover:bg-[#16663d] dark:bg-[#1D8751] dark:hover:bg-[#16663d] p-1.5 sm:p-2 rounded-lg text-white transition-colors min-w-[36px] min-h-[36px] sm:min-w-[40px] sm:min-h-[40px] flex items-center justify-center flex-shrink-0"
@@ -296,7 +314,7 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
           {/* QR code */}
           <div className="w-24 h-24 sm:w-32 sm:h-32 md:w-36 md:h-36 bg-white rounded-lg flex items-center justify-center">
             <img
-              src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${swapResponse.payinAddress}`}
+              src={qrCodeDataUrl || `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(payinAddress)}`}
               alt="QR Code"
               className="w-20 h-20 sm:w-28 sm:h-28 md:w-32 md:h-32"
             />

@@ -287,6 +287,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
     const adData = {
       order_type: type,
       currency: "USDT",
+      asset_id: "7e95b210-3e16-4343-a12d-0c998d88131b",
       range_currency: activeCurrency,
       amount,
       min_order_amount: orderMin,
@@ -301,7 +302,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
       limit: timeLimit.toString(),
       completion_time: timeLimit.toString(),
       completion_rate: "",
-      asset: "TRON",
+      asset: "USDT",
       advertiser_name: {
         id: '',
         username: "",

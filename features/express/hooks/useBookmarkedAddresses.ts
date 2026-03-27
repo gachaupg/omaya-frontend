@@ -16,8 +16,6 @@ const LOGIN_TO_SAVE_BOOKMARK_INLINE =
   "Log in to save this address to your bookmarks.";
 
 function extractBookmarkListError(err: unknown): string {
-  const detail = getBookmarkApiErrorMessage(err);
-  if (detail) return detail;
   const e = err as any;
   const data = e?.response?.data;
   if (
@@ -27,6 +25,8 @@ function extractBookmarkListError(err: unknown): string {
   ) {
     return data.error.__all__[0];
   }
+  const detail = getBookmarkApiErrorMessage(err);
+  if (detail) return detail;
   if (typeof data?.error === "string") return data.error;
   if (typeof data?.message === "string") return data.message;
   if (typeof e?.message === "string") return e.message;
@@ -82,10 +82,10 @@ export function useBookmarkedAddresses(asset?: string, network?: string) {
         const e = err as any;
         const data = e?.response?.data;
         const msg =
-          getBookmarkApiErrorMessage(err) ||
           (typeof data?.error === "object" &&
             Array.isArray(data?.error?.__all__) &&
             data.error.__all__[0]) ||
+          getBookmarkApiErrorMessage(err) ||
           (typeof data?.error === "string" ? data.error : null) ||
           data?.message ||
           e?.message ||
