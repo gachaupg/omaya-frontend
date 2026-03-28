@@ -11,6 +11,7 @@ import {
   fetchPublicPaymentMethods,
   fetchAdminPaymentMethods,
 } from "../../../p2p/slices/paymentMethodsSlice";
+import { fetchAdminPaymentDetails } from "../../../exchange/slices/paymentSlice";
 import { fetchAssets } from "../../../exchange/slices/exchangeSlice";
 import {
   createDeposit,
@@ -53,12 +54,20 @@ import { bookmarkedAddressesApi } from "../../services/bookmarkedAddressesApi";
 import {
   fetchCommission,
   getCommissionApiAsset,
+  isForexPrimusAsset,
   fetchExchangeCommissionLookup,
   getExchangeLookupParams,
   isExchangeCommissionLookupAsset,
   type ExchangeCommissionLookupResponse,
 } from "../../api";
 import { withTimeout } from "../../utils/fetchWithTimeout";
+import {
+  findPaymentMethodInList,
+  getPaymentMethodKey,
+  normalizePaymentDetails,
+  paymentMethodMatchesPayBank,
+  resolveForexDepositAdminPaymentDetailId,
+} from "../../utils/forexDepositResolution";
 
 interface DepositFormProps {
   onExchange?: (transactionData: {
@@ -165,70 +174,6 @@ const extractLogoFromDetail = (detail?: any) => {
   );
 };
 
-// Helper to resolve admin_payment_detail_id from payment object (API may use id or nest in payment_details - e.g. FXPRIMUS)
-const getAdminPaymentDetailId = (payment: any): string | null => {
-  if (!payment) return null;
-  const p = payment as any;
-  const firstDetail = (p.payment_details?.[0] ?? p.admin_payment_details?.[0]) || null;
-  const id =
-    p.admin_payment_detail_id ??
-    p.id ??
-    firstDetail?.admin_payment_detail_id ??
-    firstDetail?.id ??
-    null;
-  return id != null ? String(id) : null;
-};
-
-// Helper function to normalize payment details and ensure account_name/account_number are extracted
-const normalizePaymentDetails = (payment: any): any => {
-  if (!payment) return null;
-
-  // Get payment details from either payment_details or admin_payment_details
-  const rawDetails =
-    (payment as any).payment_details && (payment as any).payment_details.length > 0
-      ? (payment as any).payment_details
-      : (payment as any).admin_payment_details &&
-        (payment as any).admin_payment_details.length > 0
-        ? (payment as any).admin_payment_details
-        : [];
-
-  const firstDetail = rawDetails.length > 0 ? rawDetails[0] : null;
-
-  // Ensure account_name and account_number are set (prefer root level, fallback to first detail)
-  const account_name =
-    (payment as any).account_name ||
-    (firstDetail && firstDetail.account_name) ||
-    "";
-
-  const account_number =
-    (payment as any).account_number ||
-    (firstDetail && (firstDetail.account_number || firstDetail.mobile_number)) ||
-    "";
-
-  const mobile_number =
-    (payment as any).mobile_number ||
-    (firstDetail && firstDetail.mobile_number) ||
-    null;
-
-  const wallet_address =
-    (payment as any).wallet_address ||
-    (firstDetail && firstDetail.wallet_address) ||
-    null;
-
-  // Resolve admin_payment_detail_id (API may use id or nest in payment_details - e.g. FXPRIMUS)
-  const admin_payment_detail_id = getAdminPaymentDetailId(payment);
-
-  // Return normalized payment object
-  return {
-    ...payment,
-    payment_details: rawDetails,
-    account_name,
-    account_number,
-    mobile_number,
-    wallet_address,
-    ...(admin_payment_detail_id != null && { admin_payment_detail_id }),
-  };
-};
 
 export default function DepositForm({
   onExchange,
@@ -247,6 +192,9 @@ export default function DepositForm({
     publicMethodsLoading,
     publicMethodsError,
   } = useSelector((state: any) => state.paymentMethods);
+  const { adminPaymentDetails: exchangeAdminPaymentDetails } = useSelector(
+    (state: any) => state.payment
+  );
   const { assets, loading: assetsLoading } = useSelector(
     (state: any) => state.exchange
   );
@@ -357,6 +305,7 @@ export default function DepositForm({
             );
 
             const flattened = {
+              ...provider,
               provider_name: provider.provider_name,
               payment_method:
                 provider.method?.method_name ||
@@ -382,6 +331,11 @@ export default function DepositForm({
               how_to_send: firstPaymentDetail.how_to_send || null,
               account_type: firstPaymentDetail.account_type || null,
               provider_id: provider.provider_id,
+              admin_payment_detail_id:
+                provider.admin_payment_detail_id ??
+                firstPaymentDetail.admin_payment_detail_id ??
+                firstPaymentDetail.payment_detail_id ??
+                firstPaymentDetail.id,
             };
 
             console.log("🔍 Flattened provider:", {
@@ -437,6 +391,7 @@ export default function DepositForm({
                   );
 
                   flattenedMethods.push({
+                    ...provider,
                     provider_name: provider.provider_name,
                     payment_method: method.method_name,
                     payment_method_type: method.method_name,
@@ -456,6 +411,11 @@ export default function DepositForm({
                     how_to_send: firstPaymentDetail.how_to_send || null,
                     account_type: firstPaymentDetail.account_type || null,
                     provider_id: provider.provider_id,
+                    admin_payment_detail_id:
+                      provider.admin_payment_detail_id ??
+                      firstPaymentDetail.admin_payment_detail_id ??
+                      firstPaymentDetail.payment_detail_id ??
+                      firstPaymentDetail.id,
                   });
                 });
               }
@@ -860,20 +820,46 @@ export default function DepositForm({
     }
     return null;
   });
+
+  /** Same merge as CustomSelect options: extra rows (e.g. login-redirect payment) must be resolvable onChange */
+  const paymentMethodsForSelect = useMemo(() => {
+    let list = [...(finalPaymentMethods || [])];
+    if (initialState?.payment && selectedPaymentDetail) {
+      const initialStatePayment = initialState.payment;
+      const isAlreadyInOptions = finalPaymentMethods?.some(
+        (method: any) =>
+          (method.provider_name &&
+            initialStatePayment.provider_name &&
+            String(method.provider_name).toLowerCase() ===
+              String(initialStatePayment.provider_name).toLowerCase()) ||
+          (method.id &&
+            initialStatePayment.id &&
+            String(method.id) === String(initialStatePayment.id)) ||
+          (method.provider_id != null &&
+            initialStatePayment.provider_id != null &&
+            String(method.provider_id) === String(initialStatePayment.provider_id))
+      );
+      if (!isAlreadyInOptions) {
+        list = [initialStatePayment, ...list];
+      }
+    }
+    return list;
+  }, [finalPaymentMethods, initialState?.payment, selectedPaymentDetail]);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [hasAutoExpanded, setHasAutoExpanded] = useState(false);
   const [isRestoringFromInitialState, setIsRestoringFromInitialState] = useState(false);
   // Auto-select payment method - respect initialState from login redirect
   useEffect(() => {
-    if (finalPaymentMethods.length === 0) {
+    if (paymentMethodsForSelect.length === 0) {
       return;
     }
 
     // When we have initialState.payment from login redirect, use it - don't overwrite with first method
     if (initialState?.payment && selectedPaymentDetail) {
       const savedProvider = initialState.payment.provider_name || initialState.payment.payment_provider_name || initialState.payBank;
-      const matchInList = finalPaymentMethods.some(
+      const matchInList = paymentMethodsForSelect.some(
         (m: any) =>
           (m?.provider_name && savedProvider && String(m.provider_name).toLowerCase() === String(savedProvider).toLowerCase()) ||
           (m?.payment_provider_name && savedProvider && String(m.payment_provider_name).toLowerCase() === String(savedProvider).toLowerCase()) ||
@@ -884,25 +870,46 @@ export default function DepositForm({
       return;
     }
 
-    const matchProvider = (method: any, name: string) =>
-      (method?.provider_name && name && String(method.provider_name).toLowerCase().trim() === String(name).toLowerCase().trim()) ||
-      (method?.payment_provider_name && name && String(method.payment_provider_name).toLowerCase().trim() === String(name).toLowerCase().trim());
-
-    const hasSelected = finalPaymentMethods.some((method: any) => matchProvider(method, payBank));
+    const hasSelected = paymentMethodsForSelect.some((method: any) =>
+      paymentMethodMatchesPayBank(method, payBank)
+    );
 
     if (!payBank || !hasSelected) {
-      const defaultMethod = finalPaymentMethods[0];
-      setPayBank(defaultMethod.provider_name);
+      const defaultMethod = paymentMethodsForSelect[0];
+      const key =
+        getPaymentMethodKey(defaultMethod) ||
+        (defaultMethod?.provider_id != null ? String(defaultMethod.provider_id) : "");
+      if (key) setPayBank(key);
       const normalized = normalizePaymentDetails(defaultMethod);
       setSelectedPaymentDetail(normalized);
     } else if (!selectedPaymentDetail) {
-      const matchedMethod = finalPaymentMethods.find((method: any) => matchProvider(method, payBank));
+      const matchedMethod = findPaymentMethodInList(paymentMethodsForSelect, payBank);
       if (matchedMethod) {
         const normalized = normalizePaymentDetails(matchedMethod);
         setSelectedPaymentDetail(normalized);
       }
     }
-  }, [finalPaymentMethods, payBank, selectedPaymentDetail, initialState]);
+  }, [paymentMethodsForSelect, payBank, selectedPaymentDetail, initialState]);
+
+  const effectivePaymentDetail = useMemo(() => {
+    if (selectedPaymentDetail) return selectedPaymentDetail;
+    const list = paymentMethodsForSelect;
+    if (!list?.length) return null;
+    if (payBank) {
+      const m = findPaymentMethodInList(list, payBank);
+      if (m) return normalizePaymentDetails(m);
+    }
+    if (list.length === 1) {
+      return normalizePaymentDetails(list[0]);
+    }
+    return null;
+  }, [selectedPaymentDetail, payBank, paymentMethodsForSelect]);
+
+  useEffect(() => {
+    if (effectivePaymentDetail && !selectedPaymentDetail && payBank) {
+      setSelectedPaymentDetail(effectivePaymentDetail);
+    }
+  }, [effectivePaymentDetail, selectedPaymentDetail, payBank]);
 
   // Add transaction code state
   const [transactionCode, setTransactionCode] = useState<string>(initialState?.transactionCode ?? "");
@@ -1056,10 +1063,7 @@ export default function DepositForm({
       setUserNotes("");
       return;
     }
-    const ticker = (selectedAsset.ticker || selectedAsset.symbol || "")
-      .toString()
-      .toLowerCase();
-    if (ticker !== "fxp") {
+    if (!isForexPrimusAsset(selectedAsset)) {
       setShowForexForm(false);
       setForexAccountNumber("");
       setUserNotes("");
@@ -1072,6 +1076,7 @@ export default function DepositForm({
     }
 
     dispatch(fetchAdminPaymentMethods());
+    dispatch(fetchAdminPaymentDetails(false));
   }, [dispatch, isHomePage]);
 
   // Skip reset when restoring from legal pages (user was on second step)
@@ -1368,12 +1373,7 @@ export default function DepositForm({
     );
   };
 
-  // Check if asset is FXP (forex)
-  const isForexAsset = (asset: any) => {
-    if (!asset) return false;
-    const ticker = (asset?.ticker || asset?.symbol || "").toLowerCase();
-    return ticker === "fxp";
-  };
+  const isForexAsset = (asset: any) => isForexPrimusAsset(asset);
 
   // Check if asset uses commission API (USDT, USDC, FX Primus)
   const isCommissionApiAsset = (asset: any) => !!getCommissionApiAsset(asset?.ticker || asset?.symbol || "");
@@ -2024,11 +2024,13 @@ export default function DepositForm({
       return 1;
     }
 
-    // Priority 3: FXPRIMUS (ticker: fxp)
-    if (tickerA === "fxp" && !(tickerB === "fxp")) {
+    // Priority 3: FX Primus (API may use fxp or fxprimus)
+    const isFxpA = tickerA === "fxp" || tickerA === "fxprimus";
+    const isFxpB = tickerB === "fxp" || tickerB === "fxprimus";
+    if (isFxpA && !isFxpB) {
       return -1;
     }
-    if (tickerB === "fxp" && !(tickerA === "fxp")) {
+    if (isFxpB && !isFxpA) {
       return 1;
     }
 
@@ -2659,10 +2661,12 @@ export default function DepositForm({
       showToast.error("Please select an asset");
     }
 
-    // Check if payment method is selected
-    if (!selectedPaymentDetail || !payBank) {
-      errors.push("Please select a payment method");
-      showToast.error("Please select a payment method");
+    // Non–FX Primus: require a bank/payment row
+    if (selectedAsset && !isForexAsset(selectedAsset)) {
+      if (!effectivePaymentDetail) {
+        errors.push("Please select a payment method");
+        showToast.error("Please select a payment method");
+      }
     }
 
     setValidationErrors(errors);
@@ -2672,6 +2676,9 @@ export default function DepositForm({
   const handleFirstCardSubmit = async () => {
     if (exceedsDecimalPrecisionLimit) {
       showToast.error("Number cannot have more than 5 decimal places.");
+      return;
+    }
+    if (selectedAsset && isForexAsset(selectedAsset)) {
       return;
     }
     if (validateFirstCard()) {
@@ -2684,13 +2691,13 @@ export default function DepositForm({
           throw new Error("Invalid amount. Please enter a valid number greater than 0.");
         }
 
-        if (!selectedPaymentDetail) {
+        if (!effectivePaymentDetail) {
           throw new Error("Please select a payment method");
         }
-        if (!selectedPaymentDetail.provider_name) {
+        if (!effectivePaymentDetail.provider_name) {
           throw new Error("Payment provider is missing");
         }
-        if (!selectedPaymentDetail.payment_method_type) {
+        if (!effectivePaymentDetail.payment_method_type) {
           throw new Error("Payment method is missing");
         }
         if (!selectedAsset) {
@@ -2761,8 +2768,8 @@ export default function DepositForm({
         // Build JSON payload — requested_amount sent as a number
         const depositPayload = {
           requested_amount: safeAmount,
-          payment_provider: selectedPaymentDetail.provider_name,
-          payment_method: selectedPaymentDetail.payment_method_type,
+          payment_provider: effectivePaymentDetail.provider_name,
+          payment_method: effectivePaymentDetail.payment_method_type,
           currency: currencyValue,
           network: networkValue,
           asset: assetValue,
@@ -2874,14 +2881,14 @@ export default function DepositForm({
       return;
     }
 
-    // Wait for required data to be loaded
-    if (
-      !selectedAsset ||
-      !selectedPaymentDetail ||
-      !finalPaymentMethods ||
-      finalPaymentMethods.length === 0
-    ) {
+    if (!selectedAsset) {
       return;
+    }
+    // FX Primus: do not require a resolved bank/payment row for auto-expand
+    if (!isForexAsset(selectedAsset)) {
+      if (!paymentMethodsForSelect?.length || !effectivePaymentDetail) {
+        return;
+      }
     }
 
     // Check if we have all required data
@@ -2898,20 +2905,20 @@ export default function DepositForm({
     if (selectedAsset && isForexAsset(selectedAsset)) {
       setShowForexForm(true);
       setHasAutoExpanded(true);
-    } else if (selectedAsset && selectedPaymentDetail) {
+    } else if (selectedAsset && effectivePaymentDetail) {
       // Pre-populate form but do NOT auto-submit - user must click the button
       setHasAutoExpanded(true);
     }
   }, [
     initialState,
     selectedAsset,
-    selectedPaymentDetail,
-    finalPaymentMethods,
+    effectivePaymentDetail,
+    paymentMethodsForSelect,
     isHomePage,
     hasAutoExpanded,
   ]);
 
-  // Validate form data
+  // Validate form data (FX Primus skips bank / network requirements)
   const validateForm = () => {
     const errors: string[] = [];
 
@@ -2923,22 +2930,21 @@ export default function DepositForm({
       errors.push("Please select an asset");
     }
 
-    if (!selectedPaymentDetail) {
-      errors.push("Please select a payment method");
+    const isFx = selectedAsset && isForexAsset(selectedAsset);
+    if (!isFx) {
+      if (!effectivePaymentDetail) {
+        errors.push("Please select a payment method");
+      }
+      if (!selectedNetwork) {
+        errors.push("Please select a network");
+      } else if (!selectedNetwork.network_id && !selectedNetwork.network_type) {
+        errors.push("Selected network is missing required information");
+      }
     }
 
     // Wallet address is optional for initial submission - only required for address update step
     if (walletAddress.trim() && walletError) {
       errors.push("Please enter a valid wallet address");
-    }
-
-    if (!selectedNetwork) {
-      errors.push("Please select a network");
-    } else {
-      // Validate that network has required fields
-      if (!selectedNetwork.network_id && !selectedNetwork.network_type) {
-        errors.push("Selected network is missing required information");
-      }
     }
 
     return errors;
@@ -3682,21 +3688,7 @@ export default function DepositForm({
               <div className="relative">
                 <CustomSelect
                   options={(() => {
-                    // Include initialState payment in options if it exists and isn't already in finalPaymentMethods
-                    let optionsToMap = [...(finalPaymentMethods || [])];
-                    if (initialState?.payment && selectedPaymentDetail) {
-                      const initialStatePayment = initialState.payment;
-                      const isAlreadyInOptions = finalPaymentMethods?.some(
-                        (method: any) =>
-                          method.provider_name === initialStatePayment.provider_name ||
-                          (method.id && initialStatePayment.id && String(method.id) === String(initialStatePayment.id))
-                      );
-                      if (!isAlreadyInOptions) {
-                        optionsToMap = [initialStatePayment, ...optionsToMap];
-                      }
-                    }
-
-                    const mappedOptions = optionsToMap.map(
+                    const mappedOptions = paymentMethodsForSelect.map(
                       (payment: any, index: number) => {
                         // Get logo URL - check all known fields and ensure it's a valid string
                         const firstDetail =
@@ -3729,9 +3721,10 @@ export default function DepositForm({
 
                        
 
+                        const methodKey = getPaymentMethodKey(payment);
                         return {
-                          value: payment.provider_name,
-                          label: `${payment.provider_name} - ${payment.payment_method || payment.payment_method_type || payment.payment_type}`,
+                          value: methodKey || String(payment.provider_id ?? index),
+                          label: `${methodKey || "Payment"} - ${payment.payment_method || payment.payment_method_type || payment.payment_type}`,
                           logo: logoUrl,
                         };
                       }
@@ -3760,8 +3753,9 @@ export default function DepositForm({
                   logoClassName={PAYMENT_LOGO_BASE_CLASS}
                   sizeMode="card"
                   onChange={(value) => {
-                    const selectedPayment = finalPaymentMethods?.find(
-                      (payment: any) => payment.provider_name === value
+                    const selectedPayment = findPaymentMethodInList(
+                      paymentMethodsForSelect,
+                      value
                     );
 
                     // Normalize payment details to ensure account_name and account_number are extracted
@@ -4265,10 +4259,6 @@ export default function DepositForm({
                     showToast.error("Please enter a valid amount");
                     return;
                   }
-                  if (!selectedPaymentDetail) {
-                    showToast.error("Please select a payment method");
-                    return;
-                  }
                   setShowForexForm(true);
                 } else {
                   handleFirstCardSubmit();
@@ -4301,7 +4291,7 @@ export default function DepositForm({
         {showForexForm && selectedAsset && isForexAsset(selectedAsset) && (
           <div className="mt-2 sm:mt-3 md:mt-4 space-y-2 sm:space-y-3 md:space-y-4">
             {/* Payment Method Details */}
-            {selectedPaymentDetail && (
+            {effectivePaymentDetail && (
               <>
                 <h2 className="text-lg sm:text-xl font-bold mb-1 sm:mb-2 text-[#788099] dark:text-[#788099] inline-flex items-center gap-2">
                   <span className="text-[#7e7e8f] dark:text-[#788099]">2-</span>{" "}
@@ -4317,17 +4307,17 @@ export default function DepositForm({
                       <img
                         src={getHighResPaymentLogo(
                           resolveProviderLogo(
-                            selectedPaymentDetail.logo_url,
+                            effectivePaymentDetail.logo_url,
                             extractLogoFromDetail(
-                              selectedPaymentDetail.payment_details?.[0]
+                              effectivePaymentDetail.payment_details?.[0]
                             ),
-                            selectedPaymentDetail.provider_logo
+                            effectivePaymentDetail.provider_logo
                           ),
-                          selectedPaymentDetail.logo ||
-                          selectedPaymentDetail.provider_logo,
+                          effectivePaymentDetail.logo ||
+                          effectivePaymentDetail.provider_logo,
                           PAYMENT_LOGO_SIZE
                         )}
-                        alt={`${selectedPaymentDetail.provider_name || "Bank"} Logo`}
+                        alt={`${effectivePaymentDetail.provider_name || "Bank"} Logo`}
                         className={`${PAYMENT_LOGO_BASE_CLASS} w-9 h-9`}
                         loading="lazy"
                         onError={(e) => {
@@ -4339,7 +4329,7 @@ export default function DepositForm({
                         }}
                       />
                       <span className="text-[#35353e] dark:text-[#788099] text-base font-semibold">
-                        {selectedPaymentDetail.provider_name}
+                        {effectivePaymentDetail.provider_name}
                       </span>
                     </div>
                   </div>
@@ -4350,7 +4340,7 @@ export default function DepositForm({
                       {t("express.accountName", "Account Name :")}
                     </span>
                     <span className="text-[#35353e] dark:text-[#788099] text-base font-medium">
-                      {selectedPaymentDetail.account_name || selectedPaymentDetail?.payment_details?.[0]?.account_name || "N/A"}
+                      {effectivePaymentDetail.account_name || effectivePaymentDetail?.payment_details?.[0]?.account_name || "N/A"}
                     </span>
                   </div>
                   <div className="border-t border-dashed border-border mb-2"></div>
@@ -4361,11 +4351,11 @@ export default function DepositForm({
                     </span>
                     <div className="flex items-center gap-2">
                       <span className="text-[#35353e] dark:text-[#788099] text-base font-medium">
-                        {selectedPaymentDetail.account_number || selectedPaymentDetail?.payment_details?.[0]?.account_number || selectedPaymentDetail?.payment_details?.[0]?.mobile_number || "N/A"}
+                        {effectivePaymentDetail.account_number || effectivePaymentDetail?.payment_details?.[0]?.account_number || effectivePaymentDetail?.payment_details?.[0]?.mobile_number || "N/A"}
                       </span>
                       <button
                         onClick={() => {
-                          const accNumber = selectedPaymentDetail.account_number || selectedPaymentDetail?.payment_details?.[0]?.account_number || selectedPaymentDetail?.payment_details?.[0]?.mobile_number || "";
+                          const accNumber = effectivePaymentDetail.account_number || effectivePaymentDetail?.payment_details?.[0]?.account_number || effectivePaymentDetail?.payment_details?.[0]?.mobile_number || "";
                           navigator.clipboard.writeText(accNumber);
                           showToast.success(t("express.accountNumberCopied", "Account number copied!"));
                         }}
@@ -4450,18 +4440,48 @@ export default function DepositForm({
                   return;
                 }
 
-                const adminPaymentDetailId = getAdminPaymentDetailId(selectedPaymentDetail);
-                if (!adminPaymentDetailId) {
-                  showToast.error("Please select a payment method");
-                  return;
-                }
-
                 setIsSubmitting(true);
 
                 try {
                   const { createForexExchangeThunk } = await import(
                     "../../slices/forexSlice"
                   );
+
+                  let exchangeDetailsForForex: any[] = Array.isArray(
+                    exchangeAdminPaymentDetails
+                  )
+                    ? exchangeAdminPaymentDetails
+                    : [];
+                  try {
+                    const fresh = await dispatch(
+                      fetchAdminPaymentDetails(false)
+                    ).unwrap();
+                    if (Array.isArray(fresh) && fresh.length > 0) {
+                      exchangeDetailsForForex = fresh;
+                    }
+                  } catch {
+                    /* keep selector snapshot */
+                  }
+
+                  const resolvedAdminId = resolveForexDepositAdminPaymentDetailId({
+                    effective: effectivePaymentDetail,
+                    selected: selectedPaymentDetail,
+                    payBank,
+                    methods: paymentMethodsForSelect,
+                    adminMethods: Array.isArray(adminMethods) ? adminMethods : [],
+                    exchangeAdminPaymentDetails: exchangeDetailsForForex,
+                  });
+
+                  if (!resolvedAdminId?.trim()) {
+                    showToast.error(
+                      t(
+                        "express.forexPaymentDetailMissing",
+                        "We could not link this bank to an admin payment record. Open the payment dropdown and choose your bank again, then submit."
+                      )
+                    );
+                    setIsSubmitting(false);
+                    return;
+                  }
 
                   const forexPayload = {
                     transaction_type: "deposit" as const,
@@ -4470,12 +4490,13 @@ export default function DepositForm({
                     to_currency: "FXP",
                     to_amount: getAmount.toFixed(2),
                     exchange_rate: FXP_EXCHANGE_RATE.toFixed(4),
-                    additional_info: selectedPaymentDetail
-                      ? `Wire transfer from ${selectedPaymentDetail.provider_name}`
+                    additional_info: effectivePaymentDetail
+                      ? `Wire transfer from ${effectivePaymentDetail.provider_name}`
                       : "Wire transfer",
                     user_notes: userNotes.trim() || t("express.forexDepositExchange", "Forex deposit exchange"),
                     user_forex_account: forexAccountNumber.trim(),
-                    admin_payment_detail_id: adminPaymentDetailId,
+                    // Backend requires this; resolution tries nested payment_details + provider_id fallback
+                    admin_payment_detail_id: resolvedAdminId,
                   };
 
                   console.log("🚀 Forex Deposit Payload:", forexPayload);

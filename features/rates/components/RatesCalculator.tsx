@@ -24,6 +24,7 @@ import {
   getCommissionApiAsset,
   getExchangeLookupParams,
   isExchangeCommissionLookupAsset,
+  isForexPrimusAsset,
   type ExchangeCommissionLookupResponse,
 } from "../../express/api";
 import { Asset, DepositResponse } from "../../exchange/types";
@@ -51,6 +52,8 @@ import { ClipboardPaste } from "lucide-react";
 import CopyButton from "@/components/ui/CopyButton";
 import { API_CONFIG } from "@/lib/appConfig";
 import { useValidateAddress } from "@/hooks/useValidateAddress";
+import { resolveForexDepositAdminPaymentDetailId } from "../../express/utils/forexDepositResolution";
+import ForexWithdrawal from "../../express/components/forms/ForexWithdrawal";
 
 import { logger } from '@/lib/utils/logger';
 import { useChangeNowAssets } from "@/features/express/home/hooks/useChangeNowAssets";
@@ -186,6 +189,9 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
   const [walletError, setWalletError] = useState<string>("");
   const [isWalletValidating, setIsWalletValidating] = useState(false);
   const [isPasted, setIsPasted] = useState(false);
+  /** FX Primus — same as express deposit.tsx (forex account + optional notes) */
+  const [forexAccountNumber, setForexAccountNumber] = useState<string>("");
+  const [forexUserNotes, setForexUserNotes] = useState<string>("");
 
   const getValidationCurrency = (asset: any): string => {
     const ticker = String(asset?.ticker || asset?.symbol || asset?.name || "").trim();
@@ -197,6 +203,13 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
   const validationNetwork = selectedAsset
     ? String(getAssetNetwork(selectedAsset) || "bsc").toLowerCase()
     : undefined;
+
+  /** FX Primus: same as express deposit — no crypto wallet address on this step */
+  const isRatesFxpDeposit =
+    isDepositMode && !!selectedAsset && isForexPrimusAsset(selectedAsset);
+  /** FX Primus withdrawal: same as express withdrawal — ForexWithdrawal + forex create-exchange + forex-status WS (not createExpressWithdrawal / Exchanging). */
+  const isRatesFxpWithdrawal =
+    !isDepositMode && !!selectedAsset && isForexPrimusAsset(selectedAsset);
 
   // Shared address validation (same API + messages as other pages).
   const {
@@ -219,6 +232,11 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
   }, [isAddressValidating]);
 
   useEffect(() => {
+    if (isRatesFxpDeposit || isRatesFxpWithdrawal) {
+      setWalletError("");
+      resetAddressValidation();
+      return;
+    }
     const trimmed = walletAddress.trim();
     if (!trimmed) {
       setWalletError("");
@@ -243,17 +261,21 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
     addressValidationError,
     isAddressValidating,
     walletAddress,
+    isRatesFxpDeposit,
+    isRatesFxpWithdrawal,
+    resetAddressValidation,
   ]);
 
   // Reset + re-validate when asset/network changes.
   useEffect(() => {
+    if (isRatesFxpDeposit || isRatesFxpWithdrawal) return;
     const trimmed = walletAddress.trim();
     if (!trimmed) return;
     if (!validationCurrency) return;
     resetAddressValidation();
     void validateAddress(trimmed, validationCurrency, validationNetwork);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [validationCurrency, validationNetwork]);
+  }, [validationCurrency, validationNetwork, isRatesFxpDeposit, isRatesFxpWithdrawal]);
 
   const handlePaste = async () => {
     try {
@@ -290,8 +312,9 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
     null
   );
 
-  // Debounce and cache for faster, fewer API calls
-  const estimateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Debounce and cache for faster, fewer API calls (separate refs so forward/reverse effects never cancel each other's timeout)
+  const estimateForwardTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const estimateReverseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [apiCommission, setApiCommission] = useState<number | null>(null);
   const commissionFetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [exchangeLookupResponse, setExchangeLookupResponse] = useState<ExchangeCommissionLookupResponse | null>(null);
@@ -708,9 +731,9 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
 
   // Fetch estimate for non-direct assets - debounced + cached for faster response
   useEffect(() => {
-    if (estimateTimeoutRef.current) {
-      clearTimeout(estimateTimeoutRef.current);
-      estimateTimeoutRef.current = null;
+    if (estimateForwardTimeoutRef.current) {
+      clearTimeout(estimateForwardTimeoutRef.current);
+      estimateForwardTimeoutRef.current = null;
     }
 
     if (
@@ -735,8 +758,8 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
       setEstimateError(null);
       setApiValidationError(null);
 
-      estimateTimeoutRef.current = setTimeout(() => {
-        estimateTimeoutRef.current = null;
+      estimateForwardTimeoutRef.current = setTimeout(() => {
+        estimateForwardTimeoutRef.current = null;
         const timeoutPromise = new Promise((_, reject) => {
           setTimeout(() => reject(new Error("Request timeout")), 15000);
         });
@@ -869,20 +892,23 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
     } else {
       setEstimate(null);
       setEstimateError(null);
+      setEstimateLoading(false);
+      setIsCalculating(false);
+      setIsCalculatingReceive(false);
     }
 
     return () => {
-      if (estimateTimeoutRef.current) {
-        clearTimeout(estimateTimeoutRef.current);
+      if (estimateForwardTimeoutRef.current) {
+        clearTimeout(estimateForwardTimeoutRef.current);
       }
     };
   }, [selectedAsset, amount, isCalculatingFromPay, isDepositMode]);
 
   // Fetch reverse estimate - debounced + cached
   useEffect(() => {
-    if (estimateTimeoutRef.current) {
-      clearTimeout(estimateTimeoutRef.current);
-      estimateTimeoutRef.current = null;
+    if (estimateReverseTimeoutRef.current) {
+      clearTimeout(estimateReverseTimeoutRef.current);
+      estimateReverseTimeoutRef.current = null;
     }
 
     if (
@@ -909,8 +935,8 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
       setEstimateError(null);
       setApiValidationError(null);
 
-      estimateTimeoutRef.current = setTimeout(() => {
-        estimateTimeoutRef.current = null;
+      estimateReverseTimeoutRef.current = setTimeout(() => {
+        estimateReverseTimeoutRef.current = null;
         const reverseParams = isWithdrawal
         ? {
             fromCurrency: "USDT",
@@ -1059,8 +1085,8 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
     }
 
     return () => {
-      if (estimateTimeoutRef.current) {
-        clearTimeout(estimateTimeoutRef.current);
+      if (estimateReverseTimeoutRef.current) {
+        clearTimeout(estimateReverseTimeoutRef.current);
       }
     };
   }, [selectedAsset, receiveAmount, isCalculatingFromPay, isDepositMode]);
@@ -1247,13 +1273,30 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
     setQrCodeUrl("");
     setWalletAddress("");
     setWalletError("");
+    setForexAccountNumber("");
+    setForexUserNotes("");
     setShowExchanging(false);
     setExchangingData(null);
     setForceUpdate((prev) => prev + 1);
   };
 
   const handleProceedToExchanging = async () => {
-    if (!responseData || !transactionId) {
+    let effectiveTxId = transactionId;
+    let effectiveResponse: any = responseData;
+    let effectiveDepositCode = depositCode;
+
+    // FX Primus uses trading_engine forex create-exchange + forex-status WebSocket — not crypto createDeposit / Exchanging WS.
+    if (isDepositMode && isRatesFxpDeposit) {
+      if (!selectedPaymentDetail) {
+        showToast.error("Please select a payment method");
+        return;
+      }
+    } else if (!isDepositMode && isRatesFxpWithdrawal) {
+      if (!selectedPaymentDetails?.length) {
+        showToast.error("Please select your registered account");
+        return;
+      }
+    } else if (!effectiveResponse || !effectiveTxId) {
       showToast.error("No transaction data available");
       return;
     }
@@ -1278,7 +1321,19 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
       }
     }
 
-    if (isDepositMode) {
+    if (isDepositMode && isRatesFxpDeposit) {
+      if (!forexAccountNumber.trim()) {
+        showToast.error(
+          t(
+            "rates.forexAccountNumberRequired",
+            "Please enter your forex account number"
+          )
+        );
+        return;
+      }
+    }
+
+    if (isDepositMode && !isRatesFxpDeposit) {
       const trimmed = walletAddress.trim();
       if (!trimmed) {
         showToast.error("Please enter a valid wallet/account address");
@@ -1294,16 +1349,119 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
       }
     }
 
+    // FX Primus withdrawal is completed inside ForexWithdrawal (createForexExchangeThunk → forex-status), not this handler.
+    if (!isDepositMode && isRatesFxpWithdrawal) {
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
+      // FX Primus — same API as express deposit.tsx (forex create-exchange); navigate to forex-status (forexStatusWebSocket).
+      if (isDepositMode && isRatesFxpDeposit) {
+        const publicMethodsData = publicPaymentMethods as any;
+        const methodsList =
+          (Array.isArray(publicMethodsData?.data?.providers) && publicMethodsData.data.providers) ||
+          (Array.isArray(publicMethodsData?.data?.payment_methods) && publicMethodsData.data.payment_methods) ||
+          (Array.isArray(publicPaymentMethods) && publicPaymentMethods) ||
+          (Array.isArray(adminPaymentDetails)
+            ? adminPaymentDetails
+            : Array.isArray((adminPaymentDetails as any)?.data)
+              ? (adminPaymentDetails as any).data
+              : []) ||
+          [];
+
+        let exchangeDetailsForForex: any[] = Array.isArray(adminPaymentDetails)
+          ? adminPaymentDetails
+          : [];
+        try {
+          const fresh = await dispatch(fetchAdminPaymentDetails(false)).unwrap();
+          if (Array.isArray(fresh) && fresh.length > 0) {
+            exchangeDetailsForForex = fresh;
+          }
+        } catch {
+          /* keep selector snapshot */
+        }
+
+        const resolvedAdminId = resolveForexDepositAdminPaymentDetailId({
+          effective: selectedPaymentDetail,
+          selected: selectedPaymentDetail,
+          payBank,
+          methods: methodsList,
+          adminMethods: adminWalletListDisplayData,
+          exchangeAdminPaymentDetails: exchangeDetailsForForex,
+        });
+
+        if (!resolvedAdminId?.trim()) {
+          showToast.error(
+            t(
+              "rates.forexPaymentDetailMissing",
+              "We could not link this bank to an admin payment record. Open the payment dropdown and choose your bank again, then submit."
+            )
+          );
+          return;
+        }
+
+        const payNum = parseFloat(amount) || 0;
+        const recvNum = parseFloat(receiveAmount) || 0;
+        if (payNum <= 0 || recvNum <= 0) {
+          showToast.error(
+            t("rates.invalidForexAmounts", "Please enter valid send and receive amounts.")
+          );
+          return;
+        }
+
+        const FXP_EXCHANGE_RATE = 1.06;
+        const providerLabel =
+          selectedPaymentDetail.provider_name ||
+          selectedPaymentDetail.payment_provider_name ||
+          "Bank";
+
+        const forexPayload = {
+          transaction_type: "deposit" as const,
+          from_currency: "USD",
+          from_amount: payNum.toFixed(2),
+          to_currency: "FXP",
+          to_amount: recvNum.toFixed(2),
+          exchange_rate: FXP_EXCHANGE_RATE.toFixed(4),
+          additional_info: `Wire transfer from ${providerLabel}`,
+          user_notes:
+            forexUserNotes.trim() ||
+            t("rates.forexDepositExchange", "Forex deposit exchange"),
+          user_forex_account: forexAccountNumber.trim(),
+          admin_payment_detail_id: resolvedAdminId,
+        };
+
+        try {
+          const { createForexExchangeThunk } = await import(
+            "../../express/slices/forexSlice"
+          );
+          const result = await dispatch(createForexExchangeThunk(forexPayload)).unwrap();
+
+          localStorage.setItem("currentForexExchange", JSON.stringify(result));
+          showToast.success(
+            t("rates.forexExchangeCreated", "Forex exchange created successfully!")
+          );
+          router.push(
+            `/dashboard/express-exchange/forex-status?transactionId=${result.forex_transaction_id}`
+          );
+        } catch (error: any) {
+          const msg =
+            (typeof error === "string" && error) ||
+            error?.message ||
+            t("rates.forexExchangeFailed", "Failed to create forex exchange");
+          showToast.error(msg);
+        }
+        return;
+      }
+
       if (isDepositMode) {
-        // For deposit mode, update the wallet address first (if provided)
-        if (walletAddress.trim()) {
+        // For deposit mode, update the wallet address first (if provided). FXP skips — same as express deposit.
+        if (walletAddress.trim() && !isRatesFxpDeposit) {
           try {
             const updateResponse = await dispatch(
               updateDepositAddress({
-                transactionId: transactionId,
+                transactionId: effectiveTxId,
                 depositAddress: walletAddress,
               })
             ).unwrap();
@@ -1323,9 +1481,14 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                 // This response contains the additional fields we need
                 setResponseData({
                   ...responseData,
-                  transaction_id: responseData.transaction_id || transactionId,
-                  deposit_code: responseData.deposit_code || depositCode,
+                  transaction_id: responseData.transaction_id || effectiveTxId,
+                  deposit_code: responseData.deposit_code || effectiveDepositCode,
                 });
+                effectiveResponse = {
+                  ...responseData,
+                  transaction_id: responseData.transaction_id || effectiveTxId,
+                  deposit_code: responseData.deposit_code || effectiveDepositCode,
+                };
               }
             }
           } catch (error: any) {
@@ -1356,41 +1519,52 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
           provider_name: "direct",
           payment_method_type: "crypto",
         },
-        walletAddress: isDepositMode ? walletAddress : withdrawalAddress || "",
+        walletAddress: isDepositMode
+          ? isRatesFxpDeposit
+            ? ""
+            : walletAddress
+          : withdrawalAddress || "",
         network: {
           network_id: getAssetNetwork(selectedAsset),
           network_type: getAssetNetwork(selectedAsset),
         },
-        transactionId: transactionId,
+        transactionId: effectiveTxId,
         // Deposit-specific fields
         ...(isDepositMode && {
-          depositCode: depositCode,
-          totalAmountDue: responseData?.total_amount_due,
-          commission: responseData?.commission,
-          networkFee: responseData?.network_fee,
-          currency: responseData?.currency,
-          websocketUrl: responseData?.websocket_url,
-          net_amount: responseData?.net_amount,
-          fees: responseData?.fees,
+          depositCode: effectiveDepositCode,
+          totalAmountDue: effectiveResponse?.total_amount_due,
+          commission: effectiveResponse?.commission,
+          networkFee: effectiveResponse?.network_fee,
+          currency: effectiveResponse?.currency,
+          websocketUrl: effectiveResponse?.websocket_url,
+          net_amount: effectiveResponse?.net_amount,
+          fees: effectiveResponse?.fees,
         }),
         // Withdrawal-specific fields
         ...(!isDepositMode && {
           withdrawalAddress: withdrawalAddress,
           payoutAddress: payoutAddress,
-          websocketUrl: responseData?.websocket_url,
-          message: responseData?.message,
-          responseType: responseData?.response_type,
+          websocketUrl: effectiveResponse?.websocket_url,
+          message: effectiveResponse?.message,
+          responseType: effectiveResponse?.response_type,
           details: {
             withdrawal_address: withdrawalAddress,
             payout_address: payoutAddress,
-            from_currency: responseData?.from_currency,
-            to_currency: responseData?.to_currency,
-            to_network: responseData?.to_network,
-            estimated_amount: responseData?.estimated_amount,
-            changenow_id: responseData?.changenow_id,
+            from_currency: effectiveResponse?.from_currency,
+            to_currency: effectiveResponse?.to_currency,
+            to_network: effectiveResponse?.to_network,
+            estimated_amount: effectiveResponse?.estimated_amount,
+            changenow_id: effectiveResponse?.changenow_id,
           },
         }),
-        status: responseData?.status || "pending",
+        status: effectiveResponse?.status || "pending",
+        ...(isDepositMode &&
+          isRatesFxpDeposit && {
+            user_forex_account: forexAccountNumber.trim(),
+            ...(forexUserNotes.trim()
+              ? { user_notes: forexUserNotes.trim() }
+              : {}),
+          }),
       };
 
       logger.debug('general',
@@ -2029,6 +2203,87 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
     }
   }, [isAuthenticated, publicPaymentMethods, userPaymentDetails]);
 
+  /** Rates deposit POST — shared by first submit (non-FXP) and FX Primus "proceed" (FXP first submit does not POST). */
+  const submitRatesCalculatorDeposit = async (): Promise<DepositResponse> => {
+    const formData = new FormData();
+    formData.append("requested_amount", amount);
+
+    if (selectedPaymentDetail!.account_number?.trim()) {
+      formData.append("deposit_address", selectedPaymentDetail!.account_number);
+    } else {
+      formData.append("deposit_address", "");
+    }
+
+    formData.append(
+      "payment_provider",
+      selectedPaymentDetail!.payment_provider_name
+    );
+    formData.append(
+      "payment_method",
+      selectedPaymentDetail!.payment_method_name
+    );
+
+    let currencyValue = "";
+    if (selectedAsset!.ticker) {
+      currencyValue = selectedAsset!.ticker;
+    } else if (selectedAsset!.symbol) {
+      currencyValue =
+        selectedAsset!.symbol === "USDT Tether"
+          ? "USDT"
+          : selectedAsset!.symbol;
+    } else if (selectedAsset!.name) {
+      currencyValue = selectedAsset!.name;
+    }
+    currencyValue = currencyValue?.trim();
+
+    if (!currencyValue) {
+      throw new Error("Currency information is missing");
+    }
+    formData.append("currency", currencyValue);
+
+    const networkValue = getAssetNetwork(selectedAsset!);
+    if (!networkValue) {
+      throw new Error("Network information is missing");
+    }
+    formData.append("network", networkValue);
+
+    let assetValue = "";
+    if (selectedAsset!.ticker) {
+      assetValue = selectedAsset!.ticker;
+    } else if (selectedAsset!.symbol) {
+      assetValue =
+        selectedAsset!.symbol === "USDT Tether"
+          ? "USDT"
+          : selectedAsset!.symbol;
+    } else if (selectedAsset!.name) {
+      assetValue = selectedAsset!.name;
+    }
+    assetValue = assetValue?.trim();
+
+    if (!assetValue) {
+      throw new Error("Asset information is missing");
+    }
+    formData.append("asset", assetValue);
+
+    formData.append(
+      "additional_info",
+      `Account: ${selectedPaymentDetail!.account_name}`
+    );
+    formData.append("sent_from", selectedPaymentDetail!.account_name);
+
+    logger.debug("general", "DEBUG: Complete FormData entries:");
+    for (let [key, value] of formData.entries()) {
+      logger.debug("general", `${key}:`, value);
+    }
+
+    return (await dispatch(
+      createDeposit({
+        payload: formData,
+        config: {},
+      })
+    ).unwrap()) as unknown as DepositResponse;
+  };
+
   const handleSubmit = async () => {
     // Check if user is authenticated
     if (!isAuthenticated) {
@@ -2092,168 +2347,89 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
     setIsSubmitting(true);
     try {
       if (isDepositMode) {
-        // Deposit API structure - same as deposit.tsx
-        const formData = new FormData();
-        formData.append("requested_amount", amount);
-
-        // Wallet address is optional for initial submission
-        if (selectedPaymentDetail.account_number?.trim()) {
-          formData.append(
-            "deposit_address",
-            selectedPaymentDetail.account_number
-          );
+        // FX Primus: match express deposit — first action only expands the flow; no deposit POST yet.
+        if (isRatesFxpDeposit) {
+          setIsFirstCardSubmitted(true);
+          setForceUpdate((prev) => prev + 1);
         } else {
-          formData.append("deposit_address", "");
+          const depositResponse = await submitRatesCalculatorDeposit();
+
+          logger.debug("general", "DEBUG: Deposit response:", depositResponse);
+
+          setTransactionId(depositResponse.transaction_id || "");
+          setResponseData(depositResponse);
+          setDepositCode(depositResponse.deposit_code || "");
+          setIsFirstCardSubmitted(true);
+          setForceUpdate((prev) => prev + 1);
         }
-
-        formData.append(
-          "payment_provider",
-          selectedPaymentDetail.payment_provider_name
-        );
-        formData.append(
-          "payment_method",
-          selectedPaymentDetail.payment_method_name
-        );
-
-        // Handle currency field - try multiple properties to get the currency value
-        let currencyValue = "";
-        if (selectedAsset.ticker) {
-          currencyValue = selectedAsset.ticker;
-        } else if (selectedAsset.symbol) {
-          currencyValue =
-            selectedAsset.symbol === "USDT Tether"
-              ? "USDT"
-              : selectedAsset.symbol;
-        } else if (selectedAsset.name) {
-          currencyValue = selectedAsset.name;
-        }
-        currencyValue = currencyValue?.trim();
-
-        if (!currencyValue) {
-          throw new Error("Currency information is missing");
-        }
-        formData.append("currency", currencyValue);
-
-        // Handle network field
-        const networkValue = getAssetNetwork(selectedAsset);
-        if (!networkValue) {
-          throw new Error("Network information is missing");
-        }
-        formData.append("network", networkValue);
-
-        // Handle asset field
-        let assetValue = "";
-        if (selectedAsset.ticker) {
-          assetValue = selectedAsset.ticker;
-        } else if (selectedAsset.symbol) {
-          assetValue =
-            selectedAsset.symbol === "USDT Tether"
-              ? "USDT"
-              : selectedAsset.symbol;
-        } else if (selectedAsset.name) {
-          assetValue = selectedAsset.name;
-        }
-        assetValue = assetValue?.trim();
-
-        if (!assetValue) {
-          throw new Error("Asset information is missing");
-        }
-        formData.append("asset", assetValue);
-
-        formData.append(
-          "additional_info",
-          `Account: ${selectedPaymentDetail.account_name}`
-        );
-        formData.append("sent_from", selectedPaymentDetail.account_name);
-
-        // Log the complete FormData for debugging
-        logger.debug('general', "DEBUG: Complete FormData entries:");
-        for (let [key, value] of formData.entries()) {
-          logger.debug('general', `${key}:`, value);
-        }
-
-        // Use Redux action for deposit
-        const depositResponse = (await dispatch(
-          createDeposit({
-            payload: formData,
-            config: {
-              // Don't set Content-Type manually for FormData - let axios handle it
-            },
-          })
-        ).unwrap()) as unknown as DepositResponse;
-
-        logger.debug('general', "DEBUG: Deposit response:", depositResponse);
-
-        // Set transaction data
-        setTransactionId(depositResponse.transaction_id || "");
-        setResponseData(depositResponse);
-        setDepositCode(depositResponse.deposit_code || "");
-        setIsFirstCardSubmitted(true);
-        setForceUpdate((prev) => prev + 1);
       } else {
-        // Withdrawal API structure - exact as express withdrawal.tsx
-        const withdrawalDetail = selectedPaymentDetails[0];
-        const assetTicker = (
-          selectedAsset?.ticker ||
-          selectedAsset?.symbol ||
-          ""
-        ).toString().toLowerCase();
-        const isForexAsset =
-          assetTicker === "fxp" || assetTicker === "fxprimus";
-        const withdrawalPayload: ExpressWithdrawalPayload = {
-          asset: (selectedAsset.ticker?.toUpperCase() || selectedAsset.symbol?.toUpperCase()) as string,
-          amount: amount,
-          network: getAssetNetwork(selectedAsset),
-          // Express: non-FXP uses registered account `id`; FXP uses `user_payment_detail_id`
-          user_payment_detail_id: isForexAsset
-            ? String(withdrawalDetail?.user_payment_detail_id ?? withdrawalDetail?.id)
-            : String(withdrawalDetail?.id),
-        };
+        // FX Primus withdrawal: match express withdrawal — first Submit only opens the forex step (ForexWithdrawal); no createExpressWithdrawal.
+        if (isRatesFxpWithdrawal) {
+          const payNum = parseFloat(amount) || 0;
+          if (!payNum || payNum <= 0) {
+            showToast.error(
+              t("rates.validFxpAmount", "Please enter a valid amount")
+            );
+            return;
+          }
+          if (selectedPaymentDetails.length === 0) {
+            setPaymentMethodError("Please select your registered account");
+            showToast.error("Please select your registered account");
+            return;
+          }
+          setIsFirstCardSubmitted(true);
+          setForceUpdate((prev) => prev + 1);
+        } else {
+          // Withdrawal API structure — crypto / non–FX Primus
+          const withdrawalDetail = selectedPaymentDetails[0];
+          const withdrawalPayload: ExpressWithdrawalPayload = {
+            asset: (selectedAsset.ticker?.toUpperCase() || selectedAsset.symbol?.toUpperCase()) as string,
+            amount: amount,
+            network: getAssetNetwork(selectedAsset),
+            user_payment_detail_id: String(withdrawalDetail?.id),
+          };
 
-        logger.debug('general', "Submitting withdrawal request:", withdrawalPayload);
+          logger.debug('general', "Submitting withdrawal request:", withdrawalPayload);
 
-        // Use Redux action for withdrawal
-        const withdrawalResponse =
-          await createExpressWithdrawal(withdrawalPayload);
+          const withdrawalResponse =
+            await createExpressWithdrawal(withdrawalPayload);
 
-        logger.debug('general', "Withdrawal response received:", withdrawalResponse);
+          logger.debug('general', "Withdrawal response received:", withdrawalResponse);
 
-        // Extract response data - handle both direct response and nested data
-        const responseData =
-          (withdrawalResponse as any).data || (withdrawalResponse as any);
+          const responseData =
+            (withdrawalResponse as any).data || (withdrawalResponse as any);
 
-        // Set transaction data
-        setTransactionId(responseData.transaction_id || responseData.id || "");
-        setResponseData(responseData);
-        setIsFirstCardSubmitted(true);
-        setForceUpdate((prev) => prev + 1);
+          setTransactionId(responseData.transaction_id || responseData.id || "");
+          setResponseData(responseData);
+          setIsFirstCardSubmitted(true);
+          setForceUpdate((prev) => prev + 1);
 
-        // Extract addresses from response (support nested payload shapes)
-        const nextWithdrawalAddress =
-          responseData?.withdrawal_address ||
-          responseData?.details?.withdrawal_address ||
-          responseData?.data?.withdrawal_address ||
-          "";
-        const nextPayoutAddress =
-          responseData?.payout_address ||
-          responseData?.details?.payout_address ||
-          responseData?.data?.payout_address ||
-          "";
-        const nextQrCodeUrl =
-          responseData?.qr_code_url ||
-          responseData?.details?.qr_code_url ||
-          responseData?.data?.qr_code_url ||
-          (nextWithdrawalAddress
-            ? `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
-                nextWithdrawalAddress
-              )}`
-            : "");
+          const nextWithdrawalAddress =
+            responseData?.withdrawal_address ||
+            responseData?.details?.withdrawal_address ||
+            responseData?.data?.withdrawal_address ||
+            "";
+          const nextPayoutAddress =
+            responseData?.payout_address ||
+            responseData?.details?.payout_address ||
+            responseData?.data?.payout_address ||
+            "";
+          const nextQrCodeUrl =
+            responseData?.qr_code_url ||
+            responseData?.details?.qr_code_url ||
+            responseData?.data?.qr_code_url ||
+            (nextWithdrawalAddress
+              ? `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
+                  nextWithdrawalAddress
+                )}`
+              : "");
 
-        setWithdrawalAddress(nextWithdrawalAddress);
-        setPayoutAddress(nextPayoutAddress);
-        setQrCodeUrl(nextQrCodeUrl);
+          setWithdrawalAddress(nextWithdrawalAddress);
+          setPayoutAddress(nextPayoutAddress);
+          setQrCodeUrl(nextQrCodeUrl);
 
-        showToast.success("Withdrawal transaction submitted successfully!");
+          showToast.success("Withdrawal transaction submitted successfully!");
+        }
       }
     } catch (error: any) {
       console.error("Error submitting transaction:", error);
@@ -3455,12 +3631,16 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
             </>
           )}
 
-          {/* Wallet Address Section */}
+          {/* Wallet address (crypto) or continue (FX Primus deposit — same as express deposit) */}
           <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
             <span className="text-[#7e7e8f] dark:text-[#788099]">
               {isDepositMode ? "4-" : "3-"}
             </span>
-            {t("rates.walletAddress", "Wallet Address")}
+            {isDepositMode && isRatesFxpDeposit
+              ? t("rates.forexAccountDetails", "Forex Account Details")
+              : !isDepositMode && isRatesFxpWithdrawal
+                ? t("rates.fxpWithdrawalConfirm", "Confirm FX Primus withdrawal")
+                : t("rates.walletAddress", "Wallet Address")}
           </h2>
           <div
             className={`flex flex-col dark:bg-[#1D1D23] border-2 ${
@@ -3470,7 +3650,93 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
             } rounded-2xl p-5 shadow-lg w-full max-w-4xl mx-auto text-[#35353e] dark:text-[#788099] mb-6`}
           >
             {isDepositMode ? (
-              // Deposit Mode: Input field for wallet address
+              isRatesFxpDeposit ? (
+              <>
+                <p className="text-[#35353e] dark:text-[#788099] text-sm sm:text-base mb-4">
+                  {t(
+                    "rates.fxpDepositNoWalletStep",
+                    "No crypto wallet address is required here (same as Express deposit). Enter your FX Primus account number below."
+                  )}
+                </p>
+
+                <div className="flex flex-col bg-white dark:bg-[#18181D] border border-[#E2E8F0] dark:border-[#35353E] rounded-2xl p-3 sm:p-4 md:p-5 shadow-lg mb-4">
+                  <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
+                    {t(
+                      "rates.yourForexAccountNumber",
+                      "Your Forex Account Number"
+                    )}
+                  </label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={forexAccountNumber}
+                    onChange={(e) =>
+                      setForexAccountNumber(e.target.value.replace(/\D/g, ""))
+                    }
+                    placeholder={t(
+                      "rates.forexAccountNumberPlaceholder",
+                      "Enter your forex account number"
+                    )}
+                    className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 py-2 text-lg focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E]"
+                  />
+                </div>
+
+                <div className="flex flex-col bg-white dark:bg-[#18181D] border border-[#E2E8F0] dark:border-[#35353E] rounded-2xl p-3 sm:p-4 md:p-5 shadow-lg mb-6">
+                  <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
+                    {t(
+                      "rates.additionalNotesOptional",
+                      "Additional Notes (Optional)"
+                    )}
+                  </label>
+                  <textarea
+                    value={forexUserNotes}
+                    onChange={(e) => setForexUserNotes(e.target.value)}
+                    placeholder={t(
+                      "rates.forexNotesPlaceholder",
+                      "Add any special instructions or notes..."
+                    )}
+                    className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-3 sm:px-4 py-2 text-lg focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] min-h-[100px] resize-none"
+                  />
+                </div>
+
+                <div className="flex gap-2 sm:gap-3 flex-col sm:flex-row">
+                  <button
+                    type="button"
+                    onClick={resetTransaction}
+                    className="flex-1 bg-gray-500 text-white font-semibold py-2 sm:py-2 px-3 sm:px-4 rounded-lg hover:bg-gray-600 transition-colors text-sm sm:text-base"
+                  >
+                    {t("rates.cancel", "Cancel")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleProceedToExchanging}
+                    disabled={isSubmitting || !forexAccountNumber.trim()}
+                    className={`flex-1 font-semibold py-2 sm:py-2 px-3 sm:px-4 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm sm:text-base ${
+                      isSubmitting || !forexAccountNumber.trim()
+                        ? "bg-gray-500 cursor-not-allowed text-white"
+                        : "bg-[#1D8751] hover:bg-[#166b3f] text-white"
+                    }`}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-white"></div>
+                        <span>{t("rates.processing", "Processing...")}</span>
+                      </>
+                    ) : (
+                      <>
+                        <img
+                          className="mt-2"
+                          src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
+                          alt="XCHANGE"
+                        />
+                      </>
+                    )}
+                  </button>
+                </div>
+              </>
+            ) : (
+              // Deposit Mode: Input field for wallet address (non–FX Primus)
               <>
                 <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
                   {t("rates.walletAccountAddress", "Wallet/Account Address")}
@@ -3541,7 +3807,6 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                       </>
                     ) : (
                       <>
-                        E
                         <img
                           className="mt-2"
                           src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
@@ -3552,8 +3817,16 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                   </button>
                 </div>
               </>
+            )
             ) : (
-              // Withdrawal Mode: Show destination address + QR after submission
+              isRatesFxpWithdrawal ? (
+              <ForexWithdrawal
+                payAmount={parseFloat(amount) || 0}
+                getAmount={parseFloat(receiveAmount) || 0}
+                selectedPaymentDetails={selectedPaymentDetails}
+              />
+            ) : (
+              // Withdrawal Mode: Show destination address + QR after submission (crypto)
               <div className="space-y-4">
                 <div>
                   <h3 className="text-sm sm:text-base text-[#35353e] dark:text-[#788099] font-semibold mb-2">
@@ -3620,6 +3893,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                   </button>
                 </div>
               </div>
+            )
             )}
           </div>
         </>

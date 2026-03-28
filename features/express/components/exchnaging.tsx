@@ -45,6 +45,9 @@ interface ExchangingProps {
       network_fee: string;
       total_fees: string;
     };
+    /** Rates / FX Primus — from express deposit parity */
+    user_forex_account?: string;
+    user_notes?: string;
     // Additional fields for different transaction types
     status?: string;
     message?: string;
