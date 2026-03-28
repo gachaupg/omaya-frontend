@@ -1048,6 +1048,24 @@ export default function DepositForm({
   const [userNotes, setUserNotes] = useState<string>("");
   const [showForexForm, setShowForexForm] = useState<boolean>(false);
 
+  // Collapse FX Primus second step when asset changes away from FXP so the main submit stays visible
+  useEffect(() => {
+    if (!selectedAsset) {
+      setShowForexForm(false);
+      setForexAccountNumber("");
+      setUserNotes("");
+      return;
+    }
+    const ticker = (selectedAsset.ticker || selectedAsset.symbol || "")
+      .toString()
+      .toLowerCase();
+    if (ticker !== "fxp") {
+      setShowForexForm(false);
+      setForexAccountNumber("");
+      setUserNotes("");
+    }
+  }, [selectedAsset]);
+
   useEffect(() => {
     if (isHomePage) {
       return;

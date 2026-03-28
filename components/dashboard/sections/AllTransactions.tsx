@@ -43,6 +43,18 @@ const getTypeLabel = (type: string, subType: string) => {
   return type;
 };
 
+/** USDT (BSC) style label for unified “all” feed when API omits from_/to_ currency fields */
+const formatP2pCryptoLabel = (tx: AllTransactionItem): string => {
+  const sym = (tx.currency || tx.asset || "USDT").toUpperCase();
+  const net = tx.network || tx.from_network || tx.to_network;
+  return net ? `${sym} (${net})` : sym;
+};
+
+const truncateAddress = (addr: string, lead = 6, tail = 4): string => {
+  if (!addr || addr.length <= lead + tail + 2) return addr;
+  return `${addr.slice(0, lead)}...${addr.slice(-tail)}`;
+};
+
 // Format status for user-friendly display
 const formatStatus = (status: string | undefined | null): string => {
   if (!status) return "N/A";
@@ -173,18 +185,41 @@ const AllTransactions = () => {
         to: `${tx.to_currency || "-"} (${tx.to_network || "-"})`,
       };
     }
-    if (tx.type === "p2p" && tx.sub_type === "withdrawal") {
+    const p2pSub = (tx.sub_type || "").toLowerCase();
+    if (tx.type === "p2p" && p2pSub === "withdrawal") {
+      const cryptoLabel = formatP2pCryptoLabel(tx);
       return {
-        from: `P2P ${tx.currency || tx.asset || "USDT"}`,
-        to: "Wallet",
+        from: cryptoLabel,
+        to: tx.withdrawal_address
+          ? truncateAddress(tx.withdrawal_address)
+          : "Wallet",
       };
     }
-    if (tx.type === "p2p" && tx.sub_type === "deposit") {
+    if (tx.type === "p2p" && p2pSub === "deposit") {
       return {
-        from: tx.deposit_address
-          ? `${tx.deposit_address.slice(0, 6)}...${tx.deposit_address.slice(-4)}`
-          : "Source",
-        to: `${tx.currency || tx.asset || "USDT"} (${tx.network || "-"})`,
+        from: tx.deposit_address ? truncateAddress(tx.deposit_address) : "Source",
+        to: formatP2pCryptoLabel(tx),
+      };
+    }
+    if (tx.type === "p2p" && p2pSub === "buy") {
+      const cryptoLabel = formatP2pCryptoLabel(tx);
+      return {
+        from: "Fiat (P2P)",
+        to: `${cryptoLabel} · Wallet`,
+      };
+    }
+    if (tx.type === "p2p" && p2pSub === "sell") {
+      const cryptoLabel = formatP2pCryptoLabel(tx);
+      return {
+        from: `${cryptoLabel} · Wallet`,
+        to: "Fiat (P2P)",
+      };
+    }
+    if (tx.type === "p2p") {
+      const cryptoLabel = formatP2pCryptoLabel(tx);
+      return {
+        from: "P2P",
+        to: `${cryptoLabel} · Wallet`,
       };
     }
     return {
