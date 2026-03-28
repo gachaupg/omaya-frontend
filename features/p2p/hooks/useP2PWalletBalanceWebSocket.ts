@@ -52,9 +52,28 @@ function extractWalletPayload(raw: unknown): WalletBalanceState {
   const data =
     root.data && typeof root.data === "object" ? (root.data as Record<string, unknown>) : root;
 
-  const balance = pickNumber(data, ["balance", "total_balance", "wallet_balance"]);
-  const available = pickNumber(data, ["available", "available_amount"]);
-  const escrow = pickNumber(data, ["escrow", "locked", "locked_amount", "in_escrow"]);
+  const balance = pickNumber(data, [
+    "balance",
+    "total_balance",
+    "wallet_balance",
+    "totalBalance",
+  ]);
+  const available = pickNumber(data, [
+    "available",
+    "available_amount",
+    "available_balance",
+    "free",
+    "spendable",
+  ]);
+  const escrow = pickNumber(data, [
+    "escrow",
+    "locked",
+    "locked_amount",
+    "in_escrow",
+    "total_locked",
+    "escrow_amount",
+    "pending_escrow",
+  ]);
   const currency =
     pickString(data, ["currency", "asset", "symbol"]) ||
     pickString(root, ["currency", "asset", "symbol"]) ||
@@ -102,11 +121,9 @@ export function useP2PWalletBalanceWebSocket(enabled: boolean = true) {
 
         ws.onmessage = (event) => {
           try {
-            console.log("[P2P wallet-balance WS] RAW:", event.data);
             const parsed = JSON.parse(event.data);
-            console.log("[P2P wallet-balance WS] PARSED:", parsed);
             const next = extractWalletPayload(parsed);
-            console.log("[P2P wallet-balance WS] EXTRACTED:", next);
+            logger.debug("p2p", "[wallet-balance-ws] message", next);
             setState((prev) => ({
               ...prev,
               balance: next.balance ?? prev.balance,

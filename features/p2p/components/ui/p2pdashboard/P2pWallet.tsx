@@ -1,46 +1,20 @@
 /** @jsxImportSource react */
-import React, { useEffect, memo } from "react";
+import React, { memo } from "react";
 import { tokens } from "@/styles/tokens";
 import Card from "../../Common/Card";
 import Button from "../../Common/Button";
-import { useDispatch, useSelector } from "react-redux";
-import { RootState } from "@/store/rootReducer";
-import { AppDispatch } from "@/store";
-import { fetchWallets } from "@/features/p2p/slices/walletSlice";
-import { fetchMatchedTrades } from "@/features/p2p/slices/matchedTradesSlice";
-import { FinancialCalculator } from "@/lib/utils/financial";
-import { toNumber } from "@/lib/finanacial";
-import { fetchTransactionSummary } from "@/features/p2p/slices/transactionSummarySlice";
+import { useSelector } from "react-redux";
 import { formatCurrency } from "@/lib/globalFormatter";
 import {
   selectWalletBalance,
   selectP2PWalletAmounts,
   selectTransactionSummary,
 } from "@/features/p2p/selectors";
-import { useP2PWalletBalanceWebSocket } from "@/features/p2p/hooks/useP2PWalletBalanceWebSocket";
+import { useP2PWalletBalanceContext } from "@/features/p2p/context/P2PWalletBalanceProvider";
 
 import { logger } from "@/lib/utils/logger";
 
-interface Wallet {
-  currency: string;
-  balance: string;
-}
-
-const formatBalance = (value: number, isUsdt: boolean = false) => {
-  if (isUsdt) {
-    return new Intl.NumberFormat("en-US", {
-      minimumFractionDigits: 12,
-      maximumFractionDigits: 12,
-    }).format(value);
-  }
-
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 12,
-    maximumFractionDigits: 12,
-  }).format(value);
-};
+const USDT_ICON = "/images/tether.svg";
 
 const P2pWallet = memo(
   ({
@@ -50,35 +24,39 @@ const P2pWallet = memo(
     isOpenForm: string;
     setIsOpenForm: (isOpenForm: string) => void;
   }) => {
-    const dispatch = useDispatch<AppDispatch>();
-
-    // Balance from transaction summary when available, else wallet selector
     const { balance: walletBalance, currency, loading } = useSelector(selectWalletBalance);
     const summary = useSelector(selectTransactionSummary);
-    const { balance: summaryBalance } = useSelector(selectP2PWalletAmounts);
-    const { data: matchedTrades, loading: matchedTradesLoading } = useSelector(
-      (state: RootState) => state.matchedTrades
-    );
+    const { balance: summaryBalance, availableAmount, escrow } =
+      useSelector(selectP2PWalletAmounts);
 
-    const transactionSummaryState = useSelector(
-      (state: RootState) => state.transactionSummary
-    );
-    const summaryLoading = transactionSummaryState.loading;
-    const { isAuthenticated } = useSelector((state: RootState) => state.auth);
-    const wsWallet = useP2PWalletBalanceWebSocket(isAuthenticated);
+    const wsWallet = useP2PWalletBalanceContext();
 
-    // Use transaction summary total_balance when summary is loaded
     const balance =
-      wsWallet.balance ??
-      (summary != null ? summaryBalance : walletBalance);
+      wsWallet.balance ?? (summary != null ? summaryBalance : walletBalance);
 
-    logger.debug("p2p", "P2pWallet render", { balance, currency, loading });
+    const availableDisplay =
+      wsWallet.available ?? (summary != null ? availableAmount : 0);
+    const escrowDisplay =
+      wsWallet.escrow ?? (summary != null ? escrow : 0);
+
+    const displayCurrency =
+      (wsWallet.currency && wsWallet.currency.trim()) ||
+      currency ||
+      "USDT";
+
+    logger.debug("p2p", "P2pWallet render", {
+      balance,
+      availableDisplay,
+      escrowDisplay,
+      loading,
+    });
 
     const getTitle = () => {
       if (isOpenForm === "deposit") return "P2P Deposit";
       if (isOpenForm === "withdraw") return "P2P Withdrawal";
       return "P2P Wallet";
     };
+
     return (
       <div>
         <p className={`text-xl font-bold dark:text-white text-black mb-1`}>
@@ -103,7 +81,7 @@ const P2pWallet = memo(
                   <span
                     className={`text-base sm:text-lg font-bold dark:text-[${tokens.colors.dark.textTitle}] text-gray-900 truncate`}
                   >
-                    {formatCurrency(balance ?? 0, "USDT")}
+                    {formatCurrency(balance ?? 0, displayCurrency)}
                   </span>
                   <span
                     className={`text-sm sm:text-base font-semibold dark:text-[${tokens.colors.dark.textBody}] text-gray-600 opacity-80 flex items-center`}
@@ -201,6 +179,47 @@ const P2pWallet = memo(
                     Withdraw
                   </span>
                 </Button>
+              </div>
+            </div>
+
+            {/* Asset breakdown — WebSocket-first (same source as balance), REST summary as fallback */}
+            <div
+              className="mt-1 rounded-2xl border dark:border-[#35353E] border-gray-200 overflow-hidden"
+              aria-label="P2P wallet balances by asset"
+            >
+              <div className="grid grid-cols-3 px-3 sm:px-4 py-2 dark:bg-[#35353E]/80 bg-gray-50">
+                <div className="text-xs sm:text-sm dark:text-[#788099] text-gray-600 font-medium">
+                  Asset
+                </div>
+                <div className="text-xs sm:text-sm text-center dark:text-[#788099] text-gray-600 font-medium">
+                  Available
+                </div>
+                <div className="text-xs sm:text-sm text-center dark:text-[#788099] text-gray-600 font-medium whitespace-normal leading-tight">
+                  In Escrow / Locked
+                </div>
+              </div>
+              <div className="grid grid-cols-3 px-3 sm:px-4 py-3 sm:py-3.5 bg-transparent">
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                  <img
+                    src={USDT_ICON}
+                    alt="USDT"
+                    className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white flex-shrink-0"
+                  />
+                  <div className="min-w-0">
+                    <div className="font-medium text-sm sm:text-base text-gray-900 dark:text-white truncate">
+                      {displayCurrency}
+                    </div>
+                    <div className="text-[10px] sm:text-xs text-gray-600 dark:text-[#788099] mt-0.5 truncate">
+                      Tether USD
+                    </div>
+                  </div>
+                </div>
+                <div className="text-center self-center text-sm sm:text-base text-gray-900 dark:text-white font-medium tabular-nums">
+                  {formatCurrency(availableDisplay, displayCurrency)}
+                </div>
+                <div className="text-center self-center text-sm sm:text-base text-gray-900 dark:text-white font-medium tabular-nums">
+                  {formatCurrency(escrowDisplay, displayCurrency)}
+                </div>
               </div>
             </div>
           </div>
