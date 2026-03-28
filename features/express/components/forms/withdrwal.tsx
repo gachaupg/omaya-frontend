@@ -637,6 +637,14 @@ export default function WithdrawalForm({
   // Forex-specific state for withdrawal
   const [userNotesForex, setUserNotesForex] = useState<string>("");
   const [showForexWithdrawalForm, setShowForexWithdrawalForm] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!selectedAsset || !isForexAsset(selectedAsset)) {
+      setShowForexWithdrawalForm(false);
+      setUserNotesForex("");
+    }
+  }, [selectedAsset]);
+
   // Asset selection state for search functionality
   const [isAssetDropdownOpen, setIsAssetDropdownOpen] = useState(false);
   const [assetSearchTerm, setAssetSearchTerm] = useState("");
