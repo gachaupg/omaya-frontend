@@ -34,6 +34,7 @@ import {
   fetchExchangeCommissionLookup,
   getExchangeLookupParams,
   isExchangeCommissionLookupAsset,
+  isForexPrimusAsset,
   type ExchangeCommissionLookupResponse,
 } from "@/features/express/api";
 import {
@@ -260,12 +261,7 @@ export default function WithdrawalForm({
   const assetDropdownRef = useRef<HTMLDivElement>(null);
   const assetDropdownContentRef = useRef<HTMLDivElement | null>(null);
 
-  // Helper function to check if asset is FXP (forex) - defined early to avoid hoisting issues
-  const isForexAsset = (asset: any) => {
-    if (!asset) return false;
-    const ticker = (asset?.ticker || asset?.symbol || "").toLowerCase();
-    return ticker === "fxp";
-  };
+  const isForexAsset = (asset: any) => isForexPrimusAsset(asset);
 
   const { adminPaymentDetails, adminWalletList, loading, error } = useSelector(
     (state: any) => state.payment
@@ -1367,17 +1363,13 @@ export default function WithdrawalForm({
           return 1;
         }
 
-        // Priority 3: FXPRIMUS (ticker: fxp)
-        if (
-          tickerA === "fxp" &&
-          !(tickerB === "fxp")
-        ) {
+        // Priority 3: FX Primus (API may use fxp or fxprimus)
+        const isFxpA = tickerA === "fxp" || tickerA === "fxprimus";
+        const isFxpB = tickerB === "fxp" || tickerB === "fxprimus";
+        if (isFxpA && !isFxpB) {
           return -1;
         }
-        if (
-          tickerB === "fxp" &&
-          !(tickerA === "fxp")
-        ) {
+        if (isFxpB && !isFxpA) {
           return 1;
         }
 
@@ -2417,17 +2409,13 @@ export default function WithdrawalForm({
       return 1;
     }
 
-    // Priority 3: FXPRIMUS (ticker: fxp)
-    if (
-      tickerA === "fxp" &&
-      !(tickerB === "fxp")
-    ) {
+    // Priority 3: FX Primus (API may use fxp or fxprimus)
+    const isFxpA = tickerA === "fxp" || tickerA === "fxprimus";
+    const isFxpB = tickerB === "fxp" || tickerB === "fxprimus";
+    if (isFxpA && !isFxpB) {
       return -1;
     }
-    if (
-      tickerB === "fxp" &&
-      !(tickerA === "fxp")
-    ) {
+    if (isFxpB && !isFxpA) {
       return 1;
     }
 

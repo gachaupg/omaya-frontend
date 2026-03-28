@@ -13,6 +13,32 @@ export const getCommissionApiAsset = (ticker: string): string | null => {
   return null;
 };
 
+/** FX Primus: backend may expose ticker/symbol/name only, or variants like "FX Primus" / FXPRIMUS — must match commission-lookup + forex UI */
+export const isForexPrimusAsset = (asset: {
+  ticker?: string;
+  symbol?: string;
+  name?: string;
+} | null): boolean => {
+  if (!asset) return false;
+  const parts = [
+    asset.ticker,
+    asset.symbol,
+    asset.name,
+    (asset as { legacyTicker?: string }).legacyTicker,
+    (asset as { legacy_ticker?: string }).legacy_ticker,
+    (asset as { original_ticker?: string }).original_ticker,
+  ]
+    .filter((x): x is string => x != null && String(x).trim() !== "")
+    .map((x) => String(x).toLowerCase().trim());
+  for (const raw of parts) {
+    const compact = raw.replace(/\s+/g, "");
+    if (compact === "fxp" || compact === "fxprimus") return true;
+    if (compact.includes("fxprimus")) return true;
+    if (/\bfxp\b/.test(raw)) return true;
+  }
+  return false;
+};
+
 interface CommissionLookupResponse {
   commission_rate: string;
   is_percentage: boolean;

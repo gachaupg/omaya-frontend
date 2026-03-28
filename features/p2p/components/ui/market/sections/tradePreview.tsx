@@ -104,11 +104,15 @@ const TradePreview: React.FC<TradePreviewProps> = ({
   const maxAmount = advertiserData.maxAmount;
   const rangeLimitSuffix = advertiserData.range_currency?.toUpperCase() === "KES" ? "KES" : "USD";
   const availableAmount = advertiserData.availableAmount || 0;
-  const effectiveSellMinUsdt = availableAmount < minAmount ? 0.01 : minAmount;
+  // When commissionRate is 0, limits are treated as already in USDT (legacy).
+  const effectiveSellMinUsdt =
+    commissionRate <= 0 && availableAmount < minAmount ? 0.01 : minAmount;
   const effectiveSellMaxUsdt = (() => {
+    if (commissionRate > 0) {
+      return Math.min(maxAmount / commissionRate, availableAmount);
+    }
     const cappedByAd = Math.min(maxAmount, availableAmount);
     if (availableAmount < minAmount) return cappedByAd;
-    // Keep at least minAmount available after a sell.
     return Math.max(0, Math.min(cappedByAd, availableAmount - minAmount));
   })();
   const displayedAvailableAssets =
@@ -118,11 +122,13 @@ const TradePreview: React.FC<TradePreviewProps> = ({
   // Keep buy preview range identical to table "Limit" text.
   const displayedLimitRange =
     advertiserData.limit || `${minAmount.toFixed(2)} - ${maxAmount.toFixed(2)} ${rangeLimitSuffix}`;
-  // Sell input is USDT while table limits are KES/USD; show a USDT-converted range here.
+  // Sell input is USDT; advertiser min/max are in range currency (USD/KES). Convert with rate; cap by pool.
   const sellRangeMinUsdt =
     commissionRate > 0 ? minAmount / commissionRate : effectiveSellMinUsdt;
   const sellRangeMaxUsdt =
-    commissionRate > 0 ? maxAmount / commissionRate : effectiveSellMaxUsdt;
+    commissionRate > 0
+      ? Math.min(maxAmount / commissionRate, availableAmount)
+      : effectiveSellMaxUsdt;
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -307,35 +313,20 @@ const TradePreview: React.FC<TradePreviewProps> = ({
         return;
       }
 
-      // When available < min, allow selling full available (range min cannot be met)
-      const effectiveMin = availableAmount < minAmount ? 0.01 : minAmount;
-      const effectiveMax = Math.min(maxAmount, availableAmount);
+      // Same bounds as displayed "Range: … USDT" (fiat limits → USDT; do not mix fiat min with USDT remainder).
+      const minUsdt = sellRangeMinUsdt;
+      const maxUsdt = sellRangeMaxUsdt;
 
-      if (numericAmount < effectiveMin) {
+      if (numericAmount < minUsdt) {
         setIsAmountValid(false);
-        setErrorMessage(`Minimum amount is ${effectiveMin.toFixed(2)} USDT`);
+        setErrorMessage(`Minimum amount is ${minUsdt.toFixed(2)} USDT`);
         return;
       }
 
-      if (numericAmount > effectiveMax) {
+      if (numericAmount > maxUsdt) {
         setIsAmountValid(false);
-        setErrorMessage(`Maximum available is ${effectiveMax.toFixed(2)} USDT`);
+        setErrorMessage(`Maximum allowed is ${maxUsdt.toFixed(2)} USDT`);
         return;
-      }
-
-      // Ensure amount remaining (availableAmount - sendAmount) >= minAmount when available >= min
-      if (availableAmount >= minAmount) {
-        const amountRemaining = availableAmount - numericAmount;
-        if (amountRemaining < minAmount && amountRemaining >= 0) {
-          const maxAllowed = availableAmount - minAmount;
-          setIsAmountValid(false);
-          setErrorMessage(
-            maxAllowed >= minAmount
-              ? `Maximum allowed is ${maxAllowed.toFixed(2)} USDT (min ${minAmount} USDT must remain available)`
-              : `Only ${availableAmount.toFixed(2)} USDT available. Minimum order is ${minAmount} USDT.`
-          );
-          return;
-        }
       }
 
       // Validation passed
@@ -428,11 +419,10 @@ const TradePreview: React.FC<TradePreviewProps> = ({
         return;
       }
 
-      // When available < min, allow selling full available
-      const effectiveMinUsdt = availableAmount < minAmount ? 0.01 : minAmount;
-      const effectiveMaxUsdt = Math.min(maxAmount, availableAmount);
-      const minUsd = effectiveMinUsdt * commissionRate;
-      const maxUsd = effectiveMaxUsdt * commissionRate;
+      const minUsdt = sellRangeMinUsdt;
+      const maxUsdt = sellRangeMaxUsdt;
+      const minUsd = minUsdt * commissionRate;
+      const maxUsd = maxUsdt * commissionRate;
 
       if (numericAmount < minUsd) {
         setIsAmountValid(false);
@@ -442,24 +432,10 @@ const TradePreview: React.FC<TradePreviewProps> = ({
 
       if (numericAmount > maxUsd) {
         setIsAmountValid(false);
-        setErrorMessage(`Maximum available is ${availableAmount.toFixed(2)} USDT (${maxUsd.toFixed(2)} ${rangeLimitSuffix})`);
+        setErrorMessage(
+          `Maximum receive is ${maxUsd.toFixed(2)} ${rangeLimitSuffix} (${maxUsdt.toFixed(2)} USDT)`
+        );
         return;
-      }
-
-      // Ensure amount remaining >= minAmount when available >= min
-      if (availableAmount >= minAmount) {
-        const amountRemaining = availableAmount - calculatedSendUsdt;
-        if (amountRemaining < minAmount && amountRemaining >= 0) {
-          const maxAllowedUsdt = availableAmount - minAmount;
-          const maxAllowedUsd = maxAllowedUsdt * commissionRate;
-          setIsAmountValid(false);
-          setErrorMessage(
-            maxAllowedUsdt >= minAmount
-              ? `Maximum allowed is ${maxAllowedUsdt.toFixed(2)} USDT (${maxAllowedUsd.toFixed(2)} ${rangeLimitSuffix}) - min ${minAmount} USDT must remain`
-              : `Only ${availableAmount.toFixed(2)} USDT available. Minimum order is ${minAmount} USDT.`
-          );
-          return;
-        }
       }
 
       setIsAmountValid(true);
