@@ -1,15 +1,10 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { tokens } from "@/styles/tokens";
-import Card from "../Common/Card";
-import Available from "../ui/p2pdashboard/Available";
 import P2PCharts from "../ui/p2pdashboard/P2PCharts";
 import Overview from "../ui/p2pdashboard/Overview";
 import P2pWallet from "../ui/p2pdashboard/P2pWallet";
 import UserCard from "../ui/p2pdashboard/UserCard";
-import Deposit from "../ui/p2pdashboard/sections/Deposit";
-import Withdraw from "../ui/p2pdashboard/sections/Withdraw";
 import Express from "../ui/express/components/express";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "../../../../store";
@@ -18,13 +13,18 @@ import { fetchMatchedTrades } from "../../slices/matchedTradesSlice";
 import { fetchTransactionSummary } from "../../slices/transactionSummarySlice";
 import { selectP2PWalletAmounts, selectTransactionSummary } from "../../selectors";
 import { AppDispatch } from "../../../../store";
+import {
+  P2PWalletBalanceProvider,
+  useP2PWalletBalanceContext,
+} from "@/features/p2p/context/P2PWalletBalanceProvider";
 
 const P2P_EXPRESS_STATE_KEY = "omaya_p2p_express_state";
 const RETURNING_FROM_LEGAL_KEY = "omaya_returning_from_legal";
 
-const P2PDashboard = () => {
+function P2PDashboardContent() {
   const [isOpenForm, setIsOpenForm] = useState("");
   const dispatch = useDispatch<AppDispatch>();
+  const wsWallet = useP2PWalletBalanceContext();
 
   const handleBeforeLegalNavigate = useCallback(() => {
     try {
@@ -62,32 +62,26 @@ const P2PDashboard = () => {
       sessionStorage.removeItem(P2P_EXPRESS_STATE_KEY);
     }
   }, []);
+
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
   useEffect(() => {
     if (isAuthenticated) {
-      // Use catch to prevent errors from crashing the app
-      dispatch(fetchWallets()).catch(() => {
-        // Silently handle errors - wallet slice will set safe defaults
-      });
-      dispatch(fetchMatchedTrades(1)).catch(() => {
-        // Silently handle errors
-      });
-      dispatch(fetchTransactionSummary()).catch(() => {
-        // Silently handle errors
-      });
+      dispatch(fetchWallets()).catch(() => {});
+      dispatch(fetchMatchedTrades(1)).catch(() => {});
+      dispatch(fetchTransactionSummary()).catch(() => {});
     }
   }, [dispatch, isAuthenticated]);
 
-  // Available and escrow from transaction summary API when loaded
   const summary = useSelector(selectTransactionSummary);
-  const { availableAmount, escrow } = useSelector(selectP2PWalletAmounts);
-  const availableBalance = summary != null ? availableAmount : 0;
+  const { availableAmount } = useSelector(selectP2PWalletAmounts);
+  const availableBalance =
+    wsWallet.available ?? (summary != null ? availableAmount : 0);
 
   return (
     <div className="flex flex-col gap-4">
       <UserCard />
       <div className="flex flex-col lg:flex-row  gap-4">
-        {(isOpenForm === "deposit" || isOpenForm === "withdraw") ? (
+        {isOpenForm === "deposit" || isOpenForm === "withdraw" ? (
           <div className="w-full">
             <P2pWallet isOpenForm={isOpenForm} setIsOpenForm={setIsOpenForm} />
             {isOpenForm === "deposit" && (
@@ -114,8 +108,6 @@ const P2PDashboard = () => {
               <P2pWallet isOpenForm={isOpenForm} setIsOpenForm={setIsOpenForm} />
               {isOpenForm === "" && (
                 <>
-                  {" "}
-                  <Available />
                   <P2PCharts />
                 </>
               )}
@@ -130,6 +122,12 @@ const P2PDashboard = () => {
       </div>
     </div>
   );
-};
+}
+
+const P2PDashboard = () => (
+  <P2PWalletBalanceProvider>
+    <P2PDashboardContent />
+  </P2PWalletBalanceProvider>
+);
 
 export default P2PDashboard;

@@ -706,12 +706,9 @@ function ForexStatusContent() {
               </div>
             </div>
             <img
-              src="https://content-api.changenow.io/uploads/fxprimus_logo.svg"
+              src="/images/asset-default.svg"
               alt="FXPRIMUS"
               className="w-8 h-8 rounded-full"
-              onError={(e) => {
-                e.currentTarget.src = "/images/tether.svg";
-              }}
             />
           </div>
         </div>
