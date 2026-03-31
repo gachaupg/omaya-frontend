@@ -37,7 +37,6 @@ const Overview = () => {
     (Number(summary?.total_pending_p2p_withdrawals) || 0);
   const p2p = Number(summary?.total_approved_p2p_volume ?? summary?.total_p2p_orders ?? 0) || 0;
   const chartTotal = deposits + withdrawals + inProgress + p2p; // for pie segments
-  const centerTotal = p2p; // Use API total_approved_p2p_volume in center
   const totalVolume = summary?.total_approved_volume ?? parseTotalVolume(summary?.total_volume) ?? 0;
   const circumference = 2 * Math.PI * 90;
   // Order: Pending, Deposits, Withdrawals, P2P
@@ -179,14 +178,19 @@ const Overview = () => {
               />
             </svg>
           )}
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-
-            <span className="text-xs sm:text-sm md:text-[15px] font-bold text-gray-900 dark:text-white">
-              {formatCurrency(centerTotal, "USD")}
-            </span>
-            <span className="text-[10px] sm:text-xs md:text-base text-gray-500 dark:text-gray-400">
-              Total
-            </span>
+          {/* Center totals (matches deposits/withdrawals/p2p values below). */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-center gap-0.5 px-2">
+            <div className="text-[10px] sm:text-xs md:text-[13px] leading-tight text-neutral-500 dark:text-gray-400">
+              <span className="text-[#0D0D0D] dark:text-white/80 font-semibold">
+                {(deposits + withdrawals + p2p).toLocaleString()} USD
+              </span>
+            </div>
+            <div className="text-[10px] sm:text-xs md:text-[13px] leading-tight text-neutral-500 dark:text-gray-400">
+              <span className="text-[#0D0D0D] dark:text-white/80 font-semibold">
+                Total
+              </span>
+            </div>
+           
           </div>
         </div>
         <div className="mt-3 sm:mt-4 md:mt-6 w-full flex flex-col gap-1.5 sm:gap-2">

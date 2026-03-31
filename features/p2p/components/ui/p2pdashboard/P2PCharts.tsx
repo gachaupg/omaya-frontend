@@ -76,7 +76,7 @@ const P2PCharts = () => {
 
   useEffect(() => {
     if (isAuthenticated) {
-      dispatch(fetchUserTrades({ page: currentPage, currency: "USDT" }));
+      dispatch(fetchUserTrades({ page: currentPage }));
     }
   }, [dispatch, currentPage, isAuthenticated]);
 
@@ -197,7 +197,7 @@ const P2PCharts = () => {
     if (searchQuery.trim()) setSearchQuery("");
     if (page !== currentPage) {
       dispatch(setUserTradesCurrentPage(page));
-      dispatch(fetchUserTrades({ page, currency: "USDT" }));
+      dispatch(fetchUserTrades({ page }));
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
@@ -206,7 +206,7 @@ const P2PCharts = () => {
     setSearchQuery(query);
     if (query.trim() !== searchQuery.trim() && currentPage !== 1) {
       dispatch(setUserTradesCurrentPage(1));
-      dispatch(fetchUserTrades({ page: 1, currency: "USDT" }));
+      dispatch(fetchUserTrades({ page: 1 }));
     }
   };
 
@@ -220,7 +220,7 @@ const P2PCharts = () => {
       let page = 1;
       let hasMore = true;
       while (hasMore && page <= 100) {
-        const response = await getUserTrades(`?page=${page}&currency=USDT`);
+        const response = await getUserTrades(`?page=${page}`);
         const results = response?.results || [];
         if (results.length === 0) break;
         allPagesData.push(...results.map((t) => transformUserTradeToTransaction(t, user?.email)));
