@@ -3724,13 +3724,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                         <span>{t("rates.processing", "Processing...")}</span>
                       </>
                     ) : (
-                      <>
-                        <img
-                          className="mt-2"
-                          src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
-                          alt="XCHANGE"
-                        />
-                      </>
+                      <span className="tracking-wide">EXCHANGE</span>
                     )}
                   </button>
                 </div>
@@ -3806,13 +3800,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                         <span>{t("rates.processing", "Processing...")}</span>
                       </>
                     ) : (
-                      <>
-                        <img
-                          className="mt-2"
-                          src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
-                          alt="XCHANGE"
-                        />
-                      </>
+                      <span className="tracking-wide">EXCHANGE</span>
                     )}
                   </button>
                 </div>
