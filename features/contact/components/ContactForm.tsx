@@ -2,10 +2,12 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useSelector } from "react-redux";
 import { useMarketingI18n } from "@/lib/useMarketingI18n";
 import { useContact } from "../hooks/useContact";
 import type { ContactFormData } from "../types";
 import { User, Mail, MessageCircle, Send } from "lucide-react";
+import { RootState } from "@/store/rootReducer";
 
 interface ContactFormProps {
   onSuccess?: () => void;
@@ -15,6 +17,7 @@ interface ContactFormProps {
 const ContactForm: React.FC<ContactFormProps> = ({ onSuccess, onError }) => {
   const { t } = useMarketingI18n();
   const router = useRouter();
+  const { isAuthenticated, user, profile } = useSelector((state: RootState) => state.auth);
   const [formData, setFormData] = useState<ContactFormData & { name?: string; subject?: string }>({
     name: "",
     email_address: "",
@@ -60,6 +63,40 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSuccess, onError }) => {
       return () => clearTimeout(timer);
     }
   }, [error, clearContactError]);
+
+  // Prefill name/email for authenticated users; guests enter manually.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    let fallbackEmail = "";
+    let fallbackName = "";
+    if (typeof window !== "undefined") {
+      try {
+        const rawProfile = localStorage.getItem("profile");
+        if (rawProfile) {
+          const parsed = JSON.parse(rawProfile);
+          fallbackEmail = parsed?.user?.email || "";
+          const first = parsed?.user?.first_name || "";
+          const last = parsed?.user?.last_name || "";
+          fallbackName = `${first} ${last}`.trim();
+        }
+      } catch {
+        // Ignore malformed local storage payload.
+      }
+    }
+
+    const firstName = user?.first_name || "";
+    const lastName = user?.last_name || "";
+    const authName = `${firstName} ${lastName}`.trim();
+    const nextName = authName || fallbackName;
+    const nextEmail = user?.email || fallbackEmail;
+
+    setFormData((prev) => ({
+      ...prev,
+      name: nextName || prev.name || "",
+      email_address: nextEmail || prev.email_address || "",
+    }));
+  }, [isAuthenticated, user?.first_name, user?.last_name, user?.email, profile?.country]);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -275,7 +312,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSuccess, onError }) => {
             value={formData.name || ""}
             onChange={handleInputChange}
             placeholder="Enter your name"
-            disabled={isSubmitting}
+            disabled={isSubmitting || isAuthenticated}
             className="w-full pl-10 pr-4 py-2.5 sm:py-3 bg-gray-50 dark:bg-[#1A1A1F] border border-border dark:border-accent rounded-2xl text-gray-900 dark:text-gray-100 placeholder-muted-foreground focus:ring-2 focus:ring-[#1D8751] focus:border-transparent outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
           />
         </div>
@@ -299,7 +336,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSuccess, onError }) => {
             onChange={handleInputChange}
             placeholder="your@email.com"
             required
-            disabled={isSubmitting}
+            disabled={isSubmitting || isAuthenticated}
             className="w-full pl-10 pr-4 py-2.5 sm:py-3 bg-gray-50 dark:bg-[#1A1A1F] border border-border dark:border-accent rounded-2xl text-gray-900 dark:text-gray-100 placeholder-muted-foreground focus:ring-2 focus:ring-[#1D8751] focus:border-transparent outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
           />
         </div>

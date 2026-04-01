@@ -45,7 +45,6 @@ import { useRatesI18n } from "@/lib/useRatesI18n";
 import { FaSearch } from "react-icons/fa";
 import { showToast } from "@/lib/utils/toast";
 import { openKYCModal, checkKYCStatus } from "@/features/auth/slices/authSlice";
-import Exchanging from "../../express/components/exchnaging";
 import { useTheme } from "@/context/theme";
 import MoneyXRates from "./MoneyXRates";
 import { ClipboardPaste } from "lucide-react";
@@ -296,8 +295,6 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
       console.error("Paste failed", err);
     }
   };
-  const [showExchanging, setShowExchanging] = useState(false);
-  const [exchangingData, setExchangingData] = useState<any>(null);
   const hasRestoredState = useRef(false);
 
   // API calculation states
@@ -1275,8 +1272,6 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
     setWalletError("");
     setForexAccountNumber("");
     setForexUserNotes("");
-    setShowExchanging(false);
-    setExchangingData(null);
     setForceUpdate((prev) => prev + 1);
   };
 
@@ -1505,12 +1500,19 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
         }
       }
 
-      // Prepare transaction data for the exchanging page
-      const transactionData = {
+      // Same payload shape as `features/express/components/forms/deposit.tsx` / `withdrwal.tsx` → `onExchange` → `exchnaging.tsx`
+      const receiveNum = parseFloat(String(receiveAmount)) || 0;
+      const payNum = parseFloat(String(amount)) || 0;
+      const transactionData: Record<string, unknown> = {
         type: isDepositMode ? ("deposit" as const) : ("withdrawal" as const),
-        amount: amount,
+        amount: payNum,
+        receiveAmount: receiveNum,
         asset: {
           ...selectedAsset,
+          ticker:
+            (selectedAsset as any)?.ticker ||
+            (selectedAsset as any)?.symbol ||
+            (selectedAsset as any)?.name,
           icon: normalizeRatesAssetIconForPayload(
             pickRatesAssetImageRaw(selectedAsset) ?? ""
           ),
@@ -1529,22 +1531,25 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
           network_type: getAssetNetwork(selectedAsset),
         },
         transactionId: effectiveTxId,
-        // Deposit-specific fields
         ...(isDepositMode && {
           depositCode: effectiveDepositCode,
           totalAmountDue: effectiveResponse?.total_amount_due,
           commission: effectiveResponse?.commission,
           networkFee: effectiveResponse?.network_fee,
-          currency: effectiveResponse?.currency,
+          currency:
+            effectiveResponse?.currency ||
+            (selectedAsset as any)?.ticker ||
+            (selectedAsset as any)?.symbol,
           websocketUrl: effectiveResponse?.websocket_url,
+          websocket_url: effectiveResponse?.websocket_url,
           net_amount: effectiveResponse?.net_amount,
           fees: effectiveResponse?.fees,
         }),
-        // Withdrawal-specific fields
         ...(!isDepositMode && {
           withdrawalAddress: withdrawalAddress,
           payoutAddress: payoutAddress,
           websocketUrl: effectiveResponse?.websocket_url,
+          websocket_url: effectiveResponse?.websocket_url,
           message: effectiveResponse?.message,
           responseType: effectiveResponse?.response_type,
           details: {
@@ -1568,13 +1573,23 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
       };
 
       logger.debug('general',
-        "Proceeding to exchanging with transaction data:",
+        "Proceeding to Express exchanging (exchnaging) with transaction data:",
         transactionData
       );
 
-      // Set the exchanging data and show the exchanging component
-      setExchangingData(transactionData);
-      setShowExchanging(true);
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("rates-flow-visibility", { detail: { active: false } })
+        );
+        localStorage.setItem(
+          "express_transaction_data",
+          JSON.stringify(transactionData)
+        );
+      }
+      const mode = isDepositMode ? "deposit" : "withdrawal";
+      router.push(
+        `/dashboard/express-exchange?resumeStatus=1&mode=${encodeURIComponent(mode)}`
+      );
     } catch (error: any) {
       console.error("Failed to proceed to exchanging:", error);
       showToast.error("Failed to proceed. Please try again.");
@@ -2538,7 +2553,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
     if (typeof window === "undefined") return;
     window.dispatchEvent(
       new CustomEvent("rates-flow-visibility", {
-        detail: { active: showExchanging && !!exchangingData },
+        detail: { active: false },
       })
     );
     return () => {
@@ -2546,16 +2561,11 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
         new CustomEvent("rates-flow-visibility", { detail: { active: false } })
       );
     };
-  }, [showExchanging, exchangingData]);
+  }, []);
 
   // If MoneyX tab is active, render MoneyX rates component (check first, after all hooks)
   if (activeTab === 'moneyx') {
     return <MoneyXRates commissionType={isDepositMode ? "deposit" : "withdrawal"} />;
-  }
-
-  // If showing exchanging component, render it instead of the main form
-  if (showExchanging && exchangingData) {
-    return <Exchanging transactionData={exchangingData} />;
   }
 
   return (

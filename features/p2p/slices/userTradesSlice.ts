@@ -72,7 +72,7 @@ export const fetchUserTrades = createAsyncThunk(
   "userTrades/fetchUserTrades",
   async (params: FetchUserTradesParams, { rejectWithValue }) => {
     try {
-      const { page, type, status, date, currency } = params;
+      const { page, type, status, date } = params;
       let url = `?page=${page}`;
 
       // Map filter values to API parameters
@@ -104,10 +104,6 @@ export const fetchUserTrades = createAsyncThunk(
 
         url += `&start_date=${startDate.toISOString()}`;
         url += `&end_date=${today.toISOString()}`;
-      }
-
-      if (currency && currency !== "all") {
-        url += `&currency=${currency.toUpperCase()}`;
       }
 
       logger.debug('p2p', "Fetching trades with URL:", url);

@@ -64,6 +64,48 @@ interface ExchangingProps {
   };
 }
 
+/** Matches `deposit.tsx`: bank lines are often under `payment_details[0]`, not root. */
+const paymentDetailsNested = (pd: any) => pd?.payment_details?.[0];
+
+const resolvePaymentAccountNumber = (pd: any): string => {
+  if (!pd) return "";
+  const n = paymentDetailsNested(pd);
+  const pick = (v: unknown) =>
+    v != null && String(v).trim() !== "" ? String(v).trim() : "";
+  return (
+    pick(pd.account_number) ||
+    pick(pd.account_no) ||
+    pick(n?.account_number) ||
+    pick(n?.account_no) ||
+    pick(pd.mobile_number) ||
+    pick(n?.mobile_number) ||
+    pick(pd.iban) ||
+    pick(n?.iban) ||
+    ""
+  );
+};
+
+const resolvePaymentAccountName = (pd: any): string => {
+  if (!pd) return "";
+  const n = paymentDetailsNested(pd);
+  const pick = (v: unknown) =>
+    v != null && String(v).trim() !== "" ? String(v).trim() : "";
+  return pick(pd.account_name) || pick(n?.account_name) || "";
+};
+
+/** Deposit "From" bank or withdrawal payout: try paymentDetails[0] then paymentDetail. */
+const resolveBankAccountFromTx = (tx: {
+  paymentDetail?: any;
+  paymentDetails?: any[];
+}): string => {
+  const ordered = [tx?.paymentDetails?.[0], tx?.paymentDetail].filter(Boolean);
+  for (const pd of ordered) {
+    const v = resolvePaymentAccountNumber(pd);
+    if (v) return v;
+  }
+  return "";
+};
+
 export default function Exchanging({ transactionData }: ExchangingProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -1197,7 +1239,9 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                     className={`${isDark ? "text-white" : "text-gray-900"
                       } text-sm mb-1`}
                   >
-                    {effectiveTransactionData.paymentDetail.account_name}
+                    {resolvePaymentAccountName(
+                      effectiveTransactionData.paymentDetail
+                    ) || "N/A"}
                   </div>
                   <div
                     className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
@@ -1209,7 +1253,9 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                     className={`${isDark ? "text-white" : "text-gray-900"
                       } text-sm font-mono`}
                   >
-                    {effectiveTransactionData.paymentDetail.account_number}
+                    {resolvePaymentAccountNumber(
+                      effectiveTransactionData.paymentDetail
+                    ) || "N/A"}
                   </div>
                 </>
               )}
@@ -1247,15 +1293,11 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               // Crypto deposit: use wallet address (deposit address) first
               if (effectiveTransactionData?.walletAddress) {
                 qrData = effectiveTransactionData.walletAddress;
-              } else if (effectiveTransactionData?.paymentDetail?.account_number) {
-                qrData = effectiveTransactionData.paymentDetail.account_number;
-              } else if (effectiveTransactionData?.paymentDetail?.mobile_number) {
-                qrData = effectiveTransactionData.paymentDetail.mobile_number;
               } else if (effectiveTransactionData?.paymentDetail) {
-                const firstDetail = effectiveTransactionData.paymentDetail.payment_details?.[0];
-                if (firstDetail?.account_number || firstDetail?.mobile_number) {
-                  qrData = firstDetail.account_number || firstDetail.mobile_number;
-                }
+                const acct = resolvePaymentAccountNumber(
+                  effectiveTransactionData.paymentDetail
+                );
+                if (acct) qrData = acct;
               }
             } else if (effectiveTransactionData?.type === "withdrawal" && effectiveTransactionData?.walletAddress) {
               qrData = effectiveTransactionData.walletAddress;
@@ -1804,9 +1846,9 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                       } text-xs sm:text-sm font-mono break-all max-w-[200px] sm:max-w-[250px] leading-tight`}
                     style={{ wordBreak: 'break-all', lineHeight: '1.3' }}
                   >
-                    {effectiveTransactionData.paymentDetail.account_number ||
-                      effectiveTransactionData.paymentDetail.mobile_number ||
-                      "N/A"}
+                    {resolvePaymentAccountNumber(
+                      effectiveTransactionData.paymentDetail
+                    ) || "N/A"}
                   </div>
                 </div>
               </>
@@ -1960,10 +2002,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                       } text-xs sm:text-sm font-mono break-all max-w-[200px] sm:max-w-[250px] leading-tight`}
                     style={{ wordBreak: 'break-all', lineHeight: '1.3' }}
                   >
-                    {effectiveTransactionData?.paymentDetails?.[0]?.account_number ||
-                      effectiveTransactionData?.paymentDetail?.account_number ||
-                      effectiveTransactionData?.paymentDetails?.[0]?.mobile_number ||
-                      effectiveTransactionData?.paymentDetail?.mobile_number ||
+                    {resolveBankAccountFromTx(effectiveTransactionData) ||
                       "N/A"}
                   </div>
                 </div>

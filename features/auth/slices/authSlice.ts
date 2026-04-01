@@ -78,6 +78,14 @@ const handleApiError = (error: unknown): string => {
   return "An unexpected error occurred";
 };
 
+const getSuspensionMessage = (user?: User | null): string | null => {
+  if (!user?.is_suspended) return null;
+  const reason = user?.suspension_details?.reason?.trim();
+  return reason
+    ? `Your account is suspended. Reason: ${reason}`
+    : "Your account is suspended. Please contact support.";
+};
+
 // Async thunks
 export const registerUser = createAsyncThunk<RegisterResponse, RegisterPayload>(
   "auth/register",
@@ -115,6 +123,10 @@ export const loginUser = createAsyncThunk<AuthResponse, LoginPayload>(
   async (payload, { rejectWithValue, dispatch }) => {
     try {
       const response = await post<AuthResponse>(API_ENDPOINTS.LOGIN, payload);
+      const suspensionMessage = getSuspensionMessage(response.data?.user);
+      if (suspensionMessage) {
+        return rejectWithValue(suspensionMessage);
+      }
 
       // Check if 2FA is required
       if (response.data.require_2fa) {
@@ -141,6 +153,10 @@ export const loginWith2FA = createAsyncThunk<AuthResponse, Login2FAPayload>(
         API_ENDPOINTS.LOGIN_2FA,
         payload
       );
+      const suspensionMessage = getSuspensionMessage(response.data?.user);
+      if (suspensionMessage) {
+        return rejectWithValue(suspensionMessage);
+      }
       return response.data;
     } catch (error) {
       return rejectWithValue(handleApiError(error));
@@ -458,6 +474,22 @@ const authSlice = createSlice({
       
       // Valid auth requires BOTH token AND user data
       if (authData && authData.tokens?.access && authData.user) {
+        const suspensionMessage = getSuspensionMessage(authData.user);
+        if (suspensionMessage) {
+          state.user = null;
+          state.tokens = null;
+          state.isAuthenticated = false;
+          state.profile = null;
+          state.error = suspensionMessage;
+          storage.removeProfile();
+          cookieUtils.removeCookie("access_token");
+          if (typeof window !== "undefined") {
+            localStorage.removeItem("access_token");
+            localStorage.removeItem("refresh_token");
+            localStorage.removeItem("user");
+          }
+          return;
+        }
         state.user = authData.user;
         state.tokens = authData.tokens;
         state.isAuthenticated = true;
@@ -492,6 +524,20 @@ const authSlice = createSlice({
           if (accessToken && userData) {
             try {
               const user = JSON.parse(userData);
+              const suspensionMessage = getSuspensionMessage(user);
+              if (suspensionMessage) {
+                state.user = null;
+                state.tokens = null;
+                state.isAuthenticated = false;
+                state.profile = null;
+                state.error = suspensionMessage;
+                storage.removeProfile();
+                cookieUtils.removeCookie("access_token");
+                localStorage.removeItem("access_token");
+                localStorage.removeItem("refresh_token");
+                localStorage.removeItem("user");
+                return;
+              }
               const tokens = {
                 access: accessToken,
                 refresh: refreshToken || '',

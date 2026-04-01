@@ -2,10 +2,9 @@
 import React, { useEffect, useState, useRef } from "react";
 import { tokens } from "@/styles/tokens";
 import Button from "./Button";
-import { useDispatch, useSelector } from "react-redux";
-import { AppDispatch } from "@/store";
+import { useSelector } from "react-redux";
 import { RootState } from "@/store/rootReducer";
-import { fetchUserTrades } from "@/features/p2p/slices/userTradesSlice";
+import { getUserTrades } from "@/features/p2p/api";
 import {
   AreaChart,
   Area,
@@ -64,8 +63,6 @@ const Charts: React.FC<ChartProps> = ({
   selectedTimeFilter = "All Time",
   showTimeFilter = true,
 }) => {
-  const dispatch = useDispatch<AppDispatch>();
-
   const [filter, setFilter] = useState<"All" | "Sells" | "Buys">("All");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -75,11 +72,31 @@ const Charts: React.FC<ChartProps> = ({
   const [chartData, setChartData] = useState<
     { name: string; buyValue: number; sellValue: number }[]
   >([]);
+  /** All pages for the graph (no currency filter on API). */
+  const [chartTrades, setChartTrades] = useState<any[]>([]);
 
-  /* ------------------- Fetch trades once ------------------- */
+  /* ------------------- Load all user-trades pages for chart ------------------- */
   useEffect(() => {
-    dispatch(fetchUserTrades({ page: 1, currency: "usdt" }));
-  }, [dispatch]);
+    let cancelled = false;
+    (async () => {
+      const all: any[] = [];
+      try {
+        for (let page = 1; page <= 100; page++) {
+          const response = await getUserTrades(`?page=${page}`);
+          const results = response?.results || [];
+          if (results.length === 0) break;
+          all.push(...results);
+          if (!response?.next) break;
+        }
+      } catch {
+        /* keep partial/all empty */
+      }
+      if (!cancelled) setChartTrades(all);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   /* ------------------- Click-outside for dropdown ----------- */
   useEffect(() => {
@@ -97,11 +114,17 @@ const Charts: React.FC<ChartProps> = ({
 
   /* ------------------- Build chart data -------------------- */
   useEffect(() => {
-    const raw = data?.length ? data : trades?.results || [];
-    // Graph only completed trades; exclude cancelled, pending, etc.
+    const raw =
+      chartTrades.length > 0
+        ? chartTrades
+        : data?.length
+          ? data
+          : trades?.results || [];
+    // Include any trade with a valid timestamp (API may use canceled/cancelled/pending/etc.;
+    // filtering to "completed" only hid all rows when every trade was canceled.)
     const src = raw.filter((item: any) => {
-      const s = String(item?.status ?? "").toLowerCase().trim();
-      return s === "completed";
+      const ts = new Date(item.lastUpdate || item.timestamp || item.date);
+      return !isNaN(ts.getTime());
     });
     if (!src.length) {
       setChartData([]);
@@ -113,11 +136,11 @@ const Charts: React.FC<ChartProps> = ({
 
     let newData: { name: string; buyValue: number; sellValue: number }[] = [];
 
-    // Add amount to the correct slot based on type
     const addToSlot = (idx: number, amt: number, rawType: string) => {
+      const t = String(rawType).toLowerCase();
       if (newData[idx]) {
-        if (rawType === "buy") newData[idx].buyValue += amt;
-        else newData[idx].sellValue += amt;
+        if (t === "buy") newData[idx].buyValue += amt;
+        else if (t === "sell") newData[idx].sellValue += amt;
       }
     };
 
@@ -133,7 +156,7 @@ const Charts: React.FC<ChartProps> = ({
         const hour = ts.getHours();
         const amt = parseFloat(item.amount) || 0;
         const rawType = item.type || item.order_type || "";
-        addToSlot(hour, amt, rawType);
+        addToSlot(hour, amt, String(rawType));
       });
     } else if (selectedTimeFilter === "Last Week") {
       for (let i = 0; i < 7; i++) {
@@ -149,7 +172,7 @@ const Charts: React.FC<ChartProps> = ({
           const idx = 6 - diffDays;
           const amt = parseFloat(item.amount) || 0;
           const rawType = item.type || item.order_type || "";
-          addToSlot(idx, amt, rawType);
+          addToSlot(idx, amt, String(rawType));
         }
       });
     } else if (selectedTimeFilter === "Last Month" || selectedTimeFilter === "Last 6 Months" || selectedTimeFilter === "All Time") {
@@ -177,13 +200,13 @@ const Charts: React.FC<ChartProps> = ({
           const idx = slots - 1 - diffMonths;
           const amt = parseFloat(item.amount) || 0;
           const rawType = item.type || item.order_type || "";
-          addToSlot(idx, amt, rawType);
+          addToSlot(idx, amt, String(rawType));
         }
       });
     }
 
     setChartData(newData);
-  }, [data, trades, selectedTimeFilter]);
+  }, [data, trades, selectedTimeFilter, chartTrades]);
 
   /* ------------------- Tooltip ----------------------------- */
   const CustomTooltip = ({ active, payload, label }: any) => {

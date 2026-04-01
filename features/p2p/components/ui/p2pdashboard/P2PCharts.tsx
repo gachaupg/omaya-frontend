@@ -239,7 +239,6 @@ const P2PCharts = () => {
       <Charts
         title="P2P Overview (USD)"
         timeFrame="Month"
-        data={timeFilteredData}
         onTimeFilterChange={handleTimeFilterChange}
         selectedTimeFilter={timeFilter}
         showTimeFilter={true}

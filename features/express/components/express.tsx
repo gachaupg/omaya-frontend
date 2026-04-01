@@ -39,6 +39,26 @@ const Express = ({ isHomePage = false }: ExpressProps) => {
     }
   }, [searchParams]);
 
+  /** Rates (and other flows) stash payload in localStorage then `?resumeStatus=1` — same handoff as deposit/withdrawal onExchange. */
+  useEffect(() => {
+    if (!searchParams || searchParams.get("resumeStatus") !== "1") return;
+    if (typeof window === "undefined") return;
+    try {
+      const raw = localStorage.getItem("express_transaction_data");
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as { transactionId?: string; type?: string };
+      if (!parsed?.transactionId) return;
+      setTransactionData(parsed);
+      setShowExchanging(true);
+      if (parsed.type === "deposit" || parsed.type === "withdrawal") {
+        setCurrentMode(parsed.type);
+      }
+      router.replace("/dashboard/express-exchange", { scroll: false });
+    } catch {
+      /* ignore */
+    }
+  }, [searchParams, router]);
+
   const handleModeToggle = () => {
     // If on home page and not authenticated, navigate to login
     if (isHomePage && !isAuthenticated) {

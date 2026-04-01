@@ -1091,7 +1091,7 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
                     isDark ? "text-[#7B7B7B]" : "text-gray-600"
                   } text-xs font-semibold mb-0.5 mt-3`}
                 >
-                  Bank Account Address:
+                  Bank Account Number:
                 </div>
                 <div className="flex items-center mb-2 min-w-0">
                   <span
