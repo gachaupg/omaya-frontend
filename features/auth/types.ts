@@ -13,6 +13,17 @@ export interface User {
   referral_code: string;
   user_type?: "individual" | "business";
   phone_number?: string;
+  is_suspended?: boolean;
+  suspension_details?: {
+    suspended_at?: string;
+    suspended_until?: string;
+    days_remaining?: number;
+    reason?: string;
+    suspended_by?: {
+      name?: string;
+      role?: string;
+    };
+  };
 }
 
 export interface UserProfile {

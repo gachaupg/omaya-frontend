@@ -6,6 +6,45 @@ import { MdAccountCircle } from 'react-icons/md'
 import { useGroupedMessages } from '../../../hooks/useGroupedMessages'
 import { GroupedUser } from '../../../api'
 
+/** Resolve real trade/support thread id when entity_id is a placeholder (e.g. "support"). */
+const resolveSupportTradeId = (entityId: string, userGroup?: any): string => {
+  const isInvalid = (v: unknown) => {
+    const s = String(v ?? "").trim().toLowerCase();
+    return !s || s === "support" || s === "undefined" || s === "null";
+  };
+
+  if (!isInvalid(entityId)) return entityId;
+
+  const extractIdFromMessageId = (value: unknown) => {
+    const v = String(value ?? "").trim();
+    if (!v) return "";
+    if (v.includes("_initial")) {
+      const candidate = v.split("_initial")[0]?.trim();
+      if (!isInvalid(candidate)) return candidate;
+    }
+    return "";
+  };
+
+  const candidates: unknown[] = [
+    userGroup?.trade_id,
+    userGroup?.support_request_id,
+    ...(Array.isArray(userGroup?.messages)
+      ? userGroup.messages.flatMap((m: any) => [
+          m?.trade_id,
+          m?.trade,
+          m?.entity_id,
+          m?.support_request_id,
+          extractIdFromMessageId(m?.id),
+        ])
+      : []),
+  ];
+
+  for (const c of candidates) {
+    if (!isInvalid(c)) return String(c).trim();
+  }
+  return entityId;
+};
+
 interface UnreadMessagesProps {
   loading?: boolean;
   onBackToOrders?: () => void;
@@ -208,6 +247,7 @@ const UnreadMessages: React.FC<UnreadMessagesProps> = ({ loading = false, onBack
         // P2P messages use the API, just navigate
         router.push(`/p2p/messages/${entityId}`)
       } else if (messageType === 'support') {
+        const resolvedTradeId = resolveSupportTradeId(entityId, userGroup)
         // Support messages: pass data as URL params
         if (userGroup) {
           const params = new URLSearchParams({
@@ -215,11 +255,12 @@ const UnreadMessages: React.FC<UnreadMessagesProps> = ({ loading = false, onBack
             sender_id: userGroup.sender_id?.toString() || '',
             sender_name: userGroup.sender_name || '',
             sender_email: userGroup.sender_email || '',
-            messages: JSON.stringify(userGroup.messages || [])
+            messages: JSON.stringify(userGroup.messages || []),
+            trade_id: resolvedTradeId
           })
-          router.push(`/p2p/messages/${entityId}?${params.toString()}`)
+          router.push(`/p2p/messages/${resolvedTradeId}?${params.toString()}`)
         } else {
-          router.push(`/p2p/messages/${entityId}?type=support`)
+          router.push(`/p2p/messages/${resolvedTradeId}?type=support&trade_id=${encodeURIComponent(resolvedTradeId)}`)
         }
       }
     }

@@ -28,6 +28,25 @@ const isMessageImage = (img: any): img is MessageImage => {
   return img && typeof img === 'object' && ('image_url' in img || 'image' in img);
 };
 
+const isValidTradeIdForMessages = (value: unknown): value is string => {
+  const v = String(value ?? "").trim();
+  if (!v) return false;
+  if (v.toLowerCase() === "support" || v.toLowerCase() === "undefined" || v.toLowerCase() === "null") {
+    return false;
+  }
+  return true;
+};
+
+const extractIdFromMessageId = (value: unknown): string => {
+  const v = String(value ?? "").trim();
+  if (!v) return "";
+  if (v.includes("_initial")) {
+    const candidate = v.split("_initial")[0]?.trim();
+    if (isValidTradeIdForMessages(candidate)) return candidate;
+  }
+  return "";
+};
+
 const ChatBox: React.FC<{
   tradeId: string;
   userId: string;
@@ -195,6 +214,30 @@ const ChatBox: React.FC<{
     });
   }, [messagesFromRedux, tradeId]);
 
+  const apiTradeId = React.useMemo(() => {
+    if (isValidTradeIdForMessages(tradeId)) return tradeId;
+    if (messageType !== "support") return null;
+
+    const candidates: unknown[] = [];
+    if (Array.isArray(supportMessages)) {
+      for (const msg of supportMessages) {
+        const m = msg as any;
+        candidates.push(
+          m?.trade_id,
+          m?.trade,
+          m?.entity_id,
+          m?.support_request_id,
+          extractIdFromMessageId(m?.id)
+        );
+      }
+    }
+
+    for (const c of candidates) {
+      if (isValidTradeIdForMessages(c)) return String(c).trim();
+    }
+    return null;
+  }, [tradeId, messageType, supportMessages]);
+
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [copiedChatId, setCopiedChatId] = useState(false);
   const [tradeCanceledModal, setTradeCanceledModal] = useState<{
@@ -322,10 +365,10 @@ const ChatBox: React.FC<{
 
   // Fetch messages initially (WebSocket will keep them updated)
   const fetchMessages = React.useCallback(async () => {
-    if (isAuthenticated && tradeId) {
+    if (isAuthenticated && apiTradeId) {
       setIsRefreshing(true);
       try {
-        const data = await getTradeMessages(tradeId);
+        const data = await getTradeMessages(apiTradeId);
         // Dispatch to Redux instead of local state
         const { setMessages } = await import("@/features/p2p/slices/messageSlice");
         if (data && (data as any).results) {
@@ -340,7 +383,7 @@ const ChatBox: React.FC<{
         setIsRefreshing(false);
       }
     }
-  }, [isAuthenticated, tradeId, dispatch]);
+  }, [isAuthenticated, apiTradeId, dispatch, tradeId]);
 
   // Polling interval for support messages (API-based)
   const pollingIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
@@ -497,7 +540,7 @@ const ChatBox: React.FC<{
     audioFile: File,
     durationSeconds: number = 0
   ) => {
-    if (!tradeId) return;
+    if (!apiTradeId) return;
 
     const tempId = `temp-${Date.now()}-${Math.random()}`;
     const optimisticMessage: any = {
@@ -523,7 +566,7 @@ const ChatBox: React.FC<{
     dispatch(addMessageFromWS({ tradeId, message: optimisticMessage }));
 
     try {
-      await postTradeMessage(tradeId, {
+      await postTradeMessage(apiTradeId, {
         message: "",
         uploaded_images: [],
         uploaded_audios: [audioFile],
@@ -568,6 +611,7 @@ const ChatBox: React.FC<{
 
   // Update handleSend to include images and sender email
   const handleSend = async () => {
+    if (!apiTradeId) return;
     if (!message.trim() && uploaded_images.length === 0) return;
 
     const messageContent = message;
@@ -596,7 +640,7 @@ const ChatBox: React.FC<{
 
     try {
       // Send via HTTP
-      const response = await postTradeMessage(tradeId, {
+      const response = await postTradeMessage(apiTradeId, {
         message: messageContent || '',
         uploaded_images: images,
         sender_name: currentUserEmail || ""

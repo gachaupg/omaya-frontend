@@ -27,7 +27,7 @@ import { setAuthRedirectPath } from "@/lib/utils/authRedirect";
 import { FiChevronDown, FiInfo } from "react-icons/fi";
 import { AlertCircle } from "lucide-react";
 import { useRatesI18n } from "@/lib/useRatesI18n";
-import Exchanging from "@/features/moneyX/components/Exchanging";
+import Exchanging from "@/features/express/home/components/moneyX/components/Exchanging";
 import { checkKYCStatus, openKYCModal } from "@/features/auth/slices/authSlice";
 
 const RATES_MONEYX_FORM_STATE_KEY = "rates_moneyx_form_state";

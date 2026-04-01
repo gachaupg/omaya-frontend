@@ -1199,7 +1199,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
           {/* 2- Bank Account Address (user's receiving account) */}
           <h2 className="text-xl font-bold mb-2 text-[#788099] dark:text-[#788099] inline-flex items-center gap-2">
             <span className="text-[#7e7e8f] dark:text-[#788099]">2-</span>
-            Bank Account Address
+            Bank Account Number
           </h2>
 
           {/* Important Warning Banner - same style as swap/deposit */}

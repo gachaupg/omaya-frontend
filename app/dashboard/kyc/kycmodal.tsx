@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useRouter } from "next/navigation";
 import { AppDispatch } from "@/store";
 import { RootState } from "@/store/rootReducer";
 import { 
@@ -16,7 +17,11 @@ import { FaceDetectionKYC } from "@/features/kyc/components";
 
 const KYCVerificationModal: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { kycModalOpen, loading, user, tokens, isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const router = useRouter();
+  const { kycModalOpen, loading, user, profile: userProfile, tokens, isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const registeredCountry = userProfile?.country?.trim() || "";
+  const [storedCountry, setStoredCountry] = useState<string>("");
+  const defaultCountry = registeredCountry || storedCountry || "Somalia";
   
   const [error, setError] = useState<string | null>(null);
   const [showManualVerification, setShowManualVerification] = useState(false);
@@ -34,7 +39,7 @@ const KYCVerificationModal: React.FC = () => {
   const [resendTimer, setResendTimer] = useState(0);
   const [kycStatus, setKycStatus] = useState<any>(null);
   const [verificationData, setVerificationData] = useState({
-    country: 'Somalia',
+    country: defaultCountry,
     documentType: '',
     documentNumber: '',
     email: user?.email || '',
@@ -56,6 +61,40 @@ const KYCVerificationModal: React.FC = () => {
       normalizedKycStatus === "under_review" ||
       normalizedKycStatus === "under review") &&
     kycStatus?.is_verified === false;
+  const isRejectedKyc =
+    normalizedKycStatus === "rejected" && kycStatus?.is_verified === false;
+  const rejectionReason =
+    String(kycStatus?.rejection_reason || "").trim() ||
+    String(kycStatus?.reason || "").trim();
+  const rejectionMessage =
+    String(kycStatus?.message || "").trim() ||
+    "Your KYC was rejected. Please resubmit with correct documents.";
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const profileRaw = localStorage.getItem("profile");
+      const userRaw = localStorage.getItem("user");
+      let country = "";
+
+      if (profileRaw) {
+        const parsedProfile = JSON.parse(profileRaw);
+        country =
+          parsedProfile?.profile?.country?.trim?.() ||
+          parsedProfile?.user?.country?.trim?.() ||
+          "";
+      }
+
+      if (!country && userRaw) {
+        const parsedUser = JSON.parse(userRaw);
+        country = parsedUser?.country?.trim?.() || "";
+      }
+
+      if (country) setStoredCountry(country);
+    } catch {
+      // Ignore malformed local storage and keep fallback country.
+    }
+  }, []);
 
   useEffect(() => {
     // Update email when user changes
@@ -66,7 +105,16 @@ const KYCVerificationModal: React.FC = () => {
     if (user?.phone_number && user.phone_number.trim()) {
       setPhoneNumber(user.phone_number.trim());
     }
-  }, [user?.email, user?.phone_number]);
+    const preferredCountry = registeredCountry || storedCountry;
+    if (preferredCountry) {
+      setVerificationData((prev) => {
+        if (!prev.country || prev.country === "Somalia") {
+          return { ...prev, country: preferredCountry };
+        }
+        return prev;
+      });
+    }
+  }, [user?.email, user?.phone_number, registeredCountry, storedCountry]);
 
   // Close KYC modal when user is not logged in (e.g. on market page for guests)
   useEffect(() => {
@@ -578,7 +626,7 @@ const KYCVerificationModal: React.FC = () => {
     setOtpSent(false);
     setResendTimer(0);
     setVerificationData({
-      country: 'Somalia',
+      country: defaultCountry,
       documentType: '',
       documentNumber: '',
       email: user?.email || '',
@@ -993,6 +1041,11 @@ const KYCVerificationModal: React.FC = () => {
              <div className="space-y-3">
                <FaceDetectionKYC
                  onVerificationComplete={handleFaceDetectionComplete}
+                onRetake={() => {
+                  setFaceImage(null);
+                  setFacePreview(null);
+                  setFaceDetectionData(null);
+                }}
                />
                
                {/* Face Verification Status Indicator */}
@@ -1098,7 +1151,11 @@ const KYCVerificationModal: React.FC = () => {
         <div className="bg-white dark:bg-[#1A1A1A] rounded-lg p-6 max-w-md w-full mx-4 border border-gray-200 dark:border-[#35353E] shadow-xl">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-              {isWaitingApproval ? "Verification Under Review" : "Identity Verification Required"}
+              {isRejectedKyc
+                ? "Verification Rejected"
+                : isWaitingApproval
+                ? "Verification Under Review"
+                : "Identity Verification Required"}
             </h2>
             <button
               onClick={handleClose}
@@ -1132,6 +1189,15 @@ const KYCVerificationModal: React.FC = () => {
                     Our compliance team is reviewing your submission. Use the button below to check the latest status.
                   </p>
                 </>
+              ) : isRejectedKyc ? (
+                <>
+                  <p>
+                    Your identity verification was rejected. Please review the details below and resubmit your documents.
+                  </p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    If you need help, contact support and include your rejection reason.
+                  </p>
+                </>
               ) : (
                 <>
                   <p>
@@ -1150,6 +1216,18 @@ const KYCVerificationModal: React.FC = () => {
                 {"Your KYC is under review. Please wait for admin approval."}
               </div>
             )}
+
+            {isRejectedKyc && (
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-400 dark:border-red-500 text-red-700 dark:text-red-300 p-3 rounded-lg text-sm space-y-2">
+                <p className="font-semibold">KYC rejected</p>
+                <p>{rejectionMessage}</p>
+                {rejectionReason && (
+                  <p>
+                    <span className="font-semibold">Reason:</span> {rejectionReason}
+                  </p>
+                )}
+              </div>
+            )}
               
               {error && (
                 <div className="bg-red-50 dark:bg-red-900/20 border border-red-400 dark:border-red-500 text-red-600 dark:text-red-400 p-3 rounded-lg">
@@ -1157,7 +1235,7 @@ const KYCVerificationModal: React.FC = () => {
                 </div>
               )}
               
-              <div className="flex justify-between mb-6 items-center w-full mt-6">
+              <div className="flex justify-between mb-3 items-center w-full mt-6">
                 <button
                   className="bg-[#1D8751] hover:bg-[#167a47] text-white w-full h-10 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   onClick={isWaitingApproval ? handleCheckStatusClick : handleManualVerificationClick}
@@ -1169,10 +1247,24 @@ const KYCVerificationModal: React.FC = () => {
                       <span>{isWaitingApproval ? "Checking Status..." : "Loading..."}</span>
                     </>
                   ) : (
-                    isWaitingApproval ? "Check Status" : "Start Manual Verification"
+                    isWaitingApproval
+                      ? "Check Status"
+                      : isRejectedKyc
+                      ? "Resubmit Verification"
+                      : "Start Manual Verification"
                   )}
                 </button>
               </div>
+              {isRejectedKyc && (
+                <div className="flex justify-between mb-6 items-center w-full">
+                  <button
+                    className="border border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751]/10 w-full h-10 rounded-lg transition-colors duration-200"
+                    onClick={() => router.push("/contactUs")}
+                  >
+                    Contact Support
+                  </button>
+                </div>
+              )}
             </div>
         </div>
       )}

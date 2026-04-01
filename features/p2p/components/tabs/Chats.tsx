@@ -193,6 +193,46 @@ export const Chats: React.FC = () => {
   const prevSelectedUserIdRef = useRef<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const isValidTradeIdForMessages = (value: unknown): boolean => {
+    const v = String(value ?? "").trim().toLowerCase();
+    return !!v && v !== "support" && v !== "undefined" && v !== "null";
+  };
+
+  const extractIdFromMessageId = (value: unknown): string => {
+    const v = String(value ?? "").trim();
+    if (!v) return "";
+    // Support seeds often use "<uuid>_initial" ids.
+    if (v.includes("_initial")) {
+      const candidate = v.split("_initial")[0]?.trim();
+      if (isValidTradeIdForMessages(candidate)) return candidate;
+    }
+    return "";
+  };
+
+  const resolvedTradeId = useMemo(() => {
+    if (!selectedUser) return "";
+    if (isValidTradeIdForMessages(selectedUser.entity_id)) {
+      return String(selectedUser.entity_id).trim();
+    }
+    const candidates: unknown[] = [
+      (selectedUser as any)?.trade_id,
+      (selectedUser as any)?.support_request_id,
+      ...(Array.isArray((selectedUser as any)?.messages)
+        ? (selectedUser as any).messages.flatMap((m: any) => [
+            m?.trade_id,
+            m?.trade,
+            m?.entity_id,
+            m?.support_request_id,
+            extractIdFromMessageId(m?.id),
+          ])
+        : []),
+    ];
+    for (const c of candidates) {
+      if (isValidTradeIdForMessages(c)) return String(c).trim();
+    }
+    return "";
+  }, [selectedUser]);
+
   // Close emoji picker when clicking outside or when no conversation is selected
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -360,7 +400,7 @@ export const Chats: React.FC = () => {
 
   // WebSocket connection for selected user
   useEffect(() => {
-    if (!selectedUser || !selectedUser.entity_id || !isAuthenticated) {
+    if (!selectedUser || !resolvedTradeId || !isAuthenticated) {
       return;
     }
 
@@ -380,11 +420,11 @@ export const Chats: React.FC = () => {
     }
 
     // Get WebSocket instance for this entity_id (trade_id)
-    const ws = getTradeMessagesWebSocket(selectedUser.entity_id);
+    const ws = getTradeMessagesWebSocket(resolvedTradeId);
     wsRef.current = ws;
 
     // Connect WebSocket
-    ws.connect(selectedUser.entity_id, token);
+    ws.connect(resolvedTradeId, token);
 
     // Handle incoming messages
     const unsubscribeMessage = ws.onMessage((message: any) => {
@@ -400,7 +440,7 @@ export const Chats: React.FC = () => {
       // Don't cleanup WebSocket here as it might be used elsewhere
       // cleanupTradeMessagesWebSocket(selectedUser.entity_id);
     };
-  }, [selectedUser?.entity_id, isAuthenticated]);
+  }, [selectedUser?.entity_id, resolvedTradeId, isAuthenticated]);
 
   const conversations = useMemo(() => groupedUsers || [], [groupedUsers]);
 
@@ -603,7 +643,7 @@ export const Chats: React.FC = () => {
   };
 
   const handleSendAudioMessage = async (audioFile: File, durationSeconds: number = 0) => {
-    if (!selectedUser?.entity_id) return;
+    if (!selectedUser?.entity_id || !resolvedTradeId) return;
     const tempId = `temp-${Date.now()}-${Math.random()}`;
     const optimisticMessage = {
       id: tempId,
@@ -627,7 +667,7 @@ export const Chats: React.FC = () => {
     setTimeout(() => { justAddedOptimisticRef.current = false; }, 500);
     setIsSending(true);
     try {
-      await postTradeMessage(selectedUser.entity_id, {
+      await postTradeMessage(resolvedTradeId, {
         message: '',
         uploaded_images: [],
         uploaded_audios: [audioFile],
@@ -681,7 +721,7 @@ export const Chats: React.FC = () => {
       return;
     }
 
-    if (!selectedUser.entity_id) {
+    if (!selectedUser.entity_id || !resolvedTradeId) {
       console.error("No entity_id (trade_id) available");
       return;
     }
@@ -729,7 +769,7 @@ export const Chats: React.FC = () => {
 
     try {
       // Send via HTTP POST API (same as ChatBox in orders page)
-      await postTradeMessage(selectedUser.entity_id, {
+      await postTradeMessage(resolvedTradeId, {
         message: messageContent,
         uploaded_images: imagesToSend,
         sender_name: user?.email || "",

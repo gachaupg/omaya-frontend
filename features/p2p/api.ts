@@ -660,6 +660,17 @@ export const confirmTrade = async (id: string): Promise<P2PResponse> => {
   });
 };
 
+/** Never send currency= on user-trades — backend may return empty; callers may still pass legacy URLs. */
+const stripCurrencyFromUserTradesQuery = (queryParams: string): string => {
+  const q = queryParams.trim();
+  if (!q) return "";
+  const search = q.startsWith("?") ? q.slice(1) : q;
+  const params = new URLSearchParams(search);
+  params.delete("currency");
+  const s = params.toString();
+  return s ? `?${s}` : "";
+};
+
 export const getUserTrades = async (
   queryParams: string = ""
 ): Promise<{
@@ -669,12 +680,13 @@ export const getUserTrades = async (
   results: any[];
 }> => {
   return withRetry(async () => {
+    const clean = stripCurrencyFromUserTradesQuery(queryParams);
     const response = await get<{
       count: number;
       next: string | null;
       previous: string | null;
       results: any[];
-    }>(`${API_CONFIG.P2P.USER_TRADES}${queryParams}`);
+    }>(`${API_CONFIG.P2P.USER_TRADES}${clean}`);
     return response.data;
   });
 };
@@ -714,17 +726,96 @@ export const getAllP2PTransactions = async (
   });
 };
 
+/** Normalize `/user/p2p-transactions/` rows for dashboard table (legacy shape). */
+const normalizeP2PUserTxRow = (
+  raw: Record<string, unknown>,
+  kind: "deposit" | "withdrawal"
+): Record<string, unknown> => {
+  const tt = String(raw.transaction_type ?? kind).toLowerCase();
+  const transaction_type = tt.includes("withdraw") ? "withdrawal" : tt.includes("deposit") ? "deposit" : kind;
+  const approved = raw.approved ?? raw.status ?? raw.stages;
+  const status =
+    typeof approved === "string" ? approved : approved != null ? String(approved) : "";
+  const id = raw.transaction_id ?? raw.id;
+  return {
+    ...raw,
+    transaction_id: id,
+    id,
+    status,
+    transaction_type,
+  };
+};
+
+const normalizeUserP2PTransactionsPayload = (data: {
+  deposits?: unknown[];
+  withdrawals?: unknown[];
+}): { count: number; next: null; previous: null; results: Record<string, unknown>[] } => {
+  const deposits = Array.isArray(data.deposits) ? data.deposits : [];
+  const withdrawals = Array.isArray(data.withdrawals) ? data.withdrawals : [];
+  const results: Record<string, unknown>[] = [
+    ...deposits.map((row) => normalizeP2PUserTxRow(row as Record<string, unknown>, "deposit")),
+    ...withdrawals.map((row) =>
+      normalizeP2PUserTxRow(row as Record<string, unknown>, "withdrawal")
+    ),
+  ];
+  return {
+    count: results.length,
+    next: null,
+    previous: null,
+    results,
+  };
+};
+
 export const getMyTransactions = async (
   page: number = 1,
   transactionType?: "deposit" | "withdrawal"
 ): Promise<any> => {
   return withRetry(async () => {
-    let url = `${API_CONFIG.P2P_WITHDRAWAL_DEPOSIT.MY_TRANSACTIONS}?page=${page}`;
-    if (transactionType) {
-      url += `&transaction_type=${transactionType}`;
+    const buildUrl = (base: string) => {
+      let url = `${base}?page=${page}`;
+      if (transactionType) {
+        url += `&transaction_type=${transactionType}`;
+      }
+      return url;
+    };
+
+    // Primary: `/trading_engine/user/p2p-transactions/` → { deposits, withdrawals }
+    try {
+      const response = await get<{ deposits?: unknown[]; withdrawals?: unknown[] }>(
+        API_CONFIG.P2P_WITHDRAWAL_DEPOSIT.MY_TRANSACTIONS
+      );
+      const data = response.data;
+      if (data && typeof data === "object" && ("deposits" in data || "withdrawals" in data)) {
+        let normalized = normalizeUserP2PTransactionsPayload(data);
+        if (transactionType) {
+          const filtered = normalized.results.filter(
+            (r) => String(r.transaction_type).toLowerCase() === transactionType
+          );
+          normalized = { ...normalized, results: filtered, count: filtered.length };
+        }
+        return normalized;
+      }
+    } catch (primaryError: unknown) {
+      const status = (primaryError as { response?: { status?: number } })?.response?.status;
+      if (status !== 404 && status !== 405) {
+        throw primaryError;
+      }
     }
-    const response = await get<any>(url);
-    return response.data;
+
+    // Fallback: paginated P2P list
+    const legacyP2PUrl = buildUrl("/trading_engine/p2p/my-transactions/");
+    try {
+      const response = await get<any>(legacyP2PUrl);
+      return response.data;
+    } catch (legacyError: unknown) {
+      const status = (legacyError as { response?: { status?: number } })?.response?.status;
+      if (status === 404 || status === 405) {
+        const fallbackUrl = buildUrl("/trading_engine/my-transactions/");
+        const fallbackResponse = await get<any>(fallbackUrl);
+        return fallbackResponse.data;
+      }
+      throw legacyError;
+    }
   });
 };
 

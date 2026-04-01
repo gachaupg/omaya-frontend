@@ -13,11 +13,13 @@ interface FaceDetectionKYCProps {
     capturedImage?: string;
   }) => void;
   onClose?: () => void;
+  onRetake?: () => void;
 }
 
 const FaceDetectionKYC: React.FC<FaceDetectionKYCProps> = ({ 
   onVerificationComplete, 
-  onClose 
+  onClose,
+  onRetake
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -484,6 +486,7 @@ const FaceDetectionKYC: React.FC<FaceDetectionKYCProps> = ({
                 setDetectionData(null);
                 setValidationStatus('');
                 setIsFaceValid(false);
+                onRetake?.();
                 // Restart video
                 startVideo();
               }}
@@ -521,7 +524,7 @@ const FaceDetectionKYC: React.FC<FaceDetectionKYCProps> = ({
               type="button"
               onClick={() => manualFileInputRef.current?.click()}
               disabled={isManualUploadInProgress}
-              className="w-full px-6 py-3 text-sm text-white bg-[#2563eb] hover:bg-[#1d4ed8] rounded-lg transition-colors disabled:opacity-50"
+              className="w-full px-6 py-3 text-sm text-white bg-[#1D8751] hover:bg-[#167a47] rounded-lg transition-colors disabled:opacity-50"
             >
               {isManualUploadInProgress ? "Uploading selfie..." : "Upload Selfie Manually"}
             </button>

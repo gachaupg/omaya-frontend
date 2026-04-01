@@ -638,7 +638,7 @@ const LineCharts = React.memo(
     // Fetch all transactions on mount
     useEffect(() => {
       dispatch(loadAllP2PTransactions());
-      dispatch(fetchUserTrades({ page: 1, currency: "usdt" }));
+      dispatch(fetchUserTrades({ page: 1 }));
       dispatch(
         fetchAllUserTransactions({ type: "exchange", page: 1, page_size: 500 })
       );

@@ -304,7 +304,7 @@ const P2PWithdrawalDepositTransactions = ({ filterByType = "all" }: P2PWithdrawa
                 <span
                   className={`px-2 py-1 rounded-full text-xs font-medium ${tx.status === "completed" || tx.status === "approved"
                     ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                    : tx.status === "pending" || tx.stages === "pending_review"
+                    : tx.status === "pending" || tx.stages === "pending_review" || tx.status === "otp_pending"
                       ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
                       : tx.status === "rejected" || tx.status === "error"
                         ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
@@ -439,7 +439,7 @@ const P2PWithdrawalDepositTransactions = ({ filterByType = "all" }: P2PWithdrawa
                     <span
                       className={`px-2 py-1 rounded-full text-xs font-medium ${tx.status === "completed" || tx.status === "approved"
                         ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                        : tx.status === "pending" || tx.stages === "pending_review"
+                        : tx.status === "pending" || tx.stages === "pending_review" || tx.status === "otp_pending"
                           ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
                           : tx.status === "rejected" || tx.status === "error"
                             ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"

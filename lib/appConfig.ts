@@ -150,7 +150,8 @@ export const API_CONFIG = {
     },
   },
   P2P_WITHDRAWAL_DEPOSIT: {
-    MY_TRANSACTIONS: "/trading_engine/my-transactions/",
+    // User P2P deposit/withdrawal lists (dashboard table)
+    MY_TRANSACTIONS: "/trading_engine/user/p2p-transactions/",
   },
   SETTINGS: {
     CREATE_DEVICE: "/api/devices/create/",
