@@ -270,6 +270,27 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
     return providerName;
   }, []);
 
+  // Use a stable unique key so methods with same provider name don't collide in selects.
+  const getPaymentMethodKey = useCallback((payment: any) => {
+    if (!payment) return "";
+    const idPart =
+      payment?.id ??
+      payment?.provider_id ??
+      payment?.providerId ??
+      payment?.method_id ??
+      "";
+    const provider = getProviderName(payment);
+    const method =
+      payment?.payment_method ||
+      payment?.payment_method_type ||
+      payment?.method?.method_display ||
+      payment?.method?.method_name ||
+      "";
+    return idPart
+      ? `${String(idPart)}`
+      : `${provider}::${String(method).trim().toLowerCase()}`;
+  }, [getProviderName]);
+
   const currentBankAsset = selectedToPaymentDetail ? getProviderName(selectedToPaymentDetail) : "";
   const {
     bookmarks,
@@ -411,7 +432,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
 
         if (matchedFromMethod) {
           console.log("Matched from payment method:", matchedFromMethod);
-          setFromPaymentMethod(getProviderName(matchedFromMethod) || restoreFrom);
+          setFromPaymentMethod(getPaymentMethodKey(matchedFromMethod) || restoreFrom);
           setSelectedFromPaymentDetail(matchedFromMethod);
         } else {
           console.warn("Could not match from payment method:", restoreFrom);
@@ -455,7 +476,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
 
         if (matchedToMethod) {
           console.log("Matched to payment method:", matchedToMethod);
-          setToPaymentMethod(getProviderName(matchedToMethod) || restoreTo);
+          setToPaymentMethod(getPaymentMethodKey(matchedToMethod) || restoreTo);
           setSelectedToPaymentDetail(matchedToMethod);
         } else {
           console.warn("Could not match to payment method:", restoreTo);
@@ -477,7 +498,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
         localStorage.removeItem("moneyx_restore_to_detail");
       }
     }
-  }, [finalPaymentMethods, isHomePage, isAuthenticated, getProviderName]);
+  }, [finalPaymentMethods, isHomePage, isAuthenticated, getProviderName, getPaymentMethodKey]);
 
   // Auto-select first payment method for "from" when payment methods are loaded (only if not restored)
   useEffect(() => {
@@ -493,7 +514,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
     // Check if current selection still exists in the latest list (using cleaned names)
     const currentExists = fromPaymentMethod
       ? finalPaymentMethods.some(
-        (m: any) => getProviderName(m) === fromPaymentMethod
+        (m: any) => getPaymentMethodKey(m) === fromPaymentMethod
       )
       : false;
 
@@ -505,13 +526,13 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
       const methodToSelect =
         bankMethods.length > 0 ? bankMethods[0] : finalPaymentMethods[0];
 
-      const providerName = getProviderName(methodToSelect);
-      if (providerName) {
-        setFromPaymentMethod(providerName);
+      const methodKey = getPaymentMethodKey(methodToSelect);
+      if (methodKey) {
+        setFromPaymentMethod(methodKey);
         setSelectedFromPaymentDetail(methodToSelect);
       }
     }
-  }, [finalPaymentMethods, fromPaymentMethod, isBankMethod, getProviderName]);
+  }, [finalPaymentMethods, fromPaymentMethod, isBankMethod, getPaymentMethodKey]);
 
 
   // Auto-select/repair "to" payment method for You Receive
@@ -530,7 +551,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
 
     if (methodsToCheck && methodsToCheck.length > 1 && fromPaymentMethod) {
       const hasValidToSelection = methodsToCheck.some(
-        (method) => getProviderName(method) === toPaymentMethod
+        (method) => getPaymentMethodKey(method) === toPaymentMethod
       );
       const needsAutoSelect =
         !toPaymentMethod ||
@@ -549,34 +570,34 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
         methodToSelect = bankMethods[1];
       } else if (bankMethods.length === 1 && methodsToCheck.length > 1) {
         // If only one bank exists, select the second method overall (index 1) if it's different from "from"
-        if (methodsToCheck[1] && getProviderName(methodsToCheck[1]) !== fromPaymentMethod) {
+        if (methodsToCheck[1] && getPaymentMethodKey(methodsToCheck[1]) !== fromPaymentMethod) {
           methodToSelect = methodsToCheck[1];
         } else {
           // Find first method that's different from "from"
           methodToSelect = methodsToCheck.find(
-            (method) => getProviderName(method) !== fromPaymentMethod
+            (method) => getPaymentMethodKey(method) !== fromPaymentMethod
           );
         }
       } else {
         // No banks or only one method, select the second method (index 1) if it's different from "from"
-        if (methodsToCheck[1] && getProviderName(methodsToCheck[1]) !== fromPaymentMethod) {
+        if (methodsToCheck[1] && getPaymentMethodKey(methodsToCheck[1]) !== fromPaymentMethod) {
           methodToSelect = methodsToCheck[1];
         } else {
           // Find first method that's different from "from"
           methodToSelect = methodsToCheck.find(
-            (method) => getProviderName(method) !== fromPaymentMethod
+            (method) => getPaymentMethodKey(method) !== fromPaymentMethod
           );
         }
       }
 
-      const providerName = getProviderName(methodToSelect);
-      if (providerName) {
-        setToPaymentMethod(providerName);
+      const methodKey = getPaymentMethodKey(methodToSelect);
+      if (methodKey) {
+        setToPaymentMethod(methodKey);
         setSelectedToPaymentDetail(methodToSelect);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [finalPaymentMethods, stablePaymentMethods, fromPaymentMethod, adminMethods, getProviderName]);
+  }, [finalPaymentMethods, stablePaymentMethods, fromPaymentMethod, adminMethods, getPaymentMethodKey]);
 
   // Prepare options for CustomSelect
   const paymentMethodOptions = finalPaymentMethods.map((payment: any) => {
@@ -607,7 +628,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
     const subtitle = paymentMethod ? `${providerName} - ${paymentMethod}` : null;
 
     return {
-      value: providerName,
+      value: getPaymentMethodKey(payment),
       // Show only provider name (remove - {method} part) for cleaner display
       label: providerName,
       subtitle: subtitle || undefined,
@@ -919,10 +940,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
                     }`}
                   onChange={(value) => {
                     const selectedPayment = finalPaymentMethods?.find(
-                      (payment: any) => {
-                        const providerName = getProviderName(payment);
-                        return providerName === value;
-                      }
+                      (payment: any) => getPaymentMethodKey(payment) === value
                     );
                     setFromPaymentMethod(value);
                     setSelectedFromPaymentDetail(selectedPayment || null);
@@ -1032,10 +1050,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
                     }`}
                   onChange={(value) => {
                     const selectedPayment = finalPaymentMethods?.find(
-                      (payment: any) => {
-                        const providerName = getProviderName(payment);
-                        return providerName === value;
-                      }
+                      (payment: any) => getPaymentMethodKey(payment) === value
                     );
                     setToPaymentMethod(value);
                     setSelectedToPaymentDetail(selectedPayment || null);

@@ -11,6 +11,7 @@ interface ChangeNowApiAsset {
   name?: string;
   image?: string;
   network?: string;
+  asset_id?: string | null;
   legacyTicker?: string;
   hasExternalId?: boolean;
   isExtraIdSupported?: boolean;
@@ -45,8 +46,8 @@ export interface ChangeNowMappedAsset {
 // Cache for public supported-tokens response.
 // This avoids refetching when the user revisits deposit/withdraw dropdowns.
 const PUBLIC_ASSETS_CACHE_KEY =
-  "omaya_changenow_public_supported_tokens_v2";
-const PUBLIC_ASSETS_CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes
+  "omaya_changenow_public_supported_tokens_v3";
+const PUBLIC_ASSETS_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 let inMemoryPublicAssetsCache:
   | { ts: number; assets: ChangeNowMappedAsset[] }
@@ -185,73 +186,10 @@ const cleanAssetName = (
   return cleaned || ticker;
 };
 
-const FALLBACK_ASSETS: ChangeNowMappedAsset[] = [
-  {
-    asset_id: "usdt-bsc",
-    ticker: "USDT",
-    symbol: "USDT",
-    name: "Tether",
-    network: "bsc",
-    networks: [{ network_id: "bsc", network_type: "bsc" }],
-    image_url:
-      "https://content-api.changenow.io/uploads/usdtbsc_b8f3d8f316.svg",
-    icon: "https://content-api.changenow.io/uploads/usdtbsc_b8f3d8f316.svg",
-    is_stable: true,
-    is_fiat: false,
-    supportsFixedRate: true,
-    hasExternalId: false,
-    is_extra_id_supported: false,
-    range_commissions: [{ commission: "2.0" }],
-    commission: "2.0",
-    fee_rate: "2.0",
-    original_ticker: "usdtbsc",
-    change_now_ticker: "usdtbsc",
-    featured: true,
-  },
-  {
-    asset_id: "usdc-bsc",
-    ticker: "USDC",
-    symbol: "USDC",
-    name: "USD Coin",
-    network: "bsc",
-    networks: [{ network_id: "bsc", network_type: "bsc" }],
-    image_url:
-      "https://content-api.changenow.io/uploads/usdcbsc_397b9c0f7d.svg",
-    icon: "https://content-api.changenow.io/uploads/usdcbsc_397b9c0f7d.svg",
-    is_stable: true,
-    is_fiat: false,
-    supportsFixedRate: true,
-    hasExternalId: false,
-    is_extra_id_supported: false,
-    range_commissions: [{ commission: "2.0" }],
-    commission: "2.0",
-    fee_rate: "2.0",
-    original_ticker: "usdcbsc",
-    change_now_ticker: "usdcbsc",
-  },
-  {
-    asset_id: "btc-btc",
-    ticker: "BTC",
-    symbol: "BTC",
-    name: "Bitcoin",
-    network: "btc",
-    networks: [{ network_id: "btc", network_type: "btc" }],
-    image_url:
-      "https://content-api.changenow.io/uploads/btc_1_527dc9ec3c.svg",
-    icon: "https://content-api.changenow.io/uploads/btc_1_527dc9ec3c.svg",
-    is_stable: false,
-    is_fiat: false,
-    supportsFixedRate: true,
-    hasExternalId: false,
-    is_extra_id_supported: false,
-    range_commissions: [{ commission: "2.0" }],
-    commission: "2.0",
-    fee_rate: "2.0",
-    original_ticker: "btc",
-    change_now_ticker: "btc",
-    featured: true,
-  },
-];
+const isUuid = (value: unknown): boolean =>
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    String(value || "").trim()
+  );
 
 const normalizeNetworkFromName = (name?: string): string => {
   if (!name) return "";
@@ -311,9 +249,11 @@ const mapChangeNowAsset = (
 
   const rawChangeNowTicker =
     asset.legacyTicker?.trim().toLowerCase() || rawTicker;
+  const apiAssetId = String(asset.asset_id || "").trim();
 
   return {
-    asset_id: `${ticker.toLowerCase()}-${networkId}`,
+    // Keep backend UUID when provided; never synthesize fake ids.
+    asset_id: isUuid(apiAssetId) ? apiAssetId : "",
     ticker,
     symbol: ticker,
     name: displayName,
@@ -356,9 +296,16 @@ export function useChangeNowAssets(shouldFetch: boolean) {
         ? inMemoryPublicAssetsCache
         : null) ||
       readPublicAssetsCacheFromLocalStorage();
+    const staleCached = cached && Array.isArray(cached.assets) ? cached.assets : [];
+    const cachedHasOnlyUuidAssetIds =
+      !!cached &&
+      Array.isArray(cached.assets) &&
+      cached.assets.every((item) => isUuid(item?.asset_id));
 
     const isFresh =
-      !!cached && now - cached.ts < PUBLIC_ASSETS_CACHE_TTL_MS;
+      !!cached &&
+      now - cached.ts < PUBLIC_ASSETS_CACHE_TTL_MS &&
+      cachedHasOnlyUuidAssetIds;
 
     if (isFresh) {
       setAssets(cached!.assets);
@@ -404,7 +351,7 @@ export function useChangeNowAssets(shouldFetch: boolean) {
 
         const mappedAssets = Array.from(uniqueAssets.values());
 
-        const finalAssets = mappedAssets.length ? mappedAssets : FALLBACK_ASSETS;
+        const finalAssets = mappedAssets;
         setAssets(finalAssets);
 
         // Save cache after successful fetch.
@@ -421,7 +368,11 @@ export function useChangeNowAssets(shouldFetch: boolean) {
             : "Unknown error while fetching ChangeNOW assets";
 
         setError(message);
-        setAssets((prev) => (prev.length ? prev : FALLBACK_ASSETS));
+        // Never inject fake fallback assets; prefer already loaded assets,
+        // then stale cache, otherwise keep empty and surface error.
+        setAssets((prev) =>
+          prev.length ? prev : staleCached.length ? staleCached : []
+        );
       } finally {
         setLoading(false);
       }

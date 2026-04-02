@@ -26,8 +26,10 @@ export interface WithdrawalFormData {
 // New express withdrawal types
 export interface ExpressWithdrawalPayload {
   asset: string;
+  asset_id?: string;
   amount: string;
   network: string;
+  network_id?: string | null;
   user_payment_detail_id: string;
   counter_assigned_id?: number;
 }

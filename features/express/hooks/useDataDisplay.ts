@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { logger } from '@/lib/utils/logger';
 
@@ -86,6 +86,9 @@ export function useAssetsDisplay(
   exchangeError: string | null,
   swapError: string | null
 ) {
+  const ASSETS_CACHE_KEY = "omaya_real_assets_cache_v1";
+  const ASSETS_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+
   // Combine both asset sources
   const combinedAssets = useMemo(() => {
     const assets = [];
@@ -107,49 +110,67 @@ export function useAssetsDisplay(
     return assets;
   }, [exchangeAssets, swapAssets]);
 
-  // Common fallback assets
-  const fallbackAssets = useMemo(() => [
-    {
-      asset_id: "fallback-usdt-bsc",
-      ticker: "USDT",
-      symbol: "USDT",
-      name: "Tether USD",
-      network: "BSC",
-      image_url: "",
-      is_fiat: false,
-      is_stable: true,
-    },
-    {
-      asset_id: "fallback-btc",
-      ticker: "BTC",
-      symbol: "BTC", 
-      name: "Bitcoin",
-      network: "BTC",
-      image_url: "",
-      is_fiat: false,
-      is_stable: false,
-    },
-    {
-      asset_id: "fallback-eth",
-      ticker: "ETH",
-      symbol: "ETH",
-      name: "Ethereum", 
-      network: "ETH",
-      image_url: "",
-      is_fiat: false,
-      is_stable: false,
-    },
-  ], []);
+  // Load real cached assets (never synthetic fallback assets)
+  const [cachedAssets, setCachedAssets] = useState<any[]>([]);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = localStorage.getItem(ASSETS_CACHE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as { ts?: number; assets?: any[] };
+      const ts = Number(parsed?.ts || 0);
+      const assets = Array.isArray(parsed?.assets) ? parsed.assets : [];
+      const isFresh = Date.now() - ts <= ASSETS_CACHE_TTL_MS;
+      if (!isFresh) {
+        localStorage.removeItem(ASSETS_CACHE_KEY);
+        return;
+      }
+      // Keep only assets that look like real backend rows (UUID asset_id).
+      const uuidAssets = assets.filter((a: any) =>
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+          String(a?.asset_id || "")
+        )
+      );
+      if (uuidAssets.length > 0) setCachedAssets(uuidAssets);
+    } catch {
+      // Ignore bad cache entries
+    }
+  }, []);
+
+  // Persist fresh real assets to cache.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!Array.isArray(combinedAssets) || combinedAssets.length === 0) return;
+    const uuidAssets = combinedAssets.filter((a: any) =>
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+        String(a?.asset_id || "")
+      )
+    );
+    if (uuidAssets.length === 0) return;
+    try {
+      localStorage.setItem(
+        ASSETS_CACHE_KEY,
+        JSON.stringify({ ts: Date.now(), assets: uuidAssets })
+      );
+      setCachedAssets(uuidAssets);
+    } catch {
+      // Ignore storage errors
+    }
+  }, [combinedAssets]);
 
   const isAnyLoading = exchangeLoading || swapLoading;
   const hasAnyError = !!exchangeError || !!swapError;
   const errorMessage = exchangeError || swapError;
+  const dataToDisplay =
+    Array.isArray(combinedAssets) && combinedAssets.length > 0
+      ? combinedAssets
+      : cachedAssets;
 
   return useDataDisplay({
-    data: combinedAssets,
+    data: dataToDisplay,
     loading: isAnyLoading,
     error: hasAnyError ? errorMessage : null,
-    fallbackData: fallbackAssets,
+    fallbackData: [],
     dataName: 'Assets',
   });
 }

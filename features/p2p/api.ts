@@ -639,6 +639,38 @@ export const postTradeMessage = async (
   });
 };
 
+export type ThreadMessageType = "support" | "appeal";
+
+/**
+ * Send support/appeal message using the unified messages endpoint.
+ * POST /trading_engine/messages/
+ * { type, entity_id, message }
+ */
+export const postThreadMessage = async (
+  payload: {
+    type: ThreadMessageType;
+    entity_id: string;
+    message: string;
+  }
+) => {
+  const entityId = String(payload?.entity_id || "").trim();
+  const message = String(payload?.message || "").trim();
+  const type = payload?.type;
+  if (!entityId) throw new Error("entity_id is required");
+  if (!message) throw new Error("message is required");
+  if (type !== "support" && type !== "appeal") {
+    throw new Error("Invalid message type");
+  }
+  return withRetry(async () => {
+    const response = await post("/trading_engine/messages/", {
+      type,
+      entity_id: entityId,
+      message,
+    });
+    return response.data;
+  });
+};
+
 // Matched Trades API calls
 export const getMatchedTrades = async (
   page: number = 1
