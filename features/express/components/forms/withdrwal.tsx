@@ -3026,11 +3026,13 @@ export default function WithdrawalForm({
           asset:
             selectedAsset.ticker?.toUpperCase() ||
             selectedAsset.symbol?.toUpperCase(),
+          asset_id: String((selectedAsset as any)?.asset_id || ""),
           amount: payAmount.toString(),
           network:
             selectedNetwork?.network_id ||
             selectedNetwork?.network_type ||
             selectedAsset.network,
+          network_id: null,
           // For FXP, use user_payment_detail_id; for others, use id
           user_payment_detail_id: isForexAsset(selectedAsset)
             ? selectedPaymentDetails[0].user_payment_detail_id
@@ -3237,11 +3239,13 @@ export default function WithdrawalForm({
           asset:
             selectedAsset.ticker?.toUpperCase() ||
             selectedAsset.symbol?.toUpperCase(),
+          asset_id: String((selectedAsset as any)?.asset_id || ""),
           amount: payAmount.toString(),
           network:
             selectedNetwork?.network_id ||
             selectedNetwork?.network_type ||
             selectedAsset.network,
+          network_id: null,
           // For FXP, use user_payment_detail_id; for others, use id
           user_payment_detail_id: isForexAsset(selectedAsset)
             ? selectedPaymentDetails[0].user_payment_detail_id

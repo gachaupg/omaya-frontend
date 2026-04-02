@@ -1145,6 +1145,17 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
   ]);
 
   const handleAssetSelect = (asset: Asset) => {
+    // Debug selected asset object to trace missing/invalid asset_id issues.
+    console.log("[Rates] Selected asset object:", asset);
+    logger.debug("general", "[Rates] Selected asset object:", asset);
+    logger.debug("general", "[Rates] Selected asset identifiers:", {
+      asset_id: (asset as any)?.asset_id,
+      id: (asset as any)?.id,
+      ticker: (asset as any)?.ticker,
+      symbol: (asset as any)?.symbol,
+      network: (asset as any)?.network,
+      networks: (asset as any)?.networks,
+    });
     setSelectedAsset(asset);
     setIsAssetDropdownOpen(false);
 
@@ -2220,23 +2231,62 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
 
   /** Rates deposit POST — shared by first submit (non-FXP) and FX Primus "proceed" (FXP first submit does not POST). */
   const submitRatesCalculatorDeposit = async (): Promise<DepositResponse> => {
+    const pickNonEmpty = (...values: Array<unknown>) => {
+      for (const v of values) {
+        const s = String(v ?? "").trim();
+        if (s) return s;
+      }
+      return "";
+    };
+
+    const paymentDetail = selectedPaymentDetail as any;
+    const nestedDetail = paymentDetail?.payment_details?.[0] || {};
+    const providerName = pickNonEmpty(
+      paymentDetail?.payment_provider_name,
+      paymentDetail?.provider_name,
+      paymentDetail?.provider,
+      nestedDetail?.payment_provider_name,
+      nestedDetail?.provider_name
+    );
+    const methodName = pickNonEmpty(
+      paymentDetail?.payment_method_name,
+      paymentDetail?.payment_method,
+      paymentDetail?.payment_method_type,
+      paymentDetail?.method?.method_name,
+      paymentDetail?.method?.method_display,
+      nestedDetail?.payment_method_name,
+      nestedDetail?.payment_method,
+      nestedDetail?.payment_method_type
+    );
+    const accountNumber = pickNonEmpty(
+      paymentDetail?.account_number,
+      nestedDetail?.account_number,
+      paymentDetail?.mobile_number,
+      nestedDetail?.mobile_number
+    );
+    const accountName = pickNonEmpty(
+      paymentDetail?.account_name,
+      nestedDetail?.account_name,
+      providerName
+    );
+    const isUuid = (v: string) =>
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+        v
+      );
+    const assetId = String(
+      (selectedAsset as any)?.asset_id || (selectedAsset as any)?.id || ""
+    ).trim();
+    if (!isUuid(assetId)) {
+      throw new Error("Asset ID is missing or invalid");
+    }
+
     const formData = new FormData();
     formData.append("requested_amount", amount);
 
-    if (selectedPaymentDetail!.account_number?.trim()) {
-      formData.append("deposit_address", selectedPaymentDetail!.account_number);
-    } else {
-      formData.append("deposit_address", "");
-    }
+    formData.append("deposit_address", accountNumber || "");
 
-    formData.append(
-      "payment_provider",
-      selectedPaymentDetail!.payment_provider_name
-    );
-    formData.append(
-      "payment_method",
-      selectedPaymentDetail!.payment_method_name
-    );
+    formData.append("payment_provider", providerName);
+    formData.append("payment_method", methodName || providerName);
 
     let currencyValue = "";
     if (selectedAsset!.ticker) {
@@ -2279,12 +2329,12 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
       throw new Error("Asset information is missing");
     }
     formData.append("asset", assetValue);
+    formData.append("asset_id", assetId);
+    // Backend currently accepts null; send empty string in multipart as temporary null.
+    formData.append("network_id", "");
 
-    formData.append(
-      "additional_info",
-      `Account: ${selectedPaymentDetail!.account_name}`
-    );
-    formData.append("sent_from", selectedPaymentDetail!.account_name);
+    formData.append("additional_info", `Account: ${accountName || "N/A"}`);
+    formData.append("sent_from", accountName || providerName || "Customer");
 
     logger.debug("general", "DEBUG: Complete FormData entries:");
     for (let [key, value] of formData.entries()) {
@@ -2399,8 +2449,22 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
           const withdrawalDetail = selectedPaymentDetails[0];
           const withdrawalPayload: ExpressWithdrawalPayload = {
             asset: (selectedAsset.ticker?.toUpperCase() || selectedAsset.symbol?.toUpperCase()) as string,
+            asset_id: (() => {
+              const raw = String(
+                (selectedAsset as any)?.asset_id || (selectedAsset as any)?.id || ""
+              ).trim();
+              if (
+                !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+                  raw
+                )
+              ) {
+                throw new Error("Asset ID is missing or invalid");
+              }
+              return raw;
+            })(),
             amount: amount,
             network: getAssetNetwork(selectedAsset),
+            network_id: null,
             user_payment_detail_id: String(withdrawalDetail?.id),
           };
 

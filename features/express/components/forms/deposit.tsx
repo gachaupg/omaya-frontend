@@ -2773,6 +2773,8 @@ export default function DepositForm({
           currency: currencyValue,
           network: networkValue,
           asset: assetValue,
+          asset_id: String((selectedAsset as any)?.asset_id || ""),
+          network_id: null,
           additional_info: "Direct crypto deposit",
         };
 
@@ -3305,6 +3307,8 @@ export default function DepositForm({
         currency: currencyValue,
         network: networkValue,
         asset: assetValue,
+        asset_id: String((selectedAsset as any)?.asset_id || ""),
+        network_id: null,
         additional_info: `Account: ${selectedPaymentDetail.account_name}, Account Number: ${selectedPaymentDetail.account_number}`,
       };
 

@@ -33,9 +33,33 @@ interface PaymentMethod {
   editable?: boolean;
   provider_logo?: string;
   allow_auto_send?: boolean;
+  status?: string;
+  approved?: string | boolean;
 }
 
 const ITEMS_PER_PAGE = 5;
+
+const getMethodStatusLabel = (method: PaymentMethod): string => {
+  const raw = method?.status ?? method?.approved ?? "";
+  if (typeof raw === "boolean") return raw ? "Approved" : "Pending";
+  const value = String(raw || "").trim().toLowerCase();
+  if (!value) return "Pending";
+  if (value === "approved" || value === "active" || value === "success") return "Approved";
+  if (value === "rejected" || value === "declined" || value === "failed") return "Rejected";
+  if (value === "pending" || value === "in review" || value === "review") return "Pending";
+  return value.charAt(0).toUpperCase() + value.slice(1);
+};
+
+const getMethodStatusClasses = (status: string): string => {
+  const key = status.toLowerCase();
+  if (key === "approved") {
+    return "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300";
+  }
+  if (key === "rejected") {
+    return "bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300";
+  }
+  return "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300";
+};
 
 const PaymentMethods = () => {
   /** Local state */
@@ -316,6 +340,7 @@ const PaymentMethods = () => {
       return null;
     }
 
+    const statusLabel = getMethodStatusLabel(method);
     return (
       <tr key={method.id} className="border-b border-gray-200 dark:border-[#35353E] hover:bg-gray-50 dark:hover:bg-[var(--card-color)] transition-colors">
         <td className="px-4 py-4">
@@ -339,6 +364,15 @@ const PaymentMethods = () => {
         </td>
         <td className="px-4 py-4 text-sm sm:text-base text-gray-900 dark:text-white font-mono">
           {method?.account_number || '—'}
+        </td>
+        <td className="px-4 py-4">
+          <span
+            className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${getMethodStatusClasses(
+              statusLabel
+            )}`}
+          >
+            {statusLabel}
+          </span>
         </td>
         <td className="px-4 py-4">
           <div className="flex items-center justify-end gap-2">
@@ -405,6 +439,7 @@ const PaymentMethods = () => {
       return null;
     }
 
+    const statusLabel = getMethodStatusLabel(method);
     return (
       <tr key={method.id} className="border-b border-gray-200 dark:border-[#35353E] hover:bg-gray-50 dark:hover:bg-[var(--card-color)] transition-colors">
         <td className="px-4 py-4">
@@ -427,6 +462,15 @@ const PaymentMethods = () => {
         </td>
         <td className="px-4 py-4 text-sm sm:text-base text-gray-900 dark:text-white font-mono">
           {method?.account_number || '—'}
+        </td>
+        <td className="px-4 py-4">
+          <span
+            className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${getMethodStatusClasses(
+              statusLabel
+            )}`}
+          >
+            {statusLabel}
+          </span>
         </td>
         <td className="px-4 py-4">
           <div className="flex items-center justify-end gap-2">
@@ -851,6 +895,7 @@ const PaymentMethods = () => {
                           <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">Provider</th>
                           <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">Account Name</th>
                           <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">Account Number</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">Status</th>
                           <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-white">Action</th>
                         </tr>
                       </thead>
@@ -884,6 +929,7 @@ const PaymentMethods = () => {
                         <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">Provider</th>
                         <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">Account Name</th>
                         <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">Account Number</th>
+                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">Status</th>
                         <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-white">Action</th>
                       </tr>
                     </thead>

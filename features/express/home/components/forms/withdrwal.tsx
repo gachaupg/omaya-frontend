@@ -48,7 +48,7 @@ import {
   useAssetsDisplay,
   usePaymentMethodsDisplay,
 } from "../../../hooks/useDataDisplay";
-import { useChangeNowAssets } from "../../hooks/useChangeNowAssets";
+import { useChangeNowAssets } from "@/features/express/home/hooks/useChangeNowAssets";
 import CustomSelect from "@/components/ui/HomeCommonSelect";
 import ForexWithdrawal from "./ForexWithdrawal";
 import { useTheme } from "@/context/theme";
@@ -78,6 +78,11 @@ interface UserPaymentDetail {
   provider_name?: string;
   payment_provider?: string;
 }
+
+const isUuid = (value: unknown): boolean =>
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    String(value || "").trim()
+  );
 
 // Add UserPaymentSelector component
 const UserPaymentSelector = ({
@@ -247,6 +252,10 @@ export default function WithdrawalForm({
   const { assets, loading: assetsLoading } = useSelector(
     (state: any) => state.exchange
   );
+  const {
+    assets: publicAssets,
+    loading: publicAssetsLoading,
+  } = useChangeNowAssets(isHomePage);
 
   // Add swap assets state
   const {
@@ -257,19 +266,13 @@ export default function WithdrawalForm({
   const { isAuthenticated, user } = useSelector((state: any) => state.auth);
   const { isDark } = useTheme();
 
-  const {
-    assets: homeAssets,
-    loading: homeAssetsLoading,
-    error: homeAssetsError,
-  } = useChangeNowAssets(isHomePage);
-
-  const exchangeAssetsSource = isHomePage ? homeAssets : assets?.assets;
+  const exchangeAssetsSource = isHomePage ? publicAssets : assets?.assets;
   const swapAssetsSource = isHomePage ? [] : swapAssets;
   const exchangeAssetsLoadingState = isHomePage
-    ? homeAssetsLoading
+    ? publicAssetsLoading
     : assetsLoading;
   const swapAssetsLoadingState = isHomePage ? false : swapAssetsLoading;
-  const exchangeAssetsErrorState = isHomePage ? homeAssetsError : null;
+  const exchangeAssetsErrorState = null;
   const swapAssetsErrorState = isHomePage ? null : swapAssetsError;
   const requiresLoginRedirect = isHomePage && !isAuthenticated;
 
@@ -1028,7 +1031,7 @@ export default function WithdrawalForm({
   }, [dispatch, isHomePage, hasFetchedAdminWallet, adminWalletRetryCount]);
 
   useEffect(() => {
-    // Skip API calls on home page
+    // Home page uses public ChangeNOW supported-tokens endpoint (no auth).
     if (isHomePage || hasFetchedAssets) {
       return;
     }
@@ -1072,7 +1075,7 @@ export default function WithdrawalForm({
           setHasFetchedAssets(true);
         }
       });
-  }, [dispatch, isHomePage, hasFetchedAssets, assetsRetryCount]);
+  }, [dispatch, isHomePage, isAuthenticated, hasFetchedAssets, assetsRetryCount]);
 
   // Fetch user payment details
   useEffect(() => {
@@ -1122,33 +1125,6 @@ export default function WithdrawalForm({
     if (swapAssetsRetryCount >= MAX_RETRIES) {
       console.warn('⚠️ Max retries reached for swap assets');
       setHasFetchedSwapAssets(true);
-
-      // Set fallback assets after max retries
-      const fallbackAssets = [
-        {
-          ticker: "USDT",
-          symbol: "USDT",
-          name: "Tether USD",
-          network: "BSC",
-          range_commissions: [{ commission: "2" }],
-          commission: "2",
-          fee_rate: "2"
-        },
-        {
-          ticker: "USDT",
-          symbol: "USDT",
-          name: "USD Coin",
-          network: "BSC",
-          range_commissions: [{ commission: "2" }],
-          commission: "2",
-          fee_rate: "2"
-        }
-      ];
-
-      dispatch({
-        type: "swap/fetchSupportedAssets/fulfilled",
-        payload: fallbackAssets
-      });
       return;
     }
 
@@ -1178,36 +1154,8 @@ export default function WithdrawalForm({
         // Only show toast on final retry
         if (swapAssetsRetryCount + 1 >= MAX_RETRIES) {
           if (!isHomePage) {
-            showToast.warning("Unable to fetch swap assets. Using fallback data.");
+            showToast.warning("Unable to fetch swap assets. Please try again.");
           }
-
-          // Set fallback assets
-          const fallbackAssets = [
-            {
-              ticker: "USDT",
-              symbol: "USDT",
-              name: "Tether USD",
-              network: "BSC",
-              range_commissions: [{ commission: "2" }],
-              commission: "2",
-              fee_rate: "2"
-            },
-            {
-              ticker: "USDT",
-              symbol: "USDT",
-              name: "USD Coin",
-              network: "BSC",
-              range_commissions: [{ commission: "2" }],
-              commission: "2",
-              fee_rate: "2"
-            }
-          ];
-
-          dispatch({
-            type: "swap/fetchSupportedAssets/fulfilled",
-            payload: fallbackAssets
-          });
-
           setHasFetchedSwapAssets(true);
         }
       });
@@ -3395,16 +3343,22 @@ export default function WithdrawalForm({
       setIsTransactionSubmitted(false);
 
       try {
+        const selectedAssetId = String((selectedAsset as any)?.asset_id || "").trim();
+        if (!isUuid(selectedAssetId)) {
+          throw new Error("Asset ID is missing or invalid");
+        }
         // Create withdrawal payload for express API
         const withdrawalPayload: ExpressWithdrawalPayload = {
           asset:
             selectedAsset.ticker?.toUpperCase() ||
             selectedAsset.symbol?.toUpperCase(),
+          asset_id: selectedAssetId,
           amount: payAmount.toString(),
           network:
             selectedNetwork?.network_id ||
             selectedNetwork?.network_type ||
             selectedAsset.network,
+          network_id: null,
           // For FXP, use user_payment_detail_id; for others, use id
           user_payment_detail_id: isForexAsset(selectedAsset)
             ? selectedPaymentDetails[0].user_payment_detail_id
@@ -3600,16 +3554,22 @@ export default function WithdrawalForm({
 
     try {
       if (mode === "withdrawal") {
+        const selectedAssetId = String((selectedAsset as any)?.asset_id || "").trim();
+        if (!isUuid(selectedAssetId)) {
+          throw new Error("Asset ID is missing or invalid");
+        }
         // Handle withdrawal submission
         const withdrawalPayload: ExpressWithdrawalPayload = {
           asset:
             selectedAsset.ticker?.toUpperCase() ||
             selectedAsset.symbol?.toUpperCase(),
+          asset_id: selectedAssetId,
           amount: payAmount.toString(),
           network:
             selectedNetwork?.network_id ||
             selectedNetwork?.network_type ||
             selectedAsset.network,
+          network_id: null,
           // For FXP, use user_payment_detail_id; for others, use id
           user_payment_detail_id: isForexAsset(selectedAsset)
             ? selectedPaymentDetails[0].user_payment_detail_id

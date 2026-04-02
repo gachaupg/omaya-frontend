@@ -143,7 +143,7 @@ export const fetchSupportedAssets = createAsyncThunk<SupportedAsset[], boolean |
         const response = await getSupportedAssets();
         logger.debug('swap', "✅ Force refresh API response received:", response?.length || 0, "assets");
         // Cache the fresh data
-        await sliceCache.set('swap', 'fetchSupportedAssets', response, undefined, 2 * 60 * 60 * 1000);
+        await sliceCache.set('swap', 'fetchSupportedAssets', response, undefined, 60 * 60 * 1000);
         data = response;
       } else {
         data = await sliceCache.getOrSet(
@@ -156,7 +156,7 @@ export const fetchSupportedAssets = createAsyncThunk<SupportedAsset[], boolean |
             return response;
           },
           undefined, // no params
-          2 * 60 * 60 * 1000 // 2 hours cache
+          60 * 60 * 1000 // 1 hour cache
         );
       }
       
@@ -165,56 +165,9 @@ export const fetchSupportedAssets = createAsyncThunk<SupportedAsset[], boolean |
     } catch (error) {
       console.error("❌ Failed to fetch supported assets:", error);
       
-      // Provide fallback assets if API fails
-      const fallbackAssets: SupportedAsset[] = [
-        {
-          asset_id: "fallback-usdt-bsc",
-          symbol: "USDT",
-          name: "Tether USD",
-          description: "Tether USD on BSC",
-          asset_image: null,
-          image_url: "",
-          ticker: "USDT",
-          has_external_id: false,
-          is_extra_id_supported: false,
-          is_fiat: false,
-          featured: true,
-          is_stable: true,
-          supports_fixed_rate: true,
-          network: "BSC",
-          token_contract: "",
-          can_buy: true,
-          can_sell: true,
-          legacy_ticker: "usdt",
-          is_changenow_asset: false,
-        },
-        {
-          asset_id: "fallback-btc",
-          symbol: "BTC",
-          name: "Bitcoin",
-          description: "Bitcoin",
-          asset_image: null,
-          image_url: "",
-          ticker: "BTC",
-          has_external_id: false,
-          is_extra_id_supported: false,
-          is_fiat: false,
-          featured: true,
-          is_stable: false,
-          supports_fixed_rate: true,
-          network: "BTC",
-          token_contract: "",
-          can_buy: true,
-          can_sell: true,
-          legacy_ticker: "btc",
-          is_changenow_asset: false,
-        }
-      ];
-      
-      logger.debug('swap', "🔄 Using fallback assets:", fallbackAssets.length);
-      
-      // Return fallback assets instead of rejecting
-      return fallbackAssets;
+      return rejectWithValue(
+        error instanceof Error ? error.message : "Failed to fetch supported assets"
+      ) as any;
     }
   }
 );

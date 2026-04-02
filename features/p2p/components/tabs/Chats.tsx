@@ -4,7 +4,13 @@ import React, { useEffect, useMemo, useState, useRef } from "react";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/rootReducer";
 import { useGroupedMessages } from "@/features/p2p/hooks/useGroupedMessages";
-import { GroupedUser, postTradeMessage, getTermsAccepted, acceptTerms } from "@/features/p2p/api";
+import {
+  GroupedUser,
+  postTradeMessage,
+  postThreadMessage,
+  getTermsAccepted,
+  acceptTerms,
+} from "@/features/p2p/api";
 import { getTradeMessagesWebSocket, cleanupTradeMessagesWebSocket } from "@/features/p2p/services/tradeMessagesWebSocket";
 import { cookieUtils } from "@/lib/utils/cookieUtils";
 import Link from "next/link";
@@ -233,6 +239,31 @@ export const Chats: React.FC = () => {
     return "";
   }, [selectedUser]);
 
+  const resolvedThreadId = useMemo(() => {
+    const rawType = String((selectedUser as any)?.message_type || "")
+      .trim()
+      .toLowerCase();
+    if (!selectedUser) return "";
+    if (rawType === "p2p") return resolvedTradeId;
+    const candidates: unknown[] = [
+      selectedUser.entity_id,
+      (selectedUser as any)?.support_request_id,
+      (selectedUser as any)?.appeal_id,
+      ...(Array.isArray((selectedUser as any)?.messages)
+        ? (selectedUser as any).messages.flatMap((m: any) => [
+            m?.entity_id,
+            m?.support_request_id,
+            m?.appeal_id,
+            extractIdFromMessageId(m?.id),
+          ])
+        : []),
+    ];
+    for (const c of candidates) {
+      if (isValidTradeIdForMessages(c)) return String(c).trim();
+    }
+    return "";
+  }, [selectedUser, resolvedTradeId]);
+
   // Close emoji picker when clicking outside or when no conversation is selected
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -401,6 +432,9 @@ export const Chats: React.FC = () => {
   // WebSocket connection for selected user
   useEffect(() => {
     if (!selectedUser || !resolvedTradeId || !isAuthenticated) {
+      return;
+    }
+    if (String((selectedUser as any)?.message_type || "").toLowerCase() !== "p2p") {
       return;
     }
 
@@ -644,6 +678,7 @@ export const Chats: React.FC = () => {
 
   const handleSendAudioMessage = async (audioFile: File, durationSeconds: number = 0) => {
     if (!selectedUser?.entity_id || !resolvedTradeId) return;
+    if (String((selectedUser as any)?.message_type || "").toLowerCase() !== "p2p") return;
     const tempId = `temp-${Date.now()}-${Math.random()}`;
     const optimisticMessage = {
       id: tempId,
@@ -721,8 +756,12 @@ export const Chats: React.FC = () => {
       return;
     }
 
-    if (!selectedUser.entity_id || !resolvedTradeId) {
-      console.error("No entity_id (trade_id) available");
+    const messageType = String((selectedUser as any)?.message_type || "")
+      .trim()
+      .toLowerCase();
+    const targetId = messageType === "p2p" ? resolvedTradeId : resolvedThreadId;
+    if (!selectedUser.entity_id || !targetId) {
+      console.error("No entity_id available");
       return;
     }
 
@@ -768,12 +807,28 @@ export const Chats: React.FC = () => {
     setIsSending(true);
 
     try {
-      // Send via HTTP POST API (same as ChatBox in orders page)
-      await postTradeMessage(resolvedTradeId, {
-        message: messageContent,
-        uploaded_images: imagesToSend,
-        sender_name: user?.email || "",
-      });
+      if (messageType === "p2p") {
+        // P2P trade chat endpoint:
+        // POST /trading_engine/trades/<trade_uuid>/messages/
+        await postTradeMessage(targetId, {
+          message: messageContent,
+          uploaded_images: imagesToSend,
+          sender_name: user?.email || "",
+        });
+      } else if (messageType === "support" || messageType === "appeal") {
+        // Support/appeal endpoint:
+        // POST /trading_engine/messages/
+        if (imagesToSend.length > 0) {
+          throw new Error("Attachments are currently supported only for P2P trade chat.");
+        }
+        await postThreadMessage({
+          type: messageType,
+          entity_id: targetId,
+          message: messageContent,
+        });
+      } else {
+        throw new Error(`Unsupported message type: ${messageType || "unknown"}`);
+      }
 
       // Immediately refetch to get the real message
       refetch();

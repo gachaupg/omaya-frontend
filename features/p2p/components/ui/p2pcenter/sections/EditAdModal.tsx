@@ -54,9 +54,14 @@ const EditAdModal: React.FC<EditAdModalProps> = ({
 
   const minOrder = parseFloat(formData.min_order_amount) || 0;
   const maxOrder = parseFloat(formData.max_order_amount) || 0;
+  const amountValue = parseFloat(formData.amount) || 0;
   const minOrderError =
-    formData.min_order_amount !== "" && minOrder < MIN_ORDER_AMOUNT
-      ? `Minimum Order cannot be less than ${MIN_ORDER_AMOUNT}`
+    formData.min_order_amount !== ""
+      ? minOrder < MIN_ORDER_AMOUNT
+        ? `Minimum Order cannot be less than ${MIN_ORDER_AMOUNT}`
+        : amountValue > 0 && minOrder > amountValue
+        ? "Minimum Order cannot be greater than Amount"
+        : null
       : null;
   const maxOrderError =
     formData.max_order_amount !== ""
@@ -64,6 +69,8 @@ const EditAdModal: React.FC<EditAdModalProps> = ({
         ? `Maximum Order cannot be less than ${MIN_ORDER_AMOUNT}`
         : maxOrder < minOrder
         ? "Maximum Order cannot be less than Minimum Order"
+        : amountValue > 0 && maxOrder > amountValue
+        ? "Maximum Order cannot be greater than Amount"
         : null
       : null;
   const isFormValid = !minOrderError && !maxOrderError;
@@ -167,6 +174,7 @@ const EditAdModal: React.FC<EditAdModalProps> = ({
                       type="number"
                       step="0.00000001"
                       min={MIN_ORDER_AMOUNT}
+                      max={amountValue > 0 ? amountValue : undefined}
                       placeholder={`Min ${MIN_ORDER_AMOUNT}`}
                       value={formData.min_order_amount}
                       onChange={(e) =>
@@ -195,6 +203,7 @@ const EditAdModal: React.FC<EditAdModalProps> = ({
                       type="number"
                       step="0.00000001"
                       min={MIN_ORDER_AMOUNT}
+                      max={amountValue > 0 ? amountValue : undefined}
                       placeholder={`Min ${MIN_ORDER_AMOUNT}`}
                       value={formData.max_order_amount}
                       onChange={(e) =>

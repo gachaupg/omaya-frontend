@@ -30,7 +30,7 @@ import {
   useAssetsDisplay,
   usePaymentMethodsDisplay,
 } from "../../../hooks/useDataDisplay";
-import { useChangeNowAssets } from "../../hooks/useChangeNowAssets";
+import { useChangeNowAssets } from "@/features/express/home/hooks/useChangeNowAssets";
 import CustomSelect from "@/components/ui/HomeCommonSelect";
 import Select from "@/features/p2p/components/Common/Select";
 import {
@@ -143,6 +143,22 @@ const getAssetNetwork = (asset: any): string => {
   }
 
   return '';
+};
+
+const isUuid = (value: unknown): boolean =>
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    String(value || "").trim()
+  );
+
+const normalizeNetworkKey = (value: unknown): string => {
+  const key = String(value || "").trim().toLowerCase();
+  if (!key) return "";
+  if (["bsc", "bep20", "bnb smart chain", "binance smart chain"].includes(key)) return "bsc";
+  if (["eth", "erc20", "ethereum"].includes(key)) return "eth";
+  if (["trx", "trc20", "tron"].includes(key)) return "trx";
+  if (["matic", "polygon", "polygon pos"].includes(key)) return "matic";
+  if (["sol", "solana"].includes(key)) return "sol";
+  return key;
 };
 
 const networkSuffixesToStrip = [
@@ -295,6 +311,10 @@ export default function DepositForm({
   const { assets, loading: assetsLoading } = useSelector(
     (state: any) => state.exchange
   );
+  const {
+    assets: publicAssets,
+    loading: publicAssetsLoading,
+  } = useChangeNowAssets(isHomePage);
 
   // Add swap assets state
   const { supportedAssets: swapAssets, loading: swapAssetsLoading } =
@@ -302,19 +322,13 @@ export default function DepositForm({
   const { isAuthenticated, user } = useSelector((state: any) => state.auth);
   const { isDark } = useTheme();
 
-  const {
-    assets: homeAssets,
-    loading: homeAssetsLoading,
-    error: homeAssetsError,
-  } = useChangeNowAssets(isHomePage);
-
-  const exchangeAssetsSource = isHomePage ? homeAssets : assets?.assets;
+  const exchangeAssetsSource = isHomePage ? publicAssets : assets?.assets;
   const swapAssetsSource = isHomePage ? [] : swapAssets;
   const exchangeAssetsLoadingState = isHomePage
-    ? homeAssetsLoading
+    ? publicAssetsLoading
     : assetsLoading;
   const swapAssetsLoadingState = isHomePage ? false : swapAssetsLoading;
-  const exchangeAssetsErrorState = isHomePage ? homeAssetsError : null;
+  const exchangeAssetsErrorState = null;
   const swapAssetsErrorState = isHomePage ? null : null;
   const requiresLoginRedirect = isHomePage && !isAuthenticated;
 
@@ -722,6 +736,72 @@ export default function DepositForm({
   // Add state for API validation errors
   const [apiValidationError, setApiValidationError] = useState<string | null>(null);
 
+  const resolveCanonicalAssetMeta = useCallback(
+    (asset: any, network: any) => {
+      const allExchangeAssets = Array.isArray(
+        isHomePage ? publicAssets : assets?.assets
+      )
+        ? (isHomePage ? publicAssets : assets?.assets)
+        : [];
+      const preferredNetwork = normalizeNetworkKey(
+        network?.network_id || network?.network_type || network?.network || getAssetNetwork(asset)
+      );
+      const selectedTicker = String(asset?.ticker || asset?.symbol || asset?.name || "")
+        .trim()
+        .toLowerCase();
+
+      const findMatchingNetwork = (exchangeAsset: any) => {
+        const networks = Array.isArray(exchangeAsset?.networks) ? exchangeAsset.networks : [];
+        if (networks.length === 0) return null;
+        if (!preferredNetwork) return networks[0];
+        return (
+          networks.find((n: any) => {
+            const nType = normalizeNetworkKey(n?.network_type);
+            const nId = normalizeNetworkKey(n?.network_id);
+            return nType === preferredNetwork || nId === preferredNetwork;
+          }) || networks[0]
+        );
+      };
+
+      const selectedId = String(asset?.asset_id || "").trim();
+      let matchedAsset =
+        allExchangeAssets.find(
+          (a: any) => isUuid(a?.asset_id) && isUuid(selectedId) && String(a.asset_id).trim() === selectedId
+        ) ||
+        allExchangeAssets.find((a: any) => {
+          if (!isUuid(a?.asset_id)) return false;
+          const ticker = String(a?.symbol || a?.ticker || a?.name || "")
+            .trim()
+            .toLowerCase();
+          if (!ticker || ticker !== selectedTicker) return false;
+          const net = findMatchingNetwork(a);
+          return !!net;
+        });
+
+      if (!matchedAsset && isUuid(selectedId)) {
+        return {
+          assetId: selectedId,
+          network: String(network?.network_type || network?.network_id || getAssetNetwork(asset) || "").trim(),
+          networkId: String(network?.network_id || "").trim() || null,
+        };
+      }
+
+      if (!matchedAsset) {
+        return null;
+      }
+
+      const matchedNetwork = findMatchingNetwork(matchedAsset);
+      return {
+        assetId: String(matchedAsset.asset_id || "").trim(),
+        network: String(
+          matchedNetwork?.network_type || matchedNetwork?.network_id || network?.network_type || network?.network_id || getAssetNetwork(asset) || ""
+        ).trim(),
+        networkId: String(matchedNetwork?.network_id || "").trim() || null,
+      };
+    },
+    [assets?.assets, isHomePage, publicAssets]
+  );
+
 
   // Auto-select the first payment method on home page so the button behaves like the dashboard form
   useEffect(() => {
@@ -921,7 +1001,7 @@ export default function DepositForm({
   }, [dispatch, isHomePage]);
 
   useEffect(() => {
-    // Skip API calls on home page - buttons will redirect to login
+    // Home page uses public ChangeNOW supported-tokens endpoint (no auth).
     if (isHomePage) {
       return;
     }
@@ -941,7 +1021,7 @@ export default function DepositForm({
           }
         );
       });
-  }, [dispatch]);
+  }, [dispatch, isHomePage, isAuthenticated]);
 
   // Fetch swap assets
   useEffect(() => {
@@ -961,32 +1041,26 @@ export default function DepositForm({
         return withTimeout(dispatch(fetchSupportedAssets(true)).unwrap(), 15_000).catch(
           (refreshError: unknown) => {
             if (refreshError instanceof Error) {
-              if (refreshError.message.includes("Network Error") || refreshError.message.includes("Network connection issue")) {
-                showToast.warning("Network Issue", "Unable to fetch assets due to network problems. Using fallback data.");
+              if (
+                refreshError.message.includes("Network Error") ||
+                refreshError.message.includes("Network connection issue")
+              ) {
+                showToast.warning(
+                  "Network Issue",
+                  "Unable to fetch assets due to network problems. Please try again."
+                );
               } else if (refreshError.message.includes("Server Error")) {
-                showToast.error("Server Error", "Unable to fetch assets from server. Please try again later.");
+                showToast.error(
+                  "Server Error",
+                  "Unable to fetch assets from server. Please try again later."
+                );
               } else if (!refreshError.message.includes("Cache")) {
-                showToast.error("Asset Loading Error", `Failed to fetch swap assets: ${refreshError.message}`);
+                showToast.error(
+                  "Asset Loading Error",
+                  `Failed to fetch swap assets: ${refreshError.message}`
+                );
               }
             }
-            const fallbackAssets = [
-              {
-                ticker: "USDT",
-                symbol: "USDT",
-                name: "Tether USD",
-                network: "BSC",
-                range_commissions: [{ commission: "2" }],
-                commission: "2",
-                fee_rate: "2"
-              }
-            ];
-
-            // Update the Redux store with fallback assets
-            dispatch({
-              type: "swap/fetchSupportedAssets/fulfilled",
-              payload: fallbackAssets
-            });
-
             throw refreshError;
           });
       });
@@ -2648,8 +2722,15 @@ export default function DepositForm({
         depositPayload.append("currency", currencyValue);
 
         // Handle network field more carefully
+        const resolvedMeta = resolveCanonicalAssetMeta(selectedAsset, selectedNetwork);
+        if (!resolvedMeta || !isUuid(resolvedMeta.assetId)) {
+          throw new Error("Asset ID is missing or invalid");
+        }
         const networkValue =
-          selectedNetwork?.network_id || selectedNetwork?.network_type || "";
+          resolvedMeta.network ||
+          selectedNetwork?.network_id ||
+          selectedNetwork?.network_type ||
+          "";
         if (!networkValue) {
           throw new Error("Network information is missing");
         }
@@ -2688,6 +2769,15 @@ export default function DepositForm({
           throw new Error("Asset information is missing");
         }
         depositPayload.append("asset", assetValue);
+        depositPayload.append(
+          "asset_id",
+          resolvedMeta.assetId
+        );
+        // Backend expects nullable network_id; for multipart omit this field when unknown.
+        // Sending empty string triggers UUID validation errors.
+        if (resolvedMeta.networkId && isUuid(resolvedMeta.networkId)) {
+          depositPayload.append("network_id", resolvedMeta.networkId);
+        }
         // For direct crypto deposits, set minimal additional info
         depositPayload.append("additional_info", "Direct crypto deposit");
 
@@ -3082,11 +3172,17 @@ export default function DepositForm({
       }
       depositPayload.append("currency", currencyValue);
 
-      // Handle network field - use the network from selected asset or network
+      const resolvedMeta = resolveCanonicalAssetMeta(selectedAsset, selectedNetwork);
+      if (!resolvedMeta || !isUuid(resolvedMeta.assetId)) {
+        throw new Error("Asset ID is missing or invalid");
+      }
+
+      // Handle network field - use canonical exchange network when available
       let networkValue = "";
 
-      // Try to get network from selected network first
-      if (selectedNetwork?.network_id) {
+      if (resolvedMeta.network) {
+        networkValue = resolvedMeta.network;
+      } else if (selectedNetwork?.network_id) {
         networkValue = selectedNetwork.network_id;
       } else if (selectedNetwork?.network_type) {
         networkValue = selectedNetwork.network_type;
@@ -3151,6 +3247,15 @@ export default function DepositForm({
         throw new Error("Asset information is missing");
       }
       depositPayload.append("asset", assetValue);
+      depositPayload.append(
+        "asset_id",
+        resolvedMeta.assetId
+      );
+      // Backend expects nullable network_id; for multipart omit this field when unknown.
+      // Sending empty string triggers UUID validation errors.
+      if (resolvedMeta.networkId && isUuid(resolvedMeta.networkId)) {
+        depositPayload.append("network_id", resolvedMeta.networkId);
+      }
 
       // Add additional info
       depositPayload.append(
