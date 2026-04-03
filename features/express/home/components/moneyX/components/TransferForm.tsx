@@ -1237,7 +1237,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
           >
             {/* Bank Account Address Label */}
             <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
-              Bank Account Address
+              Bank Account Number
             </label>
             {/* Input group */}
             <div className="flex items-center dark:bg-[#1D1D23] border border-[#39394a] dark:border-[#35353E] rounded-2xl px-2 sm:px-4 py-2 mb-0 overflow-visible gap-1 sm:gap-2">
@@ -1274,7 +1274,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
                   setIsAddressConfirmed(false);
                   setBankAddressError(null);
                 }}
-                placeholder="Paste here your Bank Account Address"
+                placeholder="Paste here your Bank Account Number"
                 className={`flex-1 min-w-0 bg-transparent border-none outline-none text-[#35353e] dark:text-[#788099] placeholder-[#788099] text-sm sm:text-base ${bankAddressError
                     ? "border-red-500"
                     : bankAccountAddress.trim() && !bankAddressError

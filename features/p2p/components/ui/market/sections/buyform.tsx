@@ -308,6 +308,22 @@ function FinalBuy({ orderData }: FinalBuyProps) {
   const formatCommissionRate = (rate: number) =>
     Number(rate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+  const hasAvailableAmount =
+    singleOrder?.available_amount != null &&
+    String(singleOrder.available_amount).trim() !== "";
+  const displayAvailableValue = hasAvailableAmount
+    ? String(singleOrder?.available_amount ?? "").trim()
+    : singleOrder?.amount || singleOrder?.min_order_amount;
+  const displayAvailableUnit = hasAvailableAmount
+    ? singleOrder?.asset || "USDT"
+    : singleOrder?.currency || singleOrder?.asset || "USDT";
+  const effectiveMinUnit = hasAvailableAmount
+    ? singleOrder?.asset || "USDT"
+    : singleOrder?.range_currency ||
+      singleOrder?.currency ||
+      singleOrder?.asset ||
+      "";
+
   const handleCancelTransaction = () => {
     if (isAuthenticated && confirmOrder?.id) {
       dispatch(cancelP2POrderThunk(confirmOrder.id))
@@ -413,14 +429,30 @@ function FinalBuy({ orderData }: FinalBuyProps) {
               {singleOrderError}
             </div>
           )}
-          <div className="flex items-center justify-between mb-2">
-            <p
-              className="text-gray-900 dark:text-white text-[13px]"
-              style={{ fontSize: "16px" }}
-            >
-              Advertiser Info
-            </p>
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between gap-2 flex-wrap mb-2">
+            <div className="flex items-center gap-3 flex-wrap min-w-0">
+              <p
+                className="text-gray-900 dark:text-white text-[13px] shrink-0"
+                style={{ fontSize: "16px" }}
+              >
+                Advertiser Info
+              </p>
+              <span className="text-xs sm:text-sm text-[#1D8751] flex items-center gap-1 whitespace-nowrap">
+                Transaction time:{" "}
+                {isClient ? (
+                  <TimeDisplay
+                    seconds={
+                      confirmOrder?.status === "matched"
+                        ? countdown
+                        : displaySeconds
+                    }
+                  />
+                ) : (
+                  <span>--:--</span>
+                )}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
               <button
                 type="button"
                 onClick={() => setShowChat((prev) => !prev)}
@@ -470,16 +502,6 @@ function FinalBuy({ orderData }: FinalBuyProps) {
                   {singleOrder?.advertiser_name || singleOrder?.advertiser_first_name || "Advertiser"}
                 </span>
                 <UserStatusBadge isLive={statusWsConnected} className="flex-shrink-0" />
-                <span className="text-[10px] text-[#1D8751] flex items-center gap-1 flex-shrink-0">
-                  Transaction time:{" "}
-                  {isClient ? (
-                    <TimeDisplay
-                      seconds={confirmOrder?.status === "matched" ? countdown : displaySeconds}
-                    />
-                  ) : (
-                    <span>--:--</span>
-                  )}
-                </span>
               </div>
 
               <div>
@@ -515,13 +537,29 @@ function FinalBuy({ orderData }: FinalBuyProps) {
               </div>
               <div>
                 <span className="text-sm text-gray-900 dark:text-white mb-2">
-                  {singleOrder?.amount || singleOrder?.min_order_amount}{" "}
-                  {singleOrder?.currency || "USDT"}
+                  {displayAvailableValue} {displayAvailableUnit}
                 </span>
                 <br />
                 <span className="text-gray-500 dark:text-[#788099]">
                   Available assets
                 </span>
+                {singleOrder?.effective_min_order_amount != null &&
+                  String(singleOrder.effective_min_order_amount).trim() !==
+                    "" && (
+                    <>
+                      <br />
+                      <span className="text-xs text-gray-500 dark:text-[#788099] mt-1 inline-block">
+                        Min. order:{" "}
+                        {typeof singleOrder.effective_min_order_amount ===
+                        "number"
+                          ? singleOrder.effective_min_order_amount
+                          : parseFloat(
+                              String(singleOrder.effective_min_order_amount)
+                            ) || singleOrder.effective_min_order_amount}{" "}
+                        {effectiveMinUnit}
+                      </span>
+                    </>
+                  )}
               </div>
             </div>
           </section>

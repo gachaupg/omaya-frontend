@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import { API_CONFIG } from "@/lib/appConfig";
+import { API_CONFIG, CHANGE_NOW_PUBLIC_ASSET_ID_OVERRIDES } from "@/lib/appConfig";
 
 const CHANGE_NOW_API_URL = `${API_CONFIG.BASE_URL}${API_CONFIG.SWAP.SUPPORTED_ASSETS_PUBLIC}`;
 
@@ -250,10 +250,19 @@ const mapChangeNowAsset = (
   const rawChangeNowTicker =
     asset.legacyTicker?.trim().toLowerCase() || rawTicker;
   const apiAssetId = String(asset.asset_id || "").trim();
+  const overrideKey = `${ticker.toLowerCase()}-${networkId}`;
+  const overrideAssetId = String(
+    CHANGE_NOW_PUBLIC_ASSET_ID_OVERRIDES[overrideKey] || ""
+  ).trim();
+  const resolvedAssetId = isUuid(apiAssetId)
+    ? apiAssetId
+    : isUuid(overrideAssetId)
+      ? overrideAssetId
+      : "";
 
   return {
-    // Keep backend UUID when provided; never synthesize fake ids.
-    asset_id: isUuid(apiAssetId) ? apiAssetId : "",
+    // Prefer API UUID; else backend override map for this ticker+network.
+    asset_id: resolvedAssetId,
     ticker,
     symbol: ticker,
     name: displayName,

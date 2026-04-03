@@ -310,6 +310,12 @@ export interface P2POrder {
   seller_photo?: string;
   buyer_photo?: string;
   advertiser_photo?: string;
+  /** Remaining crypto amount tradable on this ad (after locks). */
+  available_amount?: string;
+  locked_amount?: string;
+  /** Min order considering remaining liquidity (may exceed min_order_amount when little is left). */
+  effective_min_order_amount?: number | string;
+  range_currency?: string;
 }
 
 export interface P2POrderList {

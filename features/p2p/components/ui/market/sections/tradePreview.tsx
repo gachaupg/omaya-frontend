@@ -85,7 +85,12 @@ const TradePreview: React.FC<TradePreviewProps> = ({
   const [paymentSearchTerm, setPaymentSearchTerm] = useState("");
   const [selectedUserPaymentDetail, setSelectedUserPaymentDetail] = useState<any>(null);
   const [showAddPaymentModal, setShowAddPaymentModal] = useState(false);
-  const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
+  const [dropdownPosition, setDropdownPosition] = useState<{
+    top: number;
+    left: number;
+    width: number;
+    maxHeight: number;
+  } | null>(null);
   const [activeField, setActiveField] = useState<"send" | "receive" | null>(null);
 
   const paymentDropdownRef = useRef<HTMLDivElement>(null);
@@ -221,7 +226,37 @@ const TradePreview: React.FC<TradePreviewProps> = ({
     const measure = () => {
       if (paymentDropdownRef.current) {
         const rect = paymentDropdownRef.current.getBoundingClientRect();
-        setDropdownPosition({ top: rect.bottom + 8, left: rect.left, width: rect.width });
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        const margin = 8;
+        const estimatedDropdownHeight = 320; // Search + options list area.
+        const spaceBelow = viewportHeight - rect.bottom - margin;
+        const spaceAbove = rect.top - margin;
+
+        // Open upward on small screens when there isn't enough room below.
+        const openUpward =
+          spaceBelow < estimatedDropdownHeight &&
+          spaceAbove > spaceBelow;
+
+        const top = openUpward
+          ? Math.max(margin, rect.top - Math.min(spaceAbove, estimatedDropdownHeight))
+          : Math.max(margin, rect.bottom + margin);
+
+        // Keep dropdown horizontally visible on narrow screens.
+        const maxWidth = viewportWidth - margin * 2;
+        const width = Math.max(220, Math.min(rect.width, maxWidth));
+        const left = Math.max(
+          margin,
+          Math.min(rect.left, viewportWidth - width - margin)
+        );
+
+        const availableHeight = openUpward ? spaceAbove : spaceBelow;
+        const maxHeight = Math.max(
+          160,
+          Math.min(estimatedDropdownHeight, availableHeight)
+        );
+
+        setDropdownPosition({ top, left, width, maxHeight });
       }
     };
     measure();
@@ -849,12 +884,13 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                     createPortal(
                       <div
                         ref={paymentDropdownPortalRef}
-                        className="rounded-xl border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] shadow-lg max-h-72 overflow-hidden flex flex-col"
+                        className="rounded-xl border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] shadow-lg overflow-hidden flex flex-col"
                         style={{
                           position: "fixed",
                           top: dropdownPosition.top,
                           left: dropdownPosition.left,
                           width: dropdownPosition.width,
+                          maxHeight: dropdownPosition.maxHeight,
                           zIndex: 9999,
                         }}
                       >
@@ -867,7 +903,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                             className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-[#35353E] bg-gray-50 dark:bg-[#23232B] text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-[#788099] focus:outline-none focus:ring-2 focus:ring-[#1D8751]"
                           />
                         </div>
-                        <div className="overflow-y-auto max-h-52">
+                        <div className="overflow-y-auto">
                           {paymentOptions.length === 0 ? (
                             <div className="px-4 py-3 text-sm text-gray-500 dark:text-[#788099]">
                               No payment methods available
@@ -944,12 +980,13 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                     createPortal(
                       <div
                         ref={paymentDropdownPortalRef}
-                        className="rounded-xl border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] shadow-lg max-h-72 overflow-hidden flex flex-col"
+                        className="rounded-xl border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] shadow-lg overflow-hidden flex flex-col"
                         style={{
                           position: "fixed",
                           top: dropdownPosition.top,
                           left: dropdownPosition.left,
                           width: dropdownPosition.width,
+                          maxHeight: dropdownPosition.maxHeight,
                           zIndex: 9999,
                         }}
                       >
@@ -962,7 +999,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                             className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-[#35353E] bg-gray-50 dark:bg-[#23232B] text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-[#788099] focus:outline-none focus:ring-2 focus:ring-[#1D8751]"
                           />
                         </div>
-                        <div className="overflow-y-auto max-h-52">
+                        <div className="overflow-y-auto">
                           {paymentOptions.length === 0 ? (
                             <div className="px-4 py-3 text-sm text-gray-500 dark:text-[#788099]">
                               No payment methods available
