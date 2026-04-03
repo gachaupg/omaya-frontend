@@ -10,6 +10,7 @@ import { Toaster } from "@/components/ui/Toast";
 import GlobalSessionManager from "@/components/GlobalSessionManager";
 import FloatingChatButton from "@/components/ui/FloatingChatButton";
 import P2PRejectionModalRoot from "@/components/P2PRejectionModalRoot";
+import NetworkOfflineRedirect from "@/components/NetworkOfflineRedirect";
 
 // Load all three fonts from local assets for offline-friendly builds
 const geistSans = localFont({
@@ -109,6 +110,7 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <Providers>
+          <NetworkOfflineRedirect />
           <P2PRejectionModalRoot />
           <GlobalSessionManager />
           <Navbar />

@@ -39,9 +39,10 @@ export const TimeDisplay = ({ seconds }: TimeDisplayProps) => {
   }, [seconds]);
 
   function formatTime(totalSeconds: number) {
-    const mins = Math.floor(totalSeconds / 60);
-    const secs = totalSeconds % 60;
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
+    const safe = Math.max(0, Math.floor(totalSeconds));
+    const mins = Math.floor(safe / 60);
+    const secs = safe % 60;
+    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   }
 
   return <span className="font-bold" suppressHydrationWarning>{time}</span>;

@@ -249,3 +249,11 @@ export const API_CONFIG = {
     },
   },
 };
+
+/**
+ * Public ChangeNOW list may omit `asset_id`. Map `${ticker.toLowerCase()}-${network}` to the
+ * trading-engine asset UUID so deposit/withdraw POSTs send a valid `asset_id`.
+ */
+export const CHANGE_NOW_PUBLIC_ASSET_ID_OVERRIDES: Record<string, string> = {
+  "usdt-bsc": "a0232aac-dca3-42a6-8a33-63658d191130",
+};

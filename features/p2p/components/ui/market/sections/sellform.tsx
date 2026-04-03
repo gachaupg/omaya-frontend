@@ -313,6 +313,22 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   const formatCommissionRate = (rate: number) =>
     Number(rate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+  const hasAvailableAmount =
+    singleOrder?.available_amount != null &&
+    String(singleOrder.available_amount).trim() !== "";
+  const displayAvailableValue = hasAvailableAmount
+    ? String(singleOrder?.available_amount ?? "").trim()
+    : singleOrder?.amount || singleOrder?.min_order_amount;
+  const displayAvailableUnit = hasAvailableAmount
+    ? singleOrder?.asset || "USDT"
+    : singleOrder?.currency || singleOrder?.asset || "USDT";
+  const effectiveMinUnit = hasAvailableAmount
+    ? singleOrder?.asset || "USDT"
+    : singleOrder?.range_currency ||
+      singleOrder?.currency ||
+      singleOrder?.asset ||
+      "";
+
   const handleCancelTransaction = () => {
     if (isAuthenticated && confirmOrder?.id) {
       dispatch(cancelP2POrderThunk(confirmOrder.id))
@@ -403,11 +419,27 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
       />
       <div className="final-buy-container grid grid-cols-1 lg:grid-cols-3 gap-2 sm:gap-3 lg:gap-6 p-1 sm:p-2 lg:p-6 min-h-screen bg-[#EEF1F4] dark:bg-(--bg-color)">
         <div className="lg:col-span-2 flex flex-col gap-4 lg:gap-6">
-          <div className="flex items-center justify-between">
-            <p className="text-gray-900 dark:text-white text-[13px]">
-              Advertiser Information
-            </p>
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-3 flex-wrap min-w-0">
+              <p className="text-gray-900 dark:text-white text-[13px] shrink-0">
+                Advertiser Information
+              </p>
+              <span className="text-xs sm:text-sm text-[#1D8751] flex items-center gap-1 whitespace-nowrap">
+                Transaction time:{" "}
+                {isAuthenticated ? (
+                  <TimeDisplay
+                    seconds={
+                      confirmOrder?.status === "matched"
+                        ? countdown
+                        : displaySeconds
+                    }
+                  />
+                ) : (
+                  <span>--:--</span>
+                )}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
               <button
                 type="button"
                 onClick={() => setShowChat((prev) => !prev)}
@@ -468,16 +500,6 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                     : singleOrder?.advertiser_name || "Advertiser"}
                 </span>
                 <UserStatusBadge isLive={statusWsConnected} className="flex-shrink-0" />
-                <span className="text-[10px] text-[#1D8751] flex items-center gap-1 flex-shrink-0">
-                  Transaction time:{" "}
-                  {isAuthenticated ? (
-                    <TimeDisplay
-                      seconds={confirmOrder?.status === "matched" ? countdown : displaySeconds}
-                    />
-                  ) : (
-                    <span>--:--</span>
-                  )}
-                </span>
               </div>
               <div className="text-xs text-gray-500 dark:text-[#788099]">
                 {singleOrder?.user_total_buy_orders || 120} Orders |{" "}
@@ -506,13 +528,29 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
               </div>
               <div>
                 <span className="text-[13px] text-gray-900 dark:text-white">
-                  {singleOrder?.amount || "1,200"}{" "}
-                  {singleOrder?.currency || "USDT"}
+                  {displayAvailableValue} {displayAvailableUnit}
                 </span>
                 <br />
                 <span className="text-gray-500 dark:text-[#788099]">
                   Available assets
                 </span>
+                {singleOrder?.effective_min_order_amount != null &&
+                  String(singleOrder.effective_min_order_amount).trim() !==
+                    "" && (
+                    <>
+                      <br />
+                      <span className="text-[11px] text-gray-500 dark:text-[#788099] mt-1 inline-block">
+                        Min. order:{" "}
+                        {typeof singleOrder.effective_min_order_amount ===
+                        "number"
+                          ? singleOrder.effective_min_order_amount
+                          : parseFloat(
+                              String(singleOrder.effective_min_order_amount)
+                            ) || singleOrder.effective_min_order_amount}{" "}
+                        {effectiveMinUnit}
+                      </span>
+                    </>
+                  )}
               </div>
             </div>
           </section>
