@@ -416,13 +416,27 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
       {
         token: token ?? undefined,
         onMessage: (data: TransactionStatusMessage) => {
+          const rootPayload = ((data as any)?.data &&
+            typeof (data as any).data === "object")
+            ? ((data as any).data as Record<string, any>)
+            : ({} as Record<string, any>);
+          const statusPayload =
+            data.type === "status_update" &&
+            rootPayload?.data &&
+            typeof rootPayload.data === "object"
+              ? (rootPayload.data as Record<string, any>)
+              : rootPayload;
+
           // Clear any WebSocket errors when we receive a message
           setWsError(null);
           setConnectionAttempts(0); // Reset connection attempts on successful message
 
           // Update transaction ID from WebSocket data if available
-          if (data.data?.transaction_id) {
-            setLiveTransactionId(data.data.transaction_id);
+          const txIdFromSocket = String(
+            statusPayload?.transaction_id || rootPayload?.transaction_id || ""
+          ).trim();
+          if (txIdFromSocket) {
+            setLiveTransactionId(txIdFromSocket);
           }
 
           // Update amount and currency from WebSocket data
@@ -434,12 +448,12 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
           setFinalWebsocketData(data);
 
           // Check regular amount format
-          if (data.data?.amount) {
-            const amount = parseFloat(data.data.amount);
+          if (statusPayload?.amount != null) {
+            const amount = parseFloat(String(statusPayload.amount));
             if (!isNaN(amount)) {
               amountToUpdate = amount;
               currencyToUpdate =
-                data.data?.currency ||
+                statusPayload?.currency ||
                 (effectiveTransactionData?.type === "deposit"
                   ? "USD"
                   : effectiveTransactionData?.type === "withdrawal"
@@ -450,7 +464,7 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
 
           // Check ChangeNow status update format and direct flow format
           if (data.type === "status_update" && data.data) {
-            const wsData = data.data as any;
+            const wsData = statusPayload as any;
 
             // Handle amount_from (what user sent/paid)
             if (
@@ -489,6 +503,25 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                     : effectiveTransactionData?.type === "withdrawal"
                       ? "USD"
                       : "USDT")
+                );
+              }
+            }
+
+            // Handle explicit net_amount from socket payload.
+            // Example:
+            // { type: "status_update", data: { net_amount: "9.90000000", currency: "USDT", ... } }
+            if (wsData.net_amount !== null && wsData.net_amount !== undefined) {
+              const netAmount = parseFloat(String(wsData.net_amount));
+              if (!isNaN(netAmount)) {
+                setLiveNetAmount(netAmount);
+                setLiveNetCurrency(
+                  wsData.to_currency?.toUpperCase() ||
+                  wsData.currency?.toUpperCase() ||
+                  (effectiveTransactionData?.type === "deposit"
+                    ? effectiveTransactionData?.asset?.ticker ||
+                      effectiveTransactionData?.asset?.symbol ||
+                      "USDT"
+                    : "USD")
                 );
               }
             }
@@ -984,17 +1017,18 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                     : (liveCurrency || effectiveTransactionData?.asset?.ticker || effectiveTransactionData?.asset?.symbol || effectiveTransactionData?.asset?.name || transactionData?.details?.to_currency || "USD").toUpperCase()}
                 </p>
               </div>
-              {(effectiveTransactionData as any)?.receiveAmount != null && (
+              {(effectiveTransactionData as any)?.receiveAmount != null ||
+              liveNetAmount != null ? (
                 <div className="min-w-0">
                   <p className={`text-xs font-medium mb-0.5 ${isDark ? "text-[#7B7B7B]" : "text-gray-500"}`}>Net amount you&apos;ll receive</p>
                   <p className="text-base font-semibold text-[#1D8751]">
-                    {((effectiveTransactionData as any)?.receiveAmount ?? liveNetAmount ?? 0).toFixed(8).replace(/\.?0+$/, "")}{" "}
+                    {(liveNetAmount ?? (effectiveTransactionData as any)?.receiveAmount ?? 0).toFixed(8).replace(/\.?0+$/, "")}{" "}
                     <span className="uppercase">
                       {liveNetCurrency || (effectiveTransactionData?.type === "deposit" ? effectiveTransactionData?.asset?.ticker || effectiveTransactionData?.asset?.symbol || "USDT" : "USD")}
                     </span>
                   </p>
                 </div>
-              )}
+              ) : null}
             </div>
             {/* {liveAmount !== null &&
               liveAmount !== effectiveTransactionData?.amount && (
