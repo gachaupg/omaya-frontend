@@ -199,10 +199,13 @@ export const Chats: React.FC = () => {
   const prevSelectedUserIdRef = useRef<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const isValidTradeIdForMessages = (value: unknown): boolean => {
-    const v = String(value ?? "").trim().toLowerCase();
-    return !!v && v !== "support" && v !== "undefined" && v !== "null";
-  };
+  const isUuid = (value: unknown): boolean =>
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      String(value ?? "").trim()
+    );
+
+  const isValidTradeIdForMessages = (value: unknown): boolean =>
+    isUuid(value);
 
   const extractIdFromMessageId = (value: unknown): string => {
     const v = String(value ?? "").trim();
@@ -760,8 +763,13 @@ export const Chats: React.FC = () => {
       .trim()
       .toLowerCase();
     const targetId = messageType === "p2p" ? resolvedTradeId : resolvedThreadId;
-    if (!selectedUser.entity_id || !targetId) {
-      console.error("No entity_id available");
+    if (!targetId) {
+      console.error("No valid thread/trade UUID available for message send", {
+        messageType,
+        entity_id: (selectedUser as any)?.entity_id,
+        resolvedTradeId,
+        resolvedThreadId,
+      });
       return;
     }
 
