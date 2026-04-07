@@ -432,13 +432,27 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
       {
         token: token ?? undefined,
         onMessage: (data: TransactionStatusMessage) => {
+          const rootPayload = ((data as any)?.data &&
+            typeof (data as any).data === "object")
+            ? ((data as any).data as Record<string, any>)
+            : ({} as Record<string, any>);
+          const statusPayload =
+            data.type === "status_update" &&
+            rootPayload?.data &&
+            typeof rootPayload.data === "object"
+              ? (rootPayload.data as Record<string, any>)
+              : rootPayload;
+
           // Clear any WebSocket errors when we receive a message
           setWsError(null);
           setConnectionAttempts(0); // Reset connection attempts on successful message
 
           // Update transaction ID from WebSocket data if available
-          if (data.data?.transaction_id) {
-            setLiveTransactionId(data.data.transaction_id);
+          const txIdFromSocket = String(
+            statusPayload?.transaction_id || rootPayload?.transaction_id || ""
+          ).trim();
+          if (txIdFromSocket) {
+            setLiveTransactionId(txIdFromSocket);
           }
 
           // Update amount and currency from WebSocket data
@@ -450,12 +464,12 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
           setFinalWebsocketData(data);
 
           // Check regular amount format (amount + net_amount from socket)
-          if (data.data?.amount) {
-            const amount = parseFloat(data.data.amount);
+          if (statusPayload?.amount != null) {
+            const amount = parseFloat(String(statusPayload.amount));
             if (!isNaN(amount)) {
               amountToUpdate = amount;
               currencyToUpdate =
-                data.data?.currency ||
+                statusPayload?.currency ||
                 (effectiveTransactionData?.type === "deposit"
                   ? "USD"
                   : effectiveTransactionData?.type === "withdrawal"
@@ -463,9 +477,9 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                     : "USDT");
             }
           }
-          if (data.data?.net_amount != null && data.data?.net_amount !== undefined) {
-            const netAmt = parseFloat(String(data.data.net_amount));
-            const d = data.data as Record<string, unknown>;
+          if (statusPayload?.net_amount != null && statusPayload?.net_amount !== undefined) {
+            const netAmt = parseFloat(String(statusPayload.net_amount));
+            const d = statusPayload as Record<string, unknown>;
             if (!isNaN(netAmt)) {
               setLiveNetAmount(netAmt);
               setLiveNetCurrency(
@@ -479,7 +493,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
 
           // Check ChangeNow status update format and direct flow format
           if (data.type === "status_update" && data.data) {
-            const wsData = data.data as any;
+            const wsData = statusPayload as any;
 
             // Handle amount_from (what user sent/paid)
             if (
@@ -506,6 +520,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                 setLiveNetAmount(amountTo);
                 setLiveNetCurrency(
                   wsData.to_currency?.toUpperCase() ||
+                  wsData.currency?.toUpperCase() ||
                   (effectiveTransactionData?.type === "deposit"
                     ? effectiveTransactionData?.asset?.ticker || "USDT"
                     : "USD")
@@ -1034,7 +1049,8 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                 </span>
               </div>
             </div>
-            {(effectiveTransactionData as any)?.receiveAmount != null && (
+            {((effectiveTransactionData as any)?.receiveAmount != null ||
+              liveNetAmount != null) && (
               <div>
                 <div
                   className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
