@@ -88,6 +88,15 @@ export function useAssetsDisplay(
 ) {
   const ASSETS_CACHE_KEY = "omaya_real_assets_cache_v1";
   const ASSETS_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+  const areSameAssetIds = (a: any[], b: any[]) => {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i += 1) {
+      if (String(a[i]?.asset_id || "") !== String(b[i]?.asset_id || "")) {
+        return false;
+      }
+    }
+    return true;
+  };
 
   // Combine both asset sources
   const combinedAssets = useMemo(() => {
@@ -131,7 +140,11 @@ export function useAssetsDisplay(
           String(a?.asset_id || "")
         )
       );
-      if (uuidAssets.length > 0) setCachedAssets(uuidAssets);
+      if (uuidAssets.length > 0) {
+        setCachedAssets((prev) =>
+          areSameAssetIds(prev, uuidAssets) ? prev : uuidAssets
+        );
+      }
     } catch {
       // Ignore bad cache entries
     }
@@ -148,11 +161,16 @@ export function useAssetsDisplay(
     );
     if (uuidAssets.length === 0) return;
     try {
-      localStorage.setItem(
-        ASSETS_CACHE_KEY,
-        JSON.stringify({ ts: Date.now(), assets: uuidAssets })
-      );
-      setCachedAssets(uuidAssets);
+      setCachedAssets((prev) => {
+        if (areSameAssetIds(prev, uuidAssets)) {
+          return prev;
+        }
+        localStorage.setItem(
+          ASSETS_CACHE_KEY,
+          JSON.stringify({ ts: Date.now(), assets: uuidAssets })
+        );
+        return uuidAssets;
+      });
     } catch {
       // Ignore storage errors
     }

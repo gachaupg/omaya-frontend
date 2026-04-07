@@ -1,47 +1,38 @@
 "use client";
 
 import { useEffect } from "react";
-import { usePathname, useRouter } from "next/navigation";
 
 const OFFLINE_ROUTE = "/offline";
 
 export default function NetworkOfflineRedirect() {
-  const router = useRouter();
-  const pathname = usePathname();
-
   useEffect(() => {
     if (typeof window === "undefined") return;
 
     const goOfflinePage = () => {
-      if (pathname === OFFLINE_ROUTE) return;
-      const from = encodeURIComponent(pathname || "/");
-      router.replace(`${OFFLINE_ROUTE}?from=${from}`);
+      if (navigator.onLine) return;
+      if (window.location.pathname === OFFLINE_ROUTE) return;
+      const currentPath = `${window.location.pathname}${window.location.search || ""}`;
+      const from = encodeURIComponent(currentPath || "/");
+      window.location.replace(`${OFFLINE_ROUTE}?from=${from}`);
     };
 
     const maybeRestore = () => {
-      if (pathname !== OFFLINE_ROUTE) return;
+      if (window.location.pathname !== OFFLINE_ROUTE) return;
       const params = new URLSearchParams(window.location.search);
       const from = params.get("from");
-      router.replace(from || "/");
+      window.location.replace(from || "/");
     };
 
-    const syncWithNetwork = () => {
-      if (!navigator.onLine) {
-        goOfflinePage();
-        return;
-      }
-      maybeRestore();
-    };
-
-    syncWithNetwork();
-    window.addEventListener("offline", syncWithNetwork);
-    window.addEventListener("online", syncWithNetwork);
+    // Do not force redirects on mount/path changes. Only react to real
+    // browser connectivity events to avoid blocking normal navbar navigation.
+    window.addEventListener("offline", goOfflinePage);
+    window.addEventListener("online", maybeRestore);
 
     return () => {
-      window.removeEventListener("offline", syncWithNetwork);
-      window.removeEventListener("online", syncWithNetwork);
+      window.removeEventListener("offline", goOfflinePage);
+      window.removeEventListener("online", maybeRestore);
     };
-  }, [pathname, router]);
+  }, []);
 
   return null;
 }

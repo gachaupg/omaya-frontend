@@ -287,7 +287,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
     const adData = {
       order_type: type,
       currency: "USDT",
-      asset_id: "7e95b210-3e16-4343-a12d-0c998d88131b",
+      asset_id: "a0232aac-dca3-42a6-8a33-63658d191130",
       range_currency: activeCurrency,
       amount,
       min_order_amount: orderMin,

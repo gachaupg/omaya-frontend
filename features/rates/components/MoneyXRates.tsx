@@ -189,6 +189,7 @@ const MoneyXRates = ({
   const [showExchanging, setShowExchanging] = useState(false);
   const [transactionData, setTransactionData] = useState<any>(null);
   const [apiCommission, setApiCommission] = useState<number | null>(null);
+  const [apiCommissionIsPercentage, setApiCommissionIsPercentage] = useState(true);
   const [accountNumberCopied, setAccountNumberCopied] = useState(false);
   const [isCalculatingFromPay, setIsCalculatingFromPay] = useState(true);
   const [isStateHydrated, setIsStateHydrated] = useState(false);
@@ -273,28 +274,61 @@ const MoneyXRates = ({
         .unwrap()
         .then((result) => {
           setApiCommission(result.commission);
+          setApiCommissionIsPercentage(result.isPercentage);
         })
-        .catch(() => setApiCommission(null));
+        .catch(() => {
+          setApiCommission(null);
+          setApiCommissionIsPercentage(true);
+        });
     }, 150);
     return () => {
       if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
     };
   }, [payAmount, getAmount, isCalculatingFromPay, commissionType, dispatch]);
 
-  // Recalculate the other field when apiCommission updates (commission is a percentage: receive = send - send*rate/100)
+  const calculateReceiveAmount = (
+    send: number,
+    commission: number,
+    isPercentage: boolean
+  ) => {
+    if (isPercentage) {
+      return Math.max(0, send - (send * commission) / 100);
+    }
+    return Math.max(0, send - commission);
+  };
+
+  const calculateSendAmount = (
+    receive: number,
+    commission: number,
+    isPercentage: boolean
+  ) => {
+    if (isPercentage) {
+      return commission >= 100 ? receive : receive / (1 - commission / 100);
+    }
+    return receive + commission;
+  };
+
+  // Recalculate the other field when commission config updates.
   useEffect(() => {
     const rate = apiCommission ?? 0;
     if (isCalculatingFromPay && payAmount > 0) {
-      const commissionAmount = (payAmount * rate) / 100;
-      const calculatedGetAmount = Math.max(0, payAmount - commissionAmount);
+      const calculatedGetAmount = calculateReceiveAmount(
+        payAmount,
+        rate,
+        apiCommissionIsPercentage
+      );
       setGetAmount(calculatedGetAmount);
       setGetAmountInput(calculatedGetAmount.toFixed(2));
     } else if (!isCalculatingFromPay && getAmount > 0) {
-      const calculatedPayAmount = rate >= 100 ? getAmount : getAmount / (1 - rate / 100);
+      const calculatedPayAmount = calculateSendAmount(
+        getAmount,
+        rate,
+        apiCommissionIsPercentage
+      );
       setPayAmount(calculatedPayAmount);
       setPayAmountInput(calculatedPayAmount.toFixed(2));
     }
-  }, [apiCommission]);
+  }, [apiCommission, apiCommissionIsPercentage]);
 
   // Helper function to get provider name
   const getProviderName = useCallback((payment: any) => {
@@ -459,25 +493,34 @@ const MoneyXRates = ({
         setPayAmountInput(value);
         setPayAmount(newAmount);
         setIsCalculatingFromPay(true);
-        const commissionAmount = (newAmount * rate) / 100;
-        const calculatedGetAmount = Math.max(0, newAmount - commissionAmount);
+        const calculatedGetAmount = calculateReceiveAmount(
+          newAmount,
+          rate,
+          apiCommissionIsPercentage
+        );
         setGetAmount(calculatedGetAmount);
         setGetAmountInput(calculatedGetAmount.toFixed(2));
       } else {
         setGetAmountInput(value);
         setGetAmount(newAmount);
         setIsCalculatingFromPay(false);
-        const calculatedPayAmount = rate >= 100 ? newAmount : newAmount / (1 - rate / 100);
+        const calculatedPayAmount = calculateSendAmount(
+          newAmount,
+          rate,
+          apiCommissionIsPercentage
+        );
         setPayAmount(calculatedPayAmount);
         setPayAmountInput(calculatedPayAmount.toFixed(2));
       }
     }
   };
 
-  // Commission from API = percentage (You Receive = You Send - You Send * rate / 100)
+  // Commission from API can be percentage OR fixed amount.
   const amountNum = parseFloat(payAmountInput) || 0;
   const commissionRate = apiCommission ?? 0;
-  const commissionAmount = (amountNum * commissionRate) / 100;
+  const commissionAmount = apiCommissionIsPercentage
+    ? (amountNum * commissionRate) / 100
+    : commissionRate;
   const networkFee = 0;
   const totalFees = commissionAmount;
   const amountIncludingFees = amountNum;

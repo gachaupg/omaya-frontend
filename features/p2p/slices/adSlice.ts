@@ -61,7 +61,23 @@ export const postP2POrderThunk = createAsyncThunk(
       const response = await api.postP2POrder(data);
       return response;
     } catch (err: any) {
-      return rejectWithValue(err.message || "Failed to post order");
+      const responseData = err?.response?.data;
+      if (typeof responseData === "string" && responseData.trim()) {
+        return rejectWithValue(responseData);
+      }
+      if (responseData && typeof responseData === "object") {
+        const firstEntry = Object.entries(responseData)[0];
+        if (firstEntry) {
+          const [, value] = firstEntry;
+          if (Array.isArray(value) && value.length > 0) {
+            return rejectWithValue(String(value[0]));
+          }
+          if (typeof value === "string" && value.trim()) {
+            return rejectWithValue(value);
+          }
+        }
+      }
+      return rejectWithValue(err?.message || "Failed to post order");
     }
   }
 );
