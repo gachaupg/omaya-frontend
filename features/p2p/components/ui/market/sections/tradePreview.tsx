@@ -231,16 +231,9 @@ const TradePreview: React.FC<TradePreviewProps> = ({
         const margin = 8;
         const estimatedDropdownHeight = 320; // Search + options list area.
         const spaceBelow = viewportHeight - rect.bottom - margin;
-        const spaceAbove = rect.top - margin;
 
-        // Open upward on small screens when there isn't enough room below.
-        const openUpward =
-          spaceBelow < estimatedDropdownHeight &&
-          spaceAbove > spaceBelow;
-
-        const top = openUpward
-          ? Math.max(margin, rect.top - Math.min(spaceAbove, estimatedDropdownHeight))
-          : Math.max(margin, rect.bottom + margin);
+        // Keep dropdown below trigger (never above).
+        const top = Math.max(margin, rect.bottom + margin);
 
         // Keep dropdown horizontally visible on narrow screens.
         const maxWidth = viewportWidth - margin * 2;
@@ -250,7 +243,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
           Math.min(rect.left, viewportWidth - width - margin)
         );
 
-        const availableHeight = openUpward ? spaceAbove : spaceBelow;
+        const availableHeight = spaceBelow;
         const maxHeight = Math.max(
           160,
           Math.min(estimatedDropdownHeight, availableHeight)
