@@ -27,6 +27,11 @@ const getStatusColor = (status: string) => {
   }
 };
 
+const formatRecentTime = (dateValue: string) => {
+  const v = formatDistanceToNow(new Date(dateValue), { addSuffix: true });
+  return /less than (a|1) minute ago/i.test(v) ? "now" : v;
+};
+
 const MoneyXTransactions = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { t } = useDashboardI18n();
@@ -143,11 +148,7 @@ const MoneyXTransactions = () => {
                 </td>
                 <td className="py-4 px-4 text-right">
                   <span className="text-xs sm:text-sm md:text-base text-gray-500 dark:text-[#A0A3BC]">
-                    {tx.created_at
-                      ? formatDistanceToNow(new Date(tx.created_at), {
-                        addSuffix: true,
-                      })
-                      : "-"}
+                    {tx.created_at ? formatRecentTime(tx.created_at) : "-"}
                   </span>
                 </td>
               </tr>
@@ -217,9 +218,7 @@ const MoneyXTransactions = () => {
             </div>
             <div className="mt-3 pt-3 border-t dark:border-accent border-gray-200">
               <p className="text-xs dark:text-[#788099] text-gray-500">
-                {tx.created_at
-                  ? formatDistanceToNow(new Date(tx.created_at), { addSuffix: true })
-                  : "-"}
+                {tx.created_at ? formatRecentTime(tx.created_at) : "-"}
               </p>
             </div>
           </div>

@@ -69,6 +69,18 @@ const KYCVerificationModal: React.FC = () => {
   const rejectionMessage =
     String(kycStatus?.message || "").trim() ||
     "Your KYC was rejected. Please resubmit with correct documents.";
+  const reviewMessageRaw = String(kycStatus?.message || "").trim();
+  const reviewMessage =
+    !reviewMessageRaw ||
+    reviewMessageRaw.toLowerCase() === "unknown status." ||
+    reviewMessageRaw.toLowerCase() === "unknown status"
+      ? "Your KYC is under review. Please wait for admin approval."
+      : reviewMessageRaw;
+  const reviewMessageDebug = `message: ${
+    typeof kycStatus?.message === "string" && kycStatus.message.trim()
+      ? kycStatus.message
+      : "{}"
+  }`;
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -581,7 +593,11 @@ const KYCVerificationModal: React.FC = () => {
     setIsSubmitting(true);
     try {
       const kycResult = await dispatch(checkKYCStatus());
-      if ((kycResult.payload as any)?.is_verified) {
+      const latestStatus = (kycResult.payload as any) || null;
+      if (latestStatus) {
+        setKycStatus(latestStatus);
+      }
+      if (latestStatus?.is_verified) {
         localStorage.removeItem("kyc_verification_status");
         showToast.success(
           "Account Verified",
@@ -594,7 +610,11 @@ const KYCVerificationModal: React.FC = () => {
         setShowPendingModal(true);
         showToast.info(
           "Verification Pending",
-          "Your verification is still under review"
+          !latestStatus?.message ||
+            String(latestStatus.message).trim().toLowerCase() === "unknown status." ||
+            String(latestStatus.message).trim().toLowerCase() === "unknown status"
+            ? "Your KYC is under review. Please wait for admin approval."
+            : String(latestStatus.message)
         );
       }
     } catch (error) {
@@ -1212,8 +1232,11 @@ const KYCVerificationModal: React.FC = () => {
               )}
 
             {isWaitingApproval && (
-              <div className="bg-green-50 dark:bg-green-900/20 border border-green-400 dark:border-green-500 text-green-700 dark:text-green-300 p-3 rounded-lg text-sm">
-                {"Your KYC is under review. Please wait for admin approval."}
+              <div className="bg-green-50 dark:bg-green-900/20 border border-green-400 dark:border-green-500 text-green-700 dark:text-green-300 p-3 rounded-lg text-sm space-y-2">
+                <p>{reviewMessage}</p>
+                <p className="text-xs text-green-800 dark:text-green-200 break-all">
+                  {reviewMessageDebug}
+                </p>
               </div>
             )}
 

@@ -13,11 +13,12 @@ import { FaExchangeAlt, FaExclamationCircle } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "../../../../../store";
 import {
-  fetchAdminPaymentDetails,
   fetchUserPaymentDetails,
   fetchAdminWalletList,
 } from "../../../../exchange/slices/paymentSlice";
-import { fetchPublicPaymentMethods } from "../../../../p2p/slices/paymentMethodsSlice";
+import {
+  fetchPublicPaymentMethods,
+} from "../../../../p2p/slices/paymentMethodsSlice";
 import { fetchAssets, createDeposit } from "../../../../exchange/slices/exchangeSlice";
 import {
   fetchSupportedAssets,
@@ -245,9 +246,23 @@ export default function WithdrawalForm({
   );
 
   // Add public payment methods state for home page
-  const { publicPaymentMethods, publicMethodsLoading, publicMethodsError } = useSelector(
+  const { publicPaymentMethods, publicMethodsLoading, publicMethodsError, adminMethods, loading: adminMethodsLoading, error: adminMethodsError } = useSelector(
     (state: any) => state.paymentMethods
   );
+  const [directPublicPaymentMethods, setDirectPublicPaymentMethods] = useState<any>(null);
+  const activePublicPaymentMethods = directPublicPaymentMethods || publicPaymentMethods;
+  const activePublicProviders = useMemo(() => {
+    if (Array.isArray(activePublicPaymentMethods?.data?.providers)) {
+      return activePublicPaymentMethods.data.providers;
+    }
+    if (Array.isArray(activePublicPaymentMethods?.data)) {
+      return activePublicPaymentMethods.data;
+    }
+    if (Array.isArray(activePublicPaymentMethods)) {
+      return activePublicPaymentMethods;
+    }
+    return [];
+  }, [activePublicPaymentMethods]);
 
   const { assets, loading: assetsLoading } = useSelector(
     (state: any) => state.exchange
@@ -303,28 +318,32 @@ export default function WithdrawalForm({
 
   // Process payment methods data based on API structure - prioritize public payment methods
   const processedPaymentMethods = useMemo(() => {
+    const publicSource = directPublicPaymentMethods || publicPaymentMethods;
+
     // Always try to use public payment methods first (they have logos)
     // Handle new API structure for public payment methods
-    if (Array.isArray(publicPaymentMethods?.data?.providers)) {
-      return publicPaymentMethods.data.providers;
+    if (Array.isArray(publicSource?.data?.providers)) {
+      return publicSource.data.providers;
     }
     // Check for payment_methods array (older structure)
-    if (Array.isArray(publicPaymentMethods?.data?.payment_methods)) {
-      return publicPaymentMethods.data.payment_methods;
+    if (Array.isArray(publicSource?.data?.payment_methods)) {
+      return publicSource.data.payment_methods;
     }
     // Check if publicPaymentMethods itself is an array (fallback)
-    if (Array.isArray(publicPaymentMethods)) {
-      return publicPaymentMethods;
+    if (Array.isArray(publicSource)) {
+      return publicSource;
     }
 
-    // Fallback to admin payment details if public methods not available
-    const adminArray = Array.isArray(adminPaymentDetails)
+    // Use same admin payment-methods source as deposit form first.
+    const adminArray = Array.isArray(adminMethods) && adminMethods.length > 0
+      ? adminMethods
+      : Array.isArray(adminPaymentDetails)
       ? adminPaymentDetails
       : Array.isArray(adminPaymentDetails?.data)
-        ? adminPaymentDetails.data
-        : [];
+      ? adminPaymentDetails.data
+      : [];
     return adminArray;
-  }, [publicPaymentMethods, adminPaymentDetails]);
+  }, [directPublicPaymentMethods, publicPaymentMethods, adminMethods, adminPaymentDetails]);
 
   // Extract payment method names based on the API structure - same as ExchangeForm
   const getPaymentMethodName = (item: any) => {
@@ -421,8 +440,8 @@ export default function WithdrawalForm({
 
   const paymentMethodsDisplay = usePaymentMethodsDisplay(
     finalPaymentMethods,
-    isHomePage ? publicMethodsLoading : loading,
-    isHomePage ? publicMethodsError : error
+    isHomePage ? publicMethodsLoading : adminMethodsLoading || loading,
+    isHomePage ? publicMethodsError : adminMethodsError || error
   );
 
   const userPaymentMethodsDisplay = usePaymentMethodsDisplay(
@@ -462,6 +481,27 @@ export default function WithdrawalForm({
   useEffect(() => {
     dispatch(fetchPublicPaymentMethods());
   }, [dispatch]);
+
+  // Directly use the same public endpoint requested for withdrawal payment methods.
+  useEffect(() => {
+    let mounted = true;
+    const loadDirectPublicMethods = async () => {
+      try {
+        const response = await fetch("https://dev.backend.omaya.io/payments/public/payment-methods/");
+        if (!response.ok) return;
+        const data = await response.json();
+        if (mounted) {
+          setDirectPublicPaymentMethods(data);
+        }
+      } catch {
+        // Keep Redux fallback path if direct request fails.
+      }
+    };
+    loadDirectPublicMethods();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   // Initialize refs with cached data IMMEDIATELY on mount (runs only once)
   useEffect(() => {
@@ -758,7 +798,9 @@ export default function WithdrawalForm({
   // Filter user payment details based on selected provider
   // Match payment_provider_name from user payment details with provider_name from admin
   const filteredUserPaymentDetails = payBank
-    ? (userPaymentMethodsDisplay.displayData || effectiveUserPaymentMethods || []).filter(
+    ? ((userPaymentMethodsDisplay.displayData && userPaymentMethodsDisplay.displayData.length > 0
+      ? userPaymentMethodsDisplay.displayData
+      : effectiveUserPaymentMethods) || []).filter(
       (detail: any) => {
         // Match user payment provider name with selected admin provider name
         return detail.payment_provider_name === payBank;
@@ -784,10 +826,11 @@ export default function WithdrawalForm({
       rawUserDetails = (rawUserDetails as any)?.data || (rawUserDetails as any)?.payment_details || rawUserDetails;
     }
 
-    const sourceData = userPaymentMethodsDisplay.displayData ||
-      effectiveUserPaymentMethods ||
-      (Array.isArray(rawUserDetails) ? rawUserDetails : []) ||
-      [];
+    const sourceData = (userPaymentMethodsDisplay.displayData && userPaymentMethodsDisplay.displayData.length > 0
+      ? userPaymentMethodsDisplay.displayData
+      : (effectiveUserPaymentMethods && effectiveUserPaymentMethods.length > 0
+        ? effectiveUserPaymentMethods
+        : (Array.isArray(rawUserDetails) ? rawUserDetails : [])));
 
     const filtered = sourceData.filter((detail: any) => {
       // Match user payment provider name with selected admin provider name
@@ -796,7 +839,8 @@ export default function WithdrawalForm({
       const normalizeProviderName = (name: string | null | undefined): string => {
         if (!name) return "";
         // Remove " - Method" suffix if present
-        return name.includes(" - ") ? name.split(" - ")[0].trim() : name.trim();
+        const base = name.includes(" - ") ? name.split(" - ")[0].trim() : name.trim();
+        return base.toLowerCase();
       };
 
       // Get the provider field from selected provider (e.g., "Equity Bank" from API)
@@ -827,24 +871,18 @@ export default function WithdrawalForm({
 
       const matchesProvider = providerMatch1 || providerMatch2 || providerMatch3;
 
-      // Compare payment_method_name from user details with available methods from API
-      const userPaymentMethodName = normalizePaymentMethodName(detail.payment_method_name);
-      const hasValidPaymentMethod = userPaymentMethodName
-        ? availablePaymentMethodNames.includes(userPaymentMethodName)
-        : false;
-
       // If FXP is selected, only show approved payment methods
       if (selectedAsset && isForexAsset(selectedAsset)) {
         const isApproved = detail.status?.toLowerCase() === 'approved';
-        return matchesProvider && isApproved && hasValidPaymentMethod;
+        return matchesProvider && isApproved;
       }
 
-      // Only return payment details that match provider AND have a valid payment method name
-      return matchesProvider && hasValidPaymentMethod;
+      // Return payment details that match selected provider.
+      return matchesProvider;
     });
 
     return filtered;
-  }, [payBank, userPaymentMethodsDisplay.displayData, effectiveUserPaymentMethods, selectedAsset, availablePaymentMethodNames, userPaymentDetails, selectedProviderData]);
+  }, [payBank, userPaymentMethodsDisplay.displayData, effectiveUserPaymentMethods, selectedAsset, userPaymentDetails, selectedProviderData]);
 
   // Auto-select first payment method when payment methods are available
   useEffect(() => {
@@ -854,8 +892,8 @@ export default function WithdrawalForm({
     }
 
     // Check if payment methods are available from public payment methods
-    if (Array.isArray(publicPaymentMethods?.data?.providers) && publicPaymentMethods.data.providers.length > 0) {
-      const firstProvider = publicPaymentMethods.data.providers[0];
+    if (activePublicProviders.length > 0) {
+      const firstProvider = activePublicProviders[0];
       const firstProviderName = firstProvider.provider_name || firstProvider.payment_provider_name;
 
       if (firstProviderName) {
@@ -866,31 +904,7 @@ export default function WithdrawalForm({
       }
     }
 
-    // Fallback to admin wallet list if public methods not available
-    if (adminWalletListDisplay.displayData && adminWalletListDisplay.displayData.length > 0) {
-      const providerNames = Array.from(
-        new Set(
-          adminWalletListDisplay.displayData.map(
-            (wallet: any) => wallet?.admin_payment_detail?.provider_name
-          )
-        )
-      ).filter((type) => Boolean(type && type.trim())) as string[];
-
-      if (providerNames.length > 0) {
-        const firstProviderName = providerNames[0];
-        const selectedWallet = adminWalletListDisplay.displayData.find(
-          (wallet: any) =>
-            wallet.admin_payment_detail?.provider_name === firstProviderName
-        );
-
-        if (selectedWallet?.admin_payment_detail) {
-          setPayBank(firstProviderName);
-          setSelectedProviderData(selectedWallet.admin_payment_detail);
-          setSelectedPaymentDetail(selectedWallet.admin_payment_detail);
-        }
-      }
-    }
-  }, [payBank, publicPaymentMethods, adminWalletListDisplay.displayData]);
+  }, [payBank, activePublicProviders]);
 
   // Auto-select first account when accounts are available for selected payment type
   useEffect(() => {
@@ -955,33 +969,6 @@ export default function WithdrawalForm({
     selectedPaymentDetails[0].status !== "approved" &&
     selectedPaymentDetails[0].status !== "verified"
   );
-
-  useEffect(() => {
-    // Skip API calls on home page - buttons will redirect to login
-    if (isHomePage) {
-      return;
-    }
-
-    // First try to get from cache, then force refresh if no data
-    dispatch(fetchAdminPaymentDetails(false))
-      .unwrap()
-      .then((data) => {
-        // Update ref immediately
-        if (data && data.length > 0) {
-          paymentMethodsRef.current = data.filter((p: any) =>
-            p.is_active === undefined || p.is_active === null || p.is_active === true || p.is_active === 'true'
-          );
-        }
-        // If no payment methods in cache, force refresh
-        if (!data || (Array.isArray(data) && data.length === 0)) {
-          return dispatch(fetchAdminPaymentDetails(true)).unwrap();
-        }
-        return data;
-      })
-      .catch((error: unknown) => {
-        console.error("❌ Failed to fetch admin payment details:", error);
-      });
-  }, [dispatch, isHomePage]);
 
   // Fetch admin wallet list
   useEffect(() => {
@@ -4403,12 +4390,26 @@ export default function WithdrawalForm({
                     {(() => {
                       // Use public payment methods if available (they have logos)
                       let paymentMethodOptions: Array<{ value: string; label: string; logo?: string }> = [];
+                      const activePublicPaymentMethods = directPublicPaymentMethods || publicPaymentMethods;
+                      const activePublicProviders = Array.isArray(activePublicPaymentMethods?.data?.providers)
+                        ? activePublicPaymentMethods.data.providers
+                        : Array.isArray(activePublicPaymentMethods?.data)
+                          ? activePublicPaymentMethods.data
+                          : Array.isArray(activePublicPaymentMethods)
+                            ? activePublicPaymentMethods
+                            : [];
 
-                      if (Array.isArray(publicPaymentMethods?.data?.providers) && publicPaymentMethods.data.providers.length > 0) {
+                      if (activePublicProviders.length > 0) {
                         // Use public payment methods with logos
-                        paymentMethodOptions = publicPaymentMethods.data.providers.map((provider: any) => {
+                        paymentMethodOptions = activePublicProviders.map((provider: any) => {
                           const providerName = provider.provider_name || provider.payment_provider_name || "Unknown";
-                          const methodName = provider.method?.method_name || provider.method?.method_display || provider.method_name || null;
+                          const methodName =
+                            provider.method_display ||
+                            provider.method ||
+                            provider.method?.method_name ||
+                            provider.method?.method_display ||
+                            provider.method_name ||
+                            null;
                           const subtitle = methodName ? `${providerName} - ${methodName}` : null;
 
                           return {
@@ -4418,44 +4419,9 @@ export default function WithdrawalForm({
                             logo: provider.logo || provider.provider_logo || undefined,
                           };
                         }).filter((opt: any) => opt.value && opt.value.trim());
-                      } else {
-                        // Fallback to admin wallet list
-                        const providerNames = Array.from(
-                          new Set(
-                            (adminWalletListDisplay.displayData || []).map(
-                              (wallet: any) => wallet?.admin_payment_detail?.provider_name
-                            )
-                          )
-                        ).filter((type) => Boolean(type && type.trim())) as string[];
-
-                        paymentMethodOptions = providerNames.map((paymentType: string) => {
-                          const adminDetail = adminWalletListDisplay.displayData?.find(
-                            (wallet: any) =>
-                              wallet.admin_payment_detail?.provider_name === paymentType
-                          )?.admin_payment_detail;
-
-                          const providerName = adminDetail?.provider_name || paymentType;
-                          const methodName = adminDetail?.payment_method_type || adminDetail?.payment_method_name || null;
-                          const subtitle = methodName ? `${providerName} - ${methodName}` : null;
-
-                          return {
-                            value: paymentType,
-                            label: providerName,
-                            subtitle: subtitle || undefined,
-                            logo: adminDetail?.provider_logo || undefined,
-                          };
-                        });
                       }
 
-                      // Use fallback if no options available
-                      if (paymentMethodOptions.length === 0) {
-                        paymentMethodOptions = fallbackProviderNames.map((name: string) => ({
-                          value: name,
-                          label: name,
-                        }));
-                      }
-
-                      const isLoading = publicMethodsLoading || adminWalletListDisplay.isLoading;
+                      const isLoading = publicMethodsLoading && paymentMethodOptions.length === 0;
 
                       return (
                         <CustomSelect
@@ -4466,32 +4432,15 @@ export default function WithdrawalForm({
                             }`}
                           placeholderClassName="text-white dark:text-white"
                           onChange={(value) => {
-                            // Find the selected provider from public payment methods or admin wallet list
-                            let selectedWallet = null;
-                            let selectedProvider = null;
-
-                            // First try to find in public payment methods
-                            if (Array.isArray(publicPaymentMethods?.data?.providers)) {
-                              selectedProvider = publicPaymentMethods.data.providers.find(
-                                (provider: any) =>
-                                  (provider.provider_name || provider.payment_provider_name) === value
-                              );
-                            }
-
-                            // If not found in public methods, try admin wallet list
-                            if (!selectedProvider) {
-                              selectedWallet = adminWalletListDisplay.displayData?.find(
-                                (wallet: any) =>
-                                  wallet.admin_payment_detail?.provider_name === value
-                              );
-                            }
+                            const selectedProvider = activePublicProviders.find(
+                              (provider: any) =>
+                                (provider.provider_name || provider.payment_provider_name) === value
+                            );
 
                             // Keep the full value for dropdown matching, but store provider data for filtering
                             setPayBank(value); // Keep full value for dropdown to work
                             setSelectedProviderData(selectedProvider); // Store full provider data for comparison
-                            setSelectedPaymentDetail(
-                              selectedWallet?.admin_payment_detail || selectedProvider || null
-                            );
+                            setSelectedPaymentDetail(selectedProvider || null);
 
                             setSelectedPaymentDetails([]);
                             setPaymentMethodError(null);
@@ -4525,7 +4474,9 @@ export default function WithdrawalForm({
                       </label>
                       {(() => {
                         // Check if user has ANY accounts at all (not just filtered ones)
-                        const allUserAccounts = userPaymentMethodsDisplay.displayData || effectiveUserPaymentMethods || [];
+                        const allUserAccounts = (userPaymentMethodsDisplay.displayData && userPaymentMethodsDisplay.displayData.length > 0
+                          ? userPaymentMethodsDisplay.displayData
+                          : effectiveUserPaymentMethods) || [];
                         const hasAnyAccounts = allUserAccounts.length > 0;
                         const hasFilteredAccounts = enhancedFilteredUserPaymentDetails.length > 0;
 

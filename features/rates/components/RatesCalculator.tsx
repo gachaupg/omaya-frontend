@@ -405,6 +405,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
 
   const effectiveUserPaymentMethods = userPaymentMethodsRef.current;
   const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
+  const [directPublicPaymentMethods, setDirectPublicPaymentMethods] = useState<any>(null);
 
   const assetDropdownRef = useRef<HTMLDivElement>(null);
   const assetDropdownContentRef = useRef<HTMLDivElement | null>(null);  // dropdown panel
@@ -418,11 +419,30 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
     // Fetch public payment methods (for non-authenticated users)
     dispatch(fetchPublicPaymentMethods());
 
+    // Force exact public endpoint payload for rates payment methods.
+    let mounted = true;
+    (async () => {
+      try {
+        const response = await fetch("https://dev.backend.omaya.io/payments/public/payment-methods/", {
+          method: "GET",
+          headers: { Accept: "application/json" },
+        });
+        if (!response.ok) return;
+        const data = await response.json();
+        if (mounted) setDirectPublicPaymentMethods(data);
+      } catch {
+        // keep redux source as fallback
+      }
+    })();
+
     // Fetch admin wallet list for fallback (like express withdrawal)
     if (isAuthenticated) {
       dispatch(fetchAdminWalletList());
       dispatch(fetchAdminPaymentDetails());
     }
+    return () => {
+      mounted = false;
+    };
   }, [dispatch, isAuthenticated]);
 
   useEffect(() => {
@@ -1243,15 +1263,28 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
 
   const handleModeSwitch = () => {
     const willBeWithdrawal = !isFieldsSwapped;
+    const firstProvider = publicPaymentProviders?.[0];
+    const secondProvider = publicPaymentProviders?.[1] || firstProvider;
+    const firstProviderName =
+      firstProvider?.provider_name || firstProvider?.payment_provider_name || "";
+    const secondProviderName =
+      secondProvider?.provider_name || secondProvider?.payment_provider_name || firstProviderName;
     setIsFieldsSwapped(!isFieldsSwapped);
     setIsDepositMode(!willBeWithdrawal);
 
     if (willBeWithdrawal) {
       setSelectedPaymentDetail(null);
-      setPayBank(selectedPaymentMethod || payBank || "");
-      setSelectedProviderData(selectedPaymentDetail && typeof selectedPaymentDetail === 'object' ? selectedPaymentDetail : selectedProviderData);
+      setPayBank(firstProviderName || selectedPaymentMethod || payBank || "");
+      setSelectedPaymentMethod(secondProviderName || selectedPaymentMethod || "");
+      setSelectedProviderData(firstProvider || (selectedPaymentDetail && typeof selectedPaymentDetail === 'object' ? selectedPaymentDetail : selectedProviderData));
       setSelectedPaymentDetails([]);
     } else {
+      if (firstProviderName) {
+        setPayBank(firstProviderName);
+        setSelectedPaymentMethod(secondProviderName || firstProviderName);
+        setSelectedProviderData(firstProvider);
+        setSelectedPaymentDetail(firstProvider);
+      }
       setSelectedPaymentDetails([]);
     }
 
@@ -1365,7 +1398,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
     try {
       // FX Primus — same API as express deposit.tsx (forex create-exchange); navigate to forex-status (forexStatusWebSocket).
       if (isDepositMode && isRatesFxpDeposit) {
-        const publicMethodsData = publicPaymentMethods as any;
+        const publicMethodsData = (directPublicPaymentMethods || publicPaymentMethods) as any;
         const methodsList =
           (Array.isArray(publicMethodsData?.data?.providers) && publicMethodsData.data.providers) ||
           (Array.isArray(publicMethodsData?.data?.payment_methods) && publicMethodsData.data.payment_methods) ||
@@ -1620,11 +1653,21 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
 
   // Handle the new API response structure for public payment methods
   // Extract providers array from the response
-  const publicMethodsData = publicPaymentMethods as any;
+  const publicMethodsData = (directPublicPaymentMethods || publicPaymentMethods) as any;
 
-  const publicPaymentProviders = Array.isArray(publicMethodsData?.data?.providers)
-    ? publicMethodsData.data.providers
-    : [];
+  const publicPaymentProviders = useMemo(() => {
+    if (Array.isArray(publicMethodsData?.data?.providers)) return publicMethodsData.data.providers;
+    if (Array.isArray(publicMethodsData?.data)) return publicMethodsData.data;
+    if (Array.isArray(publicMethodsData)) return publicMethodsData;
+    return [];
+  }, [publicMethodsData]);
+  const orderedProviderNames = useMemo(
+    () =>
+      (publicPaymentProviders || [])
+        .map((provider: any) => (provider?.provider_name || provider?.payment_provider_name || "").trim())
+        .filter((name: string) => Boolean(name)),
+    [publicPaymentProviders]
+  );
 
   const publicPaymentArray = Array.isArray(publicPaymentMethods)
     ? publicPaymentMethods
@@ -1660,9 +1703,8 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
     if (Array.isArray(publicMethodsData?.data?.providers)) return publicMethodsData.data.providers;
     if (Array.isArray(publicMethodsData?.data?.payment_methods)) return publicMethodsData.data.payment_methods;
     if (Array.isArray(publicPaymentMethods)) return publicPaymentMethods;
-    const adminArray = Array.isArray(adminPaymentDetails) ? adminPaymentDetails : Array.isArray((adminPaymentDetails as any)?.data) ? (adminPaymentDetails as any).data : [];
-    return adminArray;
-  }, [publicMethodsData, publicPaymentMethods, adminPaymentDetails]);
+    return [];
+  }, [publicMethodsData, publicPaymentMethods]);
 
   const uniquePaymentMethods = Array.from(
     new Set((processedPaymentMethods || []).map(getPaymentMethodName).filter(Boolean))
@@ -1702,12 +1744,17 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
       rawUserDetails = (rawUserDetails as any)?.data || (rawUserDetails as any)?.payment_details || rawUserDetails;
     }
 
-    const sourceData = userPaymentMethodsDisplay.displayData || effectiveUserPaymentMethods || (Array.isArray(rawUserDetails) ? rawUserDetails : []) || [];
+    const sourceData = (userPaymentMethodsDisplay.displayData && userPaymentMethodsDisplay.displayData.length > 0
+      ? userPaymentMethodsDisplay.displayData
+      : (effectiveUserPaymentMethods && effectiveUserPaymentMethods.length > 0
+        ? effectiveUserPaymentMethods
+        : (Array.isArray(rawUserDetails) ? rawUserDetails : [])));
 
     const filtered = (Array.isArray(sourceData) ? sourceData : []).filter((detail: any) => {
       const normalizeProviderName = (name: string | null | undefined): string => {
         if (!name) return "";
-        return name.includes(" - ") ? name.split(" - ")[0].trim() : name.trim();
+        const base = name.includes(" - ") ? name.split(" - ")[0].trim() : name.trim();
+        return base.toLowerCase();
       };
 
       const selectedProviderField = selectedProviderData?.provider || normalizeProviderName(payBank);
@@ -1722,14 +1769,11 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
       const providerMatch3 = normalizedDetailPaymentProvider === normalizedSelectedProvider || normalizedDetailPaymentProvider === normalizedPayBank || detail.payment_provider === payBank;
       const matchesProvider = providerMatch1 || providerMatch2 || providerMatch3;
 
-      const userPaymentMethodName = normalizePaymentMethodName(detail.payment_method_name);
-      const hasValidPaymentMethod = userPaymentMethodName ? availablePaymentMethodNames.includes(userPaymentMethodName) : false;
-
-      return matchesProvider && hasValidPaymentMethod;
+      return matchesProvider;
     });
 
     return filtered;
-  }, [payBank, userPaymentMethodsDisplay.displayData, effectiveUserPaymentMethods, effectiveUserPaymentDetails, effectiveUserPaymentDetailsFromRedux, availablePaymentMethodNames, selectedProviderData]);
+  }, [payBank, userPaymentMethodsDisplay.displayData, effectiveUserPaymentMethods, effectiveUserPaymentDetails, effectiveUserPaymentDetailsFromRedux, selectedProviderData]);
 
   // Legacy: filteredUserPaymentDetails for backward compat
   const filteredUserPaymentDetails = selectedPaymentMethod
@@ -1737,6 +1781,29 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
       (detail: any) => getPaymentMethodName(detail) === selectedPaymentMethod
     )
     : [];
+
+  // Deterministic defaults from API order:
+  // first select -> index 0, second select -> index 1 (or index 0 if missing).
+  useEffect(() => {
+    if (!Array.isArray(publicPaymentProviders) || publicPaymentProviders.length === 0) return;
+    const firstProvider = publicPaymentProviders[0];
+    const firstName = orderedProviderNames[0] || "";
+    if (!firstName) return;
+    const secondName = orderedProviderNames[1] || firstName;
+
+    if (!isFieldsSwapped) {
+      setPayBank(firstName);
+      setSelectedPaymentMethod(secondName);
+      setSelectedProviderData(firstProvider);
+      if (isDepositMode) {
+        setSelectedPaymentDetail(firstProvider);
+      }
+    } else {
+      // When swapped, show second provider in the visible selector.
+      setSelectedPaymentMethod(secondName);
+      setPayBank(firstName);
+    }
+  }, [isFieldsSwapped, publicPaymentProviders, orderedProviderNames, isDepositMode]);
 
   // Auto-select first account when accounts are available (withdrawal) - exact as express
   useEffect(() => {
@@ -1760,62 +1827,6 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
   const finalPaymentMethods = allPaymentMethods.length > 0 && allPaymentMethods.every(method =>
     typeof method === 'string' && method.trim().length > 0
   ) ? allPaymentMethods : fallbackPaymentMethods;
-
-  // Auto-select the first payment method when methods are available
-  useEffect(() => {
-    // Auto-select first provider if available (prioritize publicPaymentProviders)
-    if (isDepositMode && publicPaymentProviders.length > 0 && !selectedPaymentDetail) {
-      const firstProvider = publicPaymentProviders[0];
-      const name = firstProvider?.provider_name || firstProvider?.payment_provider_name || finalPaymentMethods[0] || "";
-      setSelectedPaymentDetail(firstProvider);
-      setSelectedPaymentMethod(name);
-      setPayBank(name);
-    } else if (!payBank && publicPaymentProviders.length > 0) {
-      const firstProvider = publicPaymentProviders[0];
-      const name = firstProvider?.provider_name || firstProvider?.payment_provider_name;
-      if (name) {
-        setPayBank(name);
-        setSelectedProviderData(firstProvider);
-        setSelectedPaymentMethod(name);
-        setSelectedPaymentDetail(isDepositMode ? firstProvider : null);
-      }
-    } else if (!selectedPaymentMethod && finalPaymentMethods.length > 0) {
-      const firstMethod = finalPaymentMethods[0];
-      setSelectedPaymentMethod(firstMethod);
-
-      // Try to also pick a sensible default payment detail for this method
-      // Prefer public providers (for deposit mode), otherwise user payment details
-      let defaultDetail: any = null;
-
-      if (isDepositMode && publicPaymentProviders.length > 0) {
-        defaultDetail =
-          publicPaymentProviders.find((provider: any) => {
-            const methodName =
-              provider?.method?.method_name ||
-              provider?.method_name ||
-              provider?.provider_name ||
-              null;
-            return methodName === firstMethod;
-          }) || publicPaymentProviders[0];
-      } else if (!isDepositMode && availablePaymentMethods.length > 0) {
-        defaultDetail =
-          availablePaymentMethods.find(
-            (detail: any) => getPaymentMethodName(detail) === firstMethod
-          ) || availablePaymentMethods[0];
-      }
-
-      if (defaultDetail) {
-        setSelectedPaymentDetail(defaultDetail);
-      }
-    }
-  }, [
-    selectedPaymentMethod,
-    selectedPaymentDetail,
-    finalPaymentMethods,
-    isDepositMode,
-    publicPaymentProviders,
-    availablePaymentMethods,
-  ]);
 
   // selectedPaymentDetail is now a state variable
 
@@ -2037,7 +2048,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
       if (state.receiveAmount) setReceiveAmount(state.receiveAmount);
       if (state.isFieldsSwapped !== undefined) setIsFieldsSwapped(state.isFieldsSwapped);
       if (state.isDepositMode !== undefined) setIsDepositMode(state.isDepositMode);
-      if (state.selectedPaymentMethod) setSelectedPaymentMethod(state.selectedPaymentMethod);
+      // Don't restore selectedPaymentMethod directly; let current provider list auto-select first.
 
       // Store asset and payment detail separately for later restoration (when they load)
       if (state.selectedAsset) {
@@ -2177,7 +2188,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
       const state = JSON.parse(savedPaymentDetail);
 
       // Get current payment methods
-      const publicMethodsData = publicPaymentMethods as any;
+      const publicMethodsData = (directPublicPaymentMethods || publicPaymentMethods) as any;
       const publicPaymentProviders = Array.isArray(publicMethodsData?.data?.providers)
         ? publicMethodsData.data.providers
         : [];
@@ -2755,10 +2766,10 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                     {(() => {
                       let paymentMethodOptions: Array<{ value: string; label: string; subtitle?: string; logo?: string }> = [];
 
-                      if (Array.isArray(publicMethodsData?.data?.providers) && publicMethodsData.data.providers.length > 0) {
-                        paymentMethodOptions = publicMethodsData.data.providers.map((provider: any) => {
+                      if (publicPaymentProviders.length > 0) {
+                        paymentMethodOptions = publicPaymentProviders.map((provider: any) => {
                           const providerName = provider.provider_name || provider.payment_provider_name || "Unknown";
-                          const methodName = provider.method?.method_name || provider.method?.method_display || provider.method_name || null;
+                          const methodName = provider.method_display || provider.method || provider.method?.method_name || provider.method?.method_display || provider.method_name || null;
                           
                           // Extract account details (account_name and account_number)
                           const details = provider.payment_details?.[0];
@@ -2774,27 +2785,9 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                             logo: provider.logo || provider.provider_logo || undefined,
                           };
                         }).filter((opt: any) => opt.value && opt.value.trim());
-                      } else {
-                        const providerNames = Array.from(new Set((adminWalletListDisplay.displayData || []).map((w: any) => w?.admin_payment_detail?.provider_name))).filter((t): t is string => typeof t === 'string' && t.trim().length > 0);
-                        paymentMethodOptions = providerNames.map((paymentType: string) => {
-                          const adminDetail = (adminWalletListDisplay.displayData || []).find((w: any) => w.admin_payment_detail?.provider_name === paymentType)?.admin_payment_detail;
-                          const providerName = adminDetail?.provider_name || paymentType;
-                          const methodName = adminDetail?.payment_method_type || adminDetail?.payment_method_name || null;
-                          const subtitle = methodName ? `${providerName} - ${methodName}` : null;
-                          return {
-                            value: paymentType,
-                            label: providerName,
-                            subtitle: subtitle || undefined,
-                            logo: adminDetail?.provider_logo || undefined,
-                          };
-                        });
                       }
 
-                      if (paymentMethodOptions.length === 0) {
-                        paymentMethodOptions = fallbackProviderNames.map((name: string) => ({ value: name, label: name }));
-                      }
-
-                      const isLoading = publicMethodsLoading || adminWalletListDisplay.isLoading;
+                      const isLoading = publicMethodsLoading && paymentMethodOptions.length === 0;
 
                       return (
                         <CustomSelect
@@ -2804,21 +2797,14 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                           logoClassName={PAYMENT_LOGO_BASE_CLASS}
                           sizeMode="card"
                           onChange={(value) => {
-                            let selectedWallet = null;
-                            let selectedProvider = null;
-                            if (Array.isArray(publicMethodsData?.data?.providers)) {
-                              selectedProvider = publicMethodsData.data.providers.find((p: any) => (p.provider_name || p.payment_provider_name) === value);
-                            }
-                            if (!selectedProvider) {
-                              selectedWallet = (adminWalletListDisplay.displayData || []).find((w: any) => w.admin_payment_detail?.provider_name === value);
-                            }
+                            const selectedProvider = publicPaymentProviders.find((p: any) => (p.provider_name || p.payment_provider_name) === value);
                             setPayBank(value);
                             setSelectedProviderData(selectedProvider);
-                            setSelectedPaymentDetail(selectedWallet?.admin_payment_detail || selectedProvider || null);
+                            setSelectedPaymentDetail(selectedProvider || null);
                             setSelectedPaymentDetails([]);
                             setPaymentMethodError(null);
                           }}
-                          placeholder={isLoading ? "Loading payment methods..." : finalPaymentMethods?.length ? "Select Payment Method" : "No payment methods available"}
+                          placeholder={isLoading ? "Loading payment methods..." : paymentMethodOptions.length > 0 ? "Select Payment Method" : "No payment methods available"}
                           disabled={isLoading}
                           loading={isLoading}
                           loadingText="Loading payment methods..."
@@ -2870,7 +2856,9 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                         })()}
                       </div>
                       {(() => {
-                        const allUserAccounts = userPaymentMethodsDisplay.displayData || effectiveUserPaymentMethods || [];
+                        const allUserAccounts = (userPaymentMethodsDisplay.displayData && userPaymentMethodsDisplay.displayData.length > 0
+                          ? userPaymentMethodsDisplay.displayData
+                          : effectiveUserPaymentMethods) || [];
                         const hasAnyAccounts = allUserAccounts.length > 0;
                         const hasFilteredAccounts = enhancedFilteredUserPaymentDetails.length > 0;
 
@@ -2904,8 +2892,8 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                                     status !== "" && status !== "approved" && status !== "verified";
                                   let providerName = detail.payment_provider_name || detail.provider_name || "Unknown Provider";
                                   let providerLogo = detail.provider_logo;
-                                  if (Array.isArray(publicMethodsData?.data?.providers)) {
-                                    const pub = publicMethodsData.data.providers.find(
+                                  if (publicPaymentProviders.length > 0) {
+                                    const pub = publicPaymentProviders.find(
                                       (p: any) =>
                                         (p.provider_name || p.payment_provider_name) === detail.payment_provider_name ||
                                         (p.provider_name || p.payment_provider_name) === detail.provider_name
@@ -3315,10 +3303,10 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                   <div className="relative z-0">
                     {(() => {
                       let paymentMethodOptions: Array<{ value: string; label: string; subtitle?: string; logo?: string }> = [];
-                      if (Array.isArray(publicMethodsData?.data?.providers) && publicMethodsData.data.providers.length > 0) {
-                        paymentMethodOptions = publicMethodsData.data.providers.map((provider: any) => {
+                      if (publicPaymentProviders.length > 0) {
+                        paymentMethodOptions = publicPaymentProviders.map((provider: any) => {
                           const providerName = provider.provider_name || provider.payment_provider_name || "Unknown";
-                          const methodName = provider.method?.method_name || provider.method?.method_display || provider.method_name || null;
+                          const methodName = provider.method_display || provider.method || provider.method?.method_name || provider.method?.method_display || provider.method_name || null;
                           
                           // Extract account details (account_name and account_number)
                           const details = provider.payment_details?.[0];
@@ -3334,35 +3322,20 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                             logo: provider.logo || provider.provider_logo || undefined,
                           };
                         }).filter((opt: any) => opt.value && opt.value.trim());
-                      } else {
-                        const providerNames = Array.from(new Set((adminWalletListDisplay.displayData || []).map((w: any) => w?.admin_payment_detail?.provider_name))).filter((t): t is string => typeof t === 'string' && t.trim().length > 0);
-                        paymentMethodOptions = providerNames.map((paymentType: string) => {
-                          const adminDetail = (adminWalletListDisplay.displayData || []).find((w: any) => w.admin_payment_detail?.provider_name === paymentType)?.admin_payment_detail;
-                          return {
-                            value: paymentType,
-                            label: adminDetail?.provider_name || paymentType,
-                            subtitle: adminDetail?.payment_method_type ? `${adminDetail.provider_name} - ${adminDetail.payment_method_type}` : undefined,
-                            logo: adminDetail?.provider_logo || undefined,
-                          };
-                        });
                       }
-                      if (paymentMethodOptions.length === 0) {
-                        paymentMethodOptions = fallbackProviderNames.map((name: string) => ({ value: name, label: name }));
-                      }
-                      const isLoading = publicMethodsLoading || adminWalletListDisplay.isLoading;
+                      const isLoading = publicMethodsLoading && paymentMethodOptions.length === 0;
                       return (
                         <CustomSelect
                           options={paymentMethodOptions}
-                          value={payBank}
+                          value={selectedPaymentMethod}
                           logoSize={PAYMENT_LOGO_SIZE}
                           logoClassName={PAYMENT_LOGO_BASE_CLASS}
                           sizeMode="card"
                           onChange={(value) => {
-                            let selectedProvider = publicMethodsData?.data?.providers?.find((p: any) => (p.provider_name || p.payment_provider_name) === value);
-                            let selectedWallet = !selectedProvider ? (adminWalletListDisplay.displayData || []).find((w: any) => w.admin_payment_detail?.provider_name === value) : null;
-                            setPayBank(value);
+                            const selectedProvider = publicPaymentProviders.find((p: any) => (p.provider_name || p.payment_provider_name) === value);
+                            setSelectedPaymentMethod(value);
                             setSelectedProviderData(selectedProvider);
-                            setSelectedPaymentDetail(selectedWallet?.admin_payment_detail || selectedProvider || null);
+                            setSelectedPaymentDetail(selectedProvider || null);
                             setSelectedPaymentDetails([]);
                             setPaymentMethodError(null);
                           }}
@@ -3407,7 +3380,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                         <CustomSelect
                           options={enhancedFilteredUserPaymentDetails.map((detail: UserPaymentDetail) => {
                             let providerLogo = detail.provider_logo;
-                            const pub = publicMethodsData?.data?.providers?.find((p: any) => (p.provider_name || p.payment_provider_name) === detail.payment_provider_name);
+                            const pub = publicPaymentProviders.find((p: any) => (p.provider_name || p.payment_provider_name) === detail.payment_provider_name);
                             if (pub) providerLogo = pub.logo || pub.provider_logo || providerLogo;
                             const accountName = detail.account_name || "No Name";
                             const accountNumber = detail.account_number || detail.wallet_address || "No Account";

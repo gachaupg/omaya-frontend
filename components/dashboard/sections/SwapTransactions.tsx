@@ -28,6 +28,11 @@ const getStatusColor = (status: string) => {
   }
 };
 
+const formatRecentTime = (dateValue: string) => {
+  const v = formatDistanceToNow(new Date(dateValue), { addSuffix: true });
+  return /less than (a|1) minute ago/i.test(v) ? "now" : v;
+};
+
 const SwapTransactions = () => {
   const [page, setPage] = useState(1);
   const { data, loading, error } = useSwapHistory({ page, limit: 10 });
@@ -156,9 +161,7 @@ const SwapTransactions = () => {
               <div className="col-span-2">
                 <div className="text-xs text-[#788099] mb-1">Date</div>
                 <div className="text-sm text-[#788099]">
-                  {formatDistanceToNow(new Date(transaction.created_at), {
-                    addSuffix: true,
-                  })}
+                  {formatRecentTime(transaction.created_at)}
                 </div>
               </div>
             </div>
@@ -229,9 +232,7 @@ const SwapTransactions = () => {
                   </span>
                 </td>
                 <td className="py-3 sm:py-4 px-3 sm:px-4 border-b border-[#E8EFF5] dark:border-[#35353E] text-xs sm:text-sm text-gray-500 dark:text-[#A0A3BC]">
-                  {formatDistanceToNow(new Date(transaction.created_at), {
-                    addSuffix: true,
-                  })}
+                  {formatRecentTime(transaction.created_at)}
                 </td>
               </tr>
             ))}

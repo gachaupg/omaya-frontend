@@ -48,6 +48,8 @@ interface KYCStatusResponse {
   status?: string;
   phone_number?: string | null;
   phone_verified?: boolean;
+  message?: string;
+  rejection_reason?: string | null;
 }
 
 const IdentityVerificationModal: React.FC<IdentityVerificationModalProps> = ({
@@ -222,6 +224,9 @@ const IdentityVerificationModal: React.FC<IdentityVerificationModalProps> = ({
     ? user.is_verified === false
     : false;
 
+  const isUnderReview =
+    isUnverified && (kycStatus?.status || "").toLowerCase() === "under_review";
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/60 p-4">
       <div className="w-full max-w-md">
@@ -230,10 +235,12 @@ const IdentityVerificationModal: React.FC<IdentityVerificationModalProps> = ({
           <div className="flex justify-between items-start mb-4 sm:mb-6">
             <div className="flex-1">
               <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                Identity Verifihhhcation Required
+                {isUnderReview ? "Verification Under Review" : "Identity Verification Required"}
               </h2>
               <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
-                {phoneVerified 
+                {isUnderReview
+                  ? "Your identity verification documents were submitted successfully and are currently under review."
+                  : phoneVerified
                   ? "Phone verified! Proceeding to document verification..."
                   : "First, verify your phone number to continue"}
               </p>
@@ -266,6 +273,39 @@ const IdentityVerificationModal: React.FC<IdentityVerificationModalProps> = ({
               <span className="ml-3 text-gray-600 dark:text-gray-400">
                 Checking verification status...
               </span>
+            </div>
+          ) : isUnderReview ? (
+            <div className="text-center py-8">
+              <div className="w-16 h-16 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg
+                  className="w-8 h-8 text-amber-600 dark:text-amber-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8v4l2 2m6-2a8 8 0 11-16 0 8 8 0 0116 0z"
+                  />
+                </svg>
+              </div>
+              <p className="text-gray-600 dark:text-gray-400 mb-3">
+                Our compliance team is reviewing your submission. Use the button below to check the latest status.
+              </p>
+              <p className="text-sm text-amber-700 dark:text-amber-300 mb-5">
+                {kycStatus?.message || "Your KYC is under review. Please wait for admin approval."}
+              </p>
+              <Button
+                type="button"
+                variant="primary"
+                onClick={fetchKYCStatus}
+                className="w-full"
+                disabled={checkingStatus}
+              >
+                {checkingStatus ? "Checking..." : "Check Status"}
+              </Button>
             </div>
           ) : phoneVerified ? (
             // Phone verified - show success message

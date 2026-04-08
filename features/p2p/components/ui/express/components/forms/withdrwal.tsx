@@ -5,7 +5,6 @@ import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import { AppDispatch } from "@/store";
 import {
-  fetchAdminPaymentDetails,
   fetchUserPaymentDetails,
 } from "@/features/exchange/slices/paymentSlice";
 import { fetchAssets } from "@/features/exchange/slices/exchangeSlice";
@@ -582,18 +581,6 @@ export default function WithdrawalForm({
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
-
-  useEffect(() => {
-    // Try to fetch from cache first, then API if needed
-    dispatch(fetchAdminPaymentDetails(false)) // false = don't force refresh
-      .unwrap()
-      .then((data) => {
-        // logger.debug('p2p', "DEBUG: Admin payment details fetched:", data);
-      })
-      .catch((error: unknown) => {
-        showToast.error(`Failed to fetch admin payment details: ${error}`);
-      });
-  }, [dispatch]);
 
   useEffect(() => {
     dispatch(fetchAssets())

@@ -132,37 +132,70 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
   // Process public payment methods to extract method types and providers
   const processedProviders = React.useMemo(() => {
     if (!publicPaymentMethods) return [];
-    
-    // Handle new API structure: data.providers
-    const data = (publicPaymentMethods as any)?.data || publicPaymentMethods;
-    if (Array.isArray(data?.providers)) {
-      return data.providers.map((provider: any) => ({
-        provider_name: provider.provider_name, // For display in dropdown
-        provider: provider.provider || provider.provider_name, // Actual provider field for API
-        payment_method_type: provider.method?.method_name || provider.method?.method_display || '',
-        logo: provider.logo || provider.provider_logo,
-        wallet_address: provider.payment_details?.[0]?.wallet_address || null,
-      }));
-    }
-    // Handle old structure: data.payment_methods
-    if (Array.isArray(data?.payment_methods)) {
-      const flattened: any[] = [];
-      data.payment_methods.forEach((method: any) => {
-        if (Array.isArray(method.providers)) {
-          method.providers.forEach((provider: any) => {
-            flattened.push({
-              provider_name: provider.provider_name, // For display in dropdown
-              provider: provider.provider || provider.provider_name, // Actual provider field for API
-              payment_method_type: method.method_name || method.method_display || '',
-              logo: provider.logo || provider.provider_logo,
-              wallet_address: provider.payment_details?.[0]?.wallet_address || null,
-            });
+
+    const payload = publicPaymentMethods as any;
+    const data = payload?.data || payload;
+    const listCandidates = [
+      data?.providers,
+      data?.payment_providers,
+      data?.payment_methods,
+      data?.results,
+      payload?.providers,
+      payload?.payment_providers,
+      payload?.payment_methods,
+      payload?.results,
+      Array.isArray(data) ? data : null,
+      Array.isArray(payload) ? payload : null,
+    ].filter(Array.isArray) as any[][];
+
+    const sourceList = listCandidates.find((list) => list.length > 0) || [];
+    const flattened: any[] = [];
+
+    sourceList.forEach((item: any) => {
+      // Shape A: method container with nested providers
+      if (Array.isArray(item?.providers)) {
+        const methodType =
+          item?.method_name ||
+          item?.method_display ||
+          item?.payment_method_type ||
+          item?.method?.method_name ||
+          item?.method?.method_display ||
+          item?.method ||
+          "Bank";
+
+        item.providers.forEach((provider: any) => {
+          flattened.push({
+            provider_name: provider?.provider_name || provider?.name || provider?.provider || "",
+            provider: provider?.provider || provider?.provider_name || provider?.name || "",
+            payment_method_type: methodType,
+            logo: provider?.logo || provider?.provider_logo || provider?.logo_url,
+            wallet_address: provider?.payment_details?.[0]?.wallet_address || provider?.wallet_address || null,
           });
-        }
+        });
+        return;
+      }
+
+      // Shape B: provider item already flat / semi-flat
+      const methodType =
+        item?.payment_method_type ||
+        item?.payment_method_name ||
+        item?.method?.method_name ||
+        item?.method?.method_display ||
+        item?.method ||
+        "Bank";
+
+      flattened.push({
+        provider_name: item?.provider_name || item?.name || item?.provider || "",
+        provider: item?.provider || item?.provider_name || item?.name || "",
+        payment_method_type: methodType,
+        logo: item?.logo || item?.provider_logo || item?.logo_url,
+        wallet_address: item?.payment_details?.[0]?.wallet_address || item?.wallet_address || null,
       });
-      return flattened;
-    }
-    return [];
+    });
+
+    return flattened.filter(
+      (p: any) => Boolean((p?.provider_name || "").trim())
+    );
   }, [publicPaymentMethods]);
 
   // When opened from trade preview with a selected payment method (e.g. "Salaam Bank"),
@@ -445,7 +478,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                className="w-full p-2.5 sm:p-3 rounded-[24px] bg-white dark:bg-[#18181D] border border-gray-200 dark:border-[#35353E] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1D8751] text-sm sm:text-base [&_option]:bg-white dark:[&_option]:bg-[#18181D] [&_option]:text-gray-900 dark:[&_option]:text-white"
                value={method}
                onChange={(e) => setMethod(e.target.value)}
-               disabled={publicMethodsLoading || methodTypes.length === 0}
+               disabled={publicMethodsLoading}
              >
                <option value="">Select Method</option>
                {methodTypes.map((type, index: number) => (
