@@ -6,7 +6,6 @@ import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "@/store";
 import {
   fetchPublicPaymentMethods,
-  fetchAdminPaymentMethods,
 } from "@/features/p2p/slices/paymentMethodsSlice";
 import {
   createMoneyXTransaction,
@@ -42,9 +41,6 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
   const { t } = useExpressI18n();
 
   const {
-    adminMethods,
-    loading: adminMethodsLoading,
-    error: adminMethodsError,
     publicPaymentMethods,
     publicMethodsLoading,
     publicMethodsError,
@@ -60,11 +56,12 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
 
   // Use state to hold payment methods - will trigger re-render when updated
   const [stablePaymentMethods, setStablePaymentMethods] = useState<any[]>([]);
+  const [directPublicPaymentMethods, setDirectPublicPaymentMethods] = useState<any>(null);
 
-  // Use appropriate payment methods data
-  const paymentMethodsData = adminMethods;
-  const paymentMethodsLoading = adminMethodsLoading;
-  const paymentMethodsError = adminMethodsError;
+  // Always use public payment methods for MoneyX.
+  const paymentMethodsData = directPublicPaymentMethods || publicPaymentMethods;
+  const paymentMethodsLoading = publicMethodsLoading;
+  const paymentMethodsError = publicMethodsError;
 
   const paymentMethodsDisplay = usePaymentMethodsDisplay(
     paymentMethodsData,
@@ -74,86 +71,105 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
 
   // Fetch payment methods on mount
   useEffect(() => {
-    dispatch(fetchAdminPaymentMethods());
+    dispatch(fetchPublicPaymentMethods());
   }, [dispatch]);
 
-  // Process payment methods similar to deposit form
+  // Direct endpoint source (same one verified in browser) as priority.
   useEffect(() => {
-    console.log("🔍 [Dashboard] Processing admin payment methods:", {
-      adminMethodsExists: !!adminMethods,
-      isArray: Array.isArray(adminMethods),
-      length: adminMethods?.length || 0
-    });
-
-    if (adminMethods && Array.isArray(adminMethods) && adminMethods.length > 0) {
-      const activeMethods = adminMethods
-        .filter((payment: any) => {
-          if (payment.is_active === undefined || payment.is_active === null)
-            return true;
-          return (
-            payment.is_active === true ||
-            payment.is_active === "true" ||
-            payment.is_active === 1 ||
-            payment.is_active === "1"
-          );
-        })
-        .map((payment: any) => ({
-          ...payment,
-          logo: payment.logo || payment.provider_logo || undefined,
-          provider_logo: payment.provider_logo || payment.logo || undefined,
-        }));
-
-      console.log("✅ [Dashboard] Processed payment methods:", activeMethods.length);
-      console.log("📋 [Dashboard] Payment method names:", activeMethods.map((m: any) => m.provider_name || m.provider || "N/A"));
-
-      if (activeMethods.length > 0) {
-        setStablePaymentMethods(activeMethods);
-      } else {
-        console.warn("⚠️ [Dashboard] No active payment methods found");
+    let mounted = true;
+    const loadDirectPublicMethods = async () => {
+      try {
+        const response = await fetch("https://dev.backend.omaya.io/payments/public/payment-methods/", {
+          method: "GET",
+          headers: { Accept: "application/json" },
+        });
+        if (!response.ok) return;
+        const data = await response.json();
+        if (mounted) setDirectPublicPaymentMethods(data);
+      } catch {
+        // Keep redux source as fallback.
       }
-    } else {
-      console.warn("⚠️ [Dashboard] Admin methods not loaded or empty");
-    }
-  }, [adminMethods]);
+    };
+    loadDirectPublicMethods();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
+  // Process public payment methods from all known response shapes.
+  useEffect(() => {
+    const payload = (directPublicPaymentMethods || publicPaymentMethods) as any;
+    const data = payload?.data || payload;
+    const lists = [
+      data?.providers,
+      data?.payment_providers,
+      data?.payment_methods,
+      data?.results,
+      payload?.providers,
+      payload?.payment_providers,
+      payload?.payment_methods,
+      payload?.results,
+      Array.isArray(data) ? data : null,
+      Array.isArray(payload) ? payload : null,
+    ].filter(Array.isArray) as any[][];
 
-  // Fallback payment methods (only used if no real payment methods are loaded)
-  const fallbackPaymentMethods = useMemo(
-    () => [
-      {
-        provider_name: "Bank",
-        payment_method: "Bank Transfer",
-        is_active: true,
-      },
-      {
-        provider_name: "Mobile Money",
-        payment_method: "Mobile Money",
-        is_active: true,
-      },
-      {
-        provider_name: "Cryptocurrency",
-        payment_method: "Crypto",
-        is_active: true,
-      },
-    ],
-    []
-  );
+    const flattened: any[] = [];
+    lists.forEach((list) =>
+      list.forEach((item: any) => {
+        if (Array.isArray(item?.providers)) {
+          const methodType =
+            item?.method_display ||
+            item?.method ||
+            item?.method_name ||
+            item?.payment_method_type ||
+            "";
+          item.providers.forEach((provider: any) => {
+            flattened.push({
+              ...provider,
+              provider_name: provider?.provider_name || provider?.provider || provider?.name || "",
+              payment_method:
+                provider?.method_display || provider?.method || provider?.payment_method || provider?.payment_method_type || methodType || "",
+              payment_method_type:
+                provider?.method || provider?.payment_method_type || methodType || "",
+              logo: provider?.logo || provider?.provider_logo || provider?.logo_url,
+              provider_logo: provider?.provider_logo || provider?.logo || provider?.logo_url,
+              is_active: provider?.is_active ?? item?.is_active ?? true,
+            });
+          });
+          return;
+        }
+        flattened.push({
+          ...item,
+          provider_name: item?.provider_name || item?.provider || item?.name || "",
+          payment_method:
+            item?.method_display || item?.method || item?.payment_method || item?.payment_method_type || item?.method_name || "",
+          payment_method_type:
+            item?.method || item?.payment_method_type || item?.method_name || "",
+          logo: item?.logo || item?.provider_logo || item?.logo_url,
+          provider_logo: item?.provider_logo || item?.logo || item?.logo_url,
+        });
+      })
+    );
+
+    const active = flattened.filter((payment: any) => {
+      if (!String(payment?.provider_name || "").trim()) return false;
+      if (payment.is_active === undefined || payment.is_active === null) return true;
+      return (
+        payment.is_active === true ||
+        payment.is_active === "true" ||
+        payment.is_active === 1 ||
+        payment.is_active === "1"
+      );
+    });
+    setStablePaymentMethods(active);
+  }, [directPublicPaymentMethods, publicPaymentMethods]);
 
   // Use stable state - React will properly render this
   const effectivePaymentMethods = stablePaymentMethods;
 
   const finalPaymentMethods = useMemo(
-    () => {
-      // Only use fallback if we have NO real payment methods
-      if (effectivePaymentMethods.length > 0) {
-        console.log("✅ [Dashboard] Using real payment methods:", effectivePaymentMethods.length);
-        return effectivePaymentMethods;
-      } else {
-        console.log("⚠️ [Dashboard] No real payment methods, using fallback");
-        return fallbackPaymentMethods;
-      }
-    },
-    [effectivePaymentMethods, fallbackPaymentMethods]
+    () => effectivePaymentMethods,
+    [effectivePaymentMethods]
   );
 
   // Form state - matching deposit form structure
@@ -1154,8 +1170,8 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
                   triggerClassName="h-[48px] w-full"
                 />
               </div>
-              {adminMethodsError && (
-                <p className="text-red-500 text-sm mt-1">{adminMethodsError}</p>
+              {paymentMethodsError && (
+                <p className="text-red-500 text-sm mt-1">{paymentMethodsError}</p>
               )}
             </div>
           </div>
@@ -1267,8 +1283,8 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
                   triggerClassName="h-[48px] w-full"
                 />
               </div>
-              {adminMethodsError && (
-                <p className="text-red-500 text-sm mt-1">{adminMethodsError}</p>
+              {paymentMethodsError && (
+                <p className="text-red-500 text-sm mt-1">{paymentMethodsError}</p>
               )}
             </div>
           </div>

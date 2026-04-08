@@ -25,6 +25,11 @@ const BANK_ICONS: Record<string, string> = {
 };
 
 const P2PTransactions = () => {
+  const formatRecentTime = (dateValue: string) => {
+    const v = formatDistanceToNow(new Date(dateValue), { addSuffix: true });
+    return /less than (a|1) minute ago/i.test(v) ? "now" : v;
+  };
+
   const { t } = useDashboardI18n();
   const dispatch = useDispatch<AppDispatch>();
   const { trades, loading, error, currentPage } = useSelector(
@@ -204,9 +209,7 @@ const P2PTransactions = () => {
                 <div className="col-span-2">
                   <div className="text-xs text-gray-500 dark:text-[#A0A3BC] mb-1">When</div>
                   <div className="text-sm text-gray-900 dark:text-[#A0A3BC]">
-                    {formatDistanceToNow(new Date(transaction.date), {
-                      addSuffix: true,
-                    })}
+                    {formatRecentTime(transaction.date)}
                   </div>
                 </div>
               </div>
@@ -324,9 +327,7 @@ const P2PTransactions = () => {
                   </td>
                   {/* When */}
                   <td className="px-3 sm:px-4 lg:px-4 py-3 border-b border-gray-200 dark:border-[#35353E] text-sm sm:text-base text-gray-500 dark:text-[#A0A3BC]">
-                    {formatDistanceToNow(new Date(transaction.date), {
-                      addSuffix: true,
-                    })}
+                    {formatRecentTime(transaction.date)}
                   </td>
                 </tr>
               ))

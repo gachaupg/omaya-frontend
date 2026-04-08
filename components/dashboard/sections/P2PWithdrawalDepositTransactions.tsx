@@ -58,6 +58,12 @@ const formatAmount = (amount: string | number | undefined | null): string => {
   return numAmount.toFixed(4);
 };
 
+const formatRecentTime = (dateValue: string) => {
+  const v = formatDistanceToNow(new Date(dateValue), { addSuffix: true });
+  if (/less than (a|1) minute ago/i.test(v)) return "now";
+  return v.replace(/^about\s+/i, "");
+};
+
 const P2PWithdrawalDepositTransactions = ({ filterByType = "all" }: P2PWithdrawalDepositTransactionsProps) => {
   const dispatch = useDispatch<AppDispatch>();
   const { t } = useDashboardI18n();
@@ -342,13 +348,7 @@ const P2PWithdrawalDepositTransactions = ({ filterByType = "all" }: P2PWithdrawa
                 <div>
                   {/* Hide the extra label so only the time value shows */}
                   <div className="font-medium text-sm text-gray-500 dark:text-[#A0A3BC]">
-                    {(() => {
-                      const v = formatDistanceToNow(new Date(tx.timestamp), {
-                        addSuffix: true,
-                      });
-                      // date-fns often returns: "about 2 hours ago" -> we want "2 hours ago"
-                      return v.replace(/^about\s+/i, "");
-                    })()}
+                    {formatRecentTime(tx.timestamp)}
                   </div>
                 </div>
               </div>
@@ -452,12 +452,7 @@ const P2PWithdrawalDepositTransactions = ({ filterByType = "all" }: P2PWithdrawa
 
                   {/* When */}
                   <td className="px-3 sm:px-4 py-2 text-xs sm:text-sm text-gray-500 dark:text-[#A0A3BC]">
-                    {(() => {
-                      const v = formatDistanceToNow(new Date(tx.timestamp), {
-                        addSuffix: true,
-                      });
-                      return v.replace(/^about\s+/i, "");
-                    })()}
+                    {formatRecentTime(tx.timestamp)}
                   </td>
                 </tr>
               );

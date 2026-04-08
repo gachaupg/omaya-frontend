@@ -7,7 +7,6 @@ import Link from "next/link";
 import { AppDispatch } from "@/store";
 import {
   fetchPublicPaymentMethods,
-  fetchAdminPaymentMethods,
 } from "@/features/p2p/slices/paymentMethodsSlice";
 import {
   createMoneyXTransaction,
@@ -44,9 +43,6 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
   const { isDark } = useTheme();
 
   const {
-    adminMethods,
-    loading: adminMethodsLoading,
-    error: adminMethodsError,
     publicPaymentMethods,
     publicMethodsLoading,
     publicMethodsError,
@@ -63,11 +59,12 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
 
   // Use state to hold payment methods - will trigger re-render when updated
   const [stablePaymentMethods, setStablePaymentMethods] = useState<any[]>([]);
+  const [directPublicPaymentMethods, setDirectPublicPaymentMethods] = useState<any>(null);
 
-  // Use appropriate payment methods data based on isHomePage
-  const paymentMethodsData = isHomePage ? publicPaymentMethods : adminMethods;
-  const paymentMethodsLoading = isHomePage ? publicMethodsLoading : adminMethodsLoading;
-  const paymentMethodsError = isHomePage ? publicMethodsError : adminMethodsError;
+  // Always use public payment methods for MoneyX rates/payment selection.
+  const paymentMethodsData = directPublicPaymentMethods || publicPaymentMethods;
+  const paymentMethodsLoading = publicMethodsLoading;
+  const paymentMethodsError = publicMethodsError;
 
   const paymentMethodsDisplay = usePaymentMethodsDisplay(
     paymentMethodsData,
@@ -77,39 +74,117 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
 
   // Fetch payment methods on mount
   useEffect(() => {
-    if (isHomePage) {
-      dispatch(fetchPublicPaymentMethods());
-    } else {
-      dispatch(fetchAdminPaymentMethods());
-    }
-  }, [dispatch, isHomePage]);
+    dispatch(fetchPublicPaymentMethods());
+  }, [dispatch]);
 
-  // Process payment methods similar to deposit form
+  // Use exact endpoint payload as priority source for this form.
   useEffect(() => {
-    const methodsToProcess = isHomePage ? publicPaymentMethods : adminMethods;
+    let mounted = true;
+    const loadDirectPublicMethods = async () => {
+      try {
+        const response = await fetch("https://dev.backend.omaya.io/payments/public/payment-methods/", {
+          method: "GET",
+          headers: { Accept: "application/json" },
+        });
+        if (!response.ok) return;
+        const data = await response.json();
+        if (mounted) setDirectPublicPaymentMethods(data);
+      } catch {
+        // Keep Redux source as fallback if direct request fails.
+      }
+    };
+    loadDirectPublicMethods();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
-    // Handle public payment methods structure (similar to ExchangeForm)
-    let processedMethods: any[] = [];
-    if (isHomePage && publicPaymentMethods) {
-      // Check for providers array (new structure)
-      if (Array.isArray(publicPaymentMethods?.data?.providers)) {
-        processedMethods = publicPaymentMethods.data.providers;
-      }
-      // Check for payment_methods array (older structure)
-      else if (Array.isArray(publicPaymentMethods?.data?.payment_methods)) {
-        processedMethods = publicPaymentMethods.data.payment_methods;
-      }
-      // Check if publicPaymentMethods itself is an array (fallback)
-      else if (Array.isArray(publicPaymentMethods)) {
-        processedMethods = publicPaymentMethods;
-      }
-    } else if (adminMethods && Array.isArray(adminMethods)) {
-      processedMethods = adminMethods;
-    }
+  // Process payment methods from public API only.
+  useEffect(() => {
+    const payload = (directPublicPaymentMethods || publicPaymentMethods) as any;
+    const data = payload?.data || payload;
+    const sourceLists = [
+      data?.providers,
+      data?.payment_providers,
+      data?.payment_methods,
+      data?.results,
+      payload?.providers,
+      payload?.payment_providers,
+      payload?.payment_methods,
+      payload?.results,
+      Array.isArray(data) ? data : null,
+      Array.isArray(payload) ? payload : null,
+    ].filter(Array.isArray) as any[][];
 
-    if (processedMethods.length > 0) {
-      const activeMethods = processedMethods
+    const flattenedMethods: any[] = [];
+    sourceLists.forEach((list) => list.forEach((item: any) => {
+      if (Array.isArray(item?.providers)) {
+        const methodType =
+          item?.method_name ||
+          item?.method_display ||
+          item?.payment_method_type ||
+          item?.method?.method_name ||
+          item?.method?.method_display ||
+          item?.method ||
+          "";
+        item.providers.forEach((provider: any) => {
+          flattenedMethods.push({
+            ...provider,
+            provider_name:
+              provider?.provider_name ||
+              provider?.provider ||
+              provider?.name ||
+              "",
+            payment_method:
+              provider?.method_display ||
+              provider?.method ||
+              provider?.payment_method ||
+              provider?.payment_method_type ||
+              methodType ||
+              "",
+            payment_method_type:
+              provider?.method ||
+              provider?.payment_method_type ||
+              methodType ||
+              "",
+            logo:
+              provider?.logo || provider?.provider_logo || provider?.logo_url,
+            provider_logo:
+              provider?.provider_logo || provider?.logo || provider?.logo_url,
+            is_active:
+              provider?.is_active ?? item?.is_active ?? true,
+          });
+        });
+        return;
+      }
+
+      flattenedMethods.push({
+        ...item,
+        provider_name:
+          item?.provider_name || item?.provider || item?.name || "",
+        payment_method:
+          item?.method_display ||
+          item?.method ||
+          item?.payment_method ||
+          item?.payment_method_type ||
+          item?.method?.method_display ||
+          item?.method?.method_name ||
+          item?.method_name ||
+          "",
+        payment_method_type:
+          item?.method ||
+          item?.payment_method_type ||
+          item?.method?.method_name ||
+          item?.method_name ||
+          "",
+        logo: item?.logo || item?.provider_logo || item?.logo_url,
+        provider_logo: item?.provider_logo || item?.logo || item?.logo_url,
+      });
+    }));
+
+    const activeMethods = flattenedMethods
         .filter((payment: any) => {
+          if (!String(payment?.provider_name || "").trim()) return false;
           if (payment.is_active === undefined || payment.is_active === null)
             return true;
           return (
@@ -118,53 +193,28 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
             payment.is_active === 1 ||
             payment.is_active === "1"
           );
-        })
-        .map((payment: any) => ({
-          ...payment,
-          logo: payment.logo || payment.provider_logo || undefined,
-          provider_logo: payment.provider_logo || payment.logo || undefined,
-          // Extract provider_name for public methods
-          provider_name: payment.provider_name || payment.provider?.provider_name || payment.method?.method_name || payment.payment_method_name,
-        }));
+        });
 
-      if (activeMethods.length > 0) {
-        setStablePaymentMethods(activeMethods);
-      }
-    }
-  }, [adminMethods, publicPaymentMethods, isHomePage]);
+    const deduped = Array.from(
+      new Map(
+        activeMethods.map((payment: any) => [String(
+          payment?.id ??
+          payment?.provider_id ??
+          payment?.providerId ??
+          `${payment?.provider_name || ""}::${payment?.method_display || payment?.method || payment?.payment_method || payment?.payment_method_type || ""}`
+        ), payment])
+      ).values()
+    );
 
-
-  // Fallback payment methods
-  const fallbackPaymentMethods = useMemo(
-    () => [
-      {
-        provider_name: "Bank",
-        payment_method: "Bank Transfer",
-        is_active: true,
-      },
-      {
-        provider_name: "Mobile Money",
-        payment_method: "Mobile Money",
-        is_active: true,
-      },
-      {
-        provider_name: "Cryptocurrency",
-        payment_method: "Crypto",
-        is_active: true,
-      },
-    ],
-    []
-  );
+    setStablePaymentMethods(deduped);
+  }, [directPublicPaymentMethods, publicPaymentMethods]);
 
   // Use stable state - React will properly render this
   const effectivePaymentMethods = stablePaymentMethods;
 
   const finalPaymentMethods = useMemo(
-    () =>
-      effectivePaymentMethods.length > 0
-        ? effectivePaymentMethods
-        : fallbackPaymentMethods,
-    [effectivePaymentMethods, fallbackPaymentMethods]
+    () => effectivePaymentMethods,
+    [effectivePaymentMethods]
   );
 
   // Form state - matching deposit form structure
@@ -284,16 +334,15 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
     setIsFirstCardSubmitted(false);
   }, [fromKey, toKey, payAmount, getAmount]);
 
-  // Helper function to get provider name from payment method (cleaned - removes method suffixes)
-  // Removes method suffixes like "- Bank", "- Mobile", "- Crypto", etc.
+  // Keep provider name exactly as provided by API.
   const getProviderName = useCallback((payment: any) => {
-    let providerName = payment?.provider_name || payment?.provider?.provider_name || payment?.provider || payment?.method?.method_name || payment?.payment_method_name || "";
-
-    // Remove common method suffixes (case-insensitive)
-    // Matches patterns like "- Bank", "- Mobile", "- Crypto", "- Forex", "- Marchant", "- Money Transfer", etc.
-    providerName = providerName.replace(/\s*-\s*(Bank|Mobile|Crypto|Forex|Marchant|Money\s*Transfer|Merchant)\s*$/i, "").trim();
-
-    return providerName;
+    const providerName =
+      payment?.provider_name ||
+      payment?.provider?.provider_name ||
+      payment?.provider ||
+      payment?.name ||
+      "";
+    return String(providerName).trim();
   }, []);
 
   // Use a stable unique key so methods with same provider name don't collide in selects.
@@ -307,6 +356,8 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
       "";
     const provider = getProviderName(payment);
     const method =
+      payment?.method_display ||
+      payment?.method ||
       payment?.payment_method ||
       payment?.payment_method_type ||
       payment?.method?.method_display ||
@@ -332,12 +383,16 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
   const isBankMethod = useCallback((method: any) => {
     if (!method) return false;
     const providerName = getProviderName(method).toLowerCase();
+    const baseMethod = (method?.method || "").toLowerCase();
+    const baseMethodDisplay = (method?.method_display || "").toLowerCase();
     const paymentMethod = (method?.payment_method || "").toLowerCase();
     const paymentMethodType = (method?.payment_method_type || "").toLowerCase();
     const provider = (method?.provider || "").toLowerCase();
 
     return (
       providerName.includes("bank") ||
+      baseMethod.includes("bank") ||
+      baseMethodDisplay.includes("bank") ||
       paymentMethod.includes("bank") ||
       paymentMethodType.includes("bank") ||
       provider.includes("bank")
@@ -526,104 +581,36 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
     }
   }, [finalPaymentMethods, isHomePage, isAuthenticated, getProviderName, getPaymentMethodKey]);
 
-  // Auto-select first payment method for "from" when payment methods are loaded (only if not restored)
+  // Keep selected methods valid against live API list, but never auto-select.
   useEffect(() => {
     if (!Array.isArray(finalPaymentMethods) || finalPaymentMethods.length === 0) {
+      if (fromPaymentMethod) {
+        setFromPaymentMethod("");
+        setSelectedFromPaymentDetail(null);
+      }
+      if (toPaymentMethod) {
+        setToPaymentMethod("");
+        setSelectedToPaymentDetail(null);
+      }
       return;
     }
 
-    // Skip only after successful explicit restoration.
-    if (paymentMethodRestoreAttempted.current) {
-      return;
+    if (
+      fromPaymentMethod &&
+      !finalPaymentMethods.some((m: any) => getPaymentMethodKey(m) === fromPaymentMethod)
+    ) {
+      setFromPaymentMethod("");
+      setSelectedFromPaymentDetail(null);
     }
 
-    // Check if current selection still exists in the latest list (using cleaned names)
-    const currentExists = fromPaymentMethod
-      ? finalPaymentMethods.some(
-        (m: any) => getPaymentMethodKey(m) === fromPaymentMethod
-      )
-      : false;
-
-    // If nothing selected OR the current selection no longer exists, (re)auto-select
-    if (!fromPaymentMethod || !currentExists) {
-      const bankMethods = finalPaymentMethods.filter(isBankMethod);
-
-      // If banks exist, pick the first bank; otherwise pick the very first method
-      const methodToSelect =
-        bankMethods.length > 0 ? bankMethods[0] : finalPaymentMethods[0];
-
-      const methodKey = getPaymentMethodKey(methodToSelect);
-      if (methodKey) {
-        setFromPaymentMethod(methodKey);
-        setSelectedFromPaymentDetail(methodToSelect);
-      }
+    if (
+      toPaymentMethod &&
+      !finalPaymentMethods.some((m: any) => getPaymentMethodKey(m) === toPaymentMethod)
+    ) {
+      setToPaymentMethod("");
+      setSelectedToPaymentDetail(null);
     }
-  }, [finalPaymentMethods, fromPaymentMethod, isBankMethod, getPaymentMethodKey]);
-
-
-  // Auto-select/repair "to" payment method for You Receive
-  useEffect(() => {
-    // Skip only after successful explicit restoration.
-    if (paymentMethodRestoreAttempted.current) {
-      return;
-    }
-
-    // Only run when methods are available and "from" exists
-    const methodsToCheck = Array.isArray(finalPaymentMethods) && finalPaymentMethods.length > 0
-      ? finalPaymentMethods
-      : (Array.isArray(stablePaymentMethods) && stablePaymentMethods.length > 0
-        ? stablePaymentMethods
-        : null);
-
-    if (methodsToCheck && methodsToCheck.length > 1 && fromPaymentMethod) {
-      const hasValidToSelection = methodsToCheck.some(
-        (method) => getPaymentMethodKey(method) === toPaymentMethod
-      );
-      const needsAutoSelect =
-        !toPaymentMethod ||
-        !hasValidToSelection ||
-        toPaymentMethod === fromPaymentMethod;
-
-      if (!needsAutoSelect) return;
-
-      // Filter for banks first
-      const bankMethods = methodsToCheck.filter(isBankMethod);
-
-      // Select the second bank (index 1) if it exists, otherwise select the second method overall
-      let methodToSelect: any;
-      if (bankMethods.length > 1) {
-        // Select the second bank in the array (index 1)
-        methodToSelect = bankMethods[1];
-      } else if (bankMethods.length === 1 && methodsToCheck.length > 1) {
-        // If only one bank exists, select the second method overall (index 1) if it's different from "from"
-        if (methodsToCheck[1] && getPaymentMethodKey(methodsToCheck[1]) !== fromPaymentMethod) {
-          methodToSelect = methodsToCheck[1];
-        } else {
-          // Find first method that's different from "from"
-          methodToSelect = methodsToCheck.find(
-            (method) => getPaymentMethodKey(method) !== fromPaymentMethod
-          );
-        }
-      } else {
-        // No banks or only one method, select the second method (index 1) if it's different from "from"
-        if (methodsToCheck[1] && getPaymentMethodKey(methodsToCheck[1]) !== fromPaymentMethod) {
-          methodToSelect = methodsToCheck[1];
-        } else {
-          // Find first method that's different from "from"
-          methodToSelect = methodsToCheck.find(
-            (method) => getPaymentMethodKey(method) !== fromPaymentMethod
-          );
-        }
-      }
-
-      const methodKey = getPaymentMethodKey(methodToSelect);
-      if (methodKey) {
-        setToPaymentMethod(methodKey);
-        setSelectedToPaymentDetail(methodToSelect);
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [finalPaymentMethods, stablePaymentMethods, fromPaymentMethod, adminMethods, getPaymentMethodKey]);
+  }, [finalPaymentMethods, fromPaymentMethod, toPaymentMethod, getPaymentMethodKey]);
 
   // Prepare options for CustomSelect
   const paymentMethodOptions = finalPaymentMethods.map((payment: any) => {
@@ -644,11 +631,21 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
     }
 
     // Get provider name - handle both admin and public payment methods structure
-    let providerName = payment.provider_name || payment.provider?.provider_name || payment.method?.method_name || payment.payment_method_name || "";
-    const paymentMethod = payment.payment_method || payment.payment_method_type || payment.method?.method_display || payment.method?.method_name || "";
-
-    // Clean provider name - remove "- Bank" suffix if present
-    providerName = providerName.replace(/\s*-\s*Bank\s*$/i, "").trim();
+    let providerName =
+      payment.provider_name ||
+      payment.provider?.provider_name ||
+      payment.provider ||
+      payment.name ||
+      "";
+    const paymentMethod =
+      payment.method_display ||
+      payment.method ||
+      payment.payment_method ||
+      payment.payment_method_type ||
+      payment.method?.method_display ||
+      payment.method?.method_name ||
+      "";
+    providerName = providerName.trim();
 
     // Create subtitle: Provider - Method
     const subtitle = paymentMethod ? `${providerName} - ${paymentMethod}` : null;
@@ -994,8 +991,8 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
                   dropdownOffsetX={20}
                 />
               </div>
-              {adminMethodsError && (
-                <p className="text-red-500 text-sm mt-1">{adminMethodsError}</p>
+              {paymentMethodsError && (
+                <p className="text-red-500 text-sm mt-1">{paymentMethodsError}</p>
               )}
             </div>
           </div>
@@ -1104,8 +1101,8 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
                   dropdownOffsetX={20}
                 />
               </div>
-              {adminMethodsError && (
-                <p className="text-red-500 text-sm mt-1">{adminMethodsError}</p>
+              {paymentMethodsError && (
+                <p className="text-red-500 text-sm mt-1">{paymentMethodsError}</p>
               )}
             </div>
           </div>

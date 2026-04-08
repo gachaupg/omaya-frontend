@@ -332,11 +332,30 @@ export const getAdminPaymentDetails = async (): Promise<AdminPaymentMethod[]> =>
 export const getPublicPaymentMethods = async (): Promise<P2PResponse> => {
   console.log("🌐 API: Calling getPublicPaymentMethods...");
   return withRetry(async () => {
-    const response = await get<P2PResponse>(
+    const directUrl = "https://dev.backend.omaya.io/payments/public/payment-methods/";
+
+    try {
+      const directResponse = await fetch(directUrl, {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+        },
+      });
+
+      if (directResponse.ok) {
+        const directData = (await directResponse.json()) as P2PResponse;
+        console.log("🌐 API: Public payment methods response (direct):", directData);
+        return directData;
+      }
+    } catch (directError) {
+      console.warn("⚠️ API: Direct public payment methods request failed, falling back:", directError);
+    }
+
+    const fallbackResponse = await get<P2PResponse>(
       API_CONFIG.P2P.PUBLIC_PAYMENT_METHODS
     );
-    console.log("🌐 API: Public payment methods response:", response.data);
-    return response.data;
+    console.log("🌐 API: Public payment methods response (fallback):", fallbackResponse.data);
+    return fallbackResponse.data;
   });
 };
 

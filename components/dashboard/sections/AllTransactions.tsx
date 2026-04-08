@@ -18,6 +18,11 @@ const formatAmount = (amount: string | number | undefined | null): string => {
   return numAmount.toFixed(4);
 };
 
+const formatRecentTime = (dateValue: string) => {
+  const v = formatDistanceToNow(new Date(dateValue), { addSuffix: true });
+  return /less than (a|1) minute ago/i.test(v) ? "now" : v;
+};
+
 const getAssetName = (symbol: string) => {
   switch (symbol) {
     case "BTC":
@@ -319,9 +324,7 @@ const AllTransactions = () => {
           </span>
         </td>
         <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E] text-sm sm:text-base text-gray-500 dark:text-[#A0A3BC]">
-          {formatDistanceToNow(new Date(tx.created_at), {
-            addSuffix: true,
-          })}
+          {formatRecentTime(tx.created_at)}
         </td>
       </tr>
     );
@@ -415,7 +418,7 @@ const AllTransactions = () => {
           <div>
             <div className="text-xs text-gray-500 dark:text-[#A0A3BC] mb-1">When</div>
             <div className="font-medium text-sm text-gray-500 dark:text-[#A0A3BC]">
-              {formatDistanceToNow(new Date(tx.created_at), { addSuffix: true })}
+              {formatRecentTime(tx.created_at)}
             </div>
           </div>
         </div>
