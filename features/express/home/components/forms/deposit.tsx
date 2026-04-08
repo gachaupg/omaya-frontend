@@ -368,9 +368,13 @@ export default function DepositForm({
       paymentMethodsDataLength: Array.isArray(paymentMethodsData) ? paymentMethodsData.length : 0
     });
 
-    // Check if we have payment methods data
+    // Check if we have payment methods data (support all known public API shapes)
+    const hasHomePublicData =
+      (Array.isArray(publicPaymentMethods?.data?.providers) && publicPaymentMethods.data.providers.length > 0) ||
+      (Array.isArray(publicPaymentMethods?.data) && publicPaymentMethods.data.length > 0) ||
+      (Array.isArray(publicPaymentMethods) && publicPaymentMethods.length > 0);
     const hasPaymentData = isHomePage
-      ? (publicPaymentMethods?.data?.providers && Array.isArray(publicPaymentMethods.data.providers) && publicPaymentMethods.data.providers.length > 0)
+      ? hasHomePublicData
       : (paymentMethodsData && Array.isArray(paymentMethodsData) && paymentMethodsData.length > 0);
 
     if (hasPaymentData) {
@@ -394,24 +398,54 @@ export default function DepositForm({
 
           // Flatten providers directly (new structure)
           flattenedMethods = providers.map((provider: any) => {
-            // Get the first payment detail for easy access
-            const firstPaymentDetail = provider.payment_details && provider.payment_details.length > 0
-              ? provider.payment_details[0]
-              : {};
+            // Support both payment_details and admin_payment_details payload shapes
+            const firstPaymentDetail =
+              (Array.isArray(provider.payment_details) && provider.payment_details.length > 0
+                ? provider.payment_details[0]
+                : null) ||
+              (Array.isArray(provider.admin_payment_details) && provider.admin_payment_details.length > 0
+                ? provider.admin_payment_details[0]
+                : null) ||
+              {};
 
             const flattened = {
               provider_name: provider.provider_name,
-              payment_method: provider.method?.method_name || provider.method?.method_display || '',
-              payment_method_type: provider.method?.method_name || provider.method?.method_display || '',
+              payment_method:
+                provider.method_display ||
+                provider.method ||
+                provider.method?.method_name ||
+                provider.method?.method_display ||
+                '',
+              payment_method_type:
+                provider.method ||
+                provider.method_display ||
+                provider.method?.method_name ||
+                provider.method?.method_display ||
+                '',
               provider_logo: provider.logo,
               logo: provider.logo, // Also add as 'logo' for backward compatibility
               is_active: true, // All public methods are considered active
-              payment_details: provider.payment_details || [],
+              payment_details:
+                provider.payment_details ||
+                provider.admin_payment_details ||
+                [],
               // Flatten first payment detail for easy access
-              account_name: firstPaymentDetail.account_name || '',
-              account_number: firstPaymentDetail.account_number || firstPaymentDetail.mobile_number || '',
-              mobile_number: firstPaymentDetail.mobile_number || null,
-              wallet_address: firstPaymentDetail.wallet_address || null,
+              account_name: provider.account_name || firstPaymentDetail.account_name || '',
+              account_number:
+                provider.account_number ||
+                firstPaymentDetail.account_number ||
+                firstPaymentDetail.mobile_number ||
+                provider.mobile_number ||
+                provider.wallet_address ||
+                '',
+              mobile_number:
+                provider.mobile_number ||
+                firstPaymentDetail.mobile_number ||
+                null,
+              wallet_address:
+                provider.wallet_address ||
+                firstPaymentDetail.wallet_address ||
+                null,
               how_to_send: firstPaymentDetail.how_to_send || null,
               account_type: firstPaymentDetail.account_type || null,
               provider_id: provider.provider_id,
@@ -425,6 +459,62 @@ export default function DepositForm({
             });
 
             return flattened;
+          });
+        } else if (Array.isArray(publicPaymentMethods?.data)) {
+          const providers = publicPaymentMethods.data;
+          flattenedMethods = providers.map((provider: any) => {
+            const firstPaymentDetail =
+              (Array.isArray(provider.payment_details) && provider.payment_details[0]) ||
+              (Array.isArray(provider.admin_payment_details) && provider.admin_payment_details[0]) ||
+              {};
+            return {
+              provider_name: provider.provider_name || provider.payment_provider_name || provider.provider || "",
+              payment_method: provider.method_display || provider.method || provider.payment_method || "",
+              payment_method_type: provider.method || provider.method_display || provider.payment_method_type || "",
+              provider_logo: provider.logo || provider.provider_logo || undefined,
+              logo: provider.logo || provider.provider_logo || undefined,
+              is_active: true,
+              payment_details: provider.payment_details || provider.admin_payment_details || [],
+              account_name: provider.account_name || firstPaymentDetail.account_name || "",
+              account_number:
+                provider.account_number ||
+                firstPaymentDetail.account_number ||
+                firstPaymentDetail.mobile_number ||
+                provider.mobile_number ||
+                provider.wallet_address ||
+                "",
+              mobile_number: provider.mobile_number || firstPaymentDetail.mobile_number || null,
+              wallet_address: provider.wallet_address || firstPaymentDetail.wallet_address || null,
+              provider_id: provider.provider_id || provider.id,
+            };
+          });
+        } else if (Array.isArray(publicPaymentMethods)) {
+          const providers = publicPaymentMethods;
+          flattenedMethods = providers.map((provider: any) => {
+            const firstPaymentDetail =
+              (Array.isArray(provider.payment_details) && provider.payment_details[0]) ||
+              (Array.isArray(provider.admin_payment_details) && provider.admin_payment_details[0]) ||
+              {};
+            return {
+              provider_name: provider.provider_name || provider.payment_provider_name || provider.provider || "",
+              payment_method: provider.method_display || provider.method || provider.payment_method || "",
+              payment_method_type: provider.method || provider.method_display || provider.payment_method_type || "",
+              provider_logo: provider.logo || provider.provider_logo || undefined,
+              logo: provider.logo || provider.provider_logo || undefined,
+              is_active: true,
+              payment_details: provider.payment_details || provider.admin_payment_details || [],
+              account_name: provider.account_name || firstPaymentDetail.account_name || "",
+              account_number:
+                provider.account_number ||
+                firstPaymentDetail.account_number ||
+                firstPaymentDetail.mobile_number ||
+                provider.mobile_number ||
+                provider.wallet_address ||
+                "",
+              mobile_number: provider.mobile_number || firstPaymentDetail.mobile_number || null,
+              wallet_address: provider.wallet_address || firstPaymentDetail.wallet_address || null,
+              provider_id: provider.provider_id || provider.id,
+            };
           });
         } else {
           // Fallback to old structure: data.payment_methods -> providers
@@ -539,42 +629,8 @@ export default function DepositForm({
   // Use stable state - React will properly render this
   const effectivePaymentMethods = stablePaymentMethods;
 
-  // Fallback payment methods if no data is available
-  const fallbackPaymentMethods = [
-    {
-      provider_name: "Bank",
-      payment_method: "Bank Transfer",
-      payment_method_type: "Bank Transfer",
-      is_active: true,
-    },
-    {
-      provider_name: "Crypto",
-      payment_method: "Cryptocurrency",
-      payment_method_type: "Cryptocurrency",
-      is_active: true,
-    },
-    {
-      provider_name: "Forex",
-      payment_method: "Forex",
-      payment_method_type: "Forex",
-      is_active: true,
-    },
-    {
-      provider_name: "Mobile",
-      payment_method: "Mobile Money",
-      payment_method_type: "Mobile Money",
-      is_active: true,
-    },
-    {
-      provider_name: "Marchant",
-      payment_method: "Marchant",
-      payment_method_type: "Marchant",
-      is_active: true,
-    },
-  ];
-
-  // Use fallback if no effective payment methods
-  const finalPaymentMethods = effectivePaymentMethods.length > 0 ? effectivePaymentMethods : fallbackPaymentMethods;
+  // Use only real provider data (no generic fallback methods).
+  const finalPaymentMethods = effectivePaymentMethods;
 
   console.log("🔍 Effective Payment Methods:", {
     isHomePage,
@@ -803,7 +859,7 @@ export default function DepositForm({
   );
 
 
-  // Auto-select the first payment method on home page so the button behaves like the dashboard form
+  // Auto-select the second payment method by default (fallback to first when only one exists)
   useEffect(() => {
     if (finalPaymentMethods.length === 0) {
       return;
@@ -814,7 +870,7 @@ export default function DepositForm({
     );
 
     if (!payBank || !hasSelected) {
-      const defaultMethod = finalPaymentMethods[0];
+      const defaultMethod = finalPaymentMethods[1] || finalPaymentMethods[0];
       setPayBank(defaultMethod.provider_name);
       setSelectedPaymentDetail(defaultMethod);
     } else if (!selectedPaymentDetail) {

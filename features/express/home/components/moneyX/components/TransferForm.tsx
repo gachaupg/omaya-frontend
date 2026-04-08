@@ -612,6 +612,34 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
     }
   }, [finalPaymentMethods, fromPaymentMethod, toPaymentMethod, getPaymentMethodKey]);
 
+  // Home MoneyX default selection: first for "from", second distinct for "to".
+  useEffect(() => {
+    if (!Array.isArray(finalPaymentMethods) || finalPaymentMethods.length === 0) return;
+    const isRestoring =
+      typeof window !== "undefined" &&
+      (localStorage.getItem("moneyx_restore_from") || localStorage.getItem("moneyx_restore_to"));
+    if (isRestoring) return;
+
+    const first = finalPaymentMethods[0];
+    const firstKey = getPaymentMethodKey(first);
+    if (!firstKey) return;
+
+    const second =
+      finalPaymentMethods.find((m: any) => getPaymentMethodKey(m) && getPaymentMethodKey(m) !== firstKey) ||
+      finalPaymentMethods[1] ||
+      first;
+    const secondKey = getPaymentMethodKey(second);
+
+    if (!fromPaymentMethod) {
+      setFromPaymentMethod(firstKey);
+      setSelectedFromPaymentDetail(first);
+    }
+    if (!toPaymentMethod && secondKey) {
+      setToPaymentMethod(secondKey);
+      setSelectedToPaymentDetail(second);
+    }
+  }, [finalPaymentMethods, fromPaymentMethod, toPaymentMethod, getPaymentMethodKey]);
+
   // Prepare options for CustomSelect
   const paymentMethodOptions = finalPaymentMethods.map((payment: any) => {
     let logoUrl: string | undefined = undefined;

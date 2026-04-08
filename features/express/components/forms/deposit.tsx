@@ -875,7 +875,7 @@ export default function DepositForm({
     );
 
     if (!payBank || !hasSelected) {
-      const defaultMethod = paymentMethodsForSelect[0];
+      const defaultMethod = paymentMethodsForSelect[1] || paymentMethodsForSelect[0];
       const key =
         getPaymentMethodKey(defaultMethod) ||
         (defaultMethod?.provider_id != null ? String(defaultMethod.provider_id) : "");
