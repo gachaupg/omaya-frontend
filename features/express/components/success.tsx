@@ -4,6 +4,15 @@ import { useRouter } from "next/navigation";
 import CopyButton from "@/components/ui/CopyButton";
 import { useTheme } from "@/context/theme";
 import { type } from "os";
+const formatDateTimeEastAfrica = (input: Date | number | string): string => {
+  const d = input instanceof Date ? input : new Date(input);
+  if (Number.isNaN(d.getTime())) return "";
+  return new Intl.DateTimeFormat("en-KE", {
+    timeZone: "Africa/Nairobi",
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(d);
+};
 
 const GREEN = "#309A64";
 
@@ -353,25 +362,17 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
   // Extract transaction type for use in JSX
   const isDeposit = transactionData?.type === "deposit";
 
-  // Format date on client side to avoid hydration mismatch
+  // Format date in East Africa Time (EAT) on client side
   useEffect(() => {
     try {
       const dateObj = new Date(realData.date);
       if (!isNaN(dateObj.getTime())) {
-        setFormattedDate(dateObj.toLocaleString("en-US", {
-          timeZone: "UTC"
-        }));
+        setFormattedDate(formatDateTimeEastAfrica(dateObj));
       } else {
-        // Fallback to current date if invalid
-        setFormattedDate(new Date().toLocaleString("en-US", {
-          timeZone: "UTC"
-        }));
+        setFormattedDate(formatDateTimeEastAfrica(new Date()));
       }
     } catch (error) {
-      // Fallback to current date if any error occurs
-      setFormattedDate(new Date().toLocaleString("en-US", {
-        timeZone: "UTC"
-      }));
+      setFormattedDate(formatDateTimeEastAfrica(new Date()));
     }
   }, [realData.date]);
   
@@ -421,7 +422,9 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
             <div className="text-left sm:text-right">
               <div className={`${
                 isDark ? "text-gray-400" : "text-gray-600"
-              }`}>Date & Time</div>
+              }`}>
+                Date & Time (EAT)
+              </div>
               <div className={`${
                 isDark ? "text-white" : "text-gray-900"
               }`}>{formattedDate || realData.date}</div>

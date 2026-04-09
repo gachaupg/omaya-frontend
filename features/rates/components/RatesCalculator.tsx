@@ -360,8 +360,9 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
     (state: RootState) => (state as any).payment || {}
   );
   const effectiveUserPaymentDetailsFromRedux =
-    (userPaymentDetails?.length > 0 ? userPaymentDetails : userPaymentDetailsFromPayment) || [];
-  const rawUserDetails = userPaymentDetails ?? userPaymentDetailsFromPayment;
+    (userPaymentDetailsFromPayment?.length > 0 ? userPaymentDetailsFromPayment : userPaymentDetails) || [];
+  // Match dashboard withdrawal source priority: prefer payment slice first.
+  const rawUserDetails = userPaymentDetailsFromPayment ?? userPaymentDetails;
   const effectiveUserPaymentDetails = (() => {
     if (Array.isArray(rawUserDetails) && rawUserDetails.length > 0) return rawUserDetails;
     if (Array.isArray((rawUserDetails as any)?.data)) return (rawUserDetails as any).data;
@@ -1744,11 +1745,10 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
       rawUserDetails = (rawUserDetails as any)?.data || (rawUserDetails as any)?.payment_details || rawUserDetails;
     }
 
-    const sourceData = (userPaymentMethodsDisplay.displayData && userPaymentMethodsDisplay.displayData.length > 0
-      ? userPaymentMethodsDisplay.displayData
-      : (effectiveUserPaymentMethods && effectiveUserPaymentMethods.length > 0
-        ? effectiveUserPaymentMethods
-        : (Array.isArray(rawUserDetails) ? rawUserDetails : [])));
+    const sourceData = userPaymentMethodsDisplay.displayData ||
+      effectiveUserPaymentMethods ||
+      (Array.isArray(rawUserDetails) ? rawUserDetails : []) ||
+      [];
 
     const filtered = (Array.isArray(sourceData) ? sourceData : []).filter((detail: any) => {
       const normalizeProviderName = (name: string | null | undefined): string => {
@@ -1787,28 +1787,59 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
   useEffect(() => {
     if (!Array.isArray(publicPaymentProviders) || publicPaymentProviders.length === 0) return;
     const firstProvider = publicPaymentProviders[0];
+    const secondProvider = publicPaymentProviders[1] || firstProvider;
     const firstName = orderedProviderNames[0] || "";
     if (!firstName) return;
     const secondName = orderedProviderNames[1] || firstName;
 
     if (!isFieldsSwapped) {
-      setPayBank(firstName);
-      setSelectedPaymentMethod(secondName);
-      setSelectedProviderData(firstProvider);
       if (isDepositMode) {
+        setPayBank(firstName);
+        setSelectedPaymentMethod(secondName);
+        setSelectedProviderData(firstProvider);
         setSelectedPaymentDetail(firstProvider);
+      } else {
+        // Withdrawal: keep registered-account provider in sync with visible selector
+        setPayBank(secondName);
+        setSelectedPaymentMethod(secondName);
+        setSelectedProviderData(secondProvider || firstProvider);
       }
     } else {
       // When swapped, show second provider in the visible selector.
       setSelectedPaymentMethod(secondName);
-      setPayBank(firstName);
+      setPayBank(secondName);
+      setSelectedProviderData(secondProvider || firstProvider);
     }
   }, [isFieldsSwapped, publicPaymentProviders, orderedProviderNames, isDepositMode]);
 
-  // Auto-select first account when accounts are available (withdrawal) - exact as express
+  // Keep selected account synced to the currently selected provider.
+  // When provider changes, always reset to that provider's first account.
+  const lastRegisteredProviderRef = useRef<string>("");
   useEffect(() => {
-    if (payBank && enhancedFilteredUserPaymentDetails.length > 0 && selectedPaymentDetails.length === 0) {
-      setSelectedPaymentDetails([enhancedFilteredUserPaymentDetails[0]]);
+    const providerKey = (payBank || "").trim().toLowerCase();
+    const providerChanged = lastRegisteredProviderRef.current !== providerKey;
+    const hasAccounts = enhancedFilteredUserPaymentDetails.length > 0;
+    const selectedId = selectedPaymentDetails[0]?.id;
+    const selectedStillValid =
+      selectedId != null &&
+      enhancedFilteredUserPaymentDetails.some((d: any) => d?.id === selectedId);
+
+    if (providerChanged) {
+      lastRegisteredProviderRef.current = providerKey;
+      if (hasAccounts) {
+        setSelectedPaymentDetails([enhancedFilteredUserPaymentDetails[0]]);
+      } else {
+        setSelectedPaymentDetails([]);
+      }
+      return;
+    }
+
+    if (!selectedStillValid) {
+      if (hasAccounts) {
+        setSelectedPaymentDetails([enhancedFilteredUserPaymentDetails[0]]);
+      } else if (selectedPaymentDetails.length > 0) {
+        setSelectedPaymentDetails([]);
+      }
     }
   }, [payBank, enhancedFilteredUserPaymentDetails, selectedPaymentDetails]);
 
@@ -3334,6 +3365,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                           onChange={(value) => {
                             const selectedProvider = publicPaymentProviders.find((p: any) => (p.provider_name || p.payment_provider_name) === value);
                             setSelectedPaymentMethod(value);
+                            setPayBank(value);
                             setSelectedProviderData(selectedProvider);
                             setSelectedPaymentDetail(selectedProvider || null);
                             setSelectedPaymentDetails([]);
@@ -3376,42 +3408,77 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                           );
                         })()}
                       </div>
-                      {enhancedFilteredUserPaymentDetails.length > 0 ? (
-                        <CustomSelect
-                          options={enhancedFilteredUserPaymentDetails.map((detail: UserPaymentDetail) => {
-                            let providerLogo = detail.provider_logo;
-                            const pub = publicPaymentProviders.find((p: any) => (p.provider_name || p.payment_provider_name) === detail.payment_provider_name);
-                            if (pub) providerLogo = pub.logo || pub.provider_logo || providerLogo;
-                            const accountName = detail.account_name || "No Name";
-                            const accountNumber = detail.account_number || detail.wallet_address || "No Account";
-                            return {
-                              value: detail.id.toString(),
-                              label: `${accountNumber} - ${accountName}`,
-                              logo: providerLogo || undefined,
-                            };
-                          })}
-                          value={selectedPaymentDetails.length > 0 ? selectedPaymentDetails[0].id.toString() : ""}
-                          onChange={(value) => {
-                            const d = enhancedFilteredUserPaymentDetails.find((x: UserPaymentDetail) => x.id === Number(value));
-                            if (d) setSelectedPaymentDetails([d]);
-                          }}
-                          placeholder={userPaymentMethodsDisplay.isLoading ? "Loading accounts..." : "Select Registered Account"}
-                          disabled={userPaymentMethodsDisplay.isLoading}
-                          loading={userPaymentMethodsDisplay.isLoading}
-                          searchable={true}
-                          logoSize={PAYMENT_LOGO_SIZE}
-                          logoClassName={PAYMENT_LOGO_BASE_CLASS}
-                          sizeMode="card"
-                          className="w-full"
-                        />
-                      ) : (
-                        <p className="text-[#F79330] text-sm">
-                          No account found for this payment method.{" "}
-                          <button type="button" onClick={() => setIsPaymentModalOpen(true)} className="hover:underline cursor-pointer font-medium text-[#1D8751]">
-                            Add Account
-                          </button>
-                        </p>
-                      )}
+                      {(() => {
+                        const allUserAccounts = (userPaymentMethodsDisplay.displayData && userPaymentMethodsDisplay.displayData.length > 0
+                          ? userPaymentMethodsDisplay.displayData
+                          : effectiveUserPaymentMethods) || [];
+                        const hasAnyAccounts = allUserAccounts.length > 0;
+                        const hasFilteredAccounts = enhancedFilteredUserPaymentDetails.length > 0;
+
+                        if (hasFilteredAccounts) {
+                          return (
+                            <CustomSelect
+                              options={enhancedFilteredUserPaymentDetails.map((detail: UserPaymentDetail) => {
+                                const normalizeProviderName = (name: string | null | undefined): string => {
+                                  if (!name) return "";
+                                  const base = name.includes(" - ") ? name.split(" - ")[0].trim() : name.trim();
+                                  return base.toLowerCase();
+                                };
+
+                                let providerLogo = detail.provider_logo;
+                                const normalizedDetailProvider = normalizeProviderName(
+                                  detail.payment_provider_name || detail.provider_name || (detail as any).payment_provider
+                                );
+                                const pub = publicPaymentProviders.find((p: any) => {
+                                  const providerName = p.provider_name || p.payment_provider_name || p.provider;
+                                  return normalizeProviderName(providerName) === normalizedDetailProvider;
+                                });
+                                if (pub) providerLogo = pub.logo || pub.provider_logo || providerLogo;
+
+                                const accountName = detail.account_name || "No Name";
+                                const accountNumber = detail.account_number || detail.wallet_address || "No Account";
+                                return {
+                                  value: detail.id.toString(),
+                                  label: `${accountNumber} - ${accountName}`,
+                                  logo: providerLogo || undefined,
+                                };
+                              })}
+                              value={selectedPaymentDetails.length > 0 ? selectedPaymentDetails[0].id.toString() : ""}
+                              onChange={(value) => {
+                                const d = enhancedFilteredUserPaymentDetails.find((x: UserPaymentDetail) => x.id === Number(value));
+                                if (d) setSelectedPaymentDetails([d]);
+                              }}
+                              placeholder={userPaymentMethodsDisplay.isLoading ? "Loading accounts..." : "Select Registered Account"}
+                              disabled={userPaymentMethodsDisplay.isLoading}
+                              loading={userPaymentMethodsDisplay.isLoading}
+                              searchable={true}
+                              logoSize={PAYMENT_LOGO_SIZE}
+                              logoClassName={PAYMENT_LOGO_BASE_CLASS}
+                              sizeMode="card"
+                              className="w-full"
+                            />
+                          );
+                        }
+
+                        if (hasAnyAccounts) {
+                          return (
+                            <p className="text-[#F79330] text-sm">
+                              No account found for this payment method.{" "}
+                              <button type="button" onClick={() => setIsPaymentModalOpen(true)} className="hover:underline cursor-pointer font-medium text-[#1D8751]">
+                                Add Account
+                              </button>
+                            </p>
+                          );
+                        }
+
+                        return (
+                          <p className="text-[#F79330] text-sm">
+                            <button type="button" onClick={() => setIsPaymentModalOpen(true)} className="hover:underline cursor-pointer">
+                              Don&apos;t have an account? Register Now
+                            </button>
+                          </p>
+                        );
+                      })()}
                     </div>
                   )}
                 </div>
