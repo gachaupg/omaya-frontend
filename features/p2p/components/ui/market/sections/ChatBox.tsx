@@ -28,6 +28,54 @@ const isMessageImage = (img: any): img is MessageImage => {
   return img && typeof img === 'object' && ('image_url' in img || 'image' in img);
 };
 
+const extractImageUrl = (img: any): string => {
+  if (!img) return "";
+  if (typeof img === "string") return img;
+  if (typeof img === "object") {
+    return (
+      img.image_url ||
+      img.image ||
+      img.url ||
+      img.src ||
+      img.file ||
+      img.attachment ||
+      img.path ||
+      ""
+    );
+  }
+  return "";
+};
+
+const normalizeAudioList = (msg: any): Array<{ id?: string; audio_url: string; duration?: number }> => {
+  const rawList = Array.isArray(msg?.audios) && msg.audios.length > 0
+    ? msg.audios
+    : Array.isArray(msg?.uploaded_audios) && msg.uploaded_audios.length > 0
+    ? msg.uploaded_audios
+    : Array.isArray(msg?.voice_notes) && msg.voice_notes.length > 0
+    ? msg.voice_notes
+    : msg?.audio_url || msg?.audio || msg?.recording_url || msg?.voice_note
+    ? [{
+        id: msg?.id,
+        audio_url: msg?.audio_url || msg?.audio || msg?.recording_url || msg?.voice_note,
+        duration: msg?.duration,
+      }]
+    : [];
+
+  return rawList
+    .map((a: any, idx: number) => {
+      if (typeof a === "string") {
+        return { id: `${msg?.id || "audio"}-${idx}`, audio_url: a, duration: msg?.duration };
+      }
+      const audioUrl = a?.audio_url || a?.audio || a?.url || a?.file || a?.recording_url || a?.voice_note || "";
+      return {
+        id: a?.id || `${msg?.id || "audio"}-${idx}`,
+        audio_url: audioUrl,
+        duration: a?.duration ?? msg?.duration,
+      };
+    })
+    .filter((a: { id?: string; audio_url: string; duration?: number }) => typeof a.audio_url === "string" && a.audio_url.trim() !== "");
+};
+
 const isValidTradeIdForMessages = (value: unknown): value is string => {
   const v = String(value ?? "").trim();
   if (!v) return false;
@@ -385,8 +433,10 @@ const ChatBox: React.FC<{
     }
   }, [isAuthenticated, apiTradeId, dispatch, tradeId]);
 
-  // Polling interval for support messages (API-based)
+  // Polling interval for support/fallback refresh
   const pollingIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
+  const SUPPORT_POLL_MS = 1000;
+  const P2P_FALLBACK_POLL_MS = 1000;
 
   // On trade change, clear current trade message list immediately to avoid
   // briefly showing stale messages from a previously open chat.
@@ -420,15 +470,20 @@ const ChatBox: React.FC<{
 
     // Fetch initial messages once on mount
     if (messageType === 'p2p') {
-      // For P2P: WebSocket will keep them updated in real-time, use API
+      // For P2P: WebSocket is primary, but add a light fallback poll to avoid delayed cross-user updates.
       fetchMessages();
+      pollingIntervalRef.current = setInterval(() => {
+        // Only poll when tab is visible to reduce unnecessary network calls.
+        if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
+        fetchMessages();
+      }, P2P_FALLBACK_POLL_MS);
     } else if (messageType === 'support') {
-      // For support: Use API polling every 5 seconds (only if not passed as props)
+      // For support: Use API polling (only if not passed as props)
       if (!supportMessages || supportMessages.length === 0) {
         fetchMessages();
         pollingIntervalRef.current = setInterval(() => {
           fetchMessages();
-        }, 5000);
+        }, SUPPORT_POLL_MS);
       }
     } else {
       fetchMessages();
@@ -441,7 +496,7 @@ const ChatBox: React.FC<{
     };
   }, [tradeId, messageType, fetchMessages, supportMessages, dispatch]);
 
-  // Auto-refresh when new messages with images arrive via WebSocket
+  // Auto-refresh when websocket message may still be incomplete (media delayed by backend processing).
   const lastMessageIdRef = React.useRef<string | null>(null);
   const refreshTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
@@ -454,19 +509,25 @@ const ChatBox: React.FC<{
       if (latestMessage.id !== lastMessageIdRef.current) {
         lastMessageIdRef.current = latestMessage.id;
 
-        // Only refresh for temporary optimistic messages.
         const hasTemporaryId = latestMessage.id && latestMessage.id.toString().startsWith('temp-');
+        const hasText = !!(latestMessage.message && String(latestMessage.message).trim().length > 0);
+        const hasImages = Array.isArray((latestMessage as any).images) && (latestMessage as any).images.length > 0;
+        const hasAudios =
+          (Array.isArray((latestMessage as any).audios) && (latestMessage as any).audios.length > 0) ||
+          !!((latestMessage as any).audio_url || (latestMessage as any).audio || (latestMessage as any).recording_url);
+        const likelyIncompleteMediaMessage = !hasText && !hasImages && !hasAudios;
 
-        if (hasTemporaryId) {
+        // Refresh for optimistic temp messages and for websocket messages that arrive blank first.
+        if (hasTemporaryId || likelyIncompleteMediaMessage) {
           // Clear any existing timeout
           if (refreshTimeoutRef.current) {
             clearTimeout(refreshTimeoutRef.current);
           }
 
-          // Schedule a single refresh after a short delay
+          // Schedule a quick refetch from API to pull final media URLs.
           refreshTimeoutRef.current = setTimeout(() => {
             fetchMessages();
-          }, 1000);
+          }, 150);
         }
       }
     }
@@ -574,10 +635,8 @@ const ChatBox: React.FC<{
         sender_name: currentUserEmail || "",
       });
 
-      // Refresh messages to get real audio URLs/IDs
-      setTimeout(() => {
-        fetchMessages();
-      }, 500);
+      // Refresh immediately to get real audio URLs/IDs
+      fetchMessages();
     } catch (e) {
       console.error("Failed to send voice message:", e);
       // Let polling/WebSocket refresh correct the UI on failure
@@ -648,10 +707,8 @@ const ChatBox: React.FC<{
 
 
 
-      // Refresh messages to get the real message with proper IDs and S3 URLs
-      setTimeout(() => {
-        fetchMessages();
-      }, 500);
+      // Refresh immediately to get the real message with proper IDs and S3 URLs
+      fetchMessages();
     } catch (e) {
       // On error, restore the message and images
       dispatch(setMessage(messageContent));
@@ -803,28 +860,18 @@ const ChatBox: React.FC<{
                   {msg.message && msg.message.trim() && <div className="text-xs sm:text-sm break-words mb-2">{msg.message}</div>}
 
                   {/* Image attachments */}
-                  {msg.images && msg.images.length > 0 && (
-                    <div className="text-xs text-gray-500 mb-1">Images: {msg.images.length}</div>
+                  {((msg as any).images?.length || (msg as any).uploaded_images?.length) > 0 && (
+                    <div className="text-xs text-gray-500 mb-1">
+                      Images: {((msg as any).images?.length || (msg as any).uploaded_images?.length || 0)}
+                    </div>
                   )}
-                  {msg.images && msg.images.length > 0 && (
+                  {(((msg as any).images?.length || 0) > 0 || ((msg as any).uploaded_images?.length || 0) > 0) && (
                     <div className={msg.message && msg.message.trim() ? "mt-0" : "mt-0"}>
                       <div className="flex gap-2 flex-wrap justify-start">
-                        {msg.images.map((img: any, idx: number) => {
-                          // Handle different image data structures
-                          let imageUrl = '';
+                        {([...(Array.isArray((msg as any).images) ? (msg as any).images : []), ...(Array.isArray((msg as any).uploaded_images) ? (msg as any).uploaded_images : [])] as any[]).map((img: any, idx: number) => {
+                          const imageUrl = extractImageUrl(img);
 
-                          if (typeof img === 'string') {
-                            // Direct string URL
-                            imageUrl = img;
-                          } else if (img && typeof img === 'object') {
-                            // Try multiple possible properties for image URL
-                            imageUrl = img.image_url || img.image || img.url || img.src || img.file || img.attachment || '';
-                          }
-
-                          // Debug: Show image data
-                          console.log(`Image ${idx}:`, { img, imageUrl, type: typeof img });
-
-                          const imageKey = isMessageImage(img) ? img.id : `img-${idx}`;
+                          const imageKey = (isMessageImage(img) && img.id) ? img.id : `img-${msg.id}-${idx}`;
 
                           // If no valid URL, show a simple placeholder
                           if (!imageUrl || imageUrl.trim() === '') {
@@ -881,21 +928,10 @@ const ChatBox: React.FC<{
                       </div>
                     </div>
                   )}
-                  {/* Voice/audio messages - API: audios: [{ id, audio_url, duration }], or legacy audio_url/audio */}
+                  {/* Voice/audio messages */}
                   {(() => {
                     const anyMsg: any = msg;
-                    const audioList =
-                      Array.isArray(anyMsg.audios) && anyMsg.audios.length > 0
-                        ? anyMsg.audios
-                        : anyMsg.audio_url || anyMsg.audio
-                        ? [
-                            {
-                              id: anyMsg.id,
-                              audio_url: anyMsg.audio_url || anyMsg.audio,
-                              duration: 0,
-                            },
-                          ]
-                        : [];
+                    const audioList = normalizeAudioList(anyMsg);
                     if (audioList.length === 0) return null;
                     return (
                       <div className="mt-1 flex flex-col gap-2">

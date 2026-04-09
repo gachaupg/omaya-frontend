@@ -55,7 +55,7 @@ export const useTradeMessagesWebSocket = (options: UseTradeMessagesWebSocketOpti
   useEffect(() => {
     if (!enabled || !tradeId) return;
 
-    // Check connection status every 5 seconds
+    // Check connection status frequently for faster recovery.
     heartbeatIntervalRef.current = setInterval(() => {
       const ws = wsRef.current;
       const connected = ws.isConnected();
@@ -82,7 +82,7 @@ export const useTradeMessagesWebSocket = (options: UseTradeMessagesWebSocketOpti
           ws.connect(tradeId, token);
         }
       }
-    }, 5000);
+    }, 1000);
 
     return () => {
       if (heartbeatIntervalRef.current) {
@@ -158,6 +158,44 @@ export const useTradeMessagesWebSocket = (options: UseTradeMessagesWebSocketOpti
               );
             }
           }
+        }
+
+        // Accept message payloads even when backend uses non-standard `type`
+        // or puts message fields at root instead of `data`.
+        const candidatePayload: any =
+          (message as any)?.data && typeof (message as any).data === "object"
+            ? (message as any).data
+            : (message as any);
+        const looksLikeChatMessage =
+          candidatePayload &&
+          candidatePayload.id != null &&
+          (candidatePayload.message != null ||
+            Array.isArray(candidatePayload.images) ||
+            Array.isArray(candidatePayload.uploaded_images));
+        if (looksLikeChatMessage) {
+          const normalized: TradeMessage = {
+            id: candidatePayload.id,
+            trade:
+              candidatePayload.trade ||
+              candidatePayload.trade_id ||
+              parseInt(tradeId),
+            sender: candidatePayload.sender,
+            sender_name: candidatePayload.sender_name,
+            message: candidatePayload.message || "",
+            images:
+              candidatePayload.images ||
+              candidatePayload.uploaded_images ||
+              [],
+            timestamp: candidatePayload.timestamp || new Date().toISOString(),
+            seller_photo: candidatePayload.seller_photo || "",
+          };
+          dispatch(
+            addMessageFromWS({
+              tradeId,
+              message: normalized,
+            })
+          );
+          setIsConnected(true);
         }
 
         switch (message.type) {
@@ -246,8 +284,7 @@ export const useTradeMessagesWebSocket = (options: UseTradeMessagesWebSocketOpti
             break;
 
           default:
-            // Log unknown message types for debugging
-            logger.debug('p2p', "❓ Unknown WebSocket message type:", message.type, message.data);
+            // Unknown types are tolerated; message-like payloads are handled above.
             break;
         }
       } catch (error) {

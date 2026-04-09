@@ -579,7 +579,15 @@ export const getTradeMessages = async (tradeId: string) => {
     throw new Error('Trade ID is required');
   }
   return withRetry(async () => {
-    const response = await get(`${API_CONFIG.P2P.TRADE_MESSAGES(tradeId)}`);
+    const response = await get(`${API_CONFIG.P2P.TRADE_MESSAGES(tradeId)}`, {
+      // Force fresh messages; avoid stale proxy/browser caches in chat.
+      params: { _ts: Date.now() },
+      headers: {
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        Pragma: "no-cache",
+        Expires: "0",
+      },
+    });
     return response.data;
   });
 };

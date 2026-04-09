@@ -40,8 +40,8 @@ type OpenHandler = () => void;
 export class TradeMessagesWebSocket {
   private ws: WebSocket | null = null;
   private reconnectAttempts = 0;
-  private maxReconnectAttempts = 5;
-  private reconnectDelay = 3000;
+  private maxReconnectAttempts = 10;
+  private reconnectDelay = 1000;
   private messageHandlers: Set<MessageHandler> = new Set();
   private errorHandlers: Set<ErrorHandler> = new Set();
   private closeHandlers: Set<CloseHandler> = new Set();
@@ -93,11 +93,8 @@ export class TradeMessagesWebSocket {
     try {
       this.url = API_CONFIG.P2P.SOCKETS.TRADE_MESSAGES(tradeId, token);
       
-      // Only log on first connection attempt
-      if (this.reconnectAttempts === 0) {
-        logger.debug('p2p', "🔌 Connecting to Trade Messages WebSocket...");
-        console.log("Trade Messages WebSocket URL:", this.url);
-      }
+      logger.debug('p2p', "🔌 Connecting to Trade Messages WebSocket...");
+      console.log("Trade Messages WebSocket URL:", this.url);
 
       this.ws = new WebSocket(this.url);
 
