@@ -810,7 +810,7 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
             <WalletAddressStep
               walletAddress={walletAddress}
               onWalletAddressChange={handleWalletAddressChange}
-              onBack={() => {}}
+              onBack={() => setShowWalletAddress(false)}
               onNext={handleWalletAddressNext}
               fromAsset={fromAsset}
               toAsset={toAsset}

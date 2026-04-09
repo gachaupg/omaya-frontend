@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import Link from "next/link";
 import { useTheme } from "@/context/theme";
 import { logger } from "@/lib/utils/logger";
 import { useValidateAddress } from "@/hooks/useValidateAddress";
@@ -20,8 +19,6 @@ interface WalletAddressStepProps {
 
 const strongBorder =
   "border-[1.5px] border-gray-200 dark:border-[#35353E]";
-const SWAP_LEGAL_RETURN_STATE_KEY = "omaya_swap_legal_return_state";
-const RETURNING_FROM_LEGAL_KEY = "omaya_returning_from_legal";
 
 const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
   walletAddress,
@@ -37,6 +34,10 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
   const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
   const [walletError, setWalletError] = useState<string | null>(null);
   const [expandedTerms, setExpandedTerms] = useState(false);
+  const [legalModal, setLegalModal] = useState<{
+    title: string;
+    content: string[];
+  } | null>(null);
   const [bookmarkOpen, setBookmarkOpen] = useState(false);
   const bookmarkAnchorRef = useRef<HTMLSpanElement>(null);
 
@@ -146,68 +147,10 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
     await onNext();
   };
 
-  const handleBeforeLegalNavigate = useCallback(() => {
-    // Keep terms section open when coming back from legal page.
+  const openLegalModal = useCallback((title: string, content: string[]) => {
     setExpandedTerms(true);
-
-    if (typeof window === "undefined") return;
-    try {
-      sessionStorage.setItem(
-        SWAP_LEGAL_RETURN_STATE_KEY,
-        JSON.stringify({
-          walletAddress,
-          hasAcceptedTerms,
-          expandedTerms: true,
-        })
-      );
-      sessionStorage.setItem(RETURNING_FROM_LEGAL_KEY, "1");
-    } catch {
-      // Ignore storage errors
-    }
-  }, [walletAddress, hasAcceptedTerms]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      const returning = sessionStorage.getItem(RETURNING_FROM_LEGAL_KEY);
-      if (!returning) {
-        // Clear stale swap legal state so checkbox doesn't get auto-restored unexpectedly.
-        sessionStorage.removeItem(SWAP_LEGAL_RETURN_STATE_KEY);
-        return;
-      }
-
-      const saved = sessionStorage.getItem(SWAP_LEGAL_RETURN_STATE_KEY);
-      if (!saved) {
-        sessionStorage.removeItem(RETURNING_FROM_LEGAL_KEY);
-        return;
-      }
-
-      const state = JSON.parse(saved) as {
-        walletAddress?: string;
-        hasAcceptedTerms?: boolean;
-        expandedTerms?: boolean;
-      };
-
-      if (typeof state.walletAddress === "string") {
-        const syntheticEvent = {
-          target: { value: state.walletAddress },
-        } as React.ChangeEvent<HTMLInputElement>;
-        onWalletAddressChange(syntheticEvent);
-        if (state.walletAddress.trim() && currentCurrency) {
-          validateAddress(state.walletAddress, currentCurrency, currentNetwork);
-        }
-      }
-      // Returning from legal page: reopen terms, preserve actual acceptance state.
-      setExpandedTerms(true);
-      setHasAcceptedTerms(Boolean(state.hasAcceptedTerms));
-
-      sessionStorage.removeItem(RETURNING_FROM_LEGAL_KEY);
-      sessionStorage.removeItem(SWAP_LEGAL_RETURN_STATE_KEY);
-    } catch {
-      sessionStorage.removeItem(RETURNING_FROM_LEGAL_KEY);
-      sessionStorage.removeItem(SWAP_LEGAL_RETURN_STATE_KEY);
-    }
-  }, [onWalletAddressChange, currentCurrency, currentNetwork, validateAddress]);
+    setLegalModal({ title, content });
+  }, []);
 
   const trimmedWalletAddress = walletAddress.trim();
   const hasWalletInput = trimmedWalletAddress.length > 0;
@@ -487,7 +430,23 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                         </p>
                         <ul className={`text-xs sm:text-sm space-y-1.5 ml-3 mt-2 ${isDark ? "text-[#788099]" : "text-gray-900"}`}>
                           <li>• all the terms and conditions listed above, and</li>
-                          <li>• our full <Link href="/legal/terms-of-service" className="text-[#1D8751] underline font-medium hover:text-[#166b3e]" onClick={handleBeforeLegalNavigate}>Terms of Service</Link></li>
+                          <li>
+                            • our full{" "}
+                            <button
+                              type="button"
+                              className="text-[#1D8751] underline font-medium hover:text-[#166b3e]"
+                              onClick={() =>
+                                openLegalModal("Terms of Service", [
+                                  "By using this swap service, you confirm that all wallet and transaction information you provide is accurate and belongs to you.",
+                                  "Blockchain transactions are irreversible. Sending to an incorrect address, asset, or network may cause permanent loss of funds.",
+                                  "Rates, fees, timing, and final output can vary based on market conditions, network congestion, liquidity, and provider availability.",
+                                  "By proceeding, you acknowledge and accept OMAYA Terms of Use, Privacy Policy, AML Policy, Payment Policies, and Risk Disclosures."
+                                ])
+                              }
+                            >
+                              Terms of Service
+                            </button>
+                          </li>
                         </ul>
                       </div>
                     </div>
@@ -552,14 +511,52 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                 />
                 <span className={`text-xs sm:text-sm ${isDark ? "text-[#788099]" : "text-[#475569]"}`}>
                   I have read and agreed to Omaya Exchange{" "}
-                  <Link href="/legal/terms-of-service" className="text-[#1D8751] underline font-medium hover:text-[#166b3e]" onClick={handleBeforeLegalNavigate}>
+                  <button
+                    type="button"
+                    className="text-[#1D8751] underline font-medium hover:text-[#166b3e]"
+                    onClick={() =>
+                      openLegalModal("Terms of Use", [
+                        "By using this swap service, you confirm that all wallet and transaction information you provide is accurate and belongs to you.",
+                        "Blockchain transactions are irreversible. Sending to an incorrect address, asset, or network may cause permanent loss of funds.",
+                        "Rates, fees, timing, and final output can vary based on market conditions, network congestion, liquidity, and provider availability.",
+                        "By proceeding, you acknowledge and accept OMAYA Terms of Use, Privacy Policy, AML Policy, Payment Policies, and Risk Disclosures."
+                      ])
+                    }
+                  >
                     Terms of Use
-                  </Link>
+                  </button>
                 </span>
               </label>
             </div>
           </div>
         </div>
+
+        {legalModal && (
+          <div className="fixed inset-0 z-[9990] bg-black/60 flex items-center justify-center p-3 sm:p-4">
+            <div className="w-full max-w-3xl h-[70vh] bg-white dark:bg-[#18181D] rounded-2xl border border-gray-200 dark:border-accent overflow-hidden flex flex-col">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-accent">
+                <h3 className="text-sm sm:text-base font-semibold text-[#35353e] dark:text-white">
+                  {legalModal.title}
+                </h3>
+                <button
+                  type="button"
+                  className="text-[#1D8751] hover:text-[#166b3e] text-sm font-semibold"
+                  onClick={() => setLegalModal(null)}
+                >
+                  Close
+                </button>
+              </div>
+              <div className="w-full h-full overflow-y-auto p-4 sm:p-6 text-sm leading-6 text-[#35353e] dark:text-[#D6D6E0] space-y-3">
+                {legalModal.content.map((line, idx) => (
+                  <div key={idx} className="flex items-start gap-2">
+                    <span className="text-[#1D8751] font-semibold">{idx + 1}.</span>
+                    <p>{line}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Create swap error - amount too small */}
         {createSwapError === "Amount you entered is too small" && (
@@ -573,6 +570,17 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
 
         {/* Navigation Buttons */}
         <div className="flex flex-col gap-3 w-full px-0 sm:px-2 mt-3 sm:mt-4">
+          <button
+            onClick={onBack}
+            disabled={isLoading}
+            className={`w-full text-sm sm:text-base font-medium py-2.5 sm:py-2 rounded-2xl transition-colors ${
+              isDark
+                ? "bg-[#2A2A33] text-white hover:bg-[#33333d]"
+                : "bg-gray-100 text-gray-800 hover:bg-gray-200"
+            } ${isLoading ? "opacity-60 cursor-not-allowed" : ""}`}
+          >
+            Back
+          </button>
           <button
             onClick={handleNext}
             disabled={isSubmitDisabled}
