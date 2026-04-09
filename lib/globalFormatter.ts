@@ -234,3 +234,20 @@ export const formatTransactionAmount = (
     threshold: 1000
   });
 };
+
+/** East Africa Time (EAT) — e.g. Kenya, Tanzania, Uganda */
+const EAST_AFRICA_TZ = "Africa/Nairobi";
+
+export const formatDateTimeEastAfrica = (
+  input: Date | number | string
+): string => {
+  const d = input instanceof Date ? input : new Date(input);
+  if (Number.isNaN(d.getTime())) {
+    return "";
+  }
+  return new Intl.DateTimeFormat("en-KE", {
+    timeZone: EAST_AFRICA_TZ,
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(d);
+};

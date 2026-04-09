@@ -4,6 +4,16 @@ import { useRouter } from "next/navigation";
 import CopyButton from "@/components/ui/CopyButton";
 import { useTheme } from "@/context/theme";
 
+const formatDateTimeEastAfrica = (input: Date | number | string): string => {
+  const d = input instanceof Date ? input : new Date(input);
+  if (Number.isNaN(d.getTime())) return "";
+  return new Intl.DateTimeFormat("en-KE", {
+    timeZone: "Africa/Nairobi",
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(d);
+};
+
 const GREEN = "#309A64";
 
 interface SuccessPageProps {
@@ -260,10 +270,10 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
 
   const realData = getRealData();
 
-  // Format date on client side to avoid hydration mismatch
+  // Format date in East Africa Time (EAT) on client side
   useEffect(() => {
     if (realData.date) {
-      setFormattedDate(new Date(realData.date).toLocaleString());
+      setFormattedDate(formatDateTimeEastAfrica(new Date(realData.date)));
     }
   }, [realData.date]);
   
@@ -304,7 +314,7 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
             <div className="text-right">
               <div className={`${
                 isDark ? "text-gray-400" : "text-gray-600"
-              }`}>Date & Time</div>
+              }`}>Date & Time (EAT)</div>
               <div className={`${
                 isDark ? "text-white" : "text-gray-900"
               }`}>{formattedDate || realData.date}</div>

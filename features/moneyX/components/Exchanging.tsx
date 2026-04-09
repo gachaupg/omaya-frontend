@@ -22,6 +22,15 @@ import {
 } from "@/features/express/slices/transactionSlice";
 import FailureStatusModal from "@/features/express/components/FailureStatusModal";
 import { resolveExpressTransactionFailureMessage } from "@/lib/utils/websocketUtils";
+const formatDateTimeEastAfrica = (input: Date | number | string): string => {
+  const d = input instanceof Date ? input : new Date(input);
+  if (Number.isNaN(d.getTime())) return "";
+  return new Intl.DateTimeFormat("en-KE", {
+    timeZone: "Africa/Nairobi",
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(d);
+};
 
 interface ExchangingProps {
   transactionData?: {
@@ -67,6 +76,7 @@ interface ExchangingProps {
     moneyxTransactionId?: string;
     isMoneyX?: boolean;
     moneyXTransaction?: any;
+    createdAt?: number;
   };
   onBackToTransfer?: () => void;
 }
@@ -103,6 +113,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
   // Timer state - 15 minutes, wall-clock based (immune to tab throttling)
   const TIMER_DURATION_SEC = 15 * 60;
   const expiryTimestampRef = React.useRef<number | null>(null);
+  const [transactionExpiryMs, setTransactionExpiryMs] = useState<number | null>(null);
   const [timeRemaining, setTimeRemaining] = useState<number>(15 * 60);
   const [timerActive, setTimerActive] = useState<boolean>(true);
 
@@ -205,9 +216,14 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
       try {
         const stored = localStorage.getItem(storageKey);
         if (stored) {
-          const { transactionId, expiry } = JSON.parse(stored);
-          if (transactionId === txId) {
+          const { transactionId: storedTxId, expiry } = JSON.parse(stored);
+          const isMatch =
+            storedTxId === txId ||
+            storedTxId === effectiveDataForTimer?.transactionId ||
+            storedTxId === effectiveDataForTimer?.moneyxTransactionId;
+          if (isMatch) {
             expiryTimestampRef.current = expiry;
+            setTransactionExpiryMs(expiry);
             if (expiry <= Date.now()) {
               setTimeRemaining(0);
               setTimerActive(false);
@@ -223,9 +239,13 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
         ? createdAt + TIMER_DURATION_SEC * 1000
         : Date.now() + TIMER_DURATION_SEC * 1000;
       expiryTimestampRef.current = expiry;
+      setTransactionExpiryMs(expiry);
       localStorage.setItem(storageKey, JSON.stringify({ transactionId: txId, expiry }));
     }
     setTimeRemaining(computeTimeRemaining());
+    if (expiryTimestampRef.current != null) {
+      setTransactionExpiryMs(expiryTimestampRef.current);
+    }
   }, [effectiveDataForTimer?.transactionId, effectiveDataForTimer?.moneyxTransactionId, effectiveDataForTimer?.createdAt, timerActive, showSuccess, computeTimeRemaining]);
 
   // Timer: wall-clock + Page Visibility for tab-inactive accuracy
@@ -308,6 +328,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
     if (currentStatus === "completed" || showSuccess) {
       setTimerActive(false);
       localStorage.removeItem("moneyx_transaction_expiry");
+      setTransactionExpiryMs(null);
     }
   }, [currentStatus, showSuccess]);
 
@@ -386,13 +407,17 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
   // Store transaction data in localStorage when it's provided
   useEffect(() => {
     if (transactionData && transactionData.transactionId) {
+      const dataToStore = {
+        ...transactionData,
+        createdAt: transactionData.createdAt || Date.now(),
+      };
       localStorage.setItem(
         "moneyx_transaction_data",
-        JSON.stringify(transactionData)
+        JSON.stringify(dataToStore)
       );
       localStorage.setItem(
         "express_transaction_data",
-        JSON.stringify(transactionData)
+        JSON.stringify(dataToStore)
       );
     }
   }, [transactionData]);
@@ -410,6 +435,11 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
   const isMoneyXTransaction = effectiveTransactionData?.isMoneyX ||
     effectiveTransactionData?.moneyxTransactionId ||
     localStorage.getItem("moneyx_transaction_data");
+
+  const eatDeadlineLabel =
+    isMoneyXTransaction && transactionExpiryMs != null
+      ? formatDateTimeEastAfrica(transactionExpiryMs)
+      : null;
 
   // Get MoneyX transaction ID
   const moneyXTransactionId = effectiveTransactionData?.moneyxTransactionId ||
@@ -922,17 +952,37 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                   ? "Transaction will be cancelled soon!"
                   : "Complete your transaction before time expires"}
               </div>
+              {eatDeadlineLabel ? (
+                <div
+                  className={`text-[10px] sm:text-xs mt-1 ${
+                    isDark ? "text-gray-400" : "text-gray-500"
+                  }`}
+                >
+                  Deadline (EAT): {eatDeadlineLabel}
+                </div>
+              ) : null}
             </div>
           </div>
-          <div
-            className={`text-xl sm:text-2xl font-bold flex-shrink-0 ${timeRemaining <= 60
-                ? "text-red-500"
-                : timeRemaining <= 300
-                  ? "text-orange-500"
-                  : "text-[#1D8751]"
-              }`}
-          >
-            {formatTime(timeRemaining)}
+          <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
+            <div
+              className={`text-xl sm:text-2xl font-bold ${timeRemaining <= 60
+                  ? "text-red-500"
+                  : timeRemaining <= 300
+                    ? "text-orange-500"
+                    : "text-[#1D8751]"
+                }`}
+            >
+              {formatTime(timeRemaining)}
+            </div>
+            {isMoneyXTransaction ? (
+              <span
+                className={`text-[10px] sm:text-xs font-medium ${
+                  isDark ? "text-gray-500" : "text-gray-500"
+                }`}
+              >
+                EAT
+              </span>
+            ) : null}
           </div>
         </div>
       )}

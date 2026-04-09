@@ -46,6 +46,7 @@ const MoneyX = ({ onTransferComplete, initialState }: MoneyXProps) => {
       moneyxTransactionId: data.moneyxTransactionId || "", // MoneyX transaction ID
       isMoneyX: true, // Flag to identify MoneyX transactions
       moneyXTransaction: data.moneyXTransaction, // Full MoneyX transaction data
+      createdAt: Date.now(),
     };
 
     // Store in localStorage
