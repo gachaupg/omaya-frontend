@@ -192,6 +192,7 @@ export const Chats: React.FC = () => {
   const [showChatView, setShowChatView] = useState(false); // For mobile/tablet: true = show conversation, false = show list
   const [searchTerm, setSearchTerm] = useState("");
   const wsRef = useRef<any>(null);
+  const mediaRefetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [optimisticMessages, setOptimisticMessages] = useState<Map<string, any[]>>(new Map());
   const justAddedOptimisticRef = useRef<boolean>(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -463,21 +464,87 @@ export const Chats: React.FC = () => {
     // Connect WebSocket
     ws.connect(resolvedTradeId, token);
 
-    // Handle incoming messages
-    const unsubscribeMessage = ws.onMessage((message: any) => {
-      if (message.type === "new_message" || message.type === "message_received") {
-        // Message received - the grouped messages will update via the hook
-        // The useEffect above will handle updating selectedUser messages without full reload
-        // No need to manually refetch here as useGroupedMessages will poll periodically
+    // Handle incoming messages immediately for instant UI updates.
+    const unsubscribeMessage = ws.onMessage((wsMessage: any) => {
+      const payload =
+        wsMessage?.data && typeof wsMessage.data === "object"
+          ? wsMessage.data
+          : wsMessage;
+      if (!payload || !payload.id) return;
+
+      // Accept both explicit message types and message-shaped payloads.
+      const isMessageEvent =
+        wsMessage?.type === "new_message" ||
+        wsMessage?.type === "message_received" ||
+        payload?.message !== undefined ||
+        Array.isArray(payload?.images) ||
+        Array.isArray(payload?.audios);
+      if (!isMessageEvent) return;
+
+      const incomingTrade =
+        String(payload.trade_id ?? payload.trade ?? resolvedTradeId ?? "").trim();
+      if (incomingTrade && resolvedTradeId && incomingTrade !== String(resolvedTradeId)) {
+        return;
+      }
+
+      const normalizedMessage = {
+        id: String(payload.id),
+        content: String(payload.content ?? payload.message ?? ""),
+        message: String(payload.message ?? payload.content ?? ""),
+        images: Array.isArray(payload.images)
+          ? payload.images
+          : Array.isArray(payload.uploaded_images)
+          ? payload.uploaded_images
+          : [],
+        audios: Array.isArray(payload.audios)
+          ? payload.audios
+          : Array.isArray(payload.uploaded_audios)
+          ? payload.uploaded_audios
+          : [],
+        audio_url: payload.audio_url,
+        audio: payload.audio,
+        sender_id: payload.sender_id ?? payload.sender ?? 0,
+        sender_email: String(payload.sender_email ?? payload.sender_name ?? payload.sender ?? ""),
+        sender_name: String(payload.sender_name ?? payload.sender_email ?? payload.sender ?? ""),
+        timestamp: String(payload.timestamp ?? new Date().toISOString()),
+      };
+
+      setSelectedUser((prev) => {
+        if (!prev) return prev;
+        const existing = Array.isArray((prev as any).messages) ? (prev as any).messages : [];
+        const alreadyExists = existing.some((m: any) => String(m?.id) === normalizedMessage.id);
+        if (alreadyExists) return prev;
+        // Keep latest-first order expected by this tab.
+        return {
+          ...prev,
+          messages: [normalizedMessage as any, ...existing],
+        } as GroupedUser;
+      });
+
+      // Media can arrive delayed on backend processing; if socket payload is empty/blank,
+      // force a quick API refetch so image/audio shows as soon as available.
+      const hasText = normalizedMessage.content.trim().length > 0;
+      const hasImages = Array.isArray(normalizedMessage.images) && normalizedMessage.images.length > 0;
+      const hasAudios = Array.isArray(normalizedMessage.audios) && normalizedMessage.audios.length > 0;
+      if (!hasText && !hasImages && !hasAudios) {
+        if (mediaRefetchTimeoutRef.current) {
+          clearTimeout(mediaRefetchTimeoutRef.current);
+        }
+        mediaRefetchTimeoutRef.current = setTimeout(() => {
+          refetch();
+        }, 300);
       }
     });
 
     return () => {
       unsubscribeMessage();
+      if (mediaRefetchTimeoutRef.current) {
+        clearTimeout(mediaRefetchTimeoutRef.current);
+      }
       // Don't cleanup WebSocket here as it might be used elsewhere
       // cleanupTradeMessagesWebSocket(selectedUser.entity_id);
     };
-  }, [selectedUser?.entity_id, resolvedTradeId, isAuthenticated]);
+  }, [selectedUser?.entity_id, resolvedTradeId, isAuthenticated, refetch]);
 
   const conversations = useMemo(() => groupedUsers || [], [groupedUsers]);
 
