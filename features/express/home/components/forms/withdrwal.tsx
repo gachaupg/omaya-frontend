@@ -4149,13 +4149,13 @@ export default function WithdrawalForm({
                 >
                   {/* Light mode image */}
                   <img
-                    src="https://res.cloudinary.com/pitz/image/upload/v1756579504/Frame_36261_1_d9cnq1.png"
+                    src="/assets/Frame_36261_1_d9cnq1.png"
                     alt="swap icon"
                     className="w-10 h-10 dark:hidden"
                   />
                   {/* Dark mode image */}
                   <img
-                    src="https://res.cloudinary.com/pitz/image/upload/v1755500509/Frame_36261_ledmyw.png"
+                    src="/assets/Frame_36261_ledmyw.png"
                     alt="swap icon"
                     className="w-10 h-10 hidden dark:block"
                   />
@@ -4667,7 +4667,7 @@ export default function WithdrawalForm({
             {!isTransactionSubmitted && !showForexWithdrawalForm && (
               <div className="mt-4 mb-3 flex items-center gap-3 p-3 rounded-2xl bg-transparent">
                 <img
-                  src="https://res.cloudinary.com/pitz/image/upload/v1765784047/alert-circle_1_ujybne.png"
+                  src="/assets/alert-circle_1_ujybne.png"
                   alt="Warning"
                   className="w-5 h-5 flex-shrink-0 mt-1"
                 />
@@ -4763,12 +4763,12 @@ export default function WithdrawalForm({
                       <span>Withdrawal Addresses Generated</span>
                     </div>
                   ) : (
-                    <span className="flex items-center justify-center gap-2">
-                      <span className="text-base font-medium text-white">Express</span>
+                    <span className="flex items-center justify-center text-muted">
+                      E
                       <img
-                        className="h-5 w-auto mt-3"
-                        src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
-                        alt="Express icon"
+                        className="mt-2"
+                        src="/assets/Group_5_gkxzdz.png"
+                        alt=""
                       />
                     </span>
                   )}
@@ -5119,14 +5119,15 @@ export default function WithdrawalForm({
               )}
               {/* Disclaimer and Button outside the card */}
               <div className="flex flex-col gap-3 w-full px-2">
-                <div className="flex items-center text-[#35353e] dark:text-[#788099] text-[16px] font-semibold">
-                  <div className="w-5 h-5 border-2 border-[#E23D3A] rounded-full flex items-center justify-center flex-shrink-0 mr-2">
-                    <span className="text-[#E23D3A] text-xs font-bold">i</span>
-                  </div>
-                  <span>
-                    This is only an estimated price based on current market rates.
-                    The final price will be confirmed when we receive the funds.
-                  </span>
+                <div className="mt-4 mb-3 flex items-center gap-3 p-3 rounded-2xl bg-transparent">
+                  <img
+                    src="/assets/alert-circle_1_ujybne.png"
+                    alt="Warning"
+                    className="w-5 h-5 flex-shrink-0 mt-1"
+                  />
+                  <p className={`text-sm ${isDark ? "text-white" : "text-gray-900"}`}>
+                    This is only an estimated price based on current market rates. The final price will be confirmed when we receive the funds.
+                  </p>
                 </div>
 
                 {/* Warning message for amounts over $15,000 */}
@@ -5182,7 +5183,7 @@ export default function WithdrawalForm({
                       E
                       <img
                         className="mt-2"
-                        src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
+                        src="/assets/Group_5_gkxzdz.png"
                         alt=""
                       />
                     </span>
