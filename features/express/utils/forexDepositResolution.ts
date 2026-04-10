@@ -3,8 +3,15 @@
  * Shared by express `deposit.tsx` and rates calculator.
  */
 
-const asPaymentDetailId = (v: unknown): string | null =>
-  v != null && String(v).trim() !== "" ? String(v).trim() : null;
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+const asPaymentDetailId = (v: unknown): string | null => {
+  if (v == null) return null;
+  const value = String(v).trim();
+  if (!value) return null;
+  return UUID_REGEX.test(value) ? value : null;
+};
 
 /** Resolve backend admin row id from a payment-method object (public + admin APIs use different shapes). */
 export const getAdminPaymentDetailId = (payment: any): string | null => {

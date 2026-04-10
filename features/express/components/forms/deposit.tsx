@@ -4491,7 +4491,7 @@ export default function DepositForm({
                     transaction_type: "deposit" as const,
                     from_currency: "USD",
                     from_amount: payAmount.toFixed(2),
-                    to_currency: "FXP",
+                    to_currency: "FXPRIMUS",
                     to_amount: getAmount.toFixed(2),
                     exchange_rate: FXP_EXCHANGE_RATE.toFixed(4),
                     additional_info: effectivePaymentDetail
