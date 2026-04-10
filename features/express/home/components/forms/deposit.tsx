@@ -278,18 +278,25 @@ const formatPaymentProviderLabel = (payment: any): string => {
   }
 };
 
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 // Helper to resolve admin_payment_detail_id from payment object (API may use id or nest in payment_details - e.g. FXPRIMUS)
 const getAdminPaymentDetailId = (payment: any): string | null => {
   if (!payment) return null;
   const p = payment as any;
   const firstDetail = (p.payment_details?.[0] ?? p.admin_payment_details?.[0]) || null;
-  const id =
+  const idCandidate =
     p.admin_payment_detail_id ??
-    p.id ??
     firstDetail?.admin_payment_detail_id ??
+    firstDetail?.payment_detail_id ??
+    firstDetail?.detail_id ??
     firstDetail?.id ??
+    p.payment_detail_id ??
+    p.detail_id ??
     null;
-  return id != null ? String(id) : null;
+  const id = idCandidate != null ? String(idCandidate).trim() : "";
+  return UUID_REGEX.test(id) ? id : null;
 };
 
 export default function DepositForm({
@@ -4280,7 +4287,7 @@ export default function DepositForm({
                     transaction_type: "deposit" as const,
                     from_currency: "USD",
                     from_amount: payAmount.toFixed(2),
-                    to_currency: "FXP",
+                    to_currency: "FXPRIMUS",
                     to_amount: getAmount.toFixed(2),
                     exchange_rate: FXP_EXCHANGE_RATE.toFixed(4),
                     additional_info: selectedPaymentDetail ? `Wire transfer from ${selectedPaymentDetail.provider_name}` : "Wire transfer",
