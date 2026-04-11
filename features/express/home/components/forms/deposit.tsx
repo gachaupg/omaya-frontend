@@ -49,6 +49,7 @@ import {
   fetchExchangeCommissionLookup,
   getExchangeLookupParams,
   isExchangeCommissionLookupAsset,
+  isForexPrimusAsset,
   type ExchangeCommissionLookupResponse,
 } from "@/features/express/api";
 import { withTimeout } from "@/features/express/utils/fetchWithTimeout";
@@ -1234,12 +1235,7 @@ export default function DepositForm({
       isExchangeCommissionLookupAsset(asset);
   };
 
-  // Check if asset is FXP (forex)
-  const isForexAsset = (asset: any) => {
-    if (!asset) return false;
-    const ticker = (asset?.ticker || asset?.symbol || "").toLowerCase();
-    return ticker === "fxp";
-  };
+  const isForexAsset = (asset: any) => isForexPrimusAsset(asset);
 
   // FXP uses manual calculation with fixed 1.06 rate
   const FXP_EXCHANGE_RATE = 1.06;
@@ -1252,15 +1248,45 @@ export default function DepositForm({
       setExchangeLookupResponse(null);
       return;
     }
-    const params = getExchangeLookupParams(selectedAsset);
     const amount = isCalculatingFromPay
       ? (parseFloat(payAmountInput) || payAmount)
       : (parseFloat(getAmountInput) || getAmount);
     if (amount <= 0) {
-      if (params) setExchangeLookupResponse(null);
-      else setApiCommission(null);
+      setExchangeLookupResponse(null);
+      setApiCommission(null);
+      setApiValidationError(null);
       return;
     }
+
+    if (isForexAsset(selectedAsset)) {
+      setExchangeLookupResponse(null);
+      setApiValidationError(null);
+      const apiAsset = getCommissionApiAsset(
+        selectedAsset.ticker || selectedAsset.symbol || ""
+      );
+      if (!apiAsset) {
+        setApiCommission(null);
+        return;
+      }
+      if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
+      commissionFetchTimeoutRef.current = setTimeout(() => {
+        fetchCommission(apiAsset, amount, "deposit")
+          .then((c) => {
+            setApiCommission(c);
+            setExchangeLookupResponse(null);
+            setApiValidationError(null);
+          })
+          .catch(() => {
+            setApiCommission(null);
+            setApiValidationError(null);
+          });
+      }, 300);
+      return () => {
+        if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
+      };
+    }
+
+    const params = getExchangeLookupParams(selectedAsset);
     if (params) {
       if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
       commissionFetchTimeoutRef.current = setTimeout(() => {
@@ -1325,7 +1351,11 @@ export default function DepositForm({
   }, [selectedAsset, payAmountInput, getAmountInput, payAmount, getAmount, isCalculatingFromPay]);
 
   useEffect(() => {
-    if (!selectedAsset || isExchangeCommissionLookupAsset(selectedAsset)) return;
+    if (
+      !selectedAsset ||
+      (isExchangeCommissionLookupAsset(selectedAsset) && !isForexAsset(selectedAsset))
+    )
+      return;
     if (isCommissionApiAsset(selectedAsset) && apiCommission !== null) {
       if (isCalculatingFromPay && payAmount > 0) {
         const commissionAmount = (payAmount * apiCommission) / 100;
@@ -1340,7 +1370,15 @@ export default function DepositForm({
   }, [apiCommission, payAmount, getAmount, isCalculatingFromPay, selectedAsset]);
 
   useEffect(() => {
-    if (!selectedAsset || !isExchangeCommissionLookupAsset(selectedAsset) || !exchangeLookupResponse?.local_commission || isCalculatingFromPay || getAmount <= 0) return;
+    if (
+      !selectedAsset ||
+      !isExchangeCommissionLookupAsset(selectedAsset) ||
+      isForexAsset(selectedAsset) ||
+      !exchangeLookupResponse?.local_commission ||
+      isCalculatingFromPay ||
+      getAmount <= 0
+    )
+      return;
     const lc = exchangeLookupResponse.local_commission;
     if (lc.commission_mode === "flat_fee" && lc.fee != null) {
       const fee = parseFloat(lc.fee);

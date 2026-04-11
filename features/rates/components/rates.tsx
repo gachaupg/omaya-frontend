@@ -117,13 +117,11 @@ const Rates = () => {
         >
           <span>{t("rates.money", "Money")}</span>
           <img
-            src={
-              activeTab === 'moneyx'
-                ? "/assets/Group_7_ichuyz.png"
-                : "/images/x.png"
-            }
+            src="/assets/Group_7_ichuyz.png"
             alt="X"
-            className="h-5 -mb-1 w-auto"
+            className={`h-5 -mb-1 w-auto transition-opacity ${
+              activeTab === "moneyx" ? "opacity-100" : "opacity-60"
+            }`}
           />
         </button>
       </div>
