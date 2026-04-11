@@ -1385,16 +1385,46 @@ export default function DepositForm({
       setExchangeLookupResponse(null);
       return;
     }
-    const params = getExchangeLookupParams(selectedAsset);
     const amount = isCalculatingFromPay
       ? (parseFloat(payAmountInput) || payAmount)
       : (parseFloat(getAmountInput) || getAmount);
     if (amount <= 0) {
-      if (params) setExchangeLookupResponse(null);
-      else setApiCommission(null);
+      setExchangeLookupResponse(null);
+      setApiCommission(null);
+      setApiValidationError(null);
       return;
     }
 
+    // FX Primus: skip exchange commission-lookup (backend "FXP to USD" when unset); use legacy % only.
+    if (isForexAsset(selectedAsset)) {
+      setExchangeLookupResponse(null);
+      setApiValidationError(null);
+      const apiAsset = getCommissionApiAsset(
+        selectedAsset.ticker || selectedAsset.symbol || ""
+      );
+      if (!apiAsset) {
+        setApiCommission(null);
+        return;
+      }
+      if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
+      commissionFetchTimeoutRef.current = setTimeout(() => {
+        fetchCommission(apiAsset, amount, "deposit")
+          .then((commission) => {
+            setApiCommission(commission);
+            setExchangeLookupResponse(null);
+            setApiValidationError(null);
+          })
+          .catch(() => {
+            setApiCommission(null);
+            setApiValidationError(null);
+          });
+      }, 300);
+      return () => {
+        if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
+      };
+    }
+
+    const params = getExchangeLookupParams(selectedAsset);
     if (params) {
       // First 3 assets only: crypto -> USD with network (USDT/USDC on BSC, etc.)
       if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
@@ -1469,9 +1499,13 @@ export default function DepositForm({
     };
   }, [selectedAsset, payAmountInput, getAmountInput, payAmount, getAmount, isCalculatingFromPay]);
 
-  // Recalculate when apiCommission arrives (legacy % API; not used for first 3 exchange-lookup assets)
+  // Recalculate when apiCommission arrives (legacy % API; not used for crypto exchange-lookup — FX Primus uses this path)
   useEffect(() => {
-    if (!selectedAsset || isExchangeCommissionLookupAsset(selectedAsset)) return;
+    if (
+      !selectedAsset ||
+      (isExchangeCommissionLookupAsset(selectedAsset) && !isForexAsset(selectedAsset))
+    )
+      return;
     if (isCommissionApiAsset(selectedAsset) && apiCommission !== null) {
       if (isCalculatingFromPay && payAmount > 0) {
         const commissionAmount = (payAmount * apiCommission) / 100;
@@ -1489,7 +1523,15 @@ export default function DepositForm({
 
   // Reverse calculation for first 3 assets (You Receive -> You Send) using last exchange lookup local_commission
   useEffect(() => {
-    if (!selectedAsset || !isExchangeCommissionLookupAsset(selectedAsset) || !exchangeLookupResponse?.local_commission || isCalculatingFromPay || getAmount <= 0) return;
+    if (
+      !selectedAsset ||
+      !isExchangeCommissionLookupAsset(selectedAsset) ||
+      isForexAsset(selectedAsset) ||
+      !exchangeLookupResponse?.local_commission ||
+      isCalculatingFromPay ||
+      getAmount <= 0
+    )
+      return;
     const lc = exchangeLookupResponse.local_commission;
     if (lc.commission_mode === "flat_fee" && lc.fee != null) {
       const fee = parseFloat(lc.fee);

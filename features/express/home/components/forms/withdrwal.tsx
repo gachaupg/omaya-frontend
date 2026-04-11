@@ -36,6 +36,7 @@ import {
   getExchangeLookupParams,
   type ExchangeCommissionLookupResponse,
   isExchangeCommissionLookupAsset,
+  isForexPrimusAsset,
 } from "../../../api";
 import {
   ExpressWithdrawalPayload,
@@ -60,6 +61,21 @@ import { openKYCModal, checkKYCStatus } from "@/features/auth/slices/authSlice";
 
 const MISSING_USDT_USD_RATE_ERROR =
   "No exchange rate configured for USDT to USD";
+
+/** Parse amount allowing comma as decimal separator (e.g. "0,1" → 0.1) */
+const parseLocalizedAmountString = (raw: string): number => {
+  if (raw === "" || raw === "-") return 0;
+  const normalized = String(raw).trim().replace(/\s/g, "").replace(",", ".");
+  const n = parseFloat(normalized);
+  return Number.isFinite(n) ? n : 0;
+};
+
+const formatAmountForInput = (n: number): string => {
+  if (!Number.isFinite(n)) return "";
+  if (n === 0) return "0";
+  const s = n.toFixed(8).replace(/\.?0+$/, "");
+  return s || "0";
+};
 
 // Add UserPaymentDetail interface
 interface UserPaymentDetail {
@@ -233,12 +249,7 @@ export default function WithdrawalForm({
   const assetDropdownContentRef = useRef<HTMLDivElement | null>(null);
   const estimateTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Helper function to check if asset is FXP (forex) - defined early to avoid hoisting issues
-  const isForexAsset = (asset: any) => {
-    if (!asset) return false;
-    const ticker = (asset?.ticker || asset?.symbol || "").toLowerCase();
-    return ticker === "fxp" || ticker === "fxprimus";
-  };
+  const isForexAsset = (asset: any) => isForexPrimusAsset(asset);
 
   const { adminPaymentDetails, adminWalletList, loading, error } = useSelector(
     (state: any) => state.payment
@@ -1240,6 +1251,7 @@ export default function WithdrawalForm({
       setCalculationError(null);
       setReceiveAmountError(null);
       setApiValidationError(null);
+      setExchangeLookupResponse(null);
 
       // Check asset type first and handle accordingly
       if (isSimpleCalculationAsset(selectedAsset)) {
@@ -1337,8 +1349,8 @@ export default function WithdrawalForm({
 
   useEffect(() => {
     const amount = isCalculatingFromPay
-      ? (parseFloat(payAmountInput) || payAmount)
-      : (parseFloat(getAmountInput) || getAmount);
+      ? (parseLocalizedAmountString(payAmountInput) || payAmount)
+      : (parseLocalizedAmountString(getAmountInput) || getAmount);
 
     if (!selectedAsset) {
       setApiCommission(null);
@@ -1348,11 +1360,48 @@ export default function WithdrawalForm({
 
     if (amount <= 0) {
       setApiCommission(null);
-      setExchangeLookupResponse(null);
+      if (!isForexAsset(selectedAsset)) {
+        setExchangeLookupResponse(null);
+      }
+      setApiValidationError(null);
       return;
     }
 
-    // First assets use exchange commission lookup (local_commission rules)
+    // FX Primus: never use exchange commission-lookup (backend "FXP to USD" / admin message).
+    // Use legacy commission % only; if unset, UI uses 1:1 pass-through.
+    if (isForexAsset(selectedAsset)) {
+      setExchangeLookupResponse(null);
+      setApiValidationError(null);
+      if (exchangeLookupFetchTimeoutRef.current) {
+        clearTimeout(exchangeLookupFetchTimeoutRef.current);
+        exchangeLookupFetchTimeoutRef.current = null;
+      }
+      const apiAsset = getCommissionApiAsset(
+        selectedAsset.ticker || selectedAsset.symbol || ""
+      );
+      if (!apiAsset) {
+        setApiCommission(null);
+        return;
+      }
+      if (commissionFetchTimeoutRef.current)
+        clearTimeout(commissionFetchTimeoutRef.current);
+      commissionFetchTimeoutRef.current = setTimeout(() => {
+        fetchCommission(apiAsset, amount, "withdrawal")
+          .then((c) => {
+            setApiCommission(c);
+            setApiValidationError(null);
+          })
+          .catch(() => {
+            setApiCommission(null);
+            setApiValidationError(null);
+          });
+      }, 300);
+      return () => {
+        if (commissionFetchTimeoutRef.current)
+          clearTimeout(commissionFetchTimeoutRef.current);
+      };
+    }
+
     if (isExchangeCommissionLookupAsset(selectedAsset)) {
       const params = getExchangeLookupParams(selectedAsset);
       if (!params) {
@@ -1419,7 +1468,6 @@ export default function WithdrawalForm({
       };
     }
 
-    // Legacy commission lookup for other assets
     const apiAsset = getCommissionApiAsset(
       selectedAsset.ticker || selectedAsset.symbol || ""
     );
@@ -1446,7 +1494,8 @@ export default function WithdrawalForm({
     if (
       selectedAsset &&
       isCommissionApiAsset(selectedAsset) &&
-      !isExchangeCommissionLookupAsset(selectedAsset) &&
+      (!isExchangeCommissionLookupAsset(selectedAsset) ||
+        isForexAsset(selectedAsset)) &&
       apiCommission !== null
     ) {
       if (isCalculatingFromPay && payAmount > 0) {
@@ -1474,6 +1523,7 @@ export default function WithdrawalForm({
     if (
       !selectedAsset ||
       !isExchangeCommissionLookupAsset(selectedAsset) ||
+      isForexAsset(selectedAsset) ||
       !exchangeLookupResponse?.local_commission
     ) {
       return;
@@ -1512,9 +1562,6 @@ export default function WithdrawalForm({
       }
     }
   }, [exchangeLookupResponse, selectedAsset, isCalculatingFromPay, payAmount, getAmount]);
-
-  // FXP withdrawal rate: 1 FXP = 1.1 USD (user sends FXP, receives USD)
-  const FXP_TO_USD_RATE = 1.1;
 
   // Helper function to check if cache entry is still valid
   const isCacheValid = (timestamp: number) => {
@@ -1605,6 +1652,7 @@ export default function WithdrawalForm({
   // Get default amount based on asset type
   const getDefaultAmount = (asset: any) => {
     if (!asset) return 100;
+    if (isForexPrimusAsset(asset)) return 100;
     const ticker = (asset?.ticker || asset?.symbol || "").toLowerCase();
     return ticker === "usdt" || ticker === "usdc" ? 100 : 0.1;
   };
@@ -2691,6 +2739,7 @@ export default function WithdrawalForm({
                           setReceiveAmountError(null);
                           setApiValidationError(null);
                           setApiValidationError(null);
+                          setExchangeLookupResponse(null);
 
                           setSelectedAsset(asset);
                           setIsAssetDropdownOpen(false);
@@ -2710,7 +2759,7 @@ export default function WithdrawalForm({
                           } else if (isForexAsset(asset)) {
                             setIsCalculatingFromPay(true);
                             if (!isUserModifiedAmount) {
-                              const defaultAmount = 1000;
+                              const defaultAmount = getDefaultAmount(asset);
                               setPayAmount(defaultAmount);
                               setPayAmountInput(defaultAmount.toString());
                               calculateAmounts(defaultAmount, true);
@@ -2814,6 +2863,7 @@ export default function WithdrawalForm({
                       setReceiveAmountError(null);
                       setApiValidationError(null);
                       setApiValidationError(null);
+                      setExchangeLookupResponse(null);
 
                       setSelectedAsset(asset);
                       setIsAssetDropdownOpen(false);
@@ -2832,7 +2882,7 @@ export default function WithdrawalForm({
                       } else if (isForexAsset(asset)) {
                         setIsCalculatingFromPay(true);
                         if (!isUserModifiedAmount) {
-                          const defaultAmount = 1000;
+                          const defaultAmount = getDefaultAmount(asset);
                           setPayAmount(defaultAmount);
                           setPayAmountInput(defaultAmount.toString());
                           calculateAmounts(defaultAmount, true);
@@ -2939,6 +2989,13 @@ export default function WithdrawalForm({
         : 2;
       commissionAmount = (payAmount * commissionRate) / 100;
     }
+  } else if (
+    selectedAsset &&
+    isForexAsset(selectedAsset) &&
+    isCommissionApiAsset(selectedAsset)
+  ) {
+    commissionAmount =
+      apiCommission == null ? 0 : (payAmount * apiCommission) / 100;
   } else {
     // Use default commission rate for other assets
     const commissionRate = selectedAsset?.range_commissions?.[0]?.commission
@@ -2986,42 +3043,54 @@ export default function WithdrawalForm({
       return;
     }
 
-    // For FXP (forex), use manual calculation with fixed rate
+    // FX Primus: commission % from API, or 1:1 when no commission configured
     if (fromPay && selectedAsset && isForexAsset(selectedAsset)) {
-      // For withdrawal: FXP to USD (multiply by 1.1)
-      const calculatedGetAmount = capReceiveAmount(fromAmount * FXP_TO_USD_RATE);
+      const hasPct =
+        apiCommission != null && !Number.isNaN(Number(apiCommission));
+      const rawReceive = hasPct
+        ? Math.max(0, fromAmount - (fromAmount * Number(apiCommission)) / 100)
+        : fromAmount;
+      const calculatedGetAmount = capReceiveAmount(rawReceive);
 
-      setGetAmount(calculatedGetAmount);
-      setGetAmountInput(calculatedGetAmount.toFixed(2));
-      setPreviousValidAmount(calculatedGetAmount.toFixed(2));
+      if (fromAmount <= 0) {
+        setGetAmount(0);
+        setGetAmountInput("");
+        setPreviousValidAmount("");
+      } else {
+        const inputStr = formatAmountForInput(calculatedGetAmount);
+        setGetAmount(calculatedGetAmount);
+        setGetAmountInput(inputStr);
+        setPreviousValidAmount(inputStr);
+      }
 
-      // Validate the calculated amount
       const validationError = validateReceiveAmount(
         calculatedGetAmount,
         selectedAsset
       );
       setReceiveAmountError(validationError);
 
-      // Show info modal if receive amount exceeds $15,000
       if (calculatedGetAmount >= MAX_RECEIVE_AMOUNT_USD) {
         setIsInfoModalOpen(true);
       }
 
-      // No loading states for FXP - instant result
       setIsCalculating(false);
       setIsCalculatingReceive(false);
       return;
     }
 
-    // For FXP reverse calculation (user types USD, get FXP amount)
     if (!fromPay && selectedAsset && isForexAsset(selectedAsset)) {
-      // For reverse: USD to FXP (divide by 1.1)
-      const calculatedPayAmount = fromAmount / FXP_TO_USD_RATE;
+      const r =
+        apiCommission != null &&
+        !Number.isNaN(Number(apiCommission)) &&
+        Number(apiCommission) < 100
+          ? Number(apiCommission)
+          : null;
+      const calculatedPayAmount =
+        r != null ? fromAmount / (1 - r / 100) : fromAmount;
 
       setPayAmount(calculatedPayAmount);
-      setPayAmountInput(calculatedPayAmount.toFixed(2));
+      setPayAmountInput(formatAmountForInput(calculatedPayAmount));
 
-      // No loading states for FXP - instant result
       setIsCalculating(false);
       setIsCalculatingReceive(false);
       return;
@@ -3896,15 +3965,27 @@ export default function WithdrawalForm({
                                 setIsCalculating(false);
                                 setIsCalculatingReceive(false);
                               } else if (isForexAsset(selectedAsset)) {
-                                // For FXP, calculate immediately without API
-                                const calculatedGetAmount = capReceiveAmount(newValue / FXP_TO_USD_RATE);
+                                const hasPct =
+                                  apiCommission != null &&
+                                  !Number.isNaN(Number(apiCommission));
+                                const rawReceive = hasPct
+                                  ? Math.max(
+                                      0,
+                                      newValue -
+                                        (newValue * Number(apiCommission)) / 100
+                                    )
+                                  : newValue;
+                                const calculatedGetAmount =
+                                  capReceiveAmount(rawReceive);
+                                const inputStr = hasPct
+                                  ? formatAmountForInput(calculatedGetAmount)
+                                  : inputValue;
                                 setGetAmount(calculatedGetAmount);
-                                setGetAmountInput(calculatedGetAmount.toFixed(2));
-                                setPreviousValidAmount(calculatedGetAmount.toFixed(2));
+                                setGetAmountInput(inputStr);
+                                setPreviousValidAmount(inputStr);
                                 if (calculatedGetAmount >= MAX_RECEIVE_AMOUNT_USD) {
                                   setIsInfoModalOpen(true);
                                 }
-                                // Clear loading states for FXP - calculation is instant
                                 setIsCalculating(false);
                                 setIsCalculatingReceive(false);
                               } else if (newValue > 0) {
@@ -4259,12 +4340,23 @@ export default function WithdrawalForm({
                                 setIsCalculating(false);
                                 setIsCalculatingReceive(false);
                               } else if (isForexAsset(selectedAsset)) {
-                                // For FXP, calculate immediately without API (reverse: USD to FXP)
-                                const calculatedPayAmount = newAmount / FXP_TO_USD_RATE;
+                                const r =
+                                  apiCommission != null &&
+                                  !Number.isNaN(Number(apiCommission)) &&
+                                  Number(apiCommission) < 100
+                                    ? Number(apiCommission)
+                                    : null;
+                                const calculatedPayAmount =
+                                  r != null
+                                    ? newAmount / (1 - r / 100)
+                                    : newAmount;
+                                const payStr =
+                                  r != null
+                                    ? formatAmountForInput(calculatedPayAmount)
+                                    : value;
                                 setPayAmount(calculatedPayAmount);
-                                setPayAmountInput(calculatedPayAmount.toFixed(2));
+                                setPayAmountInput(payStr);
 
-                                // FXP doesn't need loading states - calculation is instant
                                 setIsCalculating(false);
                                 setIsCalculatingReceive(false);
                               } else if (newAmount > 0) {

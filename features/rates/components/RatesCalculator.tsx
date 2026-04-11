@@ -114,11 +114,11 @@ const isSimpleCalculationAsset = (asset: any) => {
 
 const isCommissionApiAsset = (asset: any) => !!getCommissionApiAsset(asset?.ticker || asset?.symbol || "");
 
-/** Commission % on keystroke — not exchange-lookup (USDT/USDC/BNB/FXP use commission-lookup + local_commission). Matches express deposit. */
+/** Commission % via fetchCommission — crypto exchange-lookup assets use lookup; FX Primus uses legacy API only (lookup returns "no FXP rate" when unset). */
 const usesLegacyPercentCommission = (asset: any) =>
   !!asset &&
   isCommissionApiAsset(asset) &&
-  !isExchangeCommissionLookupAsset(asset);
+  (!isExchangeCommissionLookupAsset(asset) || isForexPrimusAsset(asset));
 
 /** Instant amount update without waiting on exchange / swap */
 const isInstantAmountAsset = (asset: any) => usesLegacyPercentCommission(asset);
@@ -583,14 +583,17 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
   // caused a second identical exchange-lookup after setReceiveAmount(from to_amount).
   const commissionApiDriverKey = `${isDepositMode ? "dep" : "wd"}:${isCalculatingFromPay ? "pay" : "recv"}:${isCalculatingFromPay ? amount : receiveAmount}`;
 
-  // Legacy commission % API — only assets that are NOT on exchange commission-lookup (FXP/FXPRIMUS use FOREX lookup like express deposit).
+  // Legacy commission % API — crypto exchange-lookup assets skip this; FX Primus uses it (no FOREX commission-lookup).
   useEffect(() => {
     const apiAsset = selectedAsset ? getCommissionApiAsset(selectedAsset.ticker || selectedAsset.symbol || "") : null;
     if (!apiAsset || !selectedAsset) {
       setApiCommission(null);
       return;
     }
-    if (isExchangeCommissionLookupAsset(selectedAsset)) {
+    if (
+      isExchangeCommissionLookupAsset(selectedAsset) &&
+      !isForexPrimusAsset(selectedAsset)
+    ) {
       setApiCommission(null);
       return;
     }
@@ -610,7 +613,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
     };
   }, [selectedAsset, commissionApiDriverKey, isCalculatingFromPay, isDepositMode]);
 
-  // Exchange commission-lookup for first assets (local_commission fee rules)
+  // Exchange commission-lookup for first assets (local_commission fee rules) — not FX Primus (backend error when unset).
   useEffect(() => {
     if (!selectedAsset) {
       setExchangeLookupResponse(null);
@@ -619,6 +622,12 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
 
     if (!isExchangeCommissionLookupAsset(selectedAsset)) {
       setExchangeLookupResponse(null);
+      return;
+    }
+
+    if (isForexPrimusAsset(selectedAsset)) {
+      setExchangeLookupResponse(null);
+      setApiValidationError(null);
       return;
     }
 
@@ -713,6 +722,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
   useEffect(() => {
     if (!selectedAsset) return;
     if (!isExchangeCommissionLookupAsset(selectedAsset)) return;
+    if (isForexPrimusAsset(selectedAsset)) return;
     if (!exchangeLookupResponse?.local_commission) return;
     if (isCalculatingFromPay) return;
 
@@ -732,9 +742,14 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
     }
   }, [exchangeLookupResponse, selectedAsset, isCalculatingFromPay, receiveAmount]);
 
-  // Recalculate receive/send when apiCommission arrives (legacy % only — not exchange-lookup)
+  // Recalculate receive/send when apiCommission arrives (legacy % — incl. FX Primus, not crypto exchange-lookup)
   useEffect(() => {
-    if (!selectedAsset || isExchangeCommissionLookupAsset(selectedAsset)) return;
+    if (
+      !selectedAsset ||
+      (isExchangeCommissionLookupAsset(selectedAsset) &&
+        !isForexPrimusAsset(selectedAsset))
+    )
+      return;
     if (!usesLegacyPercentCommission(selectedAsset) || apiCommission === null) return;
     if (isCalculatingFromPay && parseFloat(amount) > 0) {
       const amt = parseFloat(amount) || 0;
@@ -1188,8 +1203,12 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
     setExchangeLookupResponse(null);
     setApiCommission(null);
 
-    if (asset && isExchangeCommissionLookupAsset(asset)) {
-      // Express deposit: amounts from commission-lookup (to_amount / local_commission), incl. FX Primus (FOREX)
+    if (
+      asset &&
+      isExchangeCommissionLookupAsset(asset) &&
+      !isForexPrimusAsset(asset)
+    ) {
+      // Crypto exchange-lookup: amounts from commission-lookup (to_amount / local_commission)
       setReceiveAmountError(null);
       const amountNum = parseFloat(amount) || 0;
       const receiveNum = parseFloat(receiveAmount) || 0;
@@ -1205,7 +1224,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
       }
     } else if (asset && usesLegacyPercentCommission(asset)) {
       // After setApiCommission(null), React state is still stale in this tick — use default until fetch completes.
-      const commissionRate = 2;
+      const commissionRate = isForexPrimusAsset(asset) ? 0 : 2;
       if (isCalculatingFromPay) {
         const amountNum = parseFloat(amount) || 0;
         if (amountNum > 0) {
@@ -2630,13 +2649,22 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
       commissionRate = Number.isNaN(rate) ? 0 : rate;
       commissionAmount = (amountNum * commissionRate) / 100;
     }
-  } else if (selectedAsset && isExchangeCommissionLookupAsset(selectedAsset)) {
-    // FX Primus / USDT / … — waiting for commission-lookup; do not use legacy % or asset.range_commissions
+  } else if (
+    selectedAsset &&
+    isExchangeCommissionLookupAsset(selectedAsset) &&
+    !isForexPrimusAsset(selectedAsset)
+  ) {
+    // Crypto exchange-lookup pending — do not use legacy % or asset.range_commissions
     commissionAmount = 0;
     commissionRate = 0;
   } else if (selectedAsset && usesLegacyPercentCommission(selectedAsset)) {
-    commissionRate = apiCommission ?? 2;
-    commissionAmount = (amountNum * commissionRate) / 100;
+    if (isForexPrimusAsset(selectedAsset) && apiCommission == null) {
+      commissionRate = 0;
+      commissionAmount = 0;
+    } else {
+      commissionRate = apiCommission ?? 2;
+      commissionAmount = (amountNum * commissionRate) / 100;
+    }
   } else {
     // Fallback: try to use the asset-provided commission fields
     const rateFromAsset =
@@ -2690,8 +2718,8 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
               <img
                 src={
                   isDark
-                    ? "https://res.cloudinary.com/pitz/image/upload/v1755500509/Frame_36261_ledmyw.png"
-                    : "https://res.cloudinary.com/pitz/image/upload/v1756579504/Frame_36261_1_d9cnq1.png"
+                    ? "/assets/Frame_36261_ledmyw.png"
+                    : "/assets/Frame_36261_1_d9cnq1.png"
                 }
                 alt="swap"
                 className="w-11 h-11"
