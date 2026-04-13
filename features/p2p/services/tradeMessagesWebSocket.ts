@@ -4,11 +4,16 @@ import { logger } from '@/lib/utils/logger';
 
 export interface TradeMessage {
   id: string;
-  trade: number;
+  trade: number | string;
+  trade_id?: string;
   sender: number | string;
   sender_name: string;
+  sender_username?: string;
   message: string;
-  images: string[];
+  images: any[];
+  audios?: any[];
+  audio_url?: string;
+  audio?: string;
   timestamp: string;
   seller_photo: string;
 }

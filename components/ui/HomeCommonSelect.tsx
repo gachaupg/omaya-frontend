@@ -323,16 +323,30 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
       setIsOpen(false);
       setSearchTerm("");
     };
+    const handleScrollStart = () => {
+      setIsOpen(false);
+      setSearchTerm("");
+    };
 
     window.addEventListener("resize", handleReposition);
     window.addEventListener("scroll", handleScroll, true);
     document.addEventListener("scroll", handleScroll, true);
+    window.addEventListener("wheel", handleScrollStart, {
+      capture: true,
+      passive: true,
+    });
+    window.addEventListener("touchmove", handleScrollStart, {
+      capture: true,
+      passive: true,
+    });
 
     return () => {
       clearTimeout(timeoutId);
       window.removeEventListener("resize", handleReposition);
       window.removeEventListener("scroll", handleScroll, true);
       document.removeEventListener("scroll", handleScroll, true);
+      window.removeEventListener("wheel", handleScrollStart, true);
+      window.removeEventListener("touchmove", handleScrollStart, true);
     };
   }, [isOpen]);
 

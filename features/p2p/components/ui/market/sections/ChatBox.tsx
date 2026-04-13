@@ -737,8 +737,6 @@ const ChatBox: React.FC<{
             className="flex items-center justify-center px-1 py-1  dark:bg-[#1D8751] bg-[#1D8751] text-white rounded hover:bg-[#166b3e] transition-colors disabled:opacity-50 text-xs font-medium shrink-0"
             title="Refresh messages and load images"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
-            <span className="hidden sm:inline">{isRefreshing ? "Refreshing..." : "Refresh"}</span>
           </button>
           {onClose && (
             <button

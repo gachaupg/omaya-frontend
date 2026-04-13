@@ -91,6 +91,41 @@ interface UserPaymentDetail {
   payment_provider?: string;
 }
 
+const isUuid = (value: unknown): boolean =>
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    String(value || "").trim()
+  );
+
+const extractApiErrorMessage = (error: any, fallback: string): string => {
+  const responseData = error?.response?.data;
+  if (typeof responseData === "string" && responseData.trim()) return responseData;
+
+  const direct =
+    responseData?.message ||
+    responseData?.error ||
+    responseData?.details ||
+    responseData?.detail ||
+    "";
+  if (typeof direct === "string" && direct.trim()) return direct;
+
+  const fieldErrors = responseData?.errors || responseData?.error;
+  if (fieldErrors && typeof fieldErrors === "object" && !Array.isArray(fieldErrors)) {
+    const firstKey = Object.keys(fieldErrors)[0];
+    if (firstKey) {
+      const value = fieldErrors[firstKey];
+      if (Array.isArray(value) && value.length > 0) {
+        return `${firstKey}: ${String(value[0])}`;
+      }
+      if (typeof value === "string" && value.trim()) {
+        return `${firstKey}: ${value}`;
+      }
+    }
+  }
+
+  if (error?.message && String(error.message).trim()) return String(error.message);
+  return fallback;
+};
+
 // Add UserPaymentSelector component
 const UserPaymentSelector = ({
   userPaymentDetails,
@@ -3078,6 +3113,10 @@ export default function WithdrawalForm({
       setIsTransactionSubmitted(false);
 
       try {
+        const resolvedUserPaymentDetailId = Number(selectedPaymentDetails[0]?.id);
+        if (!Number.isFinite(resolvedUserPaymentDetailId) || resolvedUserPaymentDetailId <= 0) {
+          throw new Error("Selected payment method is missing account ID");
+        }
         // Create withdrawal payload for express API
         const withdrawalPayload: ExpressWithdrawalPayload = {
           asset:
@@ -3089,11 +3128,11 @@ export default function WithdrawalForm({
             selectedNetwork?.network_id ||
             selectedNetwork?.network_type ||
             selectedAsset.network,
-          network_id: null,
-          // For FXP, use user_payment_detail_id; for others, use id
-          user_payment_detail_id: isForexAsset(selectedAsset)
-            ? selectedPaymentDetails[0].user_payment_detail_id
-            : String(selectedPaymentDetails[0].id),
+          ...(selectedNetwork?.network_id
+            ? { network_id: String(selectedNetwork.network_id) }
+            : {}),
+          // Backend expects the numeric payment detail row id (e.g. 3502).
+          user_payment_detail_id: String(resolvedUserPaymentDetailId),
         };
 
 
@@ -3175,22 +3214,10 @@ export default function WithdrawalForm({
 
 
       } catch (error: any) {
-        let errorMessage = "Failed to submit withdrawal request";
-
-        if (error.response?.data) {
-          const responseData = error.response.data;
-          if (responseData.message) {
-            errorMessage = responseData.message;
-          } else if (responseData.error) {
-            errorMessage = responseData.error;
-          } else if (responseData.details) {
-            errorMessage = responseData.details;
-          } else if (typeof responseData === "string") {
-            errorMessage = responseData;
-          }
-        } else if (error.message) {
-          errorMessage = error.message;
-        }
+        const errorMessage = extractApiErrorMessage(
+          error,
+          "Failed to submit withdrawal request"
+        );
 
         showToast.error(errorMessage);
         setValidationErrors([errorMessage]);
@@ -3291,6 +3318,10 @@ export default function WithdrawalForm({
 
     try {
       if (mode === "withdrawal") {
+        const resolvedUserPaymentDetailId = Number(selectedPaymentDetails[0]?.id);
+        if (!Number.isFinite(resolvedUserPaymentDetailId) || resolvedUserPaymentDetailId <= 0) {
+          throw new Error("Selected payment method is missing account ID");
+        }
         // Handle withdrawal submission
         const withdrawalPayload: ExpressWithdrawalPayload = {
           asset:
@@ -3302,11 +3333,11 @@ export default function WithdrawalForm({
             selectedNetwork?.network_id ||
             selectedNetwork?.network_type ||
             selectedAsset.network,
-          network_id: null,
-          // For FXP, use user_payment_detail_id; for others, use id
-          user_payment_detail_id: isForexAsset(selectedAsset)
-            ? selectedPaymentDetails[0].user_payment_detail_id
-            : String(selectedPaymentDetails[0].id),
+          ...(selectedNetwork?.network_id
+            ? { network_id: String(selectedNetwork.network_id) }
+            : {}),
+          // Backend expects the numeric payment detail row id (e.g. 3502).
+          user_payment_detail_id: String(resolvedUserPaymentDetailId),
         };
 
         // Submit to express withdrawal API
@@ -3495,23 +3526,10 @@ export default function WithdrawalForm({
         }
       }
     } catch (error: any) {
-      let errorMessage = `Failed to submit ${mode} request`;
-
-      if (error.response?.data) {
-        // Try to extract specific error message from response
-        const responseData = error.response.data;
-        if (responseData.message) {
-          errorMessage = responseData.message;
-        } else if (responseData.error) {
-          errorMessage = responseData.error;
-        } else if (responseData.details) {
-          errorMessage = responseData.details;
-        } else if (typeof responseData === "string") {
-          errorMessage = responseData;
-        }
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
+      const errorMessage = extractApiErrorMessage(
+        error,
+        `Failed to submit ${mode} request`
+      );
 
       showToast.error(errorMessage);
       setValidationErrors([errorMessage]);

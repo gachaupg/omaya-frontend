@@ -109,7 +109,11 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
         <p className="text-[11px] text-gray-600 dark:text-[#9CA3AF] truncate">
           {latestMessage?.content ||
             latestMessage?.message ||
-            "No messages yet"}
+            ((Array.isArray(latestMessage?.images) && latestMessage.images.length > 0)
+              ? "Image"
+              : (Array.isArray(latestMessage?.audios) && latestMessage.audios.length > 0)
+                ? "Audio"
+                : "No messages yet")}
         </p>
       </div>
       {unreadCount > 0 && (
@@ -512,8 +516,53 @@ export const Chats: React.FC = () => {
       setSelectedUser((prev) => {
         if (!prev) return prev;
         const existing = Array.isArray((prev as any).messages) ? (prev as any).messages : [];
-        const alreadyExists = existing.some((m: any) => String(m?.id) === normalizedMessage.id);
-        if (alreadyExists) return prev;
+        const existingIndex = existing.findIndex(
+          (m: any) => String(m?.id) === normalizedMessage.id
+        );
+
+        // Some backends emit the same message twice: first without media,
+        // then again with images/audios attached. Merge instead of dropping.
+        if (existingIndex !== -1) {
+          const current = existing[existingIndex] || {};
+          const merged = {
+            ...current,
+            ...normalizedMessage,
+            content:
+              normalizedMessage.content?.trim() ||
+              current.content ||
+              current.message ||
+              "",
+            message:
+              normalizedMessage.message?.trim() ||
+              current.message ||
+              current.content ||
+              "",
+            images:
+              Array.isArray(normalizedMessage.images) &&
+              normalizedMessage.images.length > 0
+                ? normalizedMessage.images
+                : Array.isArray(current.images)
+                  ? current.images
+                  : [],
+            audios:
+              Array.isArray(normalizedMessage.audios) &&
+              normalizedMessage.audios.length > 0
+                ? normalizedMessage.audios
+                : Array.isArray(current.audios)
+                  ? current.audios
+                  : [],
+            audio_url:
+              normalizedMessage.audio_url || current.audio_url || undefined,
+            audio: normalizedMessage.audio || current.audio || undefined,
+          };
+          const nextMessages = [...existing];
+          nextMessages[existingIndex] = merged;
+          return {
+            ...prev,
+            messages: nextMessages,
+          } as GroupedUser;
+        }
+
         // Keep latest-first order expected by this tab.
         return {
           ...prev,
@@ -843,12 +892,14 @@ export const Chats: React.FC = () => {
     const messageContent = messageInput.trim();
     const tempId = `temp-${Date.now()}-${Math.random()}`;
     const imagesToSend = uploadedImages;
+    const outgoingMessageText =
+      messageContent || (imagesToSend.length > 0 ? "Image" : "");
 
     // Create optimistic message
     const optimisticMessage = {
       id: tempId,
-      content: messageContent,
-      message: messageContent,
+      content: outgoingMessageText,
+      message: outgoingMessageText,
       images: imagesToSend.map((file) => URL.createObjectURL(file)),
       sender_id: user?.id || 0,
       sender_email: user?.email || "",
@@ -886,7 +937,7 @@ export const Chats: React.FC = () => {
         // P2P trade chat endpoint:
         // POST /trading_engine/trades/<trade_uuid>/messages/
         await postTradeMessage(targetId, {
-          message: messageContent,
+          message: outgoingMessageText,
           uploaded_images: imagesToSend,
           sender_name: user?.email || "",
         });
@@ -899,7 +950,7 @@ export const Chats: React.FC = () => {
         await postThreadMessage({
           type: messageType,
           entity_id: targetId,
-          message: messageContent,
+          message: outgoingMessageText,
         });
       } else {
         throw new Error(`Unsupported message type: ${messageType || "unknown"}`);
