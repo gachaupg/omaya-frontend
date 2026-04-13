@@ -8,6 +8,9 @@ import { showToast } from "../../../../lib/utils/toast";
 
 // Forex Deposit: We send forex to user, they send us USD
 // We need: admin bank account (where they send USD), user forex account (where we send forex)
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 export default function ForexDeposit() {
   const dispatch = useDispatch<AppDispatch>();
   
@@ -63,6 +66,12 @@ export default function ForexDeposit() {
 
     if (!selectedAdminBankId) {
       showToast.error("Please select an admin bank account");
+      return;
+    }
+    if (!UUID_REGEX.test(String(selectedAdminBankId).trim())) {
+      showToast.error(
+        "Selected admin bank account has an invalid payment detail ID. Please select another account."
+      );
       return;
     }
 

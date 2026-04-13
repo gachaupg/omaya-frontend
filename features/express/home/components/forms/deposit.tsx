@@ -10,6 +10,7 @@ import {
   fetchPublicPaymentMethods,
   fetchAdminPaymentMethods,
 } from "../../../../p2p/slices/paymentMethodsSlice";
+import { fetchAdminPaymentDetails } from "../../../../exchange/slices/paymentSlice";
 import {
   fetchAssets,
   createDeposit,
@@ -53,6 +54,7 @@ import {
   type ExchangeCommissionLookupResponse,
 } from "@/features/express/api";
 import { withTimeout } from "@/features/express/utils/fetchWithTimeout";
+import { resolveForexDepositAdminPaymentDetailId } from "@/features/express/utils/forexDepositResolution";
 
 interface DepositFormProps {
   onExchange?: (transactionData: {
@@ -106,9 +108,8 @@ const getNetworkMatchKeys = (network: string): string[] => {
   return NETWORK_ALIASES[n] ? [...NETWORK_ALIASES[n], n] : [n];
 };
 
-// Use the same placeholder used by RatesCalculator/withdrwal when an asset has no image.
-const ASSET_ICON_FALLBACK_URL =
-  "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+// Use a local placeholder so missing icons always render in home flow.
+const ASSET_ICON_FALLBACK_URL = "/assets/image_7_jijlik.png";
 
 // Network mapping function
 const getNetworkDisplayName = (network: string) => {
@@ -295,6 +296,9 @@ const getAdminPaymentDetailId = (payment: any): string | null => {
     firstDetail?.id ??
     p.payment_detail_id ??
     p.detail_id ??
+    p.admin_payment_id ??
+    p.provider_id ??
+    p.id ??
     null;
   const id = idCandidate != null ? String(idCandidate).trim() : "";
   return UUID_REGEX.test(id) ? id : null;
@@ -316,6 +320,9 @@ export default function DepositForm({
     publicMethodsLoading,
     publicMethodsError,
   } = useSelector((state: any) => state.paymentMethods);
+  const { adminPaymentDetails: exchangeAdminPaymentDetails } = useSelector(
+    (state: any) => state.payment
+  );
   const { assets, loading: assetsLoading } = useSelector(
     (state: any) => state.exchange
   );
@@ -676,6 +683,19 @@ export default function DepositForm({
   const [selectedPaymentDetail, setSelectedPaymentDetail] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const normalizeProviderName = (name: string) =>
+    (name || "")
+      .split(" - ")[0]
+      .trim()
+      .toLowerCase();
+  const normalizedPayBank = normalizeProviderName(payBank || "");
+  const effectiveSelectedPaymentDetail =
+    selectedPaymentDetail ||
+    finalPaymentMethods.find((method: any) => {
+      const providerName = normalizeProviderName(method?.provider_name || "");
+      return providerName === normalizedPayBank;
+    }) ||
+    null;
 
   const hasMoreThanFiveDecimals = (value: string) => {
     if (!value.includes(".")) return false;
@@ -1214,15 +1234,28 @@ export default function DepositForm({
         setIsAssetDropdownOpen(false);
       }
     };
+    const handleScrollStart = () => {
+      setIsAssetDropdownOpen(false);
+    };
 
     if (isAssetDropdownOpen) {
       window.addEventListener("scroll", handleScroll, true);
       document.addEventListener("scroll", handleScroll, true);
+      window.addEventListener("wheel", handleScrollStart, {
+        capture: true,
+        passive: true,
+      });
+      window.addEventListener("touchmove", handleScrollStart, {
+        capture: true,
+        passive: true,
+      });
     }
 
     return () => {
       window.removeEventListener("scroll", handleScroll, true);
       document.removeEventListener("scroll", handleScroll, true);
+      window.removeEventListener("wheel", handleScrollStart, true);
+      window.removeEventListener("touchmove", handleScrollStart, true);
     };
   }, [isAssetDropdownOpen]);
 
@@ -2748,7 +2781,7 @@ export default function DepositForm({
     }
 
     // Check if payment method is selected
-    if (!selectedPaymentDetail || !payBank) {
+    if (!effectiveSelectedPaymentDetail || !payBank) {
       errors.push("Please select a payment method");
       showToast.error("Please select a payment method");
     }
@@ -2777,19 +2810,19 @@ export default function DepositForm({
         depositPayload.append("requested_amount", payAmount.toString());
 
         // Use the selected payment method details
-        if (!selectedPaymentDetail) {
+        if (!effectiveSelectedPaymentDetail) {
           throw new Error("Please select a payment method");
         }
 
-        if (!selectedPaymentDetail.provider_name) {
+        if (!effectiveSelectedPaymentDetail.provider_name) {
           throw new Error("Payment provider is missing");
         }
-        depositPayload.append("payment_provider", selectedPaymentDetail.provider_name);
+        depositPayload.append("payment_provider", effectiveSelectedPaymentDetail.provider_name);
 
-        if (!selectedPaymentDetail.payment_method_type) {
+        if (!effectiveSelectedPaymentDetail.payment_method_type) {
           throw new Error("Payment method is missing");
         }
-        depositPayload.append("payment_method", selectedPaymentDetail.payment_method_type);
+        depositPayload.append("payment_method", effectiveSelectedPaymentDetail.payment_method_type);
         // Handle currency field - try multiple properties to get the currency value
         let currencyValue = "";
 
@@ -2984,7 +3017,7 @@ export default function DepositForm({
       errors.push("Please select an asset");
     }
 
-    if (!selectedPaymentDetail) {
+    if (!effectiveSelectedPaymentDetail) {
       errors.push("Please select a payment method");
     }
 
@@ -3232,20 +3265,20 @@ export default function DepositForm({
         depositPayload.append("deposit_address", "");
       }
 
-      if (!selectedPaymentDetail.provider_name) {
+      if (!effectiveSelectedPaymentDetail?.provider_name) {
         throw new Error("Payment provider is missing");
       }
       depositPayload.append(
         "payment_provider",
-        selectedPaymentDetail.provider_name
+        effectiveSelectedPaymentDetail.provider_name
       );
 
-      if (!selectedPaymentDetail.payment_method_type) {
+      if (!effectiveSelectedPaymentDetail?.payment_method_type) {
         throw new Error("Payment method is missing");
       }
       depositPayload.append(
         "payment_method",
-        selectedPaymentDetail.payment_method_type
+        effectiveSelectedPaymentDetail.payment_method_type
       );
 
       // Handle currency field - use the asset ticker/symbol/name from the selected asset
@@ -4124,9 +4157,12 @@ export default function DepositForm({
                     showToast.error("Please enter a valid amount");
                     return;
                   }
-                  if (!selectedPaymentDetail) {
+                  if (!effectiveSelectedPaymentDetail) {
                     showToast.error("Please select a payment method");
                     return;
+                  }
+                  if (!selectedPaymentDetail && effectiveSelectedPaymentDetail) {
+                    setSelectedPaymentDetail(effectiveSelectedPaymentDetail);
                   }
                   setShowForexForm(true);
                 } else {
@@ -4170,7 +4206,7 @@ export default function DepositForm({
         {showForexForm && selectedAsset && isForexAsset(selectedAsset) && (
           <div className="mt-4 space-y-4">
             {/* Payment Method Details */}
-            {selectedPaymentDetail && (
+            {effectiveSelectedPaymentDetail && (
               <>
                 <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
                   Payment Details
@@ -4187,18 +4223,18 @@ export default function DepositForm({
                     <div className="flex items-center gap-2">
                       <img
                         src={
-                          selectedPaymentDetail.provider_logo ||
-                          selectedPaymentDetail.logo ||
+                          effectiveSelectedPaymentDetail.provider_logo ||
+                          effectiveSelectedPaymentDetail.logo ||
                           "/assets/image_7_jijlik.png"
                         }
-                        alt={`${selectedPaymentDetail.provider_name || 'Bank'} Logo`}
+                        alt={`${effectiveSelectedPaymentDetail.provider_name || 'Bank'} Logo`}
                         className="w-8 h-8 rounded-full object-contain"
                         onError={(e) => {
                           e.currentTarget.src = "/assets/image_7_jijlik.png";
                         }}
                       />
                       <span className={`${isDark ? "text-[#D1D5DB]" : "text-[#1F2937]"} text-base font-semibold`}>
-                        {selectedPaymentDetail.provider_name}
+                        {effectiveSelectedPaymentDetail.provider_name}
                       </span>
                     </div>
                   </div>
@@ -4209,7 +4245,7 @@ export default function DepositForm({
                       Account Name :
                     </span>
                     <span className={`${isDark ? "text-[#D1D5DB]" : "text-[#1F2937]"} text-base font-medium`}>
-                      {selectedPaymentDetail.account_name}
+                      {effectiveSelectedPaymentDetail.account_name}
                     </span>
                   </div>
                   <div className={`${isDark ? "border-[#39394A]" : "border-[#E2E8F0]"} border-t border-dashed mb-2`}></div>
@@ -4220,12 +4256,12 @@ export default function DepositForm({
                     </span>
                     <div className="flex items-center gap-2">
                       <span className={`${isDark ? "text-[#D1D5DB]" : "text-[#1F2937]"} text-base font-medium`}>
-                        {selectedPaymentDetail.account_number}
+                        {effectiveSelectedPaymentDetail.account_number}
                       </span>
                       <button
                         onClick={() => {
                           navigator.clipboard.writeText(
-                            selectedPaymentDetail.account_number
+                            effectiveSelectedPaymentDetail.account_number
                           );
                           showToast.success("Account number copied!");
                         }}
@@ -4310,9 +4346,34 @@ export default function DepositForm({
                   return;
                 }
 
-                const adminPaymentDetailId = getAdminPaymentDetailId(selectedPaymentDetail);
+                let exchangeDetailsForForex: any[] = Array.isArray(
+                  exchangeAdminPaymentDetails
+                )
+                  ? exchangeAdminPaymentDetails
+                  : [];
+                try {
+                  const fresh = await dispatch(
+                    fetchAdminPaymentDetails(false)
+                  ).unwrap();
+                  if (Array.isArray(fresh) && fresh.length > 0) {
+                    exchangeDetailsForForex = fresh;
+                  }
+                } catch {
+                  // keep selector snapshot
+                }
+
+                const adminPaymentDetailId = resolveForexDepositAdminPaymentDetailId({
+                  effective: effectiveSelectedPaymentDetail,
+                  selected: selectedPaymentDetail,
+                  payBank,
+                  methods: finalPaymentMethods,
+                  adminMethods: Array.isArray(adminMethods) ? adminMethods : [],
+                  exchangeAdminPaymentDetails: exchangeDetailsForForex,
+                });
                 if (!adminPaymentDetailId) {
-                  showToast.error("Please select a payment method");
+                  showToast.error(
+                    "We could not link this bank to a valid payment detail. Please open Payment Method and select your bank again."
+                  );
                   return;
                 }
 
@@ -4328,7 +4389,7 @@ export default function DepositForm({
                     to_currency: "FXPRIMUS",
                     to_amount: getAmount.toFixed(2),
                     exchange_rate: FXP_EXCHANGE_RATE.toFixed(4),
-                    additional_info: selectedPaymentDetail ? `Wire transfer from ${selectedPaymentDetail.provider_name}` : "Wire transfer",
+                    additional_info: effectiveSelectedPaymentDetail ? `Wire transfer from ${effectiveSelectedPaymentDetail.provider_name}` : "Wire transfer",
                     user_notes: userNotes.trim() || "Forex deposit exchange",
                     user_forex_account: forexAccountNumber.trim(),
                     admin_payment_detail_id: adminPaymentDetailId,

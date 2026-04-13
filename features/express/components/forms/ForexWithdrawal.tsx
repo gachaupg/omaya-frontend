@@ -9,6 +9,23 @@ import { showToast } from "../../../../lib/utils/toast";
 // FXP Withdrawal: User sends FXP from forex account, receives USD in bank
 // Exchange rate: FXP to USD = 1 FXP : 1.1 USD (inverse of deposit rate 1.06)
 const FXP_TO_USD_RATE = 1.1;
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+const resolveUserPaymentDetailUuid = (detail: any): string | null => {
+  if (!detail || typeof detail !== "object") return null;
+  const candidates = [
+    detail.user_payment_detail_id,
+    detail.payment_detail_id,
+    detail.detail_id,
+    detail.id,
+  ];
+  for (const c of candidates) {
+    const v = c != null ? String(c).trim() : "";
+    if (v && UUID_REGEX.test(v)) return v;
+  }
+  return null;
+};
 
 interface ForexWithdrawalProps {
   payAmount: number;
@@ -48,9 +65,20 @@ export default function ForexWithdrawal({
     setIsSubmitting(true);
 
     try {
+      const resolvedUserPaymentDetailId = resolveUserPaymentDetailUuid(
+        selectedPaymentDetails[0]
+      );
+      if (!resolvedUserPaymentDetailId) {
+        showToast.error(
+          "Selected account is missing a valid payment detail ID. Please re-select your registered account."
+        );
+        setIsSubmitting(false);
+        return;
+      }
+
       const payload = {
         transaction_type: "withdrawal" as const,
-        user_payment_detail_id: selectedPaymentDetails[0].user_payment_detail_id || selectedPaymentDetails[0].id,
+        user_payment_detail_id: resolvedUserPaymentDetailId,
         from_currency: "FXP",
         from_amount: payAmount.toFixed(2),
         to_currency: "USD",

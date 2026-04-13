@@ -11,6 +11,7 @@ import type { AppDispatch } from "@/store";
 import { useRouteProtection } from "@/features/auth/hooks/useRouteProtection";
 import Loader from "@/features/p2p/components/Common/Loader";
 import { withTimeout } from "@/lib/utils/fetchWithTimeout";
+import FailureStatusModal from "@/features/express/components/FailureStatusModal";
 
 function ForexStatusContent() {
   const { isChecking, isVerified } = useRouteProtection();
@@ -31,6 +32,34 @@ function ForexStatusContent() {
   const [wsConnected, setWsConnected] = useState(false);
   const [wsConnectionState, setWsConnectionState] = useState<string>("Not initialized");
   const [lastUpdateTime, setLastUpdateTime] = useState<string | null>(null);
+  const [failureModal, setFailureModal] = useState<{
+    isOpen: boolean;
+    status: string;
+    message?: string;
+  }>({ isOpen: false, status: "", message: undefined });
+
+  const extractFailureReason = (message: any): string | undefined => {
+    const m = message || {};
+    const d = m.data || {};
+    const reason =
+      d.reason ||
+      d.rejection_reason ||
+      d.message ||
+      m.message ||
+      "";
+    const normalized = String(reason || "").trim();
+    if (!normalized || normalized.toLowerCase() === "no reason provided") {
+      return undefined;
+    }
+    return normalized;
+  };
+
+  const extractFailureStatus = (message: any): string => {
+    const status = String(
+      message?.data?.status || message?.status || ""
+    ).toLowerCase();
+    return status;
+  };
 
   // Debug auth state on mount
   useEffect(() => {
@@ -111,11 +140,37 @@ function ForexStatusContent() {
         dispatch(setForexExchangeFromCache(message.data));
         localStorage.setItem('currentForexExchange', JSON.stringify(message.data));
         setLastUpdateTime(new Date().toLocaleTimeString());
+        const status = extractFailureStatus(message);
+        if (["rejected", "failed", "stopped"].includes(status)) {
+          setFailureModal({
+            isOpen: true,
+            status,
+            message: extractFailureReason(message),
+          });
+        }
       } else if (message.type === "status_update" && message.data) {
         // Status update received - update with new data
         dispatch(setForexExchangeFromCache(message.data));
         localStorage.setItem('currentForexExchange', JSON.stringify(message.data));
         setLastUpdateTime(new Date().toLocaleTimeString());
+        const status = extractFailureStatus(message);
+        if (["rejected", "failed", "stopped"].includes(status)) {
+          setFailureModal({
+            isOpen: true,
+            status,
+            message: extractFailureReason(message),
+          });
+        }
+      } else if (message.type === "status_update") {
+        // Some backends send status updates without full data payload.
+        const status = extractFailureStatus(message);
+        if (["rejected", "failed", "stopped"].includes(status)) {
+          setFailureModal({
+            isOpen: true,
+            status,
+            message: extractFailureReason(message),
+          });
+        }
       } else if (message.type === "connection_established") {
       } else {
       }
@@ -180,6 +235,21 @@ function ForexStatusContent() {
     }
   }, [currentStatus, currentExchange, router, transactionId]);
 
+  useEffect(() => {
+    const status = String(currentExchange?.status || "").toLowerCase();
+    if (!status || !["rejected", "failed", "stopped"].includes(status)) return;
+    const fallbackReason = String(
+      currentExchange?.rejection_reason ||
+        currentExchange?.admin_notes ||
+        ""
+    ).trim();
+    setFailureModal({
+      isOpen: true,
+      status,
+      message: fallbackReason || undefined,
+    });
+  }, [currentExchange?.status, currentExchange?.rejection_reason, currentExchange?.admin_notes]);
+
   if (isChecking) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -203,7 +273,11 @@ function ForexStatusContent() {
     );
   }
 
-  if (error || !currentExchange) {
+  const isNotFoundError =
+    typeof error === "string" &&
+    (error.includes("404") || error.toLowerCase().includes("not found"));
+
+  if ((error || !currentExchange) && !isNotFoundError) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white dark:bg-[#18181D] p-4">
         <div className="max-w-md w-full bg-white dark:bg-[#1D1D23] rounded-2xl border-2 border-red-500 p-8">
@@ -228,7 +302,42 @@ function ForexStatusContent() {
     );
   }
 
+  // For 404 after reject/cleanup, keep page alive for websocket status and modal.
+  if (!currentExchange && isNotFoundError && transactionId) {
+    return (
+      <>
+        <div className="min-h-screen flex items-center justify-center bg-white dark:bg-[#18181D] p-4">
+          <div className="max-w-md w-full bg-white dark:bg-[#1D1D23] rounded-2xl border border-gray-200 dark:border-[#35353E] p-8">
+            <div className="flex flex-col items-center gap-4 text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-[#1D8751]" />
+              <h2 className="text-xl font-bold text-[#788099]">
+                Waiting for Transaction Update
+              </h2>
+              <p className="text-[#788099] text-sm">
+                Transaction record is not available via API yet. Live status updates are still active.
+              </p>
+            </div>
+          </div>
+        </div>
+        <FailureStatusModal
+          isOpen={failureModal.isOpen}
+          status={failureModal.status}
+          message={failureModal.message}
+          onClose={() =>
+            setFailureModal({ isOpen: false, status: "", message: undefined })
+          }
+          onBackToForm={() => {
+            setFailureModal({ isOpen: false, status: "", message: undefined });
+            router.push("/dashboard/express-exchange");
+          }}
+          isDark={isDark}
+        />
+      </>
+    );
+  }
+
   return (
+    <>
     <div className={`container mx-auto px-4 sm:px-6 md:px-8 min-h-screen flex flex-col items-center pt-2 overflow-x-hidden ${isDark ? 'bg-[#18181D]' : 'bg-transparent'}`}>
       {/* WebSocket Connection Status Indicator */}
       <div className="w-full max-w-4xl mb-2 flex justify-between items-center">
@@ -776,6 +885,20 @@ function ForexStatusContent() {
 
 
     </div>
+    <FailureStatusModal
+      isOpen={failureModal.isOpen}
+      status={failureModal.status}
+      message={failureModal.message}
+      onClose={() =>
+        setFailureModal({ isOpen: false, status: "", message: undefined })
+      }
+      onBackToForm={() => {
+        setFailureModal({ isOpen: false, status: "", message: undefined });
+        router.push("/dashboard/express-exchange");
+      }}
+      isDark={isDark}
+    />
+    </>
   );
 }
 

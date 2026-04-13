@@ -484,46 +484,31 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
               }
             }
 
-            // Handle amount_to (what user receives) - for display
-            if (wsData.amount_to !== null && wsData.amount_to !== undefined) {
-              const amountTo = parseFloat(wsData.amount_to);
-              if (!isNaN(amountTo)) {
-                setLiveNetAmount(amountTo);
-                setLiveNetCurrency(
-                  wsData.to_currency?.toUpperCase() ||
-                  (effectiveTransactionData?.type === "deposit"
-                    ? effectiveTransactionData?.asset?.ticker || "USDT"
-                    : "USD")
-                );
-                setLiveAmount(amountTo);
-                setLiveCurrency(
-                  wsData.to_currency?.toUpperCase() ||
-                  (effectiveTransactionData?.type === "deposit"
-                    ? "USD"
-                    : effectiveTransactionData?.type === "withdrawal"
-                      ? "USD"
-                      : "USDT")
-                );
-              }
-            }
-
-            // Handle explicit net_amount from socket payload.
-            // Example:
-            // { type: "status_update", data: { net_amount: "9.90000000", currency: "USDT", ... } }
-            if (wsData.net_amount !== null && wsData.net_amount !== undefined) {
-              const netAmount = parseFloat(String(wsData.net_amount));
-              if (!isNaN(netAmount)) {
-                setLiveNetAmount(netAmount);
-                setLiveNetCurrency(
-                  wsData.to_currency?.toUpperCase() ||
-                  wsData.currency?.toUpperCase() ||
-                  (effectiveTransactionData?.type === "deposit"
-                    ? effectiveTransactionData?.asset?.ticker ||
-                      effectiveTransactionData?.asset?.symbol ||
-                      "USDT"
-                    : "USD")
-                );
-              }
+            const toCurrencyLabel =
+              wsData.to_currency?.toUpperCase() ||
+              wsData.currency?.toUpperCase() ||
+              (effectiveTransactionData?.type === "deposit"
+                ? effectiveTransactionData?.asset?.ticker ||
+                  effectiveTransactionData?.asset?.symbol ||
+                  "USDT"
+                : "USD");
+            const amountTo = parseFloat(String(wsData.amount_to ?? ""));
+            const netAmount = parseFloat(String(wsData.net_amount ?? ""));
+            const estimatedAmount = parseFloat(String(wsData.estimated_amount ?? ""));
+            const expectedAmountTo = parseFloat(String(wsData.amount_expected_to ?? ""));
+            // Prefer non-zero receive values for pending ChangeNOW responses.
+            const preferredNetAmount =
+              (Number.isFinite(amountTo) && amountTo > 0 ? amountTo : null) ??
+              (Number.isFinite(estimatedAmount) && estimatedAmount > 0
+                ? estimatedAmount
+                : null) ??
+              (Number.isFinite(expectedAmountTo) && expectedAmountTo > 0
+                ? expectedAmountTo
+                : null) ??
+              (Number.isFinite(netAmount) ? netAmount : null);
+            if (preferredNetAmount !== null) {
+              setLiveNetAmount(preferredNetAmount);
+              setLiveNetCurrency(toCurrencyLabel);
             }
 
             // Handle expected amounts if actual amounts are not available
@@ -570,11 +555,34 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
             ) {
               const estimatedAmount = parseFloat(wsData.estimated_amount);
               if (!isNaN(estimatedAmount)) {
-                setLiveAmount(estimatedAmount);
-                setLiveCurrency(
+                setLiveNetAmount(estimatedAmount);
+                setLiveNetCurrency(
                   wsData.to_currency?.toUpperCase() ||
                     (effectiveTransactionData?.type === "deposit"
-                      ? "USD"
+                      ? effectiveTransactionData?.asset?.ticker ||
+                        effectiveTransactionData?.asset?.symbol ||
+                        "USDT"
+                      : effectiveTransactionData?.type === "withdrawal"
+                        ? "USD"
+                        : "USDT")
+                );
+              }
+            }
+
+            // amount_expected_to can contain the pending receive estimate.
+            if (
+              wsData.amount_expected_to !== null &&
+              wsData.amount_expected_to !== undefined
+            ) {
+              const expectedTo = parseFloat(String(wsData.amount_expected_to));
+              if (!isNaN(expectedTo) && expectedTo > 0) {
+                setLiveNetAmount(expectedTo);
+                setLiveNetCurrency(
+                  wsData.to_currency?.toUpperCase() ||
+                    (effectiveTransactionData?.type === "deposit"
+                      ? effectiveTransactionData?.asset?.ticker ||
+                        effectiveTransactionData?.asset?.symbol ||
+                        "USDT"
                       : effectiveTransactionData?.type === "withdrawal"
                         ? "USD"
                         : "USDT")
@@ -930,6 +938,32 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
     );
   }
 
+  const wsNetCandidates = {
+    amountTo: parseFloat(String((finalWebsocketData as any)?.data?.amount_to ?? "")),
+    estimatedAmount: parseFloat(
+      String((finalWebsocketData as any)?.data?.estimated_amount ?? "")
+    ),
+    expectedAmountTo: parseFloat(
+      String((finalWebsocketData as any)?.data?.amount_expected_to ?? "")
+    ),
+    netAmount: parseFloat(String((finalWebsocketData as any)?.data?.net_amount ?? "")),
+  };
+  const resolvedDisplayNetAmount =
+    (liveNetAmount != null && liveNetAmount > 0 ? liveNetAmount : null) ??
+    (Number.isFinite(wsNetCandidates.amountTo) && wsNetCandidates.amountTo > 0
+      ? wsNetCandidates.amountTo
+      : null) ??
+    (Number.isFinite(wsNetCandidates.estimatedAmount) &&
+    wsNetCandidates.estimatedAmount > 0
+      ? wsNetCandidates.estimatedAmount
+      : null) ??
+    (Number.isFinite(wsNetCandidates.expectedAmountTo) &&
+    wsNetCandidates.expectedAmountTo > 0
+      ? wsNetCandidates.expectedAmountTo
+      : null) ??
+    (Number.isFinite(wsNetCandidates.netAmount) ? wsNetCandidates.netAmount : null) ??
+    ((effectiveTransactionData as any)?.receiveAmount ?? 0);
+
   return (
     <div className={`w-full ${isHomePage ? 'min-h-0' : 'min-h-screen'} flex flex-col items-center ${isHomePage ? 'pt-0 px-2 sm:px-4' : 'pt-2'}`}>
       {/* Timer Banner */}
@@ -1022,7 +1056,7 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                 <div className="min-w-0">
                   <p className={`text-xs font-medium mb-0.5 ${isDark ? "text-[#7B7B7B]" : "text-gray-500"}`}>Net amount you&apos;ll receive</p>
                   <p className="text-base font-semibold text-[#1D8751]">
-                    {(liveNetAmount ?? (effectiveTransactionData as any)?.receiveAmount ?? 0).toFixed(8).replace(/\.?0+$/, "")}{" "}
+                    {(resolvedDisplayNetAmount).toFixed(8).replace(/\.?0+$/, "")}{" "}
                     <span className="uppercase">
                       {liveNetCurrency || (effectiveTransactionData?.type === "deposit" ? effectiveTransactionData?.asset?.ticker || effectiveTransactionData?.asset?.symbol || "USDT" : "USD")}
                     </span>

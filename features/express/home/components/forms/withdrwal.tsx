@@ -61,6 +61,7 @@ import { openKYCModal, checkKYCStatus } from "@/features/auth/slices/authSlice";
 
 const MISSING_USDT_USD_RATE_ERROR =
   "No exchange rate configured for USDT to USD";
+const ASSET_ICON_FALLBACK_URL = "/assets/image_7_jijlik.png";
 
 /** Parse amount allowing comma as decimal separator (e.g. "0,1" → 0.1) */
 const parseLocalizedAmountString = (raw: string): number => {
@@ -99,6 +100,36 @@ const isUuid = (value: unknown): boolean =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
     String(value || "").trim()
   );
+
+const extractApiErrorMessage = (error: any, fallback: string): string => {
+  const responseData = error?.response?.data;
+  if (typeof responseData === "string" && responseData.trim()) return responseData;
+
+  const direct =
+    responseData?.message ||
+    responseData?.error ||
+    responseData?.details ||
+    responseData?.detail ||
+    "";
+  if (typeof direct === "string" && direct.trim()) return direct;
+
+  const fieldErrors = responseData?.errors || responseData?.error;
+  if (fieldErrors && typeof fieldErrors === "object" && !Array.isArray(fieldErrors)) {
+    const firstKey = Object.keys(fieldErrors)[0];
+    if (firstKey) {
+      const value = fieldErrors[firstKey];
+      if (Array.isArray(value) && value.length > 0) {
+        return `${firstKey}: ${String(value[0])}`;
+      }
+      if (typeof value === "string" && value.trim()) {
+        return `${firstKey}: ${value}`;
+      }
+    }
+  }
+
+  if (error?.message && String(error.message).trim()) return String(error.message);
+  return fallback;
+};
 
 // Add UserPaymentSelector component
 const UserPaymentSelector = ({
@@ -889,10 +920,11 @@ export default function WithdrawalForm({
 
       const matchesProvider = providerMatch1 || providerMatch2 || providerMatch3;
 
-      // If FXP is selected, only show approved payment methods
+      // If FXP is selected, show accounts that are usable for submit.
       if (selectedAsset && isForexAsset(selectedAsset)) {
-        const isApproved = detail.status?.toLowerCase() === 'approved';
-        return matchesProvider && isApproved;
+        const status = String(detail.status || "").toLowerCase();
+        const isUsableStatus = status === "approved" || status === "verified";
+        return matchesProvider && isUsableStatus;
       }
 
       // Return payment details that match selected provider.
@@ -935,6 +967,14 @@ export default function WithdrawalForm({
       setSelectedPaymentDetails([firstAccount]);
     }
   }, [payBank, enhancedFilteredUserPaymentDetails, selectedPaymentDetails]);
+
+  // Use selected account, or fallback to the first filtered one.
+  const effectiveSelectedPaymentDetails =
+    selectedPaymentDetails.length > 0
+      ? selectedPaymentDetails
+      : enhancedFilteredUserPaymentDetails.length > 0
+        ? [enhancedFilteredUserPaymentDetails[0]]
+        : [];
 
   // Reset form if user changes asset or payment method after submission
   useEffect(() => {
@@ -1322,17 +1362,55 @@ export default function WithdrawalForm({
         setIsAssetDropdownOpen(false);
       }
     };
+    const handleScrollStart = () => {
+      setIsAssetDropdownOpen(false);
+      setIsPaymentModalOpen(false);
+    };
 
     if (isAssetDropdownOpen) {
       window.addEventListener("scroll", handleScroll, true);
       document.addEventListener("scroll", handleScroll, true);
+      window.addEventListener("wheel", handleScrollStart, {
+        capture: true,
+        passive: true,
+      });
+      window.addEventListener("touchmove", handleScrollStart, {
+        capture: true,
+        passive: true,
+      });
     }
 
     return () => {
       window.removeEventListener("scroll", handleScroll, true);
       document.removeEventListener("scroll", handleScroll, true);
+      window.removeEventListener("wheel", handleScrollStart, true);
+      window.removeEventListener("touchmove", handleScrollStart, true);
     };
   }, [isAssetDropdownOpen]);
+
+  useEffect(() => {
+    if (!isPaymentModalOpen) return;
+
+    const handleScrollStart = () => {
+      setIsPaymentModalOpen(false);
+    };
+
+    window.addEventListener("wheel", handleScrollStart, {
+      capture: true,
+      passive: true,
+    });
+    window.addEventListener("touchmove", handleScrollStart, {
+      capture: true,
+      passive: true,
+    });
+    window.addEventListener("scroll", handleScrollStart, true);
+
+    return () => {
+      window.removeEventListener("wheel", handleScrollStart, true);
+      window.removeEventListener("touchmove", handleScrollStart, true);
+      window.removeEventListener("scroll", handleScrollStart, true);
+    };
+  }, [isPaymentModalOpen]);
 
   // Check if asset is one of the first two direct assets (USDT on BSC or USDC on BSC)
   const isSimpleCalculationAsset = (asset: any) => {
@@ -2792,7 +2870,7 @@ export default function WithdrawalForm({
                                 (asset as any)?.icon_url ||
                                 (asset as any)?.icon ||
                                 (asset as any)?.image ||
-                                "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                                ASSET_ICON_FALLBACK_URL
                               }
                               alt={
                                 asset?.name ||
@@ -2802,8 +2880,7 @@ export default function WithdrawalForm({
                               }
                               className="w-10 h-10 rounded-full object-cover"
                               onError={(e) => {
-                                e.currentTarget.src =
-                                  "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                                e.currentTarget.src = ASSET_ICON_FALLBACK_URL;
                               }}
                             />
                             <div className="flex-1">
@@ -2909,15 +2986,14 @@ export default function WithdrawalForm({
                         (asset as any)?.icon_url ||
                         (asset as any)?.icon ||
                         (asset as any)?.image ||
-                        "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                        ASSET_ICON_FALLBACK_URL
                       }
                       alt={
                         asset?.name || asset?.ticker || asset?.symbol || "Asset"
                       }
                       className="w-10 h-10 rounded-full object-cover"
                       onError={(e) => {
-                        e.currentTarget.src =
-                          "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                        e.currentTarget.src = ASSET_ICON_FALLBACK_URL;
                       }}
                     />
                     <div className="flex-1">
@@ -3352,7 +3428,7 @@ export default function WithdrawalForm({
     }
 
     // Check if payment method is selected
-    if (selectedPaymentDetails.length === 0) {
+    if (effectiveSelectedPaymentDetails.length === 0) {
       setPaymentMethodError("Please select a payment method");
       errors.push("Please select a payment method");
       showToast.error("Please select a payment method");
@@ -3360,7 +3436,7 @@ export default function WithdrawalForm({
     }
 
     // Check if selected payment is pending (not approved/verified)
-    const selected = selectedPaymentDetails[0];
+    const selected = effectiveSelectedPaymentDetails[0];
     if (selected?.status && selected.status !== "approved" && selected.status !== "verified") {
       setPaymentMethodError("Selected payment method is pending verification");
       errors.push("Selected payment method is pending verification");
@@ -3410,6 +3486,10 @@ export default function WithdrawalForm({
         if (!isUuid(selectedAssetId)) {
           throw new Error("Asset ID is missing or invalid");
         }
+        const resolvedUserPaymentDetailId = Number(selectedPaymentDetails[0]?.id);
+        if (!Number.isFinite(resolvedUserPaymentDetailId) || resolvedUserPaymentDetailId <= 0) {
+          throw new Error("Selected payment method is missing account ID");
+        }
         // Create withdrawal payload for express API
         const withdrawalPayload: ExpressWithdrawalPayload = {
           asset:
@@ -3421,11 +3501,11 @@ export default function WithdrawalForm({
             selectedNetwork?.network_id ||
             selectedNetwork?.network_type ||
             selectedAsset.network,
-          network_id: null,
-          // For FXP, use user_payment_detail_id; for others, use id
-          user_payment_detail_id: isForexAsset(selectedAsset)
-            ? selectedPaymentDetails[0].user_payment_detail_id
-            : String(selectedPaymentDetails[0].id),
+          ...(selectedNetwork?.network_id
+            ? { network_id: String(selectedNetwork.network_id) }
+            : {}),
+          // Backend expects the numeric payment detail row id (e.g. 3502).
+          user_payment_detail_id: String(resolvedUserPaymentDetailId),
         };
 
 
@@ -3507,22 +3587,10 @@ export default function WithdrawalForm({
 
 
       } catch (error: any) {
-        let errorMessage = "Failed to submit withdrawal request";
-
-        if (error.response?.data) {
-          const responseData = error.response.data;
-          if (responseData.message) {
-            errorMessage = responseData.message;
-          } else if (responseData.error) {
-            errorMessage = responseData.error;
-          } else if (responseData.details) {
-            errorMessage = responseData.details;
-          } else if (typeof responseData === "string") {
-            errorMessage = responseData;
-          }
-        } else if (error.message) {
-          errorMessage = error.message;
-        }
+        const errorMessage = extractApiErrorMessage(
+          error,
+          "Failed to submit withdrawal request"
+        );
 
         showToast.error(errorMessage);
         setValidationErrors([errorMessage]);
@@ -3549,7 +3617,7 @@ export default function WithdrawalForm({
       errors.push("Please select an asset");
     }
 
-    if (selectedPaymentDetails.length === 0) {
+    if (effectiveSelectedPaymentDetails.length === 0) {
       errors.push("Please select at least one payment method");
       setPaymentMethodError("Please select a payment method");
     }
@@ -3621,6 +3689,10 @@ export default function WithdrawalForm({
         if (!isUuid(selectedAssetId)) {
           throw new Error("Asset ID is missing or invalid");
         }
+        const resolvedUserPaymentDetailId = Number(selectedPaymentDetails[0]?.id);
+        if (!Number.isFinite(resolvedUserPaymentDetailId) || resolvedUserPaymentDetailId <= 0) {
+          throw new Error("Selected payment method is missing account ID");
+        }
         // Handle withdrawal submission
         const withdrawalPayload: ExpressWithdrawalPayload = {
           asset:
@@ -3632,11 +3704,11 @@ export default function WithdrawalForm({
             selectedNetwork?.network_id ||
             selectedNetwork?.network_type ||
             selectedAsset.network,
-          network_id: null,
-          // For FXP, use user_payment_detail_id; for others, use id
-          user_payment_detail_id: isForexAsset(selectedAsset)
-            ? selectedPaymentDetails[0].user_payment_detail_id
-            : String(selectedPaymentDetails[0].id),
+          ...(selectedNetwork?.network_id
+            ? { network_id: String(selectedNetwork.network_id) }
+            : {}),
+          // Backend expects the numeric payment detail row id (e.g. 3502).
+          user_payment_detail_id: String(resolvedUserPaymentDetailId),
         };
 
         // Submit to express withdrawal API
@@ -3825,23 +3897,10 @@ export default function WithdrawalForm({
         }
       }
     } catch (error: any) {
-      let errorMessage = `Failed to submit ${mode} request`;
-
-      if (error.response?.data) {
-        // Try to extract specific error message from response
-        const responseData = error.response.data;
-        if (responseData.message) {
-          errorMessage = responseData.message;
-        } else if (responseData.error) {
-          errorMessage = responseData.error;
-        } else if (responseData.details) {
-          errorMessage = responseData.details;
-        } else if (typeof responseData === "string") {
-          errorMessage = responseData;
-        }
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
+      const errorMessage = extractApiErrorMessage(
+        error,
+        `Failed to submit ${mode} request`
+      );
 
       showToast.error(errorMessage);
       setValidationErrors([errorMessage]);
@@ -4146,7 +4205,7 @@ export default function WithdrawalForm({
                                 selectedAsset?.image_url ||
                                 selectedAsset?.asset_image ||
                                 (selectedAsset as any)?.image ||
-                                "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                                ASSET_ICON_FALLBACK_URL
                               }
                               alt={
                                 selectedAsset?.name ||
@@ -4160,8 +4219,7 @@ export default function WithdrawalForm({
                                   "Image failed to load for asset:",
                                   selectedAsset
                                 );
-                                e.currentTarget.src =
-                                  "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                                e.currentTarget.src = ASSET_ICON_FALLBACK_URL;
                               }}
                             />
                             <div className="flex flex-col">
@@ -4184,7 +4242,7 @@ export default function WithdrawalForm({
                         ) : (
                           <>
                             <img
-                              src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                              src={ASSET_ICON_FALLBACK_URL}
                               alt="asset icon"
                               className="w-6 h-6"
                             />
@@ -4816,9 +4874,12 @@ export default function WithdrawalForm({
                         showToast.error("Please enter a valid amount");
                         return;
                       }
-                      if (selectedPaymentDetails.length === 0) {
+                      if (effectiveSelectedPaymentDetails.length === 0) {
                         showToast.error("Please select a payment method");
                         return;
+                      }
+                      if (selectedPaymentDetails.length === 0) {
+                        setSelectedPaymentDetails(effectiveSelectedPaymentDetails);
                       }
                       setShowForexWithdrawalForm(true);
                     } else {
@@ -4873,7 +4934,7 @@ export default function WithdrawalForm({
               <ForexWithdrawal
                 payAmount={payAmount}
                 getAmount={getAmount}
-                selectedPaymentDetails={selectedPaymentDetails}
+                selectedPaymentDetails={effectiveSelectedPaymentDetails}
               />
             )}
           </div>

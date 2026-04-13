@@ -10,6 +10,7 @@ import { isNonEmptyInvalidZeroSwapAmount } from "@/lib/utils/swapAmountInput";
 
 const ZERO_AMOUNT_INVALID_MSG =
   "0 is not a valid amount input. Enter an amount greater than zero.";
+const ASSET_ICON_FALLBACK_URL = "/assets/image_7_jijlik.png";
 
 interface TransactionInfoStepProps {
   fromAsset: SupportedAsset | null;
@@ -332,13 +333,12 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                       assetItem.image ||
                       assetItem.image_url ||
                       assetItem.asset_image ||
-                      "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                      ASSET_ICON_FALLBACK_URL
                     }
                     alt={assetItem.name || "Asset"}
                     className="w-6 h-6 rounded-full object-cover"
                     onError={(e) => {
-                      e.currentTarget.src =
-                        "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                      e.currentTarget.src = ASSET_ICON_FALLBACK_URL;
                     }}
                   />
                   <div className="flex-1">
@@ -451,13 +451,12 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                             fromAsset.image ||
                             fromAsset.image_url ||
                             fromAsset.asset_image ||
-                            "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                            ASSET_ICON_FALLBACK_URL
                           }
                           alt={fromAsset.name}
                           className="w-6 h-6 rounded-full"
                           onError={(e) => {
-                            e.currentTarget.src =
-                              "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                            e.currentTarget.src = ASSET_ICON_FALLBACK_URL;
                           }}
                         />
                         <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -476,7 +475,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                     ) : (
                       <>
                         <img
-                          src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                          src={ASSET_ICON_FALLBACK_URL}
                           alt="asset icon"
                           className="w-6 h-6"
                         />
@@ -508,21 +507,20 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
             </div>
           </div>
 
-          {/* Swap Circle - positioned to touch both borders equally */}
+          {/* Swap Circle - same assets as deposit form (local /public/assets) */}
           <div className="absolute left-1/2 transform -translate-x-1/2 top-full -translate-y-1/3 z-10">
             <button
-              className=" flex items-center justify-center transition-all duration-200  hover:scale-105"
+              type="button"
+              className="w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-105"
               onClick={onSwapAssets}
             >
-              {/* Light mode image */}
               <img
-                src="https://res.cloudinary.com/pitz/image/upload/v1756579504/Frame_36261_1_d9cnq1.png"
+                src="/assets/Frame_36261_1_d9cnq1.png"
                 alt="swap icon"
                 className="w-10 h-10 dark:hidden"
               />
-              {/* Dark mode image */}
               <img
-                src="https://res.cloudinary.com/pitz/image/upload/v1755500509/Frame_36261_ledmyw.png"
+                src="/assets/Frame_36261_ledmyw.png"
                 alt="swap icon"
                 className="w-10 h-10 hidden dark:block"
               />
@@ -616,13 +614,12 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                             toAsset.image ||
                             toAsset.image_url ||
                             toAsset.asset_image ||
-                            "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                            ASSET_ICON_FALLBACK_URL
                           }
                           alt={toAsset.name}
                           className="w-6 h-6 rounded-full"
                           onError={(e) => {
-                            e.currentTarget.src =
-                              "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                            e.currentTarget.src = ASSET_ICON_FALLBACK_URL;
                           }}
                         />
                         <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -641,7 +638,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                     ) : (
                       <>
                         <img
-                          src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                          src={ASSET_ICON_FALLBACK_URL}
                           alt="asset icon"
                           className="w-6 h-6"
                         />
@@ -678,9 +675,9 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
         {!hideContinueButton && (
           <div className="mt-4 mb-3 flex items-center gap-3 p-3 rounded-2xl bg-transparent">
             <img
-              src="https://res.cloudinary.com/pitz/image/upload/v1765784047/alert-circle_1_ujybne.png"
+              src="/assets/alert-circle_1_ujybne.png"
               alt="Warning"
-              className="w-5 h-5 flex-shrink-0"
+              className="w-5 h-5 flex-shrink-0 mt-1"
             />
             <p className={`text-sm ${isDark ? "text-white" : "text-gray-900"}`}>
               This is only an estimated price based on current market rates. The final price will be confirmed when we receive the funds.

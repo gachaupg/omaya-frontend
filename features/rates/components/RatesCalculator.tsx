@@ -76,6 +76,36 @@ interface UserPaymentDetail {
   status?: string;
 }
 
+const extractApiErrorMessage = (error: any, fallback: string): string => {
+  const responseData = error?.response?.data;
+  if (typeof responseData === "string" && responseData.trim()) return responseData;
+
+  const direct =
+    responseData?.message ||
+    responseData?.error ||
+    responseData?.details ||
+    responseData?.detail ||
+    "";
+  if (typeof direct === "string" && direct.trim()) return direct;
+
+  const fieldErrors = responseData?.errors || responseData?.error;
+  if (fieldErrors && typeof fieldErrors === "object" && !Array.isArray(fieldErrors)) {
+    const firstKey = Object.keys(fieldErrors)[0];
+    if (firstKey) {
+      const value = fieldErrors[firstKey];
+      if (Array.isArray(value) && value.length > 0) {
+        return `${firstKey}: ${String(value[0])}`;
+      }
+      if (typeof value === "string" && value.trim()) {
+        return `${firstKey}: ${value}`;
+      }
+    }
+  }
+
+  if (error?.message && String(error.message).trim()) return String(error.message);
+  return fallback;
+};
+
 // Helper function to get network value from asset (handles both Asset and SupportedAsset types)
 const getAssetNetwork = (asset: any): string => {
   if (!asset) return "";
@@ -2508,6 +2538,10 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
         } else {
           // Withdrawal API structure — crypto / non–FX Primus
           const withdrawalDetail = selectedPaymentDetails[0];
+          const resolvedUserPaymentDetailId = Number(withdrawalDetail?.id);
+          if (!Number.isFinite(resolvedUserPaymentDetailId) || resolvedUserPaymentDetailId <= 0) {
+            throw new Error("Selected payment method is missing account ID");
+          }
           const withdrawalPayload: ExpressWithdrawalPayload = {
             asset: (selectedAsset.ticker?.toUpperCase() || selectedAsset.symbol?.toUpperCase()) as string,
             asset_id: (() => {
@@ -2525,8 +2559,10 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
             })(),
             amount: amount,
             network: getAssetNetwork(selectedAsset),
-            network_id: null,
-            user_payment_detail_id: String(withdrawalDetail?.id),
+            ...(selectedAsset?.network_id
+              ? { network_id: String(selectedAsset.network_id) }
+              : {}),
+            user_payment_detail_id: String(resolvedUserPaymentDetailId),
           };
 
           logger.debug('general', "Submitting withdrawal request:", withdrawalPayload);
@@ -2573,13 +2609,10 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
       }
     } catch (error: any) {
       console.error("Error submitting transaction:", error);
-      let errorMessage = "Failed to submit transaction. Please try again.";
-
-      if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
+      const errorMessage = extractApiErrorMessage(
+        error,
+        "Failed to submit transaction. Please try again."
+      );
 
       // Check if error is about account verification - show KYC modal instead of toast
       const isVerificationError =

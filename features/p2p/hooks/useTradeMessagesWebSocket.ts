@@ -171,7 +171,11 @@ export const useTradeMessagesWebSocket = (options: UseTradeMessagesWebSocketOpti
           candidatePayload.id != null &&
           (candidatePayload.message != null ||
             Array.isArray(candidatePayload.images) ||
-            Array.isArray(candidatePayload.uploaded_images));
+            Array.isArray(candidatePayload.uploaded_images) ||
+            Array.isArray(candidatePayload.audios) ||
+            Array.isArray(candidatePayload.uploaded_audios) ||
+            candidatePayload.audio_url != null ||
+            candidatePayload.audio != null);
         if (looksLikeChatMessage) {
           const normalized: TradeMessage = {
             id: candidatePayload.id,
@@ -179,6 +183,7 @@ export const useTradeMessagesWebSocket = (options: UseTradeMessagesWebSocketOpti
               candidatePayload.trade ||
               candidatePayload.trade_id ||
               parseInt(tradeId),
+            trade_id: candidatePayload.trade_id ?? tradeId,
             sender: candidatePayload.sender,
             sender_name: candidatePayload.sender_name,
             message: candidatePayload.message || "",
@@ -186,6 +191,12 @@ export const useTradeMessagesWebSocket = (options: UseTradeMessagesWebSocketOpti
               candidatePayload.images ||
               candidatePayload.uploaded_images ||
               [],
+            audios:
+              candidatePayload.audios ||
+              candidatePayload.uploaded_audios ||
+              [],
+            audio_url: candidatePayload.audio_url,
+            audio: candidatePayload.audio,
             timestamp: candidatePayload.timestamp || new Date().toISOString(),
             seller_photo: candidatePayload.seller_photo || "",
           };
@@ -243,11 +254,15 @@ export const useTradeMessagesWebSocket = (options: UseTradeMessagesWebSocketOpti
               const newMessage: TradeMessage = {
                 id: message.data.id,
                 trade: message.data.trade || parseInt(tradeId),
+                trade_id: message.data.trade_id ?? tradeId,
                 sender: message.data.sender,
                 sender_name: message.data.sender_name,
                 message: message.data.message,
                 // IMPORTANT: Set images array even if empty - this signals that refresh is needed
                 images: message.data.images || [],
+                audios: message.data.audios || message.data.uploaded_audios || [],
+                audio_url: message.data.audio_url,
+                audio: message.data.audio,
                 timestamp: message.data.timestamp,
                 seller_photo: message.data.seller_photo || "",
               };
