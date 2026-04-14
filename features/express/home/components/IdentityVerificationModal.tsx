@@ -4,7 +4,7 @@
  * Identity Verification Required Modal
  * 
  * This modal displays when a user is not verified (is_verified: false).
- * It first requires phone verification, then navigates to documents page.
+ * It first requires email OTP verification, then navigates to documents page.
  * 
  * Usage Example:
  * ```tsx
@@ -48,6 +48,7 @@ interface KYCStatusResponse {
   status?: string;
   phone_number?: string | null;
   phone_verified?: boolean;
+  email_verified?: boolean;
   message?: string;
   rejection_reason?: string | null;
 }
@@ -84,9 +85,9 @@ const IdentityVerificationModal: React.FC<IdentityVerificationModalProps> = ({
     }
   }, [isOpen, isAuthenticated, user]);
 
-  // Check if phone is already verified
+  // Check if email/otp is already verified
   useEffect(() => {
-    if (kycStatus?.phone_verified === true) {
+    if (kycStatus?.email_verified === true || kycStatus?.phone_verified === true) {
       setPhoneVerified(true);
       setOtpSent(true);
     }
@@ -133,19 +134,14 @@ const IdentityVerificationModal: React.FC<IdentityVerificationModalProps> = ({
   };
 
   const handleSendOTP = async () => {
-    if (!phoneNumber.trim()) {
-      showToast.error("Error", "Please enter your phone number");
-      return;
-    }
-
     setSendingOTP(true);
     try {
-      const result = await dispatch(sendPhoneOTP({ phone_number: phoneNumber })).unwrap();
+      const result = await dispatch(sendPhoneOTP({})).unwrap();
       setOtpSent(true);
-      setResendTimer(60); // 60 seconds cooldown
+      setResendTimer(result?.cooldown_seconds ?? 60);
       showToast.success(
         "OTP Sent",
-        `OTP sent successfully via ${result.channel === "whatsapp" ? "WhatsApp" : "SMS"}`
+        "OTP sent to your registered email address."
       );
     } catch (error: any) {
       showToast.error("Error", error || "Failed to send OTP. Please try again.");
@@ -163,9 +159,9 @@ const IdentityVerificationModal: React.FC<IdentityVerificationModalProps> = ({
     setVerifyingOTP(true);
     try {
       const result = await dispatch(verifyPhoneOTP({ otp })).unwrap();
-      if (result.phone_verified) {
+      if (result.email_verified || result.phone_verified) {
         setPhoneVerified(true);
-        showToast.success("Success", "Phone number verified successfully");
+        showToast.success("Success", "Email verified successfully");
         
         // Refresh KYC status
         await fetchKYCStatus();
@@ -241,8 +237,8 @@ const IdentityVerificationModal: React.FC<IdentityVerificationModalProps> = ({
                 {isUnderReview
                   ? "Your identity verification documents were submitted successfully and are currently under review."
                   : phoneVerified
-                  ? "Phone verified! Proceeding to document verification..."
-                  : "First, verify your phone number to continue"}
+                  ? "Email verified! Proceeding to document verification..."
+                  : "First, verify your email to continue"}
               </p>
             </div>
             <button
@@ -308,7 +304,7 @@ const IdentityVerificationModal: React.FC<IdentityVerificationModalProps> = ({
               </Button>
             </div>
           ) : phoneVerified ? (
-            // Phone verified - show success message
+            // Email verified - show success message
             <div className="text-center py-8">
               <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg
@@ -326,12 +322,12 @@ const IdentityVerificationModal: React.FC<IdentityVerificationModalProps> = ({
                 </svg>
               </div>
               <p className="text-gray-600 dark:text-gray-400">
-                Phone number verified successfully! Redirecting to document verification...
+                Email verified successfully! Redirecting to document verification...
               </p>
             </div>
           ) : (
             <>
-              {/* Phone Verification Step */}
+              {/* Email Verification Step */}
               <div className="mb-6 space-y-4">
                 <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
                   <div className="flex items-start">
@@ -350,29 +346,28 @@ const IdentityVerificationModal: React.FC<IdentityVerificationModalProps> = ({
                     </svg>
                     <div className="flex-1">
                       <h3 className="text-sm font-semibold text-blue-800 dark:text-blue-200 mb-1">
-                        Step 1: Phone Verification
+                        Step 1: Email Verification
                       </h3>
                       <p className="text-sm text-blue-700 dark:text-blue-300">
-                        Verify your phone number to proceed with identity verification.
+                        Verify your email to proceed with identity verification.
                       </p>
                     </div>
                   </div>
                 </div>
 
-                {/* Phone Number Input */}
+                {/* Registered Email */}
                 {!otpSent && (
                   <div className="space-y-3">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Phone Number
+                        Registered Email
                       </label>
                       <input
-                        type="tel"
-                        value={phoneNumber}
-                        onChange={(e) => setPhoneNumber(e.target.value)}
-                        placeholder="+254712345678"
+                        type="email"
+                        value={user?.email || ""}
+                        readOnly
                         className="w-full px-4 py-3 border border-gray-300 dark:border-[#35353E] rounded-lg bg-white dark:bg-[#1D1D23] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1D8751] focus:border-transparent"
-                        disabled={sendingOTP}
+                        disabled
                       />
                     </div>
                     <Button
@@ -380,7 +375,7 @@ const IdentityVerificationModal: React.FC<IdentityVerificationModalProps> = ({
                       variant="primary"
                       onClick={handleSendOTP}
                       className="w-full"
-                      disabled={sendingOTP || !phoneNumber.trim()}
+                      disabled={sendingOTP}
                     >
                       {sendingOTP ? "Sending..." : "Send OTP"}
                     </Button>
@@ -455,7 +450,7 @@ const IdentityVerificationModal: React.FC<IdentityVerificationModalProps> = ({
               {/* Footer Note */}
               <div className="mt-4 text-center">
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  After phone verification, you'll be redirected to complete document verification.
+                  After email verification, you'll be redirected to complete document verification.
                 </p>
               </div>
             </>

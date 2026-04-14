@@ -132,6 +132,8 @@ const NETWORK_ALIASES: Record<string, string[]> = {
 
 const MISSING_USDT_USD_RATE_ERROR =
   "No exchange rate configured for USDT to USD";
+const MISSING_FXP_USD_RATE_ERROR =
+  "No exchange rate configured for FXP to USD";
 const getNetworkMatchKeys = (network: string): string[] => {
   const n = (network || "").toLowerCase();
   return NETWORK_ALIASES[n] ? [...NETWORK_ALIASES[n], n] : [n];
@@ -1399,41 +1401,12 @@ export default function DepositForm({
       return;
     }
 
-    // FX Primus: skip exchange commission-lookup (backend "FXP to USD" when unset); use legacy % only.
-    if (isForexAsset(selectedAsset)) {
-      setExchangeLookupResponse(null);
-      setApiValidationError(null);
-      const apiAsset = getCommissionApiAsset(
-        selectedAsset.ticker || selectedAsset.symbol || ""
-      );
-      if (!apiAsset) {
-        setApiCommission(null);
-        return;
-      }
-      if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
-      commissionFetchTimeoutRef.current = setTimeout(() => {
-        fetchCommission(apiAsset, amount, "deposit")
-          .then((commission) => {
-            setApiCommission(commission);
-            setExchangeLookupResponse(null);
-            setApiValidationError(null);
-          })
-          .catch(() => {
-            setApiCommission(null);
-            setApiValidationError(null);
-          });
-      }, 300);
-      return () => {
-        if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
-      };
-    }
-
     const params = getExchangeLookupParams(selectedAsset);
     if (params) {
       // First 3 assets only: crypto -> USD with network (USDT/USDC on BSC, etc.)
       if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
       commissionFetchTimeoutRef.current = setTimeout(() => {
-        fetchExchangeCommissionLookup(amount, "deposit", params.from_currency, "USD", params.from_network)
+        fetchExchangeCommissionLookup(amount, "deposit", params.from_currency, "USD", params.from_network, params.from_asset_id)
           .then((res) => {
             setExchangeLookupResponse(res);
             setApiCommission(null);
@@ -1474,6 +1447,18 @@ export default function DepositForm({
               setIsSupportModalOpen(true);
               return;
             }
+            if (normalizedMessage.includes(MISSING_FXP_USD_RATE_ERROR)) {
+              // For FXP without configured commission, fallback to zero-commission UI.
+              setApiValidationError(null);
+              if (isCalculatingFromPay) {
+                setGetAmount(amount);
+                setGetAmountInput(String(amount));
+              } else {
+                setPayAmount(amount);
+                setPayAmountInput(String(amount));
+              }
+              return;
+            }
             setApiValidationError(
               normalizedMessage
             );
@@ -1482,6 +1467,10 @@ export default function DepositForm({
       return () => {
         if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
       };
+    }
+    if (isForexAsset(selectedAsset)) {
+      setApiCommission(null);
+      return;
     }
 
     const apiAsset = getCommissionApiAsset(selectedAsset.ticker || selectedAsset.symbol || "");

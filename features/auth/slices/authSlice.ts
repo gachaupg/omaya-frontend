@@ -180,11 +180,11 @@ export const checkKYCStatus = createAsyncThunk<KYCResponse>(
 export const sendPhoneOTP = createAsyncThunk<
   PhoneSendOTPResponse,
   PhoneSendOTPPayload
->("auth/sendPhoneOTP", async (payload, { rejectWithValue }) => {
+>("auth/sendPhoneOTP", async (_payload, { rejectWithValue }) => {
   try {
     const response = await post<PhoneSendOTPResponse>(
-      API_ENDPOINTS.KYC_PHONE_SEND_OTP,
-      payload
+      API_ENDPOINTS.KYC_EMAIL_SEND_OTP || API_ENDPOINTS.KYC_PHONE_SEND_OTP,
+      undefined
     );
     return response.data;
   } catch (error) {
@@ -199,7 +199,7 @@ export const verifyPhoneOTP = createAsyncThunk<
 >("auth/verifyPhoneOTP", async (payload, { rejectWithValue }) => {
   try {
     const response = await post<PhoneVerifyOTPResponse>(
-      API_ENDPOINTS.KYC_PHONE_VERIFY_OTP,
+      API_ENDPOINTS.KYC_EMAIL_VERIFY_OTP || API_ENDPOINTS.KYC_PHONE_VERIFY_OTP,
       payload
     );
     return response.data;

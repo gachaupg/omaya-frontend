@@ -58,9 +58,16 @@ import {
   setAuthRedirectPath,
 } from "@/lib/utils/authRedirect";
 import { openKYCModal, checkKYCStatus } from "@/features/auth/slices/authSlice";
+import { getHighResAssetIcon, ASSET_ICON_SIZE } from "@/features/express/utils/imageHelpers";
+import {
+  AssetDropdownVirtualized,
+  buildAssetDropdownRows,
+} from "@/features/express/components/forms/AssetDropdownVirtualized";
 
 const MISSING_USDT_USD_RATE_ERROR =
   "No exchange rate configured for USDT to USD";
+const MISSING_FXP_USD_RATE_ERROR =
+  "No exchange rate configured for FXP to USD";
 const ASSET_ICON_FALLBACK_URL = "/assets/image_7_jijlik.png";
 const FX_PRIMUS_ASSET_ICON_URL = "/assets/fx-primus-custom.svg";
 
@@ -87,14 +94,7 @@ const getAssetDropdownIcon = (asset: any): string => {
   if (isForexPrimusAsset(asset)) {
     return FX_PRIMUS_ASSET_ICON_URL;
   }
-  return (
-    asset?.image_url ||
-    asset?.asset_image ||
-    (asset as any)?.icon_url ||
-    (asset as any)?.icon ||
-    (asset as any)?.image ||
-    ASSET_ICON_FALLBACK_URL
-  );
+  return getHighResAssetIcon(asset, ASSET_ICON_SIZE) || ASSET_ICON_FALLBACK_URL;
 };
 
 /** Parse amount allowing comma as decimal separator (e.g. "0,1" → 0.1) */
@@ -703,6 +703,7 @@ export default function WithdrawalForm({
   const [forceUpdate, setForceUpdate] = useState(0);
   const [selectedPaymentDetail, setSelectedPaymentDetail] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [commissionRefreshSeed, setCommissionRefreshSeed] = useState(0);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   // Add state for payment method validation error
   const [paymentMethodError, setPaymentMethodError] = useState<string | null>(null);
@@ -735,6 +736,11 @@ export default function WithdrawalForm({
     cardWidth: 0,
   });
   const [isComponentMounted, setIsComponentMounted] = useState(false);
+
+  useEffect(() => {
+    if (!selectedAsset) return;
+    setCommissionRefreshSeed((prev) => prev + 1);
+  }, [selectedAsset?.asset_id, selectedAsset?.ticker, selectedAsset?.symbol, selectedAsset?.network]);
 
   const updateAssetDropdownPosition = useCallback(() => {
     if (!assetDropdownRef.current) {
@@ -1482,41 +1488,6 @@ export default function WithdrawalForm({
       return;
     }
 
-    // FX Primus: never use exchange commission-lookup (backend "FXP to USD" / admin message).
-    // Use legacy commission % only; if unset, UI uses 1:1 pass-through.
-    if (isForexAsset(selectedAsset)) {
-      setExchangeLookupResponse(null);
-      setApiValidationError(null);
-      if (exchangeLookupFetchTimeoutRef.current) {
-        clearTimeout(exchangeLookupFetchTimeoutRef.current);
-        exchangeLookupFetchTimeoutRef.current = null;
-      }
-      const apiAsset = getCommissionApiAsset(
-        selectedAsset.ticker || selectedAsset.symbol || ""
-      );
-      if (!apiAsset) {
-        setApiCommission(null);
-        return;
-      }
-      if (commissionFetchTimeoutRef.current)
-        clearTimeout(commissionFetchTimeoutRef.current);
-      commissionFetchTimeoutRef.current = setTimeout(() => {
-        fetchCommission(apiAsset, amount, "withdrawal")
-          .then((c) => {
-            setApiCommission(c);
-            setApiValidationError(null);
-          })
-          .catch(() => {
-            setApiCommission(null);
-            setApiValidationError(null);
-          });
-      }, 300);
-      return () => {
-        if (commissionFetchTimeoutRef.current)
-          clearTimeout(commissionFetchTimeoutRef.current);
-      };
-    }
-
     if (isExchangeCommissionLookupAsset(selectedAsset)) {
       const params = getExchangeLookupParams(selectedAsset);
       if (!params) {
@@ -1533,7 +1504,8 @@ export default function WithdrawalForm({
           "withdrawal",
           params.from_currency,
           "USD",
-          params.from_network
+          params.from_network,
+          params.from_asset_id
         )
           .then((res) => {
             setExchangeLookupResponse(res);
@@ -1572,6 +1544,18 @@ export default function WithdrawalForm({
               setIsSupportModalOpen(true);
               return;
             }
+            if (normalizedMessage.includes(MISSING_FXP_USD_RATE_ERROR)) {
+              // For FXP without configured commission, fallback to zero-commission UI.
+              setApiValidationError(null);
+              if (isCalculatingFromPay) {
+                setGetAmount(amount);
+                setGetAmountInput(String(amount));
+              } else {
+                setPayAmount(amount);
+                setPayAmountInput(String(amount));
+              }
+              return;
+            }
             setApiValidationError(normalizedMessage);
           });
       }, 300);
@@ -1581,6 +1565,11 @@ export default function WithdrawalForm({
           clearTimeout(exchangeLookupFetchTimeoutRef.current);
         }
       };
+    }
+
+    if (isForexAsset(selectedAsset)) {
+      setApiCommission(null);
+      return;
     }
 
     const apiAsset = getCommissionApiAsset(
@@ -1602,7 +1591,7 @@ export default function WithdrawalForm({
     return () => {
       if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
     };
-  }, [selectedAsset, payAmountInput, getAmountInput, payAmount, getAmount, isCalculatingFromPay, isSubmitting]);
+  }, [selectedAsset, payAmountInput, getAmountInput, payAmount, getAmount, isCalculatingFromPay, isSubmitting, commissionRefreshSeed]);
 
   // Recalculate receive amount when apiCommission arrives (was null during initial calculation)
   useEffect(() => {
@@ -2665,6 +2654,17 @@ export default function WithdrawalForm({
     return sortedSwapAssets.filter((a) => !popularKeySet.has(getAssetKeyForGrouping(a)));
   }, [assetSearchTerm, sortedSwapAssets, popularKeySet]);
 
+  const assetDropdownRows = useMemo(
+    () =>
+      buildAssetDropdownRows(
+        sortedSwapAssets,
+        assetSearchTerm,
+        [],
+        allAssetsList
+      ),
+    [sortedSwapAssets, assetSearchTerm, allAssetsList]
+  );
+
   const renderAssetDropdown = () => {
     if (!isComponentMounted || !isAssetDropdownOpen) {
       return null;
@@ -2741,6 +2741,61 @@ export default function WithdrawalForm({
         width: desiredWidth,
       };
     }
+
+    const handlePickAsset = (asset: SupportedAsset) => {
+      if (calculationTimeout) {
+        clearTimeout(calculationTimeout);
+      }
+      if (estimateTimeoutRef.current) {
+        clearTimeout(estimateTimeoutRef.current);
+        estimateTimeoutRef.current = null;
+      }
+
+      setEstimate(null);
+      setEstimateError(null);
+      setEstimateLoading(false);
+      setCalculationError(null);
+      setReceiveAmountError(null);
+      setApiValidationError(null);
+      setExchangeLookupResponse(null);
+
+      setSelectedAsset(asset);
+      setIsAssetDropdownOpen(false);
+      setAssetSearchTerm("");
+      if (isHomePage) setAssetFilterTab("all");
+
+      if (isSimpleCalculationAsset(asset)) {
+        setIsCalculatingFromPay(true);
+        if (!isUserModifiedAmount) {
+          const defaultAmount = getDefaultAmount(asset);
+          setPayAmount(defaultAmount);
+          setPayAmountInput(defaultAmount.toString());
+          calculateAmounts(defaultAmount, true);
+        } else {
+          calculateAmounts(payAmount, true);
+        }
+      } else if (isForexAsset(asset)) {
+        setIsCalculatingFromPay(true);
+        if (!isUserModifiedAmount) {
+          const defaultAmount = getDefaultAmount(asset);
+          setPayAmount(defaultAmount);
+          setPayAmountInput(defaultAmount.toString());
+          calculateAmounts(defaultAmount, true);
+        } else {
+          calculateAmounts(payAmount, true);
+        }
+      } else {
+        setIsCalculatingFromPay(true);
+        setIsCalculating(true);
+        setIsCalculatingReceive(true);
+        setEstimateLoading(true);
+        if (!isUserModifiedAmount) {
+          const defaultAmount = getDefaultAmount(asset);
+          setPayAmount(defaultAmount);
+          setPayAmountInput(defaultAmount.toString());
+        }
+      }
+    };
 
     return createPortal(
       (
@@ -2836,225 +2891,11 @@ export default function WithdrawalForm({
 
           <div ref={assetListRef} className="overflow-y-auto p-1 flex-1 min-h-0">
             {sortedSwapAssets.length > 0 ? (
-              <>
-                {!assetSearchTerm && popularAssets.length > 0 && (
-                  <>
-                    <div className="px-3 sm:px-4 py-2 bg-[#F5F6F7] dark:bg-[#23232B] border-b border-gray-200 dark:border-gray-600">
-                      <span className="text-xs font-semibold text-[#788099] uppercase tracking-wider">
-                        Popular Currencies
-                      </span>
-                    </div>
-                    {popularAssets.map((asset: SupportedAsset, index: number) => {
-                        const handleAssetClick = () => {
-                          if (calculationTimeout) {
-                            clearTimeout(calculationTimeout);
-                          }
-                        if (estimateTimeoutRef.current) {
-                          clearTimeout(estimateTimeoutRef.current);
-                          estimateTimeoutRef.current = null;
-                        }
-
-                          setEstimate(null);
-                          setEstimateError(null);
-                          setEstimateLoading(false);
-                          setCalculationError(null);
-                          setReceiveAmountError(null);
-                          setApiValidationError(null);
-                          setApiValidationError(null);
-                          setExchangeLookupResponse(null);
-
-                          setSelectedAsset(asset);
-                          setIsAssetDropdownOpen(false);
-                          setAssetSearchTerm("");
-                          if (isHomePage) setAssetFilterTab("all");
-
-                          if (isSimpleCalculationAsset(asset)) {
-                            setIsCalculatingFromPay(true);
-                            if (!isUserModifiedAmount) {
-                              const defaultAmount = getDefaultAmount(asset);
-                              setPayAmount(defaultAmount);
-                              setPayAmountInput(defaultAmount.toString());
-                              calculateAmounts(defaultAmount, true);
-                            } else {
-                              calculateAmounts(payAmount, true);
-                            }
-                          } else if (isForexAsset(asset)) {
-                            setIsCalculatingFromPay(true);
-                            if (!isUserModifiedAmount) {
-                              const defaultAmount = getDefaultAmount(asset);
-                              setPayAmount(defaultAmount);
-                              setPayAmountInput(defaultAmount.toString());
-                              calculateAmounts(defaultAmount, true);
-                            } else {
-                              calculateAmounts(payAmount, true);
-                            }
-                          } else {
-                            setIsCalculatingFromPay(true);
-                            setIsCalculating(true);
-                            setIsCalculatingReceive(true);
-                            setEstimateLoading(true);
-                            if (!isUserModifiedAmount) {
-                              const defaultAmount = getDefaultAmount(asset);
-                              setPayAmount(defaultAmount);
-                              setPayAmountInput(defaultAmount.toString());
-                            }
-                          }
-                        };
-
-                        return (
-                          <div
-                            key={`popular-${asset.asset_id}-${asset.ticker}-${asset.network}-${index}`}
-                            className="flex items-center gap-4 p-4 sm:p-5 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-b border-gray-200 dark:border-gray-600 transition-colors duration-150"
-                            onClick={handleAssetClick}
-                          >
-                            <img
-                              src={getAssetDropdownIcon(asset)}
-                              alt={
-                                asset?.name ||
-                                asset?.ticker ||
-                                asset?.symbol ||
-                                "Asset"
-                              }
-                              className="w-10 h-10 rounded-full object-cover"
-                              onError={(e) => {
-                                e.currentTarget.src = ASSET_ICON_FALLBACK_URL;
-                              }}
-                            />
-                            <div className="flex-1">
-                              <div className="text-[#1F2937] dark:text-[#ffffff] font-medium text-base flex items-center gap-2">
-                                {(asset.ticker ||
-                                  asset.symbol ||
-                                  asset.name ||
-                                  "Unknown"
-                                ).toUpperCase()}
-                                <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-normal px-2 py-0.5 rounded-full">
-                                  {getNetworkDisplayName(asset.network)}
-                                </span>
-                              </div>
-                              <div className="text-sm text-gray-500 dark:text-gray-400">
-                                {asset.name ||
-                                  (asset.ticker || "").toUpperCase() ||
-                                  (asset.symbol || "").toUpperCase() ||
-                                  "Unknown Asset"}
-                                {asset.legacy_ticker && (
-                                  <span className="text-xs text-[#f7c624] dark:text-[#f7c624] bg-[#f7c6241a] px-1 py-0.5 rounded-full">
-                                    {asset.legacy_ticker}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                            {selectedAsset?.asset_id === asset.asset_id && (
-                              <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
-                            )}
-                          </div>
-                        );
-                      })}
-
-                    <div className="border-t-2 border-gray-200 dark:border-gray-600"></div>
-                  </>
-                )}
-
-                {(assetSearchTerm
-                  ? sortedSwapAssets
-                  : allAssetsList
-                ).map((asset: SupportedAsset, index: number) => (
-                  <div
-                    key={`${asset.asset_id}-${asset.ticker}-${asset.network}-${index}`}
-                    className="flex items-center gap-4 p-4 sm:p-5 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-b border-gray-200 dark:border-gray-600 last:border-b-0 transition-colors duration-150"
-                    onClick={() => {
-                      if (calculationTimeout) {
-                        clearTimeout(calculationTimeout);
-                      }
-                        if (estimateTimeoutRef.current) {
-                          clearTimeout(estimateTimeoutRef.current);
-                          estimateTimeoutRef.current = null;
-                        }
-
-                      setEstimate(null);
-                      setEstimateError(null);
-                      setEstimateLoading(false);
-                      setCalculationError(null);
-                      setReceiveAmountError(null);
-                      setApiValidationError(null);
-                      setApiValidationError(null);
-                      setExchangeLookupResponse(null);
-
-                      setSelectedAsset(asset);
-                      setIsAssetDropdownOpen(false);
-                      setAssetSearchTerm("");
-
-                      if (isSimpleCalculationAsset(asset)) {
-                        setIsCalculatingFromPay(true);
-                        if (!isUserModifiedAmount) {
-                          const defaultAmount = getDefaultAmount(asset);
-                          setPayAmount(defaultAmount);
-                          setPayAmountInput(defaultAmount.toString());
-                          calculateAmounts(defaultAmount, true);
-                        } else {
-                          calculateAmounts(payAmount, true);
-                        }
-                      } else if (isForexAsset(asset)) {
-                        setIsCalculatingFromPay(true);
-                        if (!isUserModifiedAmount) {
-                          const defaultAmount = getDefaultAmount(asset);
-                          setPayAmount(defaultAmount);
-                          setPayAmountInput(defaultAmount.toString());
-                          calculateAmounts(defaultAmount, true);
-                        } else {
-                          calculateAmounts(payAmount, true);
-                        }
-                      } else {
-                        setIsCalculatingFromPay(true);
-                        setIsCalculating(true);
-                        setIsCalculatingReceive(true);
-                        setEstimateLoading(true);
-                        if (!isUserModifiedAmount) {
-                          const defaultAmount = getDefaultAmount(asset);
-                          setPayAmount(defaultAmount);
-                          setPayAmountInput(defaultAmount.toString());
-                        }
-                      }
-                    }}
-                  >
-                    <img
-                      src={getAssetDropdownIcon(asset)}
-                      alt={
-                        asset?.name || asset?.ticker || asset?.symbol || "Asset"
-                      }
-                      className="w-10 h-10 rounded-full object-cover"
-                      onError={(e) => {
-                        e.currentTarget.src = ASSET_ICON_FALLBACK_URL;
-                      }}
-                    />
-                    <div className="flex-1">
-                      <div className="text-[#1F2937] dark:text-[#ffffff] font-medium text-base flex items-center gap-2">
-                        {(asset.ticker ||
-                          asset.symbol ||
-                          asset.name ||
-                          "Unknown"
-                        ).toUpperCase()}
-                        <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-normal px-2 py-0.5 rounded-full">
-                          {getNetworkDisplayName(asset.network)}
-                        </span>
-                      </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
-                        {asset.name ||
-                          (asset.ticker || "").toUpperCase() ||
-                          (asset.symbol || "").toUpperCase() ||
-                          "Unknown Asset"}
-                        {asset.legacy_ticker && (
-                          <span className="text-xs text-[#f7c624] dark:text-[#f7c624] bg-[#f7c6241a] px-1 py-0.5 rounded-full">
-                            {asset.legacy_ticker}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    {selectedAsset?.asset_id === asset.asset_id && (
-                      <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
-                    )}
-                  </div>
-                ))}
-              </>
+              <AssetDropdownVirtualized
+                rows={assetDropdownRows}
+                selectedAsset={selectedAsset}
+                onAssetSelect={handlePickAsset}
+              />
             ) : (
               <div className="p-4 text-center text-[#7e7e8f] dark:text-[#788099]">
                 {assetSearchTerm ? "No assets found" : "No assets available"}
