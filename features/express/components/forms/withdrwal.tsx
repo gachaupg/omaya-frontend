@@ -257,6 +257,8 @@ const NETWORK_ALIASES: Record<string, string[]> = {
 
 const MISSING_USDT_USD_RATE_ERROR =
   "No exchange rate configured for USDT to USD";
+const MISSING_FXP_USD_RATE_ERROR =
+  "No exchange rate configured for FXP to USD";
 const getNetworkMatchKeys = (network: string): string[] => {
   const n = (network || "").toLowerCase();
   return NETWORK_ALIASES[n] ? [...NETWORK_ALIASES[n], n] : [n];
@@ -1566,45 +1568,6 @@ export default function WithdrawalForm({
       setExchangeLookupResponse(null);
       return;
     }
-    // FX Primus: skip exchange commission-lookup (backend returns "no rate configured" when unset).
-    // Use legacy commission % only; if none, "You Receive" mirrors "You Send" (no error).
-    if (isForexAsset(selectedAsset)) {
-      setExchangeLookupResponse(null);
-      const amount = isCalculatingFromPay
-        ? (parseLocalizedAmountString(payAmountInput) || payAmount)
-        : (parseLocalizedAmountString(getAmountInput) || getAmount);
-      if (amount <= 0) {
-        setApiCommission(null);
-        setApiValidationError(null);
-        return;
-      }
-      if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
-      commissionFetchTimeoutRef.current = setTimeout(() => {
-        if (isExpressCancelled()) return;
-        const apiAsset = getCommissionApiAsset(
-          selectedAsset.ticker || selectedAsset.symbol || ""
-        );
-        if (!apiAsset) {
-          setApiCommission(null);
-          setApiValidationError(null);
-          return;
-        }
-        fetchCommission(apiAsset, amount, "withdrawal")
-          .then((commission) => {
-            if (isExpressCancelled()) return;
-            setApiCommission(commission);
-            setApiValidationError(null);
-          })
-          .catch(() => {
-            if (isExpressCancelled()) return;
-            setApiCommission(null);
-            setApiValidationError(null);
-          });
-      }, 300);
-      return () => {
-        if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
-      };
-    }
     const params = getExchangeLookupParams(selectedAsset);
     const amount = isCalculatingFromPay
       ? (parseLocalizedAmountString(payAmountInput) || payAmount)
@@ -1618,7 +1581,7 @@ export default function WithdrawalForm({
       if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
       commissionFetchTimeoutRef.current = setTimeout(() => {
         if (isExpressCancelled()) return;
-        fetchExchangeCommissionLookup(amount, "withdrawal", params.from_currency, "USD", params.from_network)
+        fetchExchangeCommissionLookup(amount, "withdrawal", params.from_currency, "USD", params.from_network, params.from_asset_id)
           .then((res) => {
             if (isExpressCancelled()) return;
             setExchangeLookupResponse(res);
@@ -1662,6 +1625,18 @@ export default function WithdrawalForm({
               setIsSupportModalOpen(true);
               return;
             }
+            if (normalizedMessage.includes(MISSING_FXP_USD_RATE_ERROR)) {
+              // For FXP without configured commission, fallback to zero-commission UI.
+              setApiValidationError(null);
+              if (isCalculatingFromPay) {
+                setGetAmount(amount);
+                setGetAmountInput(String(amount));
+              } else {
+                setPayAmount(amount);
+                setPayAmountInput(String(amount));
+              }
+              return;
+            }
             setApiValidationError(
               normalizedMessage
             );
@@ -1670,6 +1645,10 @@ export default function WithdrawalForm({
       return () => {
         if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
       };
+    }
+    if (isForexAsset(selectedAsset)) {
+      setApiCommission(null);
+      return;
     }
     const apiAsset = getCommissionApiAsset(selectedAsset.ticker || selectedAsset.symbol || "");
     if (!apiAsset) {

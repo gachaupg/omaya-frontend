@@ -63,6 +63,9 @@ import {
   pickRatesAssetImageRaw,
 } from "./RatesAssetImage";
 
+const MISSING_FXP_USD_RATE_ERROR =
+  "No exchange rate configured for FXP to USD";
+
 interface UserPaymentDetail {
   id: number;
   user_payment_detail_id?: string;
@@ -620,10 +623,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
       setApiCommission(null);
       return;
     }
-    if (
-      isExchangeCommissionLookupAsset(selectedAsset) &&
-      !isForexPrimusAsset(selectedAsset)
-    ) {
+    if (isExchangeCommissionLookupAsset(selectedAsset)) {
       setApiCommission(null);
       return;
     }
@@ -643,7 +643,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
     };
   }, [selectedAsset, commissionApiDriverKey, isCalculatingFromPay, isDepositMode]);
 
-  // Exchange commission-lookup for first assets (local_commission fee rules) — not FX Primus (backend error when unset).
+  // Exchange commission-lookup for first assets (local_commission fee rules), including FX Primus.
   useEffect(() => {
     if (!selectedAsset) {
       setExchangeLookupResponse(null);
@@ -652,12 +652,6 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
 
     if (!isExchangeCommissionLookupAsset(selectedAsset)) {
       setExchangeLookupResponse(null);
-      return;
-    }
-
-    if (isForexPrimusAsset(selectedAsset)) {
-      setExchangeLookupResponse(null);
-      setApiValidationError(null);
       return;
     }
 
@@ -675,7 +669,8 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
         isDepositMode ? "deposit" : "withdrawal",
         params.from_currency,
         "USD",
-        params.from_network
+        params.from_network,
+        params.from_asset_id
       )
         .then((res) => {
           setExchangeLookupResponse(res);
@@ -737,6 +732,14 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
             return;
           }
 
+          if ((errorMessage || "").includes(MISSING_FXP_USD_RATE_ERROR)) {
+            // For FXP without configured commission, fallback to zero-commission UI.
+            setApiValidationError(null);
+            setReceiveAmount(amount || "0");
+            setIsCalculating(false);
+            setIsCalculatingReceive(false);
+            return;
+          }
           setApiValidationError(errorMessage || "Failed to fetch exchange rate");
           setIsCalculating(false);
           setIsCalculatingReceive(false);

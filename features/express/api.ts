@@ -76,6 +76,7 @@ export interface ExchangeCommissionLookupResponse {
 export const isExchangeCommissionLookupAsset = (asset: {
   ticker?: string;
   symbol?: string;
+  name?: string;
   network?: string;
   networks?: Array<{ network_type?: string; network_id?: string }>;
 } | null): boolean => {
@@ -91,7 +92,7 @@ export const isExchangeCommissionLookupAsset = (asset: {
 
   const isUsdt = ticker === "usdt";
   const isUsdc = ticker === "usdc";
-  const isFxp = ticker === "fxp" || ticker === "fxprimus";
+  const isFxp = isForexPrimusAsset(asset);
   const isBscLike = network === "bsc" || network === "bep20";
   const isEthLike = network === "eth" || network === "erc20";
 
@@ -103,48 +104,57 @@ export const isExchangeCommissionLookupAsset = (asset: {
   );
 };
 
+const FX_PRIMUS_DEFAULT_ASSET_ID = "22c346e6-4fa8-4da5-ac48-8c96ca8f934f";
+
 /** Map frontend asset (ticker + network) to API from_currency and from_network for exchange commission-lookup. Returns null if not one of the first 3 assets. */
 export const getExchangeLookupParams = (
   asset: {
     ticker?: string;
     symbol?: string;
+    name?: string;
+    asset_id?: string;
     network?: string;
     networks?: Array<{ network_type?: string; network_id?: string }>;
   } | null
-): { from_currency: string; from_network: string } | null => {
+): { from_currency: string; from_network: string; from_asset_id?: string } | null => {
   if (!asset || !isExchangeCommissionLookupAsset(asset)) return null;
 
-  const ticker = (asset.ticker || asset.symbol || "").toUpperCase();
+  const ticker = (asset.ticker || asset.symbol || asset.name || "").toUpperCase();
   const rawNetwork =
     asset.network ||
     asset.networks?.[0]?.network_type ||
     asset.networks?.[0]?.network_id ||
     "";
   const network = rawNetwork.toLowerCase();
+  const rawAssetId = String(asset.asset_id || "").trim();
 
   // USDT on BSC/BEP20 → from_currency=USDT, from_network=bsc
   if (ticker === "USDT" && (network === "bsc" || network === "bep20")) {
-    return { from_currency: "USDT", from_network: "bsc" };
+    return { from_currency: "USDT", from_network: "bsc", from_asset_id: rawAssetId || undefined };
   }
 
   // USDC → always treat as BSC for commission-lookup (backend expects bsc)
   if (ticker === "USDC") {
-    return { from_currency: "USDC", from_network: "bsc" };
+    return { from_currency: "USDC", from_network: "bsc", from_asset_id: rawAssetId || undefined };
   }
 
   // BNB on BSC/BEP20 → from_currency=BNB, from_network=bsc
   if (ticker === "BNB" && (network === "bsc" || network === "bep20")) {
-    return { from_currency: "BNB", from_network: "bsc" };
+    return { from_currency: "BNB", from_network: "bsc", from_asset_id: rawAssetId || undefined };
   }
 
   // USDT on ETH/ERC20 → from_currency=USDT, from_network=ETH
   if (ticker === "USDT" && (network === "eth" || network === "erc20")) {
-    return { from_currency: "USDT", from_network: "eth" };
+    return { from_currency: "USDT", from_network: "eth", from_asset_id: rawAssetId || undefined };
   }
 
   // FXP / FXPRIMUS (FOREX) → from_currency=FOREX, no network
-  if (ticker === "FXP" || ticker === "FXPRIMUS") {
-    return { from_currency: "FOREX", from_network: "" };
+  if (isForexPrimusAsset(asset)) {
+    return {
+      from_currency: "FOREX",
+      from_network: "",
+      from_asset_id: rawAssetId || FX_PRIMUS_DEFAULT_ASSET_ID,
+    };
   }
 
   return null;
@@ -168,10 +178,16 @@ export const fetchExchangeCommissionLookup = async (
   type: "deposit" | "withdrawal",
   from_currency: string,
   to_currency: string = "USD",
-  from_network?: string
+  from_network?: string,
+  from_asset_id?: string
 ): Promise<ExchangeCommissionLookupResponse> => {
   const path = API_CONFIG.COMMISSION_LOOKUP_EXCHANGE(amount, type, from_currency, to_currency, from_network);
-  const response = await axios.get<ExchangeCommissionLookupResponse>(`${API_BASE_URL}${path}`);
+  const queryJoiner = path.includes("?") ? "&" : "?";
+  const withAssetId =
+    from_asset_id && from_asset_id.trim()
+      ? `${path}${queryJoiner}from_asset_id=${encodeURIComponent(from_asset_id.trim())}`
+      : path;
+  const response = await axios.get<ExchangeCommissionLookupResponse>(`${API_BASE_URL}${withAssetId}`);
   return response.data;
 };
 

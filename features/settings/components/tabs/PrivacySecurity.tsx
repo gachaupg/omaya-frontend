@@ -137,6 +137,7 @@ const PrivacySecurity = () => {
   const [sessionToDelete, setSessionToDelete] = useState<DeviceSession | null>(null);
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
   const isRedirectingAfterLogoutAllRef = useRef(false);
+  const hasForcedLogoutForNoSessionsRef = useRef(false);
 
   // Track session creation to prevent premature auto-logout
   const [isCreatingSession, setIsCreatingSession] = useState(false);
@@ -578,6 +579,34 @@ const PrivacySecurity = () => {
       // Let apiClient/tokenRefresh handle redirect; we don't double-logout here to avoid races.
     }
   }, [deviceSessionsLoading, deviceSessionsError, isAuthenticated]);
+
+  // Product requirement: in Privacy & Security, force logout when there are no active
+  // device sessions at all (after loading completes and we are not in session-creation flow).
+  useEffect(() => {
+    if (
+      hasForcedLogoutForNoSessionsRef.current ||
+      isRedirectingAfterLogoutAllRef.current
+    ) {
+      return;
+    }
+    const noSessionRows = allSessions.length === 0;
+    if (
+      isAuthenticated &&
+      !deviceSessionsLoading &&
+      !isCreatingSession &&
+      noSessionRows
+    ) {
+      hasForcedLogoutForNoSessionsRef.current = true;
+      showToast.info("No active devices found. Please log in again.");
+      performLogoutAndRedirect();
+    }
+  }, [
+    isAuthenticated,
+    deviceSessionsLoading,
+    isCreatingSession,
+    allSessions.length,
+    performLogoutAndRedirect,
+  ]);
 
   // Scroll to top when page changes (but not on initial load)
   useEffect(() => {

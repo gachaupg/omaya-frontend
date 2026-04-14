@@ -55,6 +55,11 @@ import {
 } from "@/features/express/api";
 import { withTimeout } from "@/features/express/utils/fetchWithTimeout";
 import { resolveForexDepositAdminPaymentDetailId } from "@/features/express/utils/forexDepositResolution";
+import { getHighResAssetIcon, ASSET_ICON_SIZE } from "@/features/express/utils/imageHelpers";
+import {
+  AssetDropdownVirtualized,
+  buildAssetDropdownRows,
+} from "@/features/express/components/forms/AssetDropdownVirtualized";
 
 interface DepositFormProps {
   onExchange?: (transactionData: {
@@ -103,6 +108,8 @@ const NETWORK_ALIASES: Record<string, string[]> = {
 
 const MISSING_USDT_USD_RATE_ERROR =
   "No exchange rate configured for USDT to USD";
+const MISSING_FXP_USD_RATE_ERROR =
+  "No exchange rate configured for FXP to USD";
 const getNetworkMatchKeys = (network: string): string[] => {
   const n = (network || "").toLowerCase();
   return NETWORK_ALIASES[n] ? [...NETWORK_ALIASES[n], n] : [n];
@@ -135,12 +142,7 @@ const getAssetDropdownIcon = (asset: any): string => {
   if (isForexPrimusAsset(asset)) {
     return FX_PRIMUS_ASSET_ICON_URL;
   }
-  return (
-    asset?.image_url ||
-    asset?.asset_image ||
-    (asset as any)?.image ||
-    ASSET_ICON_FALLBACK_URL
-  );
+  return getHighResAssetIcon(asset, ASSET_ICON_SIZE) || ASSET_ICON_FALLBACK_URL;
 };
 
 // Network mapping function
@@ -714,6 +716,12 @@ export default function DepositForm({
   const [forceUpdate, setForceUpdate] = useState(0);
   const [selectedPaymentDetail, setSelectedPaymentDetail] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [commissionRefreshSeed, setCommissionRefreshSeed] = useState(0);
+
+  useEffect(() => {
+    if (!selectedAsset) return;
+    setCommissionRefreshSeed((prev) => prev + 1);
+  }, [selectedAsset?.asset_id, selectedAsset?.ticker, selectedAsset?.symbol, selectedAsset?.network]);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const normalizeProviderName = (name: string) =>
     (name || "")
@@ -1328,40 +1336,12 @@ export default function DepositForm({
       return;
     }
 
-    if (isForexAsset(selectedAsset)) {
-      setExchangeLookupResponse(null);
-      setApiValidationError(null);
-      const apiAsset = getCommissionApiAsset(
-        selectedAsset.ticker || selectedAsset.symbol || ""
-      );
-      if (!apiAsset) {
-        setApiCommission(null);
-        return;
-      }
-      if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
-      commissionFetchTimeoutRef.current = setTimeout(() => {
-        fetchCommission(apiAsset, amount, "deposit")
-          .then((c) => {
-            setApiCommission(c);
-            setExchangeLookupResponse(null);
-            setApiValidationError(null);
-          })
-          .catch(() => {
-            setApiCommission(null);
-            setApiValidationError(null);
-          });
-      }, 300);
-      return () => {
-        if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
-      };
-    }
-
     const params = getExchangeLookupParams(selectedAsset);
     if (params) {
       if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
       commissionFetchTimeoutRef.current = setTimeout(() => {
         // Home: deposit = crypto -> USD with network for USDT/USDC
-        fetchExchangeCommissionLookup(amount, "deposit", params.from_currency, "USD", params.from_network)
+        fetchExchangeCommissionLookup(amount, "deposit", params.from_currency, "USD", params.from_network, params.from_asset_id)
           .then((res) => {
             setExchangeLookupResponse(res);
             setApiCommission(null);
@@ -1402,12 +1382,28 @@ export default function DepositForm({
               setIsSupportModalOpen(true);
               return;
             }
+            if (normalizedMessage.includes(MISSING_FXP_USD_RATE_ERROR)) {
+              // For FXP without configured commission, fallback to zero-commission UI.
+              setApiValidationError(null);
+              if (isCalculatingFromPay) {
+                setGetAmount(amount);
+                setGetAmountInput(String(amount));
+              } else {
+                setPayAmount(amount);
+                setPayAmountInput(String(amount));
+              }
+              return;
+            }
             setApiValidationError(
               normalizedMessage
             );
           });
       }, 300);
       return () => { if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current); };
+    }
+    if (isForexAsset(selectedAsset)) {
+      setApiCommission(null);
+      return;
     }
     const apiAsset = getCommissionApiAsset(selectedAsset.ticker || selectedAsset.symbol || "");
     if (!apiAsset) { setApiCommission(null); return; }
@@ -1418,7 +1414,7 @@ export default function DepositForm({
         .catch(() => setApiCommission(null));
     }, 300);
     return () => { if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current); };
-  }, [selectedAsset, payAmountInput, getAmountInput, payAmount, getAmount, isCalculatingFromPay, isSubmitting]);
+  }, [selectedAsset, payAmountInput, getAmountInput, payAmount, getAmount, isCalculatingFromPay, isSubmitting, commissionRefreshSeed]);
 
   useEffect(() => {
     if (
@@ -2167,6 +2163,17 @@ export default function DepositForm({
     });
   }, [assetSearchTerm, sortedSwapAssets, whitelistKeySet, popularKeySet]);
 
+  const assetDropdownRows = useMemo(
+    () =>
+      buildAssetDropdownRows(
+        sortedSwapAssets,
+        assetSearchTerm,
+        whitelistAssets,
+        allAssetsList
+      ),
+    [sortedSwapAssets, assetSearchTerm, whitelistAssets, allAssetsList]
+  );
+
   const renderAssetDropdown = () => {
     if (!isComponentMounted || !isAssetDropdownOpen) {
       return null;
@@ -2336,215 +2343,16 @@ export default function DepositForm({
           {/* Asset List */}
           <div ref={assetListRef} className="overflow-y-auto p-1 flex-1 min-h-0">
             {sortedSwapAssets.length > 0 ? (
-              <>
-                {/* Popular Section - First 3 assets only if no search */}
-                {!assetSearchTerm && sortedSwapAssets.length > 3 && (
-                  <>
-                    <div className="px-3 sm:px-4 py-2 bg-[#F5F6F7] dark:bg-[#23232B]">
-                      <span className="text-xs font-semibold text-[#788099] uppercase tracking-wider">
-                        Popular Currencies
-                      </span>
-                    </div>
-                    {popularAssets.map((asset: SupportedAsset, index: number) => (
-                        <div
-                          key={`popular-${asset.asset_id || "asset"}-${asset.symbol || asset.ticker || asset.name}-${asset.network || "unknown"}-${index}`}
-                          className="flex items-center gap-4 p-4 sm:p-5 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer transition-colors duration-150"
-                          onClick={() => {
-                            handleAssetSelection(asset);
-                            setIsAssetDropdownOpen(false);
-                            setAssetSearchTerm("");
-                            if (isHomePage) setAssetFilterTab("all");
-                          }}
-                        >
-                          <img
-                            src={getAssetDropdownIcon(asset)}
-                            alt={
-                              asset?.name ||
-                              asset?.ticker ||
-                              asset?.symbol ||
-                              "Asset"
-                            }
-                            className="w-10 h-10 rounded-full object-cover"
-                            onError={(e) => {
-                              console.log(
-                                "Image failed to load for asset:",
-                                asset
-                              );
-                              e.currentTarget.src =
-                                ASSET_ICON_FALLBACK_URL;
-                            }}
-                          />
-                          <div className="flex-1">
-                            <div
-                              className={`font-medium text-base flex items-center gap-2 ${isDark ? "text-white" : "text-[#1F2937]"
-                                }`}
-                            >
-                              {(asset.ticker || asset.symbol || asset.name || "Unknown").toUpperCase()}
-                              <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-normal px-2 py-0.5 rounded-full">
-                                {getNetworkDisplayName(getAssetNetwork(asset))}
-                              </span>
-                            </div>
-                            <div
-                              className={`text-sm text-gray-500 dark:text-gray-400`}
-                            >
-                              {(() => {
-                                let displayName =
-                                  asset.name || asset.ticker || asset.symbol || "Unknown Asset";
-
-                                displayName = displayName
-                                  .replace(/\s*\(Binance Smart Chain\)\s*\(BSC\)/gi, "")
-                                  .replace(/\s*\(Ethereum\)\s*\(ETH\)/gi, "")
-                                  .replace(/\s*\(Polygon\)\s*\(MATIC\)/gi, "")
-                                  .replace(/\s*\(Avalanche\)\s*\(AVAX\)/gi, "")
-                                  .replace(/\s*\(TRON\)\s*\(TRX\)/gi, "")
-                                  .replace(/\s*\(Solana\)\s*\(SOL\)/gi, "")
-                                  .replace(/\s*\(BSC\)$/gi, "")
-                                  .replace(/\s*\(ETH\)$/gi, "")
-                                  .replace(/\s*\(MATIC\)$/gi, "")
-                                  .replace(/\s*\(AVAX\)$/gi, "")
-                                  .replace(/\s*\(TRX\)$/gi, "")
-                                  .replace(/\s*\(SOL\)$/gi, "")
-                                  .trim();
-
-                                return displayName;
-                              })()}
-                            </div>
-                          </div>
-                          {selectedAsset?.asset_id === asset.asset_id && (
-                            <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
-                          )}
-                        </div>
-                      ))}
-
-                    {whitelistAssets.length > 0 && (
-                      <>
-                        <div className="px-3 sm:px-4 py-2 bg-[#F5F6F7] dark:bg-[#23232B]">
-                          <span className="text-xs font-semibold text-[#788099] uppercase tracking-wider">
-                            Whitelist
-                          </span>
-                        </div>
-                        {whitelistAssets.map((asset: SupportedAsset, index: number) => (
-                          <div
-                            key={`whitelist-${asset.asset_id || "asset"}-${asset.symbol || asset.ticker || asset.name}-${asset.network || "unknown"}-${index}`}
-                            className="flex items-center gap-4 p-4 sm:p-5 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer transition-colors duration-150"
-                            onClick={() => {
-                              handleAssetSelection(asset);
-                              setIsAssetDropdownOpen(false);
-                              setAssetSearchTerm("");
-                              if (isHomePage) setAssetFilterTab("all");
-                            }}
-                          >
-                            <img
-                              src={getAssetDropdownIcon(asset)}
-                              alt={asset?.name || asset?.ticker || asset?.symbol || "Asset"}
-                              className="w-10 h-10 rounded-full object-cover"
-                              onError={(e) => {
-                                console.log(
-                                  "Image failed to load for asset:",
-                                  asset
-                                );
-                                e.currentTarget.src = ASSET_ICON_FALLBACK_URL;
-                              }}
-                            />
-                            <div className="flex-1">
-                              <div className={`font-medium text-base flex items-center gap-2 ${isDark ? "text-white" : "text-[#1F2937]"}`}>
-                                {(asset.ticker || asset.symbol || asset.name || "Unknown").toUpperCase()}
-                                <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-normal px-2 py-0.5 rounded-full">
-                                  {getNetworkDisplayName(getAssetNetwork(asset))}
-                                </span>
-                              </div>
-                              <div className={`text-sm text-gray-500 dark:text-gray-400`}>
-                                {asset.name || asset.ticker || asset.symbol || "Unknown Asset"}
-                              </div>
-                            </div>
-                            {selectedAsset?.asset_id === asset.asset_id && (
-                              <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
-                            )}
-                          </div>
-                        ))}
-                      </>
-                    )}
-
-                    <div className="border-t-2 border-gray-200 dark:border-gray-600"></div>
-
-                    <div className="px-3 sm:px-4 py-2 bg-[#F5F6F7] dark:bg-[#23232B] border-b border-gray-200 dark:border-gray-600">
-                      <span className="text-xs font-semibold text-[#788099] uppercase tracking-wider">
-                        All Assets
-                      </span>
-                    </div>
-                  </>
-                )}
-
-                {(assetSearchTerm ? sortedSwapAssets : allAssetsList).map((asset: SupportedAsset, index: number) => (
-                  <div
-                    key={`${asset.asset_id || "asset"}-${asset.symbol || asset.ticker || asset.name}-${asset.network || "unknown"}-${index}`}
-                    className="flex items-center gap-4 p-4 sm:p-5 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer transition-colors duration-150"
-                    onClick={() => {
-                      handleAssetSelection(asset);
-                      setIsAssetDropdownOpen(false);
-                      setAssetSearchTerm("");
-                      if (isHomePage) setAssetFilterTab("all");
-                    }}
-                  >
-                    <img
-                      src={getAssetDropdownIcon(asset)}
-                      alt={
-                        asset?.name ||
-                        asset?.ticker ||
-                        asset?.symbol ||
-                        "Asset"
-                      }
-                      className="w-10 h-10 rounded-full object-cover"
-                      onError={(e) => {
-                        console.log(
-                          "Image failed to load for asset:",
-                          asset
-                        );
-                        e.currentTarget.src = ASSET_ICON_FALLBACK_URL;
-                      }}
-                    />
-                    <div className="flex-1">
-                      <div
-                        className={`font-medium text-base flex items-center gap-2 ${isDark ? "text-white" : "text-[#1F2937]"
-                          }`}
-                      >
-                        {(asset.ticker || asset.symbol || asset.name || "Unknown").toUpperCase()}
-                        <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-normal px-2 py-0.5 rounded-full">
-                          {getNetworkDisplayName(getAssetNetwork(asset))}
-                        </span>
-                      </div>
-                      <div
-                        className={`text-sm text-gray-500 dark:text-gray-400`}
-                      >
-                        {(() => {
-                          let displayName =
-                            asset.name || asset.ticker || asset.symbol || "Unknown Asset";
-
-                          displayName = displayName
-                            .replace(/\s*\(Binance Smart Chain\)\s*\(BSC\)/gi, "")
-                            .replace(/\s*\(Ethereum\)\s*\(ETH\)/gi, "")
-                            .replace(/\s*\(Polygon\)\s*\(MATIC\)/gi, "")
-                            .replace(/\s*\(Avalanche\)\s*\(AVAX\)/gi, "")
-                            .replace(/\s*\(TRON\)\s*\(TRX\)/gi, "")
-                            .replace(/\s*\(Solana\)\s*\(SOL\)/gi, "")
-                            .replace(/\s*\(BSC\)$/gi, "")
-                            .replace(/\s*\(ETH\)$/gi, "")
-                            .replace(/\s*\(MATIC\)$/gi, "")
-                            .replace(/\s*\(AVAX\)$/gi, "")
-                            .replace(/\s*\(TRX\)$/gi, "")
-                            .replace(/\s*\(SOL\)$/gi, "")
-                            .trim();
-
-                          return displayName;
-                        })()}
-                      </div>
-                    </div>
-                    {selectedAsset?.asset_id === asset.asset_id && (
-                      <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
-                    )}
-                  </div>
-                ))}
-              </>
+              <AssetDropdownVirtualized
+                rows={assetDropdownRows}
+                selectedAsset={selectedAsset}
+                onAssetSelect={(asset) => {
+                  handleAssetSelection(asset);
+                  setIsAssetDropdownOpen(false);
+                  setAssetSearchTerm("");
+                  if (isHomePage) setAssetFilterTab("all");
+                }}
+              />
             ) : (
               <div className="p-4 text-center text-[#7e7e8f] dark:text-[#788099]">
                 {assetSearchTerm ? "No assets found" : "No assets available"}

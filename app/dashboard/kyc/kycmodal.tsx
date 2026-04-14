@@ -135,7 +135,7 @@ const KYCVerificationModal: React.FC = () => {
     }
   }, [kycModalOpen, isAuthenticated, user, dispatch]);
 
-  // Check KYC status for phone verification; close modal if user is already verified
+  // Check KYC status for OTP verification; close modal if user is already verified
   useEffect(() => {
     if (kycModalOpen && user) {
       dispatch(checkAuthKYCStatus()).then((result: any) => {
@@ -148,7 +148,7 @@ const KYCVerificationModal: React.FC = () => {
             dispatch(closeKYCModal());
             return;
           }
-          if (status.phone_verified === true) {
+          if (status.email_verified === true || status.phone_verified === true) {
             setPhoneVerified(true);
           }
           // Keep phone field in sync with profile if API returns a phone
@@ -215,35 +215,33 @@ const KYCVerificationModal: React.FC = () => {
   const handleManualVerificationClick = async () => {
     setError(null);
     
-    // Check if phone is already verified
-    if (phoneVerified || kycStatus?.phone_verified === true) {
-      // Phone already verified, start from step 1 (document info)
+    // Check if email OTP is already verified
+    if (
+      phoneVerified ||
+      kycStatus?.email_verified === true ||
+      kycStatus?.phone_verified === true
+    ) {
+      // OTP already verified, start from step 1 (document info)
       setCurrentStep(1);
       setShowManualVerification(true);
       return;
     }
     
-    // Phone not verified, start from step 0 (phone verification)
+    // OTP not verified, start from step 0 (email verification)
     setCurrentStep(0);
     setShowManualVerification(true);
   };
 
   const handleSendOTP = async () => {
-    if (!phoneNumber.trim()) {
-      setError("Please enter your phone number");
-      showToast.error("Error", "Please enter your phone number");
-      return;
-    }
-
     setSendingOTP(true);
     setError(null);
     try {
-      const result = await dispatch(sendPhoneOTP({ phone_number: phoneNumber })).unwrap();
+      const result = await dispatch(sendPhoneOTP({})).unwrap();
       setOtpSent(true);
-      setResendTimer(60); // 60 seconds cooldown
+      setResendTimer(result?.cooldown_seconds ?? 60);
       showToast.success(
         "OTP Sent",
-        `OTP sent successfully via ${result.channel === "whatsapp" ? "WhatsApp" : "SMS"}`
+        "OTP sent to your registered email address."
       );
     } catch (error: any) {
       const errorMsg = typeof error === "string" ? error : "Failed to send OTP. Please try again.";
@@ -265,9 +263,9 @@ const KYCVerificationModal: React.FC = () => {
     setError(null);
     try {
       const result = await dispatch(verifyPhoneOTP({ otp })).unwrap();
-      if (result.phone_verified) {
+      if (result.email_verified || result.phone_verified) {
         setPhoneVerified(true);
-        showToast.success("Success", "Phone number verified successfully");
+        showToast.success("Success", "Email verified successfully");
         
         // Refresh KYC status
         const kycResult = await dispatch(checkAuthKYCStatus()).unwrap();
@@ -307,9 +305,9 @@ const KYCVerificationModal: React.FC = () => {
   const validateStep = (step: number) => {
     switch (step) {
       case 0:
-        // Phone verification step - OTP must be verified
+        // Email verification step - OTP must be verified
         if (!phoneVerified) {
-          setError("Please verify your phone number first");
+          setError("Please verify your email first");
           return false;
         }
         return true;
@@ -782,7 +780,7 @@ const KYCVerificationModal: React.FC = () => {
             </div>
           )}
 
-          {/* Step 0: Phone Verification */}
+          {/* Step 0: Email Verification */}
           {currentStep === 0 && !phoneVerified && (
             <div className="space-y-3">
               <div className="text-center mb-4">
@@ -791,28 +789,27 @@ const KYCVerificationModal: React.FC = () => {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                   </svg>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">Phone Verification</h3>
-                <p className="text-gray-500 dark:text-gray-400 text-xs">Verify your phone number to continue</p>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">Email Verification</h3>
+                <p className="text-gray-500 dark:text-gray-400 text-xs">Verify your email address to continue</p>
               </div>
 
               <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 mb-4">
                 <p className="text-sm text-green-700 dark:text-green-300">
-                  We'll send you a verification code via WhatsApp (or SMS if WhatsApp is unavailable).
+                  We'll send a verification code to your registered email address.
                 </p>
               </div>
 
-              {/* Phone Number Input */}
+              {/* Registered Email */}
               {!otpSent && (
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Phone Number *</label>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Registered Email</label>
                     <input
-                      type="tel"
-                      value={phoneNumber}
-                      onChange={(e) => setPhoneNumber(e.target.value)}
-                      placeholder="+254712345678"
+                      type="email"
+                      value={user?.email || ""}
+                      readOnly
                       className="w-full px-3 py-1.5 text-sm bg-gray-50 dark:bg-[#2A2A2A] border border-gray-300 dark:border-[#35353E] rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#1D8751]"
-                      disabled={sendingOTP}
+                      disabled
                     />
                   </div>
                 </div>
@@ -864,9 +861,9 @@ const KYCVerificationModal: React.FC = () => {
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
                   <div className="flex-1">
-                    <p className="font-semibold mb-1 text-sm">Phone Verified!</p>
+                    <p className="font-semibold mb-1 text-sm">Email Verified!</p>
                     <p className="text-xs text-green-500 dark:text-green-300">
-                      Your phone number has been successfully verified.
+                      Your email has been successfully verified.
                     </p>
                   </div>
                 </div>
@@ -1097,12 +1094,12 @@ const KYCVerificationModal: React.FC = () => {
             )}
             
             {currentStep === 0 && !phoneVerified ? (
-              // Phone verification step buttons
+              // Email verification step buttons
               <div className="flex gap-2 w-full">
                 {!otpSent ? (
                   <button
                     onClick={handleSendOTP}
-                    disabled={sendingOTP || !phoneNumber.trim()}
+                    disabled={sendingOTP}
                     className="flex-1 bg-[#1D8751] hover:bg-[#167a47] text-white h-9 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm"
                   >
                     {sendingOTP ? (

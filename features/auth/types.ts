@@ -174,15 +174,12 @@ export interface ApiErrorResponse {
   statusText: string;
 }
 
-// Phone verification types
-export interface PhoneSendOTPPayload {
-  phone_number: string;
-}
+// KYC OTP (email verification) types
+export interface PhoneSendOTPPayload {}
 
 export interface PhoneSendOTPResponse {
   message: string;
-  phone_number: string;
-  channel: "whatsapp" | "sms";
+  cooldown_seconds?: number;
 }
 
 export interface PhoneVerifyOTPPayload {
@@ -191,5 +188,6 @@ export interface PhoneVerifyOTPPayload {
 
 export interface PhoneVerifyOTPResponse {
   message: string;
-  phone_verified: boolean;
+  email_verified?: boolean;
+  phone_verified?: boolean;
 }
