@@ -17,8 +17,8 @@ export const API_ENDPOINTS = {
   SUMSUB_TOKEN: "/api/sumsub/token/",
   ENABLE_2FA: "/api/2fa/enable/",
   VERIFY_2FA_SETUP: "/api/2fa/verify-setup/",
-  KYC_EMAIL_SEND_OTP: "/api/kyc/email/send-otp/",
-  KYC_EMAIL_VERIFY_OTP: "/api/kyc/email/verify-otp/",
+  KYC_EMAIL_SEND_OTP: "/api/kyc/phone/send-otp/",
+  KYC_EMAIL_VERIFY_OTP: "/api/kyc/phone/verify-otp/",
   KYC_PHONE_SEND_OTP: "/api/kyc/phone/send-otp/",
   KYC_PHONE_VERIFY_OTP: "/api/kyc/phone/verify-otp/",
 };
