@@ -9,8 +9,8 @@ import React, {
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { FaExchangeAlt, FaExclamationCircle } from "react-icons/fa";
-import { useDispatch, useSelector } from "react-redux";
-import { AppDispatch } from "@/store";
+import { useDispatch, useSelector, useStore } from "react-redux";
+import { AppDispatch, type RootState } from "@/store";
 import {
   fetchUserPaymentDetails,
   fetchAdminWalletList,
@@ -54,6 +54,7 @@ import CustomSelect from "@/components/ui/CustomSelect";
 import {
   PAYMENT_LOGO_BASE_CLASS,
   PAYMENT_LOGO_SIZE,
+  getHighResAssetIcon,
 } from "../../utils/imageHelpers";
 import ForexWithdrawal from "./ForexWithdrawal";
 import { useTheme } from "@/context/theme";
@@ -305,6 +306,7 @@ export default function WithdrawalForm({
   initialState,
 }: DepositFormProps) {
   const dispatch = useDispatch<AppDispatch>();
+  const store = useStore<RootState>();
   const router = useRouter();
   const [transactionMode, setTransactionMode] = useState<"crypto" | "forex">("crypto");
 
@@ -1261,7 +1263,12 @@ export default function WithdrawalForm({
       console.warn('⚠️ Max retries reached for swap assets');
       setHasFetchedSwapAssets(true);
 
-      // Set fallback assets after max retries
+      const existingSwap = store.getState().swap.supportedAssets;
+      if (Array.isArray(existingSwap) && existingSwap.length > 0) {
+        return;
+      }
+
+      // Set fallback assets after max retries (only if Redux has no list)
       const fallbackAssets = [
         {
           ticker: "USDT",
@@ -1290,7 +1297,36 @@ export default function WithdrawalForm({
       return;
     }
 
-    withTimeout(dispatch(fetchSupportedAssets(false)).unwrap(), 15_000)
+    const resolveSwapPayload = (force: boolean): Promise<SupportedAsset[]> => {
+      return dispatch(fetchSupportedAssets(force)).then(
+        (action): SupportedAsset[] | Promise<SupportedAsset[]> => {
+          if (fetchSupportedAssets.fulfilled.match(action)) {
+            return action.payload;
+          }
+          if (
+            fetchSupportedAssets.rejected.match(action) &&
+            (action as { meta?: { condition?: boolean } }).meta?.condition
+          ) {
+            const existing = store.getState().swap.supportedAssets;
+            if (Array.isArray(existing) && existing.length > 0) {
+              return existing;
+            }
+            if (!force) {
+              return resolveSwapPayload(true);
+            }
+          }
+          if (fetchSupportedAssets.rejected.match(action)) {
+            throw new Error(
+              action.error?.message || "Failed to fetch swap assets"
+            );
+          }
+          throw new Error("Unexpected swap assets fetch result");
+        }
+      );
+    };
+
+    // Must exceed getSupportedAssets axios timeout (30s) or UI shows "Request timeout" first
+    withTimeout(resolveSwapPayload(false), 35_000)
       .then((data) => {
         console.log("✅ Swap assets fetched successfully");
         setHasFetchedSwapAssets(true);
@@ -1298,48 +1334,53 @@ export default function WithdrawalForm({
 
         if ((!data || data.length === 0) && swapAssetsRetryCount === 0) {
           setSwapAssetsRetryCount(1);
-          withTimeout(dispatch(fetchSupportedAssets(true)).unwrap(), 15_000)
+          withTimeout(resolveSwapPayload(true), 35_000)
             .then(() => setHasFetchedSwapAssets(true))
             .catch(() => setHasFetchedSwapAssets(true));
         }
       })
       .catch((error: unknown) => {
         console.error(`❌ Failed to fetch swap assets (attempt ${swapAssetsRetryCount + 1}/${MAX_RETRIES}):`, error);
-        setSwapAssetsRetryCount(prev => prev + 1);
-        if (swapAssetsRetryCount + 1 >= MAX_RETRIES) {
-          if (!isHomePage) {
-            showToast.warning("Unable to fetch swap assets. Using fallback data.");
-          }
-          const fallbackAssets = [
-            {
-              ticker: "USDT",
-              symbol: "USDT",
-              name: "Tether USD",
-              network: "BSC",
-              range_commissions: [{ commission: "2" }],
-              commission: "2",
-              fee_rate: "2"
-            },
-            {
-              ticker: "USDT",
-              symbol: "USDT",
-              name: "USD Coin",
-              network: "BSC",
-              range_commissions: [{ commission: "2" }],
-              commission: "2",
-              fee_rate: "2"
+        setSwapAssetsRetryCount((prev) => {
+          const nextRetry = prev + 1;
+          if (nextRetry >= MAX_RETRIES) {
+            const existingSwap = store.getState().swap.supportedAssets;
+            if (!(Array.isArray(existingSwap) && existingSwap.length > 0)) {
+              if (!isHomePage) {
+                showToast.warning("Unable to fetch swap assets. Using fallback data.");
+              }
+              const fallbackAssets = [
+                {
+                  ticker: "USDT",
+                  symbol: "USDT",
+                  name: "Tether USD",
+                  network: "BSC",
+                  range_commissions: [{ commission: "2" }],
+                  commission: "2",
+                  fee_rate: "2",
+                },
+                {
+                  ticker: "USDC",
+                  symbol: "USDC",
+                  name: "USD Coin",
+                  network: "BSC",
+                  range_commissions: [{ commission: "2" }],
+                  commission: "2",
+                  fee_rate: "2",
+                },
+              ];
+
+              dispatch({
+                type: "swap/fetchSupportedAssets/fulfilled",
+                payload: fallbackAssets,
+              });
             }
-          ];
-
-          dispatch({
-            type: "swap/fetchSupportedAssets/fulfilled",
-            payload: fallbackAssets
-          });
-
-          setHasFetchedSwapAssets(true);
-        }
+            setHasFetchedSwapAssets(true);
+          }
+          return nextRetry;
+        });
       });
-  }, [dispatch, isHomePage, hasFetchedSwapAssets, swapAssetsRetryCount]);
+  }, [dispatch, isHomePage, hasFetchedSwapAssets, swapAssetsRetryCount, store]);
 
   // Auto-select first asset and calculate received amount when assets are loaded
   useEffect(() => {
@@ -2474,9 +2515,9 @@ export default function WithdrawalForm({
       return 1;
     }
 
-    // Priority 3: FX Primus (API may use fxp or fxprimus)
-    const isFxpA = tickerA === "fxp" || tickerA === "fxprimus";
-    const isFxpB = tickerB === "fxp" || tickerB === "fxprimus";
+    // Priority 3: FX Primus (match ticker, name, legacy fields)
+    const isFxpA = isForexPrimusAsset(a);
+    const isFxpB = isForexPrimusAsset(b);
     if (isFxpA && !isFxpB) {
       return -1;
     }
@@ -3833,12 +3874,7 @@ export default function WithdrawalForm({
                         {selectedAsset ? (
                           <>
                             <img
-                              src={
-                                selectedAsset?.image_url ||
-                                selectedAsset?.asset_image ||
-                                (selectedAsset as any)?.image ||
-                                "/images/tether.svg"
-                              }
+                              src={getHighResAssetIcon(selectedAsset, 72)}
                               alt={
                                 selectedAsset?.name ||
                                 selectedAsset?.ticker ||
@@ -3851,8 +3887,7 @@ export default function WithdrawalForm({
                                   "Image failed to load for asset:",
                                   selectedAsset
                                 );
-                                e.currentTarget.src =
-                                  "/images/tether.svg";
+                                e.currentTarget.src = getHighResAssetIcon(null, 72);
                               }}
                             />
                             <div className="flex flex-col text-left">

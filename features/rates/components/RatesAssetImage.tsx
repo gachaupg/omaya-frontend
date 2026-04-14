@@ -3,6 +3,7 @@
 import React, { type ImgHTMLAttributes } from "react";
 
 export const RATES_ASSET_ICON_FALLBACK = "/images/asset-default.svg";
+export const RATES_FX_PRIMUS_ICON = "/assets/fx-primus-custom.svg";
 
 /** Real remote URLs for display; broken FX Primus path → local default. */
 export function resolveRatesAssetImageUrl(raw: string | undefined | null): string {
@@ -18,12 +19,21 @@ export function normalizeRatesAssetIconForPayload(raw: string | undefined | null
 }
 
 export function pickRatesAssetImageRaw(asset: {
+  ticker?: string;
+  symbol?: string;
+  name?: string;
   image_url?: string;
   asset_image?: string;
   icon_url?: string;
   image?: string;
 } | null | undefined): string | undefined {
   if (!asset) return undefined;
+  const identity = String(
+    asset.ticker || asset.symbol || asset.name || ""
+  ).toLowerCase();
+  if (identity === "fxp" || identity === "fxprimus" || identity === "fx primus") {
+    return RATES_FX_PRIMUS_ICON;
+  }
   const u =
     asset.image_url ||
     asset.asset_image ||

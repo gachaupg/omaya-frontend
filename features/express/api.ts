@@ -27,6 +27,7 @@ export const isForexPrimusAsset = (asset: {
     (asset as { legacyTicker?: string }).legacyTicker,
     (asset as { legacy_ticker?: string }).legacy_ticker,
     (asset as { original_ticker?: string }).original_ticker,
+    (asset as { change_now_ticker?: string }).change_now_ticker,
   ]
     .filter((x): x is string => x != null && String(x).trim() !== "")
     .map((x) => String(x).toLowerCase().trim());

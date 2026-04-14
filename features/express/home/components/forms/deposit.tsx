@@ -110,6 +110,38 @@ const getNetworkMatchKeys = (network: string): string[] => {
 
 // Use a local placeholder so missing icons always render in home flow.
 const ASSET_ICON_FALLBACK_URL = "/assets/image_7_jijlik.png";
+const FX_PRIMUS_ASSET_ICON_URL = "/assets/fx-primus-custom.svg";
+
+/** Keep FX Primus visible in Popular when ChangeNOW public assets omit it. */
+const homePopularFxPrimusFallback = (): SupportedAsset =>
+  ({
+    asset_id: "",
+    ticker: "FXP",
+    symbol: "FXP",
+    name: "FX Primus",
+    network: "bsc",
+    networks: [{ network_id: "bsc", network_type: "bsc" }],
+    image_url: FX_PRIMUS_ASSET_ICON_URL,
+    change_now_ticker: "fxp",
+    original_ticker: "fxp",
+    featured: true,
+    is_changenow_asset: true,
+    range_commissions: [{ commission: "2" }],
+    commission: "2",
+    fee_rate: "2",
+  }) as SupportedAsset;
+
+const getAssetDropdownIcon = (asset: any): string => {
+  if (isForexPrimusAsset(asset)) {
+    return FX_PRIMUS_ASSET_ICON_URL;
+  }
+  return (
+    asset?.image_url ||
+    asset?.asset_image ||
+    (asset as any)?.image ||
+    ASSET_ICON_FALLBACK_URL
+  );
+};
 
 // Network mapping function
 const getNetworkDisplayName = (network: string) => {
@@ -1276,6 +1308,11 @@ export default function DepositForm({
   const isCommissionApiAsset = (asset: any) => !!getCommissionApiAsset(asset?.ticker || asset?.symbol || "");
 
   useEffect(() => {
+    if (isSubmitting) {
+      if (commissionFetchTimeoutRef.current)
+        clearTimeout(commissionFetchTimeoutRef.current);
+      return;
+    }
     if (!selectedAsset) {
       setApiCommission(null);
       setExchangeLookupResponse(null);
@@ -1381,7 +1418,7 @@ export default function DepositForm({
         .catch(() => setApiCommission(null));
     }, 300);
     return () => { if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current); };
-  }, [selectedAsset, payAmountInput, getAmountInput, payAmount, getAmount, isCalculatingFromPay]);
+  }, [selectedAsset, payAmountInput, getAmountInput, payAmount, getAmount, isCalculatingFromPay, isSubmitting]);
 
   useEffect(() => {
     if (
@@ -1431,7 +1468,13 @@ export default function DepositForm({
   }, [selectedAsset, exchangeLookupResponse, isCalculatingFromPay, getAmount]);
 
   // Fetch estimate for non-direct assets - debounced to avoid rapid API calls
+  const estimateDebounceMs = isHomePage ? 280 : 800;
+
   useEffect(() => {
+    if (isSubmitting) {
+      setEstimateLoading(false);
+      return;
+    }
 
     if (
       selectedAsset &&
@@ -1441,11 +1484,11 @@ export default function DepositForm({
       payAmount > 0 &&
       isCalculatingFromPay
     ) {
-      setEstimateLoading(true);
       setEstimateError(null);
 
-      // Debounce API call by 800ms to avoid rapid requests while user is typing
+      // Debounce: shorter on marketing home so estimates feel snappy; longer when logged in (typing stability)
       const debounceTimer = setTimeout(() => {
+        setEstimateLoading(true);
         // Add timeout to prevent hanging API calls
         const timeoutPromise = new Promise((_, reject) => {
           setTimeout(() => reject(new Error("Request timeout")), 12000); // 12 second timeout (10s API + 2s buffer)
@@ -1677,19 +1720,27 @@ export default function DepositForm({
           .finally(() => {
             setEstimateLoading(false);
           });
-      }, 800); // 800ms debounce
+      }, estimateDebounceMs);
 
       // Cleanup function to clear debounce timer on unmount or dependency change
-      return () => clearTimeout(debounceTimer);
+      return () => {
+        clearTimeout(debounceTimer);
+        setEstimateLoading(false);
+      };
     } else {
       // Clear estimate for USDT or when conditions not met
       setEstimate(null);
       setEstimateError(null);
+      setEstimateLoading(false);
     }
-  }, [selectedAsset, payAmount, isCalculatingFromPay]);
+  }, [selectedAsset, payAmount, isCalculatingFromPay, isHomePage, isSubmitting]);
 
   // Fetch reverse estimate for non-direct assets when calculating from receive amount - debounced
   useEffect(() => {
+    if (isSubmitting) {
+      setEstimateLoading(false);
+      return;
+    }
     if (
       selectedAsset &&
       !isSimpleCalculationAsset(selectedAsset) &&
@@ -1698,11 +1749,10 @@ export default function DepositForm({
       getAmount > 0 &&
       !isCalculatingFromPay
     ) {
-      setEstimateLoading(true);
       setEstimateError(null);
 
-      // Debounce API call by 800ms to avoid rapid requests while user is typing
       const debounceTimer = setTimeout(() => {
+        setEstimateLoading(true);
         // Add timeout to prevent hanging API calls
         const timeoutPromise = new Promise((_, reject) => {
           setTimeout(() => reject(new Error("Request timeout")), 12000); // 12 second timeout (10s API + 2s buffer)
@@ -1847,12 +1897,15 @@ export default function DepositForm({
           .finally(() => {
             setEstimateLoading(false);
           });
-      }, 800); // 800ms debounce
+      }, estimateDebounceMs);
 
       // Cleanup function to clear debounce timer on unmount or dependency change
-      return () => clearTimeout(debounceTimer);
+      return () => {
+        clearTimeout(debounceTimer);
+        setEstimateLoading(false);
+      };
     }
-  }, [selectedAsset, getAmount, isCalculatingFromPay]);
+  }, [selectedAsset, getAmount, isCalculatingFromPay, isHomePage, isSubmitting]);
 
   // Safety timeout to clear loading states if they get stuck
   useEffect(() => {
@@ -1928,7 +1981,8 @@ export default function DepositForm({
               return (
                 asset.featured === true ||
                 asset.is_changenow_asset === true ||
-                isUsdcBsc
+                isUsdcBsc ||
+                isForexPrimusAsset(asset)
               );
             }
           case "gainers":
@@ -2023,19 +2077,13 @@ export default function DepositForm({
       return 1;
     }
 
-    // Priority 3: FXPRIMUS (ticker can be fxp or fxprimus)
-    const isFxpA = tickerA === "fxp" || tickerA === "fxprimus";
-    const isFxpB = tickerB === "fxp" || tickerB === "fxprimus";
-    if (
-      isFxpA &&
-      !isFxpB
-    ) {
+    // Priority 3: FX Primus (match ticker, name, legacy fields)
+    const isFxpA = isForexPrimusAsset(a);
+    const isFxpB = isForexPrimusAsset(b);
+    if (isFxpA && !isFxpB) {
       return -1;
     }
-    if (
-      isFxpB &&
-      !isFxpA
-    ) {
+    if (isFxpB && !isFxpA) {
       return 1;
     }
 
@@ -2072,16 +2120,16 @@ export default function DepositForm({
       (a) => normalizeCurrency(a) === "usdc" && isBscLike(a)
     );
 
-    const fxprimusAsset = sourceAssets.find(
-      (a) =>
-        normalizeCurrency(a) === "fxp" || normalizeCurrency(a) === "fxprimus"
-    );
+    let fxprimusAsset = sourceAssets.find((a) => isForexPrimusAsset(a));
+    if (isHomePage && !fxprimusAsset) {
+      fxprimusAsset = homePopularFxPrimusFallback();
+    }
 
     const selected: SupportedAsset[] = [usdtAsset, usdcAsset, fxprimusAsset].filter(
       Boolean
     ) as SupportedAsset[];
     return selected;
-  }, [assetsDisplay.displayData, getCurrencyFromAsset]);
+  }, [assetsDisplay.displayData, getCurrencyFromAsset, isHomePage]);
 
   const popularKeySet = useMemo(
     () => new Set(popularAssets.map((a) => getAssetKeyForGrouping(a))),
@@ -2309,12 +2357,7 @@ export default function DepositForm({
                           }}
                         >
                           <img
-                            src={
-                              asset?.image_url ||
-                              asset?.asset_image ||
-                              (asset as any)?.image ||
-                              ASSET_ICON_FALLBACK_URL
-                            }
+                            src={getAssetDropdownIcon(asset)}
                             alt={
                               asset?.name ||
                               asset?.ticker ||
@@ -2392,12 +2435,7 @@ export default function DepositForm({
                             }}
                           >
                             <img
-                              src={
-                                asset?.image_url ||
-                                asset?.asset_image ||
-                                (asset as any)?.image ||
-                                ASSET_ICON_FALLBACK_URL
-                              }
+                              src={getAssetDropdownIcon(asset)}
                               alt={asset?.name || asset?.ticker || asset?.symbol || "Asset"}
                               className="w-10 h-10 rounded-full object-cover"
                               onError={(e) => {
@@ -2449,12 +2487,7 @@ export default function DepositForm({
                     }}
                   >
                     <img
-                      src={
-                        asset?.image_url ||
-                        asset?.asset_image ||
-                        (asset as any)?.image ||
-                        ASSET_ICON_FALLBACK_URL
-                      }
+                      src={getAssetDropdownIcon(asset)}
                       alt={
                         asset?.name ||
                         asset?.ticker ||
@@ -3971,12 +4004,7 @@ export default function DepositForm({
                     {selectedAsset ? (
                       <>
                         <img
-                          src={
-                            selectedAsset?.image_url ||
-                            selectedAsset?.asset_image ||
-                            (selectedAsset as any)?.image ||
-                            ASSET_ICON_FALLBACK_URL
-                          }
+                          src={getAssetDropdownIcon(selectedAsset)}
                           alt={selectedAsset?.name || selectedAsset?.ticker || selectedAsset?.symbol || "Asset"}
                           className="w-6 h-6 rounded-full object-cover"
                           onError={(e) => {

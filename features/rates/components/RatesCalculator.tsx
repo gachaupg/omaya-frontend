@@ -2016,9 +2016,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
           }}
         >
           <RatesAssetImage
-            remoteUrl={
-              asset?.image_url || asset?.asset_image || (asset as any)?.image
-            }
+            remoteUrl={pickRatesAssetImageRaw(asset)}
             alt={asset?.name || asset?.ticker || asset?.symbol || "Asset"}
             className="w-8 h-8 rounded-full object-cover flex-shrink-0"
             onError={() => {
@@ -3099,11 +3097,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                         {selectedAsset ? (
                           <>
                             <RatesAssetImage
-                              remoteUrl={
-                                selectedAsset?.image_url ||
-                                selectedAsset?.asset_image ||
-                                (selectedAsset as any)?.image
-                              }
+                              remoteUrl={pickRatesAssetImageRaw(selectedAsset)}
                               alt={
                                 selectedAsset?.name ||
                                 selectedAsset?.ticker ||
@@ -3296,11 +3290,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                         {selectedAsset ? (
                           <>
                             <RatesAssetImage
-                              remoteUrl={
-                                selectedAsset?.image_url ||
-                                selectedAsset?.asset_image ||
-                                (selectedAsset as any)?.image
-                              }
+                              remoteUrl={pickRatesAssetImageRaw(selectedAsset)}
                               alt={
                                 selectedAsset?.name ||
                                 selectedAsset?.ticker ||

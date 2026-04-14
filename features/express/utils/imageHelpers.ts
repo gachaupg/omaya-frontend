@@ -12,6 +12,9 @@ const LOCAL_ASSET_ICON_MAP: Record<string, string> = {
   bitcoin: "/images/Bitcoin.svg",
   eth: "/images/eth.svg",
   ethereum: "/images/eth.svg",
+  fxp: "/assets/fx-primus-custom.svg",
+  fxprimus: "/assets/fx-primus-custom.svg",
+  "fx primus": "/assets/fx-primus-custom.svg",
   usd: "/images/united_kingdom_zud79x.webp",
 };
 

@@ -31,6 +31,12 @@ export default function ForexWithdrawal({
   const [additionalInfo, setAdditionalInfo] = useState("");
   const [userNotes, setUserNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const selectedAccount = selectedPaymentDetails?.[0];
+  const selectedAccountStatus = String(
+    selectedAccount?.status ?? selectedAccount?.payment_status ?? ""
+  ).toLowerCase();
+  const isSelectedAccountPending =
+    selectedAccountStatus === "pending" || selectedAccountStatus === "pending_verification";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,6 +48,10 @@ export default function ForexWithdrawal({
 
     if (!selectedPaymentDetails || selectedPaymentDetails.length === 0) {
       showToast.error("Please select your bank account where you want to receive USD");
+      return;
+    }
+    if (isSelectedAccountPending) {
+      showToast.error("Selected payment method is pending verification");
       return;
     }
 
@@ -155,8 +165,8 @@ export default function ForexWithdrawal({
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-[#7e7e8f] dark:text-[#788099]">Bank Account:</span>
                   <span className="text-sm font-semibold text-[#1D8751]">
-                    {selectedPaymentDetails[0]?.payment_provider_name || selectedPaymentDetails[0]?.provider_name} - 
-                    {selectedPaymentDetails[0]?.account_number && ` ****${selectedPaymentDetails[0].account_number.slice(-4)}`}
+                    {selectedAccount?.payment_provider_name || selectedAccount?.provider_name || "No account selected"}
+                    {selectedAccount?.account_number && ` - ****${selectedAccount.account_number.slice(-4)}`}
                   </span>
                 </div>
               </div>
@@ -182,9 +192,9 @@ export default function ForexWithdrawal({
         <div className="w-full mt-4">
           <button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || !selectedAccount || isSelectedAccountPending}
             className={`w-full text-white text-base font-medium py-3 rounded-2xl flex items-center justify-center gap-2 transition-colors ${
-              isSubmitting
+              isSubmitting || !selectedAccount || isSelectedAccountPending
                 ? "bg-gray-500 cursor-not-allowed"
                 : "bg-[#1D8751] hover:bg-[#166b3e]"
             }`}
@@ -201,6 +211,16 @@ export default function ForexWithdrawal({
           {forexError && (
             <div className="text-red-500 text-sm mt-2 text-center">
               {typeof forexError === "string" ? forexError : JSON.stringify(forexError)}
+            </div>
+          )}
+          {!selectedAccount && (
+            <div className="text-red-500 text-sm mt-2 text-center">
+              No account found for this payment method. Add Account
+            </div>
+          )}
+          {isSelectedAccountPending && (
+            <div className="text-yellow-600 text-sm mt-2 text-center">
+              Selected payment method is pending verification.
             </div>
           )}
         </div>

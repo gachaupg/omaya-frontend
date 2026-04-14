@@ -92,12 +92,17 @@ function estimateErrorStringFromRejectAction(action: {
   return "Failed to fetch swap estimate";
 }
 
+/** Skip list refetch in UI when Redux already has data (avoids pending/loading + IndexedDB on every mount). */
+export const SUPPORTED_ASSETS_CLIENT_TTL_MS = 60 * 60 * 1000;
+
 interface SwapState {
   fromAsset: SupportedAsset | null;
   toAsset: SupportedAsset | null;
   fromAmount: string;
   toAmount: string;
   supportedAssets: SupportedAsset[];
+  /** Set when `supportedAssets` was last filled from a successful fetch (non-empty). */
+  supportedAssetsFetchedAt: number | null;
   loading: boolean;
   error: string | null;
   estimate: SwapEstimate | null;
@@ -116,6 +121,7 @@ const initialState: SwapState = {
   fromAmount: "0.01",
   toAmount: "0",
   supportedAssets: [],
+  supportedAssetsFetchedAt: null,
   loading: false,
   error: null,
   estimate: null,
@@ -169,6 +175,22 @@ export const fetchSupportedAssets = createAsyncThunk<SupportedAsset[], boolean |
         error instanceof Error ? error.message : "Failed to fetch supported assets"
       ) as any;
     }
+  },
+  {
+    condition: (forceRefresh, { getState }) => {
+      if (forceRefresh) return true;
+      const state = getState() as { swap: SwapState };
+      const { supportedAssets, supportedAssetsFetchedAt } = state.swap;
+      const n = Array.isArray(supportedAssets) ? supportedAssets.length : 0;
+      if (
+        n > 0 &&
+        typeof supportedAssetsFetchedAt === "number" &&
+        Date.now() - supportedAssetsFetchedAt < SUPPORTED_ASSETS_CLIENT_TTL_MS
+      ) {
+        return false;
+      }
+      return true;
+    },
   }
 );
 
@@ -318,6 +340,9 @@ const swapSlice = createSlice({
         });
         state.loading = false;
         state.supportedAssets = action.payload;
+        if (Array.isArray(action.payload) && action.payload.length > 0) {
+          state.supportedAssetsFetchedAt = Date.now();
+        }
         logger.debug('swap', "🎯 Redux: supportedAssets set to:", state.supportedAssets?.length || 0, "assets");
         
         // Set default assets if not set - BTC for fromAsset, ETH for toAsset
@@ -342,6 +367,10 @@ const swapSlice = createSlice({
       })
       .addCase(fetchSupportedAssets.rejected, (state, action) => {
         state.loading = false;
+        // Thunk was skipped because we already have fresh assets in state (see condition callback)
+        if ((action as { meta?: { condition?: boolean } }).meta?.condition) {
+          return;
+        }
         state.error =
           action.error.message || "Failed to fetch supported assets";
         state.hasShownErrorToast = true; // Mark that error toast has been shown

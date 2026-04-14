@@ -8,6 +8,7 @@ import React, {
   useState,
 } from "react";
 import type { SupportedAsset } from "@/features/swap/types";
+import { getHighResAssetIcon } from "../../utils/imageHelpers";
 
 export type AssetDropdownRow =
   | { type: "section"; key: string; label: string }
@@ -89,12 +90,7 @@ const AssetRow = React.memo(function AssetRow({
       onClick={() => onSelect(asset)}
     >
       <img
-        src={
-          asset?.image_url ||
-          asset?.asset_image ||
-          (asset as { image?: string })?.image ||
-          "/images/tether.svg"
-        }
+        src={getHighResAssetIcon(asset, 72)}
         alt={
           asset?.name || asset?.ticker || asset?.symbol || "Asset"
         }
@@ -102,7 +98,7 @@ const AssetRow = React.memo(function AssetRow({
         loading="lazy"
         decoding="async"
         onError={(e) => {
-          (e.currentTarget as HTMLImageElement).src = "/images/tether.svg";
+          (e.currentTarget as HTMLImageElement).src = getHighResAssetIcon(null, 72);
         }}
       />
       <div className="flex-1 min-w-0">

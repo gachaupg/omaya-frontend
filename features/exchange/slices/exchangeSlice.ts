@@ -31,12 +31,17 @@ import {
   RemoveFavoritePayload,
 } from "../types";
 
+/** Skip exchange asset list refetch when Redux already has rows and TTL not expired. */
+export const EXCHANGE_ASSETS_CLIENT_TTL_MS = 60 * 60 * 1000;
+
 interface ExchangeState {
   deposits: TransactionsResponse | null;
   withdrawals: TransactionsResponse | null;
   favoriteAssets: FavoriteAsset[] | null;
   statistics: ExchangeStatistics | null;
   assets: AssetsResponse | null;
+  /** Last time `assets.assets` was filled from a successful non-empty fetch. */
+  assetsFetchedAt: number | null;
   transactions: TransactionsResponse | null;
   loading: boolean;
   error: string | null;
@@ -48,6 +53,7 @@ const initialState: ExchangeState = {
   favoriteAssets: null,
   statistics: null,
   assets: null,
+  assetsFetchedAt: null,
   transactions: null,
   loading: false,
   error: null,
@@ -234,6 +240,23 @@ export const fetchAssets = createAsyncThunk<AssetsResponse, boolean | undefined>
       // Return empty assets instead of throwing
       return { total_wallet_balance: "0.00", assets: [] };
     }
+  },
+  {
+    condition: (forceRefresh, { getState }) => {
+      if (forceRefresh) return true;
+      const state = getState() as { exchange: ExchangeState };
+      const rows = state.exchange.assets?.assets;
+      const n = Array.isArray(rows) ? rows.length : 0;
+      const at = state.exchange.assetsFetchedAt;
+      if (
+        n > 0 &&
+        typeof at === "number" &&
+        Date.now() - at < EXCHANGE_ASSETS_CLIENT_TTL_MS
+      ) {
+        return false;
+      }
+      return true;
+    },
   }
 );
 
@@ -487,6 +510,12 @@ const exchangeSlice = createSlice({
       (state, action: PayloadAction<AssetsResponse>) => {
         state.loading = false;
         state.assets = action.payload;
+        const n = Array.isArray(action.payload?.assets)
+          ? action.payload.assets.length
+          : 0;
+        if (n > 0) {
+          state.assetsFetchedAt = Date.now();
+        }
       }
     );
     builder.addCase(fetchAssets.rejected, (state, action) => {
