@@ -9,6 +9,7 @@ import EmailPhoneChangeModal from "./EmailPhoneChangeModal";
 interface BasicInfoSectionProps {
   user: any;
 }
+const PROFILE_CHANGE_OTP_PENDING_KEY = "profile_change_otp_pending_v1";
 
 const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ user }) => {
   const dispatch = useDispatch<AppDispatch>();
@@ -25,6 +26,15 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ user }) => {
     type: "email" | "phone";
     initialValue?: string;
   }>({ open: false, type: "email" });
+
+  const closeChangeModal = () => {
+    try {
+      localStorage.removeItem(PROFILE_CHANGE_OTP_PENDING_KEY);
+    } catch {
+      // Ignore localStorage access issues
+    }
+    setChangeModal({ open: false, type: "email" });
+  };
 
   // Initialize form data when user changes (phone stored/displayed without leading +)
   useEffect(() => {
@@ -46,6 +56,27 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ user }) => {
       isMountedRef.current = false;
     };
   }, []);
+
+  // Restore pending profile-change OTP modal after refresh/navigation.
+  useEffect(() => {
+    if (!user) return;
+    try {
+      const raw = localStorage.getItem(PROFILE_CHANGE_OTP_PENDING_KEY);
+      if (!raw) return;
+      const pending = JSON.parse(raw) as {
+        type?: "email" | "phone";
+        value?: string;
+      };
+      if (!pending?.type || !pending?.value) return;
+      setChangeModal({
+        open: true,
+        type: pending.type,
+        initialValue: pending.value,
+      });
+    } catch {
+      // Ignore malformed pending OTP state
+    }
+  }, [user]);
 
   // Check if email or phone has changed (first/last are disabled)
   const hasChanges = useMemo(() => {
@@ -154,7 +185,7 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ user }) => {
 
       <EmailPhoneChangeModal
         isOpen={changeModal.open}
-        onClose={() => setChangeModal({ open: false, type: "email" })}
+        onClose={closeChangeModal}
         type={changeModal.type}
         currentValue={
           changeModal.type === "email"

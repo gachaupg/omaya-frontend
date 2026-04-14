@@ -1,0 +1,10 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="fxPrimusGradient" x1="60" y1="30" x2="210" y2="210" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#00F5D4"/>
+      <stop offset="1" stop-color="#00C2B8"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="256" height="256" rx="24" fill="#000000"/>
+  <path d="M60 58C60 49.1634 67.1634 42 76 42H188C196.837 42 204 49.1634 204 58V72H76V98H188V126H76V152H164V180H76V198C76 206.837 68.8366 214 60 214V58Z" fill="url(#fxPrimusGradient)"/>
+</svg>

@@ -165,6 +165,19 @@ const AllTransactions = () => {
   }
 
   const getFromToDisplay = (tx: AllTransactionItem) => {
+    const clean = (v: unknown): string | null => {
+      const s = String(v ?? "").trim();
+      if (!s || s === "-" || s.toLowerCase() === "null" || s.toLowerCase() === "undefined") {
+        return null;
+      }
+      return s;
+    };
+    const paymentProvider = clean((tx as any)?.payment_method?.provider);
+    const senderProvider = clean((tx as any)?.sender_provider);
+    const receiverProvider = clean((tx as any)?.receiver_provider);
+    const recipientName = clean((tx as any)?.recipient_name);
+    const fallbackAsset = clean(tx.currency || tx.asset) || "USD";
+
     if (tx.type === "swap") {
       return {
         from: `${tx.from_currency || tx.currency} (${tx.from_network || tx.network || "-"})`,
@@ -174,14 +187,26 @@ const AllTransactions = () => {
     if (tx.type === "exchange") {
       const isDeposit = tx.sub_type === "deposit";
       return {
-        from: isDeposit ? "Bank / Payment" : `${tx.currency || "USDT"} (${tx.network || "-"})`,
-        to: isDeposit ? `${tx.currency || "USDT"} (${tx.network || "-"})` : "Bank / Wallet",
+        from: isDeposit
+          ? paymentProvider || senderProvider || "Bank / Payment"
+          : `${tx.currency || "USDT"} (${tx.network || "-"})`,
+        to: isDeposit
+          ? `${tx.currency || "USDT"} (${tx.network || "-"})`
+          : paymentProvider || receiverProvider || recipientName || "Bank / Wallet",
+      };
+    }
+    if ((tx as any)?.type === "forex") {
+      const fromCurrency = clean((tx as any)?.from_currency);
+      const toCurrency = clean((tx as any)?.to_currency);
+      return {
+        from: fromCurrency || fallbackAsset,
+        to: paymentProvider || receiverProvider || recipientName || toCurrency || "Bank / Wallet",
       };
     }
     if (tx.type === "moneyx") {
       return {
-        from: tx.sender_provider || "-",
-        to: tx.receiver_provider || tx.recipient_name || "-",
+        from: senderProvider || paymentProvider || "Sender Provider",
+        to: receiverProvider || recipientName || paymentProvider || "Receiver Provider",
       };
     }
     if (tx.type === "p2p" && (tx.from_currency || tx.to_currency)) {
@@ -228,10 +253,85 @@ const AllTransactions = () => {
       };
     }
     return {
-      from: tx.sender_provider || "-",
-      to: tx.receiver_provider || tx.recipient_name || "-",
+      from: senderProvider || paymentProvider || fallbackAsset,
+      to: receiverProvider || recipientName || paymentProvider || "Bank / Wallet",
     };
   };
+
+const getFromToLogos = (tx: AllTransactionItem): { fromLogo: string | null; toLogo: string | null } => {
+  const paymentMethodLogo = String((tx as any)?.payment_method?.logo_url || "").trim() || null;
+  const senderLogo = String((tx as any)?.sender_provider_logo || "").trim() || null;
+  const receiverLogo = String((tx as any)?.receiver_provider_logo || "").trim() || null;
+  const providerLogo = String((tx as any)?.provider_logo || "").trim() || null;
+  const paymentDetailLogo =
+    (Array.isArray((tx as any)?.payment_details)
+      ? ((tx as any).payment_details.find(
+          (detail: any) => detail?.provider_logo || detail?.logo || detail?.logo_url
+        )?.provider_logo ||
+        (tx as any).payment_details.find(
+          (detail: any) => detail?.provider_logo || detail?.logo || detail?.logo_url
+        )?.logo ||
+        (tx as any).payment_details.find(
+          (detail: any) => detail?.provider_logo || detail?.logo || detail?.logo_url
+        )?.logo_url)
+      : null) || null;
+  const genericLogo = paymentMethodLogo || paymentDetailLogo || providerLogo;
+
+  if (tx.type === "exchange") {
+    const isDeposit = tx.sub_type === "deposit";
+    return {
+      fromLogo: isDeposit ? genericLogo : null,
+      toLogo: isDeposit ? null : genericLogo,
+    };
+  }
+
+  if (tx.type === "moneyx") {
+    return {
+      fromLogo: senderLogo || genericLogo,
+      toLogo: receiverLogo || genericLogo,
+    };
+  }
+
+  // For "all" feed rows where backend provides payment details on other types,
+  // prefer showing at least one provider logo in the payment side.
+  if ((tx as any)?.sub_type === "withdrawal") {
+    return { fromLogo: null, toLogo: genericLogo };
+  }
+  if ((tx as any)?.sub_type === "deposit") {
+    return { fromLogo: genericLogo, toLogo: null };
+  }
+
+  return {
+    fromLogo: genericLogo,
+    toLogo: genericLogo,
+  };
+};
+
+const renderFromToValue = (label: string, logoUrl?: string | null) => {
+  if (!logoUrl) {
+    return (
+      <span className="font-medium text-sm text-gray-900 dark:text-white truncate block">
+        {label}
+      </span>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2 min-w-0">
+      <img
+        src={logoUrl}
+        alt={label}
+        className="w-5 h-5 rounded-full object-cover flex-shrink-0"
+        onError={(e) => {
+          e.currentTarget.style.display = "none";
+        }}
+      />
+      <span className="font-medium text-sm text-gray-900 dark:text-white truncate block">
+        {label}
+      </span>
+    </div>
+  );
+};
 
   const renderAssetIcon = (tx: AllTransactionItem) => {
     if (tx.type === "moneyx" && !tx.currency && !tx.asset) {
@@ -268,6 +368,7 @@ const AllTransactions = () => {
     const isExchange = tx.type === "exchange";
     const isDeposit = tx.sub_type === "deposit";
     const { from: fromDisplay, to: toDisplay } = getFromToDisplay(tx);
+    const { fromLogo, toLogo } = getFromToLogos(tx);
 
     const assetName = getAssetName(tx.currency || tx.asset || "USDT");
     return (
@@ -291,14 +392,10 @@ const AllTransactions = () => {
           </div>
         </td>
         <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E]">
-          <span className="font-medium text-sm text-gray-900 dark:text-white truncate block">
-            {fromDisplay}
-          </span>
+          {renderFromToValue(fromDisplay, fromLogo)}
         </td>
         <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E]">
-          <span className="font-medium text-sm text-gray-900 dark:text-white truncate block">
-            {toDisplay}
-          </span>
+          {renderFromToValue(toDisplay, toLogo)}
         </td>
         <td
           className={`px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E] text-sm sm:text-base font-semibold ${isExchange && isDeposit ? "text-[#1D8751]" : "text-red-500 dark:text-red-400"
@@ -334,6 +431,7 @@ const AllTransactions = () => {
     const isExchange = tx.type === "exchange";
     const isDeposit = tx.sub_type === "deposit";
     const { from: fromDisplay, to: toDisplay } = getFromToDisplay(tx);
+    const { fromLogo, toLogo } = getFromToLogos(tx);
 
     const renderMobileAssetIcon = () => {
       if (tx.type === "moneyx" && !tx.asset_image) {
@@ -396,15 +494,11 @@ const AllTransactions = () => {
         <div className="grid grid-cols-2 gap-3 text-sm">
           <div>
             <div className="text-xs text-gray-500 dark:text-[#A0A3BC] mb-1">From</div>
-            <div className="font-medium text-sm text-gray-900 dark:text-white truncate">
-              {fromDisplay}
-            </div>
+            {renderFromToValue(fromDisplay, fromLogo)}
           </div>
           <div>
             <div className="text-xs text-gray-500 dark:text-[#A0A3BC] mb-1">To</div>
-            <div className="font-medium text-sm text-gray-900 dark:text-white truncate">
-              {toDisplay}
-            </div>
+            {renderFromToValue(toDisplay, toLogo)}
           </div>
           <div>
             <div className="text-xs text-gray-500 dark:text-[#A0A3BC] mb-1">Amount</div>

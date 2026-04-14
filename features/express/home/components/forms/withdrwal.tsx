@@ -62,6 +62,40 @@ import { openKYCModal, checkKYCStatus } from "@/features/auth/slices/authSlice";
 const MISSING_USDT_USD_RATE_ERROR =
   "No exchange rate configured for USDT to USD";
 const ASSET_ICON_FALLBACK_URL = "/assets/image_7_jijlik.png";
+const FX_PRIMUS_ASSET_ICON_URL = "/assets/fx-primus-custom.svg";
+
+/** When ChangeNOW public tokens omit FX Primus, still show it under Popular on home express withdrawal. */
+const homePopularFxPrimusFallback = (): SupportedAsset =>
+  ({
+    asset_id: "",
+    ticker: "FXP",
+    symbol: "FXP",
+    name: "FX Primus",
+    network: "bsc",
+    networks: [{ network_id: "bsc", network_type: "bsc" }],
+    image_url: FX_PRIMUS_ASSET_ICON_URL,
+    change_now_ticker: "fxp",
+    original_ticker: "fxp",
+    featured: true,
+    is_changenow_asset: true,
+    range_commissions: [{ commission: "2" }],
+    commission: "2",
+    fee_rate: "2",
+  }) as SupportedAsset;
+
+const getAssetDropdownIcon = (asset: any): string => {
+  if (isForexPrimusAsset(asset)) {
+    return FX_PRIMUS_ASSET_ICON_URL;
+  }
+  return (
+    asset?.image_url ||
+    asset?.asset_image ||
+    (asset as any)?.icon_url ||
+    (asset as any)?.icon ||
+    (asset as any)?.image ||
+    ASSET_ICON_FALLBACK_URL
+  );
+};
 
 /** Parse amount allowing comma as decimal separator (e.g. "0,1" → 0.1) */
 const parseLocalizedAmountString = (raw: string): number => {
@@ -1252,17 +1286,13 @@ export default function WithdrawalForm({
           return 1;
         }
 
-        // Priority 3: FXPRIMUS (ticker: fxp)
-        if (
-          tickerA === "fxp" &&
-          !(tickerB === "fxp")
-        ) {
+        // Priority 3: FX Primus (match ticker, name, legacy fields)
+        const isFxpA = isForexPrimusAsset(a);
+        const isFxpB = isForexPrimusAsset(b);
+        if (isFxpA && !isFxpB) {
           return -1;
         }
-        if (
-          tickerB === "fxp" &&
-          !(tickerA === "fxp")
-        ) {
+        if (isFxpB && !isFxpA) {
           return 1;
         }
 
@@ -1426,6 +1456,13 @@ export default function WithdrawalForm({
   const isCommissionApiAsset = (asset: any) => !!getCommissionApiAsset(asset?.ticker || asset?.symbol || "");
 
   useEffect(() => {
+    if (isSubmitting) {
+      if (commissionFetchTimeoutRef.current)
+        clearTimeout(commissionFetchTimeoutRef.current);
+      if (exchangeLookupFetchTimeoutRef.current)
+        clearTimeout(exchangeLookupFetchTimeoutRef.current);
+      return;
+    }
     const amount = isCalculatingFromPay
       ? (parseLocalizedAmountString(payAmountInput) || payAmount)
       : (parseLocalizedAmountString(getAmountInput) || getAmount);
@@ -1565,7 +1602,7 @@ export default function WithdrawalForm({
     return () => {
       if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
     };
-  }, [selectedAsset, payAmountInput, getAmountInput, payAmount, getAmount, isCalculatingFromPay]);
+  }, [selectedAsset, payAmountInput, getAmountInput, payAmount, getAmount, isCalculatingFromPay, isSubmitting]);
 
   // Recalculate receive amount when apiCommission arrives (was null during initial calculation)
   useEffect(() => {
@@ -1754,6 +1791,14 @@ export default function WithdrawalForm({
 
   // Fetch estimate for non-direct assets with debouncing for better performance
   useEffect(() => {
+    if (isSubmitting) {
+      if (estimateTimeoutRef.current) {
+        clearTimeout(estimateTimeoutRef.current);
+        estimateTimeoutRef.current = null;
+      }
+      setEstimateLoading(false);
+      return;
+    }
     if (estimateTimeoutRef.current) {
       clearTimeout(estimateTimeoutRef.current);
       estimateTimeoutRef.current = null;
@@ -1811,7 +1856,7 @@ export default function WithdrawalForm({
             }
           }
           // Keep loading states active
-        }, 1500); // Ultra-fast 1.5 second timeout for immediate response
+        }, 12000); // Align with public estimate API budget; 1.5s was aborting slow but successful calls
 
         const handleSwapEstimateApiFailure = (actionOrError: any) => {
             const error = actionOrError?.payload ?? actionOrError;
@@ -2057,10 +2102,14 @@ export default function WithdrawalForm({
         estimateTimeoutRef.current = null;
       }
     };
-  }, [selectedAsset, payAmount, isCalculatingFromPay]);
+  }, [selectedAsset, payAmount, isCalculatingFromPay, isSubmitting]);
 
   // Reverse calculation effect for non-simple assets when user types in "You Receive"
   useEffect(() => {
+    if (isSubmitting) {
+      setEstimateLoading(false);
+      return;
+    }
 
 
     if (
@@ -2402,7 +2451,7 @@ export default function WithdrawalForm({
       setIsCalculatingReceive(false);
       setEstimateLoading(false);
     }
-  }, [selectedAsset, getAmount, isCalculatingFromPay, apiValidationError]);
+  }, [selectedAsset, getAmount, isCalculatingFromPay, apiValidationError, isSubmitting]);
 
   // Filter swap assets based on search term and filter tab - search by ticker and name
   const filteredSwapAssets = useMemo(() => {
@@ -2453,7 +2502,8 @@ export default function WithdrawalForm({
               return (
                 asset.featured === true ||
                 asset.is_changenow_asset === true ||
-                isUsdcBsc
+                isUsdcBsc ||
+                isForexPrimusAsset(asset)
               );
             }
           case "gainers":
@@ -2550,17 +2600,13 @@ export default function WithdrawalForm({
       return 1;
     }
 
-    // Priority 3: FXPRIMUS (ticker: fxp or fxprimus)
-    if (
-      (tickerA === "fxp" || tickerA === "fxprimus") &&
-      !(tickerB === "fxp" || tickerB === "fxprimus")
-    ) {
+    // Priority 3: FX Primus (match ticker, name, legacy fields)
+    const isFxpA = isForexPrimusAsset(a);
+    const isFxpB = isForexPrimusAsset(b);
+    if (isFxpA && !isFxpB) {
       return -1;
     }
-    if (
-      (tickerB === "fxp" || tickerB === "fxprimus") &&
-      !(tickerA === "fxp" || tickerA === "fxprimus")
-    ) {
+    if (isFxpB && !isFxpA) {
       return 1;
     }
 
@@ -2601,15 +2647,13 @@ export default function WithdrawalForm({
       (a) =>
         getCurrencyLower(a) === "usdc" && String(a?.network || "").toLowerCase() === "bsc"
     );
-    const fxprimusAsset = sourceAssets.find(
-      (a) => {
-        const c = getCurrencyLower(a);
-        return c === "fxp" || c === "fxprimus";
-      }
-    );
+    let fxprimusAsset = sourceAssets.find((a) => isForexPrimusAsset(a));
+    if (isHomePage && !fxprimusAsset) {
+      fxprimusAsset = homePopularFxPrimusFallback();
+    }
 
     return [usdtAsset, usdcAsset, fxprimusAsset].filter(Boolean) as SupportedAsset[];
-  }, [assetsDisplay.displayData]);
+  }, [assetsDisplay.displayData, isHomePage]);
 
   const popularKeySet = useMemo(
     () => new Set(popularAssets.map((a) => getAssetKeyForGrouping(a))),
@@ -2864,14 +2908,7 @@ export default function WithdrawalForm({
                             onClick={handleAssetClick}
                           >
                             <img
-                              src={
-                                asset?.image_url ||
-                                asset?.asset_image ||
-                                (asset as any)?.icon_url ||
-                                (asset as any)?.icon ||
-                                (asset as any)?.image ||
-                                ASSET_ICON_FALLBACK_URL
-                              }
+                              src={getAssetDropdownIcon(asset)}
                               alt={
                                 asset?.name ||
                                 asset?.ticker ||
@@ -2980,14 +3017,7 @@ export default function WithdrawalForm({
                     }}
                   >
                     <img
-                      src={
-                        asset?.image_url ||
-                        asset?.asset_image ||
-                        (asset as any)?.icon_url ||
-                        (asset as any)?.icon ||
-                        (asset as any)?.image ||
-                        ASSET_ICON_FALLBACK_URL
-                      }
+                      src={getAssetDropdownIcon(asset)}
                       alt={
                         asset?.name || asset?.ticker || asset?.symbol || "Asset"
                       }
@@ -4201,12 +4231,7 @@ export default function WithdrawalForm({
                         {selectedAsset ? (
                           <>
                             <img
-                              src={
-                                selectedAsset?.image_url ||
-                                selectedAsset?.asset_image ||
-                                (selectedAsset as any)?.image ||
-                                ASSET_ICON_FALLBACK_URL
-                              }
+                              src={getAssetDropdownIcon(selectedAsset)}
                               alt={
                                 selectedAsset?.name ||
                                 selectedAsset?.ticker ||

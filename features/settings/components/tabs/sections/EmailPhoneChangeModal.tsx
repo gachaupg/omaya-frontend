@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/store";
 import {
@@ -12,6 +12,7 @@ import { updateUser } from "@/features/auth/slices/authSlice";
 import { showToast } from "@/lib/utils/toast";
 
 type ChangeType = "email" | "phone";
+const PROFILE_CHANGE_OTP_PENDING_KEY = "profile_change_otp_pending_v1";
 
 interface EmailPhoneChangeModalProps {
   isOpen: boolean;
@@ -29,24 +30,75 @@ const EmailPhoneChangeModal: React.FC<EmailPhoneChangeModalProps> = ({
   initialValue,
 }) => {
   const dispatch = useDispatch<AppDispatch>();
+  const isOpenRef = useRef(isOpen);
   const [value, setValue] = useState(initialValue ?? currentValue);
   const [otp, setOtp] = useState("");
   const [step, setStep] = useState<"input" | "otp">("input");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [resendRemaining, setResendRemaining] = useState(0);
 
   const label = type === "email" ? "Email" : "Phone Number";
   const placeholder =
     type === "email" ? "newemail@example.com" : "+254712345678";
+  const otpDestinationText =
+    type === "email" ? "your new email address" : "your registered email address";
+
+  useEffect(() => {
+    isOpenRef.current = isOpen;
+  }, [isOpen]);
+
+  const handleCloseModal = () => {
+    try {
+      localStorage.removeItem(PROFILE_CHANGE_OTP_PENDING_KEY);
+    } catch {
+      // Ignore localStorage errors
+    }
+    onClose();
+  };
 
   useEffect(() => {
     if (isOpen) {
-      setValue(initialValue ?? currentValue);
+      const fallbackValue = initialValue ?? currentValue;
+      let pendingValue: string | null = null;
+      let pendingSentAt = 0;
+      try {
+        const raw = localStorage.getItem(PROFILE_CHANGE_OTP_PENDING_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw) as {
+            type?: ChangeType;
+            value?: string;
+            sentAt?: number;
+          };
+          if (parsed?.type === type && parsed?.value) {
+            pendingValue = parsed.value;
+            pendingSentAt = Number(parsed.sentAt || 0);
+          }
+        }
+      } catch {
+        // Ignore malformed persisted OTP state
+      }
+      const initialStep = pendingValue ? "otp" : "input";
+      const now = Date.now();
+      const remaining = pendingSentAt
+        ? Math.max(0, 60 - Math.floor((now - pendingSentAt) / 1000))
+        : 0;
+
+      setValue(pendingValue ?? fallbackValue);
       setOtp("");
-      setStep("input");
+      setStep(initialStep);
       setError(null);
+      setResendRemaining(remaining);
     }
   }, [isOpen, currentValue, initialValue, type]);
+
+  useEffect(() => {
+    if (!isOpen || step !== "otp" || resendRemaining <= 0) return;
+    const timer = setInterval(() => {
+      setResendRemaining((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [isOpen, step, resendRemaining]);
 
   const validateValue = (): boolean => {
     if (type === "email") {
@@ -86,18 +138,66 @@ const EmailPhoneChangeModal: React.FC<EmailPhoneChangeModalProps> = ({
           value: valueToSend,
         })
       ).unwrap();
+      if (!isOpenRef.current) return;
+      localStorage.setItem(
+        PROFILE_CHANGE_OTP_PENDING_KEY,
+        JSON.stringify({
+          type,
+          value: valueToSend,
+          sentAt: Date.now(),
+        })
+      );
       showToast.success(
-        type === "email"
-          ? "OTP sent to your new email address"
-          : "OTP sent to your email address"
+        `OTP sent to ${otpDestinationText}`
       );
       setStep("otp");
       setOtp("");
+      setResendRemaining(60);
     } catch (err: any) {
       const message =
         typeof err === "string"
           ? err
           : err?.error ?? err?.message ?? err?.detail ?? "Failed to send OTP";
+      setError(message);
+      showToast.error(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (loading || resendRemaining > 0) return;
+    setError(null);
+    setLoading(true);
+    try {
+      const valueToSend =
+        type === "phone"
+          ? value.startsWith("+")
+            ? value
+            : `+${value.replace(/\D/g, "")}`
+          : value.trim();
+      await dispatch(
+        requestProfileChange({
+          type,
+          value: valueToSend,
+        })
+      ).unwrap();
+      if (!isOpenRef.current) return;
+      localStorage.setItem(
+        PROFILE_CHANGE_OTP_PENDING_KEY,
+        JSON.stringify({
+          type,
+          value: valueToSend,
+          sentAt: Date.now(),
+        })
+      );
+      setResendRemaining(60);
+      showToast.success("OTP resent successfully");
+    } catch (err: any) {
+      const message =
+        typeof err === "string"
+          ? err
+          : err?.error ?? err?.message ?? err?.detail ?? "Failed to resend OTP";
       setError(message);
       showToast.error(message);
     } finally {
@@ -127,6 +227,7 @@ const EmailPhoneChangeModal: React.FC<EmailPhoneChangeModalProps> = ({
           field: type === "email" ? "email" : "phone_number",
         })
       ).unwrap();
+      localStorage.removeItem(PROFILE_CHANGE_OTP_PENDING_KEY);
 
       dispatch(
         updateUser(
@@ -142,7 +243,7 @@ const EmailPhoneChangeModal: React.FC<EmailPhoneChangeModalProps> = ({
           ? "Your email has been updated successfully"
           : "Your phone number has been updated successfully"
       );
-      onClose();
+      handleCloseModal();
     } catch (err: any) {
       const message =
         typeof err === "string"
@@ -168,7 +269,7 @@ const EmailPhoneChangeModal: React.FC<EmailPhoneChangeModalProps> = ({
             Change {label}
           </h2>
           <button
-            onClick={onClose}
+            onClick={handleCloseModal}
             className="p-2 hover:bg-gray-100 dark:hover:bg-[#35353E] rounded-full transition-colors text-gray-500 dark:text-gray-400"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -180,7 +281,10 @@ const EmailPhoneChangeModal: React.FC<EmailPhoneChangeModalProps> = ({
         {step === "input" ? (
           <>
             <p className="text-sm text-gray-600 dark:text-[#9CA3AF] mb-4">
-              Enter your new {label.toLowerCase()}. We&apos;ll send a verification code to confirm.
+              Enter your new {label.toLowerCase()}.
+              {type === "email"
+                ? " We’ll send a verification code to that email to confirm."
+                : " We’ll send a verification code to your registered email to confirm."}
             </p>
             <input
               type={type === "email" ? "email" : "tel"}
@@ -196,7 +300,7 @@ const EmailPhoneChangeModal: React.FC<EmailPhoneChangeModalProps> = ({
         ) : (
           <>
             <p className="text-sm text-gray-600 dark:text-[#9CA3AF] mb-4">
-              Enter the verification code sent to your new {label.toLowerCase()}
+              Enter the verification code sent to {otpDestinationText}
             </p>
             <input
               type="text"
@@ -240,6 +344,20 @@ const EmailPhoneChangeModal: React.FC<EmailPhoneChangeModalProps> = ({
                 : "Verify & Update"}
           </button>
         </div>
+        {step === "otp" && (
+          <div className="mt-3 text-center">
+            <button
+              type="button"
+              onClick={handleResendOtp}
+              disabled={loading || resendRemaining > 0}
+              className="text-sm font-medium text-[#1D8751] disabled:text-gray-400 disabled:cursor-not-allowed hover:underline"
+            >
+              {resendRemaining > 0
+                ? `Resend OTP in ${resendRemaining}s`
+                : "Resend OTP"}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

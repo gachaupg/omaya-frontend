@@ -1135,15 +1135,16 @@ export default function DepositForm({
       return;
     }
 
-    withTimeout(dispatch(fetchSupportedAssets(false)).unwrap(), 15_000)
+    // Must exceed getSupportedAssets axios timeout (30s) or UI shows "Request timeout" first
+    withTimeout(dispatch(fetchSupportedAssets(false)).unwrap(), 35_000)
       .then((data) => {
         if (!data || data.length === 0) {
-          return withTimeout(dispatch(fetchSupportedAssets(true)).unwrap(), 15_000);
+          return withTimeout(dispatch(fetchSupportedAssets(true)).unwrap(), 35_000);
         }
         return data;
       })
       .catch((error: unknown) => {
-        return withTimeout(dispatch(fetchSupportedAssets(true)).unwrap(), 15_000).catch(
+        return withTimeout(dispatch(fetchSupportedAssets(true)).unwrap(), 35_000).catch(
           (refreshError: unknown) => {
             // Only show error if it's a network issue, not cache issues
             if (refreshError instanceof Error) {
