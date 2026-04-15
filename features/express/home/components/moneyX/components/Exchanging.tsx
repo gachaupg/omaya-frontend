@@ -143,6 +143,12 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
     status: string;
     message?: string;
   }>({ isOpen: false, status: "", message: undefined });
+
+  const parseNumberish = (value: unknown): number | null => {
+    if (value === null || value === undefined) return null;
+    const parsed = parseFloat(String(value));
+    return Number.isNaN(parsed) ? null : parsed;
+  };
   const getFailureMessage = (wsData: any): string => {
     const fromResolver = resolveExpressTransactionFailureMessage({ data: wsData });
     if (fromResolver) return fromResolver;
@@ -505,6 +511,19 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
 
     if (data.type === "status_update" && data.data) {
       const wsData = data.data as any;
+      const socketNetAmount =
+        parseNumberish(wsData.net_amount) ?? parseNumberish(wsData.amount_to);
+      if (socketNetAmount !== null) {
+        setLiveNetAmount(socketNetAmount);
+        setLiveNetCurrency(
+          wsData.to_currency?.toUpperCase() ||
+            wsData.currency?.toUpperCase() ||
+            liveNetCurrency ||
+            effectiveTransactionData?.toPaymentMethod?.currency ||
+            effectiveTransactionData?.toPaymentMethod?.ticker ||
+            "USD"
+        );
+      }
 
       if (wsData.status) {
         const validStatuses = [
@@ -903,6 +922,19 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
     );
   }
 
+  const initialNetAmount = parseNumberish((effectiveTransactionData as any)?.net_amount);
+  const netAmountToDisplay =
+    liveNetAmount ??
+    (effectiveTransactionData as any)?.receiveAmount ??
+    initialNetAmount;
+  const netCurrencyToDisplay =
+    liveNetCurrency ||
+    effectiveTransactionData?.toPaymentMethod?.currency ||
+    effectiveTransactionData?.toPaymentMethod?.ticker ||
+    liveCurrency ||
+    effectiveTransactionData?.currency ||
+    "USD";
+
   return (
     <div className={`w-full ${isHomePage ? 'min-h-0' : 'min-h-screen'} flex flex-col ${isHomePage ? 'pt-0 px-2 sm:px-4' : 'pt-2'} overflow-x-hidden`}>
       {/* Timer Banner */}
@@ -1018,7 +1050,7 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
                 USD
               </span>
             </div>
-            {(effectiveTransactionData as any)?.receiveAmount != null && (
+            {netAmountToDisplay != null && (
               <div>
                 <div
                   className={`${
@@ -1033,19 +1065,10 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
                   } text-base font-semibold flex items-center gap-2`}
                 >
                   <span>
-                    {(
-                      liveNetAmount ??
-                      (effectiveTransactionData as any)?.receiveAmount ??
-                      0
-                    )
+                    {netAmountToDisplay
                       .toFixed(8)
                       .replace(/\.?0+$/, "")}{" "}
-                    {liveNetCurrency ??
-                      (effectiveTransactionData?.type === "deposit"
-                        ? effectiveTransactionData?.asset?.ticker ||
-                          effectiveTransactionData?.asset?.symbol ||
-                          "USDT"
-                        : "USD")}
+                    {netCurrencyToDisplay}
                   </span>
                 </div>
               </div>

@@ -143,6 +143,12 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
     message?: string;
   }>({ isOpen: false, status: "", message: undefined });
 
+  const parseNumberish = (value: unknown): number | null => {
+    if (value === null || value === undefined) return null;
+    const parsed = parseFloat(String(value));
+    return Number.isNaN(parsed) ? null : parsed;
+  };
+
   const getFailureMessage = (wsData: any): string => {
     const fromResolver = resolveExpressTransactionFailureMessage({ data: wsData });
     if (fromResolver) return fromResolver;
@@ -505,6 +511,19 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
 
     if (data.type === "status_update" && data.data) {
       const wsData = data.data as any;
+      const socketNetAmount =
+        parseNumberish(wsData.net_amount) ?? parseNumberish(wsData.amount_to);
+      if (socketNetAmount !== null) {
+        setLiveNetAmount(socketNetAmount);
+        setLiveNetCurrency(
+          wsData.to_currency?.toUpperCase() ||
+            wsData.currency?.toUpperCase() ||
+            liveNetCurrency ||
+            effectiveTransactionData?.toPaymentMethod?.currency ||
+            effectiveTransactionData?.toPaymentMethod?.ticker ||
+            "USD"
+        );
+      }
 
       if (wsData.status) {
         const validStatuses = [
@@ -894,6 +913,16 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
 
   const ussdAmount = liveAmount ?? effectiveTransactionData?.amount ?? 0;
   const ussdCode = `*789*75466*${ussdAmount}#`;
+  const initialNetAmount = parseNumberish(effectiveTransactionData?.net_amount);
+  const netAmountToDisplay =
+    liveNetAmount ?? effectiveTransactionData?.receiveAmount ?? initialNetAmount;
+  const netCurrencyToDisplay =
+    liveNetCurrency ||
+    effectiveTransactionData?.toPaymentMethod?.currency ||
+    effectiveTransactionData?.toPaymentMethod?.ticker ||
+    liveCurrency ||
+    effectiveTransactionData?.currency ||
+    "USD";
   const handleFailureModalClose = () => {
     setFailureModal({ isOpen: false, status: "", message: undefined });
     localStorage.removeItem("moneyx_transaction_data");
@@ -1007,19 +1036,16 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
               </span>
             </div>
             {/* Net amount you'll receive - from form "You Receive", must differ from send amount */}
-            {effectiveTransactionData?.receiveAmount != null && (
+            {netAmountToDisplay != null && (
               <>
                 <div className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"} text-[10px] sm:text-xs font-semibold mb-0.5 mt-2`}>
                   Net amount you&apos;ll receive:
                 </div>
                 <div className={`${isDark ? "text-[#1D8751]" : "text-[#15803D]"} text-sm sm:text-base font-semibold mb-1 flex items-center gap-2`}>
                   <span>
-                    {(liveNetAmount ?? effectiveTransactionData.receiveAmount).toFixed(8).replace(/\.?0+$/, "")}{" "}
+                    {netAmountToDisplay.toFixed(8).replace(/\.?0+$/, "")}{" "}
                     <span className="uppercase">
-                      {liveNetCurrency ||
-                        effectiveTransactionData.toPaymentMethod?.currency ||
-                        effectiveTransactionData.toPaymentMethod?.ticker ||
-                        "USDT"}
+                      {netCurrencyToDisplay}
                     </span>
                   </span>
                 </div>
