@@ -1379,6 +1379,10 @@ export default function WithdrawalForm({
   useEffect(() => {
     const handleScroll = (event: Event) => {
       const target = event.target as Node | null;
+      const isPageScrollTarget =
+        target === document ||
+        target === document.documentElement ||
+        target === document.body;
       // Ignore scroll events that originate from inside the dropdown content
       if (
         assetDropdownContentRef.current &&
@@ -1394,57 +1398,46 @@ export default function WithdrawalForm({
       ) {
         return;
       }
+      if (!isPageScrollTarget) {
+        return;
+      }
       if (isAssetDropdownOpen) {
         setIsAssetDropdownOpen(false);
       }
-    };
-    const handleScrollStart = () => {
-      setIsAssetDropdownOpen(false);
-      setIsPaymentModalOpen(false);
     };
 
     if (isAssetDropdownOpen) {
       window.addEventListener("scroll", handleScroll, true);
       document.addEventListener("scroll", handleScroll, true);
-      window.addEventListener("wheel", handleScrollStart, {
-        capture: true,
-        passive: true,
-      });
-      window.addEventListener("touchmove", handleScrollStart, {
-        capture: true,
-        passive: true,
-      });
     }
 
     return () => {
       window.removeEventListener("scroll", handleScroll, true);
       document.removeEventListener("scroll", handleScroll, true);
-      window.removeEventListener("wheel", handleScrollStart, true);
-      window.removeEventListener("touchmove", handleScrollStart, true);
     };
   }, [isAssetDropdownOpen]);
 
   useEffect(() => {
     if (!isPaymentModalOpen) return;
 
-    const handleScrollStart = () => {
+    const handlePageScroll = (event: Event) => {
+      const target = event.target as Node | null;
+      const isPageScrollTarget =
+        target === document ||
+        target === document.documentElement ||
+        target === document.body;
+      if (!isPageScrollTarget) {
+        return;
+      }
       setIsPaymentModalOpen(false);
     };
 
-    window.addEventListener("wheel", handleScrollStart, {
-      capture: true,
-      passive: true,
-    });
-    window.addEventListener("touchmove", handleScrollStart, {
-      capture: true,
-      passive: true,
-    });
-    window.addEventListener("scroll", handleScrollStart, true);
+    window.addEventListener("scroll", handlePageScroll, true);
+    document.addEventListener("scroll", handlePageScroll, true);
 
     return () => {
-      window.removeEventListener("wheel", handleScrollStart, true);
-      window.removeEventListener("touchmove", handleScrollStart, true);
-      window.removeEventListener("scroll", handleScrollStart, true);
+      window.removeEventListener("scroll", handlePageScroll, true);
+      document.removeEventListener("scroll", handlePageScroll, true);
     };
   }, [isPaymentModalOpen]);
 
@@ -1511,6 +1504,15 @@ export default function WithdrawalForm({
             setExchangeLookupResponse(res);
             setApiCommission(null);
             setApiValidationError(null);
+            if (isCalculatingFromPay && res.to_amount != null) {
+              const toAmount = parseFloat(res.to_amount);
+              if (!Number.isNaN(toAmount)) {
+                const calculatedGetAmount = capReceiveAmount(Math.max(0, toAmount));
+                setGetAmount(calculatedGetAmount);
+                setGetAmountInput(res.to_amount);
+                setPreviousValidAmount(calculatedGetAmount.toString());
+              }
+            }
           })
           .catch((error: any) => {
             setExchangeLookupResponse(null);
@@ -1624,16 +1626,34 @@ export default function WithdrawalForm({
 
   // Exchange-lookup recalc when local_commission arrives
   useEffect(() => {
+    const parseCommissionRule = () => {
+      const local = exchangeLookupResponse?.local_commission as any;
+      if (local?.commission_mode) {
+        return {
+          commission_mode: local.commission_mode as "flat_fee" | "percentage",
+          rate: local.rate,
+          fee: local.fee,
+        };
+      }
+      const crypto = exchangeLookupResponse?.crypto_commission as any;
+      if (crypto?.commission_mode) {
+        return {
+          commission_mode: crypto.commission_mode as "flat_fee" | "percentage",
+          rate: crypto.rate,
+          fee: crypto.fee,
+        };
+      }
+      return null;
+    };
+
     if (
       !selectedAsset ||
       !isExchangeCommissionLookupAsset(selectedAsset) ||
       isForexAsset(selectedAsset) ||
-      !exchangeLookupResponse?.local_commission
+      !exchangeLookupResponse
     ) {
       return;
     }
-
-    const lc = exchangeLookupResponse.local_commission;
 
     if (isCalculatingFromPay && payAmount > 0) {
       const toAmountStr = exchangeLookupResponse.to_amount;
@@ -1649,6 +1669,10 @@ export default function WithdrawalForm({
         }
       }
     } else if (!isCalculatingFromPay && getAmount > 0) {
+      const lc = parseCommissionRule();
+      if (!lc) {
+        return;
+      }
       if (lc.commission_mode === "flat_fee" && lc.fee != null) {
         const fee = parseFloat(lc.fee);
         if (!Number.isNaN(fee)) {
@@ -2403,18 +2427,8 @@ export default function WithdrawalForm({
           const fallbackPayAmount =
             selectedAsset &&
             isExchangeCommissionLookupAsset(selectedAsset) &&
-            exchangeLookupResponse?.local_commission
-              ? (() => {
-                  const lc = exchangeLookupResponse.local_commission;
-                  if (lc.commission_mode === "flat_fee") {
-                    const fee = lc.fee != null ? parseFloat(lc.fee) : NaN;
-                    return Number.isNaN(fee) ? getAmount : getAmount + fee;
-                  }
-                  const rate = lc.rate != null ? parseFloat(lc.rate) : NaN;
-                  return Number.isNaN(rate) || rate >= 100
-                    ? getAmount
-                    : getAmount / (1 - rate / 100);
-                })()
+            exchangeCommissionRule
+              ? getExchangeLookupGrossAmount(getAmount)
               : getAmount /
                   (1 -
                     (selectedAsset && isCommissionApiAsset(selectedAsset)
@@ -2910,15 +2924,39 @@ export default function WithdrawalForm({
 
   // Calculate fees and amounts - Network fee is always 0 for BEP20
   const networkFee = 0;
+  const exchangeCommissionRule =
+    (exchangeLookupResponse?.local_commission as any)?.commission_mode
+      ? (exchangeLookupResponse?.local_commission as any)
+      : (exchangeLookupResponse?.crypto_commission as any)?.commission_mode
+        ? (exchangeLookupResponse?.crypto_commission as any)
+        : null;
+  const getExchangeLookupCommissionAmount = (baseAmount: number): number => {
+    if (!exchangeCommissionRule) return 0;
+    if (exchangeCommissionRule.commission_mode === "flat_fee") {
+      const fee = exchangeCommissionRule.fee != null ? parseFloat(exchangeCommissionRule.fee) : NaN;
+      return Number.isNaN(fee) ? 0 : fee;
+    }
+    const rate = exchangeCommissionRule.rate != null ? parseFloat(exchangeCommissionRule.rate) : NaN;
+    return Number.isNaN(rate) ? 0 : (baseAmount * rate) / 100;
+  };
+  const getExchangeLookupGrossAmount = (netAmount: number): number => {
+    if (!exchangeCommissionRule) return netAmount;
+    if (exchangeCommissionRule.commission_mode === "flat_fee") {
+      const fee = exchangeCommissionRule.fee != null ? parseFloat(exchangeCommissionRule.fee) : NaN;
+      return Number.isNaN(fee) ? netAmount : netAmount + fee;
+    }
+    const rate = exchangeCommissionRule.rate != null ? parseFloat(exchangeCommissionRule.rate) : NaN;
+    return Number.isNaN(rate) || rate >= 100 ? netAmount : netAmount / (1 - rate / 100);
+  };
 
   // Use commission API for USDT/USDC/FX Primus - API returns % (e.g. {"commission":"2.00"} = 2%)
   let commissionAmount = 0;
   if (
     selectedAsset &&
     isExchangeCommissionLookupAsset(selectedAsset) &&
-    exchangeLookupResponse?.local_commission
+    exchangeCommissionRule
   ) {
-    const lc = exchangeLookupResponse.local_commission;
+    const lc = exchangeCommissionRule;
     if (lc.commission_mode === "flat_fee") {
       const fee = lc.fee != null ? parseFloat(lc.fee) : NaN;
       commissionAmount = Number.isNaN(fee) ? 0 : fee;
@@ -3075,16 +3113,8 @@ export default function WithdrawalForm({
             const commissionAmount =
               selectedAsset &&
               isExchangeCommissionLookupAsset(selectedAsset) &&
-              exchangeLookupResponse?.local_commission
-                ? (() => {
-                    const lc = exchangeLookupResponse.local_commission;
-                    if (lc.commission_mode === "flat_fee") {
-                      const fee = lc.fee != null ? parseFloat(lc.fee) : NaN;
-                      return Number.isNaN(fee) ? 0 : fee;
-                    }
-                    const rate = lc.rate != null ? parseFloat(lc.rate) : NaN;
-                    return Number.isNaN(rate) ? 0 : (fromAmount * rate) / 100;
-                  })()
+              exchangeCommissionRule
+                ? getExchangeLookupCommissionAmount(fromAmount)
                 : isCommissionApiAsset(selectedAsset)
                   ? (fromAmount * (apiCommission ?? 2)) / 100
                   : (fromAmount *
@@ -3162,18 +3192,8 @@ export default function WithdrawalForm({
             const newPayAmount =
               selectedAsset &&
               isExchangeCommissionLookupAsset(selectedAsset) &&
-              exchangeLookupResponse?.local_commission
-                ? (() => {
-                    const lc = exchangeLookupResponse.local_commission;
-                    if (lc.commission_mode === "flat_fee") {
-                      const fee = lc.fee != null ? parseFloat(lc.fee) : NaN;
-                      return Number.isNaN(fee) ? fromAmount : fromAmount + fee;
-                    }
-                    const rate = lc.rate != null ? parseFloat(lc.rate) : NaN;
-                    return Number.isNaN(rate) || rate >= 100
-                      ? fromAmount
-                      : fromAmount / (1 - rate / 100);
-                  })()
+              exchangeCommissionRule
+                ? getExchangeLookupGrossAmount(fromAmount)
                 : (() => {
                     const commissionRate = isCommissionApiAsset(selectedAsset)
                       ? apiCommission ?? 2
@@ -4237,18 +4257,8 @@ export default function WithdrawalForm({
                                 const calculatedPayAmount =
                                   selectedAsset &&
                                   isExchangeCommissionLookupAsset(selectedAsset) &&
-                                  exchangeLookupResponse?.local_commission
-                                    ? (() => {
-                                        const lc = exchangeLookupResponse.local_commission;
-                                        if (lc.commission_mode === "flat_fee") {
-                                          const fee = lc.fee != null ? parseFloat(lc.fee) : NaN;
-                                          return Number.isNaN(fee) ? newAmount : newAmount + fee;
-                                        }
-                                        const rate = lc.rate != null ? parseFloat(lc.rate) : NaN;
-                                        return Number.isNaN(rate) || rate >= 100
-                                          ? newAmount
-                                          : newAmount / (1 - rate / 100);
-                                      })()
+                                  exchangeCommissionRule
+                                    ? getExchangeLookupGrossAmount(newAmount)
                                     : (() => {
                                         const commissionRate = isCommissionApiAsset(selectedAsset)
                                           ? (apiCommission ?? 2)

@@ -1262,6 +1262,10 @@ export default function DepositForm({
   useEffect(() => {
     const handleScroll = (event: Event) => {
       const target = event.target as Node | null;
+      const isPageScrollTarget =
+        target === document ||
+        target === document.documentElement ||
+        target === document.body;
       // Ignore scroll events that originate from inside the dropdown content
       if (
         assetDropdownContentRef.current &&
@@ -1270,32 +1274,22 @@ export default function DepositForm({
       ) {
         return;
       }
+      if (!isPageScrollTarget) {
+        return;
+      }
       if (isAssetDropdownOpen) {
         setIsAssetDropdownOpen(false);
       }
-    };
-    const handleScrollStart = () => {
-      setIsAssetDropdownOpen(false);
     };
 
     if (isAssetDropdownOpen) {
       window.addEventListener("scroll", handleScroll, true);
       document.addEventListener("scroll", handleScroll, true);
-      window.addEventListener("wheel", handleScrollStart, {
-        capture: true,
-        passive: true,
-      });
-      window.addEventListener("touchmove", handleScrollStart, {
-        capture: true,
-        passive: true,
-      });
     }
 
     return () => {
       window.removeEventListener("scroll", handleScroll, true);
       document.removeEventListener("scroll", handleScroll, true);
-      window.removeEventListener("wheel", handleScrollStart, true);
-      window.removeEventListener("touchmove", handleScrollStart, true);
     };
   }, [isAssetDropdownOpen]);
 
@@ -1436,16 +1430,36 @@ export default function DepositForm({
   }, [apiCommission, payAmount, getAmount, isCalculatingFromPay, selectedAsset]);
 
   useEffect(() => {
+    const parseCommissionRule = () => {
+      const local = exchangeLookupResponse?.local_commission as any;
+      if (local?.commission_mode) {
+        return {
+          commission_mode: local.commission_mode as "flat_fee" | "percentage",
+          rate: local.rate,
+          fee: local.fee,
+        };
+      }
+      const crypto = exchangeLookupResponse?.crypto_commission as any;
+      if (crypto?.commission_mode) {
+        return {
+          commission_mode: crypto.commission_mode as "flat_fee" | "percentage",
+          rate: crypto.rate,
+          fee: crypto.fee,
+        };
+      }
+      return null;
+    };
+
     if (
       !selectedAsset ||
       !isExchangeCommissionLookupAsset(selectedAsset) ||
       isForexAsset(selectedAsset) ||
-      !exchangeLookupResponse?.local_commission ||
       isCalculatingFromPay ||
       getAmount <= 0
     )
       return;
-    const lc = exchangeLookupResponse.local_commission;
+    const lc = parseCommissionRule();
+    if (!lc) return;
     if (lc.commission_mode === "flat_fee" && lc.fee != null) {
       const fee = parseFloat(lc.fee);
       if (!Number.isNaN(fee)) {
@@ -2366,9 +2380,15 @@ export default function DepositForm({
   };
 
   const networkFee = 0;
+  const exchangeCommissionRule =
+    (exchangeLookupResponse?.local_commission as any)?.commission_mode
+      ? (exchangeLookupResponse?.local_commission as any)
+      : (exchangeLookupResponse?.crypto_commission as any)?.commission_mode
+        ? (exchangeLookupResponse?.crypto_commission as any)
+        : null;
   let commissionAmount: number;
-  if (selectedAsset && isExchangeCommissionLookupAsset(selectedAsset) && exchangeLookupResponse?.local_commission) {
-    const lc = exchangeLookupResponse.local_commission;
+  if (selectedAsset && isExchangeCommissionLookupAsset(selectedAsset) && exchangeCommissionRule) {
+    const lc = exchangeCommissionRule;
     if (lc.commission_mode === "flat_fee" && lc.fee != null) commissionAmount = parseFloat(lc.fee) || 0;
     else if (lc.commission_mode === "percentage" && lc.rate != null) commissionAmount = (payAmount * parseFloat(lc.rate)) / 100;
     else commissionAmount = 0;

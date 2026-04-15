@@ -137,14 +137,23 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
   // but NOT when scrolling inside the dropdown lists themselves
   useEffect(() => {
     const handleWindowScroll = (event: Event) => {
-      const target = event.target as HTMLElement | null;
+      const target = event.target;
+      const elementTarget =
+        target instanceof Element ? target : null;
+      const isPageScrollTarget =
+        target === document ||
+        target === document.documentElement ||
+        target === document.body;
 
       // If the scroll originated from inside an asset dropdown, ignore it
       if (
-        target &&
-        target.closest &&
-        target.closest("[data-asset-dropdown='true']")
+        elementTarget &&
+        elementTarget.closest("[data-asset-dropdown='true']")
       ) {
+        return;
+      }
+      // Only close on whole-page scroll.
+      if (!isPageScrollTarget) {
         return;
       }
 
