@@ -68,12 +68,18 @@ function extractWalletPayload(raw: unknown): WalletBalanceState {
   const escrow = pickNumber(data, [
     "escrow",
     "locked",
+    "locked_balance",
     "locked_amount",
     "in_escrow",
     "total_locked",
     "escrow_amount",
     "pending_escrow",
   ]);
+  const derivedEscrow =
+    escrow ??
+    (balance != null && available != null
+      ? Math.max(0, balance - available)
+      : null);
   const currency =
     pickString(data, ["currency", "asset", "symbol"]) ||
     pickString(root, ["currency", "asset", "symbol"]) ||
@@ -82,7 +88,7 @@ function extractWalletPayload(raw: unknown): WalletBalanceState {
   return {
     balance,
     available,
-    escrow,
+    escrow: derivedEscrow,
     currency: currency.toUpperCase(),
     connected: true,
   };
