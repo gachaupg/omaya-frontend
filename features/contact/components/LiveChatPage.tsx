@@ -70,8 +70,7 @@ const LiveChatPage: React.FC = () => {
     },
     autoReconnect: true,
   });
-  const isChatOpenForMessaging =
-    !sessionClosed && session?.status === "active" && isConnected;
+  const isChatOpenForMessaging = !!session && !sessionClosed && isConnected;
 
   const applySessionMessagesStable = useCallback(
     (sess: ChatSession | null) => {
@@ -423,9 +422,9 @@ const LiveChatPage: React.FC = () => {
             placeholder={
               sessionClosed
                 ? "Reopen chat to send messages…"
-                : session?.status !== "active"
-                  ? "Wait for an agent to open the chat…"
-                : "Type your message..."
+                : !isConnected
+                  ? "Connecting…"
+                  : "Type your message..."
             }
             disabled={!isChatOpenForMessaging || isCreatingSession}
             rows={1}
@@ -443,8 +442,7 @@ const LiveChatPage: React.FC = () => {
             disabled={
               !messageInput.trim() ||
               !isChatOpenForMessaging ||
-              isCreatingSession ||
-              sessionClosed
+              isCreatingSession
             }
             className="px-3 sm:px-4 py-2 h-[40px] bg-[#1D8751] text-white rounded-lg hover:bg-[#166b42] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center flex-shrink-0"
             aria-label="Send message"
