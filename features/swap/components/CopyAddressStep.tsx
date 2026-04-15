@@ -7,6 +7,7 @@ import { API_CONFIG } from "@/lib/appConfig";
 import SuccessPage from "./success";
 import { Copy } from "lucide-react";
 import QRCode from "qrcode";
+import FailureStatusModal from "@/features/express/components/FailureStatusModal";
 
 import { logger } from '@/lib/utils/logger';
 
@@ -104,6 +105,11 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
   const token = tokens?.access ?? cookieUtils.getCookie("access_token") ?? (typeof window !== "undefined" ? localStorage.getItem("access_token") : null);
   const [status, setStatus] = useState<string>("pending");
   const [statusObj, setStatusObj] = useState<any>(null);
+  const [failureModal, setFailureModal] = useState<{
+    isOpen: boolean;
+    status: string;
+    message?: string;
+  }>({ isOpen: false, status: "", message: undefined });
   const [wsConnected, setWsConnected] = useState<boolean>(false);
   const [reconnectAttempts, setReconnectAttempts] = useState(0);
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>("");
@@ -138,6 +144,19 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
     if (s === "completed") return "completed"; // Keep completed as completed
     return s;
   }
+
+  const isFailureLikeStatus = (value: unknown): boolean => {
+    if (typeof value !== "string") return false;
+    const normalized = value.toLowerCase();
+    return [
+      "failed",
+      "rejected",
+      "stopped",
+      "cancelled",
+      "canceled",
+      "error",
+    ].includes(normalized);
+  };
 
   useEffect(() => {
     if (!swapResponse?.id) return;
@@ -194,6 +213,31 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
             const msg = JSON.parse(event.data);
             const sts = msg.data?.status;
             logger.debug('swap', "new data check", sts, msg);
+
+            const statusCandidates = [
+              msg?.data?.status,
+              msg?.data?.internal_status,
+              msg?.data?.api_status,
+              msg?.data?.original_status,
+              msg?.status,
+              msg?.type === "swap_failed" ? "failed" : null,
+            ];
+            const detectedFailure = statusCandidates.find(isFailureLikeStatus) as
+              | string
+              | undefined;
+            if (detectedFailure) {
+              setStatusObj(msg.data ?? msg);
+              setFailureModal({
+                isOpen: true,
+                status: detectedFailure,
+                message:
+                  msg?.data?.message ||
+                  msg?.data?.api_message ||
+                  msg?.data?.error ||
+                  "Swap transaction failed.",
+              });
+              return;
+            }
 
             if (msg.type === "status_update" && msg.data) {
               const backendStatus = msg.data.status;
@@ -509,6 +553,18 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
           </div>
         </div>
       </div>
+      <FailureStatusModal
+        isOpen={failureModal.isOpen}
+        status={failureModal.status}
+        message={failureModal.message}
+        onClose={() =>
+          setFailureModal({ isOpen: false, status: "", message: undefined })
+        }
+        onBackToForm={() => {
+          setFailureModal({ isOpen: false, status: "", message: undefined });
+          onBack();
+        }}
+      />
       
     </div>
   );
