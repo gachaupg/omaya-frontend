@@ -70,17 +70,15 @@ const KYCVerificationModal: React.FC = () => {
     String(kycStatus?.message || "").trim() ||
     "Your KYC was rejected. Please resubmit with correct documents.";
   const reviewMessageRaw = String(kycStatus?.message || "").trim();
+  const sanitizedReviewMessage = reviewMessageRaw.replace(/^message:\s*/i, "").trim();
   const reviewMessage =
-    !reviewMessageRaw ||
-    reviewMessageRaw.toLowerCase() === "unknown status." ||
-    reviewMessageRaw.toLowerCase() === "unknown status"
-      ? "Your KYC is under review. Please wait for admin approval."
-      : reviewMessageRaw;
-  const reviewMessageDebug = `message: ${
-    typeof kycStatus?.message === "string" && kycStatus.message.trim()
-      ? kycStatus.message
-      : "{}"
-  }`;
+    !sanitizedReviewMessage ||
+    sanitizedReviewMessage.toLowerCase() === "unknown status." ||
+    sanitizedReviewMessage.toLowerCase() === "unknown status"
+      ? normalizedKycStatus === "waiting_approval"
+        ? "Your KYC is waiting approval."
+        : "Your KYC is under review. Please wait for admin approval."
+      : sanitizedReviewMessage;
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -1171,7 +1169,9 @@ const KYCVerificationModal: React.FC = () => {
               {isRejectedKyc
                 ? "Verification Rejected"
                 : isWaitingApproval
-                ? "Verification Under Review"
+                ? normalizedKycStatus === "waiting_approval"
+                  ? "Verification Waiting Approval"
+                  : "Verification Under Review"
                 : "Identity Verification Required"}
             </h2>
             <button
@@ -1198,14 +1198,7 @@ const KYCVerificationModal: React.FC = () => {
           
             <div className="text-gray-700 dark:text-gray-300 space-y-4">
               {isWaitingApproval ? (
-                <>
-                  <p>
-                    Your identity verification documents were submitted successfully and are currently under review.
-                  </p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Our compliance team is reviewing your submission. Use the button below to check the latest status.
-                  </p>
-                </>
+                <p>{reviewMessage}</p>
               ) : isRejectedKyc ? (
                 <>
                   <p>
@@ -1229,11 +1222,8 @@ const KYCVerificationModal: React.FC = () => {
               )}
 
             {isWaitingApproval && (
-              <div className="bg-green-50 dark:bg-green-900/20 border border-green-400 dark:border-green-500 text-green-700 dark:text-green-300 p-3 rounded-lg text-sm space-y-2">
+              <div className="bg-green-50 dark:bg-green-900/20 border border-green-400 dark:border-green-500 text-green-700 dark:text-green-300 p-3 rounded-lg text-sm">
                 <p>{reviewMessage}</p>
-                <p className="text-xs text-green-800 dark:text-green-200 break-all">
-                  {reviewMessageDebug}
-                </p>
               </div>
             )}
 

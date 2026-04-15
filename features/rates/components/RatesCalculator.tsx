@@ -753,16 +753,35 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
 
   // Apply local_commission when calculating from "You Get" (reverse direction)
   useEffect(() => {
+    const parseCommissionRule = () => {
+      const local = exchangeLookupResponse?.local_commission as any;
+      if (local?.commission_mode) {
+        return {
+          commission_mode: local.commission_mode as "flat_fee" | "percentage",
+          rate: local.rate,
+          fee: local.fee,
+        };
+      }
+      const crypto = exchangeLookupResponse?.crypto_commission as any;
+      if (crypto?.commission_mode) {
+        return {
+          commission_mode: crypto.commission_mode as "flat_fee" | "percentage",
+          rate: crypto.rate,
+          fee: crypto.fee,
+        };
+      }
+      return null;
+    };
+
     if (!selectedAsset) return;
     if (!isExchangeCommissionLookupAsset(selectedAsset)) return;
-    if (isForexPrimusAsset(selectedAsset)) return;
-    if (!exchangeLookupResponse?.local_commission) return;
     if (isCalculatingFromPay) return;
 
     const recv = parseFloat(receiveAmount) || 0;
     if (recv <= 0) return;
 
-    const lc = exchangeLookupResponse.local_commission;
+    const lc = parseCommissionRule();
+    if (!lc) return;
     if (lc.commission_mode === "flat_fee" && lc.fee != null) {
       const fee = parseFloat(lc.fee);
       if (!Number.isNaN(fee)) setAmount((recv + fee).toFixed(2));
@@ -2667,13 +2686,19 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
   // Use flat $2 fee for direct assets (USDT on BSC, USDC on BSC), percentage for other assets
   let commissionAmount = 0;
   let commissionRate = 0;
+  const exchangeCommissionRule =
+    (exchangeLookupResponse?.local_commission as any)?.commission_mode
+      ? (exchangeLookupResponse?.local_commission as any)
+      : (exchangeLookupResponse?.crypto_commission as any)?.commission_mode
+        ? (exchangeLookupResponse?.crypto_commission as any)
+        : null;
 
   if (
     selectedAsset &&
     isExchangeCommissionLookupAsset(selectedAsset) &&
-    exchangeLookupResponse?.local_commission
+    exchangeCommissionRule
   ) {
-    const lc = exchangeLookupResponse.local_commission;
+    const lc = exchangeCommissionRule;
     if (lc.commission_mode === "flat_fee") {
       const fee = lc.fee != null ? parseFloat(lc.fee) : 0;
       commissionAmount = Number.isNaN(fee) ? 0 : fee;
@@ -3579,7 +3604,9 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                 {t("rates.commission", "Commission:")}{" "}
                 {selectedAsset && !isSimpleCalculationAsset(selectedAsset) && estimate?.omaya_fee_percentage
                   ? `${estimate.omaya_fee_percentage}%`
-                  : amountNum > 0 ? `${commissionRate.toFixed(1)}%` : "0%"}
+                  : amountNum > 0
+                    ? `${commissionRate.toFixed(2).replace(/\.?0+$/, "")}%`
+                    : "0%"}
               </span>
               <span className="text-[#1D8751]">
                 {selectedAsset && !isSimpleCalculationAsset(selectedAsset) && estimate?.total_fee

@@ -312,6 +312,10 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
     const handleReposition = () => updateDropdownPosition();
     const handleScroll = (event: Event) => {
       const target = event.target as Node | null;
+      const isPageScrollTarget =
+        target === document ||
+        target === document.documentElement ||
+        target === document.body;
       // If the scroll originated from inside the dropdown itself, don't close it
       if (
         dropdownContentRef.current &&
@@ -320,10 +324,10 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
       ) {
         return;
       }
-      setIsOpen(false);
-      setSearchTerm("");
-    };
-    const handleScrollStart = () => {
+      // Only close on whole-page scroll, not nested container scroll.
+      if (!isPageScrollTarget) {
+        return;
+      }
       setIsOpen(false);
       setSearchTerm("");
     };
@@ -331,22 +335,12 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
     window.addEventListener("resize", handleReposition);
     window.addEventListener("scroll", handleScroll, true);
     document.addEventListener("scroll", handleScroll, true);
-    window.addEventListener("wheel", handleScrollStart, {
-      capture: true,
-      passive: true,
-    });
-    window.addEventListener("touchmove", handleScrollStart, {
-      capture: true,
-      passive: true,
-    });
 
     return () => {
       clearTimeout(timeoutId);
       window.removeEventListener("resize", handleReposition);
       window.removeEventListener("scroll", handleScroll, true);
       document.removeEventListener("scroll", handleScroll, true);
-      window.removeEventListener("wheel", handleScrollStart, true);
-      window.removeEventListener("touchmove", handleScrollStart, true);
     };
   }, [isOpen]);
 

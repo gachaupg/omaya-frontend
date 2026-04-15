@@ -61,7 +61,7 @@ export interface ExchangeCommissionLookupResponse {
   crypto_commission: { rate: string; commission_mode: string; fee?: string; asset_specific?: boolean } | null;
   changenow_fees: { omaya_fee?: number; gas_fee?: number; total_fee?: number; min_amount?: number } | null;
   usdt_amount: string;
-  local_commission: { rate: string; commission_mode: "flat_fee" | "percentage"; fee: string };
+  local_commission: { rate: string; commission_mode: "flat_fee" | "percentage"; fee: string } | null;
   to_amount: string;
 }
 

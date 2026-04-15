@@ -220,8 +220,21 @@ const IdentityVerificationModal: React.FC<IdentityVerificationModalProps> = ({
     ? user.is_verified === false
     : false;
 
-  const isUnderReview =
-    isUnverified && (kycStatus?.status || "").toLowerCase() === "under_review";
+  const kycStatusNormalized = (kycStatus?.status || "").toLowerCase();
+  const isKycPendingApproval =
+    isUnverified &&
+    (kycStatusNormalized === "under_review" ||
+      kycStatusNormalized === "waiting_approval");
+  const pendingApprovalTitle =
+    kycStatusNormalized === "waiting_approval"
+      ? "Verification Waiting Approval"
+      : "Verification Under Review";
+  const pendingApprovalMessage = (kycStatus?.message ||
+    (kycStatusNormalized === "waiting_approval"
+      ? "Your KYC is waiting approval."
+      : "Your KYC is under verification. Please wait for admin approval."))
+    .replace(/^message:\s*/i, "")
+    .trim();
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/60 p-4">
@@ -231,11 +244,11 @@ const IdentityVerificationModal: React.FC<IdentityVerificationModalProps> = ({
           <div className="flex justify-between items-start mb-4 sm:mb-6">
             <div className="flex-1">
               <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                {isUnderReview ? "Verification Under Review" : "Identity Verification Required"}
+                {isKycPendingApproval ? pendingApprovalTitle : "Identity Verification Required"}
               </h2>
               <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
-                {isUnderReview
-                  ? "Your identity verification documents were submitted successfully and are currently under review."
+                {isKycPendingApproval
+                  ? "KYC Status Update"
                   : phoneVerified
                   ? "Email verified! Proceeding to document verification..."
                   : "First, verify your email to continue"}
@@ -270,7 +283,7 @@ const IdentityVerificationModal: React.FC<IdentityVerificationModalProps> = ({
                 Checking verification status...
               </span>
             </div>
-          ) : isUnderReview ? (
+          ) : isKycPendingApproval ? (
             <div className="text-center py-8">
               <div className="w-16 h-16 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg
@@ -287,11 +300,8 @@ const IdentityVerificationModal: React.FC<IdentityVerificationModalProps> = ({
                   />
                 </svg>
               </div>
-              <p className="text-gray-600 dark:text-gray-400 mb-3">
-                Our compliance team is reviewing your submission. Use the button below to check the latest status.
-              </p>
               <p className="text-sm text-amber-700 dark:text-amber-300 mb-5">
-                {kycStatus?.message || "Your KYC is under review. Please wait for admin approval."}
+                {pendingApprovalMessage}
               </p>
               <Button
                 type="button"
