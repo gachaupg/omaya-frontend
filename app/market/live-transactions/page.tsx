@@ -57,12 +57,6 @@ const getLogoUrl = (name: string, isCurrency: boolean, logoFromData?: string | n
   return getDefaultProviderLogo();
 };
 
-// Helper function to check if name is a currency
-const isCurrency = (name: string): boolean => {
-  const currencies = ["usdt", "usd", "btc", "bitcoin", "eth", "ethereum"];
-  return currencies.includes((name || "").toLowerCase());
-};
-
 // Return API logo URL when valid (http/https or relative path)
 const resolveLogoUrl = (url: string | null | undefined): string | null => {
   if (url && (url.startsWith("http") || url.startsWith("/"))) return url;
@@ -71,60 +65,29 @@ const resolveLogoUrl = (url: string | null | undefined): string | null => {
 
 // Map API/WebSocket data to display Transaction (matches REST API structure)
 const mapApiDataToTransaction = (data: any): Transaction => {
-  const type = String(data.transaction_type || "").toLowerCase();
   const currency = data.currency || data.asset || "USDT";
   const ts = data.timestamp || data.created_at || new Date().toISOString();
+  const fromName = (
+    data.from_currency ||
+    data.fromCurrency ||
+    currency
+  ).toString().toUpperCase();
+  const toName = (
+    data.to_currency ||
+    data.toCurrency ||
+    currency
+  ).toString().toUpperCase();
 
-  let fromName = "";
-  let fromLogo: string | null = null;
-  let toName = "";
-  let toLogo: string | null = null;
-
-  // p2p_trade: buyer → seller (buyer bought from seller), use nested or flat fields
-  if (type === "p2p_trade") {
-    fromName = data.buyer?.name || data.buyer_name || "Buyer";
-    fromLogo = resolveLogoUrl(data.buyer?.photo) || resolveLogoUrl(data.buyer_photo);
-    toName = data.seller?.name || data.seller_name || "Seller";
-    toLogo = resolveLogoUrl(data.seller?.photo) || resolveLogoUrl(data.seller_photo);
-  }
-  // moneyx: from_provider → to_provider
-  else if (type === "moneyx") {
-    fromName = data.from_provider || data.user?.name || "MoneyX";
-    fromLogo = resolveLogoUrl(data.from_provider_logo) || resolveLogoUrl(data.user?.photo);
-    toName = data.to_provider || currency;
-    toLogo = resolveLogoUrl(data.to_provider_logo);
-  }
-  // p2p_deposit, p2p_withdraw, exchange, swap, etc.
-  else {
-    const userName = data.user_name || data.user?.name || data.account_name || data.sender_name || data.from_name || "";
-    const receiverName = data.receiver_name || data.to_name || data.recipient_name || "";
-    const paymentProvider = data.payment_provider || data.provider || data.bank_name || "";
-
-    if (type === "p2p_deposit") {
-      fromName = userName || paymentProvider || "P2P Deposit";
-      fromLogo = resolveLogoUrl(data.payment_provider_logo) || resolveLogoUrl(data.from_logo);
-      toName = currency;
-      toLogo = resolveLogoUrl(data.asset_image) || getLogoUrl(currency, true, data.asset_image);
-    } else if (type === "p2p_withdraw") {
-      fromName = currency;
-      fromLogo = resolveLogoUrl(data.asset_image) || getLogoUrl(currency, true, data.asset_image);
-      toName = userName || receiverName || "P2P Withdraw";
-      toLogo = resolveLogoUrl(data.payment_provider_logo) || resolveLogoUrl(data.to_logo);
-    } else if (type === "exchange" || type === "swap") {
-      fromName = userName || paymentProvider || currency;
-      fromLogo = resolveLogoUrl(data.from_logo) || resolveLogoUrl(data.asset_image);
-      toName = receiverName || currency;
-      toLogo = resolveLogoUrl(data.to_logo) || resolveLogoUrl(data.asset_image);
-    } else {
-      fromName = userName || paymentProvider || currency;
-      fromLogo = resolveLogoUrl(data.from_provider_logo) || resolveLogoUrl(data.payment_provider_logo) || resolveLogoUrl(data.from_logo);
-      toName = receiverName || paymentProvider || currency;
-      toLogo = resolveLogoUrl(data.to_provider_logo) || resolveLogoUrl(data.to_logo) || resolveLogoUrl(data.asset_image);
-    }
-    // Fallback for logos when API didn't provide URLs
-    if (!fromLogo) fromLogo = getLogoUrl(fromName, isCurrency(fromName), null);
-    if (!toLogo) toLogo = getLogoUrl(toName, isCurrency(toName), null);
-  }
+  const fromLogo =
+    resolveLogoUrl(data.from_currency_image) ||
+    resolveLogoUrl(data.from_asset_image) ||
+    resolveLogoUrl(data.asset_image) ||
+    getLogoUrl(fromName, true, null);
+  const toLogo =
+    resolveLogoUrl(data.to_currency_image) ||
+    resolveLogoUrl(data.to_asset_image) ||
+    resolveLogoUrl(data.asset_image) ||
+    getLogoUrl(toName, true, null);
 
   return {
     id: data.id || data.transaction_id || `tx-${Date.now()}-${Math.random()}`,
