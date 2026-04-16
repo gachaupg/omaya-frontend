@@ -207,13 +207,17 @@ export interface CashWithdrawalResponse extends SettingsApiResponse {
 
 // Referral Fee Calculation Types
 export interface ReferralFeeCalculation {
+  requested_amount?: string;
   commission_fee: string;
   network_fee: string;
   total_fees: string;
+  net_amount?: string;
 }
 
 export interface ReferralFeeCalculationResponse {
+  requested_amount?: string;
   commission_fee: string;
   network_fee: string;
   total_fees: string;
+  net_amount?: string;
 }

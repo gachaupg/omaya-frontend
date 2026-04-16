@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { SupportedAsset, SwapEstimate } from "../types";
 import { useTheme } from "@/context/theme";
-import { FaSearch } from "react-icons/fa";
+import { FaExchangeAlt, FaSearch } from "react-icons/fa";
 import { useSwapI18n } from "@/lib/useSwapI18n";
 import { isNonEmptyInvalidZeroSwapAmount } from "@/lib/utils/swapAmountInput";
 
@@ -575,16 +575,17 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
             type="button"
             onClick={onSwapAssets}
             className="flex items-center justify-center p-0 bg-transparent border-none shadow-none"
+            aria-label="Swap selected assets"
           >
-            <img
-              src={
+            <span
+              className={`w-11 h-11 rounded-full flex items-center justify-center border ${
                 isDark
-                  ? "/assets/Frame_36261_ledmyw.png"
-                  : "/assets/Frame_36261_1_d9cnq1.png"
-              }
-              alt="swap"
-              className="w-11 h-11"
-            />
+                  ? "bg-[#1F1F26] border-[#35353E] text-[#C8C8D0]"
+                  : "bg-white border-gray-300 text-gray-700"
+              }`}
+            >
+              <FaExchangeAlt className="w-4 h-4" />
+            </span>
           </button>
         </div>
       </div>

@@ -39,8 +39,12 @@ function Cash({ sharedFeesError }: CashProps) {
   const commission = fees?.commission_fee ? Number(fees.commission_fee) : 0
   const networkFee = fees?.network_fee ? Number(fees.network_fee) : 0
   const totalFees = fees?.total_fees ? Number(fees.total_fees) : 0
-  const netAmount = amount ? Number(amount) : 0
-  const totalWithFees = netAmount + totalFees
+  const netAmount = fees?.net_amount ? Number(fees.net_amount) : amount ? Number(amount) : 0
+  const totalWithFees = fees?.requested_amount
+    ? Number(fees.requested_amount)
+    : amount
+      ? Number(amount)
+      : 0
 
   // Load user payment details and admin methods on component mount
   useEffect(() => {
@@ -286,7 +290,7 @@ function Cash({ sharedFeesError }: CashProps) {
                 </label>
                 <div className="flex items-center bg-white dark:bg-[var(--bg-color)] border border-[#E8EFF5] dark:border-[#35353F] rounded-[18px] px-1 py-1">
                   <span className="text-[#1D8751] text-2xl font-bold mr-2">
-                    $ {netAmount ? netAmount.toFixed(2) : "0.00"}
+                    $ {Number.isFinite(netAmount) ? netAmount.toFixed(2) : "0.00"}
                   </span>
                   <span className="ml-auto text-[#A3A3A3] flex items-center">
                     USD

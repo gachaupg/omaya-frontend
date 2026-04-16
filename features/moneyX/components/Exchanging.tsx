@@ -394,10 +394,14 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
   // Use persisted data if no transactionData is provided (page reload scenario)
   const effectiveTransactionData = transactionData || persistedTransactionData;
 
-  // Initialize net amount from receiveAmount (form's "You Receive") - never use send amount
+  // Prefer API net_amount over any form-calculated receive amount.
+  // This prevents stale/hardcoded client-side FX math from leaking into status.
   useEffect(() => {
-    if (effectiveTransactionData?.receiveAmount != null) {
-      const parsed = parseFloat(String(effectiveTransactionData.receiveAmount));
+    const initialNet =
+      effectiveTransactionData?.net_amount ??
+      effectiveTransactionData?.receiveAmount;
+    if (initialNet != null) {
+      const parsed = parseFloat(String(initialNet));
       if (!isNaN(parsed)) {
         setLiveNetAmount(parsed);
         // MoneyX: send USD, receive USDT (from toPaymentMethod)
@@ -408,7 +412,11 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
         setLiveNetCurrency(netCur);
       }
     }
-  }, [effectiveTransactionData?.receiveAmount, effectiveTransactionData?.toPaymentMethod]);
+  }, [
+    effectiveTransactionData?.net_amount,
+    effectiveTransactionData?.receiveAmount,
+    effectiveTransactionData?.toPaymentMethod,
+  ]);
 
   // Store transaction data in localStorage when it's provided
   useEffect(() => {
@@ -915,7 +923,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
   const ussdCode = `*789*75466*${ussdAmount}#`;
   const initialNetAmount = parseNumberish(effectiveTransactionData?.net_amount);
   const netAmountToDisplay =
-    liveNetAmount ?? effectiveTransactionData?.receiveAmount ?? initialNetAmount;
+    liveNetAmount ?? initialNetAmount ?? effectiveTransactionData?.receiveAmount;
   const netCurrencyToDisplay =
     liveNetCurrency ||
     effectiveTransactionData?.toPaymentMethod?.currency ||

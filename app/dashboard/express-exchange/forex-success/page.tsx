@@ -17,6 +17,9 @@ function ForexSuccessContent() {
   
   const { currentExchange } = useSelector((state: any) => state.forex);
   const [exchangeData, setExchangeData] = useState<any>(null);
+  const shouldHideExchangeRate =
+    String(exchangeData?.to_currency || "").toUpperCase() === "FXP" ||
+    String(exchangeData?.from_currency || "").toUpperCase() === "FXP";
 
   // Load exchange data from localStorage or Redux
   useEffect(() => {
@@ -124,16 +127,20 @@ function ForexSuccessContent() {
                 </div>
               </div>
 
-              <div className={`border-t ${isDark ? "border-[#35353E]" : "border-gray-300"}`}></div>
+              {!shouldHideExchangeRate && (
+                <>
+                  <div className={`border-t ${isDark ? "border-[#35353E]" : "border-gray-300"}`}></div>
 
-              <div className="flex items-center justify-between">
-                <span className={`${isDark ? "text-[#788099]" : "text-gray-600"} text-base font-medium`}>
-                  Exchange Rate:
-                </span>
-                <span className={`${isDark ? "text-white" : "text-gray-900"} text-base font-semibold`}>
-                  1 {exchangeData.from_currency} = {exchangeData.exchange_rate} {exchangeData.to_currency}
-                </span>
-              </div>
+                  <div className="flex items-center justify-between">
+                    <span className={`${isDark ? "text-[#788099]" : "text-gray-600"} text-base font-medium`}>
+                      Exchange Rate:
+                    </span>
+                    <span className={`${isDark ? "text-white" : "text-gray-900"} text-base font-semibold`}>
+                      1 {exchangeData.from_currency} = {exchangeData.exchange_rate} {exchangeData.to_currency}
+                    </span>
+                  </div>
+                </>
+              )}
 
               {exchangeData.user_forex_account && (
                 <>
