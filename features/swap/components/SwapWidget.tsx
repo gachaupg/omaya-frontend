@@ -679,29 +679,41 @@ const SwapWidget = () => {
     dispatch(clearEstimate());
   };
 
-  const [skeletonTimeoutReached, setSkeletonTimeoutReached] = useState(false);
-
-  useEffect(() => {
-    if (loading && supportedAssets.length === 0) {
-      const timer = setTimeout(() => setSkeletonTimeoutReached(true), 10000);
-      return () => clearTimeout(timer);
-    }
-    setSkeletonTimeoutReached(false);
-  }, [loading, supportedAssets.length]);
+  const staleRefreshInFlightRef = React.useRef(false);
 
   // Detect stale loading state (e.g., persisted loading flag) and force refresh
   useEffect(() => {
     if (!loading || supportedAssets.length > 0) {
+      staleRefreshInFlightRef.current = false;
+      return;
+    }
+    if (staleRefreshInFlightRef.current) {
       return;
     }
 
     const staleLoadingTimer = setTimeout(() => {
-      if (loading && supportedAssets.length === 0) {
+      if (
+        loading &&
+        supportedAssets.length === 0 &&
+        !staleRefreshInFlightRef.current
+      ) {
+        staleRefreshInFlightRef.current = true;
         logger.warn(
           "swap",
           "SwapWidget detected stale loading state. Forcing supported assets refresh."
         );
-        dispatch(fetchSupportedAssets(true));
+        dispatch(fetchSupportedAssets(true))
+          .unwrap()
+          .catch((error) => {
+            logger.error(
+              "swap",
+              "Forced supported assets refresh failed in SwapWidget:",
+              error
+            );
+          })
+          .finally(() => {
+            staleRefreshInFlightRef.current = false;
+          });
       }
     }, 8000); // fallback after 8s
 
@@ -709,66 +721,32 @@ const SwapWidget = () => {
   }, [loading, supportedAssets.length, dispatch]);
 
   const handleSupportedAssetsRetry = useCallback(() => {
-    setSkeletonTimeoutReached(false);
     dispatch(fetchSupportedAssets(true));
   }, [dispatch]);
 
-  // Show skeleton while loading initial data (supported assets)
-  if (loading && supportedAssets.length === 0) {
-    if (!skeletonTimeoutReached) {
-      return <SwapWidgetSkeleton />;
-    }
-
-    return (
-      <div className="w-full sm:max-w-lg sm:mx-auto p-3 sm:p-4 md:p-6 bg-white dark:bg-[var(--card-color)] rounded-lg border dark:border-[#35353E] border-gray-200">
-        <div className="flex flex-col items-center text-center gap-3">
-          <SwapWidgetSkeleton />
-          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-            This is taking longer than usual. Please refresh or try again.
-          </p>
-          <div className="flex gap-2">
-            <button
-              onClick={() => window.location.reload()}
-              className="px-3 sm:px-4 py-2 bg-[#1D8751] hover:bg-[#1a6b3f] text-white rounded-md text-xs sm:text-sm"
-            >
-              Refresh
-            </button>
-            <button
-              onClick={handleSupportedAssetsRetry}
-              className="px-3 sm:px-4 py-2 border border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751]/10 rounded-md text-xs sm:text-sm"
-            >
-              Try Again
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="w-full dark:text-white text-gray-900">
-        <div className="bg-red-500/10 dark:bg-red-500/10 border border-red-500/20 dark:border-red-500/20 rounded-lg p-3 sm:p-4">
-          <h3 className="text-red-600 dark:text-red-400 font-semibold mb-2 text-sm sm:text-base">
-            Error Loading Swap
-          </h3>
-          <p className="text-red-500 dark:text-red-300 text-xs sm:text-sm">{error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="mt-3 px-3 sm:px-4 py-2 bg-red-500 hover:bg-red-600 dark:bg-red-500 dark:hover:bg-red-600 rounded-md text-white text-xs sm:text-sm"
-          >
-            Try Again
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const isInitialAssetLoading = loading && supportedAssets.length === 0;
 
   return (
     <div className="flex flex-col dark:text-white text-gray-900 w-full max-w-5xl mx-auto px-4 sm:px-6">
       <h2 className="text-base sm:text-lg font-semibold   text-gray-900 dark:text-white">
         Swap Crypto
       </h2>
+      {isInitialAssetLoading && (
+        <div className="mb-3 rounded-lg border border-[#1D8751]/30 bg-[#1D8751]/10 px-3 py-2 text-xs sm:text-sm text-[#1D8751]">
+          Loading assets in background... you can already view the swap UI.
+        </div>
+      )}
+      {error && (
+        <div className="mb-3 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs sm:text-sm text-red-500 dark:text-red-300 flex items-center justify-between gap-2">
+          <span>{error}</span>
+          <button
+            onClick={handleSupportedAssetsRetry}
+            className="px-3 py-1 border border-red-500/30 rounded-md text-xs"
+          >
+            Retry
+          </button>
+        </div>
+      )}
 
       {/* Step Indicator */}
       {/* <StepIndicator currentStep={currentStep} /> */}

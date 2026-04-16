@@ -15,7 +15,157 @@ import {
   SwapStatus,
 } from "./types";
 
+type PublicAssetLike = {
+  asset_id?: string;
+  ticker?: string;
+  symbol?: string;
+  name?: string;
+  image?: string;
+  image_url?: string;
+  network?: string;
+  legacyTicker?: string;
+  legacy_ticker?: string;
+  hasExternalId?: boolean;
+  has_external_id?: boolean;
+  isExtraIdSupported?: boolean;
+  is_extra_id_supported?: boolean;
+  isFiat?: boolean;
+  is_fiat?: boolean;
+  isStable?: boolean;
+  is_stable?: boolean;
+  featured?: boolean;
+  supportsFixedRate?: boolean;
+  supports_fixed_rate?: boolean;
+};
+
+const SWAP_PUBLIC_ASSETS_CACHE_KEY =
+  "omaya_changenow_public_supported_tokens_v3";
+const SWAP_PUBLIC_ASSETS_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+
+const mapPublicAssetToSupportedAsset = (
+  asset: PublicAssetLike
+): SupportedAsset | null => {
+  const ticker = String(asset.ticker || asset.symbol || "").trim();
+  if (!ticker) return null;
+  const normalizedTicker = ticker.toUpperCase();
+  const network = String(asset.network || "").trim().toLowerCase() || "mainnet";
+  const image = String(asset.image || asset.image_url || "").trim();
+
+  return {
+    asset_id: asset.asset_id,
+    ticker: normalizedTicker,
+    symbol: normalizedTicker,
+    name: String(asset.name || normalizedTicker).trim(),
+    image_url: image || undefined,
+    image: image || undefined,
+    network,
+    has_external_id: Boolean(asset.hasExternalId ?? asset.has_external_id),
+    is_extra_id_supported: Boolean(
+      asset.isExtraIdSupported ?? asset.is_extra_id_supported
+    ),
+    is_fiat: Boolean(asset.isFiat ?? asset.is_fiat),
+    featured: Boolean(asset.featured),
+    is_stable: Boolean(asset.isStable ?? asset.is_stable),
+    supports_fixed_rate: Boolean(
+      asset.supportsFixedRate ?? asset.supports_fixed_rate
+    ),
+    legacy_ticker: String(
+      asset.legacyTicker || asset.legacy_ticker || ticker
+    ).trim(),
+    is_changenow_asset: true,
+  };
+};
+
+const readSwapPublicAssetsCache = (allowStale: boolean): SupportedAsset[] => {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(SWAP_PUBLIC_ASSETS_CACHE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as {
+      ts?: number;
+      assets?: PublicAssetLike[];
+    };
+    if (!parsed || !Array.isArray(parsed.assets)) return [];
+
+    const isFresh =
+      typeof parsed.ts === "number" &&
+      Date.now() - parsed.ts < SWAP_PUBLIC_ASSETS_CACHE_TTL_MS;
+    if (!allowStale && !isFresh) return [];
+
+    return parsed.assets
+      .map(mapPublicAssetToSupportedAsset)
+      .filter((item): item is SupportedAsset => Boolean(item));
+  } catch {
+    return [];
+  }
+};
+
+const writeSwapPublicAssetsCache = (assets: PublicAssetLike[]) => {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(
+      SWAP_PUBLIC_ASSETS_CACHE_KEY,
+      JSON.stringify({
+        ts: Date.now(),
+        assets,
+      })
+    );
+  } catch {
+    // ignore storage quota/privacy failures
+  }
+};
+
+const fetchPublicSupportedAssetsFallback = async (): Promise<SupportedAsset[]> => {
+  const freshCached = readSwapPublicAssetsCache(false);
+  if (freshCached.length > 0) {
+    logger.debug(
+      "swap",
+      `Using cached public supported-assets (${freshCached.length} assets)`
+    );
+    return freshCached;
+  }
+
+  try {
+    const response = await cachedGet<PublicAssetLike[]>(
+      API_CONFIG.SWAP.SUPPORTED_ASSETS_PUBLIC,
+      { timeout: 15000 }
+    );
+    const payload = response?.data;
+    if (!Array.isArray(payload)) {
+      return [];
+    }
+
+    const mapped = payload
+      .map(mapPublicAssetToSupportedAsset)
+      .filter((item): item is SupportedAsset => Boolean(item));
+
+    if (mapped.length > 0) {
+      writeSwapPublicAssetsCache(payload);
+      logger.warn(
+        "swap",
+        `Using public supported-assets fallback (${mapped.length} assets)`
+      );
+    }
+    return mapped;
+  } catch (fallbackError) {
+    logger.error("swap", "Public supported-assets fallback failed", fallbackError);
+    const staleCached = readSwapPublicAssetsCache(true);
+    return staleCached;
+  }
+};
+
 export const getSupportedAssets = async (): Promise<SupportedAsset[]> => {
+  // Fast path: same caching behavior as Express public assets hook.
+  // Serve cached list immediately and avoid blocking UI on network timeout.
+  const cachedPublicAssets = readSwapPublicAssetsCache(false);
+  if (cachedPublicAssets.length > 0) {
+    logger.debug(
+      "swap",
+      `Loaded supported assets from 1h cache (${cachedPublicAssets.length})`
+    );
+    return cachedPublicAssets;
+  }
+
   return withRetry(async () => {
     try {
       const response = await get<{ message: string; total_changenow_tokens: number; results: SupportedAsset[] }>(
@@ -40,8 +190,9 @@ export const getSupportedAssets = async (): Promise<SupportedAsset[]> => {
         return data;
       }
       
-      console.warn("Unexpected response format, returning empty array");
-      return [];
+      console.warn("Unexpected supported-assets format, trying public fallback");
+      const fallbackAssets = await fetchPublicSupportedAssetsFallback();
+      return fallbackAssets;
     } catch (error: any) {
       console.error("Failed to fetch supported assets:", error);
 
@@ -58,12 +209,12 @@ export const getSupportedAssets = async (): Promise<SupportedAsset[]> => {
 
       if (error.response?.status === 404) {
         console.warn("Endpoint not found, returning empty assets list");
-        return [];
+        return await fetchPublicSupportedAssetsFallback();
       }
 
-      // For other errors, return empty array instead of throwing
-      console.warn("Unknown error, returning empty assets list");
-      return [];
+      // For other errors, use public endpoint fallback (Express-style source)
+      console.warn("Unknown error, trying public assets fallback");
+      return await fetchPublicSupportedAssetsFallback();
     }
   });
 };

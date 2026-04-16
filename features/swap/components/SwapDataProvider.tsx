@@ -1,10 +1,9 @@
 "use client";
-import { useEffect, ReactNode } from "react";
+import { useEffect, ReactNode, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/store";
 import { fetchSupportedAssets } from "../slices/swapSlice";
 import { logger } from "@/lib/logger";
-import { withTimeout } from "@/lib/utils/fetchWithTimeout";
 
 interface SwapDataProviderProps {
   children: ReactNode;
@@ -24,27 +23,53 @@ interface SwapDataProviderProps {
  */
 export const SwapDataProvider = ({ children }: SwapDataProviderProps) => {
   const dispatch = useDispatch<AppDispatch>();
+  const staleRefreshTriggeredRef = useRef(false);
   const { supportedAssets, loading } = useSelector(
     (state: RootState) => state.swap
   );
 
   useEffect(() => {
-    // Only fetch if we don't have assets and we're not already loading
-    const needsData = supportedAssets.length === 0 && !loading;
+    const hasAssets = supportedAssets.length > 0;
+    if (hasAssets) {
+      staleRefreshTriggeredRef.current = false;
+      logger.debug(
+        "[SwapDataProvider] Swap assets already available, using cached data"
+      );
+      return;
+    }
 
-    if (needsData) {
+    // Normal initial load path
+    if (!loading) {
       logger.info("[SwapDataProvider] Fetching swap supported assets...");
-      withTimeout(dispatch(fetchSupportedAssets(false)).unwrap(), 15_000)
+      dispatch(fetchSupportedAssets(false))
+        .unwrap()
         .then(() => {
           logger.info("[SwapDataProvider] Swap assets loaded successfully");
         })
         .catch((error) => {
           logger.error("[SwapDataProvider] Error loading swap assets", error);
         });
-    } else {
-      logger.debug(
-        "[SwapDataProvider] Swap assets already available, using cached data"
+      return;
+    }
+
+    // Recovery path: when Redux rehydrates with loading=true and empty assets,
+    // force one refresh so the widget does not stay on skeleton forever.
+    if (loading && !staleRefreshTriggeredRef.current) {
+      staleRefreshTriggeredRef.current = true;
+      logger.warn(
+        "[SwapDataProvider] Detected stale swap loading state, forcing refresh"
       );
+      dispatch(fetchSupportedAssets(true))
+        .unwrap()
+        .catch((error) => {
+          logger.error(
+            "[SwapDataProvider] Forced refresh failed for supported assets",
+            error
+          );
+        })
+        .finally(() => {
+          staleRefreshTriggeredRef.current = false;
+        });
     }
   }, [dispatch, supportedAssets, loading]);
 

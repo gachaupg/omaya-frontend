@@ -524,6 +524,9 @@ const MoneyXRates = ({
   const networkFee = 0;
   const totalFees = commissionAmount;
   const amountIncludingFees = amountNum;
+  const commissionDisplayValue = apiCommissionIsPercentage
+    ? `${commissionRate.toFixed(2).replace(/\.?0+$/, "")}%`
+    : `$${commissionRate.toFixed(2)}`;
 
   // Filter payment methods based on search
   const filteredFromMethods = finalPaymentMethods.filter((method: any) => {
@@ -1256,7 +1259,7 @@ const MoneyXRates = ({
             >
               <div className="flex justify-between gap-20 text-sm mb-1">
                 <span className={isDark ? "text-[#E8EFF5]" : "text-[#051015]"}>
-                  {t("rates.commission", "Commission:")}
+                  {t("rates.commission", "Commission:")} {commissionDisplayValue}
                 </span>
                 <span className="text-[#1D8751]">
                   ${commissionAmount.toFixed(2)}

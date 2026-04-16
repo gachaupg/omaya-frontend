@@ -5164,7 +5164,6 @@ export default function WithdrawalForm({
                   <div className="flex items-start sm:items-center gap-2 text-[#1D8751] text-xs sm:text-sm font-medium bg-[#EFFAF3] dark:bg-[#35353E] border border-[#1D8751] rounded-xl p-2.5 sm:p-3">
                     <FaExclamationCircle className="mt-0.5 sm:mt-0 text-[#1D8751] flex-shrink-0" />
                     <span className="leading-relaxed break-words">
-                      Anything above $15,000? Please contact our OTC Desk for better rates.
                     </span>
                   </div>
                 )}

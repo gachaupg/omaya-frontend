@@ -223,6 +223,38 @@ function ForexStatusContent() {
 
   const currentStatus = currentExchange ? getUIStatus(currentExchange.status) : 'pending';
 
+  const parseNumericValue = (value: unknown): number | null => {
+    const parsed = Number.parseFloat(String(value ?? ""));
+    return Number.isFinite(parsed) ? parsed : null;
+  };
+
+  const getDisplayedExchangeRate = () => {
+    if (!currentExchange) {
+      return null;
+    }
+
+    const fromAmountNum = parseNumericValue(currentExchange.from_amount);
+    const toAmountNum = parseNumericValue(currentExchange.to_amount);
+
+    // FX Primus status should reflect the actual effective rate from the API-driven
+    // transaction amounts, not the stale hardcoded rate originally submitted.
+    if (
+      fromAmountNum &&
+      toAmountNum &&
+      fromAmountNum > 0 &&
+      String(currentExchange.to_currency || "").toUpperCase() === "FXP"
+    ) {
+      return (toAmountNum / fromAmountNum).toFixed(8);
+    }
+
+    return currentExchange.exchange_rate || null;
+  };
+
+  const displayedExchangeRate = getDisplayedExchangeRate();
+  const shouldHideExchangeRate =
+    String(currentExchange?.to_currency || "").toUpperCase() === "FXP" ||
+    String(currentExchange?.from_currency || "").toUpperCase() === "FXP";
+
   // Redirect to success page when transaction is completed
   useEffect(() => {
     if (currentExchange && currentStatus === 'completed') {
@@ -432,19 +464,22 @@ function ForexStatusContent() {
               />
             </div>
 
-            {/* Exchange Rate */}
-            <div
-              className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                } text-xs font-semibold mb-0.5 mt-3`}
-            >
-              Exchange Rate:
-            </div>
-            <div
-              className={`${isDark ? "text-white" : "text-gray-900"
-                } text-sm`}
-            >
-              1 {currentExchange.from_currency} = {currentExchange.exchange_rate} {currentExchange.to_currency}
-            </div>
+            {!shouldHideExchangeRate && (
+              <>
+                <div
+                  className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                    } text-xs font-semibold mb-0.5 mt-3`}
+                >
+                  Exchange Rate:
+                </div>
+                <div
+                  className={`${isDark ? "text-white" : "text-gray-900"
+                    } text-sm`}
+                >
+                  1 {currentExchange.from_currency} = {displayedExchangeRate || currentExchange.exchange_rate} {currentExchange.to_currency}
+                </div>
+              </>
+            )}
 
             {/* Bank Information */}
             {currentExchange.admin_payment_info && (
