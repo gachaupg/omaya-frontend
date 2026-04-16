@@ -5,6 +5,7 @@ import Button from "./Button";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/rootReducer";
 import { getUserTrades } from "@/features/p2p/api";
+import { normalizeP2PTradeStatus } from "@/features/p2p/utils/normalizeP2PTradeStatus";
 import {
   AreaChart,
   Area,
@@ -33,6 +34,59 @@ interface ChartProps {
   selectedTimeFilter?: TimeFilter;
   showTimeFilter?: boolean;
 }
+
+const normalizeRangeCurrency = (value: unknown): "USD" | "KES" => {
+  const upper = String(value || "").trim().toUpperCase();
+  return upper === "KES" ? "KES" : "USD";
+};
+
+const transformTradeForChart = (
+  item: any,
+  currentUserEmail?: string
+): {
+  amount: number;
+  type: "buy" | "sell";
+  timestamp: string;
+  rangeCurrency: "USD" | "KES";
+} | null => {
+  const timestamp = String(item?.lastUpdate || item?.timestamp || item?.date || "");
+  const ts = new Date(timestamp);
+  if (isNaN(ts.getTime())) return null;
+
+  const rawOrderType = String(item?.type || item?.order_type || "")
+    .trim()
+    .toLowerCase();
+  if (rawOrderType !== "buy" && rawOrderType !== "sell") {
+    return null;
+  }
+
+  const ownerEmail = String(item?.owner || "").trim().toLowerCase();
+  const userEmail = String(currentUserEmail || "").trim().toLowerCase();
+  const isOwner = Boolean(userEmail && ownerEmail && ownerEmail === userEmail);
+
+  const displayType = item?.type
+    ? rawOrderType
+    : isOwner
+      ? rawOrderType
+      : rawOrderType === "buy"
+        ? "sell"
+        : "buy";
+
+  const parsedAmount = Number.parseFloat(
+    String(item?.amount ?? item?.net_amount ?? 0)
+  );
+  const amount = Number.isFinite(parsedAmount) ? parsedAmount : 0;
+  const rangeCurrency = normalizeRangeCurrency(item?.range_currency);
+  const normalizedStatus = normalizeP2PTradeStatus(item?.status);
+  if (!normalizedStatus) return null;
+
+  return {
+    amount,
+    type: displayType as "buy" | "sell",
+    timestamp,
+    rangeCurrency,
+  };
+};
 
 /* ------------------------------------------------------------------ */
 /* Helpers                                                            */
@@ -68,6 +122,9 @@ const Charts: React.FC<ChartProps> = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const { trades } = useSelector((s: RootState) => s.userTrades);
+  const currentUserEmail = useSelector(
+    (s: RootState) => s.auth?.user?.email || ""
+  );
 
   const [chartData, setChartData] = useState<
     { name: string; buyValue: number; sellValue: number }[]
@@ -122,10 +179,18 @@ const Charts: React.FC<ChartProps> = ({
           : trades?.results || [];
     // Include any trade with a valid timestamp (API may use canceled/cancelled/pending/etc.;
     // filtering to "completed" only hid all rows when every trade was canceled.)
-    const src = raw.filter((item: any) => {
-      const ts = new Date(item.lastUpdate || item.timestamp || item.date);
-      return !isNaN(ts.getTime());
-    });
+    const src = raw
+      .map((item: any) => transformTradeForChart(item, currentUserEmail))
+      .filter(
+        (
+          item
+        ): item is {
+          amount: number;
+          type: "buy" | "sell";
+          timestamp: string;
+          rangeCurrency: "USD" | "KES";
+        } => Boolean(item)
+      );
     if (!src.length) {
       setChartData([]);
       return;
@@ -150,13 +215,11 @@ const Charts: React.FC<ChartProps> = ({
       }
       const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
       src.forEach((item: any) => {
-        const ts = new Date(item.lastUpdate || item.timestamp || item.date);
+        const ts = new Date(item.timestamp);
         if (isNaN(ts.getTime())) return;
         if (ts.getTime() < todayStart) return;
         const hour = ts.getHours();
-        const amt = parseFloat(item.amount) || 0;
-        const rawType = item.type || item.order_type || "";
-        addToSlot(hour, amt, String(rawType));
+        addToSlot(hour, item.amount, item.type);
       });
     } else if (selectedTimeFilter === "Last Week") {
       for (let i = 0; i < 7; i++) {
@@ -165,14 +228,12 @@ const Charts: React.FC<ChartProps> = ({
         newData.push({ name: months[d.getMonth()].slice(0, 3) + " " + d.getDate(), buyValue: 0, sellValue: 0 });
       }
       src.forEach((item: any) => {
-        const ts = new Date(item.lastUpdate || item.timestamp || item.date);
+        const ts = new Date(item.timestamp);
         if (isNaN(ts.getTime())) return;
         const diffDays = Math.floor((now.getTime() - ts.getTime()) / (1000 * 60 * 60 * 24));
         if (diffDays >= 0 && diffDays < 7) {
           const idx = 6 - diffDays;
-          const amt = parseFloat(item.amount) || 0;
-          const rawType = item.type || item.order_type || "";
-          addToSlot(idx, amt, String(rawType));
+          addToSlot(idx, item.amount, item.type);
         }
       });
     } else if (selectedTimeFilter === "Last Month" || selectedTimeFilter === "Last 6 Months" || selectedTimeFilter === "All Time") {
@@ -193,20 +254,18 @@ const Charts: React.FC<ChartProps> = ({
         newData.push({ name: label, buyValue: 0, sellValue: 0 });
       }
       src.forEach((item: any) => {
-        const ts = new Date(item.lastUpdate || item.timestamp || item.date);
+        const ts = new Date(item.timestamp);
         if (isNaN(ts.getTime())) return;
         const diffMonths = (now.getFullYear() - ts.getFullYear()) * 12 + (now.getMonth() - ts.getMonth());
         if (diffMonths >= 0 && diffMonths < slots) {
           const idx = slots - 1 - diffMonths;
-          const amt = parseFloat(item.amount) || 0;
-          const rawType = item.type || item.order_type || "";
-          addToSlot(idx, amt, String(rawType));
+          addToSlot(idx, item.amount, item.type);
         }
       });
     }
 
     setChartData(newData);
-  }, [data, trades, selectedTimeFilter, chartTrades]);
+  }, [data, trades, selectedTimeFilter, chartTrades, currentUserEmail]);
 
   /* ------------------- Tooltip ----------------------------- */
   const CustomTooltip = ({ active, payload, label }: any) => {

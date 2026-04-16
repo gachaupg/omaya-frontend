@@ -65,6 +65,10 @@ import {
 
 const MISSING_FXP_USD_RATE_ERROR =
   "No exchange rate configured for FXP to USD";
+const NEGATIVE_RECEIVE_ERROR =
+  "Receive amount cannot be negative. Please adjust the amount.";
+const buildNegativeReceiveError = (value: number) =>
+  `${NEGATIVE_RECEIVE_ERROR} Calculated value: ${value.toFixed(2)}.`;
 
 interface UserPaymentDetail {
   id: number;
@@ -155,6 +159,13 @@ const usesLegacyPercentCommission = (asset: any) =>
 
 /** Instant amount update without waiting on exchange / swap */
 const isInstantAmountAsset = (asset: any) => usesLegacyPercentCommission(asset);
+
+const toNonNegativeAmount = (value: unknown): number => {
+  const parsed =
+    typeof value === "number" ? value : parseFloat(String(value ?? ""));
+  if (!Number.isFinite(parsed)) return 0;
+  return Math.max(0, parsed);
+};
 
 interface RatesCalculatorProps {
   activeTab?: 'crypto' | 'moneyx';
@@ -679,8 +690,13 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
 
           // When calculating from "You Send", backend gives us to_amount directly.
           if (isCalculatingFromPay && res.to_amount != null) {
-            const toAmount = parseFloat(res.to_amount);
-            if (!Number.isNaN(toAmount)) {
+            const rawToAmount = parseFloat(String(res.to_amount));
+            if (Number.isFinite(rawToAmount) && rawToAmount < 0) {
+              setApiValidationError(buildNegativeReceiveError(rawToAmount));
+              setReceiveAmount("0");
+            } else {
+              const toAmount = toNonNegativeAmount(res.to_amount);
+              setApiValidationError(null);
               setReceiveAmount(toAmount.toFixed(2));
             }
           }
@@ -966,7 +982,14 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                     return rate;
                   })();
             const commissionAmount = (parseFloat(amount) * commissionRate) / 100;
-            setReceiveAmount((parseFloat(amount) - commissionAmount).toFixed(2));
+            const rawReceive = parseFloat(amount) - commissionAmount;
+            if (Number.isFinite(rawReceive) && rawReceive < 0) {
+              setApiValidationError(buildNegativeReceiveError(rawReceive));
+            } else {
+              setApiValidationError(null);
+            }
+            const safeReceive = toNonNegativeAmount(rawReceive);
+            setReceiveAmount(safeReceive.toFixed(2));
             setIsCalculating(false);
             setIsCalculatingReceive(false);
           })
@@ -1195,9 +1218,19 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
           (estimate as any)?.estimated_amount
         );
 
-        const estAmt = (estimate as any)?.toAmount ?? (estimate as any)?.estimated_amount;
-        if (estAmt && estAmt > 0) {
-          setReceiveAmount(estAmt.toString());
+        const estAmt =
+          (estimate as any)?.toAmount ?? (estimate as any)?.estimated_amount;
+        if (
+          Number.isFinite(Number(estAmt)) &&
+          Number(estAmt) < 0
+        ) {
+          setApiValidationError(buildNegativeReceiveError(Number(estAmt)));
+        } else {
+          setApiValidationError(null);
+        }
+        const safeEstAmt = toNonNegativeAmount(estAmt);
+        if (safeEstAmt > 0) {
+          setReceiveAmount(safeEstAmt.toString());
           setReceiveAmountError(null);
           setIsCalculating(false);
           setIsCalculatingReceive(false);

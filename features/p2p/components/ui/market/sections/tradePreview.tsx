@@ -99,6 +99,17 @@ const TradePreview: React.FC<TradePreviewProps> = ({
     (state: RootState) => state.paymentMethods || { userPaymentDetails: [], userDetailsLoading: false }
   );
 
+  const getPaymentDetailId = (detail: any): number | null => {
+    if (!detail || typeof detail !== "object") return null;
+    const rawId =
+      detail.id ??
+      detail.user_payment_detail_id ??
+      detail.payment_detail_id ??
+      detail.provider_id;
+    const normalized = Number(rawId);
+    return Number.isFinite(normalized) ? normalized : null;
+  };
+
   // Reset image error when advertiser data changes
   useEffect(() => {
     setImageError(false);
@@ -514,6 +525,13 @@ const TradePreview: React.FC<TradePreviewProps> = ({
     }
     if (tradeType === "sell" && paymentMethod && !userDetailsLoading) {
       if (matchingUserPaymentMethods.length > 0 && !selectedUserPaymentDetail) return false;
+      if (
+        matchingUserPaymentMethods.length > 0 &&
+        selectedUserPaymentDetail &&
+        getPaymentDetailId(selectedUserPaymentDetail) == null
+      ) {
+        return false;
+      }
       if (matchingUserPaymentMethods.length === 0) return false; // Must add one first
     }
     return true;
@@ -539,8 +557,11 @@ const TradePreview: React.FC<TradePreviewProps> = ({
         amount: tradeType === "sell" ? sendAmount : receiveAmount,
       };
 
-      if (tradeType === "sell" && selectedUserPaymentDetail?.id != null) {
-        orderData.payment_details_ids = [Number(selectedUserPaymentDetail.id)];
+      if (tradeType === "sell") {
+        const selectedPaymentDetailId = getPaymentDetailId(selectedUserPaymentDetail);
+        if (selectedPaymentDetailId != null) {
+          orderData.payment_details_ids = [selectedPaymentDetailId];
+        }
       }
 
       const response = await matchP2POrder(advertiserData.id, orderData);
@@ -1057,7 +1078,12 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                   <>
                     <div className="flex flex-col gap-2">
                       {matchingUserPaymentMethods.map((detail: any) => {
-                        const isSelected = selectedUserPaymentDetail?.id === detail.id;
+                        const selectedId = getPaymentDetailId(selectedUserPaymentDetail);
+                        const currentId = getPaymentDetailId(detail);
+                        const isSelected =
+                          selectedId != null &&
+                          currentId != null &&
+                          selectedId === currentId;
                         const status = (detail.status || "").toLowerCase();
                         const isPending = status && status !== "approved" && status !== "verified";
                         return (

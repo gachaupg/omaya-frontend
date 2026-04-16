@@ -259,6 +259,10 @@ const MISSING_USDT_USD_RATE_ERROR =
   "No exchange rate configured for USDT to USD";
 const MISSING_FXP_USD_RATE_ERROR =
   "No exchange rate configured for FXP to USD";
+const NEGATIVE_RECEIVE_ERROR =
+  "Receive amount cannot be negative. Please adjust the amount.";
+const buildNegativeReceiveError = (value: number) =>
+  `${NEGATIVE_RECEIVE_ERROR} Calculated value: ${value.toFixed(2)}.`;
 const getNetworkMatchKeys = (network: string): string[] => {
   const n = (network || "").toLowerCase();
   return NETWORK_ALIASES[n] ? [...NETWORK_ALIASES[n], n] : [n];
@@ -1590,9 +1594,17 @@ export default function WithdrawalForm({
             if (isCalculatingFromPay && res.to_amount != null) {
               const toAmount = parseFloat(res.to_amount);
               if (!Number.isNaN(toAmount)) {
-                setGetAmount(toAmount);
-                setGetAmountInput(res.to_amount);
-                setPreviousValidAmount(res.to_amount);
+                if (toAmount < 0) {
+                  setApiValidationError(buildNegativeReceiveError(toAmount));
+                  setGetAmount(0);
+                  setGetAmountInput("0");
+                  setPreviousValidAmount("0");
+                } else {
+                  setApiValidationError(null);
+                  setGetAmount(toAmount);
+                  setGetAmountInput(res.to_amount);
+                  setPreviousValidAmount(res.to_amount);
+                }
               }
             }
           })

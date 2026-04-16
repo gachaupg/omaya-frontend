@@ -306,15 +306,9 @@ export function useChangeNowAssets(shouldFetch: boolean) {
         : null) ||
       readPublicAssetsCacheFromLocalStorage();
     const staleCached = cached && Array.isArray(cached.assets) ? cached.assets : [];
-    const cachedHasOnlyUuidAssetIds =
-      !!cached &&
-      Array.isArray(cached.assets) &&
-      cached.assets.every((item) => isUuid(item?.asset_id));
-
     const isFresh =
       !!cached &&
-      now - cached.ts < PUBLIC_ASSETS_CACHE_TTL_MS &&
-      cachedHasOnlyUuidAssetIds;
+      now - cached.ts < PUBLIC_ASSETS_CACHE_TTL_MS;
 
     if (isFresh) {
       setAssets(cached!.assets);

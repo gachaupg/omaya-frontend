@@ -94,6 +94,7 @@ const MoneyXTransactions = () => {
               <th className="py-3 px-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099] text-left"><span className="inline-flex items-center gap-1">To<SortArrowsIcon /></span></th>
               <th className="py-3 px-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099] text-right"><span className="inline-flex items-center gap-1 justify-end">Amount Sent<SortArrowsIcon /></span></th>
               <th className="py-3 px-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099] text-right"><span className="inline-flex items-center gap-1 justify-end">Amount Received<SortArrowsIcon /></span></th>
+              <th className="py-3 px-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099] text-center"><span className="inline-flex items-center gap-1 justify-center">Status<SortArrowsIcon /></span></th>
               <th className="py-3 px-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099] text-right"><span className="inline-flex items-center gap-1 justify-end">When<SortArrowsIcon /></span></th>
             </tr>
           </thead>
@@ -144,6 +145,15 @@ const MoneyXTransactions = () => {
                 <td className="py-4 px-4 text-right">
                   <span className="text-sm font-medium text-[#1D8751]">
                     {formatCurrency(tx.receive_amount || tx.net_amount || 0, tx.to_currency || tx.currency || "USDT")}
+                  </span>
+                </td>
+                <td className="py-4 px-4 text-center">
+                  <span
+                    className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                      tx.status || "-"
+                    )}`}
+                  >
+                    {tx.status || "-"}
                   </span>
                 </td>
                 <td className="py-4 px-4 text-right">
@@ -214,6 +224,16 @@ const MoneyXTransactions = () => {
                 <p className="text-sm font-medium text-[#1D8751]">
                   {formatCurrency(tx.receive_amount || tx.net_amount || 0, tx.to_currency || tx.currency || "USD")}
                 </p>
+              </div>
+              <div>
+                <p className="text-xs dark:text-[#788099] text-gray-500">Status</p>
+                <span
+                  className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                    tx.status || "-"
+                  )}`}
+                >
+                  {tx.status || "-"}
+                </span>
               </div>
             </div>
             <div className="mt-3 pt-3 border-t dark:border-accent border-gray-200">
