@@ -35,6 +35,7 @@ import { storage } from "../utils/storage";
 import { cookieUtils } from "@/lib/utils/cookieUtils";
 
 const CROSS_TAB_LOGOUT_FLAG = "__omayaCrossTabLogout";
+const KYC_STATUS_CACHE_TTL_MS = 5 * 60 * 1000;
 
 const initialState: AuthState = {
   user: null,
@@ -43,6 +44,8 @@ const initialState: AuthState = {
   error: null,
   isAuthenticated: false,
   profile: null,
+  kycStatusCheckedAt: null,
+  kycStatusLoading: false,
   kycModalOpen: false,
   twoFAModalOpen: false,
   twoFAEmail: "",
@@ -164,15 +167,43 @@ export const loginWith2FA = createAsyncThunk<AuthResponse, Login2FAPayload>(
   }
 );
 
-export const checkKYCStatus = createAsyncThunk<KYCResponse>(
+export const checkKYCStatus = createAsyncThunk<
+  KYCResponse,
+  boolean | undefined,
+  { state: { auth: AuthState } }
+>(
   "auth/checkKYCStatus",
-  async (_, { rejectWithValue }) => {
+  async (forceRefresh = false, { rejectWithValue, getState }) => {
     try {
+      const state = getState().auth;
+      const now = Date.now();
+      const cachedIsVerified = state.user?.is_verified === true;
+      const hasFreshCachedStatus =
+        !forceRefresh &&
+        cachedIsVerified &&
+        !!state.user &&
+        typeof state.kycStatusCheckedAt === "number" &&
+        now - state.kycStatusCheckedAt < KYC_STATUS_CACHE_TTL_MS;
+
+      if (hasFreshCachedStatus) {
+        return { is_verified: Boolean(state.user!.is_verified) };
+      }
+
       const response = await get<KYCResponse>(API_ENDPOINTS.KYC);
       return response.data;
     } catch (error) {
       return rejectWithValue(handleApiError(error));
-    }
+    } 
+  },
+  {
+    condition: (forceRefresh = false, { getState }) => {
+      const state = getState() as { auth: AuthState };
+      // Avoid duplicate in-flight KYC requests unless explicitly forced.
+      if (!forceRefresh && state.auth.kycStatusLoading) {
+        return false;
+      }
+      return true;
+    },
   }
 );
 
@@ -424,6 +455,8 @@ const authSlice = createSlice({
       state.tokens = null;
       state.isAuthenticated = false;
       state.profile = null;
+      state.kycStatusCheckedAt = null;
+      state.kycStatusLoading = false;
       state.kycModalOpen = false;
       state.twoFAModalOpen = false;
       storage.removeProfile();
@@ -695,12 +728,15 @@ const authSlice = createSlice({
     // Check KYC Status
     builder.addCase(checkKYCStatus.pending, (state) => {
       state.loading = true;
+      state.kycStatusLoading = true;
       state.error = null;
     });
     builder.addCase(
       checkKYCStatus.fulfilled,
       (state, action: PayloadAction<KYCResponse>) => {
         state.loading = false;
+        state.kycStatusLoading = false;
+        state.kycStatusCheckedAt = Date.now();
         if (state.user) {
           state.user.is_verified = action.payload.is_verified;
           // Show KYC modal if user is not verified
@@ -712,6 +748,7 @@ const authSlice = createSlice({
     );
     builder.addCase(checkKYCStatus.rejected, (state, action) => {
       state.loading = false;
+      state.kycStatusLoading = false;
       state.error = action.payload as string;
     });
 

@@ -9,6 +9,7 @@ import {
   calculateReferralFees,
   setFeesFromCache,
   clearFees,
+  fetchReferralWallet,
 } from "@/features/settings/slices/referralWalletSlice";
 import { AppDispatch } from "@/store/rootReducer";
 import { validateWithdrawalForm } from "@/features/p2p/components/ui/p2pdashboard/sections/validation";
@@ -44,6 +45,9 @@ const Withdraw = () => {
   const { loading, error, success, showOtpModal, withdrawalId, otpVerifying, otpError, fees, feesLoading, feesError } = useSelector(
     (state: any) => state.referralWallet
   );
+  const referralWalletBalance = Number(
+    useSelector((state: any) => state.referralWallet?.data?.balance ?? 0)
+  );
 
   // Cache for fees by amount to avoid redundant API calls
   const feesCacheRef = useRef<Map<string, ReferralFeeCalculation>>(new Map());
@@ -73,6 +77,10 @@ const Withdraw = () => {
     saveBookmarkError,
     clearSaveBookmarkError,
   } = useBookmarkedAddresses("usdt", "bsc");
+
+  useEffect(() => {
+    dispatch(fetchReferralWallet());
+  }, [dispatch]);
 
   // Validate address when wallet address changes
   useEffect(() => {
@@ -379,11 +387,44 @@ const Withdraw = () => {
     : amount
       ? Number(amount)
       : 0;
+  const enteredAmount = Number(amount || 0);
+  const exceedsReferralBalance =
+    Number.isFinite(enteredAmount) &&
+    enteredAmount > 0 &&
+    enteredAmount > referralWalletBalance;
   const normalizedFeesError =
     typeof feesError === "object" && feesError !== null
       ? feesError.error || feesError.message || Object.values(feesError)[0]
       : feesError;
-  const disableSubmit = loading || Boolean(normalizedFeesError);
+  const disableSubmit =
+    loading || Boolean(normalizedFeesError) || exceedsReferralBalance;
+
+  useEffect(() => {
+    const trimmedAmount = String(amount || "").trim();
+    if (!trimmedAmount) {
+      setErrors((prev) => ({ ...prev, amount: undefined }));
+      return;
+    }
+
+    const numericAmount = Number(trimmedAmount);
+    if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+      setErrors((prev) => ({
+        ...prev,
+        amount: "Please enter a valid amount",
+      }));
+      return;
+    }
+
+    if (numericAmount > referralWalletBalance) {
+      setErrors((prev) => ({
+        ...prev,
+        amount: `Amount exceeds your referral wallet balance of $${referralWalletBalance.toFixed(2)}`,
+      }));
+      return;
+    }
+
+    setErrors((prev) => ({ ...prev, amount: undefined }));
+  }, [amount, referralWalletBalance]);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[var(--bg-color)] text-[#0D0D0D] dark:text-white flex flex-col">
@@ -467,7 +508,9 @@ const Withdraw = () => {
                         }`}
                       placeholder="100"
                       value={amount}
-                      onChange={(e) => setAmount(e.target.value)}
+                      onChange={(e) => {
+                        setAmount(e.target.value);
+                      }}
                     />
                     {errors.amount && (
                       <div className="text-red-500 text-xs mt-1 ml-2">
@@ -616,6 +659,9 @@ const Withdraw = () => {
                     Transactions are subject to commission, above is the
                     information on the commission rates
                   </span>
+                </div>
+                <div className="text-xs text-[#788099] dark:text-[#A3A3A3] mt-2">
+                  Available referral balance: ${referralWalletBalance.toFixed(2)}
                 </div>
               </div>
 

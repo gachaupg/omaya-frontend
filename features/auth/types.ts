@@ -84,6 +84,8 @@ export interface AuthState {
   error: string | null;
   isAuthenticated: boolean;
   profile: UserProfile | null;
+  kycStatusCheckedAt: number | null;
+  kycStatusLoading: boolean;
   kycModalOpen: boolean;
   twoFAModalOpen: boolean;
   twoFAEmail: string;

@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { useRouter } from 'next/navigation'
 import Button from "@/components/ui/Button"
 import { createCashWithdrawal, clearSuccess, clearError, calculateCashWithdrawalFees, clearFees } from '../../slices/cashWithdrawalSlice'
+import { fetchReferralWallet } from '../../slices/referralWalletSlice'
 import { fetchUserPaymentDetails, fetchAdminPaymentMethods } from '@/features/p2p/slices/paymentMethodsSlice'
 import { AppDispatch } from '@/store/rootReducer'
 import UserPaymentSelector, { UserPaymentDetail } from '@/features/p2p/components/ui/p2pdashboard/sections/UserPaymentSelector'
@@ -21,6 +22,9 @@ function Cash({ sharedFeesError }: CashProps) {
   const router = useRouter()
   const { loading, error, success, message, withdrawalData, fees, feesLoading, feesError } = useSelector((state: any) => state.cashWithdrawal)
   const { userPaymentDetails, userDetailsLoading, adminMethods } = useSelector((state: any) => state.paymentMethods)
+  const referralWalletBalance = Number(
+    useSelector((state: any) => state.referralWallet?.data?.balance ?? 0)
+  )
   
   const [amount, setAmount] = useState("")
   const [selectedPaymentDetails, setSelectedPaymentDetails] = useState<UserPaymentDetail[]>([])
@@ -45,9 +49,15 @@ function Cash({ sharedFeesError }: CashProps) {
     : amount
       ? Number(amount)
       : 0
+  const enteredAmount = Number(amount || 0)
+  const exceedsReferralBalance =
+    Number.isFinite(enteredAmount) &&
+    enteredAmount > 0 &&
+    enteredAmount > referralWalletBalance
 
   // Load user payment details and admin methods on component mount
   useEffect(() => {
+    dispatch(fetchReferralWallet() as any)
     dispatch(fetchUserPaymentDetails() as any)
     dispatch(fetchAdminPaymentMethods() as any)
   }, [dispatch])
@@ -57,6 +67,33 @@ function Cash({ sharedFeesError }: CashProps) {
       ? feesError.error || feesError.message || Object.values(feesError)[0]
       : feesError
   const effectiveFeesError = normalizedFeesError || sharedFeesError || null
+
+  useEffect(() => {
+    const trimmedAmount = String(amount || "").trim()
+    if (!trimmedAmount) {
+      setErrors((prev) => ({ ...prev, amount: undefined }))
+      return
+    }
+
+    const numericAmount = Number(trimmedAmount)
+    if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+      setErrors((prev) => ({
+        ...prev,
+        amount: "Please enter a valid amount",
+      }))
+      return
+    }
+
+    if (numericAmount > referralWalletBalance) {
+      setErrors((prev) => ({
+        ...prev,
+        amount: `Amount exceeds your referral wallet balance of $${referralWalletBalance.toFixed(2)}`,
+      }))
+      return
+    }
+
+    setErrors((prev) => ({ ...prev, amount: undefined }))
+  }, [amount, referralWalletBalance])
 
   // Fetch fees when amount changes
   useEffect(() => {
@@ -96,6 +133,10 @@ function Cash({ sharedFeesError }: CashProps) {
 
     if (!amount || Number(amount) <= 0) {
       newErrors.amount = "Please enter a valid amount"
+      isValid = false
+    }
+    if (Number(amount) > referralWalletBalance) {
+      newErrors.amount = `Amount exceeds your referral wallet balance of $${referralWalletBalance.toFixed(2)}`
       isValid = false
     }
 
@@ -424,6 +465,9 @@ function Cash({ sharedFeesError }: CashProps) {
                 information on the commission rates
               </span>
             </div>
+            <div className="text-xs text-[#788099] dark:text-[#A3A3A3] mt-2">
+              Available referral balance: ${referralWalletBalance.toFixed(2)}
+            </div>
           </div>
 
           {/* 2- Your Bank / Mobile Payment Details */}
@@ -513,7 +557,7 @@ function Cash({ sharedFeesError }: CashProps) {
                 size="lg"
                 className="w-full bg-error hover:bg-[#d32f2f] text-white font-semibold text-[14px] rounded-[18px] py-3 mt-4 flex items-center justify-center transition-all duration-200 transform hover:scale-[1.02] disabled:bg-[#4B5563] disabled:hover:bg-[#4B5563] disabled:text-white/70 disabled:cursor-not-allowed disabled:transform-none"
                 type="submit"
-                disabled={loading || Boolean(effectiveFeesError) || !isTermsAccepted}
+                disabled={loading || Boolean(effectiveFeesError) || !isTermsAccepted || exceedsReferralBalance}
               >
                 {loading && (
                   <svg

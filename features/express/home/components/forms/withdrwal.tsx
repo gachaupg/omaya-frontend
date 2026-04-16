@@ -68,6 +68,10 @@ const MISSING_USDT_USD_RATE_ERROR =
   "No exchange rate configured for USDT to USD";
 const MISSING_FXP_USD_RATE_ERROR =
   "No exchange rate configured for FXP to USD";
+const NEGATIVE_RECEIVE_ERROR =
+  "Receive amount cannot be negative. Please adjust the amount.";
+const buildNegativeReceiveError = (value: number) =>
+  `${NEGATIVE_RECEIVE_ERROR} Calculated value: ${value.toFixed(2)}.`;
 const ASSET_ICON_FALLBACK_URL = "/assets/image_7_jijlik.png";
 const FX_PRIMUS_ASSET_ICON_URL = "/assets/fx-primus-custom.svg";
 
@@ -1507,10 +1511,18 @@ export default function WithdrawalForm({
             if (isCalculatingFromPay && res.to_amount != null) {
               const toAmount = parseFloat(res.to_amount);
               if (!Number.isNaN(toAmount)) {
-                const calculatedGetAmount = capReceiveAmount(Math.max(0, toAmount));
-                setGetAmount(calculatedGetAmount);
-                setGetAmountInput(res.to_amount);
-                setPreviousValidAmount(calculatedGetAmount.toString());
+                if (toAmount < 0) {
+                  setApiValidationError(buildNegativeReceiveError(toAmount));
+                  setGetAmount(0);
+                  setGetAmountInput("0");
+                  setPreviousValidAmount("0");
+                } else {
+                  const calculatedGetAmount = capReceiveAmount(Math.max(0, toAmount));
+                  setApiValidationError(null);
+                  setGetAmount(calculatedGetAmount);
+                  setGetAmountInput(calculatedGetAmount.toString());
+                  setPreviousValidAmount(calculatedGetAmount.toString());
+                }
               }
             }
           })

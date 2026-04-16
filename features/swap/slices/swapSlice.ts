@@ -133,11 +133,36 @@ const initialState: SwapState = {
   hasShownErrorToast: false,
 };
 
-export const fetchSupportedAssets = createAsyncThunk<SupportedAsset[], boolean | undefined>(
+export const fetchSupportedAssets = createAsyncThunk<
+  SupportedAsset[],
+  boolean | undefined,
+  { state: { swap: SwapState } }
+>(
   "swap/fetchSupportedAssets",
-  async (forceRefresh: boolean = false, { rejectWithValue }) => {
+  async (forceRefresh: boolean = false, { rejectWithValue, getState }) => {
     try {
       logger.debug('swap', "🔄 Starting fetchSupportedAssets...");
+
+      // Serve fresh Redux state as a fulfilled result so callers using `.unwrap()`
+      // do not treat cache hits as failures and trigger unnecessary force refreshes.
+      if (!forceRefresh) {
+        const state = getState();
+        const n = Array.isArray(state.swap.supportedAssets)
+          ? state.swap.supportedAssets.length
+          : 0;
+        if (
+          n > 0 &&
+          typeof state.swap.supportedAssetsFetchedAt === "number" &&
+          Date.now() - state.swap.supportedAssetsFetchedAt <
+            SUPPORTED_ASSETS_CLIENT_TTL_MS
+        ) {
+          logger.debug(
+            "swap",
+            `✅ Returning fresh Redux supported assets (${n})`
+          );
+          return state.swap.supportedAssets;
+        }
+      }
       
       let data;
       
@@ -175,22 +200,6 @@ export const fetchSupportedAssets = createAsyncThunk<SupportedAsset[], boolean |
         error instanceof Error ? error.message : "Failed to fetch supported assets"
       ) as any;
     }
-  },
-  {
-    condition: (forceRefresh, { getState }) => {
-      if (forceRefresh) return true;
-      const state = getState() as { swap: SwapState };
-      const { supportedAssets, supportedAssetsFetchedAt } = state.swap;
-      const n = Array.isArray(supportedAssets) ? supportedAssets.length : 0;
-      if (
-        n > 0 &&
-        typeof supportedAssetsFetchedAt === "number" &&
-        Date.now() - supportedAssetsFetchedAt < SUPPORTED_ASSETS_CLIENT_TTL_MS
-      ) {
-        return false;
-      }
-      return true;
-    },
   }
 );
 
