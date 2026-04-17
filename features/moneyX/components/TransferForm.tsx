@@ -1658,17 +1658,17 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
             </div>
 
             {/* Acceptance checkbox */}
-            <label className="flex mb-4 items-start gap-2 mt-4 text-sm text-[#35353e] dark:text-[#788099] cursor-pointer">
+            <div className="flex mb-4 items-start gap-2 mt-4 text-sm text-[#35353e] dark:text-[#788099]">
               <input
                 type="checkbox"
                 checked={isAddressConfirmed}
                 onChange={(event) =>
                   setIsAddressConfirmed(event.target.checked)
                 }
-                className="w-4 h-4 mt-0.5 rounded border-[#1D8751] text-[#1D8751] accent-[#1D8751]"
+                className="w-4 h-4 mt-0.5 rounded border-[#1D8751] text-[#1D8751] accent-[#1D8751] cursor-pointer"
               />
               <span>I have read and agreed to Omaya Exchange <Link href="/legal/terms-of-service" rel="noopener noreferrer" className="text-[#1D8751] underline" onClick={(e) => { e.stopPropagation(); handleBeforeLegalNavigate(); }}>Terms of Use</Link>, <Link href="/legal/privacy-policy" rel="noopener noreferrer" className="text-[#1D8751] underline" onClick={(e) => { e.stopPropagation(); handleBeforeLegalNavigate(); }}>Privacy Policy</Link></span>
-            </label>
+            </div>
           </div>
 
           {/* Final Submit Button */}
