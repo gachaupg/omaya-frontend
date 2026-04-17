@@ -184,11 +184,20 @@ const TradePreview: React.FC<TradePreviewProps> = ({
     if (!paymentDetails || !Array.isArray(paymentDetails)) return [];
 
     // Create options for each payment method from the row
-    return paymentDetails.map((detail: any, index: number) => ({
-      id: detail.id || index,
-      value: detail.provider,
-      label: detail.provider,
-    }));
+    return paymentDetails.map((detail: any, index: number) => {
+      const provider = detail.provider || detail.provider_name || "Payment Method";
+      const accountNumber =
+        detail.account_number ||
+        detail.wallet_address ||
+        detail.account ||
+        detail.number ||
+        "";
+      return {
+        id: detail.id || index,
+        value: provider,
+        label: accountNumber ? `${provider} (${accountNumber})` : provider,
+      };
+    });
   }, [paymentDetails]);
 
   const selectedPaymentSummary = React.useMemo(() => {
@@ -250,9 +259,12 @@ const TradePreview: React.FC<TradePreviewProps> = ({
         const margin = 8;
         const estimatedDropdownHeight = 320; // Search + options list area.
         const spaceBelow = viewportHeight - rect.bottom - margin;
-
-        // Keep dropdown below trigger (never above).
+        // Always open below the trigger.
         const top = Math.max(margin, rect.bottom + margin);
+        const maxHeight = Math.max(
+          120,
+          Math.min(estimatedDropdownHeight, Math.max(120, spaceBelow))
+        );
 
         // Keep dropdown horizontally visible on narrow screens.
         const maxWidth = viewportWidth - margin * 2;
@@ -260,12 +272,6 @@ const TradePreview: React.FC<TradePreviewProps> = ({
         const left = Math.max(
           margin,
           Math.min(rect.left, viewportWidth - width - margin)
-        );
-
-        const availableHeight = spaceBelow;
-        const maxHeight = Math.max(
-          160,
-          Math.min(estimatedDropdownHeight, availableHeight)
         );
 
         setDropdownPosition({ top, left, width, maxHeight });
@@ -712,7 +718,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
           {/* Right Panel */}
           <div className="flex-1 flex flex-col gap-3">
             {/* Commission */}
-            <div className="text-left text-base sm:text-lg font-semibold text-gray-900 dark:text-white mt-0 lg:mt-4">
+            <div className="text-left text-base sm:text-lg font-semibold text-gray-900 dark:text-white mt-0 lg:mt-1">
               Rate:{" "}
               <span className="text-[#1D8751]">
                 {formatRateWithoutCurrency(advertiserData.commission)}
@@ -913,7 +919,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                           left: dropdownPosition.left,
                           width: dropdownPosition.width,
                           maxHeight: dropdownPosition.maxHeight,
-                          zIndex: 9999,
+                          zIndex: 2147483647,
                         }}
                       >
                         <div className="p-2 border-b border-gray-200 dark:border-[#35353E]">
@@ -1009,7 +1015,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                           left: dropdownPosition.left,
                           width: dropdownPosition.width,
                           maxHeight: dropdownPosition.maxHeight,
-                          zIndex: 9999,
+                          zIndex: 2147483647,
                         }}
                       >
                         <div className="p-2 border-b border-gray-200 dark:border-[#35353E]">
@@ -1119,10 +1125,8 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                               )}
                               <div className="min-w-0">
                                 <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                                  {detail.account_name || "Account"}
-                                </div>
-                                <div className="text-xs text-gray-500 dark:text-[#788099] truncate">
-                                  {detail.account_number || detail.wallet_address || "—"}
+                                  {(detail.account_name || "Account") +
+                                    ` (${detail.account_number || detail.wallet_address || "—"})`}
                                 </div>
                               </div>
                             </div>
@@ -1170,7 +1174,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
               </div>
             )}
 
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-1">
               <button
                 className="w-full sm:flex-1 py-2.5 sm:py-2 rounded-lg border font-semibold text-sm sm:text-base transition border-gray-400 dark:border-[#788099] text-gray-700 dark:text-[#788099] hover:bg-gray-200 dark:hover:bg-[var(--card-color)]"
                 onClick={onClose}
@@ -1209,7 +1213,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
 
   return (
     <>
-      <div className="rounded-2xl p-3 sm:p-4 lg:p-6 w-full max-w-5xl mx-auto flex flex-col gap-3 sm:gap-4 border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] text-gray-900 dark:text-white">
+      <div className="rounded-2xl pt-2 pb-3 px-3 sm:pt-3 sm:pb-4 sm:px-4 lg:pt-3 lg:pb-5 lg:px-6 w-full max-w-5xl mx-auto flex flex-col gap-2 sm:gap-3 border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] text-gray-900 dark:text-white">
         {!isAuthenticated ? (
           <div className="text-center py-4 text-red-500">
             Please login to continue with the trade
