@@ -15,6 +15,14 @@ import { getTradeMessagesWebSocket, cleanupTradeMessagesWebSocket } from "@/feat
 import { cookieUtils } from "@/lib/utils/cookieUtils";
 import Link from "next/link";
 import TermsAndConditionsModal from "@/features/p2p/components/ui/TermsAndConditionsModal";
+import { showToast } from "@/lib/utils/toast";
+import {
+  coalesceMessageImages,
+  resolveMessageImageUrl,
+  shouldHideBodyTextForMediaPlaceholder,
+  hasRenderableMessageImages,
+  normalizeMessageCaptionForDedupe,
+} from "@/features/p2p/utils/messageMedia";
 
 interface ConversationItemProps {
   group: any;
@@ -106,15 +114,39 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
               : ""}
           </span>
         </div>
-        <p className="text-[11px] text-gray-600 dark:text-[#9CA3AF] truncate">
-          {latestMessage?.content ||
-            latestMessage?.message ||
-            ((Array.isArray(latestMessage?.images) && latestMessage.images.length > 0)
-              ? "Image"
-              : (Array.isArray(latestMessage?.audios) && latestMessage.audios.length > 0)
-                ? "Audio"
-                : "No messages yet")}
-        </p>
+        <div className="text-[11px] text-gray-600 dark:text-[#9CA3AF] truncate flex items-center gap-1.5 min-w-0">
+          {(() => {
+            if (!latestMessage) {
+              return <span>No messages yet</span>;
+            }
+            const imgs = coalesceMessageImages(latestMessage);
+            const firstImg = imgs.length ? resolveMessageImageUrl(imgs[0]) : "";
+            const hasRenderableImg = !!firstImg;
+            const hasAudios =
+              (Array.isArray(latestMessage?.audios) && latestMessage.audios.length > 0) ||
+              !!(latestMessage?.audio_url || latestMessage?.audio);
+            const text = String(latestMessage.content ?? latestMessage.message ?? "").trim();
+            if (firstImg) {
+              return (
+                <>
+                  <img
+                    src={firstImg}
+                    alt=""
+                    className="h-5 w-5 rounded object-cover flex-shrink-0 border border-gray-200 dark:border-gray-600"
+                  />
+                  {!shouldHideBodyTextForMediaPlaceholder(text, hasRenderableImg, hasAudios) && (
+                    <span className="truncate">{text}</span>
+                  )}
+                </>
+              );
+            }
+            if (hasAudios) {
+              return <span className="truncate">Voice message</span>;
+            }
+            if (text) return <span className="truncate">{text}</span>;
+            return <span>No messages yet</span>;
+          })()}
+        </div>
       </div>
       {unreadCount > 0 && (
         <div className="flex-shrink-0 ml-2">
@@ -352,17 +384,37 @@ export const Chats: React.FC = () => {
     const realMessages = selectedUser.messages || [];
     const optimistic = optimisticMessages.get(selectedUser.entity_id) || [];
 
+    const sameMessageSender = (a: any, b: any) => {
+      if (a?.sender_id && b?.sender_id && a.sender_id === b.sender_id) return true;
+      const ae = String(a?.sender_email ?? "").trim().toLowerCase();
+      const be = String(b?.sender_email ?? "").trim().toLowerCase();
+      return !!ae && ae === be;
+    };
+
     // Filter out optimistic messages that have been replaced by real ones
     const filteredOptimistic = optimistic.filter((optMsg) => {
-      // Check if a real message with same content exists (sent within 10 seconds)
       const hasRealMatch = realMessages.some((realMsg) => {
-        const sameContent = realMsg.content === optMsg.content;
+        if (!sameMessageSender(realMsg, optMsg)) return false;
+
+        const realText = String(realMsg?.content ?? realMsg?.message ?? "").trim();
+        const optText = String(optMsg?.content ?? optMsg?.message ?? "").trim();
+        const realNorm = normalizeMessageCaptionForDedupe(realText);
+        const optNorm = normalizeMessageCaptionForDedupe(optText);
+        const sameNormalizedCaption = realNorm === optNorm;
+        const realRenderable = hasRenderableMessageImages(realMsg);
+        const optRenderable = hasRenderableMessageImages(optMsg);
+        const bothMediaOnly =
+          sameNormalizedCaption &&
+          realNorm === "" &&
+          realRenderable &&
+          optRenderable;
+        const sameContent = (sameNormalizedCaption && realNorm !== "") || bothMediaOnly;
         const timeDiff = Math.abs(
           new Date(realMsg.timestamp).getTime() - new Date(optMsg.timestamp).getTime()
         );
-        return sameContent && timeDiff < 10000; // Within 10 seconds
+        return sameContent && timeDiff < 10000;
       });
-      return !hasRealMatch; // Keep if no real match found
+      return !hasRealMatch;
     });
 
     // Clean up replaced optimistic messages
@@ -380,7 +432,13 @@ export const Chats: React.FC = () => {
     }
 
     return [...realMessages, ...filteredOptimistic];
-  }, [selectedUser?.messages, selectedUser?.entity_id, optimisticMessages]);
+  }, [
+    selectedUser?.messages,
+    selectedUser?.entity_id,
+    optimisticMessages,
+    user?.id,
+    user?.email,
+  ]);
 
   // Auto-scroll to bottom when chat is opened or messages change
   useEffect(() => {
@@ -495,6 +553,11 @@ export const Chats: React.FC = () => {
         id: String(payload.id),
         content: String(payload.content ?? payload.message ?? ""),
         message: String(payload.message ?? payload.content ?? ""),
+        support_document: String(
+          (payload as any).support_document ??
+            (payload as any).support_document_url ??
+            ""
+        ).trim(),
         images: Array.isArray(payload.images)
           ? payload.images
           : Array.isArray(payload.uploaded_images)
@@ -554,6 +617,10 @@ export const Chats: React.FC = () => {
             audio_url:
               normalizedMessage.audio_url || current.audio_url || undefined,
             audio: normalizedMessage.audio || current.audio || undefined,
+            support_document:
+              (normalizedMessage as any).support_document ||
+              (current as any).support_document ||
+              "",
           };
           const nextMessages = [...existing];
           nextMessages[existingIndex] = merged;
@@ -573,7 +640,7 @@ export const Chats: React.FC = () => {
       // Media can arrive delayed on backend processing; if socket payload is empty/blank,
       // force a quick API refetch so image/audio shows as soon as available.
       const hasText = normalizedMessage.content.trim().length > 0;
-      const hasImages = Array.isArray(normalizedMessage.images) && normalizedMessage.images.length > 0;
+      const hasImages = coalesceMessageImages(normalizedMessage).length > 0;
       const hasAudios = Array.isArray(normalizedMessage.audios) && normalizedMessage.audios.length > 0;
       if (!hasText && !hasImages && !hasAudios) {
         if (mediaRefetchTimeoutRef.current) {
@@ -796,8 +863,22 @@ export const Chats: React.FC = () => {
   };
 
   const handleSendAudioMessage = async (audioFile: File, durationSeconds: number = 0) => {
-    if (!selectedUser?.entity_id || !resolvedTradeId) return;
-    if (String((selectedUser as any)?.message_type || "").toLowerCase() !== "p2p") return;
+    if (!selectedUser?.entity_id) return;
+    const messageType = String((selectedUser as any)?.message_type || "")
+      .trim()
+      .toLowerCase();
+    const targetId = messageType === "p2p" ? resolvedTradeId : resolvedThreadId;
+    if (!targetId) {
+      console.error("No valid thread/trade UUID for voice message", {
+        messageType,
+        resolvedTradeId,
+        resolvedThreadId,
+      });
+      return;
+    }
+    if (messageType !== "p2p" && messageType !== "support" && messageType !== "appeal") {
+      return;
+    }
     const tempId = `temp-${Date.now()}-${Math.random()}`;
     const optimisticMessage = {
       id: tempId,
@@ -821,13 +902,25 @@ export const Chats: React.FC = () => {
     setTimeout(() => { justAddedOptimisticRef.current = false; }, 500);
     setIsSending(true);
     try {
-      await postTradeMessage(resolvedTradeId, {
-        message: '',
-        uploaded_images: [],
-        uploaded_audios: [audioFile],
-        duration: durationSeconds,
-        sender_name: user?.email || '',
-      });
+      if (messageType === "p2p") {
+        await postTradeMessage(targetId, {
+          message: "",
+          uploaded_images: [],
+          uploaded_audios: [audioFile],
+          duration: durationSeconds,
+          sender_name: user?.email || "",
+        });
+      } else {
+        await postThreadMessage({
+          type: messageType as "support" | "appeal",
+          entity_id: targetId,
+          message: "",
+          uploaded_images: [],
+          uploaded_audios: [audioFile],
+          duration: durationSeconds,
+          sender_name: user?.email || "",
+        });
+      }
       refetch();
       setTimeout(() => {
         setOptimisticMessages((prev) => {
@@ -842,6 +935,8 @@ export const Chats: React.FC = () => {
       }, 1000);
     } catch (error) {
       console.error('Failed to send voice message:', error);
+      const msg = error instanceof Error ? error.message : String(error);
+      showToast.error("Could not send voice message", msg);
       setOptimisticMessages((prev) => {
         const newMap = new Map(prev);
         const entityId = selectedUser.entity_id;
@@ -892,8 +987,9 @@ export const Chats: React.FC = () => {
     const messageContent = messageInput.trim();
     const tempId = `temp-${Date.now()}-${Math.random()}`;
     const imagesToSend = uploadedImages;
+    // Image-only: empty caption in UI; postThreadMessage / postTradeMessage still send a server fallback when needed.
     const outgoingMessageText =
-      messageContent || (imagesToSend.length > 0 ? "Image" : "");
+      messageContent || (imagesToSend.length > 0 ? "" : "");
 
     // Create optimistic message
     const optimisticMessage = {
@@ -942,15 +1038,13 @@ export const Chats: React.FC = () => {
           sender_name: user?.email || "",
         });
       } else if (messageType === "support" || messageType === "appeal") {
-        // Support/appeal endpoint:
-        // POST /trading_engine/messages/
-        if (imagesToSend.length > 0) {
-          throw new Error("Attachments are currently supported only for P2P trade chat.");
-        }
+        // Support/appeal: same attachments as trade chat (multipart when images present).
         await postThreadMessage({
           type: messageType,
           entity_id: targetId,
           message: outgoingMessageText,
+          uploaded_images: imagesToSend,
+          sender_name: user?.email || "",
         });
       } else {
         throw new Error(`Unsupported message type: ${messageType || "unknown"}`);
@@ -959,12 +1053,21 @@ export const Chats: React.FC = () => {
       // Immediately refetch to get the real message
       refetch();
 
-      // Remove optimistic message after a short delay
+      // Drop optimistic row only after a long fallback so blob previews survive until
+      // the server message includes a real image URL (dedupe removes it earlier when it does).
       setTimeout(() => {
         setOptimisticMessages((prev) => {
           const newMap = new Map(prev);
           const entityId = selectedUser.entity_id;
           const existing = newMap.get(entityId) || [];
+          const removed = existing.find((m) => m.id === tempId);
+          if (removed?.images && Array.isArray(removed.images)) {
+            for (const u of removed.images) {
+              if (typeof u === "string" && u.startsWith("blob:")) {
+                URL.revokeObjectURL(u);
+              }
+            }
+          }
           const filtered = existing.filter((msg) => msg.id !== tempId);
           if (filtered.length === 0) {
             newMap.delete(entityId);
@@ -973,9 +1076,19 @@ export const Chats: React.FC = () => {
           }
           return newMap;
         });
-      }, 1000); // Remove after 1 second, real message should be in by then
+      }, 45000);
     } catch (error) {
       console.error("Failed to send message:", error);
+      const msg = error instanceof Error ? error.message : String(error);
+      showToast.error("Could not send message", msg);
+
+      if (Array.isArray(optimisticMessage.images)) {
+        for (const u of optimisticMessage.images) {
+          if (typeof u === "string" && u.startsWith("blob:")) {
+            URL.revokeObjectURL(u);
+          }
+        }
+      }
 
       // Remove optimistic message on error
       setOptimisticMessages((prev) => {
@@ -991,8 +1104,9 @@ export const Chats: React.FC = () => {
         return newMap;
       });
 
-      // Restore message in input so user can retry
+      // Restore message and attachments so user can retry
       setMessageInput(messageContent);
+      setUploadedImages(imagesToSend);
     } finally {
       setIsSending(false);
     }
@@ -1047,6 +1161,26 @@ export const Chats: React.FC = () => {
             const displayName = msg.sender_name ||
               (msg.sender_email ? msg.sender_email.split('@')[0] : "Unknown User");
 
+            const imageItems = coalesceMessageImages(msg);
+            const hasRenderableImages = hasRenderableMessageImages(msg);
+            const audioListForFlag =
+              Array.isArray(msg.audios) && msg.audios.length > 0
+                ? msg.audios
+                : msg.audio_url || msg.audio
+                  ? [{ id: msg.id, audio_url: msg.audio_url || msg.audio, duration: 0 }]
+                  : [];
+            const hasRenderableAudios = audioListForFlag.some((a: { audio_url?: string }) =>
+              String(a?.audio_url ?? "").trim()
+            );
+            const rawBodyText = String(msg.content ?? msg.message ?? "").trim();
+            const showBodyText =
+              rawBodyText &&
+              !shouldHideBodyTextForMediaPlaceholder(
+                rawBodyText,
+                hasRenderableImages,
+                hasRenderableAudios
+              );
+
             const prevMsg = index > 0 ? reversedMessages[index - 1] : null;
             const prevDate = prevMsg?.timestamp ? new Date(prevMsg.timestamp).toDateString() : "";
             const currDate = msg.timestamp ? new Date(msg.timestamp).toDateString() : "";
@@ -1077,27 +1211,24 @@ export const Chats: React.FC = () => {
                     {isSender ? "You" : displayName}
                   </div>
 
-                  {msg.content && (
+                  {showBodyText && (
                     <div className="text-xs sm:text-sm break-words mb-0.5 whitespace-pre-line">
-                      {msg.content}
+                      {rawBodyText}
                     </div>
                   )}
 
                   {/* Image attachments (if present) */}
-                  {Array.isArray(msg.images) && msg.images.length > 0 && (
-                    <div className="mt-1 flex flex-wrap gap-2">
-                      {msg.images.map((img: any, idx: number) => {
-                        const imageUrl =
-                          typeof img === "string"
-                            ? img
-                            : img?.image_url || img?.image || img?.url || "";
+                  {hasRenderableImages && (
+                    <div className={`flex flex-wrap gap-2 ${showBodyText ? "mt-1" : ""}`}>
+                      {imageItems.map((img: unknown, idx: number) => {
+                        const imageUrl = resolveMessageImageUrl(img);
                         if (!imageUrl) return null;
                         return (
                           <img
                             key={`${msg.id}-img-${idx}`}
                             src={imageUrl}
                             alt={`attachment-${idx + 1}`}
-                            className="w-20 h-20 rounded object-cover border border-white/20 cursor-pointer hover:opacity-90"
+                            className="max-w-[220px] max-h-48 w-auto h-auto rounded object-contain border border-white/20 cursor-pointer hover:opacity-90 bg-black/10"
                             onClick={() => window.open(imageUrl, "_blank")}
                           />
                         );

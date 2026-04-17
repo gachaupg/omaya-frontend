@@ -40,12 +40,14 @@ export const isForexPrimusAsset = (asset: {
   return false;
 };
 
-interface CommissionLookupResponse {
+export interface CommissionLookupResponse {
   commission_rate: string;
   is_percentage: boolean;
   calculated_fee: string;
   range_min: string;
   range_max: string;
+  commission_mode?: "flat_fee" | "percentage" | string;
+  fee?: string;
 }
 
 /** Exchange commission-lookup response (GET /administration/commission-lookup/ with from_currency, to_currency, from_network). Used for first 3 assets only. */
@@ -166,10 +168,19 @@ export const fetchCommission = async (
   amount: number,
   type: "deposit" | "withdrawal"
 ): Promise<number> => {
+  const details = await fetchCommissionDetails(_asset, amount, type);
+  const rate = details?.commission_rate;
+  return typeof rate === "number" ? rate : parseFloat(String(rate)) || 0;
+};
+
+export const fetchCommissionDetails = async (
+  _asset: string,
+  amount: number,
+  type: "deposit" | "withdrawal"
+): Promise<CommissionLookupResponse> => {
   const url = `${API_BASE_URL}${API_CONFIG.COMMISSION_LOOKUP(amount, type)}`;
   const response = await axios.get<CommissionLookupResponse>(url);
-  const rate = response.data?.commission_rate;
-  return typeof rate === "number" ? rate : parseFloat(String(rate)) || 0;
+  return response.data;
 };
 
 /** GET exchange estimate — for first 3 assets only (USDT BEP20, BNB BSC, USDT ERC20). Uses to_amount and local_commission. */
