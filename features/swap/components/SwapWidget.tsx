@@ -34,7 +34,7 @@ import { logger } from "@/lib/utils/logger";
 import { swapAmountToInputString } from "@/lib/utils/swapAmountInput";
 
 // Minimum swap value in USD/USDT - smaller amounts can disappear due to fees
-const MIN_SWAP_USD = 30;
+const MIN_SWAP_USD = 1;
 
 const meetsMinimumSwap = (
   fromAsset: SupportedAsset | null,
@@ -731,11 +731,7 @@ const SwapWidget = () => {
       <h2 className="text-base sm:text-lg font-semibold   text-gray-900 dark:text-white">
         Swap Crypto
       </h2>
-      {isInitialAssetLoading && (
-        <div className="mb-3 rounded-lg border border-[#1D8751]/30 bg-[#1D8751]/10 px-3 py-2 text-xs sm:text-sm text-[#1D8751]">
-          Loading assets in background... you can already view the swap UI.
-        </div>
-      )}
+
       {error && (
         <div className="mb-3 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs sm:text-sm text-red-500 dark:text-red-300 flex items-center justify-between gap-2">
           <span>{error}</span>

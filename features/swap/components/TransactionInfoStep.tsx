@@ -84,7 +84,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
     onSwapAssets,
     activeInputField,
     meetsMinimumAmount = true,
-    minSwapUsd = 30,
+    minSwapUsd = 1,
     amountError,
   } = props;
 
