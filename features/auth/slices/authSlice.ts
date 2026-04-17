@@ -194,16 +194,6 @@ export const checkKYCStatus = createAsyncThunk<
     } catch (error) {
       return rejectWithValue(handleApiError(error));
     } 
-  },
-  {
-    condition: (forceRefresh = false, { getState }) => {
-      const state = getState() as { auth: AuthState };
-      // Avoid duplicate in-flight KYC requests unless explicitly forced.
-      if (!forceRefresh && state.auth.kycStatusLoading) {
-        return false;
-      }
-      return true;
-    },
   }
 );
 
@@ -739,9 +729,11 @@ const authSlice = createSlice({
         state.kycStatusCheckedAt = Date.now();
         if (state.user) {
           state.user.is_verified = action.payload.is_verified;
-          // Show KYC modal if user is not verified
+          // Keep modal state aligned with latest backend verification status.
           if (!action.payload.is_verified) {
             state.kycModalOpen = true;
+          } else {
+            state.kycModalOpen = false;
           }
         }
       }

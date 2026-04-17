@@ -54,6 +54,14 @@ const formatRateWithoutCurrency = (raw: string | undefined | null): string => {
   return Number.isFinite(n2) ? n2.toFixed(2) : noSuffix || "—";
 };
 
+const normalizeAvailableAssetsLabel = (raw: string | undefined | null): string => {
+  if (raw == null) return "—";
+  const value = String(raw).trim();
+  if (!value) return "—";
+  // Available assets should be shown in USD (never KES) on this preview.
+  return value.replace(/\bKES\b/gi, "USD");
+};
+
 const TradePreview: React.FC<TradePreviewProps> = ({
   advertiserData,
   onClose,
@@ -134,7 +142,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
   const displayedAvailableAssets =
     tradeType === "sell"
       ? `${availableAmount.toFixed(2)} USDT`
-      : advertiserData.available;
+      : normalizeAvailableAssetsLabel(advertiserData.available);
   // Keep buy preview range identical to table "Limit" text.
   const displayedLimitRange =
     advertiserData.limit || `${minAmount.toFixed(2)} - ${maxAmount.toFixed(2)} ${rangeLimitSuffix}`;

@@ -322,6 +322,10 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   const displayAvailableUnit = hasAvailableAmount
     ? singleOrder?.asset || "USDT"
     : singleOrder?.currency || singleOrder?.asset || "USDT";
+  const normalizedAvailableUnit =
+    String(displayAvailableUnit || "").toUpperCase() === "KES"
+      ? "USD"
+      : displayAvailableUnit;
   const effectiveMinUnit = hasAvailableAmount
     ? singleOrder?.asset || "USDT"
     : singleOrder?.range_currency ||
@@ -528,7 +532,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
               </div>
               <div>
                 <span className="text-[13px] text-gray-900 dark:text-white">
-                  {displayAvailableValue} {displayAvailableUnit}
+                  {displayAvailableValue} {normalizedAvailableUnit}
                 </span>
                 <br />
                 <span className="text-gray-500 dark:text-[#788099]">
