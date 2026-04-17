@@ -872,6 +872,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
               toCurrency: "USDT",
               toNetwork: "BSC",
               amount: parseFloat(amount),
+              usePublicApi: !isAuthenticated,
             }
           : {
               fromCurrency: "USDT",
@@ -879,6 +880,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
               toCurrency: selectedAsset.ticker,
               toNetwork: getAssetNetwork(selectedAsset),
               amount: parseFloat(amount),
+              usePublicApi: !isAuthenticated,
             };
 
         Promise.race([dispatch(fetchSwapEstimate(params)), timeoutPromise])
@@ -1052,6 +1054,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
             toCurrency: selectedAsset.ticker,
             toNetwork: getAssetNetwork(selectedAsset),
             amount: parseFloat(receiveAmount),
+            usePublicApi: !isAuthenticated,
           }
         : {
             fromCurrency: selectedAsset.ticker,
@@ -1059,6 +1062,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
             toCurrency: "USDT",
             toNetwork: "BSC",
             amount: parseFloat(receiveAmount),
+            usePublicApi: !isAuthenticated,
           };
 
         const timeoutPromise = new Promise((_, reject) => {
