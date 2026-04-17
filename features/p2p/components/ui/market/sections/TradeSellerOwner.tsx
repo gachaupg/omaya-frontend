@@ -255,6 +255,10 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   const rangeCurrency = ((singleOrder as any)?.range_currency || (confirmOrder as any)?.buy_order?.range_currency || (confirmOrder as any)?.sell_order?.range_currency || tradeDataJson?.range_currency || "USD")?.toString().toUpperCase();
   const rangeSuffix = rangeCurrency === "KES" ? "KES" : "USD";
   const rangeSymbol = rangeCurrency === "KES" ? "KES" : "$";
+  const normalizedAvailableUnit =
+    String(singleOrder?.currency || "USDT").toUpperCase() === "KES"
+      ? "USD"
+      : singleOrder?.currency || "USDT";
 
   // --- Calculation logic ---
   const sendAmount = Number(confirmOrder?.amount) || 0;
@@ -440,7 +444,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
               <div className="flex-shrink-0">
                 <span className="text-xs sm:text-[13px] text-gray-900 dark:text-white font-medium block">
                   {singleOrder?.amount || "1,200"}{" "}
-                  {singleOrder?.currency || "USDT"}
+                  {normalizedAvailableUnit}
                 </span>
                 <span className="text-[10px] sm:text-xs text-gray-500 dark:text-[#788099]">
                   Available assets

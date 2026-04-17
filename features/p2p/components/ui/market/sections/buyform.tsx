@@ -317,6 +317,10 @@ function FinalBuy({ orderData }: FinalBuyProps) {
   const displayAvailableUnit = hasAvailableAmount
     ? singleOrder?.asset || "USDT"
     : singleOrder?.currency || singleOrder?.asset || "USDT";
+  const normalizedAvailableUnit =
+    String(displayAvailableUnit || "").toUpperCase() === "KES"
+      ? "USD"
+      : displayAvailableUnit;
   const effectiveMinUnit = hasAvailableAmount
     ? singleOrder?.asset || "USDT"
     : singleOrder?.range_currency ||
@@ -537,7 +541,7 @@ function FinalBuy({ orderData }: FinalBuyProps) {
               </div>
               <div>
                 <span className="text-sm text-gray-900 dark:text-white mb-2">
-                  {displayAvailableValue} {displayAvailableUnit}
+                  {displayAvailableValue} {normalizedAvailableUnit}
                 </span>
                 <br />
                 <span className="text-gray-500 dark:text-[#788099]">
