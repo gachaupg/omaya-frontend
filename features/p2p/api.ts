@@ -599,6 +599,43 @@ const getCsrfToken = (): string => {
   return match ? match[1] : '';
 };
 
+/** Prefer API `error` / `message` / `detail` over raw JSON in XHR rejection text. */
+const messageFromXhrResponse = (xhr: XMLHttpRequest): string => {
+  const status = xhr.status;
+  const raw = (xhr.responseText || "").trim();
+  if (!raw) return `Request failed (${status})`;
+  try {
+    const data = JSON.parse(raw) as Record<string, unknown>;
+    const pick = (v: unknown): string | null => {
+      if (typeof v === "string" && v.trim()) return v.trim();
+      if (Array.isArray(v) && v.length > 0) {
+        const first = v[0];
+        if (typeof first === "string" && first.trim()) return first.trim();
+      }
+      return null;
+    };
+    const fromError =
+      pick(data.error) ||
+      pick(data.message) ||
+      pick(data.detail) ||
+      pick(data.non_field_errors);
+    if (fromError) return fromError;
+    const inner = data.response_data;
+    if (inner && typeof inner === "object") {
+      const innerObj = inner as Record<string, unknown>;
+      const nested =
+        pick(innerObj.error) ||
+        pick(innerObj.message) ||
+        pick(innerObj.detail);
+      if (nested) return nested;
+    }
+  } catch {
+    // not JSON — fall through
+  }
+  if (raw.length > 400) return `${raw.slice(0, 400)}…`;
+  return raw;
+};
+
 export const postTradeMessage = async (
   tradeId: string,
   payload: {
@@ -649,7 +686,7 @@ export const postTradeMessage = async (
               resolve({});
             }
           } else {
-            reject(new Error(xhr.responseText || `HTTP ${xhr.status}`));
+            reject(new Error(messageFromXhrResponse(xhr)));
           }
         };
         xhr.onerror = () => reject(new Error('Network error'));
@@ -671,30 +708,86 @@ export type ThreadMessageType = "support" | "appeal";
 /**
  * Send support/appeal message using the unified messages endpoint.
  * POST /trading_engine/messages/
- * { type, entity_id, message }
+ * JSON: { type, entity_id, message }
+ * Multipart (same field names as trade chat): type, entity_id, message, uploaded_images, uploaded_audios, duration, sender_name
  */
 export const postThreadMessage = async (
   payload: {
     type: ThreadMessageType;
     entity_id: string;
     message: string;
+    uploaded_images?: File[];
+    uploaded_audios?: File[];
+    duration?: number;
+    sender_name?: string;
   }
 ) => {
   const entityId = String(payload?.entity_id || "").trim();
-  const message = String(payload?.message || "").trim();
   const type = payload?.type;
+  const images = payload.uploaded_images ?? [];
+  const audios = payload.uploaded_audios ?? [];
+  const messageTrim = String(payload?.message ?? "").trim();
+
   if (!entityId) throw new Error("entity_id is required");
-  if (!message) throw new Error("message is required");
   if (type !== "support" && type !== "appeal") {
     throw new Error("Invalid message type");
   }
+
+  const hasFiles = images.length > 0 || audios.length > 0;
+  const fallbackText =
+    messageTrim ||
+    (images.length > 0 ? "Image" : "") ||
+    (audios.length > 0 ? "Voice message" : "");
+  if (!fallbackText && !hasFiles) {
+    throw new Error("message is required");
+  }
+
   return withRetry(async () => {
-    const response = await post("/trading_engine/messages/", {
-      type,
-      entity_id: entityId,
-      message,
+    // Always multipart + XHR (same as trade chat). JSON POST was returning 403 for some users/setups;
+    // FormData matches Django view expectations and sends CSRF/cookies like file uploads.
+    const formData = new FormData();
+    formData.append("type", type);
+    formData.append("entity_id", entityId);
+    formData.append("message", messageTrim || fallbackText);
+    if (payload.sender_name) {
+      formData.append("sender_name", payload.sender_name);
+    }
+    images.forEach((f) => formData.append("uploaded_images", f));
+    if (audios.length > 0) {
+      const f = audios[0];
+      if (f.size === 0) {
+        throw new Error("Recording failed – audio file is empty. Try recording again.");
+      }
+      formData.append("uploaded_audios", f, f.name);
+    }
+    if (payload.duration !== undefined && payload.duration >= 0) {
+      formData.append("duration", String(Math.round(payload.duration)));
+    }
+
+    const token = storage.getProfile()?.tokens?.access;
+    const url = `${API_CONFIG.BASE_URL}/trading_engine/messages/`;
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", url);
+      xhr.setRequestHeader("Accept", "application/json");
+      xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
+      xhr.setRequestHeader("X-CSRFToken", getCsrfToken());
+      if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+      xhr.withCredentials = true;
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            resolve(JSON.parse(xhr.responseText || "{}"));
+          } catch {
+            resolve({});
+          }
+        } else {
+          reject(new Error(messageFromXhrResponse(xhr)));
+        }
+      };
+      xhr.onerror = () => reject(new Error("Network error"));
+      xhr.send(formData);
     });
-    return response.data;
   });
 };
 
@@ -1177,6 +1270,8 @@ export interface GroupedMessageImage {
 export interface GroupedMessage {
   id: string;
   content: string;
+  /** Alternate body field used by some endpoints / optimistic rows */
+  message?: string;
   timestamp: string;
   images: GroupedMessageImage[] | string[];
   sender_id: number | null;

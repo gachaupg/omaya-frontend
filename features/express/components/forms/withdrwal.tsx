@@ -30,12 +30,13 @@ import { SupportedAsset } from "../../../swap/types";
 import { FaSearch } from "react-icons/fa";
 import {
   createExpressWithdrawal,
-  fetchCommission,
+  fetchCommissionDetails,
   getCommissionApiAsset,
   fetchExchangeCommissionLookup,
   getExchangeLookupParams,
   isExchangeCommissionLookupAsset,
   isForexPrimusAsset,
+  type CommissionLookupResponse,
   type ExchangeCommissionLookupResponse,
 } from "@/features/express/api";
 import {
@@ -762,9 +763,30 @@ export default function WithdrawalForm({
 
   // Commission from API for USDT, USDC, FX Primus (null = not yet fetched, 0 = API returned 0)
   const [apiCommission, setApiCommission] = useState<number | null>(null);
+  const [apiCommissionDetails, setApiCommissionDetails] =
+    useState<CommissionLookupResponse | null>(null);
   const [exchangeLookupResponse, setExchangeLookupResponse] = useState<ExchangeCommissionLookupResponse | null>(null);
   const commissionFetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isMountedRef = useRef(true);
+
+  const getFxpReversePayAmount = (receiveAmount: number): number => {
+    if (!Number.isFinite(receiveAmount)) return 0;
+    const feeFromPayload = Number(apiCommissionDetails?.calculated_fee ?? apiCommissionDetails?.fee);
+    if (Number.isFinite(feeFromPayload) && feeFromPayload >= 0) {
+      return receiveAmount + feeFromPayload;
+    }
+    const mode = (apiCommissionDetails?.commission_mode || "").toString().toLowerCase();
+    const isPercentageFlag = apiCommissionDetails?.is_percentage;
+    const treatAsFlatFee = mode === "flat_fee" || isPercentageFlag === false;
+    if (treatAsFlatFee) {
+      return receiveAmount;
+    }
+    const rate = Number(apiCommissionDetails?.commission_rate ?? apiCommission ?? 0);
+    if (Number.isFinite(rate) && rate > 0 && rate < 100) {
+      return receiveAmount / (1 - rate / 100);
+    }
+    return receiveAmount;
+  };
 
   const updateAssetDropdownPosition = useCallback(() => {
     if (!assetDropdownRef.current) {
@@ -1583,19 +1605,30 @@ export default function WithdrawalForm({
     if (isExpressCancelled()) return;
     if (!selectedAsset) {
       setApiCommission(null);
+      setApiCommissionDetails(null);
       setExchangeLookupResponse(null);
       return;
     }
-    const params = getExchangeLookupParams(selectedAsset);
     const amount = isCalculatingFromPay
       ? (parseLocalizedAmountString(payAmountInput) || payAmount)
       : (parseLocalizedAmountString(getAmountInput) || getAmount);
     if (amount <= 0) {
-      if (params) setExchangeLookupResponse(null);
-      else setApiCommission(null);
+      setApiCommission(null);
+      setApiCommissionDetails(null);
+      if (!isForexAsset(selectedAsset)) {
+        setExchangeLookupResponse(null);
+      }
+      setApiValidationError(null);
       return;
     }
-    if (params) {
+    if (isExchangeCommissionLookupAsset(selectedAsset) && !isForexAsset(selectedAsset)) {
+      const params = getExchangeLookupParams(selectedAsset);
+      if (!params) {
+        setExchangeLookupResponse(null);
+        setApiCommission(null);
+        setApiCommissionDetails(null);
+        return;
+      }
       if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
       commissionFetchTimeoutRef.current = setTimeout(() => {
         if (isExpressCancelled()) return;
@@ -1604,6 +1637,7 @@ export default function WithdrawalForm({
             if (isExpressCancelled()) return;
             setExchangeLookupResponse(res);
             setApiCommission(null);
+            setApiCommissionDetails(null);
             setApiValidationError(null);
             if (isCalculatingFromPay && res.to_amount != null) {
               const toAmount = parseFloat(res.to_amount);
@@ -1672,25 +1706,26 @@ export default function WithdrawalForm({
         if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
       };
     }
-    if (isForexAsset(selectedAsset)) {
-      setApiCommission(null);
-      return;
-    }
     const apiAsset = getCommissionApiAsset(selectedAsset.ticker || selectedAsset.symbol || "");
     if (!apiAsset) {
       setApiCommission(null);
+      setApiCommissionDetails(null);
       return;
     }
     if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
     commissionFetchTimeoutRef.current = setTimeout(() => {
       if (isExpressCancelled()) return;
-      fetchCommission(apiAsset, amount, "withdrawal")
-        .then((commission) => {
+      fetchCommissionDetails(apiAsset, amount, "withdrawal")
+        .then((details) => {
           if (isExpressCancelled()) return;
-          setApiCommission(commission);
+          setApiCommission(Number(details?.commission_rate ?? 0));
+          setApiCommissionDetails(details);
           setExchangeLookupResponse(null);
         })
-        .catch(() => setApiCommission(null));
+        .catch(() => {
+          setApiCommission(null);
+          setApiCommissionDetails(null);
+        });
     }, 300);
     return () => {
       if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
@@ -1712,25 +1747,24 @@ export default function WithdrawalForm({
         setGetAmountInput(calculatedGetAmount.toString());
         setPreviousValidAmount(calculatedGetAmount.toString());
       } else if (!isCalculatingFromPay && getAmount > 0) {
-        const commissionRate = apiCommission;
-        const calculatedPayAmount = getAmount / (1 - commissionRate / 100);
+        const calculatedPayAmount = isForexAsset(selectedAsset)
+          ? getFxpReversePayAmount(getAmount)
+          : getAmount / (1 - apiCommission / 100);
         setPayAmount(calculatedPayAmount);
         setPayAmountInput(calculatedPayAmount.toString());
       }
     }
-  }, [apiCommission, payAmount, getAmount, isCalculatingFromPay, selectedAsset]);
+  }, [apiCommission, apiCommissionDetails, payAmount, getAmount, isCalculatingFromPay, selectedAsset]);
 
   // Reverse (You Receive -> You Send) for first 3 assets using exchange lookup local_commission
   useEffect(() => {
     if (!selectedAsset || !isExchangeCommissionLookupAsset(selectedAsset) || !exchangeLookupResponse?.local_commission || isCalculatingFromPay || getAmount <= 0) return;
     const lc = exchangeLookupResponse.local_commission;
-    if (lc.commission_mode === "flat_fee" && lc.fee != null) {
-      const fee = parseFloat(lc.fee);
-      if (!Number.isNaN(fee)) {
-        const calculatedPay = getAmount + fee;
-        setPayAmount(calculatedPay);
-        setPayAmountInput(calculatedPay.toString());
-      }
+    const fee = lc.fee != null ? parseFloat(lc.fee) : NaN;
+    if (!Number.isNaN(fee)) {
+      const calculatedPay = getAmount + fee;
+      setPayAmount(calculatedPay);
+      setPayAmountInput(calculatedPay.toString());
     } else if (lc.commission_mode === "percentage" && lc.rate != null) {
       const rate = parseFloat(lc.rate);
       if (!Number.isNaN(rate) && rate < 100) {
@@ -2160,29 +2194,24 @@ export default function WithdrawalForm({
       ])
         .then((result: any) => {
           if (isExpressCancelled()) return;
-          if (result.payload && (result.payload as any)?.estimated_amount) {
-            // The API now returns how much USDT we need to get the desired amount
-            const requiredUsdtAmount = (result.payload as any)
-              ?.estimated_amount;
+          if (result?.meta?.requestStatus === "fulfilled" && result.payload) {
+            const payload = result.payload as any;
+            const requiredUsdtAmountRaw =
+              payload?.estimated_amount ?? payload?.toAmount ?? payload?.user_amount;
+            const requiredUsdtAmount = Number(requiredUsdtAmountRaw);
 
-            if (requiredUsdtAmount && requiredUsdtAmount > 0) {
+            if (Number.isFinite(requiredUsdtAmount) && requiredUsdtAmount >= 0) {
               // Set the pay amount to the required USDT amount
               setPayAmount(requiredUsdtAmount);
               setPayAmountInput(requiredUsdtAmount.toString());
-              setEstimate(result.payload);
+              setEstimate(payload);
               setApiValidationError(null);
             }
-
-            // Clear loading states after successful calculation
-            setIsCalculating(false);
-            setIsCalculatingReceive(false);
-            setEstimateLoading(false);
-          } else {
-            // No valid result, clear loading states
-            setIsCalculating(false);
-            setIsCalculatingReceive(false);
-            setEstimateLoading(false);
           }
+          // Always clear loading states after this response branch.
+          setIsCalculating(false);
+          setIsCalculatingReceive(false);
+          setEstimateLoading(false);
         })
         .catch((error) => {
           if (isExpressCancelled()) return;
@@ -2804,17 +2833,8 @@ export default function WithdrawalForm({
               setIsCalculating(false);
               setIsCalculatingReceive(false);
             } else if (isForexAsset(selectedAsset)) {
-              const r =
-                apiCommission != null &&
-                !Number.isNaN(Number(apiCommission)) &&
-                Number(apiCommission) < 100
-                  ? Number(apiCommission)
-                  : null;
-              const newPayAmount =
-                r != null ? fromAmount / (1 - r / 100) : fromAmount;
-              const payStr = Number.isInteger(newPayAmount)
-                ? String(newPayAmount)
-                : newPayAmount.toFixed(2);
+              const newPayAmount = getFxpReversePayAmount(fromAmount);
+              const payStr = formatAmountForInput(newPayAmount);
               setPayAmount(newPayAmount);
               setPayAmountInput(payStr);
               setIsCalculating(false);
@@ -4045,20 +4065,10 @@ export default function WithdrawalForm({
                                   setIsCalculating(false);
                                   setIsCalculatingReceive(false);
                                 } else if (isForexAsset(selectedAsset)) {
-                                  const r =
-                                    apiCommission != null &&
-                                    !Number.isNaN(Number(apiCommission)) &&
-                                    Number(apiCommission) < 100
-                                      ? Number(apiCommission)
-                                      : null;
                                   const calculatedPayAmount =
-                                    r != null
-                                      ? newAmount / (1 - r / 100)
-                                      : newAmount;
+                                    getFxpReversePayAmount(newAmount);
                                   const payStr =
-                                    r != null
-                                      ? formatAmountForInput(calculatedPayAmount)
-                                      : value;
+                                    formatAmountForInput(calculatedPayAmount);
                                   setPayAmount(calculatedPayAmount);
                                   setPayAmountInput(payStr);
                                   setIsCalculating(false);

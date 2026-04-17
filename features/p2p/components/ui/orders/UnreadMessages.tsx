@@ -5,6 +5,12 @@ import { useRouter, usePathname } from 'next/navigation'
 import { MdAccountCircle } from 'react-icons/md'
 import { useGroupedMessages } from '../../../hooks/useGroupedMessages'
 import { GroupedUser } from '../../../api'
+import {
+  coalesceMessageImages,
+  firstMessageImageUrl,
+  shouldHideBodyTextForMediaPlaceholder,
+  hasRenderableMessageImages,
+} from "@/features/p2p/utils/messageMedia";
 
 /** Resolve real trade/support thread id when entity_id is a placeholder (e.g. "support"). */
 const resolveSupportTradeId = (entityId: string, userGroup?: any): string => {
@@ -163,18 +169,53 @@ const AvatarMessageItem: React.FC<AvatarMessageItemProps> = ({
             </span>
           </div>
 
-          {/* Message Preview */}
-          <div className="flex items-center space-x-2">
-            {(hasImages || hasSupportDocument) && (
-              <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-            )}
-            <p className="text-sm text-gray-600 dark:text-gray-300 truncate">
-              {latestMessage?.content || 
-                (hasImages ? `${imageCount} image${imageCount !== 1 ? 's' : ''}` : 
-                (hasSupportDocument ? 'Support document attached' : 'No content'))}
-            </p>
+          {/* Message Preview — do not let placeholder "Image" hide real thumbnails (appeal/support use support_document too). */}
+          <div className="flex items-center space-x-2 min-w-0">
+            {(() => {
+              const imageUrls = coalesceMessageImages(latestMessage);
+              const previewUrl = firstMessageImageUrl(latestMessage);
+              const hasRenderable = hasRenderableMessageImages(latestMessage);
+              const hasAnyVisual = imageUrls.length > 0 || hasSupportDocument;
+              const rawText = String(
+                latestMessage?.content ?? latestMessage?.message ?? ""
+              ).trim();
+              const hidePlaceholder =
+                shouldHideBodyTextForMediaPlaceholder(rawText, hasRenderable, false);
+
+              return (
+                <>
+                  {hasAnyVisual && (
+                    <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  )}
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    {previewUrl ? (
+                      <>
+                        <img
+                          src={previewUrl}
+                          alt=""
+                          className="h-10 w-10 rounded-md object-cover border border-gray-200 dark:border-gray-600 flex-shrink-0"
+                        />
+                        {rawText && !hidePlaceholder && (
+                          <p className="text-sm text-gray-600 dark:text-gray-300 truncate">{rawText}</p>
+                        )}
+                      </>
+                    ) : (
+                      <p className="text-sm text-gray-600 dark:text-gray-300 truncate">
+                        {rawText && !hidePlaceholder
+                          ? rawText
+                          : hasSupportDocument
+                            ? "Attachment"
+                            : hasImages
+                              ? `${imageCount} image${imageCount !== 1 ? "s" : ""}`
+                              : "No content"}
+                      </p>
+                    )}
+                  </div>
+                </>
+              );
+            })()}
           </div>
 
           {/* Message Count and Unread Badge */}
@@ -380,11 +421,14 @@ const UnreadMessages: React.FC<UnreadMessagesProps> = ({ loading = false, onBack
           const latestMessage = userGroup.messages[0]
           const messageCount = userGroup.messages.length
           
-          // Check if message has images (for p2p) or support_document (for support)
-          // Images can be an array of objects or strings
-          const hasImages = Boolean(latestMessage?.images && Array.isArray(latestMessage.images) && latestMessage.images.length > 0)
-          const imageCount = hasImages ? latestMessage.images.length : 0
-          const hasSupportDocument = Boolean(latestMessage?.support_document && userGroup.message_type === 'support')
+          // Images: arrays + appeal/support `support_document` URL (same coalescing as Chats tab).
+          const imageItems = coalesceMessageImages(latestMessage);
+          const hasImages = imageItems.length > 0;
+          const imageCount = imageItems.length;
+          const hasSupportDocument = Boolean(
+            latestMessage?.support_document &&
+            (userGroup.message_type === "support" || userGroup.message_type === "appeal")
+          );
           
           // Determine which photo to use based on message type
           // For P2P: use peer_photo, for support/contact: use sender_photo from message or userGroup

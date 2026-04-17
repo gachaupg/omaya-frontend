@@ -19,12 +19,13 @@ import { fetchAdminWalletList, fetchAdminPaymentDetails } from "../../exchange/s
 import PaymentMethodsModal from "../../p2p/components/ui/p2pdashboard/sections/PaymentMethodsModal";
 import {
   createExpressWithdrawal,
-  fetchCommission,
+  fetchCommissionDetails,
   fetchExchangeCommissionLookup,
   getCommissionApiAsset,
   getExchangeLookupParams,
   isExchangeCommissionLookupAsset,
   isForexPrimusAsset,
+  type CommissionLookupResponse,
   type ExchangeCommissionLookupResponse,
 } from "../../express/api";
 import { Asset, DepositResponse } from "../../exchange/types";
@@ -253,6 +254,24 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
   /** FX Primus withdrawal: same as express withdrawal — ForexWithdrawal + forex create-exchange + forex-status WS (not createExpressWithdrawal / Exchanging). */
   const isRatesFxpWithdrawal =
     !isDepositMode && !!selectedAsset && isForexPrimusAsset(selectedAsset);
+  const getFxpReverseAmount = (receiveValue: number): number => {
+    if (!Number.isFinite(receiveValue)) return 0;
+    const feeFromPayload = Number(apiCommissionDetails?.calculated_fee ?? apiCommissionDetails?.fee);
+    if (Number.isFinite(feeFromPayload) && feeFromPayload >= 0) {
+      return receiveValue + feeFromPayload;
+    }
+    const mode = (apiCommissionDetails?.commission_mode || "").toString().toLowerCase();
+    const isPercentageFlag = apiCommissionDetails?.is_percentage;
+    const treatAsFlatFee = mode === "flat_fee" || isPercentageFlag === false;
+    if (treatAsFlatFee) {
+      return receiveValue;
+    }
+    const rate = Number(apiCommissionDetails?.commission_rate ?? apiCommission ?? 0);
+    if (Number.isFinite(rate) && rate > 0 && rate < 100) {
+      return receiveValue / (1 - rate / 100);
+    }
+    return receiveValue;
+  };
 
   // Shared address validation (same API + messages as other pages).
   const {
@@ -357,6 +376,8 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
   const estimateForwardTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const estimateReverseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [apiCommission, setApiCommission] = useState<number | null>(null);
+  const [apiCommissionDetails, setApiCommissionDetails] =
+    useState<CommissionLookupResponse | null>(null);
   const commissionFetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [exchangeLookupResponse, setExchangeLookupResponse] = useState<ExchangeCommissionLookupResponse | null>(null);
   const exchangeLookupFetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -634,27 +655,39 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
       setApiCommission(null);
       return;
     }
-    if (isExchangeCommissionLookupAsset(selectedAsset)) {
+    // Crypto USDT/USDC (etc.) use exchange-lookup; FX Primus uses direct commission API only (same as home).
+    if (
+      isExchangeCommissionLookupAsset(selectedAsset) &&
+      !isForexPrimusAsset(selectedAsset)
+    ) {
       setApiCommission(null);
+      setApiCommissionDetails(null);
       return;
     }
     const amt = isCalculatingFromPay ? (parseFloat(amount) || 0) : (parseFloat(receiveAmount) || 0);
     if (amt <= 0) {
       setApiCommission(null);
+      setApiCommissionDetails(null);
       return;
     }
     if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
     commissionFetchTimeoutRef.current = setTimeout(() => {
-      fetchCommission(apiAsset, amt, isDepositMode ? "deposit" : "withdrawal")
-        .then((c) => setApiCommission(c))
-        .catch(() => setApiCommission(null));
+      fetchCommissionDetails(apiAsset, amt, isDepositMode ? "deposit" : "withdrawal")
+        .then((details) => {
+          setApiCommission(Number(details?.commission_rate ?? 0));
+          setApiCommissionDetails(details);
+        })
+        .catch(() => {
+          setApiCommission(null);
+          setApiCommissionDetails(null);
+        });
     }, 300);
     return () => {
       if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
     };
   }, [selectedAsset, commissionApiDriverKey, isCalculatingFromPay, isDepositMode]);
 
-  // Exchange commission-lookup for first assets (local_commission fee rules), including FX Primus.
+  // Exchange commission-lookup for crypto→USD assets (local_commission). FX Primus uses commission API only.
   useEffect(() => {
     if (!selectedAsset) {
       setExchangeLookupResponse(null);
@@ -662,6 +695,11 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
     }
 
     if (!isExchangeCommissionLookupAsset(selectedAsset)) {
+      setExchangeLookupResponse(null);
+      return;
+    }
+
+    if (isForexPrimusAsset(selectedAsset)) {
       setExchangeLookupResponse(null);
       return;
     }
@@ -798,9 +836,9 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
 
     const lc = parseCommissionRule();
     if (!lc) return;
-    if (lc.commission_mode === "flat_fee" && lc.fee != null) {
-      const fee = parseFloat(lc.fee);
-      if (!Number.isNaN(fee)) setAmount((recv + fee).toFixed(2));
+    const fee = lc.fee != null ? parseFloat(lc.fee) : NaN;
+    if (!Number.isNaN(fee)) {
+      setAmount((recv + fee).toFixed(2));
     } else if (lc.commission_mode === "percentage" && lc.rate != null) {
       const rate = parseFloat(lc.rate);
       if (!Number.isNaN(rate) && rate < 100) {
@@ -825,10 +863,12 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
       setReceiveAmount(calculatedReceive.toFixed(2));
     } else if (!isCalculatingFromPay && parseFloat(receiveAmount) > 0) {
       const recv = parseFloat(receiveAmount) || 0;
-      const calculatedAmount = recv / (1 - apiCommission / 100);
+      const calculatedAmount = isForexPrimusAsset(selectedAsset)
+        ? getFxpReverseAmount(recv)
+        : recv / (1 - apiCommission / 100);
       setAmount(calculatedAmount.toFixed(2));
     }
-  }, [apiCommission, selectedAsset, isCalculatingFromPay, amount, receiveAmount]);
+  }, [apiCommission, apiCommissionDetails, selectedAsset, isCalculatingFromPay, amount, receiveAmount]);
 
   // Fetch estimate for non-direct assets - debounced + cached for faster response
   useEffect(() => {
@@ -1074,14 +1114,17 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
           timeoutPromise,
         ])
           .then((result: any) => {
-            if (result.payload && (result.payload as any)?.estimated_amount) {
-              const requiredAmount = (result.payload as any).estimated_amount;
-              if (requiredAmount > 0) {
+            if (result?.meta?.requestStatus === "fulfilled" && result.payload) {
+              const payload = result.payload as any;
+              const requiredAmountRaw =
+                payload?.estimated_amount ?? payload?.toAmount ?? payload?.user_amount;
+              const requiredAmount = Number(requiredAmountRaw);
+              if (Number.isFinite(requiredAmount) && requiredAmount >= 0) {
                 setAmount(requiredAmount.toString());
-                setEstimate(result.payload);
+                setEstimate(payload);
                 setEstimateCache((prev) =>
                   new Map(prev).set(cacheKey, {
-                    data: result.payload,
+                    data: payload,
                     timestamp: Date.now(),
                   })
                 );
@@ -1169,23 +1212,27 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
             setEstimateError("Using fallback calculation");
             const recv = parseFloat(receiveAmount);
             const fallbackAmount =
-              selectedAsset && isCommissionApiAsset(selectedAsset)
-                ? recv / (1 - (apiCommission ?? 2) / 100)
-                : (() => {
-                    let commissionRate = 2;
-                    if (selectedAsset?.range_commissions?.length) {
-                      commissionRate = parseFloat(
-                        selectedAsset.range_commissions[0]?.commission || "2"
-                      );
-                    } else if (selectedAsset?.commission) {
-                      commissionRate = parseFloat(selectedAsset.commission);
-                    } else if (selectedAsset?.fee_rate) {
-                      commissionRate = parseFloat(selectedAsset.fee_rate);
-                    }
-                    return isDepositMode
-                      ? recv * (1 + commissionRate / 100)
-                      : recv / (1 - commissionRate / 100);
-                  })();
+              selectedAsset &&
+              isCommissionApiAsset(selectedAsset) &&
+              isForexPrimusAsset(selectedAsset)
+                ? getFxpReverseAmount(recv)
+                : selectedAsset && isCommissionApiAsset(selectedAsset)
+                  ? recv / (1 - (apiCommission ?? 2) / 100)
+                  : (() => {
+                      let commissionRate = 2;
+                      if (selectedAsset?.range_commissions?.length) {
+                        commissionRate = parseFloat(
+                          selectedAsset.range_commissions[0]?.commission || "2"
+                        );
+                      } else if (selectedAsset?.commission) {
+                        commissionRate = parseFloat(selectedAsset.commission);
+                      } else if (selectedAsset?.fee_rate) {
+                        commissionRate = parseFloat(selectedAsset.fee_rate);
+                      }
+                      return isDepositMode
+                        ? recv * (1 + commissionRate / 100)
+                        : recv / (1 - commissionRate / 100);
+                    })();
             setAmount(fallbackAmount.toString());
             setIsCalculating(false);
             setIsCalculatingReceive(false);
@@ -2860,8 +2907,27 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                           newAmount > 0 &&
                           isExchangeCommissionLookupAsset(selectedAsset)
                         ) {
-                          setIsCalculating(true);
-                          setIsCalculatingReceive(true);
+                          if (exchangeCommissionRule) {
+                            const lc = exchangeCommissionRule as any;
+                            let calculatedSendAmount = newAmount;
+                            if (lc.commission_mode === "flat_fee" && lc.fee != null) {
+                              const fee = parseFloat(lc.fee);
+                              if (!Number.isNaN(fee)) {
+                                calculatedSendAmount = newAmount + fee;
+                              }
+                            } else if (lc.commission_mode === "percentage" && lc.rate != null) {
+                              const rate = parseFloat(lc.rate);
+                              if (!Number.isNaN(rate) && rate < 100) {
+                                calculatedSendAmount = newAmount / (1 - rate / 100);
+                              }
+                            }
+                            setAmount(calculatedSendAmount.toFixed(2));
+                            setIsCalculating(false);
+                            setIsCalculatingReceive(false);
+                          } else {
+                            setIsCalculating(true);
+                            setIsCalculatingReceive(true);
+                          }
                         } else if (
                           selectedAsset &&
                           newAmount > 0 &&
@@ -3300,8 +3366,9 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                           newAmount > 0 &&
                           usesLegacyPercentCommission(selectedAsset)
                         ) {
-                          const commissionRate = apiCommission ?? 2;
-                          const calculatedSendAmount = newAmount / (1 - commissionRate / 100);
+                          const calculatedSendAmount = isForexPrimusAsset(selectedAsset)
+                            ? getFxpReverseAmount(newAmount)
+                            : newAmount / (1 - (apiCommission ?? 2) / 100);
                           setAmount(calculatedSendAmount.toFixed(2));
                           setIsCalculating(false);
                           setIsCalculatingReceive(false);
