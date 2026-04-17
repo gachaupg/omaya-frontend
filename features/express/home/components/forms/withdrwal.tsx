@@ -369,6 +369,7 @@ export default function WithdrawalForm({
   const exchangeAssetsErrorState = null;
   const swapAssetsErrorState = isHomePage ? null : swapAssetsError;
   const requiresLoginRedirect = isHomePage && !isAuthenticated;
+  const shouldHideGuestPaymentDetails = isHomePage && !isAuthenticated;
 
   // Use the data display hooks for consistent data handling
   const assetsDisplay = useAssetsDisplay(
@@ -779,6 +780,18 @@ export default function WithdrawalForm({
     });
   }, []);
 
+  // Never show cached payment/account details on home when logged out.
+  useEffect(() => {
+    if (!shouldHideGuestPaymentDetails) {
+      return;
+    }
+    setSelectedPaymentDetails([]);
+    setSelectedPaymentDetail(null);
+    setSelectedProviderData(null);
+    setPayBank("");
+    setPaymentMethodError(null);
+  }, [shouldHideGuestPaymentDetails]);
+
   useEffect(() => {
     setIsComponentMounted(true);
   }, []);
@@ -1064,12 +1077,26 @@ export default function WithdrawalForm({
     setSelectedPaymentDetails((prev) => prev.filter((d) => d.id !== detail.id));
   };
 
+  const selectedPaymentStatus = (
+    selectedPaymentDetails[0]?.status || ""
+  )
+    .toString()
+    .trim()
+    .toLowerCase();
+  const isSelectedPaymentApproved = [
+    "approved",
+    "verified",
+    "active",
+    "enabled",
+    "accepted",
+    "completed",
+    "success",
+  ].includes(selectedPaymentStatus);
   const isSelectedPaymentPending = !!(
     payBank &&
     selectedPaymentDetails.length > 0 &&
-    selectedPaymentDetails[0].status &&
-    selectedPaymentDetails[0].status !== "approved" &&
-    selectedPaymentDetails[0].status !== "verified"
+    selectedPaymentStatus &&
+    !isSelectedPaymentApproved
   );
 
   // Fetch admin wallet list
@@ -4444,7 +4471,7 @@ export default function WithdrawalForm({
                             ? activePublicPaymentMethods
                             : [];
 
-                      if (activePublicProviders.length > 0) {
+                      if (!shouldHideGuestPaymentDetails && activePublicProviders.length > 0) {
                         // Use public payment methods with logos
                         paymentMethodOptions = activePublicProviders.map((provider: any) => {
                           const providerName = provider.provider_name || provider.payment_provider_name || "Unknown";
@@ -4471,12 +4498,14 @@ export default function WithdrawalForm({
                       return (
                         <CustomSelect
                           options={paymentMethodOptions}
-                          value={payBank}
                           className="w-full"
                           triggerClassName={`px-4 py-2 text-lg border rounded-2xl bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
                             }`}
                           placeholderClassName="text-white dark:text-white"
                           onChange={(value) => {
+                            if (shouldHideGuestPaymentDetails) {
+                              return;
+                            }
                             const selectedProvider = activePublicProviders.find(
                               (provider: any) =>
                                 (provider.provider_name || provider.payment_provider_name) === value
@@ -4491,14 +4520,21 @@ export default function WithdrawalForm({
                             setPaymentMethodError(null);
                           }}
                           placeholder={
-                            isLoading
+                            shouldHideGuestPaymentDetails
+                              ? "Login to view payment methods"
+                              : isLoading
                               ? "Loading payment methods..."
                               : "Payment Method"
                           }
-                          disabled={isLoading}
+                          value={shouldHideGuestPaymentDetails ? "" : payBank}
+                          disabled={shouldHideGuestPaymentDetails || isLoading}
                           loading={isLoading}
                           loadingText="Loading payment methods..."
-                          emptyText="No payment methods available"
+                          emptyText={
+                            shouldHideGuestPaymentDetails
+                              ? "Login to view payment methods"
+                              : "No payment methods available"
+                          }
                           searchable={true}
                           dropdownTitle="Select a payment methods"
                           dropdownOffsetY={-68}
@@ -4512,7 +4548,7 @@ export default function WithdrawalForm({
                   {paymentMethodError && <p className="text-red-500 text-sm mt-1">{paymentMethodError}</p>}
 
                   {/* Registered Account Section */}
-                  {payBank && (
+                  {!shouldHideGuestPaymentDetails && payBank && (
                     <div className="mt-3 w-full relative z-10">
                       <label className="block text-[17px] text-[#475569] dark:text-[#9CA3AF] mb-2 font-semibold">
                         Registered Account
@@ -4721,14 +4757,13 @@ export default function WithdrawalForm({
                 <button
                   type="button"
                   className={`w-full text-[#35353e] dark:text-[#788099] text-base font-medium py-1.5 rounded-full flex items-center justify-center gap-2 transition-colors ${isHomePage
-                    ? payAmount >= 15000 || getAmount >= 15000 || isSelectedPaymentPending
+                    ? payAmount >= 15000 || isSelectedPaymentPending
                       ? "bg-gray-500 cursor-not-allowed"
                       : "bg-[#1D8751] hover:bg-[#1D8751]/80 cursor-pointer"
                     : isSubmitting ||
                       isTransactionSubmitted ||
                       isInfoModalOpen ||
                       payAmount >= 15000 ||
-                      getAmount >= 15000 ||
                       isSelectedPaymentPending
                       ? "bg-gray-500 cursor-not-allowed"
                       : "bg-[#1D8751] hover:bg-[#1D8751]/80"
@@ -4776,12 +4811,11 @@ export default function WithdrawalForm({
                   }}
                   disabled={
                     requiresLoginRedirect
-                      ? payAmount >= 15000 || getAmount >= 15000 || isSelectedPaymentPending
+                      ? payAmount >= 15000 || isSelectedPaymentPending
                       : isSubmitting ||
                       isTransactionSubmitted ||
                       isInfoModalOpen ||
                       payAmount >= 15000 ||
-                      getAmount >= 15000 ||
                       isSelectedPaymentPending
                   }
                 >

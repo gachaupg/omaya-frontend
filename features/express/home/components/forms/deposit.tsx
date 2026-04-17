@@ -748,9 +748,9 @@ export default function DepositForm({
     if (decimal.length <= 5) return value;
     return `${whole}.${decimal.slice(0, 5)}`;
   };
-  const exceedsDecimalPrecisionLimit =
-    hasMoreThanFiveDecimals(payAmountInput) ||
-    hasMoreThanFiveDecimals(getAmountInput);
+  // Do not disable submit from API-estimated receive decimals.
+  // Precision validation should only gate user-entered send amount.
+  const exceedsDecimalPrecisionLimit = hasMoreThanFiveDecimals(payAmountInput);
 
 
   // Add transaction code state
@@ -936,6 +936,16 @@ export default function DepositForm({
   );
 
 
+  const getPaymentMethodKey = (method: any): string => {
+    const providerKey =
+      method?.provider_name ||
+      method?.payment_provider_name ||
+      method?.payment_provider ||
+      method?.name ||
+      "";
+    return String(providerKey).trim();
+  };
+
   // Auto-select the second payment method by default (fallback to first when only one exists)
   useEffect(() => {
     if (finalPaymentMethods.length === 0) {
@@ -943,16 +953,16 @@ export default function DepositForm({
     }
 
     const hasSelected = finalPaymentMethods.some(
-      (method: any) => method?.provider_name === payBank
+      (method: any) => getPaymentMethodKey(method) === payBank
     );
 
     if (!payBank || !hasSelected) {
       const defaultMethod = finalPaymentMethods[1] || finalPaymentMethods[0];
-      setPayBank(defaultMethod.provider_name);
+      setPayBank(getPaymentMethodKey(defaultMethod));
       setSelectedPaymentDetail(defaultMethod);
     } else if (!selectedPaymentDetail) {
       const matchedMethod = finalPaymentMethods.find(
-        (method: any) => method?.provider_name === payBank
+        (method: any) => getPaymentMethodKey(method) === payBank
       );
       if (matchedMethod) {
         setSelectedPaymentDetail(matchedMethod);
@@ -3552,9 +3562,10 @@ export default function DepositForm({
                       const providerName = formatPaymentProviderLabel(payment);
                       const methodName = getPaymentMethodNameToStrip(payment);
                       const subtitle = methodName ? `${providerName} - ${methodName}` : null;
+                      const providerKey = getPaymentMethodKey(payment);
 
                       return {
-                        value: payment.provider_name,
+                        value: providerKey,
                         label: providerName,
                         subtitle: subtitle || undefined,
                         logo: logoUrl,
@@ -3584,7 +3595,7 @@ export default function DepositForm({
                     }`}
                   onChange={(value) => {
                     const selectedPayment = finalPaymentMethods?.find(
-                      (payment: any) => payment.provider_name === value
+                      (payment: any) => getPaymentMethodKey(payment) === value
                     );
 
                     // Debug logging when payment method is selected
@@ -3602,7 +3613,7 @@ export default function DepositForm({
                       });
                     }
 
-                    setPayBank(value);
+                    setPayBank(String(value || "").trim());
                     setSelectedPaymentDetail(selectedPayment || null);
                   }}
                   placeholder={
@@ -3944,14 +3955,12 @@ export default function DepositForm({
             <button
               type="button"
               className={`w-full text-base font-medium py-1.5 rounded-full flex items-center justify-center gap-2 transition-colors text-white ${isHomePage
-                ? payAmount >= 15000 || getAmount >= 15000 || exceedsDecimalPrecisionLimit
+                ? payAmount >= 15000 || exceedsDecimalPrecisionLimit
                   ? "bg-gray-500 cursor-not-allowed"
                   : "bg-[#1D8751] hover:bg-[#1D8751]/80 cursor-pointer"
                 : isSubmitting ||
                   !selectedAsset ||
-                  !payBank ||
                   payAmount >= 15000 ||
-                  getAmount >= 15000 ||
                   exceedsDecimalPrecisionLimit ||
                   (selectedAsset &&
                     !isSimpleCalculationAsset(selectedAsset) &&
@@ -4027,16 +4036,11 @@ export default function DepositForm({
               }}
               disabled={
                 requiresLoginRedirect
-                  ? payAmount >= 15000 || getAmount >= 15000 || exceedsDecimalPrecisionLimit
+                  ? payAmount >= 15000 || exceedsDecimalPrecisionLimit
                   : isSubmitting ||
                   !selectedAsset ||
-                  !payBank ||
                   (walletAddress.trim() && !!walletError) ||
-                  exceedsDecimalPrecisionLimit ||
-                  (selectedAsset &&
-                    !isSimpleCalculationAsset(selectedAsset) &&
-                    !isForexAsset(selectedAsset) &&
-                    estimateLoading)
+                  exceedsDecimalPrecisionLimit
               }
             >
               {isSubmitting ? (

@@ -1080,12 +1080,26 @@ export default function WithdrawalForm({
     setSelectedPaymentDetails((prev) => prev.filter((d) => d.id !== detail.id));
   };
 
+  const selectedPaymentStatus = (
+    selectedPaymentDetails[0]?.status || ""
+  )
+    .toString()
+    .trim()
+    .toLowerCase();
+  const isSelectedPaymentApproved = [
+    "approved",
+    "verified",
+    "active",
+    "enabled",
+    "accepted",
+    "completed",
+    "success",
+  ].includes(selectedPaymentStatus);
   const isSelectedPaymentPending = !!(
     payBank &&
     selectedPaymentDetails.length > 0 &&
-    selectedPaymentDetails[0].status &&
-    selectedPaymentDetails[0].status.toLowerCase() !== "approved" &&
-    selectedPaymentDetails[0].status.toLowerCase() !== "verified"
+    selectedPaymentStatus &&
+    !isSelectedPaymentApproved
   );
 
   // Sync selectedPaymentDetails when WebSocket refetches and status changes (e.g. Pending → APPROVED)
