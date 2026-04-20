@@ -54,6 +54,7 @@ import { API_CONFIG } from "@/lib/appConfig";
 import { useValidateAddress } from "@/hooks/useValidateAddress";
 import { resolveForexDepositAdminPaymentDetailId } from "../../express/utils/forexDepositResolution";
 import ForexWithdrawal from "../../express/components/forms/ForexWithdrawal";
+import InfoModal from "../../express/components/forms/info";
 
 import { logger } from '@/lib/utils/logger';
 import { useChangeNowAssets } from "@/features/express/home/hooks/useChangeNowAssets";
@@ -68,6 +69,7 @@ const MISSING_FXP_USD_RATE_ERROR =
   "No exchange rate configured for FXP to USD";
 const NEGATIVE_RECEIVE_ERROR =
   "Receive amount cannot be negative. Please adjust the amount.";
+const EXPRESS_FIXED_MIN_AMOUNT = 5;
 const buildNegativeReceiveError = (value: number) =>
   `${NEGATIVE_RECEIVE_ERROR} Calculated value: ${value.toFixed(2)}.`;
 
@@ -160,6 +162,8 @@ const usesLegacyPercentCommission = (asset: any) =>
 
 /** Instant amount update without waiting on exchange / swap */
 const isInstantAmountAsset = (asset: any) => usesLegacyPercentCommission(asset);
+const isOtcPopupAsset = (asset: any) =>
+  !!asset && !isSimpleCalculationAsset(asset) && !isForexPrimusAsset(asset);
 
 const toNonNegativeAmount = (value: unknown): number => {
   const parsed =
@@ -393,6 +397,8 @@ const getPaymentRestrictionMessage = (status?: string) =>
   const [receiveAmountError, setReceiveAmountError] = useState<string | null>(
     null
   );
+  const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
+  const otcThresholdExceededRef = useRef(false);
 
   // Debounce and cache for faster, fewer API calls (separate refs so forward/reverse effects never cancel each other's timeout)
   const estimateForwardTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -787,11 +793,10 @@ const getPaymentRestrictionMessage = (status?: string) =>
           }
 
           if (errorMessage.includes("deposit_too_small") || errorDetails.includes("Out of min amount")) {
-            const minAmount = responseInner?.payload?.range?.minAmount ?? responseData?.payload?.range?.minAmount;
             setApiValidationError(
-              minAmount
-                ? `Amount entered is too small. Minimum amount is ${Number(minAmount).toFixed(8)}.`
-                : "Amount entered is too small. Please enter a larger amount."
+              `Amount entered is too small. Minimum amount is ${Number(
+                EXPRESS_FIXED_MIN_AMOUNT
+              ).toFixed(8)}.`
             );
             setReceiveAmount("0");
             return;
@@ -999,13 +1004,9 @@ const getPaymentRestrictionMessage = (status?: string) =>
               errorMessage.includes("deposit_too_small") ||
               errorDetails.includes("Out of min amount")
             ) {
-              const minAmount =
-                (error as any)?.response_data?.payload?.range?.minAmount;
-              const text = minAmount
-                ? `Amount entered is too small. Minimum amount is ${Number(
-                    minAmount
-                  ).toFixed(8)}.`
-                : "Amount entered is too small. Please enter a larger amount.";
+              const text = `Amount entered is too small. Minimum amount is ${Number(
+                EXPRESS_FIXED_MIN_AMOUNT
+              ).toFixed(8)}.`;
               setApiValidationError(text);
               setEstimateError(null);
               setReceiveAmount("0");
@@ -1195,13 +1196,9 @@ const getPaymentRestrictionMessage = (status?: string) =>
               errorMessage.includes("deposit_too_small") ||
               errorDetails.includes("Out of min amount")
             ) {
-              const minAmount =
-                (error as any)?.response_data?.payload?.range?.minAmount;
-              const text = minAmount
-                ? `Amount entered is too small. Minimum amount is ${Number(
-                    minAmount
-                  ).toFixed(8)}.`
-                : "Amount entered is too small. Please enter a larger amount.";
+              const text = `Amount entered is too small. Minimum amount is ${Number(
+                EXPRESS_FIXED_MIN_AMOUNT
+              ).toFixed(8)}.`;
               setApiValidationError(text);
               setEstimateError(null);
               setAmount("0");
@@ -1439,6 +1436,18 @@ const getPaymentRestrictionMessage = (status?: string) =>
     setIsMethodDropdownOpen(false);
   };
 
+  // Match express OTC UX: open modal immediately when crossing threshold.
+  useEffect(() => {
+    const payNum = parseFloat(amount) || 0;
+    const recvNum = parseFloat(receiveAmount) || 0;
+    const exceeded =
+      isOtcPopupAsset(selectedAsset) && (payNum > 15000 || recvNum > 15000);
+    if (exceeded && !otcThresholdExceededRef.current) {
+      setIsInfoModalOpen(true);
+    }
+    otcThresholdExceededRef.current = exceeded;
+  }, [selectedAsset, amount, receiveAmount]);
+
   const handleModeSwitch = () => {
     const willBeWithdrawal = !isFieldsSwapped;
     const firstProvider = publicPaymentProviders?.[0];
@@ -1498,6 +1507,29 @@ const getPaymentRestrictionMessage = (status?: string) =>
   };
 
   const handleProceedToExchanging = async () => {
+    const payNum = parseFloat(amount) || 0;
+    if (
+      selectedAsset &&
+      isExchangeCommissionLookupAsset(selectedAsset) &&
+      payNum > 0 &&
+      payNum < EXPRESS_FIXED_MIN_AMOUNT
+    ) {
+      const minMsg = `Minimum amount for this asset is ${EXPRESS_FIXED_MIN_AMOUNT}.`;
+      setReceiveAmountError(minMsg);
+      showToast.error(minMsg);
+      return;
+    }
+    const recvNum = parseFloat(receiveAmount) || 0;
+    if (
+      selectedAsset &&
+      isOtcPopupAsset(selectedAsset) &&
+      (payNum > 15000 || recvNum > 15000)
+    ) {
+      showToast.error("Amount cannot exceed $15,000. Please contact OTC Desk for larger amounts.");
+      setIsInfoModalOpen(true);
+      return;
+    }
+
     let effectiveTxId = transactionId;
     let effectiveResponse: any = responseData;
     let effectiveDepositCode = depositCode;
@@ -2602,6 +2634,28 @@ const getPaymentRestrictionMessage = (status?: string) =>
       showToast.error("Please select all required fields");
       return;
     }
+    const payNum = parseFloat(amount) || 0;
+    if (
+      selectedAsset &&
+      isExchangeCommissionLookupAsset(selectedAsset) &&
+      payNum > 0 &&
+      payNum < EXPRESS_FIXED_MIN_AMOUNT
+    ) {
+      const minMsg = `Minimum amount for this asset is ${EXPRESS_FIXED_MIN_AMOUNT}.`;
+      setReceiveAmountError(minMsg);
+      showToast.error(minMsg);
+      return;
+    }
+    const recvNum = parseFloat(receiveAmount) || 0;
+    if (
+      selectedAsset &&
+      isOtcPopupAsset(selectedAsset) &&
+      (payNum > 15000 || recvNum > 15000)
+    ) {
+      showToast.error("Amount cannot exceed $15,000. Please contact OTC Desk for larger amounts.");
+      setIsInfoModalOpen(true);
+      return;
+    }
     if (!isDepositMode && selectedPaymentDetails.length === 0) {
       setPaymentMethodError("Please select your registered account");
       showToast.error("Please select your registered account");
@@ -2785,6 +2839,16 @@ const getPaymentRestrictionMessage = (status?: string) =>
 
   const amountNum = parseFloat(amount) || 0;
   const receiveAmountNum = parseFloat(receiveAmount) || 0;
+  const isLookupMinGuard =
+    !!selectedAsset && isExchangeCommissionLookupAsset(selectedAsset);
+  const isAmountBelowFixedMin =
+    isLookupMinGuard &&
+    amountNum > 0 &&
+    amountNum < EXPRESS_FIXED_MIN_AMOUNT;
+  const isOtcThresholdReached =
+    !!selectedAsset &&
+    isOtcPopupAsset(selectedAsset) &&
+    (amountNum >= 15000 || receiveAmountNum >= 15000);
 
   // Calculate fees and amounts - Network fee is always 0
   const networkFee = 0;
@@ -2923,6 +2987,18 @@ const getPaymentRestrictionMessage = (status?: string) =>
                         setAmount(value);
                         const newAmount = parseFloat(value) || 0;
                         setIsCalculatingFromPay(true);
+                        if (
+                          selectedAsset &&
+                          isExchangeCommissionLookupAsset(selectedAsset) &&
+                          newAmount > 0 &&
+                          newAmount < EXPRESS_FIXED_MIN_AMOUNT
+                        ) {
+                          setReceiveAmountError(
+                            `Minimum amount for this asset is ${EXPRESS_FIXED_MIN_AMOUNT}.`
+                          );
+                        } else {
+                          setReceiveAmountError(null);
+                        }
 
                         if (
                           selectedAsset &&
@@ -2931,19 +3007,22 @@ const getPaymentRestrictionMessage = (status?: string) =>
                         ) {
                           if (exchangeCommissionRule) {
                             const lc = exchangeCommissionRule as any;
-                            let calculatedSendAmount = newAmount;
+                            let calculatedReceiveAmount = newAmount;
                             if (lc.commission_mode === "flat_fee" && lc.fee != null) {
                               const fee = parseFloat(lc.fee);
                               if (!Number.isNaN(fee)) {
-                                calculatedSendAmount = newAmount + fee;
+                                calculatedReceiveAmount = Math.max(0, newAmount - fee);
                               }
                             } else if (lc.commission_mode === "percentage" && lc.rate != null) {
                               const rate = parseFloat(lc.rate);
                               if (!Number.isNaN(rate) && rate < 100) {
-                                calculatedSendAmount = newAmount / (1 - rate / 100);
+                                calculatedReceiveAmount = Math.max(
+                                  0,
+                                  newAmount * (1 - rate / 100)
+                                );
                               }
                             }
-                            setAmount(calculatedSendAmount.toFixed(2));
+                            setReceiveAmount(calculatedReceiveAmount.toFixed(2));
                             setIsCalculating(false);
                             setIsCalculatingReceive(false);
                           } else {
@@ -2991,9 +3070,9 @@ const getPaymentRestrictionMessage = (status?: string) =>
                       </div>
                     )}
                 </div>
-                {apiValidationError && (
+                {(receiveAmountError || apiValidationError) && (
                   <div className="mt-2 text-xs text-red-500">
-                    {apiValidationError}
+                    {receiveAmountError || apiValidationError}
                   </div>
                 )}
               </div>
@@ -3768,7 +3847,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
       {!isFirstCardSubmitted && (
         <button
           onClick={handleSubmit}
-          disabled={isSubmitting}
+          disabled={isSubmitting || isAmountBelowFixedMin || isOtcThresholdReached}
           className={`w-full py-3 px-4 rounded-xl font-semibold text-white bg-[#1D8751] hover:bg-[#0f8f4d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""
             }`}
         >
@@ -4105,6 +4184,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
                     onClick={handleProceedToExchanging}
                     disabled={
                       isSubmitting ||
+                      isAmountBelowFixedMin ||
                       !walletAddress.trim() ||
                       !!walletError ||
                       isWalletValidating
@@ -4221,6 +4301,14 @@ const getPaymentRestrictionMessage = (status?: string) =>
           } catch {
             showToast.error("Payment method added, but failed to refresh. Please reload the page.");
           }
+        }}
+      />
+      <InfoModal
+        isOpen={isInfoModalOpen}
+        onClose={() => setIsInfoModalOpen(false)}
+        onContactUs={() => {
+          setIsInfoModalOpen(false);
+          window.open("https://wa.me/252615066247", "_blank");
         }}
       />
     </div>

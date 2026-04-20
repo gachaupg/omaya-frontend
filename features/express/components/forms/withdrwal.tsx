@@ -1931,9 +1931,9 @@ export default function WithdrawalForm({
 
   // Get minimum amount based on asset type
   const getMinimumAmount = (asset: any) => {
-    if (!asset) return 10; // Default minimum
-    // First 3 assets use exchange lookup: enforce minimum 10
-    if (isExchangeCommissionLookupAsset(asset)) return 10;
+    if (!asset) return 5; // Default minimum
+    // First 3 assets use exchange lookup: enforce minimum 5
+    if (isExchangeCommissionLookupAsset(asset)) return 5;
     return 0; // No minimum for other assets
   };
 
