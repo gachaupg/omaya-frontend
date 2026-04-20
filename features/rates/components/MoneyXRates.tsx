@@ -14,6 +14,7 @@ import { RootState } from "@/store/rootReducer";
 import {
   fetchPublicPaymentMethods,
   fetchAdminPaymentMethods,
+  fetchUserPaymentDetails,
 } from "@/features/p2p/slices/paymentMethodsSlice";
 import {
   createMoneyXTransaction,
@@ -29,6 +30,8 @@ import { AlertCircle } from "lucide-react";
 import { useRatesI18n } from "@/lib/useRatesI18n";
 import Exchanging from "@/features/express/home/components/moneyX/components/Exchanging";
 import { checkKYCStatus, openKYCModal } from "@/features/auth/slices/authSlice";
+import { useBookmarkedAddresses } from "@/features/express/hooks/useBookmarkedAddresses";
+import { BookmarkDropdown } from "@/features/express/components/forms/BookmarkDropdown";
 
 const RATES_MONEYX_FORM_STATE_KEY = "rates_moneyx_form_state";
 
@@ -51,6 +54,7 @@ const MoneyXRates = ({
     publicPaymentMethods,
     publicMethodsLoading,
     publicMethodsError,
+    userPaymentDetails,
   } = useSelector((state: RootState) => state.paymentMethods);
 
   const {
@@ -170,6 +174,8 @@ const MoneyXRates = ({
   const [accountNumberCopied, setAccountNumberCopied] = useState(false);
   const [isCalculatingFromPay, setIsCalculatingFromPay] = useState(true);
   const [isStateHydrated, setIsStateHydrated] = useState(false);
+  const [bookmarkOpen, setBookmarkOpen] = useState(false);
+  const bookmarkAnchorRef = useRef<HTMLSpanElement>(null);
   const commissionFetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const paymentDetailsRef = useRef<HTMLDivElement>(null);
 
@@ -332,6 +338,73 @@ const MoneyXRates = ({
 
     return providerName;
   }, []);
+  const currentBankAsset = selectedToPaymentDetail
+    ? getProviderName(selectedToPaymentDetail)
+    : "";
+  const {
+    bookmarks,
+    loading: bookmarksLoading,
+    saving: bookmarkSaving,
+    fetchBookmarks,
+    saveBookmarkError,
+    clearSaveBookmarkError,
+  } = useBookmarkedAddresses(currentBankAsset || "BANK", "BANK");
+  const mergedSavedAddresses = useMemo(() => {
+    const approvedDetails = Array.isArray(userPaymentDetails)
+      ? userPaymentDetails
+      : [];
+    const assetFilter = String(currentBankAsset || "").trim().toLowerCase();
+
+    const approvedAsBookmarks = approvedDetails
+      .filter((detail: any) => {
+        const raw = String(detail?.status ?? detail?.approved ?? "")
+          .trim()
+          .toLowerCase();
+        const isApproved =
+          raw === "approved" ||
+          raw === "active" ||
+          raw === "success" ||
+          raw === "true";
+        if (!isApproved) return false;
+        const provider = String(
+          detail?.payment_provider_name ??
+            detail?.provider_name ??
+            detail?.payment_method_name ??
+            ""
+        )
+          .trim()
+          .toLowerCase();
+        if (!assetFilter) return true;
+        return provider.includes(assetFilter) || assetFilter.includes(provider);
+      })
+      .map((detail: any, idx: number) => {
+        const address = String(
+          detail?.account_number ?? detail?.wallet_address ?? ""
+        ).trim();
+        const providerName = String(
+          detail?.payment_provider_name ??
+            detail?.provider_name ??
+            detail?.payment_method_name ??
+            "Approved payment"
+        ).trim();
+        return {
+          id: `approved-${detail?.id ?? idx}-${address}`,
+          address,
+          label: `${providerName} (Approved)`,
+          asset: currentBankAsset || "BANK",
+          network: "BANK",
+        };
+      })
+      .filter((b: any) => b.address);
+
+    const deduped = new Map<string, any>();
+    [...approvedAsBookmarks, ...bookmarks].forEach((b: any) => {
+      const key = String(b?.address ?? "").trim().toLowerCase();
+      if (!key || deduped.has(key)) return;
+      deduped.set(key, b);
+    });
+    return Array.from(deduped.values());
+  }, [userPaymentDetails, currentBankAsset, bookmarks]);
 
   // Helper function to check if a payment method is a bank
   const isBankMethod = useCallback(
@@ -1382,12 +1455,16 @@ const MoneyXRates = ({
               <label
                 className={`block text-base ${isDark ? "text-[#788099]" : "text-[#475569]"} mb-2 font-semibold`}
               >
-                {t("rates.bankAccountAddress", "Bank Account Address")}
+                {selectedToPaymentDetail
+                  ? `${t("rates.toBankAccountLabel", "To")} ${getProviderName(
+                      selectedToPaymentDetail
+                    )} ${t("rates.accountNumber", "Account Number")}`
+                  : t("rates.toBankAccountAddress", "To Bank Account Address")}
               </label>
 
               {/* Input group */}
               <div
-                className={`flex items-center ${isDark ? "bg-[#1D1D23]" : "bg-white"} border ${isDark ? "border-[#35353E]" : "border-[#E2E8F0]"} rounded-2xl px-4 py-2 mb-2 overflow-hidden gap-2`}
+                className={`flex items-center ${isDark ? "bg-[#1D1D23]" : "bg-white"} border ${isDark ? "border-[#35353E]" : "border-[#E2E8F0]"} rounded-2xl px-4 py-2 mb-2 overflow-visible gap-2`}
               >
                 {/* Left icon */}
                 <span className="text-[#1D8751] flex-shrink-0">
@@ -1416,12 +1493,22 @@ const MoneyXRates = ({
                   type="text"
                   value={bankAccountAddress}
                   onChange={(e) => {
+                    clearSaveBookmarkError();
                     const value = e.target.value;
                     setBankAccountAddress(value);
                     setIsAddressConfirmed(false);
                     setBankAddressError(null);
                   }}
-                  placeholder={t("rates.pasteAccountAddressPlaceholder", "Paste here your Bank Account Address")}
+                  placeholder={
+                    selectedToPaymentDetail
+                      ? `${t("rates.pasteToAccountNumber", "Paste here your")} ${getProviderName(
+                          selectedToPaymentDetail
+                        )} ${t("rates.accountNumber", "Account Number")}`
+                      : t(
+                          "rates.pasteToBankAccountAddressPlaceholder",
+                          "Paste here your To Bank Account Address"
+                        )
+                  }
                   className={`flex-1 min-w-0 bg-transparent border-none outline-none ${isDark ? "text-[#788099]" : "text-[#475569]"} placeholder-[#788099] text-sm sm:text-base ${bankAddressError
                     ? "border-red-500"
                     : bankAccountAddress.trim() && !bankAddressError
@@ -1429,6 +1516,50 @@ const MoneyXRates = ({
                       : ""
                     }`}
                 />
+                <span
+                  ref={bookmarkAnchorRef}
+                  className="relative mx-1 sm:mx-2 text-[#1D8751] cursor-pointer flex-shrink-0 hover:opacity-80 transition-opacity"
+                  onClick={async () => {
+                    if (bookmarkOpen) {
+                      setBookmarkOpen(false);
+                      return;
+                    }
+                    setBookmarkOpen(true);
+                    await Promise.all([
+                      fetchBookmarks(),
+                      isAuthenticated
+                        ? dispatch(fetchUserPaymentDetails())
+                            .unwrap()
+                            .catch(() => undefined)
+                        : Promise.resolve(),
+                    ]);
+                  }}
+                  title="Load from saved addresses"
+                >
+                  <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                  </svg>
+                  <BookmarkDropdown
+                    isOpen={bookmarkOpen}
+                    onClose={() => setBookmarkOpen(false)}
+                    bookmarks={mergedSavedAddresses}
+                    loading={bookmarksLoading}
+                    saving={bookmarkSaving}
+                    currentAddress={bankAccountAddress}
+                    asset={currentBankAsset || "BANK"}
+                    network="BANK"
+                    onSelect={(addr) => {
+                      clearSaveBookmarkError();
+                      setBankAccountAddress(addr);
+                      setBankAddressError(null);
+                    }}
+                    onSaveCurrent={async () => {}}
+                    anchorRef={bookmarkAnchorRef}
+                    isDark={isDark}
+                    saveDisabled={true}
+                    hideSaveButton={true}
+                  />
+                </span>
                 {/* Paste button */}
                 <button
                   onClick={async () => {
@@ -1459,6 +1590,11 @@ const MoneyXRates = ({
               {bankAddressError && (
                 <p className="text-red-500 text-sm mt-2 font-medium">
                   ❌ {bankAddressError}
+                </p>
+              )}
+              {saveBookmarkError && (
+                <p className="text-red-500 text-sm mt-2 font-medium">
+                  ❌ {saveBookmarkError}
                 </p>
               )}
 
@@ -1610,7 +1746,7 @@ const MoneyXRates = ({
 
       {legalModalType && (
         <div
-          className="fixed inset-0 z-[9990] bg-black/60 flex items-center justify-center p-4"
+          className="fixed inset-0 z-[10050] bg-black/60 flex items-center justify-center p-4"
           onClick={() => setLegalModalType(null)}
         >
           <div

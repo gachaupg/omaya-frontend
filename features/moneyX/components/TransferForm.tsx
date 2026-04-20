@@ -1023,9 +1023,10 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
       logoUrl = payment.logo.trim();
     }
 
+    const cleanProviderName = getProviderName(payment);
     return {
       value: payment.provider_name,
-      label: `${payment.provider_name} - ${payment.payment_method || payment.payment_method_type || ""}`,
+      label: cleanProviderName,
       logo: logoUrl,
     };
   });
@@ -1578,6 +1579,7 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
                   anchorRef={bookmarkAnchorRef}
                   isDark={isDark}
                   saveDisabled={!!bankAddressError}
+                  hideSaveButton={true}
                 />
               </span>
               {/* Paste button */}

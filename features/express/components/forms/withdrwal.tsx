@@ -1930,10 +1930,18 @@ export default function WithdrawalForm({
   };
 
   // Get minimum amount based on asset type
+  const isFixedMinWithdrawalAsset = (asset: any) => {
+    const raw = String(
+      asset?.ticker || asset?.symbol || asset?.name || ""
+    )
+      .trim()
+      .toLowerCase();
+    return raw === "usd" || raw === "usdt" || raw.startsWith("usdt ");
+  };
+
   const getMinimumAmount = (asset: any) => {
-    if (!asset) return 5; // Default minimum
-    // First 3 assets use exchange lookup: enforce minimum 5
-    if (isExchangeCommissionLookupAsset(asset)) return 5;
+    if (!asset) return 0;
+    if (isFixedMinWithdrawalAsset(asset)) return 5;
     return 0; // No minimum for other assets
   };
 

@@ -55,6 +55,8 @@ import { useValidateAddress } from "@/hooks/useValidateAddress";
 import { resolveForexDepositAdminPaymentDetailId } from "../../express/utils/forexDepositResolution";
 import ForexWithdrawal from "../../express/components/forms/ForexWithdrawal";
 import InfoModal from "../../express/components/forms/info";
+import { useBookmarkedAddresses } from "../../express/hooks/useBookmarkedAddresses";
+import { BookmarkDropdown } from "../../express/components/forms/BookmarkDropdown";
 
 import { logger } from '@/lib/utils/logger';
 import { useChangeNowAssets } from "@/features/express/home/hooks/useChangeNowAssets";
@@ -164,6 +166,12 @@ const usesLegacyPercentCommission = (asset: any) =>
 const isInstantAmountAsset = (asset: any) => usesLegacyPercentCommission(asset);
 const isOtcPopupAsset = (asset: any) =>
   !!asset && !isSimpleCalculationAsset(asset) && !isForexPrimusAsset(asset);
+const isFixedMinWithdrawalAsset = (asset: any) => {
+  const raw = String(asset?.ticker || asset?.symbol || asset?.name || "")
+    .trim()
+    .toLowerCase();
+  return raw === "usd" || raw === "usdt" || raw.startsWith("usdt ");
+};
 
 const toNonNegativeAmount = (value: unknown): number => {
   const parsed =
@@ -237,6 +245,8 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
   const [walletError, setWalletError] = useState<string>("");
   const [isWalletValidating, setIsWalletValidating] = useState(false);
   const [isPasted, setIsPasted] = useState(false);
+  const [bookmarkOpen, setBookmarkOpen] = useState(false);
+  const bookmarkAnchorRef = useRef<HTMLSpanElement>(null);
   /** FX Primus — same as express deposit.tsx (forex account + optional notes) */
   const [forexAccountNumber, setForexAccountNumber] = useState<string>("");
   const [forexUserNotes, setForexUserNotes] = useState<string>("");
@@ -273,6 +283,23 @@ const getPaymentRestrictionMessage = (status?: string) =>
   const validationNetwork = selectedAsset
     ? String(getAssetNetwork(selectedAsset) || "bsc").toLowerCase()
     : undefined;
+  const bookmarkAsset = String(
+    selectedAsset?.ticker || selectedAsset?.symbol || selectedAsset?.name || "USDT"
+  )
+    .trim()
+    .toUpperCase();
+  const bookmarkNetwork = String(getAssetNetwork(selectedAsset) || "BSC")
+    .trim()
+    .toUpperCase();
+  const {
+    bookmarks,
+    loading: bookmarksLoading,
+    saving: bookmarkSaving,
+    fetchBookmarks,
+    saveBookmark,
+    saveBookmarkError,
+    clearSaveBookmarkError,
+  } = useBookmarkedAddresses(bookmarkAsset, bookmarkNetwork);
 
   /** FX Primus: same as express deposit — no crypto wallet address on this step */
   const isRatesFxpDeposit =
@@ -1510,7 +1537,8 @@ const getPaymentRestrictionMessage = (status?: string) =>
     const payNum = parseFloat(amount) || 0;
     if (
       selectedAsset &&
-      isExchangeCommissionLookupAsset(selectedAsset) &&
+      !isDepositMode &&
+      isFixedMinWithdrawalAsset(selectedAsset) &&
       payNum > 0 &&
       payNum < EXPRESS_FIXED_MIN_AMOUNT
     ) {
@@ -1810,7 +1838,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
             withdrawal_address: withdrawalAddress,
             payout_address: payoutAddress,
             from_currency: effectiveResponse?.from_currency,
-            to_currency: effectiveResponse?.to_currency,
+            to_currency: "USD",
             to_network: effectiveResponse?.to_network,
             estimated_amount: effectiveResponse?.estimated_amount,
             changenow_id: effectiveResponse?.changenow_id,
@@ -2637,7 +2665,8 @@ const getPaymentRestrictionMessage = (status?: string) =>
     const payNum = parseFloat(amount) || 0;
     if (
       selectedAsset &&
-      isExchangeCommissionLookupAsset(selectedAsset) &&
+      !isDepositMode &&
+      isFixedMinWithdrawalAsset(selectedAsset) &&
       payNum > 0 &&
       payNum < EXPRESS_FIXED_MIN_AMOUNT
     ) {
@@ -2840,7 +2869,9 @@ const getPaymentRestrictionMessage = (status?: string) =>
   const amountNum = parseFloat(amount) || 0;
   const receiveAmountNum = parseFloat(receiveAmount) || 0;
   const isLookupMinGuard =
-    !!selectedAsset && isExchangeCommissionLookupAsset(selectedAsset);
+    !isDepositMode &&
+    !!selectedAsset &&
+    isFixedMinWithdrawalAsset(selectedAsset);
   const isAmountBelowFixedMin =
     isLookupMinGuard &&
     amountNum > 0 &&
@@ -2989,7 +3020,8 @@ const getPaymentRestrictionMessage = (status?: string) =>
                         setIsCalculatingFromPay(true);
                         if (
                           selectedAsset &&
-                          isExchangeCommissionLookupAsset(selectedAsset) &&
+                          !isDepositMode &&
+                          isFixedMinWithdrawalAsset(selectedAsset) &&
                           newAmount > 0 &&
                           newAmount < EXPRESS_FIXED_MIN_AMOUNT
                         ) {
@@ -4140,6 +4172,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
                     type="text"
                     value={walletAddress}
                     onChange={(e) => {
+                      clearSaveBookmarkError();
                       const value = e.target.value;
                       setWalletAddress(value);
                       const trimmed = value.trim();
@@ -4153,6 +4186,57 @@ const getPaymentRestrictionMessage = (status?: string) =>
                     placeholder={t("rates.enterWalletAddressPlaceholder", "Enter your wallet address")}
                     className="flex-1 bg-transparent text-[#35353e] dark:text-[#788099] placeholder-[#7e7e8f] focus:outline-none min-w-0"
                   />
+                  <span
+                    ref={bookmarkAnchorRef}
+                    className="relative mx-2 text-[#1D8751] cursor-pointer flex-shrink-0 hover:opacity-80 transition-opacity"
+                    onClick={async () => {
+                      if (bookmarkOpen) {
+                        setBookmarkOpen(false);
+                        return;
+                      }
+                      setBookmarkOpen(true);
+                      await fetchBookmarks();
+                    }}
+                    title="Load from saved addresses"
+                  >
+                    <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                    </svg>
+                    <BookmarkDropdown
+                      isOpen={bookmarkOpen}
+                      onClose={() => setBookmarkOpen(false)}
+                      bookmarks={bookmarks}
+                      loading={bookmarksLoading}
+                      saving={bookmarkSaving}
+                      currentAddress={walletAddress}
+                      asset={bookmarkAsset}
+                      network={bookmarkNetwork}
+                      onSelect={(addr) => {
+                        clearSaveBookmarkError();
+                        setWalletAddress(addr);
+                        setWalletError("");
+                        if (addr.trim() && validationCurrency) {
+                          void validateAddress(addr.trim(), validationCurrency, validationNetwork);
+                        }
+                      }}
+                      onSaveCurrent={async () => {
+                        try {
+                          if (!walletAddress.trim()) return;
+                          await saveBookmark({
+                            address: walletAddress.trim(),
+                            label: `My ${bookmarkAsset} wallet`,
+                            network: bookmarkNetwork,
+                            asset: bookmarkAsset,
+                          });
+                        } catch {
+                          // handled by hook
+                        }
+                      }}
+                      anchorRef={bookmarkAnchorRef}
+                      isDark={isDark}
+                      saveDisabled={!!walletError}
+                    />
+                  </span>
                   <button
                     type="button"
                     onClick={handlePaste}
@@ -4172,6 +4256,9 @@ const getPaymentRestrictionMessage = (status?: string) =>
                 )}
                 {walletError && (
                   <p className="text-red-500 text-sm mb-4">{walletError}</p>
+                )}
+                {saveBookmarkError && (
+                  <p className="text-red-500 text-sm mb-4">{saveBookmarkError}</p>
                 )}
                 <div className="flex gap-2 sm:gap-3 flex-col sm:flex-row">
                   <button
@@ -4266,17 +4353,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
                         <span>{t("rates.processing", "Processing...")}</span>
                       </>
                     ) : (
-                      <>
-                        <img
-                          src="https://res.cloudinary.com/pitz/image/upload/v1752429993/Express_1_ggdxth.png"
-                          alt=""
-                        />
-                        <img
-                          className="mt-2"
-                          src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
-                          alt=""
-                        />
-                      </>
+                      <span className="tracking-wide">EXCHANGE</span>
                     )}
                   </button>
                 </div>
