@@ -1023,13 +1023,13 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
 
       {/* Top Card */}
       <div
-        className={`flex flex-col md:flex-row justify-between items-stretch bg-[#FFFFFF] dark:${
+        className={`${isHomePage ? "flex flex-col md:flex-row justify-between items-stretch" : "flex flex-col md:flex-row justify-between items-stretch"} bg-[#FFFFFF] dark:${
           isDark
             ? "bg-[#23232B]  border:[#E8EFF5] dark:border-[#35353E]"
             : "bg-white border-gray-200"
         } border-2 rounded-2xl ${isHomePage ? 'p-2 sm:p-3' : 'p-4'} shadow-lg w-full ${isHomePage ? 'mb-2 sm:mb-3' : 'mb-4'} ${isHomePage ? 'min-h-[120px] sm:min-h-[140px]' : 'min-h-[180px]'} overflow-hidden`}
       >
-        <div className={`flex-1 flex flex-col justify-between ${isHomePage ? 'py-1 sm:py-2 pr-0 sm:pr-2' : 'py-2 pr-2'} min-w-0`}>
+        <div className={`flex flex-col justify-between ${isHomePage ? 'flex-1 py-1 sm:py-2 pr-0 sm:pr-2' : 'flex-1 py-2 pr-2'} min-w-0`}>
           <div>
             <div
               className={`${
@@ -1174,7 +1174,7 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
             )}
           </div>
         </div>
-        <div className={`flex-shrink-0 ${isHomePage ? 'ml-0 mt-2 md:mt-0 md:ml-3' : 'ml-0 md:ml-6'} flex items-center justify-center ${isHomePage ? 'py-1 sm:py-2' : 'py-2'}`}>
+        <div className={`${isHomePage ? "flex-shrink-0 ml-0 mt-2 md:mt-0 md:ml-3" : "flex-shrink-0 ml-0 md:ml-2 md:mr-48 mt-3 sm:mt-2 md:mt-0"} flex items-center justify-center ${isHomePage ? 'py-1 sm:py-2' : 'py-2'}`}>
           {/* QR code */}
           <div className={`${isHomePage ? 'w-24 h-24 sm:w-28 sm:h-28' : 'w-36 h-36'} bg-white rounded-lg flex items-center justify-center flex-shrink-0`}>
             <img

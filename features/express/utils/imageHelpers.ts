@@ -15,7 +15,7 @@ const LOCAL_ASSET_ICON_MAP: Record<string, string> = {
   fxp: "/assets/fx-primus-custom.svg",
   fxprimus: "/assets/fx-primus-custom.svg",
   "fx primus": "/assets/fx-primus-custom.svg",
-  usd: "/images/united_kingdom_zud79x.webp",
+  usd: "/assets/united_states_flag.svg",
 };
 
 const sanitizeUrl = (value?: string | null) => {

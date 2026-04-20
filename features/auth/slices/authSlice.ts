@@ -82,6 +82,9 @@ const handleApiError = (error: unknown): string => {
 };
 
 const getSuspensionMessage = (user?: User | null): string | null => {
+  if (user?.is_deactivated) {
+    return "Your account is deactivated. Please contact support.";
+  }
   if (!user?.is_suspended) return null;
   const reason = user?.suspension_details?.reason?.trim();
   return reason

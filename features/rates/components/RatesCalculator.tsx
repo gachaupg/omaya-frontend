@@ -243,6 +243,28 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
     return ticker === "USDT Tether" ? "usdt" : ticker.toLowerCase();
   };
 
+const normalizePaymentStatus = (status?: string) =>
+  (status || "").toString().trim().toLowerCase();
+
+const isApprovedPaymentStatus = (status?: string) =>
+  ["approved", "verified"].includes(normalizePaymentStatus(status));
+
+const isFrozenPaymentStatus = (status?: string) => {
+  const normalized = normalizePaymentStatus(status);
+  return (
+    normalized.includes("frozen") ||
+    normalized.includes("freeze") ||
+    normalized.includes("blocked") ||
+    normalized.includes("suspend") ||
+    normalized.includes("disabled")
+  );
+};
+
+const getPaymentRestrictionMessage = (status?: string) =>
+  isFrozenPaymentStatus(status)
+    ? "This account is frozen. Please contact Customer Support."
+    : "Selected payment method is pending verification";
+
   const validationCurrency = selectedAsset ? getValidationCurrency(selectedAsset) : undefined;
   const validationNetwork = selectedAsset
     ? String(getAssetNetwork(selectedAsset) || "bsc").toLowerCase()
@@ -2590,10 +2612,10 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
     // Deposit mode should not require/verify payment-method approval.
     // We key off `isFieldsSwapped` because the UI (registered account) is rendered only for withdrawal.
     if (isFieldsSwapped && selectedPaymentDetails.length > 0) {
-      const status = (selectedPaymentDetails[0]?.status || "").toString().toLowerCase();
-      const isPending = status !== "" && status !== "approved" && status !== "verified";
-      if (isPending) {
-        const msg = "Selected payment method is pending verification";
+      const status = selectedPaymentDetails[0]?.status;
+      const isRestricted = status && !isApprovedPaymentStatus(status);
+      if (isRestricted) {
+        const msg = getPaymentRestrictionMessage(status);
         setPaymentMethodError(msg);
         showToast.error(msg);
         return;
@@ -3106,11 +3128,9 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                               </div>
                               <CustomSelect
                                 options={(enhancedFilteredUserPaymentDetails || []).map((detail: UserPaymentDetail) => {
-                                  const status = (detail?.status || "")
-                                    .toString()
-                                    .toLowerCase();
-                                  const isPending =
-                                    status !== "" && status !== "approved" && status !== "verified";
+                                  const status = detail?.status;
+                                  const isPending = !!(status && !isApprovedPaymentStatus(status));
+                                  const isFrozen = isFrozenPaymentStatus(status);
                                   let providerName = detail.payment_provider_name || detail.provider_name || "Unknown Provider";
                                   let providerLogo = detail.provider_logo;
                                   if (publicPaymentProviders.length > 0) {
@@ -3134,7 +3154,9 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                                   const displayLabel = `${accountNumber} - ${accountName}`;
                                   return {
                                     value: detail.id.toString(),
-                                    label: isPending ? `${displayLabel} (Pending)` : displayLabel,
+                                    label: isPending
+                                      ? `${displayLabel} (${isFrozen ? "Frozen" : "Pending"})`
+                                      : displayLabel,
                                     logo: providerLogo || undefined,
                                     title: `Account Number: ${accountNumber} | Account Name: ${accountName}${providerName ? ` | Provider: ${providerName}` : ""}`,
                                     disabled: isPending,
@@ -3185,23 +3207,23 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                         !isFirstCardSubmitted &&
                         selectedPaymentDetails.length > 0 &&
                         (() => {
-                          const status = (selectedPaymentDetails[0]?.status || "")
-                            .toString()
-                            .toLowerCase();
-                          return (
-                            status !== "" &&
-                            status !== "approved" &&
-                            status !== "verified"
-                          );
+                          const status = selectedPaymentDetails[0]?.status;
+                          return !!(status && !isApprovedPaymentStatus(status));
                         })() && (
                           <div className="mb-3 flex items-start gap-3 p-4 rounded-2xl bg-[#F79330]/10 border border-[#F79330]/40">
                             <svg className="w-5 h-5 text-[#F79330] flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                             </svg>
                             <div className="flex-1">
-                              <p className="text-sm font-semibold text-[#F79330]">Account Pending Approval</p>
+                              <p className="text-sm font-semibold text-[#F79330]">
+                                {isFrozenPaymentStatus(selectedPaymentDetails[0]?.status)
+                                  ? "Account Frozen"
+                                  : "Account Pending Approval"}
+                              </p>
                               <p className="text-xs text-[#F79330]/80 mt-1">
-                                Your account is pending approval. Please contact support to get it approved.
+                                {isFrozenPaymentStatus(selectedPaymentDetails[0]?.status)
+                                  ? "Your account is frozen. Please contact support for assistance."
+                                  : "Your account is pending approval. Please contact support to get it approved."}
                               </p>
                             </div>
                           </div>
@@ -3570,23 +3592,22 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                           {t("rates.registeredAccount", "Registered Account")}
                         </label>
                         {(() => {
-                          const status = (
-                            selectedPaymentDetails[0]?.status || ""
-                          )
-                            .toString()
-                            .toLowerCase();
-                          const isPending =
-                            status !== "" &&
-                            status !== "approved" &&
-                            status !== "verified";
+                          const status = selectedPaymentDetails[0]?.status;
+                          const isPending = !!(status && !isApprovedPaymentStatus(status));
                           if (!isPending) return null;
 
                           return (
                             <span
                               className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border border-[#F79330]/40 bg-[#F79330]/10 text-[#F79330]"
-                              title="Account pending approval"
+                              title={
+                                isFrozenPaymentStatus(status)
+                                  ? "Account frozen"
+                                  : "Account pending approval"
+                              }
                             >
-                              Pending Registered Account
+                              {isFrozenPaymentStatus(status)
+                                ? "Frozen Registered Account"
+                                : "Pending Registered Account"}
                             </span>
                           );
                         })()}

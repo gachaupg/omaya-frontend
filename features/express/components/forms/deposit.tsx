@@ -551,21 +551,17 @@ export default function DepositForm({
         activeMethodsLength: activeMethods.length,
       });
 
-      if (activeMethods.length > 0) {
-        console.log("🔍 Setting stable payment methods:", {
-          count: activeMethods.length,
-          firstMethod: activeMethods[0]
-            ? {
-              provider_name: activeMethods[0].provider_name,
-              provider_logo: activeMethods[0].provider_logo,
-              logo: activeMethods[0].logo,
-            }
-            : null,
-        });
-        setStablePaymentMethods(activeMethods);
-      } else {
-        console.log("🔍 No active methods found after filtering");
-      }
+      console.log("🔍 Setting stable payment methods:", {
+        count: activeMethods.length,
+        firstMethod: activeMethods[0]
+          ? {
+            provider_name: activeMethods[0].provider_name,
+            provider_logo: activeMethods[0].provider_logo,
+            logo: activeMethods[0].logo,
+          }
+          : null,
+      });
+      setStablePaymentMethods(activeMethods);
     } else {
       console.log("🔍 No payment methods data available", {
         isHomePage,
@@ -573,48 +569,14 @@ export default function DepositForm({
         hasPaymentMethodsData: !!paymentMethodsData,
         publicPaymentMethodsStructure: publicPaymentMethods,
       });
+      setStablePaymentMethods([]);
     }
   }, [paymentMethodsData, publicPaymentMethods]); // Update when payment data changes
 
   // Use stable state - React will properly render this
   const effectivePaymentMethods = stablePaymentMethods;
 
-  // Fallback payment methods if no data is available
-  const fallbackPaymentMethods = useMemo(
-    () => [
-      {
-        provider_name: "Bank",
-        payment_method: "Bank Transfer",
-        is_active: true,
-      },
-      {
-        provider_name: "Crypto",
-        payment_method: "Cryptocurrency",
-        is_active: true,
-      },
-      { provider_name: "Forex", payment_method: "Forex", is_active: true },
-      {
-        provider_name: "Mobile",
-        payment_method: "Mobile Money",
-        is_active: true,
-      },
-      {
-        provider_name: "Marchant",
-        payment_method: "Marchant",
-        is_active: true,
-      },
-    ],
-    []
-  );
-
-  // Use fallback if no effective payment methods
-  const finalPaymentMethods = useMemo(
-    () =>
-      effectivePaymentMethods.length > 0
-        ? effectivePaymentMethods
-        : fallbackPaymentMethods,
-    [effectivePaymentMethods, fallbackPaymentMethods]
-  );
+  const finalPaymentMethods = effectivePaymentMethods;
 
   console.log("🔍 Effective Payment Methods:", {
     isHomePage,
@@ -1383,6 +1345,18 @@ export default function DepositForm({
   };
 
   const isForexAsset = (asset: any) => isForexPrimusAsset(asset);
+  const isOtcPopupAsset = (asset: any) =>
+    !!asset && !isSimpleCalculationAsset(asset) && !isForexAsset(asset);
+  const otcThresholdExceededRef = useRef(false);
+
+  useEffect(() => {
+    const exceeded =
+      isOtcPopupAsset(selectedAsset) && (payAmount > 15000 || getAmount > 15000);
+    if (exceeded && !otcThresholdExceededRef.current) {
+      setIsInfoModalOpen(true);
+    }
+    otcThresholdExceededRef.current = exceeded;
+  }, [selectedAsset, payAmount, getAmount]);
   const getFxpReversePayAmount = (receiveAmount: number): number => {
     if (!Number.isFinite(receiveAmount)) return 0;
     const feeFromPayload = Number(apiCommissionDetails?.calculated_fee ?? apiCommissionDetails?.fee);
@@ -2656,8 +2630,7 @@ export default function DepositForm({
     !!walletError ||
     !termsAccepted ||
     exceedsDecimalPrecisionLimit ||
-    payAmount >= 15000 ||
-    getAmount >= 15000;
+    (isOtcPopupAsset(selectedAsset) && (payAmount >= 15000 || getAmount >= 15000));
 
   // Save form state before navigating to legal pages so back button restores it
   const handleBeforeLegalNavigate = useCallback(() => {
@@ -3256,7 +3229,7 @@ export default function DepositForm({
     setValidationErrors([]);
 
     // Prevent submission if amount exceeds $15,000
-    if (payAmount > 15000 || getAmount > 15000) {
+    if (isOtcPopupAsset(selectedAsset) && (payAmount > 15000 || getAmount > 15000)) {
       showToast.error("Amount cannot exceed $15,000. Please contact OTC Desk for larger amounts.");
       setIsInfoModalOpen(true);
       return;
@@ -3566,7 +3539,7 @@ export default function DepositForm({
                         setIsUserModifiedAmount(true);
 
                         // Show info modal if amount exceeds $15,000
-                        if (newAmount > 15000) {
+                        if (isOtcPopupAsset(selectedAsset) && newAmount > 15000) {
                           setIsInfoModalOpen(true);
                         }
 
@@ -3656,7 +3629,7 @@ export default function DepositForm({
                         setApiValidationError(null);
                         setIsUserModifiedAmount(true);
 
-                        if (newAmount > 15000) setIsInfoModalOpen(true);
+                        if (isOtcPopupAsset(selectedAsset) && newAmount > 15000) setIsInfoModalOpen(true);
 
                         if (selectedAsset && newAmount > 0 && isSimpleCalculationAsset(selectedAsset)) {
                           if (!isExchangeCommissionLookupAsset(selectedAsset)) {
@@ -3791,9 +3764,14 @@ export default function DepositForm({
                        
 
                         const methodKey = getPaymentMethodKey(payment);
+                        const providerLabel =
+                          payment?.provider_name ||
+                          payment?.payment_provider_name ||
+                          payment?.provider ||
+                          "Payment Method";
                         return {
                           value: methodKey || String(payment.provider_id ?? index),
-                          label: `${methodKey || "Payment"} - ${payment.payment_method || payment.payment_method_type || payment.payment_type}`,
+                          label: providerLabel,
                           logo: logoUrl,
                         };
                       }
@@ -4300,8 +4278,9 @@ export default function DepositForm({
                   return;
                 }
 
-                if (payAmount >= 15000 || getAmount >= 15000) {
+                if (isOtcPopupAsset(selectedAsset) && (payAmount >= 15000 || getAmount >= 15000)) {
                   showToast.error("Amount cannot exceed $15,000. Please contact OTC Desk for larger amounts.");
+                  setIsInfoModalOpen(true);
                   return;
                 }
 
@@ -4995,7 +4974,10 @@ export default function DepositForm({
               <div className="mt-2">
                 {isAddressValidating && (
                   <p className="text-[#1D8751] text-sm font-medium flex items-center gap-2">
-                    <div className="w-4 h-4 border-2 border-[#1D8751] border-t-transparent rounded-full animate-spin"></div>
+                    <span
+                      className="w-4 h-4 border-2 border-[#1D8751] border-t-transparent rounded-full animate-spin"
+                      aria-hidden="true"
+                    />
                     Validating address...
                   </p>
                 )}
@@ -5195,29 +5177,11 @@ export default function DepositForm({
       <InfoModal
         isOpen={isInfoModalOpen}
         onClose={() => {
-          // When modal closes, reset amount to maximum allowed (15000)
-          if (payAmount > 15000) {
-            setPayAmount(15000);
-            setPayAmountInput("15000");
-          }
-          if (getAmount > 15000) {
-            setGetAmount(15000);
-            setGetAmountInput("15000");
-          }
           setIsInfoModalOpen(false);
         }}
         onContactUs={() => {
           setIsInfoModalOpen(false);
           router.push("/contactUs");
-          // When modal closes, reset amount to maximum allowed (15000)
-          if (payAmount > 15000) {
-            setPayAmount(15000);
-            setPayAmountInput("15000");
-          }
-          if (getAmount > 15000) {
-            setGetAmount(15000);
-            setGetAmountInput("15000");
-          }
         }}
       />
 

@@ -654,19 +654,15 @@ export default function DepositForm({
         activeMethodsLength: activeMethods.length
       });
 
-      if (activeMethods.length > 0) {
-        console.log("🔍 Setting stable payment methods:", {
-          count: activeMethods.length,
-          firstMethod: activeMethods[0] ? {
-            provider_name: activeMethods[0].provider_name,
-            provider_logo: activeMethods[0].provider_logo,
-            logo: activeMethods[0].logo
-          } : null
-        });
-        setStablePaymentMethods(activeMethods);
-      } else {
-        console.log("🔍 No active methods found after filtering");
-      }
+      console.log("🔍 Setting stable payment methods:", {
+        count: activeMethods.length,
+        firstMethod: activeMethods[0] ? {
+          provider_name: activeMethods[0].provider_name,
+          provider_logo: activeMethods[0].provider_logo,
+          logo: activeMethods[0].logo
+        } : null
+      });
+      setStablePaymentMethods(activeMethods);
     } else {
       console.log("🔍 No payment methods data available", {
         isHomePage,
@@ -674,6 +670,7 @@ export default function DepositForm({
         hasPaymentMethodsData: !!paymentMethodsData,
         publicPaymentMethodsStructure: publicPaymentMethods
       });
+      setStablePaymentMethods([]);
     }
   }, [paymentMethodsData, isHomePage, publicPaymentMethods]); // Update when payment data changes
 
@@ -1316,6 +1313,18 @@ export default function DepositForm({
   };
 
   const isForexAsset = (asset: any) => isForexPrimusAsset(asset);
+  const isOtcPopupAsset = (asset: any) =>
+    !!asset && !isSimpleCalculationAsset(asset) && !isForexAsset(asset);
+  const otcThresholdExceededRef = useRef(false);
+
+  useEffect(() => {
+    const exceeded =
+      isOtcPopupAsset(selectedAsset) && (payAmount > 15000 || getAmount > 15000);
+    if (exceeded && !otcThresholdExceededRef.current) {
+      setIsInfoModalOpen(true);
+    }
+    otcThresholdExceededRef.current = exceeded;
+  }, [selectedAsset, payAmount, getAmount]);
 
   // FXP uses manual calculation with fixed 1.06 rate
   const FXP_EXCHANGE_RATE = 1.06;
@@ -3151,7 +3160,7 @@ export default function DepositForm({
   // Handle form submission
   const handleSubmit = async () => {
     // Prevent submission if amount exceeds $15,000
-    if (payAmount > 15000 || getAmount > 15000) {
+    if (isOtcPopupAsset(selectedAsset) && (payAmount > 15000 || getAmount > 15000)) {
       showToast.error("Amount cannot exceed $15,000. Please contact OTC Desk for larger amounts.");
       setIsInfoModalOpen(true);
       return;
@@ -3509,7 +3518,7 @@ export default function DepositForm({
                         setIsUserModifiedAmount(true);
 
                         // Show info modal if amount exceeds $15,000
-                        if (newAmount > 15000) {
+                        if (isOtcPopupAsset(selectedAsset) && newAmount > 15000) {
                           setIsInfoModalOpen(true);
                         }
 
@@ -4026,12 +4035,12 @@ export default function DepositForm({
             <button
               type="button"
               className={`w-full text-base font-medium py-1.5 rounded-full flex items-center justify-center gap-2 transition-colors text-white ${isHomePage
-                ? payAmount >= 15000 || exceedsDecimalPrecisionLimit
+                ? (isOtcPopupAsset(selectedAsset) && payAmount >= 15000) || exceedsDecimalPrecisionLimit
                   ? "bg-gray-500 cursor-not-allowed"
                   : "bg-[#1D8751] hover:bg-[#1D8751]/80 cursor-pointer"
                 : isSubmitting ||
                   !selectedAsset ||
-                  payAmount >= 15000 ||
+                  (isOtcPopupAsset(selectedAsset) && payAmount >= 15000) ||
                   exceedsDecimalPrecisionLimit ||
                   (selectedAsset &&
                     !isSimpleCalculationAsset(selectedAsset) &&
@@ -4107,7 +4116,7 @@ export default function DepositForm({
               }}
               disabled={
                 requiresLoginRedirect
-                  ? payAmount >= 15000 || exceedsDecimalPrecisionLimit
+                  ? (isOtcPopupAsset(selectedAsset) && payAmount >= 15000) || exceedsDecimalPrecisionLimit
                   : isSubmitting ||
                   !selectedAsset ||
                   (walletAddress.trim() && !!walletError) ||
@@ -4982,12 +4991,12 @@ export default function DepositForm({
           {/* Button outside the card */}
           <div className="flex flex-col gap-3 w-full px-2">
             <button
-              className={`w-full text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors text-white ${isSubmitting || payAmount >= 15000 || getAmount >= 15000 || !isTermsAccepted
+              className={`w-full text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors text-white ${isSubmitting || (isOtcPopupAsset(selectedAsset) && (payAmount >= 15000 || getAmount >= 15000)) || !isTermsAccepted
                 ? "bg-gray-500 cursor-not-allowed"
                 : "bg-[#1D8751] hover:bg-[#166b3e]"
                 }`}
               onClick={handleProceedToNext}
-              disabled={isSubmitting || !walletAddress.trim() || !!walletError || payAmount >= 15000 || getAmount >= 15000 || !isTermsAccepted}
+              disabled={isSubmitting || !walletAddress.trim() || !!walletError || (isOtcPopupAsset(selectedAsset) && (payAmount >= 15000 || getAmount >= 15000)) || !isTermsAccepted}
             >
               {isSubmitting ? (
                 <div className="flex items-center gap-2">
@@ -5013,29 +5022,11 @@ export default function DepositForm({
       <InfoModal
         isOpen={isInfoModalOpen}
         onClose={() => {
-          // When modal closes, reset amount to maximum allowed (15000)
-          if (payAmount > 15000) {
-            setPayAmount(15000);
-            setPayAmountInput("15000");
-          }
-          if (getAmount > 15000) {
-            setGetAmount(15000);
-            setGetAmountInput("15000");
-          }
           setIsInfoModalOpen(false);
         }}
         onContactUs={() => {
           setIsInfoModalOpen(false);
           router.push("/contactUs");
-          // When modal closes, reset amount to maximum allowed (15000)
-          if (payAmount > 15000) {
-            setPayAmount(15000);
-            setPayAmountInput("15000");
-          }
-          if (getAmount > 15000) {
-            setGetAmount(15000);
-            setGetAmountInput("15000");
-          }
         }}
       />
 

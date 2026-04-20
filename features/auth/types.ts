@@ -13,6 +13,8 @@ export interface User {
   referral_code: string;
   user_type?: "individual" | "business";
   phone_number?: string;
+  freeze?: boolean;
+  is_deactivated?: boolean;
   is_suspended?: boolean;
   suspension_details?: {
     suspended_at?: string;

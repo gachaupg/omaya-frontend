@@ -30,6 +30,7 @@ import SuccessPage from "@/features/express/components/success";
 import { SwapWidgetSkeleton } from "@/components/ui/Skeletons";
 import { useChangeNowAssets } from "../../hooks/useChangeNowAssets";
 import { useRouter } from "next/navigation";
+import InfoModal from "@/features/express/components/forms/info";
 import { logger } from "@/lib/utils/logger";
 import {
   buildSwapRedirectPath,
@@ -88,6 +89,8 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
   const [currentStep, setCurrentStep] =
     React.useState<SwapStep>("transaction-info");
   const [showWalletAddress, setShowWalletAddress] = React.useState(false);
+  const [isInfoModalOpen, setIsInfoModalOpen] = React.useState(false);
+  const otcThresholdExceededRef = React.useRef(false);
 
   // When coming back from Terms in swap flow, reopen wallet step instead of initial page.
   useEffect(() => {
@@ -185,6 +188,16 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
 
     return () => clearTimeout(timer);
   }, [toAmount]);
+
+  useEffect(() => {
+    const fromValue = parseFloat(fromAmount) || 0;
+    const toValue = parseFloat(toAmount) || 0;
+    const exceeded = fromValue > 15000 || toValue > 15000;
+    if (exceeded && !otcThresholdExceededRef.current) {
+      setIsInfoModalOpen(true);
+    }
+    otcThresholdExceededRef.current = exceeded;
+  }, [fromAmount, toAmount]);
 
   // Clear stale estimate errors when user clears the active field or enters 0 (avoids race with in-flight requests)
   useEffect(() => {
@@ -452,6 +465,11 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
 
     if (!estimate) {
       setLocalSwapError("Please wait for the swap estimate to load.");
+      return;
+    }
+
+    if ((parseFloat(fromAmount) || 0) > 15000 || (parseFloat(toAmount) || 0) > 15000) {
+      setIsInfoModalOpen(true);
       return;
     }
 
@@ -832,6 +850,14 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
       {/* <SwapStatusComponent transactionId={""} date={""} paidAmount={""} paidCurrency={""} receivedAmount={""} receivedCurrency={""}        */}
       {/* /> */}
       {/* <SuccessPage /> */}
+      <InfoModal
+        isOpen={isInfoModalOpen}
+        onClose={() => setIsInfoModalOpen(false)}
+        onContactUs={() => {
+          setIsInfoModalOpen(false);
+          router.push("/contactUs");
+        }}
+      />
     </div>
   );
 };
