@@ -20,6 +20,7 @@ import { FaSearch } from "react-icons/fa";
 import Express from "@/features/express/home/express/express";
 import SwapWidget from "@/features/express/home/swap copy/components/SwapWidget";
 import MoneyX from "@/features/express/home/components/moneyX/components/MoneyX";
+import FrozenAccountModal from "@/components/ui/FrozenAccountModal";
 
 
 /**
@@ -322,7 +323,7 @@ export default function ExchangeForm({
   );
   const { publicPaymentMethods, publicMethodsLoading, publicMethodsError } =
     useSelector((state: any) => state.paymentMethods);
-  const { isAuthenticated } = useSelector((state: any) => state.auth);
+  const { isAuthenticated, user } = useSelector((state: any) => state.auth);
 
   /* ------------------- State ------------------- */
   const [activeTab, setActiveTab] = useState<Tab>("express");
@@ -345,10 +346,12 @@ export default function ExchangeForm({
   const [estimate, setEstimate] = useState<any>(null);
   const [estimateLoading, setEstimateLoading] = useState(false);
   const [estimateError, setEstimateError] = useState<string | null>(null);
+  const [showFrozenModal, setShowFrozenModal] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const assetDropdownRef = useRef<HTMLDivElement>(null);
   const paymentDropdownRef = useRef<HTMLDivElement>(null);
   const getDropdownContainerRef = useRef<HTMLDivElement>(null);
+  const isFrozenUser = isAuthenticated && user?.freeze === true;
 
   // Use the data display hooks for consistent data handling
   const assetsDisplay = useAssetsDisplay(
@@ -1050,6 +1053,10 @@ export default function ExchangeForm({
 
   /* ------------------- Helpers ------------------- */
   const handleTabClick = (tabId: Tab) => {
+    if (isFrozenUser) {
+      setShowFrozenModal(true);
+      return;
+    }
     // Allow tab switching without forcing navigation to the login page
     setActiveTab(tabId);
   };
@@ -1645,8 +1652,18 @@ export default function ExchangeForm({
           }`}>
         {renderTabs()}
         <div className="pt-5 sm:pt-5 px-3 sm:px-4 md:px-5 py-3 border-l border-r border-b border-border dark:border-accent rounded-b-2xl">
-          <SwapWidget usePublicApi={isHomePage} />
+          {isFrozenUser ? (
+            <div className="rounded-xl border border-[#E23D3A]/40 bg-[#E23D3A]/10 p-4 text-sm text-[#E23D3A]">
+              Your account is frozen. Please contact Customer Support to unfreeze and continue transactions.
+            </div>
+          ) : (
+            <SwapWidget usePublicApi={isHomePage} />
+          )}
         </div>
+        <FrozenAccountModal
+          isOpen={showFrozenModal}
+          onClose={() => setShowFrozenModal(false)}
+        />
       </div>
     );
   }
@@ -1662,8 +1679,18 @@ export default function ExchangeForm({
           }`}>
         {renderTabs()}
         <div className="pt-2 sm:pt-3 px-3 sm:px-4 md:px-5 py-3 border-l border-r border-b border-border dark:border-accent rounded-b-2xl">
-          <MoneyX isHomePage={isHomePage} commissionType="deposit" />
+          {isFrozenUser ? (
+            <div className="rounded-xl border border-[#E23D3A]/40 bg-[#E23D3A]/10 p-4 text-sm text-[#E23D3A]">
+              Your account is frozen. Please contact Customer Support to unfreeze and continue transactions.
+            </div>
+          ) : (
+            <MoneyX isHomePage={isHomePage} commissionType="deposit" />
+          )}
         </div>
+        <FrozenAccountModal
+          isOpen={showFrozenModal}
+          onClose={() => setShowFrozenModal(false)}
+        />
       </div>
     );
   }
@@ -1679,8 +1706,18 @@ export default function ExchangeForm({
       {renderTabs()}
       {/* Express Exchange Content */}
       <div className="pt-2 sm:pt-3 px-3 sm:px-4 md:px-5 py-3 border-l border-r border-b border-border dark:border-accent rounded-b-2xl">
-        <Express isHomePage={isHomePage} />
+        {isFrozenUser ? (
+          <div className="rounded-xl border border-[#E23D3A]/40 bg-[#E23D3A]/10 p-4 text-sm text-[#E23D3A]">
+            Your account is frozen. Please contact Customer Support to unfreeze and continue transactions.
+          </div>
+        ) : (
+          <Express isHomePage={isHomePage} />
+        )}
       </div>
+      <FrozenAccountModal
+        isOpen={showFrozenModal}
+        onClose={() => setShowFrozenModal(false)}
+      />
     </div>
   );
 }

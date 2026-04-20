@@ -1169,7 +1169,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
             )}
           </div>
         </div>
-        <div className="flex-shrink-0 ml-0 md:ml-6 mt-3 sm:mt-0 flex items-center justify-center py-2">
+        <div className="flex-shrink-0 ml-0 md:ml-2 md:mr-48 mt-3 sm:mt-2 md:mt-0 flex items-center justify-center py-2">
           {/* QR code */}
           <div className="w-28 h-28 sm:w-36 sm:h-36 bg-white rounded-lg flex items-center justify-center">
             <img

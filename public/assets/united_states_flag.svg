@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 7410 3900" aria-label="United States flag" role="img">
+  <rect width="7410" height="3900" fill="#b22234"/>
+  <g fill="#fff">
+    <rect y="300" width="7410" height="300"/>
+    <rect y="900" width="7410" height="300"/>
+    <rect y="1500" width="7410" height="300"/>
+    <rect y="2100" width="7410" height="300"/>
+    <rect y="2700" width="7410" height="300"/>
+    <rect y="3300" width="7410" height="300"/>
+  </g>
+  <rect width="2964" height="2100" fill="#3c3b6e"/>
+  <g fill="#fff">
+    <g id="star-row-6">
+      <g id="star">
+        <path d="M0,-42 10,-13 40,-13 16,5 24,34 0,17 -24,34 -16,5 -40,-13 -10,-13Z"/>
+      </g>
+      <use href="#star" x="494"/>
+      <use href="#star" x="988"/>
+      <use href="#star" x="1482"/>
+      <use href="#star" x="1976"/>
+      <use href="#star" x="2470"/>
+    </g>
+    <g id="star-row-5" transform="translate(247,105)">
+      <use href="#star"/>
+      <use href="#star" x="494"/>
+      <use href="#star" x="988"/>
+      <use href="#star" x="1482"/>
+      <use href="#star" x="1976"/>
+    </g>
+    <use href="#star-row-6" y="210"/>
+    <use href="#star-row-5" y="210"/>
+    <use href="#star-row-6" y="420"/>
+    <use href="#star-row-5" y="420"/>
+    <use href="#star-row-6" y="630"/>
+    <use href="#star-row-5" y="630"/>
+    <use href="#star-row-6" y="840"/>
+    <use href="#star-row-5" y="840"/>
+  </g>
+</svg>

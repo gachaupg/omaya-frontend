@@ -128,38 +128,15 @@ const MoneyXRates = ({
             payment.payment_method_name,
         }));
 
-      if (activeMethods.length > 0) {
-        setStablePaymentMethods(activeMethods);
-      }
+      setStablePaymentMethods(activeMethods);
+      return;
     }
+    setStablePaymentMethods([]);
   }, [publicPaymentMethods]);
-
-  // Fallback payment methods
-  const fallbackPaymentMethods = useMemo(
-    () => [
-      {
-        provider_name: "Bank",
-        payment_method: "Bank Transfer",
-        is_active: true,
-      },
-      {
-        provider_name: "Mobile Money",
-        payment_method: "Mobile Money",
-        is_active: true,
-      },
-    ],
-    []
-  );
 
   const effectivePaymentMethods = stablePaymentMethods;
 
-  const finalPaymentMethods = useMemo(
-    () =>
-      effectivePaymentMethods.length > 0
-        ? effectivePaymentMethods
-        : fallbackPaymentMethods,
-    [effectivePaymentMethods, fallbackPaymentMethods]
-  );
+  const finalPaymentMethods = effectivePaymentMethods;
 
   // Form state
   const [payAmount, setPayAmount] = useState(100);
@@ -1012,34 +989,40 @@ const MoneyXRates = ({
                             } focus:outline-none`}
                         />
                       </div>
-                      {filteredFromMethods.map((method: any, index: number) => (
-                        <button
-                          key={index}
-                          type="button"
-                          onClick={() => {
-                            const providerName = getProviderName(method);
-                            setFromPaymentMethod(providerName);
-                            setSelectedFromPaymentDetail(method);
-                            setIsFromDropdownOpen(false);
-                            setFromSearchTerm("");
-                          }}
-                          className={`w-full px-3 py-2 rounded-lg flex items-center gap-3 hover:bg-opacity-50 ${isDark ? "hover:bg-[#2F2F3A]" : "hover:bg-gray-100"
-                            }`}
-                        >
-                          {method.provider_logo || method.logo ? (
-                            <img
-                              src={method.provider_logo || method.logo}
-                              alt={getProviderName(method)}
-                              className="w-8 h-8 rounded-full"
-                            />
-                          ) : (
-                            <div className="w-8 h-8 rounded-full bg-[#1D8751] flex items-center justify-center text-white text-xs font-semibold">
-                              {getProviderName(method)?.charAt(0) || "B"}
-                            </div>
-                          )}
-                          <span>{getProviderName(method)}</span>
-                        </button>
-                      ))}
+                      {filteredFromMethods.length === 0 ? (
+                        <p className={`px-3 py-2 text-sm ${isDark ? "text-[#788099]" : "text-gray-500"}`}>
+                          No payment methods available
+                        </p>
+                      ) : (
+                        filteredFromMethods.map((method: any, index: number) => (
+                          <button
+                            key={index}
+                            type="button"
+                            onClick={() => {
+                              const providerName = getProviderName(method);
+                              setFromPaymentMethod(providerName);
+                              setSelectedFromPaymentDetail(method);
+                              setIsFromDropdownOpen(false);
+                              setFromSearchTerm("");
+                            }}
+                            className={`w-full px-3 py-2 rounded-lg flex items-center gap-3 hover:bg-opacity-50 ${isDark ? "hover:bg-[#2F2F3A]" : "hover:bg-gray-100"
+                              }`}
+                          >
+                            {method.provider_logo || method.logo ? (
+                              <img
+                                src={method.provider_logo || method.logo}
+                                alt={getProviderName(method)}
+                                className="w-8 h-8 rounded-full"
+                              />
+                            ) : (
+                              <div className="w-8 h-8 rounded-full bg-[#1D8751] flex items-center justify-center text-white text-xs font-semibold">
+                                {getProviderName(method)?.charAt(0) || "B"}
+                              </div>
+                            )}
+                            <span>{getProviderName(method)}</span>
+                          </button>
+                        ))
+                      )}
                     </div>
                   </div>
                 )}
@@ -1168,34 +1151,40 @@ const MoneyXRates = ({
                             } focus:outline-none`}
                         />
                       </div>
-                      {filteredToMethods.map((method: any, index: number) => (
-                        <button
-                          key={index}
-                          type="button"
-                          onClick={() => {
-                            const providerName = getProviderName(method);
-                            setToPaymentMethod(providerName);
-                            setSelectedToPaymentDetail(method);
-                            setIsToDropdownOpen(false);
-                            setToSearchTerm("");
-                          }}
-                          className={`w-full px-3 py-2 rounded-lg flex items-center gap-3 hover:bg-opacity-50 ${isDark ? "hover:bg-[#2F2F3A]" : "hover:bg-gray-100"
-                            }`}
-                        >
-                          {method.provider_logo || method.logo ? (
-                            <img
-                              src={method.provider_logo || method.logo}
-                              alt={getProviderName(method)}
-                              className="w-8 h-8 rounded-full"
-                            />
-                          ) : (
-                            <div className="w-8 h-8 rounded-full bg-[#1D8751] flex items-center justify-center text-white text-xs font-semibold">
-                              {getProviderName(method)?.charAt(0) || "P"}
-                            </div>
-                          )}
-                          <span>{getProviderName(method)}</span>
-                        </button>
-                      ))}
+                      {filteredToMethods.length === 0 ? (
+                        <p className={`px-3 py-2 text-sm ${isDark ? "text-[#788099]" : "text-gray-500"}`}>
+                          No payment methods available
+                        </p>
+                      ) : (
+                        filteredToMethods.map((method: any, index: number) => (
+                          <button
+                            key={index}
+                            type="button"
+                            onClick={() => {
+                              const providerName = getProviderName(method);
+                              setToPaymentMethod(providerName);
+                              setSelectedToPaymentDetail(method);
+                              setIsToDropdownOpen(false);
+                              setToSearchTerm("");
+                            }}
+                            className={`w-full px-3 py-2 rounded-lg flex items-center gap-3 hover:bg-opacity-50 ${isDark ? "hover:bg-[#2F2F3A]" : "hover:bg-gray-100"
+                              }`}
+                          >
+                            {method.provider_logo || method.logo ? (
+                              <img
+                                src={method.provider_logo || method.logo}
+                                alt={getProviderName(method)}
+                                className="w-8 h-8 rounded-full"
+                              />
+                            ) : (
+                              <div className="w-8 h-8 rounded-full bg-[#1D8751] flex items-center justify-center text-white text-xs font-semibold">
+                                {getProviderName(method)?.charAt(0) || "P"}
+                              </div>
+                            )}
+                            <span>{getProviderName(method)}</span>
+                          </button>
+                        ))
+                      )}
                     </div>
                   </div>
                 )}
@@ -1310,13 +1299,13 @@ const MoneyXRates = ({
             </h2>
             {(() => {
               const accountName =
-                selectedToPaymentDetail?.account_name ??
-                selectedToPaymentDetail?.payment_details?.[0]?.account_name ??
-                getProviderName(selectedToPaymentDetail) ??
+                selectedFromPaymentDetail?.account_name ??
+                selectedFromPaymentDetail?.payment_details?.[0]?.account_name ??
+                getProviderName(selectedFromPaymentDetail) ??
                 "—";
               const accountNumber =
-                selectedToPaymentDetail?.account_number ??
-                selectedToPaymentDetail?.payment_details?.[0]?.account_number ??
+                selectedFromPaymentDetail?.account_number ??
+                selectedFromPaymentDetail?.payment_details?.[0]?.account_number ??
                 "—";
               const copyAccountNumber = () => {
                 if (!accountNumber || accountNumber === "—") return;

@@ -481,11 +481,11 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
                   {searchTerm ? "No matching options" : emptyText}
                 </div>
               ) : (
-                filteredOptions.map((option) => {
+                filteredOptions.map((option, index) => {
                   const isSelected = value === option.value;
                   return (
                     <button
-                      key={option.value}
+                      key={`${option.value}-${index}`}
                       type="button"
                       onClick={() => handleOptionClick(option.value)}
                       disabled={option.disabled}

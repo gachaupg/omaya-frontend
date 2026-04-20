@@ -99,8 +99,24 @@ const isUuid = (value: unknown): boolean =>
   );
 
 const extractApiErrorMessage = (error: any, fallback: string): string => {
+  const toFrozenMessageIfNeeded = (message: string): string => {
+    const normalized = message.toLowerCase();
+    const isFrozenError =
+      (normalized.includes("account") || normalized.includes("payment detail")) &&
+      (normalized.includes("frozen") ||
+        normalized.includes("freeze") ||
+        normalized.includes("blocked") ||
+        normalized.includes("suspend") ||
+        normalized.includes("disabled"));
+    return isFrozenError
+      ? "This account is frozen. Please contact Customer Support."
+      : message;
+  };
+
   const responseData = error?.response?.data;
-  if (typeof responseData === "string" && responseData.trim()) return responseData;
+  if (typeof responseData === "string" && responseData.trim()) {
+    return toFrozenMessageIfNeeded(responseData);
+  }
 
   const direct =
     responseData?.message ||
@@ -108,7 +124,9 @@ const extractApiErrorMessage = (error: any, fallback: string): string => {
     responseData?.details ||
     responseData?.detail ||
     "";
-  if (typeof direct === "string" && direct.trim()) return direct;
+  if (typeof direct === "string" && direct.trim()) {
+    return toFrozenMessageIfNeeded(direct);
+  }
 
   const fieldErrors = responseData?.errors || responseData?.error;
   if (fieldErrors && typeof fieldErrors === "object" && !Array.isArray(fieldErrors)) {
@@ -116,17 +134,52 @@ const extractApiErrorMessage = (error: any, fallback: string): string => {
     if (firstKey) {
       const value = fieldErrors[firstKey];
       if (Array.isArray(value) && value.length > 0) {
-        return `${firstKey}: ${String(value[0])}`;
+        return toFrozenMessageIfNeeded(`${firstKey}: ${String(value[0])}`);
       }
       if (typeof value === "string" && value.trim()) {
-        return `${firstKey}: ${value}`;
+        return toFrozenMessageIfNeeded(`${firstKey}: ${value}`);
       }
     }
   }
 
-  if (error?.message && String(error.message).trim()) return String(error.message);
+  if (error?.message && String(error.message).trim()) {
+    return toFrozenMessageIfNeeded(String(error.message));
+  }
   return fallback;
 };
+
+const FROZEN_ACCOUNT_MESSAGE =
+  "This account is frozen. Please contact Customer Support.";
+
+const normalizePaymentStatus = (status?: string) =>
+  (status || "").toString().trim().toLowerCase();
+
+const isApprovedPaymentStatus = (status?: string) =>
+  [
+    "approved",
+    "verified",
+    "active",
+    "enabled",
+    "accepted",
+    "completed",
+    "success",
+  ].includes(normalizePaymentStatus(status));
+
+const isFrozenPaymentStatus = (status?: string) => {
+  const normalized = normalizePaymentStatus(status);
+  return (
+    normalized.includes("frozen") ||
+    normalized.includes("freeze") ||
+    normalized.includes("blocked") ||
+    normalized.includes("suspend") ||
+    normalized.includes("disabled")
+  );
+};
+
+const getPaymentRestrictionMessage = (status?: string) =>
+  isFrozenPaymentStatus(status)
+    ? FROZEN_ACCOUNT_MESSAGE
+    : "Selected payment method is pending verification";
 
 // Add UserPaymentSelector component
 const UserPaymentSelector = ({
@@ -1046,15 +1099,20 @@ export default function WithdrawalForm({
 
   }, [payBank, activePublicProviders]);
 
-  // Auto-select first account when accounts are available for selected payment type
+  // Auto-select account when accounts are available for selected payment type.
+  // Also recover from stale selections that no longer exist in the filtered list.
   useEffect(() => {
-    if (
-      payBank &&
-      enhancedFilteredUserPaymentDetails.length > 0 &&
-      selectedPaymentDetails.length === 0
-    ) {
-      const firstAccount = enhancedFilteredUserPaymentDetails[0];
-      setSelectedPaymentDetails([firstAccount]);
+    if (!payBank || enhancedFilteredUserPaymentDetails.length === 0) return;
+
+    const selectedId = selectedPaymentDetails[0]?.id;
+    const selectedStillValid =
+      selectedId != null &&
+      enhancedFilteredUserPaymentDetails.some(
+        (detail: UserPaymentDetail) => detail.id === selectedId
+      );
+
+    if (!selectedStillValid) {
+      setSelectedPaymentDetails([enhancedFilteredUserPaymentDetails[0]]);
     }
   }, [payBank, enhancedFilteredUserPaymentDetails, selectedPaymentDetails]);
 
@@ -1102,21 +1160,11 @@ export default function WithdrawalForm({
     setSelectedPaymentDetails((prev) => prev.filter((d) => d.id !== detail.id));
   };
 
-  const selectedPaymentStatus = (
+  const selectedPaymentStatus = normalizePaymentStatus(
     selectedPaymentDetails[0]?.status || ""
-  )
-    .toString()
-    .trim()
-    .toLowerCase();
-  const isSelectedPaymentApproved = [
-    "approved",
-    "verified",
-    "active",
-    "enabled",
-    "accepted",
-    "completed",
-    "success",
-  ].includes(selectedPaymentStatus);
+  );
+  const isSelectedPaymentApproved = isApprovedPaymentStatus(selectedPaymentStatus);
+  const isSelectedPaymentFrozen = isFrozenPaymentStatus(selectedPaymentStatus);
   const isSelectedPaymentPending = !!(
     payBank &&
     selectedPaymentDetails.length > 0 &&
@@ -1596,6 +1644,18 @@ export default function WithdrawalForm({
       (ticker === "usdc" && network === "bsc") ||
       isExchangeCommissionLookupAsset(asset);
   };
+  const isOtcPopupAsset = (asset: any) =>
+    !!asset && !isSimpleCalculationAsset(asset) && !isForexAsset(asset);
+  const otcThresholdExceededRef = useRef(false);
+
+  useEffect(() => {
+    const exceeded =
+      isOtcPopupAsset(selectedAsset) && (payAmount > 15000 || getAmount > 15000);
+    if (exceeded && !otcThresholdExceededRef.current) {
+      setIsInfoModalOpen(true);
+    }
+    otcThresholdExceededRef.current = exceeded;
+  }, [selectedAsset, payAmount, getAmount]);
 
   // Check if asset uses commission API (USDT, USDC, FX Primus)
   const isCommissionApiAsset = (asset: any) => !!getCommissionApiAsset(asset?.ticker || asset?.symbol || "");
@@ -2681,7 +2741,7 @@ export default function WithdrawalForm({
         setReceiveAmountError(
           validateReceiveAmount(calculatedGetAmount, selectedAsset)
         );
-        if (calculatedGetAmount > 15000) setIsInfoModalOpen(true);
+        if (isOtcPopupAsset(selectedAsset) && calculatedGetAmount > 15000) setIsInfoModalOpen(true);
         setIsCalculating(false);
         setIsCalculatingReceive(false);
         return;
@@ -2696,7 +2756,7 @@ export default function WithdrawalForm({
       setPreviousValidAmount(calculatedGetAmount.toString());
       const validationError = validateReceiveAmount(calculatedGetAmount, selectedAsset);
       setReceiveAmountError(validationError);
-      if (calculatedGetAmount > 15000) setIsInfoModalOpen(true);
+      if (isOtcPopupAsset(selectedAsset) && calculatedGetAmount > 15000) setIsInfoModalOpen(true);
       setIsCalculating(false);
       setIsCalculatingReceive(false);
       return;
@@ -2755,7 +2815,7 @@ export default function WithdrawalForm({
               setReceiveAmountError(
                 validateReceiveAmount(calculatedGetAmount, selectedAsset)
               );
-              if (calculatedGetAmount > 15000) setIsInfoModalOpen(true);
+              if (isOtcPopupAsset(selectedAsset) && calculatedGetAmount > 15000) setIsInfoModalOpen(true);
               setIsCalculating(false);
               setIsCalculatingReceive(false);
               return;
@@ -2785,7 +2845,7 @@ export default function WithdrawalForm({
             setReceiveAmountError(validationError);
 
             // Show info modal if receive amount exceeds $15,000
-            if (calculatedGetAmount > 15000) {
+            if (isOtcPopupAsset(selectedAsset) && calculatedGetAmount > 15000) {
               setIsInfoModalOpen(true);
             }
           } else {
@@ -2812,7 +2872,7 @@ export default function WithdrawalForm({
               );
               setReceiveAmountError(validationError);
 
-              if (finalAmount > 15000) {
+              if (isOtcPopupAsset(selectedAsset) && finalAmount > 15000) {
                 setIsInfoModalOpen(true);
               }
             } else if (estimateLoading) {
@@ -3128,10 +3188,11 @@ export default function WithdrawalForm({
 
     // Check if selected payment is pending (not approved/verified)
     const selected = selectedPaymentDetails[0];
-    if (selected?.status && selected.status !== "approved" && selected.status !== "verified") {
-      setPaymentMethodError("Selected payment method is pending verification");
-      errors.push("Selected payment method is pending verification");
-      showToast.error("Selected payment method is pending verification");
+    if (selected?.status && !isApprovedPaymentStatus(selected.status)) {
+      const restrictionMessage = getPaymentRestrictionMessage(selected.status);
+      setPaymentMethodError(restrictionMessage);
+      errors.push(restrictionMessage);
+      showToast.error(restrictionMessage);
       return false;
     }
 
@@ -3341,7 +3402,7 @@ export default function WithdrawalForm({
     setValidationErrors([]);
 
     // Prevent submission if amount exceeds $15,000
-    if (payAmount > 15000 || getAmount > 15000) {
+    if (isOtcPopupAsset(selectedAsset) && (payAmount > 15000 || getAmount > 15000)) {
       showToast.error("Amount cannot exceed $15,000. Please contact OTC Desk for larger amounts.");
       setIsInfoModalOpen(true);
       return;
@@ -4416,16 +4477,26 @@ export default function WithdrawalForm({
                                       const displayLabel = `${accountNumber} - ${accountName}`;
                                       // Create a full tooltip with all information (using separators since HTML title doesn't support newlines)
                                       const fullInfo = `Account Number: ${accountNumber} | Account Name: ${accountName}${providerName ? ` | Provider: ${providerName}` : ''}`;
-                                      const isPending = !!(detail.status && detail.status !== "approved" && detail.status !== "verified");
+                                      const isPending = !!(
+                                        detail.status &&
+                                        !isApprovedPaymentStatus(detail.status)
+                                      );
+                                      const isFrozen = isFrozenPaymentStatus(detail.status);
 
                                       return {
                                         value: detail.id.toString(),
-                                        label: isPending ? `${displayLabel} (Pending)` : displayLabel,
+                                        label: isPending
+                                          ? `${displayLabel} (${isFrozen ? "Frozen" : "Pending"})`
+                                          : displayLabel,
                                         logo: providerLogo || undefined,
                                         // Add full information for tooltip on hover
                                         title: fullInfo,
                                         disabled: isPending,
-                                        subtitle: isPending ? "Pending" : undefined,
+                                        subtitle: isPending
+                                          ? isFrozen
+                                            ? "Frozen"
+                                            : "Pending"
+                                          : undefined,
                                       };
                                     }
                                   )}
@@ -4544,11 +4615,18 @@ export default function WithdrawalForm({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
                 <div className="flex-1">
-                  <p className="text-sm font-semibold text-[#F79330]">Account Pending Approval</p>
+                  <p className="text-sm font-semibold text-[#F79330]">
+                    {isSelectedPaymentFrozen ? "Account Frozen" : "Account Pending Approval"}
+                  </p>
                   <p className="text-xs text-[#F79330]/80 mt-1">
-                    Your account{selectedPaymentDetails[0]?.account_name ? ` "${selectedPaymentDetails[0].account_name}"` : ""}{selectedPaymentDetails[0]?.account_number ? ` (${selectedPaymentDetails[0].account_number})` : ""} is pending approval. Please{" "}
+                    Your account{selectedPaymentDetails[0]?.account_name ? ` "${selectedPaymentDetails[0].account_name}"` : ""}{selectedPaymentDetails[0]?.account_number ? ` (${selectedPaymentDetails[0].account_number})` : ""}{" "}
+                    {isSelectedPaymentFrozen
+                      ? "is frozen. Please "
+                      : "is pending approval. Please "}
                     <a href="/contactUs" className="text-[#1D8751] underline font-semibold hover:text-[#17693f] transition-colors">contact support</a>{" "}
-                    to get your account approved.
+                    {isSelectedPaymentFrozen
+                      ? "for assistance."
+                      : "to get your account approved."}
                   </p>
                 </div>
               </div>
@@ -4560,14 +4638,13 @@ export default function WithdrawalForm({
                 <button
                   type="button"
                   className={`w-full text-[#35353e] dark:text-[#788099] text-base font-medium py-1.5 rounded-full flex items-center justify-center gap-2 transition-colors ${isHomePage
-                    ? payAmount >= 15000 || getAmount >= 15000 || isSelectedPaymentPending
+                    ? (isOtcPopupAsset(selectedAsset) && (payAmount >= 15000 || getAmount >= 15000)) || isSelectedPaymentPending
                       ? "bg-gray-500 cursor-not-allowed"
                       : "bg-[#1D8751] hover:bg-[#1D8751]/80 cursor-pointer"
                     : isSubmitting ||
                       isTransactionSubmitted ||
                       isInfoModalOpen ||
-                      payAmount >= 15000 ||
-                      getAmount >= 15000 ||
+                      (isOtcPopupAsset(selectedAsset) && (payAmount >= 15000 || getAmount >= 15000)) ||
                       isSelectedPaymentPending
                       ? "bg-gray-500 cursor-not-allowed"
                       : "bg-[#1D8751] hover:bg-[#1D8751]/80"
@@ -4612,12 +4689,11 @@ export default function WithdrawalForm({
                   }}
                   disabled={
                     requiresLoginRedirect
-                      ? payAmount >= 15000 || getAmount >= 15000 || isSelectedPaymentPending
+                      ? (isOtcPopupAsset(selectedAsset) && (payAmount >= 15000 || getAmount >= 15000)) || isSelectedPaymentPending
                       : isSubmitting ||
                       isTransactionSubmitted ||
                       isInfoModalOpen ||
-                      payAmount >= 15000 ||
-                      getAmount >= 15000 ||
+                      (isOtcPopupAsset(selectedAsset) && (payAmount >= 15000 || getAmount >= 15000)) ||
                       isSelectedPaymentPending
                   }
                 >
@@ -5015,18 +5091,25 @@ export default function WithdrawalForm({
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                     </svg>
                     <div className="flex-1">
-                      <p className="text-sm font-semibold text-[#F79330]">Account Pending Approval</p>
+                      <p className="text-sm font-semibold text-[#F79330]">
+                        {isSelectedPaymentFrozen ? "Account Frozen" : "Account Pending Approval"}
+                      </p>
                       <p className="text-xs text-[#F79330]/80 mt-1">
-                        Your account{selectedPaymentDetails[0]?.account_name ? ` "${selectedPaymentDetails[0].account_name}"` : ""}{selectedPaymentDetails[0]?.account_number ? ` (${selectedPaymentDetails[0].account_number})` : ""} is pending approval. Please{" "}
+                        Your account{selectedPaymentDetails[0]?.account_name ? ` "${selectedPaymentDetails[0].account_name}"` : ""}{selectedPaymentDetails[0]?.account_number ? ` (${selectedPaymentDetails[0].account_number})` : ""}{" "}
+                        {isSelectedPaymentFrozen
+                          ? "is frozen. Please "
+                          : "is pending approval. Please "}
                         <a href="/contactUs" className="text-[#1D8751] underline font-semibold hover:text-[#17693f] transition-colors">contact support</a>{" "}
-                        to get your account approved.
+                        {isSelectedPaymentFrozen
+                          ? "for assistance."
+                          : "to get your account approved."}
                       </p>
                     </div>
                   </div>
                 )}
 
                 {/* Warning message for amounts over $15,000 */}
-                {getAmount > 15000 && (
+                {isOtcPopupAsset(selectedAsset) && getAmount > 15000 && (
                   <div className="flex items-center text-[#1D8751] text-[14px] font-medium bg-[#23232b] dark:bg-[#35353E] border border-[#1D8751] rounded-xl p-3">
                     <FaExclamationCircle className="mr-2 text-[#1D8751]" />
                     <span>
@@ -5036,7 +5119,7 @@ export default function WithdrawalForm({
                   </div>
                 )}
                 <button
-                  className={`w-full text-white text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${isSubmitting || isInfoModalOpen || getAmount > 15000 || !isTermsAccepted || isSelectedPaymentPending
+                  className={`w-full text-white text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${isSubmitting || isInfoModalOpen || (isOtcPopupAsset(selectedAsset) && getAmount > 15000) || !isTermsAccepted || isSelectedPaymentPending
                     ? "bg-gray-500 cursor-not-allowed"
                     : "bg-[#1D8751] hover:bg-[#166b3e]"
                     }`}
@@ -5067,7 +5150,7 @@ export default function WithdrawalForm({
                       onExchange(transactionData);
                     }
                   }}
-                  disabled={isSubmitting || isInfoModalOpen || getAmount > 15000 || !isTermsAccepted || isSelectedPaymentPending}
+                  disabled={isSubmitting || isInfoModalOpen || (isOtcPopupAsset(selectedAsset) && getAmount > 15000) || !isTermsAccepted || isSelectedPaymentPending}
                 >
                   {isSubmitting ? (
                     <div className="flex items-center gap-2">
@@ -5126,29 +5209,11 @@ export default function WithdrawalForm({
           <InfoModal
             isOpen={isInfoModalOpen}
             onClose={() => {
-              // When modal closes, reset amount to maximum allowed (15000)
-              if (payAmount > 15000) {
-                setPayAmount(15000);
-                setPayAmountInput("15000");
-              }
-              if (getAmount > 15000) {
-                setGetAmount(15000);
-                setGetAmountInput("15000");
-              }
               setIsInfoModalOpen(false);
             }}
             onContactUs={() => {
               setIsInfoModalOpen(false);
               router.push("/contactUs");
-              // When modal closes, reset amount to maximum allowed (15000)
-              if (payAmount > 15000) {
-                setPayAmount(15000);
-                setPayAmountInput("15000");
-              }
-              if (getAmount > 15000) {
-                setGetAmount(15000);
-                setGetAmountInput("15000");
-              }
             }}
           />
           {isSupportModalOpen && (

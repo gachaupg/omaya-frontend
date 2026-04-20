@@ -25,6 +25,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/store/rootReducer";
 import { AppDispatch } from "@/store";
 import { openKYCModal } from "@/features/auth/slices/authSlice";
+import FrozenAccountModal from "@/components/ui/FrozenAccountModal";
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -40,6 +41,16 @@ export default function Sidebar() {
     : (user?.is_verified !== undefined ? user.is_verified : true);
 
   const { isDark } = useTheme();
+  const [showFrozenModal, setShowFrozenModal] = React.useState(false);
+  const isFrozenUser = isAuthenticated && user?.freeze === true;
+  const isFrozenBlockedHref = (href: string) => {
+    const normalized = href.replace(/\/$/, "");
+    return (
+      normalized === "/dashboard/exchange" ||
+      normalized === "/dashboard/swap" ||
+      normalized === "/dashboard/express-exchange"
+    );
+  };
 
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     // Immediately cancel any ongoing Express work (estimates, commissions, etc.)
@@ -58,6 +69,13 @@ export default function Sidebar() {
       e.preventDefault();
       e.stopPropagation();
       dispatch(openKYCModal());
+      return false;
+    }
+
+    if (isFrozenUser && isFrozenBlockedHref(href)) {
+      e.preventDefault();
+      e.stopPropagation();
+      setShowFrozenModal(true);
       return false;
     }
 
@@ -110,14 +128,23 @@ export default function Sidebar() {
                     normalizedPathname.startsWith(normalizedHref + "/"));
               const label = t(item.labelKey, NAV_LABEL_FALLBACKS[item.labelKey] ?? item.labelKey);
               const isUnverifiedUser = isAuthenticated && user && isVerified === false;
-              const isDisabled = isUnverifiedUser && item.href !== "/dashboard/" && item.href !== "/dashboard";
+              const isFrozenDisabled = isFrozenUser && isFrozenBlockedHref(item.href);
+              const isDisabled =
+                (isUnverifiedUser && item.href !== "/dashboard/" && item.href !== "/dashboard") ||
+                isFrozenDisabled;
               return (
                 <li key={item.labelKey}>
                   <Link
                     prefetch={true}
                     href={item.href}
                     onClick={(e) => handleNavClick(e, item.href)}
-                    title={isDisabled ? "Please verify your identity to access this feature" : undefined}
+                    title={
+                      isFrozenDisabled
+                        ? "Your account is frozen. Contact support to unfreeze."
+                        : isDisabled
+                          ? "Please verify your identity to access this feature"
+                          : undefined
+                    }
                     className={clsx(
                       "flex items-center px-3 md:px-4 lg:px-6 py-3 rounded-lg text-sm md:text-base font-medium gap-2 md:gap-3 lg:gap-4 transition",
                       "w-full",
@@ -246,13 +273,22 @@ export default function Sidebar() {
               const label = t(item.labelKey, NAV_LABEL_FALLBACKS[item.labelKey] ?? item.labelKey);
               // Only disable for unverified authenticated users (explicitly false, not undefined)
               const isUnverifiedUser = isAuthenticated && user && isVerified === false;
-              const isDisabled = isUnverifiedUser && item.href !== "/dashboard/" && item.href !== "/dashboard";
+              const isFrozenDisabled = isFrozenUser && isFrozenBlockedHref(item.href);
+              const isDisabled =
+                (isUnverifiedUser && item.href !== "/dashboard/" && item.href !== "/dashboard") ||
+                isFrozenDisabled;
               return (
                 <li key={item.labelKey} className="snap-start">
                   <Link
                     href={item.href}
                     onClick={(e) => handleNavClick(e, item.href)}
-                    title={isDisabled ? "Please verify your identity to access this feature" : undefined}
+                    title={
+                      isFrozenDisabled
+                        ? "Your account is frozen. Contact support to unfreeze."
+                        : isDisabled
+                          ? "Please verify your identity to access this feature"
+                          : undefined
+                    }
                     className={clsx(
                       "flex items-center justify-center px-2.5 sm:px-3 py-2.5 rounded-lg text-xs sm:text-sm font-medium gap-1.5 sm:gap-2 whitespace-nowrap transition min-h-[44px]",
                       isActive
@@ -338,6 +374,10 @@ export default function Sidebar() {
           </ul>
         </nav>
       </div>
+      <FrozenAccountModal
+        isOpen={showFrozenModal}
+        onClose={() => setShowFrozenModal(false)}
+      />
     </React.Fragment>
   );
 }

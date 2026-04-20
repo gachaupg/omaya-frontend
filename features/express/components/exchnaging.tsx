@@ -152,6 +152,40 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
     message?: string;
   }>({ isOpen: false, status: "", message: undefined });
 
+  // For dashboard deposit status, payout is fiat to bank and should remain USD.
+  const getStableReceiveCurrency = React.useCallback(
+    (fallback?: string) => {
+      const currentTx = transactionData || persistedTransactionData;
+      if (currentTx?.type === "deposit" || currentTx?.type === "withdrawal") {
+        return "USD";
+      }
+      const detailsToCurrency = currentTx?.details?.to_currency?.toString().toUpperCase();
+      if (detailsToCurrency) {
+        return detailsToCurrency;
+      }
+      return fallback || "USD";
+    },
+    [transactionData, persistedTransactionData]
+  );
+
+  const getStableSendCurrency = React.useCallback(
+    (fallback?: string) => {
+      const currentTx = transactionData || persistedTransactionData;
+      const detailsFromCurrency = currentTx?.details?.from_currency?.toString().toUpperCase();
+      if (detailsFromCurrency) {
+        return detailsFromCurrency;
+      }
+      return (
+        fallback ||
+        currentTx?.asset?.ticker ||
+        currentTx?.asset?.symbol ||
+        currentTx?.asset?.name ||
+        "USD"
+      );
+    },
+    [transactionData, persistedTransactionData]
+  );
+
   // Fallback polling function
   const startFallbackPolling = () => {
     if (pollingInterval) {
@@ -370,15 +404,15 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
       if (!isNaN(parsed)) {
         setLiveNetAmount(parsed);
         setLiveNetCurrency(
-          effectiveTransactionData?.type === "deposit"
-            ? (effectiveTransactionData?.asset?.ticker ||
-                effectiveTransactionData?.asset?.symbol ||
-                "USDT")
-            : "USD"
+          getStableReceiveCurrency(
+            effectiveTransactionData?.asset?.ticker ||
+              effectiveTransactionData?.asset?.symbol ||
+              "USD"
+          )
         );
       }
     }
-  }, [effectiveTransactionData]);
+  }, [effectiveTransactionData, getStableReceiveCurrency]);
 
   // Clear localStorage when transaction is completed
   useEffect(() => {
@@ -470,11 +504,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               amountToUpdate = amount;
               currencyToUpdate =
                 statusPayload?.currency ||
-                (effectiveTransactionData?.type === "deposit"
-                  ? "USD"
-                  : effectiveTransactionData?.type === "withdrawal"
-                    ? "USD"
-                    : "USDT");
+                getStableSendCurrency();
             }
           }
           if (statusPayload?.net_amount != null && statusPayload?.net_amount !== undefined) {
@@ -483,10 +513,11 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
             if (!isNaN(netAmt)) {
               setLiveNetAmount(netAmt);
               setLiveNetCurrency(
-                (d.to_currency || d.currency || "")?.toString().toUpperCase() ||
-                (effectiveTransactionData?.type === "deposit"
-                  ? effectiveTransactionData?.asset?.ticker || "USDT"
-                  : "USD")
+                getStableReceiveCurrency(
+                  (d.to_currency || d.currency || "")?.toString().toUpperCase() ||
+                    effectiveTransactionData?.asset?.ticker ||
+                    "USD"
+                )
               );
             }
           }
@@ -505,11 +536,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                 amountToUpdate = amountFrom;
                 currencyToUpdate =
                   wsData.from_currency?.toUpperCase() ||
-                  (effectiveTransactionData?.type === "deposit"
-                    ? "USD"
-                    : effectiveTransactionData?.type === "withdrawal"
-                      ? "USD"
-                      : "USDT");
+                  getStableSendCurrency();
               }
             }
 
@@ -536,7 +563,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               (Number.isFinite(netAmt) ? netAmt : null);
             if (preferredNetAmount !== null) {
               setLiveNetAmount(preferredNetAmount);
-              setLiveNetCurrency(toCurrencyLabel);
+              setLiveNetCurrency(getStableReceiveCurrency(toCurrencyLabel));
             }
 
             // Handle expected amounts if actual amounts are not available
@@ -550,11 +577,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                 amountToUpdate = expectedAmount;
                 currencyToUpdate =
                   wsData.from_currency?.toUpperCase() ||
-                  (effectiveTransactionData?.type === "deposit"
-                    ? "USD"
-                    : effectiveTransactionData?.type === "withdrawal"
-                      ? "USD"
-                      : "USDT");
+                  getStableSendCurrency();
               }
             }
 
@@ -568,11 +591,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                 amountToUpdate = paidAmount;
                 currencyToUpdate =
                   wsData.from_currency?.toUpperCase() ||
-                  (effectiveTransactionData?.type === "deposit"
-                    ? "USD"
-                    : effectiveTransactionData?.type === "withdrawal"
-                      ? "USD"
-                      : "USDT");
+                  getStableSendCurrency();
               }
             }
 
@@ -585,10 +604,11 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               if (!isNaN(expectedTo) && expectedTo > 0) {
                 setLiveNetAmount(expectedTo);
                 setLiveNetCurrency(
-                  wsData.to_currency?.toUpperCase() ||
-                    (effectiveTransactionData?.type === "deposit"
-                      ? effectiveTransactionData?.asset?.ticker || "USDT"
-                      : "USD")
+                  getStableReceiveCurrency(
+                    wsData.to_currency?.toUpperCase() ||
+                      effectiveTransactionData?.asset?.ticker ||
+                      "USD"
+                  )
                 );
               }
             }
@@ -616,11 +636,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                   currencyToUpdate ||
                   wsData?.from_currency?.toUpperCase() ||
                   transactionData?.details?.to_currency ||
-                  (effectiveTransactionData?.type === "deposit"
-                    ? "USD"
-                    : effectiveTransactionData?.type === "withdrawal"
-                      ? "USD"
-                      : "USDT"),
+                  getStableSendCurrency(),
               };
 
               // Only add if amount is different from last entry
@@ -1055,22 +1071,14 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                   {liveAmount !== null
                     ? liveAmount
                     : effectiveTransactionData?.amount || 0}{" "}
-                  {effectiveTransactionData?.type === "deposit" ? (
-                    "USD"
-                  ) : (
-                    <span className="uppercase">
-                      {liveCurrency ||
+                  <span className="uppercase">
+                    {liveCurrency ||
+                      getStableSendCurrency(
                         effectiveTransactionData?.asset?.ticker ||
-                        effectiveTransactionData?.asset?.symbol ||
-                        effectiveTransactionData?.asset?.name ||
-                        transactionData?.details?.to_currency ||
-                        (effectiveTransactionData?.type === "deposit"
-                          ? "USD"
-                          : effectiveTransactionData?.type === "withdrawal"
-                            ? "USD"
-                            : "USD")}
-                    </span>
-                  )}
+                          effectiveTransactionData?.asset?.symbol ||
+                          effectiveTransactionData?.asset?.name
+                      )}
+                  </span>
                 </span>
               </div>
             </div>
@@ -1095,9 +1103,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                     <span className="uppercase">
                       {liveNetCurrency ||
                         (effectiveTransactionData?.type === "deposit"
-                          ? effectiveTransactionData?.asset?.ticker ||
-                            effectiveTransactionData?.asset?.symbol ||
-                            "USDT"
+                          ? "USD"
                           : "USD")}
                     </span>
                   </span>
@@ -1140,11 +1146,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                       effectiveTransactionData?.asset?.ticker ||
                       effectiveTransactionData?.asset?.symbol ||
                       effectiveTransactionData?.asset?.name ||
-                      (effectiveTransactionData?.type === "deposit"
-                        ? "USD"
-                        : effectiveTransactionData?.type === "withdrawal"
-                          ? "USD"
-                          : "USDT")}
+                      getStableSendCurrency()}
                   </div>
                   <div className="text-green-400 text-xs">
                     Current: {liveAmount.toFixed(8)}{" "}
@@ -1152,11 +1154,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                       effectiveTransactionData?.asset?.ticker ||
                       effectiveTransactionData?.asset?.symbol ||
                       effectiveTransactionData?.asset?.name ||
-                      (effectiveTransactionData?.type === "deposit"
-                        ? "USD"
-                        : effectiveTransactionData?.type === "withdrawal"
-                          ? "USD"
-                          : "USDT")}
+                      getStableSendCurrency()}
                   </div>
                 </div>
               )}
@@ -1200,11 +1198,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                     {effectiveTransactionData?.asset?.ticker ||
                       effectiveTransactionData?.asset?.symbol ||
                       effectiveTransactionData?.asset?.name ||
-                      (effectiveTransactionData?.type === "deposit"
-                        ? "USD"
-                        : effectiveTransactionData?.type === "withdrawal"
-                          ? "USD"
-                          : "USDT")}
+                      getStableSendCurrency()}
                   </span>
                   <span className="ml-2 bg-[#1D8751] text-white text-xs font-semibold px-2 py-0.5 rounded-full">
                     {effectiveTransactionData?.asset?.network ||
@@ -1220,7 +1214,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                       className={`${isDark ? "text-[#1D8751]" : "text-[#1D8751]"
                         } text-sm font-semibold mb-1 mt-3`}
                     >
-                      USDT Wallet Address:
+                      {getStableSendCurrency()} Wallet Address:
                     </div>
                     <div className="flex items-center mb-2 p-2 rounded-lg border border-[#1D8751]/30 bg-[#1D8751]/5">
                       <span
@@ -2066,7 +2060,10 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                 <span className="text-[#1D8751] font-bold text-sm flex-shrink-0">1.</span>
                 <p className={`text-xs sm:text-sm ${isDark ? "text-[#788099]" : "text-[#475569]"}`}>
                   <span className="font-semibold">Send the correct asset and network:</span> Only send{" "}
-                  {transactionData?.asset?.ticker || transactionData?.asset?.symbol || transactionData?.asset?.name || (transactionData?.type === "deposit" ? "USD" : transactionData?.type === "withdrawal" ? "USD" : "USDT")} ({transactionData?.asset?.network}) to this address.
+                  {transactionData?.asset?.ticker ||
+                    transactionData?.asset?.symbol ||
+                    transactionData?.asset?.name ||
+                    getStableSendCurrency()} ({transactionData?.asset?.network}) to this address.
                 </p>
               </div>
               <div className="flex items-start gap-2">

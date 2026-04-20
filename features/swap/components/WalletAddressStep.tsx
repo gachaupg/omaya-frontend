@@ -380,7 +380,10 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                 <div className="mt-1">
                   {isAddressValidating && (
                     <p className="text-[#1D8751] text-sm font-medium flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-[#1D8751] border-t-transparent rounded-full animate-spin"></div>
+                      <span
+                        className="w-4 h-4 border-2 border-[#1D8751] border-t-transparent rounded-full animate-spin"
+                        aria-hidden="true"
+                      />
                       Validating address...
                     </p>
                   )}

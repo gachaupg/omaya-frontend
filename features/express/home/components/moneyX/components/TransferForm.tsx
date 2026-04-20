@@ -7,6 +7,7 @@ import Link from "next/link";
 import { AppDispatch } from "@/store";
 import {
   fetchPublicPaymentMethods,
+  fetchUserPaymentDetails,
 } from "@/features/p2p/slices/paymentMethodsSlice";
 import {
   createMoneyXTransaction,
@@ -46,6 +47,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
     publicPaymentMethods,
     publicMethodsLoading,
     publicMethodsError,
+    userPaymentDetails,
   } = useSelector((state: any) => state.paymentMethods);
 
   const {
@@ -75,7 +77,10 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
   // Fetch payment methods on mount
   useEffect(() => {
     dispatch(fetchPublicPaymentMethods());
-  }, [dispatch]);
+    if (isAuthenticated) {
+      dispatch(fetchUserPaymentDetails());
+    }
+  }, [dispatch, isAuthenticated]);
 
   // Use exact endpoint payload as priority source for this form.
   useEffect(() => {
@@ -378,6 +383,51 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
     saveBookmarkError,
     clearSaveBookmarkError,
   } = useBookmarkedAddresses(currentBankAsset || "BANK", "BANK");
+
+  const mergedSavedAddresses = useMemo(() => {
+    const approvedDetails = Array.isArray(userPaymentDetails) ? userPaymentDetails : [];
+    const assetFilter = String(currentBankAsset || "").trim().toLowerCase();
+
+    const approvedAsBookmarks = approvedDetails
+      .filter((detail: any) => {
+        const raw = String(detail?.status ?? detail?.approved ?? "").trim().toLowerCase();
+        const isApproved =
+          raw === "approved" ||
+          raw === "active" ||
+          raw === "success" ||
+          raw === "true";
+        if (!isApproved) return false;
+        const provider = String(
+          detail?.payment_provider_name ?? detail?.provider_name ?? detail?.payment_method_name ?? ""
+        )
+          .trim()
+          .toLowerCase();
+        if (!assetFilter) return true;
+        return provider.includes(assetFilter) || assetFilter.includes(provider);
+      })
+      .map((detail: any, idx: number) => {
+        const address = String(detail?.account_number ?? detail?.wallet_address ?? "").trim();
+        const providerName = String(
+          detail?.payment_provider_name ?? detail?.provider_name ?? detail?.payment_method_name ?? "Approved payment"
+        ).trim();
+        return {
+          id: `approved-${detail?.id ?? idx}-${address}`,
+          address,
+          label: `${providerName} (Approved)`,
+          asset: currentBankAsset || "BANK",
+          network: "BANK",
+        };
+      })
+      .filter((b: any) => b.address);
+
+    const deduped = new Map<string, any>();
+    [...approvedAsBookmarks, ...bookmarks].forEach((b: any) => {
+      const key = String(b?.address ?? "").trim().toLowerCase();
+      if (!key || deduped.has(key)) return;
+      deduped.set(key, b);
+    });
+    return Array.from(deduped.values());
+  }, [userPaymentDetails, currentBankAsset, bookmarks]);
 
   // Helper function to check if a payment method is a bank
   const isBankMethod = useCallback((method: any) => {
@@ -986,7 +1036,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
             <div className="flex-1 min-w-0">
               <div className={`text-xs mb-1 mt-[30px] ${isDark ? "text-[#788099]" : "text-[#64748B]"
                 }`}>
-                Payment Method
+                From Payment Method
               </div>
               <div className="relative">
                 <CustomSelect
@@ -1007,14 +1057,14 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
                   placeholder={
                     paymentMethodsDisplay.isLoading && finalPaymentMethods.length === 0
                       ? "Loading payment methods..."
-                      : "Payment Method"
+                      : "From Payment Method"
                   }
                   disabled={paymentMethodsDisplay.isLoading && finalPaymentMethods.length === 0}
                   loading={paymentMethodsDisplay.isLoading && finalPaymentMethods.length === 0}
                   loadingText="Loading payment methods..."
                   emptyText="No payment methods available"
                   searchable={true}
-                  dropdownTitle="Payment method"
+                  dropdownTitle="From payment method"
                   dropdownOffsetY={-68}
                   dropdownOffsetX={20}
                 />
@@ -1094,7 +1144,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
             <div className="flex-1 min-w-0">
               <div className={`text-xs mb-1 mt-[30px] ${isDark ? "text-[#788099]" : "text-[#64748B]"
                 }`}>
-                Payment Method
+                To Payment Method
               </div>
               <div className="relative">
                 <CustomSelect
@@ -1117,14 +1167,14 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
                   placeholder={
                     paymentMethodsDisplay.isLoading && finalPaymentMethods.length === 0
                       ? "Loading payment methods..."
-                      : "Payment Method"
+                      : "To Payment Method"
                   }
                   disabled={paymentMethodsDisplay.isLoading && finalPaymentMethods.length === 0}
                   loading={paymentMethodsDisplay.isLoading && finalPaymentMethods.length === 0}
                   loadingText="Loading payment methods..."
                   emptyText="No payment methods available"
                   searchable={true}
-                  dropdownTitle="Payment method"
+                  dropdownTitle="To payment method"
                   dropdownOffsetY={-68}
                   dropdownOffsetX={20}
                 />
@@ -1205,13 +1255,13 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
           </h2>
           {(() => {
             const accountName =
-              selectedToPaymentDetail?.account_name ??
-              selectedToPaymentDetail?.payment_details?.[0]?.account_name ??
-              getProviderName(selectedToPaymentDetail) ??
+              selectedFromPaymentDetail?.account_name ??
+              selectedFromPaymentDetail?.payment_details?.[0]?.account_name ??
+              getProviderName(selectedFromPaymentDetail) ??
               "—";
             const accountNumber =
-              selectedToPaymentDetail?.account_number ??
-              selectedToPaymentDetail?.payment_details?.[0]?.account_number ??
+              selectedFromPaymentDetail?.account_number ??
+              selectedFromPaymentDetail?.payment_details?.[0]?.account_number ??
               "—";
             const copyAccountNumber = () => {
               if (!accountNumber || accountNumber === "—") return;
@@ -1272,7 +1322,9 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
           {/* 2- Bank Account Address (user's receiving account) */}
           <h2 className="text-xl font-bold mb-2 text-[#788099] dark:text-[#788099] inline-flex items-center gap-2">
             <span className="text-[#7e7e8f] dark:text-[#788099]">2-</span>
-            Bank Account Number
+            {getProviderName(selectedToPaymentDetail)
+              ? `${getProviderName(selectedToPaymentDetail)} Account Number`
+              : "Bank Account Number"}
           </h2>
 
           {/* Important Warning Banner - same style as swap/deposit */}
@@ -1295,7 +1347,9 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
           >
             {/* Bank Account Address Label */}
             <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
-              Bank Account Number
+              {getProviderName(selectedToPaymentDetail)
+                ? `${getProviderName(selectedToPaymentDetail)} Account Number`
+                : "Bank Account Number"}
             </label>
             {/* Input group */}
             <div className="flex items-center dark:bg-[#1D1D23] border border-[#39394a] dark:border-[#35353E] rounded-2xl px-2 sm:px-4 py-2 mb-0 overflow-visible gap-1 sm:gap-2">
@@ -1332,7 +1386,11 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
                   setIsAddressConfirmed(false);
                   setBankAddressError(null);
                 }}
-                placeholder="Paste here your Bank Account Number"
+                placeholder={
+                  getProviderName(selectedToPaymentDetail)
+                    ? `Paste here your ${getProviderName(selectedToPaymentDetail)} Account Number`
+                    : "Paste here your Bank Account Number"
+                }
                 className={`flex-1 min-w-0 bg-transparent border-none outline-none text-[#35353e] dark:text-[#788099] placeholder-[#788099] text-sm sm:text-base ${bankAddressError
                     ? "border-red-500"
                     : bankAccountAddress.trim() && !bankAddressError
@@ -1360,7 +1418,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
                 <BookmarkDropdown
                   isOpen={bookmarkOpen}
                   onClose={() => setBookmarkOpen(false)}
-                  bookmarks={bookmarks}
+                  bookmarks={mergedSavedAddresses}
                   loading={bookmarksLoading}
                   saving={bookmarkSaving}
                   currentAddress={bankAccountAddress}

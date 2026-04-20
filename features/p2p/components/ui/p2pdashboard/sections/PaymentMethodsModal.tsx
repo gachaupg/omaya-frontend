@@ -44,6 +44,9 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
   const router = useRouter();
   const { publicPaymentMethods, publicMethodsLoading, publicMethodsError, postLoading, postError, postSuccess } =
     useSelector((state: RootState) => state.paymentMethods);
+  const userPaymentDetails = useSelector(
+    (state: RootState) => state.paymentMethods.userPaymentDetails
+  );
   const { isAuthenticated, user } = useSelector(
     (state: RootState) => state.auth
   );
@@ -69,6 +72,17 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
   const [verifyOtpLoading, setVerifyOtpLoading] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
   const RESEND_COOLDOWN_SECONDS = 60;
+  const autoSendPreviouslyEnabled = React.useMemo(
+    () =>
+      Array.isArray(userPaymentDetails) &&
+      userPaymentDetails.some((detail: any) => {
+        const raw = detail?.allow_auto_send;
+        if (typeof raw === "boolean") return raw;
+        if (typeof raw === "string") return raw.trim().toLowerCase() === "true";
+        return false;
+      }),
+    [userPaymentDetails]
+  );
 
   // Set isClient to true after mount
   useEffect(() => {
@@ -128,6 +142,14 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
        dispatch(clearPostStatus());
      }
    }, [open, dispatch, isClient, user]);
+
+  // A user that has already had auto-send enabled should not re-enable it
+  // while adding a new payment method.
+  useEffect(() => {
+    if (autoSendPreviouslyEnabled && allowAutoSend) {
+      setAllowAutoSend(false);
+    }
+  }, [autoSendPreviouslyEnabled, allowAutoSend]);
 
   // Process public payment methods to extract method types and providers
   const processedProviders = React.useMemo(() => {
@@ -286,7 +308,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
         ? account
         : selectedProvider?.wallet_address || null,
     };
-    payload.allow_auto_send = allowAutoSend;
+    payload.allow_auto_send = autoSendPreviouslyEnabled ? false : allowAutoSend;
 
     setSendOtpLoading(true);
     try {
@@ -598,17 +620,32 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                 type="checkbox"
                 id="allowAutoSend"
                 checked={allowAutoSend}
-                onChange={(e) => setAllowAutoSend(e.target.checked)}
+                onChange={(e) => {
+                  if (autoSendPreviouslyEnabled) {
+                    setAllowAutoSend(false);
+                    return;
+                  }
+                  setAllowAutoSend(e.target.checked);
+                }}
                 className="w-4 h-4 text-[#1D8751] bg-gray-100 dark:bg-[#23232B] border-gray-300 dark:border-[#35353E] rounded focus:ring-2 focus:ring-[#1D8751] cursor-pointer"
-                disabled={publicMethodsLoading}
+                disabled={publicMethodsLoading || autoSendPreviouslyEnabled}
               />
               <label
                 htmlFor="allowAutoSend"
-                className="text-sm text-gray-700 dark:text-[#788099] cursor-pointer"
+                className={`text-sm ${
+                  autoSendPreviouslyEnabled
+                    ? "text-gray-400 dark:text-[#5f6576] cursor-not-allowed"
+                    : "text-gray-700 dark:text-[#788099] cursor-pointer"
+                }`}
               >
                 Allow auto send
               </label>
             </div>
+          )}
+          {method && autoSendPreviouslyEnabled && (
+            <p className="mt-1 inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-1 text-xs font-medium text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">
+              Auto send has already been used on your account and cannot be enabled again here.
+            </p>
           )}
            
           {/* Error/Loading */}

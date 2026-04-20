@@ -4,7 +4,11 @@ import Sidebar from "@/components/layout/Sidebar";
 import { motion, AnimatePresence } from "framer-motion";
 import KYCVerificationModal from "./kyc/kycmodal";
 import { useKYCVerification } from "@/features/auth/hooks/useKYCVerification";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store/rootReducer";
+import React from "react";
+import FrozenAccountModal from "@/components/ui/FrozenAccountModal";
 
 export default function DashboardLayout({
   children,
@@ -19,6 +23,28 @@ export default function DashboardLayout({
   // Use pathname as key for proper React reconciliation
   // This prevents unnecessary component remounts on every render
   const pathname = usePathname();
+  const router = useRouter();
+  const { user } = useSelector((state: RootState) => state.auth);
+  const [showFrozenModal, setShowFrozenModal] = React.useState(false);
+  const isFrozenUser = user?.freeze === true;
+
+  React.useEffect(() => {
+    if (!isFrozenUser) return;
+
+    const blockedRoutes = [
+      "/dashboard/exchange",
+      "/dashboard/swap",
+      "/dashboard/express-exchange",
+    ];
+    const current = (pathname || "").replace(/\/$/, "");
+    const isBlockedRoute = blockedRoutes.some((route) =>
+      current === route || current.startsWith(`${route}/`)
+    );
+    if (isBlockedRoute) {
+      setShowFrozenModal(true);
+      router.replace("/dashboard");
+    }
+  }, [isFrozenUser, pathname, router]);
 
   return (
     <div className="min-h-screen mt-0 md:mt-8 w-full overflow-x-hidden md:flex bg-gray-50 dark:bg-[var(--bg-color)]">
@@ -62,6 +88,10 @@ export default function DashboardLayout({
 
       {/* KYC Verification Modal */}
       <KYCVerificationModal />
+      <FrozenAccountModal
+        isOpen={showFrozenModal}
+        onClose={() => setShowFrozenModal(false)}
+      />
     </div>
   );
 }

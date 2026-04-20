@@ -1,6 +1,8 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store/rootReducer";
 import ProfileSettings from "../tabs/ProfileSettings";
 import KYC from "../tabs/KYC";
 import PrivacySecurity from "../tabs/PrivacySecurity";
@@ -10,6 +12,7 @@ import Stats from "../tabs/Stats";
 import { Settings, ShieldCheck, Key } from "lucide-react";
 import HelpSupportForm from "../HelpSupportForm";
 import { useSettingsI18n } from "@/lib/useSettingsI18n";
+import FrozenAccountModal from "@/components/ui/FrozenAccountModal";
 
 const TAB_FALLBACKS: Record<string, string> = {
   "settings.tabs.profile": "Profile Settings",
@@ -145,6 +148,9 @@ const Filters = () => {
   const router = useRouter();
   const searchParams: ReturnType<typeof useSearchParams> = useSearchParams();
   const { t } = useSettingsI18n();
+  const { user } = useSelector((state: RootState) => state.auth);
+  const isFrozenUser = user?.freeze === true;
+  const [showFrozenModal, setShowFrozenModal] = useState(false);
 
   // Get active tab from URL or default to 0 (profile)
   const tabParam = searchParams?.get("tab") || null;
@@ -158,14 +164,29 @@ const Filters = () => {
   useEffect(() => {
     if (!searchParams) return;
     const tabParam = searchParams?.get("tab");
+    if (isFrozenUser && tabParam && ["kyc", "payment", "referral"].includes(tabParam)) {
+      setShowFrozenModal(true);
+      const params = new URLSearchParams(searchParams?.toString() || "");
+      params.set("tab", "profile");
+      router.replace(`?${params.toString()}`);
+      setActiveIdx(0);
+      return;
+    }
     const idx = tabs.findIndex(t => t.id === tabParam);
     if (idx !== -1 && idx !== activeIdx) {
       setActiveIdx(idx);
     }
-  }, [searchParams, activeIdx]);
+  }, [searchParams, activeIdx, isFrozenUser, router]);
 
   // Handle tab change
   const handleTabChange = (idx: number) => {
+    const targetTabId = tabs[idx]?.id;
+    const frozenBlockedTabs = ["kyc", "payment", "referral"];
+    if (isFrozenUser && targetTabId && frozenBlockedTabs.includes(targetTabId)) {
+      setShowFrozenModal(true);
+      return;
+    }
+
     setActiveIdx(idx);
     setShowHelpSupport(false);
     
@@ -211,6 +232,11 @@ const Filters = () => {
       <div className="md:hidden">
         <div className="flex flex-col p-2 sm:p-3 md:p-4 rounded-lg border dark:bg-[var(--card-color)] bg-white dark:border-[#35353E] border-gray-300 w-full overflow-hidden">
           {tabs.map((tab, idx) => (
+            (() => {
+              const isFrozenBlocked =
+                isFrozenUser &&
+                ["kyc", "payment", "referral"].includes(tab.id);
+              return (
             <button
               key={tab.label}
               className={`flex flex-row items-center justify-start gap-2 transition-all duration-150 focus:outline-none w-full px-3 py-2 border-b dark:border-[#35353E] border-gray-300 last:border-b-0
@@ -218,11 +244,17 @@ const Filters = () => {
                   ? "bg-[#1D8751] text-white font-normal"
                   : "bg-transparent dark:text-white text-[#0D0D0D] hover:dark:bg-[#23232a] hover:bg-gray-100 font-normal"
                 }
+                ${isFrozenBlocked ? "opacity-60 cursor-not-allowed" : ""}
               `}
               onClick={() => {
                 handleTabChange(idx);
               }}
               type="button"
+              title={
+                isFrozenBlocked
+                  ? "Your account is frozen. Contact support to unfreeze."
+                  : undefined
+              }
             >
               <span className="flex items-center justify-center">
                 {tab.icon}
@@ -231,6 +263,8 @@ const Filters = () => {
                 {t(tab.label, tab.label)}
               </span>
             </button>
+              );
+            })()
           ))}
         </div>
       </div>
@@ -238,20 +272,32 @@ const Filters = () => {
       {/* Desktop: Horizontal tabs */}
       <div className="hidden md:flex items-center justify-between rounded-xl border-2 px-4 py-3 dark:bg-[#1D1D23] bg-white dark:border-accent border-border w-full overflow-x-auto overflow-y-hidden whitespace-nowrap">
         {tabs.map((tab, idx) => (
+          (() => {
+            const isFrozenBlocked =
+              isFrozenUser &&
+              ["kyc", "payment", "referral"].includes(tab.id);
+            return (
           <button
             key={tab.label}
             className="flex flex-row items-center justify-center transition-colors duration-150 focus:outline-none h-full bg-transparent dark:text-white text-[#0D0D0D] hover:dark:bg-[#23232a] hover:bg-gray-100 font-normal"
             onClick={() => handleTabChange(idx)}
             type="button"
+            title={
+              isFrozenBlocked
+                ? "Your account is frozen. Contact support to unfreeze."
+                : undefined
+            }
           >
             <span className={`inline-flex flex-row items-center justify-center gap-1.5 px-3 py-2 rounded-3xl min-w-32 w-max transition-colors duration-150 ${activeIdx === idx
                 ? "bg-[#1D8751] text-white"
                 : "bg-transparent"
-              }`}>
+              } ${isFrozenBlocked ? "opacity-60 cursor-not-allowed" : ""}`}>
               <span className="flex items-center justify-center shrink-0">{tab.icon}</span>
               <span className="text-xs whitespace-nowrap">{t(tab.label, TAB_FALLBACKS[tab.label] ?? tab.label)}</span>
             </span>
           </button>
+            );
+          })()
         ))}
       </div>
 
@@ -268,6 +314,10 @@ const Filters = () => {
           </div>
         )}
       </div>
+      <FrozenAccountModal
+        isOpen={showFrozenModal}
+        onClose={() => setShowFrozenModal(false)}
+      />
     </div>
   );
 };

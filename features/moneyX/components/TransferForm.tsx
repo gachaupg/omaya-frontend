@@ -6,6 +6,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "@/store";
 import {
   fetchPublicPaymentMethods,
+  fetchUserPaymentDetails,
 } from "@/features/p2p/slices/paymentMethodsSlice";
 import {
   createMoneyXTransaction,
@@ -44,6 +45,7 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
     publicPaymentMethods,
     publicMethodsLoading,
     publicMethodsError,
+    userPaymentDetails,
   } = useSelector((state: any) => state.paymentMethods);
 
   const {
@@ -72,7 +74,10 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
   // Fetch payment methods on mount
   useEffect(() => {
     dispatch(fetchPublicPaymentMethods());
-  }, [dispatch]);
+    if (isAuthenticated) {
+      dispatch(fetchUserPaymentDetails());
+    }
+  }, [dispatch, isAuthenticated]);
 
   // Direct endpoint source (same one verified in browser) as priority.
   useEffect(() => {
@@ -350,6 +355,51 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
     saveBookmarkError,
     clearSaveBookmarkError,
   } = useBookmarkedAddresses(currentBankAsset || "BANK", "BANK");
+
+  const mergedSavedAddresses = useMemo(() => {
+    const approvedDetails = Array.isArray(userPaymentDetails) ? userPaymentDetails : [];
+    const assetFilter = String(currentBankAsset || "").trim().toLowerCase();
+
+    const approvedAsBookmarks = approvedDetails
+      .filter((detail: any) => {
+        const raw = String(detail?.status ?? detail?.approved ?? "").trim().toLowerCase();
+        const isApproved =
+          raw === "approved" ||
+          raw === "active" ||
+          raw === "success" ||
+          raw === "true";
+        if (!isApproved) return false;
+        const provider = String(
+          detail?.payment_provider_name ?? detail?.provider_name ?? detail?.payment_method_name ?? ""
+        )
+          .trim()
+          .toLowerCase();
+        if (!assetFilter) return true;
+        return provider.includes(assetFilter) || assetFilter.includes(provider);
+      })
+      .map((detail: any, idx: number) => {
+        const address = String(detail?.account_number ?? detail?.wallet_address ?? "").trim();
+        const providerName = String(
+          detail?.payment_provider_name ?? detail?.provider_name ?? detail?.payment_method_name ?? "Approved payment"
+        ).trim();
+        return {
+          id: `approved-${detail?.id ?? idx}-${address}`,
+          address,
+          label: `${providerName} (Approved)`,
+          asset: currentBankAsset || "BANK",
+          network: "BANK",
+        };
+      })
+      .filter((b: any) => b.address);
+
+    const deduped = new Map<string, any>();
+    [...approvedAsBookmarks, ...bookmarks].forEach((b: any) => {
+      const key = String(b?.address ?? "").trim().toLowerCase();
+      if (!key || deduped.has(key)) return;
+      deduped.set(key, b);
+    });
+    return Array.from(deduped.values());
+  }, [userPaymentDetails, currentBankAsset, bookmarks]);
 
   // Helper function to check if a payment method is a bank
   const isBankMethod = useCallback((method: any) => {
@@ -1352,14 +1402,14 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
           {/* Card: instruction + account name/number with copy */}
           {(() => {
             const accountName =
-              selectedToPaymentDetail?.account_name ??
-              selectedToPaymentDetail?.payment_details?.[0]?.account_name ??
-              getProviderName(selectedToPaymentDetail) ??
+              selectedFromPaymentDetail?.account_name ??
+              selectedFromPaymentDetail?.payment_details?.[0]?.account_name ??
+              getProviderName(selectedFromPaymentDetail) ??
               "—";
             // Display only the provider's account number (where user sends money); do not use what user types
             const accountNumber =
-              selectedToPaymentDetail?.account_number ??
-              selectedToPaymentDetail?.payment_details?.[0]?.account_number ??
+              selectedFromPaymentDetail?.account_number ??
+              selectedFromPaymentDetail?.payment_details?.[0]?.account_number ??
               "—";
             const copyAccountNumber = () => {
               if (!accountNumber || accountNumber === "—") return;
@@ -1503,7 +1553,7 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
                 <BookmarkDropdown
                   isOpen={bookmarkOpen}
                   onClose={() => setBookmarkOpen(false)}
-                  bookmarks={bookmarks}
+                  bookmarks={mergedSavedAddresses}
                   loading={bookmarksLoading}
                   saving={bookmarkSaving}
                   currentAddress={bankAccountAddress}
