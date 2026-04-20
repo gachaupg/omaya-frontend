@@ -414,6 +414,16 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
     }
   }, [effectiveTransactionData, getStableReceiveCurrency]);
 
+  // Keep payout currency fixed for bank payout flows (deposit/withdrawal).
+  useEffect(() => {
+    if (
+      effectiveTransactionData?.type === "deposit" ||
+      effectiveTransactionData?.type === "withdrawal"
+    ) {
+      setLiveNetCurrency("USD");
+    }
+  }, [effectiveTransactionData?.transactionId, effectiveTransactionData?.type]);
+
   // Clear localStorage when transaction is completed
   useEffect(() => {
     if (showSuccess) {

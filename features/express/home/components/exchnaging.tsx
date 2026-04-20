@@ -409,6 +409,16 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
     }
   }, [effectiveTransactionData, getStableReceiveCurrency]);
 
+  // Keep payout currency fixed for bank payout flows (deposit/withdrawal).
+  useEffect(() => {
+    if (
+      effectiveTransactionData?.type === "deposit" ||
+      effectiveTransactionData?.type === "withdrawal"
+    ) {
+      setLiveNetCurrency("USD");
+    }
+  }, [effectiveTransactionData?.transactionId, effectiveTransactionData?.type]);
+
   // Use WebSocket for both deposit and withdrawal transactions
   const shouldUseWebSocket =
     effectiveTransactionData?.transactionId &&

@@ -339,15 +339,22 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
     setIsFirstCardSubmitted(false);
   }, [fromKey, toKey, payAmount, getAmount]);
 
-  // Keep provider name exactly as provided by API.
+  // Normalize provider labels for dropdowns (e.g. remove trailing "- Bank").
   const getProviderName = useCallback((payment: any) => {
-    const providerName =
+    let providerName =
       payment?.provider_name ||
       payment?.provider?.provider_name ||
       payment?.provider ||
       payment?.name ||
       "";
-    return String(providerName).trim();
+    providerName = String(providerName || "");
+    providerName = providerName
+      .replace(
+        /\s*-\s*(Bank|Mobile|Crypto|Forex|Marchant|Money\s*Transfer|Merchant)\s*$/i,
+        ""
+      )
+      .trim();
+    return providerName;
   }, []);
 
   // Use a stable unique key so methods with same provider name don't collide in selects.
@@ -708,31 +715,11 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
       logoUrl = payment.logo.trim();
     }
 
-    // Get provider name - handle both admin and public payment methods structure
-    let providerName =
-      payment.provider_name ||
-      payment.provider?.provider_name ||
-      payment.provider ||
-      payment.name ||
-      "";
-    const paymentMethod =
-      payment.method_display ||
-      payment.method ||
-      payment.payment_method ||
-      payment.payment_method_type ||
-      payment.method?.method_display ||
-      payment.method?.method_name ||
-      "";
-    providerName = providerName.trim();
-
-    // Create subtitle: Provider - Method
-    const subtitle = paymentMethod ? `${providerName} - ${paymentMethod}` : null;
-
+    const cleanProviderName = getProviderName(payment);
     return {
       value: getPaymentMethodKey(payment),
-      // Show only provider name (remove - {method} part) for cleaner display
-      label: providerName,
-      subtitle: subtitle || undefined,
+      // Show provider name only; do not append method suffixes like "- Bank".
+      label: cleanProviderName,
       logo: logoUrl,
       raw: payment,
     };
@@ -1443,6 +1430,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
                   anchorRef={bookmarkAnchorRef}
                   isDark={isDark}
                   saveDisabled={!!bankAddressError}
+                  hideSaveButton={true}
                 />
               </span>
               {/* Paste button */}

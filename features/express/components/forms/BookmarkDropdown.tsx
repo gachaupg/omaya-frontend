@@ -18,6 +18,8 @@ interface BookmarkDropdownProps {
   isDark?: boolean;
   /** When true, disables the "Whitelist address" button (e.g. address failed validation) */
   saveDisabled?: boolean;
+  /** When true, hides the "Whitelist address" button entirely. */
+  hideSaveButton?: boolean;
 }
 
 export function BookmarkDropdown({
@@ -32,6 +34,7 @@ export function BookmarkDropdown({
   anchorRef,
   isDark = false,
   saveDisabled = false,
+  hideSaveButton = false,
 }: BookmarkDropdownProps) {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -56,12 +59,12 @@ export function BookmarkDropdown({
   return (
     <div
       ref={dropdownRef}
-      className={`absolute right-0 top-full mt-1 z-[9999] min-w-[240px] max-w-[320px] rounded-xl shadow-lg border ${
+      className={`absolute right-0 top-full mt-1 z-[11000] min-w-[240px] max-w-[320px] rounded-xl shadow-lg border ${
         isDark ? "bg-[#1D1D23] border-[#35353E]" : "bg-white border-gray-200"
       }`}
     >
       <div className="p-2 max-h-[280px] overflow-y-auto">
-        {currentAddress.trim() && !saveDisabled && (
+        {currentAddress.trim() && !saveDisabled && !hideSaveButton && (
           <button
             type="button"
             onClick={() => {
