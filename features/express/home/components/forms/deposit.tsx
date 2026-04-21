@@ -3652,7 +3652,7 @@ export default function DepositForm({
                   value={payBank}
                   className="w-full"
                   placeholderClassName="text-white dark:text-white"
-                  triggerClassName={`!px-4 !py-[8px] !min-h-0 text-lg border rounded-2xl bg-transparent !h-[44px] ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
+                  triggerClassName={`!px-4 !py-[8px] !min-h-0 text-[14px] border rounded-2xl bg-transparent !h-[44px] ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
                     }`}
                   onChange={(value) => {
                     const selectedPayment = finalPaymentMethods?.find(

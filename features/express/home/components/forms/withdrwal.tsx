@@ -1164,6 +1164,10 @@ export default function WithdrawalForm({
     selectedPaymentStatus &&
     !isSelectedPaymentApproved
   );
+  const hasDecimalPlacesError =
+    /decimal places/i.test(String(apiValidationError || "")) ||
+    /decimal places/i.test(String(receiveAmountError || "")) ||
+    /decimal places/i.test(String(calculationError || ""));
 
   // Fetch admin wallet list
   useEffect(() => {
@@ -4575,7 +4579,7 @@ export default function WithdrawalForm({
                         <CustomSelect
                           options={paymentMethodOptions}
                           className="w-full"
-                          triggerClassName={`px-4 py-2 text-lg border rounded-2xl bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
+                          triggerClassName={`px-4 py-2 text-[14px] border rounded-2xl bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
                             }`}
                           placeholderClassName="text-white dark:text-white"
                           onChange={(value) => {
@@ -4753,7 +4757,7 @@ export default function WithdrawalForm({
                                   searchable={true}
                                   dropdownTitle="Select a registered account from"
                                   className="w-full min-w-0"
-                                  triggerClassName={`px-4 py-2 text-lg border rounded-2xl w-full min-w-0 bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
+                                  triggerClassName={`px-4 py-2 text-[14px] border rounded-2xl w-full min-w-0 bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
                                     }`}
                                   largeDropdownItems={true}
                                   dropdownMatchTriggerWidth={true}
@@ -4897,12 +4901,15 @@ export default function WithdrawalForm({
                   }}
                   disabled={
                     requiresLoginRedirect
-                      ? (isOtcPopupAsset(selectedAsset) && payAmount >= 15000) || isSelectedPaymentPending
+                      ? (isOtcPopupAsset(selectedAsset) && payAmount >= 15000) ||
+                        isSelectedPaymentPending ||
+                        hasDecimalPlacesError
                       : isSubmitting ||
                       isTransactionSubmitted ||
                       isInfoModalOpen ||
                       (isOtcPopupAsset(selectedAsset) && payAmount >= 15000) ||
-                      isSelectedPaymentPending
+                      isSelectedPaymentPending ||
+                      hasDecimalPlacesError
                   }
                 >
                   {isSubmitting ? (
@@ -5332,7 +5339,14 @@ export default function WithdrawalForm({
                       onExchange(transactionData);
                     }
                   }}
-                  disabled={isSubmitting || isInfoModalOpen || (isOtcPopupAsset(selectedAsset) && getAmount > 15000) || !isTermsAccepted || isSelectedPaymentPending}
+                  disabled={
+                    isSubmitting ||
+                    isInfoModalOpen ||
+                    (isOtcPopupAsset(selectedAsset) && getAmount > 15000) ||
+                    !isTermsAccepted ||
+                    isSelectedPaymentPending ||
+                    hasDecimalPlacesError
+                  }
                 >
                   {isSubmitting ? (
                     <div className="flex items-center gap-2">

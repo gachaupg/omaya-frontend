@@ -428,7 +428,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
             )}
             {!hideSelectedLabel && (
               <span
-                className={`truncate min-w-0 text-lg ${
+                className={`truncate min-w-0 text-[14px] ${
                   !selectedOption && !loading
                     ? placeholderClassName || "text-gray-500 dark:text-gray-400"
                     : selectedOption ? "font-bold dark:font-normal" : ""
@@ -532,7 +532,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
                     hover:bg-blue-50 dark:hover:bg-blue-900/20
                     focus:outline-none focus:bg-blue-50 dark:focus:bg-blue-900/20
                     ${largeDropdownItems ? "px-4 py-3 sm:py-4" : "px-3 sm:px-4 py-2 sm:py-2.5"}
-                    ${largeDropdownItems ? "text-base sm:text-lg" : "text-base sm:text-lg"}
+                    text-[14px]
                     ${isSelected
                       ? "bg-blue-100 dark:bg-blue-900/30 text-blue-900 dark:text-blue-100 font-medium"
                       : "text-gray-900 dark:text-white"
@@ -565,7 +565,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
                           <div className={`text-gray-500 dark:text-gray-400 truncate ${largeDropdownItems ? "text-sm" : "text-sm"}`}>{option.subtitle}</div>
                         </div>
                       ) : (
-                        <span className={`truncate min-w-0 flex-1 text-left ${largeDropdownItems ? "text-base sm:text-lg font-medium" : "text-base sm:text-lg"}`}>{option.label}</span>
+                        <span className={`truncate min-w-0 flex-1 text-left ${largeDropdownItems ? "text-[14px] font-medium" : "text-[14px]"}`}>{option.label}</span>
                       )}
                     </div>
                   </button>
