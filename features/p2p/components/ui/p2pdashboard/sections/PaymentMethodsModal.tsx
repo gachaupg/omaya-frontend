@@ -12,6 +12,11 @@ import {
 } from "../../../../slices/paymentMethodsSlice";
 import { showToast } from "../../../../../../lib/utils/toast";
 import { logger } from '@/lib/utils/logger';
+import {
+  getHighResPaymentLogo,
+  PAYMENT_LOGO_SIZE,
+} from "@/features/express/utils/imageHelpers";
+import AddWalletAddressModal from "@/features/settings/components/tabs/AddWalletAddressModal";
 
 type PaymentDetailPayload = {
   account_name: string;
@@ -22,6 +27,7 @@ type PaymentDetailPayload = {
   wallet_address?: string | null;
   allow_auto_send?: boolean;
 };
+type PaymentTab = "crypto" | "bank" | "forex";
 
 interface PaymentMethodsModalProps {
   open: boolean;
@@ -60,6 +66,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
   });
   logger.debug('p2p', "Auth state", { isAuthenticated, user });
   const [method, setMethod] = useState("");
+  const [methodTab, setMethodTab] = useState<PaymentTab>("crypto");
   const [provider, setProvider] = useState("");
   const [name, setName] = useState("");
   const [account, setAccount] = useState("");
@@ -67,6 +74,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
   const [isClient, setIsClient] = useState(false);
   const [step, setStep] = useState<"form" | "otp">("form");
   const [otpCode, setOtpCode] = useState("");
+  const [showForexAddressModal, setShowForexAddressModal] = useState(false);
   const [pendingPayload, setPendingPayload] = useState<PaymentDetailPayload | null>(null);
   const [sendOtpLoading, setSendOtpLoading] = useState(false);
   const [verifyOtpLoading, setVerifyOtpLoading] = useState(false);
@@ -127,7 +135,8 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
        } catch (error) {
          logger.debug('p2p', "Error fetching public payment methods:", error);
        }
-       setMethod("");
+      setMethod("");
+      setMethodTab("crypto");
        setProvider("");
        // Auto-populate name with user's full name
        const fullName = user
@@ -138,6 +147,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
        setAllowAutoSend(false);
        setStep("form");
        setOtpCode("");
+      setShowForexAddressModal(false);
        setPendingPayload(null);
        dispatch(clearPostStatus());
      }
@@ -240,15 +250,67 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
     )
   ) as string[];
 
-  const providers = processedProvidersFiltered.filter(
-    (p: any) => p.payment_method_type === method
+  const isMethodInTab = (methodType: string, tab: PaymentTab) => {
+    const m = (methodType || "").toLowerCase();
+    if (tab === "crypto") {
+      return m.includes("crypto");
+    }
+    if (tab === "forex") {
+      return m.includes("forex") || m.includes("wallet");
+    }
+    return (
+      m.includes("bank") ||
+      m.includes("account") ||
+      m.includes("mobile") ||
+      m.includes("money") ||
+      (!m.includes("crypto") && !m.includes("forex") && !m.includes("wallet"))
+    );
+  };
+
+  const providersForTab = processedProvidersFiltered.filter((p: any) =>
+    isMethodInTab(String(p?.payment_method_type || ""), methodTab)
   );
+  const forexAssetOptions = React.useMemo(() => {
+    const bankLike = ["bank", "account", "mobile", "money", "mpesa", "provider"];
+    const nonBank = processedProvidersFiltered.filter((p: any) => {
+      const name = String(p?.provider_name || "").toLowerCase();
+      const providerName = String(p?.provider || "").toLowerCase();
+      const methodName = String(p?.payment_method_type || "").toLowerCase();
+      return !bankLike.some(
+        (k) => name.includes(k) || providerName.includes(k) || methodName.includes(k)
+      );
+    });
+
+    if (nonBank.length > 0) return nonBank;
+
+    // Fallback so Forex tab always lets user add an Omaya address.
+    return [
+      {
+        provider_name: "USDT",
+        provider: "USDT",
+        payment_method_type: "Forex Wallet",
+        wallet_address: null,
+      },
+    ];
+  }, [processedProvidersFiltered]);
+
+  const providers = methodTab === "forex" ? forexAssetOptions : providersForTab;
 
   // When filtered to a single provider, auto-select its method and provider
   const singleFilteredProvider = processedProvidersFiltered.length === 1 ? processedProvidersFiltered[0] : null;
   useEffect(() => {
     if (!open || !filterByProviderName?.trim() || !singleFilteredProvider) return;
-    if (singleFilteredProvider.payment_method_type) setMethod(singleFilteredProvider.payment_method_type);
+    if (singleFilteredProvider.payment_method_type) {
+      const singleType = String(singleFilteredProvider.payment_method_type);
+      setMethod(singleType);
+      setMethodTab(
+        singleType.toLowerCase().includes("crypto")
+          ? "crypto"
+          : singleType.toLowerCase().includes("forex")
+            ? "forex"
+            : "bank"
+      );
+    }
     if (singleFilteredProvider.provider_name) setProvider(singleFilteredProvider.provider_name);
   }, [open, filterByProviderName, singleFilteredProvider?.payment_method_type, singleFilteredProvider?.provider_name]);
 
@@ -257,7 +319,8 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
   const isForexMethod = normalizedMethod.includes("forex");
   const isMobileMethod =
     normalizedMethod.includes("mobile") || normalizedMethod.includes("money") || normalizedMethod.includes("mpesa");
-  const shouldUseWalletAddressField = isCryptoMethod || isForexMethod;
+  const shouldUseWalletAddressField =
+    isCryptoMethod || isForexMethod || methodTab === "forex";
 
   const accountFieldLabel = shouldUseWalletAddressField
     ? "Wallet Address"
@@ -284,7 +347,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
        showToast.error("Please log in to add payment methods");
        return;
      }
-     if (!method || !provider || !name || !account) {
+    if (!provider || !name || !account) {
        logger.debug('p2p', "Validation failed", { method, provider, name, account });
        showToast.error("Please fill all required fields");
        return;
@@ -298,10 +361,20 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
     // Use the provider field (e.g., "Cooperative Bank") instead of provider_name
     const providerField = selectedProvider?.provider || provider;
     
+    const resolvedMethod =
+      selectedProvider?.payment_method_type ||
+      selectedProvider?.payment_method_name ||
+      method ||
+      (methodTab === "crypto"
+        ? "Crypto Wallet"
+        : methodTab === "forex"
+          ? "Forex Wallet"
+          : "Bank Wallet");
+
     const payload: PaymentDetailPayload = {
       account_name: name,
       account_number: account,
-      payment_method_name: method,
+      payment_method_name: resolvedMethod,
       payment_provider_name: providerField,
       provider_name: providerField,
       wallet_address: shouldUseWalletAddressField
@@ -409,13 +482,13 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
       style={{ pointerEvents: 'auto' }}
     >
       <div 
-        className="bg-white dark:bg-[#19191D] rounded-2xl p-4 sm:p-6 w-full max-w-sm shadow-xl border border-gray-200 dark:border-[#35353E] relative z-[10000] max-h-[90vh] overflow-y-auto"
+        className="bg-white dark:bg-[#13151E] rounded-[28px] p-4 sm:p-6 w-full max-w-[620px] shadow-xl border border-[#E3E6F0] dark:border-[#2A2F40] relative z-[10000] max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
         style={{ pointerEvents: 'auto' }}
       >
         <div className="flex items-center justify-between mb-4">
-          <div className="text-gray-900 dark:text-white text-base sm:text-lg font-semibold">
-            Add Payment Details
+          <div className="text-gray-900 dark:text-white text-2xl leading-[1.1] font-semibold">
+            {methodTab === "forex" ? "Add My Omaya Address" : "Add Payment Method"}
           </div>
                      <button
              onClick={(e) => {
@@ -423,10 +496,10 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                e.stopPropagation();
                onClose();
              }}
-             className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors p-1"
+             className="text-gray-400 hover:text-white transition-colors p-1"
              type="button"
            >
-             <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
              </svg>
            </button>
@@ -493,43 +566,64 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
         >
                      {/* Payment Method Dropdown */}
            <div>
-             <label className="block text-gray-600 dark:text-[#788099] text-sm mb-1">
-               Payment Method
+             <label className="block text-gray-900 dark:text-white text-base mb-2 font-medium">
+               {methodTab === "forex" ? "Address Type" : "Payment Type"}
              </label>
-             <select
-               className="w-full p-2.5 sm:p-3 rounded-[24px] bg-white dark:bg-[#18181D] border border-gray-200 dark:border-[#35353E] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1D8751] text-sm sm:text-base [&_option]:bg-white dark:[&_option]:bg-[#18181D] [&_option]:text-gray-900 dark:[&_option]:text-white"
-               value={method}
-               onChange={(e) => setMethod(e.target.value)}
-               disabled={publicMethodsLoading}
-             >
-               <option value="">Select Method</option>
-               {methodTypes.map((type, index: number) => (
-                 <option key={`${type}-${index}`} value={type}>
-                   {type}
-                 </option>
-               ))}
-             </select>
+             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+               {[
+                 { key: "crypto", label: "Crypto Wallet" },
+                 { key: "bank", label: "Bank Wallet" },
+                 { key: "forex", label: "Forex Wallet" },
+               ].map((tab) => {
+                 const active = methodTab === (tab.key as PaymentTab);
+                 return (
+                   <button
+                     key={tab.key}
+                     type="button"
+                     onClick={() => {
+                       const nextTab = tab.key as PaymentTab;
+                       setMethodTab(nextTab);
+                       setProvider("");
+                       const firstForTab = processedProvidersFiltered.find((p: any) =>
+                         isMethodInTab(String(p?.payment_method_type || ""), nextTab)
+                       );
+                       setMethod(firstForTab?.payment_method_type || "");
+                     }}
+                     disabled={publicMethodsLoading}
+                    className={`rounded-[14px] border px-3 py-2 text-sm font-medium transition-colors ${
+                       active
+                         ? "bg-[#1D8751] border-[#1D8751] text-white"
+                         : "bg-[#F8FAFC] dark:bg-[#060913] border-[#E3E6F0] dark:border-[#2A2F40] text-[#4B5563] dark:text-[#9EA7BE] hover:text-gray-900 dark:hover:text-white"
+                     }`}
+                   >
+                     {tab.label}
+                   </button>
+                 );
+               })}
+             </div>
             {!publicMethodsLoading && methodTypes.length === 0 && (
-              <p className="mt-2 text-sm text-gray-500 dark:text-[#788099]">
+              <p className="mt-2 text-sm text-[#788099]">
                 No payment methods available.
               </p>
             )}
            </div>
 
-                     {/* Provider Dropdown */}
-           {method && (
+          {/* Provider / Asset Dropdown */}
+           {methodTab !== "forex" && (methodTab || method) && (
              <div>
-               <label className="block text-gray-600 dark:text-[#788099] text-sm mb-1">
-                 Provider
+               <label className="block text-gray-900 dark:text-white text-sm mb-2">
+                Provider
                </label>
                <div className="relative">
                  <select
-                   className="w-full p-2.5 sm:p-3 rounded-[24px] bg-white dark:bg-[#18181D] border border-gray-200 dark:border-[#35353E] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1D8751] appearance-none pr-10 text-sm sm:text-base [&_option]:bg-white dark:[&_option]:bg-[#18181D] [&_option]:text-gray-900 dark:[&_option]:text-white"
+                   className="w-full p-3 rounded-[14px] bg-white dark:bg-[#060913] border border-[#E3E6F0] dark:border-[#2A2F40] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1D8751] appearance-none pr-10 text-sm [&_option]:bg-white dark:[&_option]:bg-[#060913] [&_option]:text-gray-900 dark:[&_option]:text-white"
                    value={provider}
                    onChange={(e) => setProvider(e.target.value)}
                   disabled={publicMethodsLoading || providers.length === 0}
                  >
-                   <option value="">Select Provider</option>
+                   <option value="">
+                    Select Provider
+                   </option>
                   {providers.map((p: any, index: number) => (
                      <option
                        key={`${p.provider_name}-${index}`}
@@ -548,7 +642,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                
                {/* Provider Preview with Logo */}
               {provider && (
-                 <div className="mt-2 p-3 rounded-lg bg-gray-50 dark:bg-[#23232B] border border-gray-200 dark:border-[#35353E]">
+                 <div className="mt-2 p-3 rounded-lg bg-[#F8FAFC] dark:bg-[#171C2A] border border-[#E3E6F0] dark:border-[#2A2F40]">
                    <div className="flex items-center gap-3">
                      {(() => {
                        const selectedProvider = providers.find(
@@ -556,19 +650,28 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                        );
                        return (
                          <>
-                           <img
-                             src={selectedProvider?.logo || "/default-provider-logo.svg"}
-                             alt={`${provider} logo`}
-                             className="w-8 h-8 rounded-full object-cover"
-                             onError={(e) => {
-                               e.currentTarget.src = "/default-provider-logo.svg";
-                             }}
-                           />
+                          <span
+                            className="rounded-full overflow-hidden flex-shrink-0"
+                            style={{ width: PAYMENT_LOGO_SIZE, height: PAYMENT_LOGO_SIZE }}
+                          >
+                            <img
+                              src={getHighResPaymentLogo(
+                                selectedProvider?.logo,
+                                undefined,
+                                PAYMENT_LOGO_SIZE
+                              )}
+                              alt={`${provider} logo`}
+                              className="w-full h-full object-contain"
+                              onError={(e) => {
+                                e.currentTarget.src = "/default-provider-logo.svg";
+                              }}
+                            />
+                          </span>
                            <div>
                              <p className="text-sm font-medium text-gray-900 dark:text-white">
                                {provider}
                              </p>
-                             <p className="text-xs text-gray-500 dark:text-[#788099]">
+                             <p className="text-xs text-[#788099]">
                                Selected Provider
                              </p>
                            </div>
@@ -578,7 +681,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                    </div>
                  </div>
                )}
-              {!publicMethodsLoading && method && providers.length === 0 && (
+              {!publicMethodsLoading && providers.length === 0 && (
                 <p className="mt-2 text-sm text-gray-500 dark:text-[#788099]">
                   No providers found for the selected method.
                 </p>
@@ -586,26 +689,44 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
              </div>
            )}
 
-                     {/* Name Input */}
+          {methodTab === "forex" && (
+            <div className="rounded-2xl border border-[#E3E6F0] dark:border-[#2A2F40] bg-[#F8FAFC] dark:bg-[#171C2A] px-4 py-3">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-gray-900 dark:text-white text-sm font-semibold">Your Addresses</p>
+                <button
+                  type="button"
+                  onClick={() => setShowForexAddressModal(true)}
+                  className="text-xs sm:text-sm text-[#1D8751] hover:text-[#0f8f4d] font-medium"
+                >
+                  + Add New Address
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Name Input */}
+          {methodTab !== "forex" && (
            <div>
-             <label className="block text-gray-600 dark:text-[#788099] text-sm mb-1">
+              <label className="block text-gray-900 dark:text-white text-sm mb-2">
                Account Name (Auto-filled)
              </label>
              <input
-               className="w-full bg-gray-100 dark:bg-[#2A2A30] text-gray-500 dark:text-[#788099] rounded-lg px-3 sm:px-4 py-2.5 sm:py-3 cursor-not-allowed text-sm sm:text-base"
+                className="w-full rounded-[14px] px-3 sm:px-4 py-2.5 sm:py-3 text-sm bg-[#F8FAFC] dark:bg-[#171C2A] text-[#6B7280] dark:text-[#788099] border border-[#E3E6F0] dark:border-transparent cursor-not-allowed"
                placeholder="Your name will be auto-filled"
                value={name}
                readOnly
                disabled
              />
            </div>
+          )}
                      {/* Account Number / Mobile Number / Wallet - dynamic based on payment method */}
+          {methodTab !== "forex" && (
           <div>
-            <label className="block text-gray-600 dark:text-[#788099] text-sm mb-1">
+            <label className="block text-gray-900 dark:text-white text-sm mb-2">
               {accountFieldLabel}
             </label>
              <input
-               className="w-full bg-gray-50 dark:bg-[#23232B] text-gray-900 dark:text-white rounded-lg px-3 sm:px-4 py-2.5 sm:py-3 focus:outline-none focus:ring-2 focus:ring-[#1D8751] placeholder:text-gray-400 dark:placeholder:text-[#788099] text-sm sm:text-base"
+               className="w-full bg-white dark:bg-[#060913] text-gray-900 dark:text-white rounded-[14px] border border-[#E3E6F0] dark:border-[#2A2F40] px-3 sm:px-4 py-2.5 sm:py-3 focus:outline-none focus:ring-2 focus:ring-[#1D8751] placeholder:text-gray-400 dark:placeholder:text-[#6F7893] text-sm"
                placeholder={accountFieldPlaceholder}
                value={account}
                onChange={(e) => setAccount(e.target.value)}
@@ -613,9 +734,11 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                maxLength={20}
              />
            </div>
+          )}
 
-          {method && (
-            <div className="flex items-center gap-2">
+          {methodTab !== "forex" && (methodTab || method) && (
+            <div className="rounded-2xl border border-[#1D8751] bg-[linear-gradient(90deg,rgba(29,135,81,0.14)_0%,rgba(29,135,81,0.02)_100%)] dark:bg-[linear-gradient(90deg,rgba(29,135,81,0.18)_0%,rgba(29,135,81,0.04)_100%)] p-4">
+              <div className="flex items-center gap-2">
               <input
                 type="checkbox"
                 id="allowAutoSend"
@@ -627,22 +750,26 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                   }
                   setAllowAutoSend(e.target.checked);
                 }}
-                className="w-4 h-4 text-[#1D8751] bg-gray-100 dark:bg-[#23232B] border-gray-300 dark:border-[#35353E] rounded focus:ring-2 focus:ring-[#1D8751] cursor-pointer"
+                className="w-4 h-4 text-[#1D8751] bg-white dark:bg-[#0D1320] border-[#C7D2E5] dark:border-[#2A2F40] rounded focus:ring-2 focus:ring-[#1D8751] cursor-pointer"
                 disabled={publicMethodsLoading || autoSendPreviouslyEnabled}
               />
               <label
                 htmlFor="allowAutoSend"
-                className={`text-sm ${
+                className={`text-lg leading-none ${
                   autoSendPreviouslyEnabled
-                    ? "text-gray-400 dark:text-[#5f6576] cursor-not-allowed"
-                    : "text-gray-700 dark:text-[#788099] cursor-pointer"
+                    ? "text-[#5f6576] cursor-not-allowed"
+                    : "text-gray-900 dark:text-white cursor-pointer"
                 }`}
               >
-                Allow auto send
+                Automatic Transaction
               </label>
             </div>
+              <p className="mt-3 text-sm text-gray-700 dark:text-[#D3D7E0]">
+                We will use this address for all your <span className="text-[#1D8751]">USDT DEPOSITS</span>, ensuring seamless automatic processing! <span className="text-[#1D8751]">learn more!</span>
+              </p>
+            </div>
           )}
-          {method && autoSendPreviouslyEnabled && (
+          {(methodTab || method) && autoSendPreviouslyEnabled && (
             <p className="mt-1 inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-1 text-xs font-medium text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">
               Auto send has already been used on your account and cannot be enabled again here.
             </p>
@@ -681,6 +808,15 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
               Cancel
             </button>
             {isAuthenticated ? (
+              methodTab === "forex" ? (
+                <button
+                  className="flex-1 rounded-xl bg-[#1D8751] text-white py-2.5 sm:py-3 font-medium hover:bg-[#17693f] transition-colors text-sm sm:text-base"
+                  type="button"
+                  onClick={() => setShowForexAddressModal(true)}
+                >
+                  + Add New Address
+                </button>
+              ) : (
               <button
                 className="flex-1 rounded-xl bg-[#1D8751] text-white py-2.5 sm:py-3 font-medium hover:bg-[#17693f] transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
                 type="submit"
@@ -688,14 +824,18 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                   publicMethodsLoading ||
                   postLoading ||
                   sendOtpLoading ||
-                  !method ||
                   !provider ||
                   !name ||
                   !account
                 }
               >
-                {sendOtpLoading ? "Sending OTP..." : postLoading ? "Adding..." : "Add"}
+                {sendOtpLoading
+                  ? "Sending OTP..."
+                  : postLoading
+                    ? "Adding..."
+                    : "Add"}
               </button>
+              )
             ) : (
               <button
                 className="flex-1 rounded-xl bg-[#1D8751] text-white py-2.5 sm:py-3 font-medium hover:bg-[#17693f] transition-colors text-sm sm:text-base"
@@ -713,6 +853,14 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
           </div>
         </form>
         )}
+        <AddWalletAddressModal
+          open={showForexAddressModal}
+          onClose={() => setShowForexAddressModal(false)}
+          onSuccess={() => {
+            setShowForexAddressModal(false);
+            onClose();
+          }}
+        />
       </div>
     </div>
   );

@@ -3151,7 +3151,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
                           options={paymentMethodOptions}
                           value={payBank}
                           logoSize={PAYMENT_LOGO_SIZE}
-                          logoClassName={PAYMENT_LOGO_BASE_CLASS}
+                          logoClassName={`${PAYMENT_LOGO_BASE_CLASS} rounded-full`}
                           sizeMode="card"
                           onChange={(value) => {
                             const selectedProvider = publicPaymentProviders.find((p: any) => (p.provider_name || p.payment_provider_name) === value);
@@ -3291,7 +3291,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
                                 emptyText="No registered accounts available"
                                 searchable={true}
                                 logoSize={PAYMENT_LOGO_SIZE}
-                                logoClassName={PAYMENT_LOGO_BASE_CLASS}
+                                logoClassName={`${PAYMENT_LOGO_BASE_CLASS} rounded-full`}
                                 sizeMode="card"
                                 className="w-full min-w-0"
                               />
@@ -3679,7 +3679,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
                           options={paymentMethodOptions}
                           value={selectedPaymentMethod}
                           logoSize={PAYMENT_LOGO_SIZE}
-                          logoClassName={PAYMENT_LOGO_BASE_CLASS}
+                          logoClassName={`${PAYMENT_LOGO_BASE_CLASS} rounded-full`}
                           sizeMode="card"
                           onChange={(value) => {
                             const selectedProvider = publicPaymentProviders.find((p: any) => (p.provider_name || p.payment_provider_name) === value);
@@ -3771,7 +3771,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
                               loading={userPaymentMethodsDisplay.isLoading}
                               searchable={true}
                               logoSize={PAYMENT_LOGO_SIZE}
-                              logoClassName={PAYMENT_LOGO_BASE_CLASS}
+                              logoClassName={`${PAYMENT_LOGO_BASE_CLASS} rounded-full`}
                               sizeMode="card"
                               className="w-full"
                             />

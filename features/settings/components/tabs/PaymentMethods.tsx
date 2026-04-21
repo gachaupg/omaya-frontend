@@ -78,7 +78,7 @@ const AddressQrImage: React.FC<{ value: string }> = ({ value }) => {
     <img
       src={qrDataUrl}
       alt="Wallet QR"
-      className="w-12 h-12 rounded-lg border border-[#E3E6F0] dark:border-[#2A2A35] bg-white object-contain"
+      className="w-9 h-9 rounded-lg border border-[#E3E6F0] dark:border-[#2A2A35] bg-white object-contain"
     />
   );
 };
@@ -95,15 +95,17 @@ const WalletAddressCard = ({
   <div className="flex flex-col gap-3 rounded-[28px] border border-[#E3E6F0] dark:border-[#2A2A35] bg-gray-50 dark:bg-[var(--card-color)] px-4 py-4">
     <div className="flex items-start gap-4">
       <div className="relative">
-        <img
-          src={addr.asset_details?.image || "/images/tether.svg"}
-          alt={addr.asset}
-          className="w-12 h-12 rounded-full object-cover flex-shrink-0"
-          style={{ display: "block" }}
-          onError={(e) => {
-            e.currentTarget.src = "/default-provider-logo.svg";
-          }}
-        />
+        <span className="w-4 h-4 rounded-full overflow-hidden flex-shrink-0 bg-white dark:bg-[#1F2432]">
+          <img
+            src={addr.asset_details?.image || "/images/tether.svg"}
+            alt={addr.asset}
+            className="w-full h-full object-cover"
+            style={{ display: "block" }}
+            onError={(e) => {
+              e.currentTarget.src = "/default-provider-logo.svg";
+            }}
+          />
+        </span>
         {addr.status === "pending" && (
           <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-[#FF4D55] border-2 border-white dark:border-[#13131A]" />
         )}
@@ -424,15 +426,17 @@ const PaymentMethods = () => {
                             <div className="flex items-start justify-between gap-4">
                               <div className="flex items-start gap-4">
                                 <div className="relative">
-                                  <img
-                                    src="/images/tether.svg"
-                                    alt="USDT"
-                                    className="w-12 h-12 object-contain flex-shrink-0"
-                                    style={{ display: "block" }}
-                                    onError={(e) => {
-                                      e.currentTarget.src = "/default-provider-logo.svg";
-                                    }}
-                                  />
+                                  <span className="w-4 h-4 rounded-full overflow-hidden flex-shrink-0 bg-white dark:bg-[#1F2432]">
+                                    <img
+                                      src="/images/tether.svg"
+                                      alt="USDT"
+                                      className="w-full h-full object-cover"
+                                      style={{ display: "block" }}
+                                      onError={(e) => {
+                                        e.currentTarget.src = "/default-provider-logo.svg";
+                                      }}
+                                    />
+                                  </span>
                                 </div>
                                 <div className="flex-1">
                                   <p className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
@@ -563,17 +567,19 @@ const PaymentMethods = () => {
                   >
                     <div className="flex items-start gap-4">
                       <div className="relative">
-                        <img
-                          src={payment?.provider_logo || (isCryptoWallet(payment) ? "/images/tether.svg" : "/default-provider-logo.svg")}
-                          alt={payment?.payment_provider_name || payment?.payment_method_name}
-                          className="w-12 h-12 object-contain flex-shrink-0"
-                          style={{ display: 'block' }}
-                          onError={(e) => {
-                            e.currentTarget.src = isCryptoWallet(payment) ? "/images/tether.svg" : "/default-provider-logo.svg";
-                          }}
-                        />
+                        <span className=" overflow-hidden flex-shrink-0 bg-white dark:bg-[#1F2432]">
+                          <img
+                            src={payment?.provider_logo || (isCryptoWallet(payment) ? "/images/tether.svg" : "/default-provider-logo.svg")}
+                            alt={payment?.payment_provider_name || payment?.payment_method_name}
+                            className="w-10 h-10 rounded-full object-cover"
+                            style={{ display: 'block' }}
+                            onError={(e) => {
+                              e.currentTarget.src = isCryptoWallet(payment) ? "/images/tether.svg" : "/default-provider-logo.svg";
+                            }}
+                          />
+                        </span>
                         {isPending && (
-                          <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-[#FF4D55] border-2 border-white dark:border-[#13131A]" />
+                          <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-[#FF4D55] border border-white dark:border-[#13131A]" />
                         )}
                       </div>
                       <div className="flex-1 flex items-center justify-between gap-2">

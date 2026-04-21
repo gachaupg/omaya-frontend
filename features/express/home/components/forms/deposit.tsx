@@ -57,7 +57,14 @@ import {
 } from "@/features/express/api";
 import { withTimeout } from "@/features/express/utils/fetchWithTimeout";
 import { resolveForexDepositAdminPaymentDetailId } from "@/features/express/utils/forexDepositResolution";
-import { getHighResAssetIcon, ASSET_ICON_SIZE } from "@/features/express/utils/imageHelpers";
+import {
+  ASSET_ICON_BASE_CLASS,
+  ASSET_ICON_SIZE,
+  getHighResAssetIcon,
+  getHighResPaymentLogo,
+  PAYMENT_LOGO_BASE_CLASS,
+  PAYMENT_LOGO_SIZE,
+} from "@/features/express/utils/imageHelpers";
 import {
   AssetDropdownVirtualized,
   buildAssetDropdownRows,
@@ -3607,14 +3614,12 @@ export default function DepositForm({
                 <CustomSelect
                   options={(() => {
                     const mappedOptions = (finalPaymentMethods || []).map((payment: any, index: number) => {
-                      // Get logo URL - check both fields and ensure it's a valid string
-                      let logoUrl: string | undefined = undefined;
-
-                      if (payment.provider_logo && typeof payment.provider_logo === 'string' && payment.provider_logo.trim()) {
-                        logoUrl = payment.provider_logo.trim();
-                      } else if (payment.logo && typeof payment.logo === 'string' && payment.logo.trim()) {
-                        logoUrl = payment.logo.trim();
-                      }
+                      // Normalize logo source so every payment icon uses a consistent resolution and shape.
+                      const logoUrl = getHighResPaymentLogo(
+                        payment.provider_logo,
+                        payment.logo,
+                        PAYMENT_LOGO_SIZE
+                      );
 
                      
 
@@ -3650,9 +3655,11 @@ export default function DepositForm({
                     return mappedOptions;
                   })()}
                   value={payBank}
+                  logoSize={PAYMENT_LOGO_SIZE}
+                  logoClassName={`${PAYMENT_LOGO_BASE_CLASS} rounded-full`}
                   className="w-full"
                   placeholderClassName="text-white dark:text-white"
-                  triggerClassName={`!px-4 !py-[8px] !min-h-0 text-[14px] border rounded-2xl bg-transparent !h-[44px] ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
+                  triggerClassName={`!px-4 !py-[8px] !min-h-0 text-sm font-medium border rounded-2xl bg-transparent !h-[44px] ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
                     }`}
                   onChange={(value) => {
                     const selectedPayment = finalPaymentMethods?.find(
@@ -3925,7 +3932,7 @@ export default function DepositForm({
                         <img
                           src={getAssetDropdownIcon(selectedAsset)}
                           alt={selectedAsset?.name || selectedAsset?.ticker || selectedAsset?.symbol || "Asset"}
-                          className="w-6 h-6 rounded-full object-cover"
+                          className={`${ASSET_ICON_BASE_CLASS} w-6 h-6 rounded-full`}
                           onError={(e) => {
                             console.log(
                               "Image failed to load for asset:",
@@ -3953,7 +3960,7 @@ export default function DepositForm({
                         <img
                           src={ASSET_ICON_FALLBACK_URL}
                           alt="asset icon"
-                          className="w-6 h-6"
+                          className={`${ASSET_ICON_BASE_CLASS} w-6 h-6 rounded-full`}
                         />
                         <span className={`${isDark ? "text-[#788099]" : "text-[#64748B]"}`}>
                           {assetsDisplay.isLoading

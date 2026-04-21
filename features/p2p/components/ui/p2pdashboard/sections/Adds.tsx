@@ -149,6 +149,14 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
   }, [error]);
 
   const [openSuccess, setOpenSuccess] = useState(false);
+  const applyCommissionDelta = (delta: number) => {
+    setCommission((c) => {
+      const current = parseFloat(c) || 1.0;
+      const next = Math.max(0.01, current + delta);
+      return next.toFixed(2);
+    });
+    setErrors((prev) => ({ ...prev, commission: undefined }));
+  };
   useEffect(() => {
     if (postOrderError) {
       showToast.error(postOrderError);
@@ -414,8 +422,8 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
           <div className="text-sm text-gray-600 dark:text-[#788099] mb-2 mt-3">
             Type & Price
           </div>
-          <Card className="w-full mb-2 p-9 sm:px-2 sm:py-2 bg-card border border-gray-200 dark:border-[#35353E] rounded-[24px]">
-            <div className="flex flex-col md:flex-row gap-4 items-start md:items-end w-full">
+          <Card className="w-full mb-2 p-3 sm:p-4 bg-card border border-gray-200 dark:border-[#35353E] rounded-[24px]">
+            <div className="flex flex-col md:flex-row gap-4 items-start md:items-start w-full">
               {/* Asset */}
               <div className="flex-1 flex flex-col">
                 <span className="text-xs text-gray-600 dark:text-[#788099] mb-2">
@@ -423,14 +431,14 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                 </span>
                 <div
                   className="flex w-full items-center
-               bg-card border border-gray-200 dark:border-[#35353E] rounded-[19px] px-2 py-2 min-h-[40px]"
+               bg-card border border-gray-200 dark:border-[#35353E] rounded-[19px] px-3 py-2 min-h-[48px]"
                 >
                   <img
                     src="/images/tether.svg"
                     alt="USDT"
                     className="w-6 h-6 rounded-full"
                   />
-                  <span className="text-gray-900 dark:text-white text-base ml-2">
+                  <span className="ml-2 text-gray-900 dark:text-white text-sm font-medium leading-none">
                     {asset}
                   </span>
                 </div>
@@ -439,15 +447,15 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
               {/* Commission */}
               <div className="flex-1 flex flex-col">
                 <span className="text-xs text-gray-600 dark:text-[#788099] mb-2">
-                  Rate
+                  Commission
                 </span>
                 <div
                   className={`flex w-full items-center justify-between bg-card border ${errors.commission
                     ? "border-red-500"
                     : "border-gray-200 dark:border-[#35353E]"
-                    } rounded-[19px] min-h-[40px]`}
+                    } rounded-[19px] min-h-[48px] px-3`}
                 >
-                  <div className="flex items-center flex-1">
+                  <div className="flex items-center flex-1 min-h-[40px]">
                     <svg
                       className="w-6 h-6 text-[#1D8751] mr-2"
                       fill="none"
@@ -473,37 +481,46 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                       className="bg-transparent border-none text-gray-900 dark:text-white text-base focus:outline-none w-20"
                       placeholder="1.00"
                     />
+                    <span className="text-gray-900 dark:text-white text-base">%</span>
                   </div>
                   <div className="flex items-center">
                     <button
-                      className="text-[#1D8751] text-xl w-8 h-8 rounded-full hover:bg-[#1D8751]/10 flex items-center justify-center transition mr-2"
-                      onClick={() => {
-                        setCommission((c) => {
-                          // Parse decimal format like "1.00" or "1.01"
-                          const current = parseFloat(c) || 1.00;
-                          const incremented = current + 0.01;
-                          return incremented.toFixed(2);
-                        });
-                        setErrors((prev) => ({ ...prev, commission: undefined }));
-                      }}
+                      className="text-[#1D8751] text-xl w-9 h-9 rounded-lg bg-gray-100 dark:bg-[#2A2D35] hover:bg-[#1D8751]/10 flex items-center justify-center transition mr-2"
+                      onClick={() => applyCommissionDelta(0.01)}
+                      type="button"
                     >
                       +
                     </button>
                     <button
-                      className="text-[#1D8751] text-xl w-8 h-8 rounded-full hover:bg-[#1D8751]/10 flex items-center justify-center transition"
-                      onClick={() => {
-                        setCommission((c) => {
-                          // Parse decimal format like "1.00" or "1.01"
-                          const current = parseFloat(c) || 1.00;
-                          const decremented = Math.max(0.01, current - 0.01);
-                          return decremented.toFixed(2);
-                        });
-                        setErrors((prev) => ({ ...prev, commission: undefined }));
-                      }}
+                      className="text-[#1D8751] text-xl w-9 h-9 rounded-lg bg-gray-100 dark:bg-[#2A2D35] hover:bg-[#1D8751]/10 flex items-center justify-center transition"
+                      onClick={() => applyCommissionDelta(-0.01)}
+                      type="button"
                     >
                       –
                     </button>
                   </div>
+                </div>
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <button
+                      key={`plus-${n}`}
+                      type="button"
+                      onClick={() => applyCommissionDelta(n / 100)}
+                      className="px-2.5 py-1.5 text-sm rounded-lg bg-gray-100 dark:bg-[#2A2D35] text-gray-700 dark:text-[#D1D5DB] hover:bg-gray-200 dark:hover:bg-[#3A3D45]"
+                    >
+                      +{n}%
+                    </button>
+                  ))}
+                  {[1, 2, 3].map((n) => (
+                    <button
+                      key={`minus-${n}`}
+                      type="button"
+                      onClick={() => applyCommissionDelta(-(n / 100))}
+                      className="px-2.5 py-1.5 text-sm rounded-lg bg-gray-100 dark:bg-[#2A2D35] text-gray-700 dark:text-[#D1D5DB] hover:bg-gray-200 dark:hover:bg-[#3A3D45]"
+                    >
+                      -{n}%
+                    </button>
+                  ))}
                 </div>
                 {errors.commission && (
                   <span className="text-red-500 text-sm mt-1">
@@ -960,11 +977,11 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                             >
                               <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0 w-full sm:w-auto">
                                 {/* Logo */}
-                                <div className="flex-shrink-0">
+                                <div className="flex-shrink-0 w-6 h-6 rounded-full overflow-hidden bg-white dark:bg-[#1F2432] border border-white dark:border-card">
                                   <img
                                     src={logoUrl}
                                     alt={`${detail.payment_provider_name} logo`}
-                                    className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-white dark:border-card"
+                                    className="w-full h-full object-cover"
                                     onError={(e) => {
                                       e.currentTarget.src = "/default-provider-logo.svg";
                                     }}

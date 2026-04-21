@@ -22,6 +22,11 @@ import { BookmarkDropdown } from "@/features/express/components/forms/BookmarkDr
 import { usePaymentMethodsDisplay } from "@/features/express/hooks/useDataDisplay";
 import { setAuthRedirectPath, buildMoneyXRedirectPath, setMoneyXPrefillState } from "@/lib/utils/authRedirect";
 import { openKYCModal, checkKYCStatus } from "@/features/auth/slices/authSlice";
+import {
+  getHighResPaymentLogo,
+  PAYMENT_LOGO_BASE_CLASS,
+  PAYMENT_LOGO_SIZE,
+} from "@/features/express/utils/imageHelpers";
 
 interface TransferFormProps {
   isHomePage?: boolean;
@@ -720,7 +725,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
       value: getPaymentMethodKey(payment),
       // Show provider name only; do not append method suffixes like "- Bank".
       label: cleanProviderName,
-      logo: logoUrl,
+      logo: getHighResPaymentLogo(logoUrl, undefined, PAYMENT_LOGO_SIZE),
       raw: payment,
     };
   });
@@ -1029,9 +1034,11 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
                 <CustomSelect
                   options={paymentMethodOptions}
                   value={fromPaymentMethod}
+                  logoSize={PAYMENT_LOGO_SIZE}
+                  logoClassName={`${PAYMENT_LOGO_BASE_CLASS} rounded-full`}
                   className="w-full"
                   placeholderClassName="text-white dark:text-white"
-                  triggerClassName={`px-4 py-2 text-[14px] border rounded-2xl bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
+                  triggerClassName={`px-4 py-2 text-sm font-medium border rounded-2xl bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
                     }`}
                   onChange={(value) => {
                     const selectedPayment = finalPaymentMethods?.find(
@@ -1139,9 +1146,11 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
                     (opt) => opt.value !== fromPaymentMethod
                   )}
                   value={toPaymentMethod}
+                  logoSize={PAYMENT_LOGO_SIZE}
+                  logoClassName={`${PAYMENT_LOGO_BASE_CLASS} rounded-full`}
                   className="w-full"
                   placeholderClassName="text-white dark:text-white"
-                  triggerClassName={`px-4 py-2 text-[14px] border rounded-2xl bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
+                  triggerClassName={`px-4 py-2 text-sm font-medium border rounded-2xl bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
                     }`}
                   onChange={(value) => {
                     const selectedPayment = finalPaymentMethods?.find(

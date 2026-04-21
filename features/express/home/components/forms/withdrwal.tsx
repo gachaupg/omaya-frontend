@@ -59,7 +59,14 @@ import {
   setAuthRedirectPath,
 } from "@/lib/utils/authRedirect";
 import { openKYCModal, checkKYCStatus } from "@/features/auth/slices/authSlice";
-import { getHighResAssetIcon, ASSET_ICON_SIZE } from "@/features/express/utils/imageHelpers";
+import {
+  ASSET_ICON_BASE_CLASS,
+  ASSET_ICON_SIZE,
+  getHighResAssetIcon,
+  getHighResPaymentLogo,
+  PAYMENT_LOGO_BASE_CLASS,
+  PAYMENT_LOGO_SIZE,
+} from "@/features/express/utils/imageHelpers";
 import {
   AssetDropdownVirtualized,
   buildAssetDropdownRows,
@@ -4220,7 +4227,7 @@ export default function WithdrawalForm({
                                 selectedAsset?.symbol ||
                                 "Asset"
                               }
-                              className="w-6 h-6 rounded-full object-cover"
+                              className={`${ASSET_ICON_BASE_CLASS} w-6 h-6 rounded-full`}
                               onError={(e) => {
                                 console.log(
                                   "Image failed to load for asset:",
@@ -4251,7 +4258,7 @@ export default function WithdrawalForm({
                             <img
                               src={ASSET_ICON_FALLBACK_URL}
                               alt="asset icon"
-                              className="w-6 h-6"
+                              className={`${ASSET_ICON_BASE_CLASS} w-6 h-6 rounded-full`}
                             />
                             <span className={`${isDark ? "text-[#788099]" : "text-[#64748B]"}`}>
                               {assetsDisplay.isLoading
@@ -4568,7 +4575,11 @@ export default function WithdrawalForm({
                             value: providerName,
                             label: providerName,
                             subtitle: subtitle || undefined,
-                            logo: provider.logo || provider.provider_logo || undefined,
+                            logo: getHighResPaymentLogo(
+                              provider.logo || provider.provider_logo || undefined,
+                              undefined,
+                              PAYMENT_LOGO_SIZE
+                            ),
                           };
                         }).filter((opt: any) => opt.value && opt.value.trim());
                       }
@@ -4578,8 +4589,10 @@ export default function WithdrawalForm({
                       return (
                         <CustomSelect
                           options={paymentMethodOptions}
+                          logoSize={PAYMENT_LOGO_SIZE}
+                          logoClassName={`${PAYMENT_LOGO_BASE_CLASS} rounded-full`}
                           className="w-full"
-                          triggerClassName={`px-4 py-2 text-[14px] border rounded-2xl bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
+                          triggerClassName={`px-4 py-2 text-sm font-medium border rounded-2xl bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
                             }`}
                           placeholderClassName="text-white dark:text-white"
                           onChange={(value) => {
@@ -4715,7 +4728,11 @@ export default function WithdrawalForm({
                                         label: isPending
                                           ? `${displayLabel} (${isFrozen ? "Frozen" : "Pending"})`
                                           : displayLabel,
-                                        logo: providerLogo || undefined,
+                                        logo: getHighResPaymentLogo(
+                                          providerLogo || undefined,
+                                          undefined,
+                                          PAYMENT_LOGO_SIZE
+                                        ),
                                         // Add full information for tooltip on hover
                                         title: fullInfo,
                                         disabled: isPending,
@@ -4757,7 +4774,9 @@ export default function WithdrawalForm({
                                   searchable={true}
                                   dropdownTitle="Select a registered account from"
                                   className="w-full min-w-0"
-                                  triggerClassName={`px-4 py-2 text-[14px] border rounded-2xl w-full min-w-0 bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
+                                  logoSize={PAYMENT_LOGO_SIZE}
+                                  logoClassName={`${PAYMENT_LOGO_BASE_CLASS} rounded-full`}
+                                  triggerClassName={`px-4 py-2 text-sm font-medium border rounded-2xl w-full min-w-0 bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
                                     }`}
                                   largeDropdownItems={true}
                                   dropdownMatchTriggerWidth={true}

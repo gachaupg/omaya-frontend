@@ -113,7 +113,7 @@ const AvatarMessageItem: React.FC<AvatarMessageItemProps> = ({
   return (
     <div
       onClick={() => onMessageClick(userGroup.entity_id, userGroup.message_type, userGroup)}
-      className="bg-white dark:bg-[#1D1D23] border border-gray-200 dark:border-[#35353E] rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-[#23232B] cursor-pointer transition-colors"
+      className="bg-white dark:bg-[#1D1D23] border border-gray-200 dark:border-[#35353E] rounded-lg p-0 hover:bg-gray-50 dark:hover:bg-[#23232B] cursor-pointer transition-colors"
     >
       <div className="flex items-start space-x-3">
         {/* Avatar */}
@@ -319,7 +319,7 @@ const UnreadMessages: React.FC<UnreadMessagesProps> = ({ loading = false, onBack
     return (
       <div className="space-y-2">
         {[...Array(5)].map((_, i) => (
-          <div key={i} className="bg-white dark:bg-[#1D1D23] rounded-lg p-4 animate-pulse">
+          <div key={i} className="bg-white dark:bg-[#1D1D23] rounded-lg p-0 animate-pulse">
             <div className="flex items-start space-x-3">
               <div className="w-12 h-12 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
               <div className="flex-1 space-y-2">

@@ -110,7 +110,7 @@ const ProcessingNotifications: React.FC<ProcessingNotificationsProps> = ({ match
 
   if (!hasNotifications) {
     return (
-      <div className="dark:bg-[#23232B] bg-white rounded-xl p-8 text-center shadow-lg border dark:border-[#35353E] border-gray-200">
+      <div className="dark:bg-[#23232B] bg-white rounded-xl p-0 text-center shadow-lg border dark:border-[#35353E] border-gray-200">
         <div className="flex flex-col items-center justify-center min-h-[400px]">
           <div className="relative mb-6">
             <div className="w-24 h-24 bg-gradient-to-br from-[#1D8751] to-[#17693F] rounded-full flex items-center justify-center mb-4">
@@ -181,7 +181,7 @@ const ProcessingNotifications: React.FC<ProcessingNotificationsProps> = ({ match
           return (
             <div
               key={trade.id}
-              className="group flex flex-col sm:flex-row sm:items-center justify-between bg-white dark:bg-[#1f1f27] border border-gray-100 dark:border-[#35353E] rounded-xl p-3 sm:p-4 mb-3 shadow-sm hover:shadow-md transition-all duration-200"
+              className="group flex flex-col sm:flex-row sm:items-center justify-between bg-white dark:bg-[#1f1f27] border border-gray-100 dark:border-[#35353E] rounded-xl p-0 mb-3 shadow-sm hover:shadow-md transition-all duration-200"
             >
               <div className="flex items-start gap-3 flex-1 min-w-0">
                 <div className="relative shrink-0">
