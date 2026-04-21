@@ -48,6 +48,8 @@ interface CustomSelectProps {
    * Whether to use larger dropdown items (bigger logos and text)
    */
   largeDropdownItems?: boolean;
+  selectedTextClassName?: string;
+  optionTextClassName?: string;
 }
 
 const CustomSelect: React.FC<CustomSelectProps> = ({
@@ -74,6 +76,8 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   dropdownTitle,
   dropdownOffsetX = 0,
   largeDropdownItems = false,
+  selectedTextClassName,
+  optionTextClassName,
 }) => {
   // Use larger logo size for large dropdown items
   const resolvedLogoSize = logoSize ?? (largeDropdownItems ? 40 : sizeMode === "card" ? 24 : 32);
@@ -408,7 +412,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
             )}
             {!hideSelectedLabel && (
               <span
-                className={`truncate min-w-0 text-base sm:text-lg ${!selectedOption && !loading
+                className={`truncate min-w-0 ${selectedTextClassName || "text-base sm:text-lg"} ${!selectedOption && !loading
                     ? placeholderClassName || "text-gray-500 dark:text-gray-400"
                     : selectedOption ? "font-bold dark:font-normal" : ""
                   }`}
@@ -494,7 +498,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
                     hover:bg-blue-50 dark:hover:bg-blue-900/20
                     focus:outline-none focus:bg-blue-50 dark:focus:bg-blue-900/20
                     ${largeDropdownItems ? "px-4 py-3 sm:py-4" : "px-3 sm:px-4 py-2 sm:py-2.5"}
-                    ${largeDropdownItems ? "text-base sm:text-lg" : "text-base sm:text-lg"}
+                    ${optionTextClassName || "text-base sm:text-lg"}
                     ${isSelected
                           ? "bg-blue-100 dark:bg-blue-900/30 text-blue-900 dark:text-blue-100 font-medium"
                           : "text-gray-900 dark:text-white"
@@ -523,7 +527,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
                           />
                         )}
                         <div className="flex flex-col min-w-0 flex-1">
-                          <span className={`truncate text-left ${largeDropdownItems ? "text-base sm:text-lg font-medium" : "text-base sm:text-lg"}`}>{option.label}</span>
+                          <span className={`truncate text-left ${optionTextClassName || (largeDropdownItems ? "text-base sm:text-lg font-medium" : "text-base sm:text-lg")}`}>{option.label}</span>
                           {option.subtitle && (
                             <span className={`truncate text-left text-gray-500 dark:text-gray-400 ${largeDropdownItems ? "text-sm" : "text-xs"}`}>
                               {option.subtitle}

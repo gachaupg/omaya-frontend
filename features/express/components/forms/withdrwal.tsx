@@ -1171,6 +1171,10 @@ export default function WithdrawalForm({
     selectedPaymentStatus &&
     !isSelectedPaymentApproved
   );
+  const hasDecimalPlacesError =
+    /decimal places/i.test(String(apiValidationError || "")) ||
+    /decimal places/i.test(String(receiveAmountError || "")) ||
+    /decimal places/i.test(String(calculationError || ""));
 
   // Sync selectedPaymentDetails when WebSocket refetches and status changes (e.g. Pending → APPROVED)
   useEffect(() => {
@@ -4697,12 +4701,16 @@ export default function WithdrawalForm({
                   }}
                   disabled={
                     requiresLoginRedirect
-                      ? (isOtcPopupAsset(selectedAsset) && (payAmount >= 15000 || getAmount >= 15000)) || isSelectedPaymentPending
+                      ? (isOtcPopupAsset(selectedAsset) &&
+                          (payAmount >= 15000 || getAmount >= 15000)) ||
+                        isSelectedPaymentPending ||
+                        hasDecimalPlacesError
                       : isSubmitting ||
                       isTransactionSubmitted ||
                       isInfoModalOpen ||
                       (isOtcPopupAsset(selectedAsset) && (payAmount >= 15000 || getAmount >= 15000)) ||
-                      isSelectedPaymentPending
+                      isSelectedPaymentPending ||
+                      hasDecimalPlacesError
                   }
                 >
                   {isSubmitting ? (
@@ -5158,7 +5166,14 @@ export default function WithdrawalForm({
                       onExchange(transactionData);
                     }
                   }}
-                  disabled={isSubmitting || isInfoModalOpen || (isOtcPopupAsset(selectedAsset) && getAmount > 15000) || !isTermsAccepted || isSelectedPaymentPending}
+                  disabled={
+                    isSubmitting ||
+                    isInfoModalOpen ||
+                    (isOtcPopupAsset(selectedAsset) && getAmount > 15000) ||
+                    !isTermsAccepted ||
+                    isSelectedPaymentPending ||
+                    hasDecimalPlacesError
+                  }
                 >
                   {isSubmitting ? (
                     <div className="flex items-center gap-2">

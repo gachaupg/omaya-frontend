@@ -166,7 +166,27 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
         payment.is_active === "1"
       );
     });
-    setStablePaymentMethods(active);
+
+    // Dedupe provider/method rows that can arrive from multiple response shapes/sources.
+    const deduped = Array.from(
+      new Map(
+        active.map((payment: any) => {
+          const providerId = String(payment?.provider_id || payment?.id || "").trim().toLowerCase();
+          const providerName = String(payment?.provider_name || payment?.provider || "").trim().toLowerCase();
+          const methodName = String(
+            payment?.method_display ||
+            payment?.method ||
+            payment?.payment_method ||
+            payment?.payment_method_type ||
+            ""
+          ).trim().toLowerCase();
+          const key = `${providerId || providerName}::${methodName}`;
+          return [key, payment] as const;
+        })
+      ).values()
+    );
+
+    setStablePaymentMethods(deduped);
   }, [directPublicPaymentMethods, publicPaymentMethods]);
 
   // Use stable state - React will properly render this

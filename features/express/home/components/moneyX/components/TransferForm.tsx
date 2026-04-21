@@ -1031,7 +1031,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
                   value={fromPaymentMethod}
                   className="w-full"
                   placeholderClassName="text-white dark:text-white"
-                  triggerClassName={`px-4 py-2 text-lg border rounded-2xl bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
+                  triggerClassName={`px-4 py-2 text-[14px] border rounded-2xl bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
                     }`}
                   onChange={(value) => {
                     const selectedPayment = finalPaymentMethods?.find(
@@ -1141,7 +1141,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
                   value={toPaymentMethod}
                   className="w-full"
                   placeholderClassName="text-white dark:text-white"
-                  triggerClassName={`px-4 py-2 text-lg border rounded-2xl bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
+                  triggerClassName={`px-4 py-2 text-[14px] border rounded-2xl bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
                     }`}
                   onChange={(value) => {
                     const selectedPayment = finalPaymentMethods?.find(

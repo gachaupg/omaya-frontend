@@ -2876,6 +2876,9 @@ const getPaymentRestrictionMessage = (status?: string) =>
     isLookupMinGuard &&
     amountNum > 0 &&
     amountNum < EXPRESS_FIXED_MIN_AMOUNT;
+  const hasDecimalPlacesError =
+    /decimal places/i.test(String(apiValidationError || "")) ||
+    /decimal places/i.test(String(receiveAmountError || ""));
   const isOtcThresholdReached =
     !!selectedAsset &&
     isOtcPopupAsset(selectedAsset) &&
@@ -3879,7 +3882,12 @@ const getPaymentRestrictionMessage = (status?: string) =>
       {!isFirstCardSubmitted && (
         <button
           onClick={handleSubmit}
-          disabled={isSubmitting || isAmountBelowFixedMin || isOtcThresholdReached}
+          disabled={
+            isSubmitting ||
+            isAmountBelowFixedMin ||
+            isOtcThresholdReached ||
+            hasDecimalPlacesError
+          }
           className={`w-full py-3 px-4 rounded-xl font-semibold text-white bg-[#1D8751] hover:bg-[#0f8f4d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""
             }`}
         >
@@ -4274,7 +4282,8 @@ const getPaymentRestrictionMessage = (status?: string) =>
                       isAmountBelowFixedMin ||
                       !walletAddress.trim() ||
                       !!walletError ||
-                      isWalletValidating
+                      isWalletValidating ||
+                      hasDecimalPlacesError
                     }
                     className={`flex-1 font-semibold py-2 sm:py-2 px-3 sm:px-4 rounded-lg transition-colors flex items-center justify-center text-sm sm:text-base ${isSubmitting || !walletAddress.trim() || !!walletError
                       ? "bg-gray-500 cursor-not-allowed text-white"
@@ -4341,7 +4350,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
                 <div className="mt-2 p-1 bg-[#1D8751] bg-opacity-10 border border-[#1D8751] rounded-xl">
                   <button
                     onClick={handleProceedToExchanging}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || hasDecimalPlacesError}
                     className={`w-full font-semibold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 ${(isSubmitting)
                       ? "bg-gray-500 cursor-not-allowed text-white"
                       : "bg-[#1D8751] hover:bg-[#166b3f] text-white"

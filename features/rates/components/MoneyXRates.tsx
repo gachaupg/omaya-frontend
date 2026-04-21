@@ -112,6 +112,9 @@ const MoneyXRates = ({
     if (processedMethods.length > 0) {
       const activeMethods = processedMethods
         .filter((payment: any) => {
+          if (!String(payment?.provider_name || payment?.provider?.provider_name || "").trim()) {
+            return false;
+          }
           if (payment.is_active === undefined || payment.is_active === null)
             return true;
           return (
@@ -132,7 +135,27 @@ const MoneyXRates = ({
             payment.payment_method_name,
         }));
 
-      setStablePaymentMethods(activeMethods);
+      const deduped = Array.from(
+        new Map(
+          activeMethods.map((payment: any) => [
+            String(
+              payment?.id ??
+                payment?.provider_id ??
+                payment?.providerId ??
+                `${payment?.provider_name || ""}::${
+                  payment?.method_display ||
+                  payment?.method ||
+                  payment?.payment_method ||
+                  payment?.payment_method_type ||
+                  ""
+                }`
+            ),
+            payment,
+          ])
+        ).values()
+      );
+
+      setStablePaymentMethods(deduped);
       return;
     }
     setStablePaymentMethods([]);
@@ -1016,7 +1039,7 @@ const MoneyXRates = ({
                     setIsFromDropdownOpen(!isFromDropdownOpen);
                     setIsToDropdownOpen(false);
                   }}
-                  className={`w-full rounded-2xl px-4 py-2 text-lg focus:outline-none border appearance-none bg-transparent flex items-center justify-between ${isDark
+                  className={`w-full rounded-2xl px-4 py-2 text-[14px] focus:outline-none border appearance-none bg-transparent flex items-center justify-between ${isDark
                     ? "border-white/10 text-white"
                     : "border-gray-200 text-[#111827]"
                     }`}
@@ -1092,7 +1115,7 @@ const MoneyXRates = ({
                                 {getProviderName(method)?.charAt(0) || "B"}
                               </div>
                             )}
-                            <span>{getProviderName(method)}</span>
+                            <span className="text-[14px]">{getProviderName(method)}</span>
                           </button>
                         ))
                       )}
@@ -1178,7 +1201,7 @@ const MoneyXRates = ({
                     setIsToDropdownOpen(!isToDropdownOpen);
                     setIsFromDropdownOpen(false);
                   }}
-                  className={`w-full rounded-2xl px-4 py-2 text-lg focus:outline-none border appearance-none bg-transparent flex items-center justify-between ${isDark
+                  className={`w-full rounded-2xl px-4 py-2 text-[14px] focus:outline-none border appearance-none bg-transparent flex items-center justify-between ${isDark
                     ? "border-white/10 text-white"
                     : "border-gray-200 text-[#111827]"
                     }`}
@@ -1254,7 +1277,7 @@ const MoneyXRates = ({
                                 {getProviderName(method)?.charAt(0) || "P"}
                               </div>
                             )}
-                            <span>{getProviderName(method)}</span>
+                            <span className="text-[14px]">{getProviderName(method)}</span>
                           </button>
                         ))
                       )}

@@ -424,12 +424,8 @@ export default function MarketingPage() {
   return (
     <div>
       <section
-        className="relative min-h-screen pt-18 pb-16 mx-auto overflow-visible bg-gradient-to-br from-gray-50 to-white dark:bg-[var(--bg-color)]"
+        className="relative min-h-[calc(100vh-80px)] lg:min-h-[calc(100vh-80px)] pt-22 sm:pt-24 lg:pt-20 pb-8 sm:pb-10 lg:pb-6 mx-auto overflow-visible bg-gradient-to-br from-gray-50 to-white dark:bg-[var(--bg-color)]"
       >
-        {/* Mask overlay to hide content behind navbar - positioned just below navbar (z-50) */}
-        <div className="fixed top-0 left-0 right-0 h-[80px] z-[45] pointer-events-none">
-          <div className="w-full h-full bg-white dark:bg-[var(--bg-color)]"></div>
-        </div>
 
         {/* Background styling - different for light and dark modes */}
         <div className="absolute inset-0 overflow-hidden z-0">
@@ -488,9 +484,9 @@ export default function MarketingPage() {
           ></div>
         </div>
 
-        <div className="w-full max-w-[1600px] mx-auto px-2 sm:px-4 lg:px-8 xl:px-10 relative z-10 mt-4" style={{ paddingTop: 'clamp(1rem, 3vw, 2rem)' }}>
-          <div className="grid grid-cols-1 lg:grid-cols-2 items-start gap-y-5 md:gap-y-4 md:gap-x-6 lg:gap-x-8 xl:gap-x-10">
-            <div className="space-y-2 md:space-y-3 pl-0 md:pl-4 lg:pl-5 text-center lg:text-left">
+        <div className="w-full max-w-[1600px] mx-auto px-2 sm:px-4 lg:px-8 xl:px-10 relative z-10 mt-2" style={{ paddingTop: 'clamp(1rem, 2.5vw, 1.75rem)' }}>
+          <div className="grid grid-cols-1 lg:grid-cols-2 items-start gap-y-4 md:gap-y-3 md:gap-x-6 lg:gap-x-8 xl:gap-x-10">
+            <div className="space-y-2 md:space-y-2 pl-0 md:pl-4 lg:pl-5 text-center lg:text-left">
               {/* Green pill banner */}
               <div className="inline-flex items-center justify-center md:justify-start">
                 <span className="bg-[#1D8751]/10 border border-[#1D8751] text-[#1D8751] px-3 py-1 rounded-full text-xs sm:text-sm font-medium">
@@ -542,7 +538,7 @@ export default function MarketingPage() {
               </div>
 
               {/* Stats */}
-              <div className="flex flex-wrap gap-3 sm:gap-4 justify-center lg:justify-start pt-4 md:pt-6 w-full">
+              <div className="flex flex-wrap gap-3 sm:gap-4 justify-center lg:justify-start pt-2 md:pt-3 w-full">
                 {heroStats.map((stat, index) => (
                   <div key={index} className="bg-white/5 dark:bg-white/5 backdrop-blur-sm rounded-2xl px-2 py-3 sm:px-5 sm:py-4 flex flex-col items-center sm:items-start gap-3 shadow-lg border border-white/10 flex-1 min-w-[120px] max-w-[180px]">
                     <div className={`w-10 h-10 rounded-xl bg-linear-to-br ${stat.gradient} flex items-center justify-center shadow-lg`}>
