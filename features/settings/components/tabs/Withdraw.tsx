@@ -469,7 +469,7 @@ const Withdraw = () => {
 
       <div className="w-full flex flex-col">
         {/* Withdraw Form Card */}
-        <div className="w-full max-w-4xl lg:max-w-5xl rounded-xl p-2 sm:p-6 mx-auto">
+        <div className="w-full rounded-xl p-0">
           {/* Tabs for USDT BEP20 / Cash */}
           <div className="flex gap-2 mb-6 border border-[#EF4444] bg-white dark:bg-[#1A1A1F] rounded-lg p-1 w-fit flex-wrap">
             <button

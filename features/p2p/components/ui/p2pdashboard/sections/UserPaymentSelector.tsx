@@ -162,19 +162,21 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
                       className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-3 sm:gap-4 rounded-lg p-3 sm:p-4 bg-gray-100 dark:bg-[#2a2d35] border border-gray-200 dark:border-[#35353E]"
                     >
                       {/* Logo */}
-                      <img
-                        src={
-                          detail.logo_url ||
-                          detail.logo ||
-                          detail.provider_logo ||
-                          "/default-provider-logo.svg"
-                        }
-                        alt={detail.payment_provider_name}
-                        className="w-10 h-10 rounded-full object-cover shrink-0"
-                        onError={(e) => {
-                          e.currentTarget.src = "/default-provider-logo.svg";
-                        }}
-                      />
+                      <span className="w-6 h-6 rounded-full overflow-hidden shrink-0 bg-white dark:bg-[#1F2432]">
+                        <img
+                          src={
+                            detail.logo_url ||
+                            detail.logo ||
+                            detail.provider_logo ||
+                            "/default-provider-logo.svg"
+                          }
+                          alt={detail.payment_provider_name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.src = "/default-provider-logo.svg";
+                          }}
+                        />
+                      </span>
                       {/* Account Name & Number - Grouped for better hierarchy */}
                       <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-4">
                         {/* Account Name */}

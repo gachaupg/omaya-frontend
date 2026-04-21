@@ -81,7 +81,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
 }) => {
   // Use larger logo size for large dropdown items
   const resolvedLogoSize = logoSize ?? (largeDropdownItems ? 40 : sizeMode === "card" ? 24 : 32);
-  const dropdownItemLogoSize = largeDropdownItems ? 40 : resolvedLogoSize;
+  const dropdownItemLogoSize = resolvedLogoSize;
   const resolvedLogoClass =
     logoClassName ?? "rounded object-cover flex-shrink-0";
   const [isOpen, setIsOpen] = useState(false);
@@ -379,7 +379,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
         disabled={disabled || loading}
         ref={triggerRef}
         className={`
-          w-full text-left px-3 sm:px-4 py-2 rounded-2xl border text-base sm:text-lg
+          w-full text-left px-3 sm:px-4 py-2 rounded-2xl border text-sm
           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
           transition-colors duration-200 min-w-0
           ${sizeMode === "card" ? "h-[48px] flex items-center bg-transparent dark:bg-transparent" : ""}
@@ -400,19 +400,23 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
         <div className="flex items-center justify-between min-w-0 w-full">
           <div className="flex items-center gap-3 min-w-0 flex-1 overflow-hidden">
             {selectedLogo && !loading && (
-              <img
-                src={selectedLogo}
-                alt=""
-                className={resolvedLogoClass}
+              <span
+                className="rounded-full overflow-hidden flex-shrink-0"
                 style={{ width: resolvedLogoSize, height: resolvedLogoSize }}
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = 'none';
-                }}
-              />
+              >
+                <img
+                  src={selectedLogo}
+                  alt=""
+                  className={`${resolvedLogoClass} w-full h-full object-cover`}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = "none";
+                  }}
+                />
+              </span>
             )}
             {!hideSelectedLabel && (
               <span
-                className={`truncate min-w-0 ${selectedTextClassName || "text-base sm:text-lg"} ${!selectedOption && !loading
+                className={`truncate min-w-0 ${selectedTextClassName || "text-sm"} ${!selectedOption && !loading
                     ? placeholderClassName || "text-gray-500 dark:text-gray-400"
                     : selectedOption ? "font-bold dark:font-normal" : ""
                   }`}
@@ -498,7 +502,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
                     hover:bg-blue-50 dark:hover:bg-blue-900/20
                     focus:outline-none focus:bg-blue-50 dark:focus:bg-blue-900/20
                     ${largeDropdownItems ? "px-4 py-3 sm:py-4" : "px-3 sm:px-4 py-2 sm:py-2.5"}
-                    ${optionTextClassName || "text-base sm:text-lg"}
+                    ${optionTextClassName || "text-sm"}
                     ${isSelected
                           ? "bg-blue-100 dark:bg-blue-900/30 text-blue-900 dark:text-blue-100 font-medium"
                           : "text-gray-900 dark:text-white"
@@ -516,18 +520,25 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
                       <div className={`flex items-center min-w-0 w-full ${largeDropdownItems ? "gap-3 sm:gap-4" : "gap-2 sm:gap-3"}`}>
 
                         {option.logo && (
-                          <img
-                            src={option.logo}
-                            alt=""
-                            className={resolvedLogoClass}
-                            style={{ width: dropdownItemLogoSize, height: dropdownItemLogoSize }}
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).style.display = "none";
+                          <span
+                            className="rounded-full overflow-hidden flex-shrink-0"
+                            style={{
+                              width: dropdownItemLogoSize,
+                              height: dropdownItemLogoSize,
                             }}
-                          />
+                          >
+                            <img
+                              src={option.logo}
+                              alt=""
+                              className={`${resolvedLogoClass} w-full h-full object-cover`}
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display = "none";
+                              }}
+                            />
+                          </span>
                         )}
                         <div className="flex flex-col min-w-0 flex-1">
-                          <span className={`truncate text-left ${optionTextClassName || (largeDropdownItems ? "text-base sm:text-lg font-medium" : "text-base sm:text-lg")}`}>{option.label}</span>
+                          <span className={`truncate text-left ${optionTextClassName || (largeDropdownItems ? "text-sm font-medium" : "text-sm")}`}>{option.label}</span>
                           {option.subtitle && (
                             <span className={`truncate text-left text-gray-500 dark:text-gray-400 ${largeDropdownItems ? "text-sm" : "text-xs"}`}>
                               {option.subtitle}

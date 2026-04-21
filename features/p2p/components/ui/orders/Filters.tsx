@@ -444,7 +444,7 @@ const Filters: React.FC<FiltersProps> = ({
 
       {/* Custom Date Range Picker */}
       {showCustomDatePicker && (
-        <div className="mt-3 p-4 rounded-xl bg-white dark:bg-[var(--card-color)] border border-gray-200 dark:border-[#35353E] shadow-lg">
+        <div className="mt-3 p-0 rounded-xl bg-white dark:bg-[var(--card-color)] border border-gray-200 dark:border-[#35353E] shadow-lg">
           <div className="flex flex-col sm:flex-row gap-3 items-end">
             <div className="flex-1">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
