@@ -278,7 +278,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   const fromSingle = Array.isArray(singleOrder?.payment_details) ? singleOrder.payment_details : [];
   const fromConfirm = Array.isArray(confirmOrder?.payment_details) ? confirmOrder.payment_details : [];
   const fromSaveOrder = Array.isArray(saveOrder?.payment_details) ? saveOrder.payment_details : [];
-  const paymentDetailsList = fromSingle.length > 0 ? fromSingle : fromConfirm.length > 0 ? fromConfirm : fromSaveOrder;
+  const paymentDetailsList = fromConfirm.length > 0 ? fromConfirm : fromSingle.length > 0 ? fromSingle : fromSaveOrder;
 
   // Range currency (KES or USD) for display - from order/trade
   const rangeCurrency = ((singleOrder as any)?.range_currency || (confirmOrder as any)?.buy_order?.range_currency || (confirmOrder as any)?.sell_order?.range_currency || "USD")?.toString().toUpperCase();
@@ -569,7 +569,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
             <div className="bg-white dark:bg-[var(--card-color)] rounded-2xl p-4 sm:p-6 mt-4 flex flex-col gap-4 sm:gap-6 border border-gray-200 dark:border-[#35353E]">
               {/* Payment methods from API - display all from payment_details */}
               {paymentDetailsList.length > 0 ? (
-                paymentDetailsList.map((paymentDetails: { id?: number; provider?: string; payment_method?: string; account_name?: string; account_number?: string; provider_logo?: string }) => (
+                paymentDetailsList.map((paymentDetails: { id?: number; provider?: string; payment_method?: string; account_name?: string; account_number?: string; wallet_address?: string; provider_logo?: string }) => (
                   <div key={paymentDetails?.id ?? paymentDetails?.provider ?? Math.random()} className="flex flex-col gap-4 p-3 sm:p-4 border border-gray-200 dark:border-[#35353E] rounded-xl">
                     <div className="flex items-center gap-3 sm:gap-4">
                       {paymentDetails?.provider_logo ? (
@@ -643,6 +643,27 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                         </button>
                       </div>
                     </div>
+                    {paymentDetails?.wallet_address ? (
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                        <div className="text-gray-600 dark:text-[#A3A3C2] text-sm sm:text-base sm:mb-1 sm:w-1/4 sm:min-w-[100px]">
+                          Wallet Address
+                        </div>
+                        <div className="flex items-center bg-gray-100 dark:bg-[#35353E] border border-[#1D8751] rounded-full px-4 sm:px-6 py-2 flex-1 min-w-0">
+                          <span className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-[#1D8751] mr-2 sm:mr-3 inline-block flex-shrink-0"></span>
+                          <span className="text-[#1D8751] font-semibold text-sm sm:text-lg truncate">
+                            {paymentDetails.wallet_address}
+                          </span>
+                          <div className="flex-1" />
+                          <button
+                            className="ml-2 sm:ml-3 text-[#1D8751] hover:text-[#F79330] focus:outline-none flex-shrink-0"
+                            onClick={() => handleCopy(paymentDetails.wallet_address || "")}
+                            title="Copy Wallet Address"
+                          >
+                            <FileIcon size={16} className="sm:w-[18px] sm:h-[18px]" />
+                          </button>
+                        </div>
+                      </div>
+                    ) : null}
                   </div>
                 ))
               ) : (

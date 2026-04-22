@@ -493,7 +493,7 @@ const Dropdown = ({
   options: string[];
   onChange: (v: string) => void;
 }) => (
-  <div className="relative inline-flex min-w-0 max-w-full">
+  <div className="relative inline-flex min-w-0 max-w-full mr-1 sm:mr-2 md:mr-3">
     <select
       className="appearance-none bg-white dark:bg-[#23232B] dark:text-white text-gray-700 rounded-full px-1.5 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs md:text-sm pr-4 sm:pr-6 md:pr-7 focus:outline-none w-full min-w-0 border border-gray-300 dark:border-[#35353E] max-w-[80px] sm:max-w-none"
       value={value}
@@ -920,7 +920,7 @@ const LineCharts = React.memo(
                 size="sm"
                 variant={filter === "All" ? "primary" : "outline"}
                 onClick={() => setFilter("All")}
-                className="whitespace-nowrap text-xs sm:text-sm flex-shrink-0"
+                className="whitespace-nowrap rounded-3xl text-xs sm:text-sm flex-shrink-0"
               >
                 All
               </Button>
@@ -928,7 +928,7 @@ const LineCharts = React.memo(
                 size="sm"
                 variant={filter === "Deposits" ? "primary" : "outline"}
                 onClick={() => setFilter("Deposits")}
-                className="whitespace-nowrap text-xs sm:text-sm flex-shrink-0"
+                className="whitespace-nowrap rounded-3xl text-xs sm:text-sm flex-shrink-0"
               >
                 Deposits
               </Button>
@@ -936,7 +936,7 @@ const LineCharts = React.memo(
                 size="sm"
                 variant={filter === "Withdrawals" ? "primary" : "outline"}
                 onClick={() => setFilter("Withdrawals")}
-                className="whitespace-nowrap text-xs sm:text-sm flex-shrink-0"
+                className="whitespace-nowrap rounded-3xl text-xs sm:text-sm flex-shrink-0"
               >
                 Withdrawals
               </Button>

@@ -157,7 +157,7 @@ export default function Sidebar() {
                     {item.labelKey === "navigation.exchange" ? (
                       <>
                         <img
-                          className="ml-2 w-5 h-5 md:w-6 md:h-6 object-contain flex-shrink-0"
+                          className="-ml-1 w-8 h-8 object-contain flex-shrink-0"
                           src="/images/exchange1.png"
                           alt=""
                         />
@@ -166,7 +166,7 @@ export default function Sidebar() {
                       <img
                         src={item.icon}
                         alt={label + " icon"}
-                        className="ml-2 w-5 h-5 md:w-6 md:h-6 object-contain flex-shrink-0"
+                        className="w-5 h-5 object-contain flex-shrink-0"
                       />
                     )}
                     {item.labelKey === "navigation.exchange" ? (
@@ -188,7 +188,10 @@ export default function Sidebar() {
                             {/* Light-mode image (always shown in light mode, and in dark mode when inactive) */}
                             <img
                               src="/images/x.png"
-                              className={isActive ? "block dark:hidden" : "block"}
+                              className={clsx(
+                                "w-5 h-5 object-contain",
+                                isActive ? "block dark:hidden" : "block"
+                              )}
                               alt=""
                             />
 
@@ -196,7 +199,7 @@ export default function Sidebar() {
                             {isActive && (
                               <img
                                 src="/images/xwhite.png"
-                                className="hidden dark:block"
+                                className="hidden dark:block w-5 h-5 object-contain"
                                 alt=""
                               />
                             )}
@@ -225,7 +228,10 @@ export default function Sidebar() {
             also shown in dark mode when not active */}
                             <img
                               src="/images/Group_9_momvgo.png"
-                              className={isActive ? "block dark:hidden" : "block"}
+                              className={clsx(
+                                "h-5 w-auto object-contain",
+                                isActive ? "block dark:hidden" : "block"
+                              )}
                               alt=""
                             />
 
@@ -233,7 +239,7 @@ export default function Sidebar() {
                             {isActive && (
                               <img
                                 src="/images/Group_5_gkxzdz.png"
-                                className="hidden dark:block"
+                                className="hidden dark:block h-5 w-auto object-contain"
                                 alt=""
                               />
                             )}
@@ -300,7 +306,7 @@ export default function Sidebar() {
                     {item.labelKey === "navigation.exchange" ? (
                       <>
                         <img
-                          className="w-7 h-6 sm:w-8 sm:h-7 object-cover flex-shrink-0"
+                          className="-ml-1 w-8 h-8 object-contain flex-shrink-0"
                           src="/assets/uil_exchange_1_okxkvb.png"
                           alt=""
                         />
@@ -316,7 +322,7 @@ export default function Sidebar() {
                             Money
                           </span>
                           <img
-                            className="mt-[5px] w-3.5 h-3.5"
+                            className="mt-[4px] w-5 h-5 object-contain"
                             src={isActive
 
                               ? isDark ? "/assets/Group_7_ichuyz.png"
@@ -349,7 +355,7 @@ export default function Sidebar() {
                               E
                             </span>
                             <img
-                              className="h-4 mt-[7px]"
+                              className="h-5 w-auto mt-[5px] object-contain"
                               style={{ maxWidth: 'none' }}
                               src={
                                 isActive

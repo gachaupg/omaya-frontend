@@ -539,6 +539,17 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
       }
 
       if (wsData.status) {
+        const isWithdrawalFlow = effectiveTransactionData?.type === "withdrawal";
+        const wsOperationalStatus = String(wsData.operational_status || "")
+          .trim()
+          .toLowerCase();
+        const effectiveStatus =
+          isWithdrawalFlow &&
+          ["admin_approval_required", "approval_required", "agent_approve"].includes(
+            wsOperationalStatus
+          )
+            ? wsOperationalStatus
+            : wsData.status;
         const validStatuses = [
           "pending",
           "pending_review",
@@ -562,28 +573,37 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
           "approved",
         ];
 
-        if (["failed", "rejected", "stopped"].includes(wsData.status)) {
+        if (["failed", "rejected", "stopped"].includes(effectiveStatus)) {
           setFailureModal({
             isOpen: true,
-            status: wsData.status,
+            status: effectiveStatus,
             message:
               resolveExpressTransactionFailureMessage(data) ||
               getFailureMessage(wsData),
           });
-          setCurrentStatus(wsData.status);
+          setCurrentStatus(effectiveStatus);
           return;
         }
 
-        if (validStatuses.includes(wsData.status)) {
-          let uiStatus = wsData.status;
-          if (wsData.status === "pending_review" || wsData.status === "pending_blockchain") {
+        if (validStatuses.includes(effectiveStatus)) {
+          let uiStatus = effectiveStatus;
+          if (effectiveStatus === "pending_review" || effectiveStatus === "pending_blockchain") {
             uiStatus = "confirming";
-          } else if (wsData.status === "completed" || wsData.status === "finished" || wsData.status === "approved") {
+          } else if (effectiveStatus === "completed" || effectiveStatus === "finished" || effectiveStatus === "approved") {
             uiStatus = "completed";
           }
-          setCurrentStatus(uiStatus);
+          setCurrentStatus((prev) => {
+            if (
+              isWithdrawalFlow &&
+              prev === "sending" &&
+              ["pending", "confirming", "exchanging"].includes(uiStatus)
+            ) {
+              return prev;
+            }
+            return uiStatus;
+          });
 
-          if (wsData.status === "completed" || wsData.status === "finished" || wsData.status === "approved") {
+          if (effectiveStatus === "completed" || effectiveStatus === "finished" || effectiveStatus === "approved") {
             setFinalWebsocketData(data);
             setSnapshotWebsocketData(data);
             setTimeout(() => {
@@ -746,6 +766,21 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
           "approved",
         ];
 
+        const isWithdrawalFlow = effectiveTransactionData?.type === "withdrawal";
+        const wsOperationalStatus = String(
+          (data.data as any)?.operational_status || ""
+        )
+          .trim()
+          .toLowerCase();
+        if (
+          isWithdrawalFlow &&
+          ["admin_approval_required", "approval_required", "agent_approve"].includes(
+            wsOperationalStatus
+          )
+        ) {
+          status = wsOperationalStatus;
+        }
+
         if (status && ["failed", "rejected", "stopped"].includes(status)) {
           const wsData = data.data as any;
           setFailureModal({
@@ -788,7 +823,16 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
             uiStatus = "sending";
           }
 
-          setCurrentStatus(uiStatus);
+            setCurrentStatus((prev) => {
+              if (
+                isWithdrawalFlow &&
+                prev === "sending" &&
+                ["pending", "confirming", "exchanging"].includes(uiStatus)
+              ) {
+                return prev;
+              }
+              return uiStatus;
+            });
 
           const shouldAutoNavigate =
             uiStatus === "completed" || status === "completed" || status === "approved";
@@ -976,7 +1020,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
       {/* Timer Banner */}
       {timerActive && timeRemaining > 0 && (
         <div
-          className={`w-full mb-3 sm:mb-4 ${timeRemaining <= 60
+          className={`w-full max-w-4xl mb-3 sm:mb-4 ${timeRemaining <= 60
               ? "bg-red-500/20 border-red-500"
               : timeRemaining <= 300
                 ? "bg-orange-500/20 border-orange-500"
@@ -1057,7 +1101,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
         className={`flex flex-col md:flex-row justify-between items-stretch bg-[#FFFFFF] dark:${isDark
             ? "bg-[var(--card-color)]  border:[#E8EFF5] dark:border-[#35353E]"
             : "bg-white border-gray-200"
-          } border-2 rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 shadow-lg w-full mb-3 sm:mb-4 min-h-[160px] sm:min-h-[180px] overflow-hidden box-border`}
+          } border-2 rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 shadow-lg w-full max-w-4xl mb-3 sm:mb-4 min-h-[160px] sm:min-h-[180px] overflow-hidden box-border`}
       >
         <div className="flex-1 flex flex-col justify-between py-1 sm:py-2 pr-0 sm:pr-2 w-full">
           <div className="w-full">
@@ -1213,7 +1257,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
       </div>
 
       {/* Progress Steps - Always in row, responsive */}
-      <div className="flex flex-row items-center justify-between w-full mb-3 sm:mb-4 relative gap-1 sm:gap-2 md:gap-4 overflow-x-auto pb-2 scrollbar-hide">
+      <div className="flex flex-row items-center justify-between w-full max-w-4xl mb-3 sm:mb-4 relative gap-1 sm:gap-2 md:gap-4 overflow-x-auto pb-2 scrollbar-hide">
         {/* Connecting Lines - Responsive positioning */}
         <div className="absolute top-3 sm:top-4 md:top-5 left-[10%] sm:left-[12.5%] right-[10%] sm:right-[12.5%] h-0.5 z-0">
           <div
@@ -1630,7 +1674,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
       {/* Transaction Details Card */}
       <div
         className={`${isDark ? "bg-[var(--card-color)] border-[#35353E]" : "bg-white border-gray-200"
-          } border-2 rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 shadow-lg w-full mb-2 sm:mb-4 overflow-hidden box-border`}
+          } border-2 rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 shadow-lg w-full max-w-4xl mb-2 sm:mb-4 overflow-hidden box-border`}
       >
         <div
           className={`${isDark ? "text-white" : "text-gray-900"
@@ -1781,7 +1825,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
       </div>
 
       {/* Terms & Conditions */}
-      <div className="w-full rounded-xl sm:rounded-2xl flex">
+      <div className="w-full max-w-4xl rounded-xl sm:rounded-2xl flex">
         <div className={`w-full border border-[#1D8751] rounded-xl overflow-hidden transition-all duration-300 ${isDark ? "bg-[#1D1D23]" : "bg-[#F8FAFF]"}`}>
           <div className="flex flex-col gap-1.5 sm:gap-2 p-2.5 sm:p-3 md:p-4">
             <div className="flex items-center gap-2">

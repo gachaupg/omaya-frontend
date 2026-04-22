@@ -686,6 +686,26 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
             message = (data as any).message;
           }
 
+          // For withdrawal flows, backend may keep `operational_status` as the source of truth
+          // while `status` briefly moves backward (e.g. admin_approval_required -> pending).
+          const wsOperationalStatus = String(
+            (statusPayload as any)?.operational_status ||
+              (data as any)?.data?.operational_status ||
+              ""
+          )
+            .trim()
+            .toLowerCase();
+          const isWithdrawalFlow = effectiveTransactionData?.type === "withdrawal";
+
+          if (
+            isWithdrawalFlow &&
+            ["admin_approval_required", "approval_required", "agent_approve"].includes(
+              wsOperationalStatus
+            )
+          ) {
+            status = wsOperationalStatus;
+          }
+
           // Process statuses for both deposit and withdrawal
           const validStatuses = [
             "pending",
@@ -801,6 +821,15 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
               } else if (status === "agent_approve") {
                 uiStatus = "sending"; // Show as "sending to you" when agent approved
               }
+            }
+
+            // Prevent backward UI jumps for withdrawal pipeline after it reaches sending.
+            if (
+              isWithdrawalFlow &&
+              currentStatus === "sending" &&
+              ["pending", "confirming", "exchanging"].includes(uiStatus)
+            ) {
+              return;
             }
 
             setCurrentStatus(uiStatus);

@@ -435,8 +435,8 @@ const ChatBox: React.FC<{
 
   // Polling interval for support/fallback refresh
   const pollingIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
-  const SUPPORT_POLL_MS = 1000;
-  const P2P_FALLBACK_POLL_MS = 1000;
+  const SUPPORT_POLL_MS = 5000;
+  const P2P_FALLBACK_POLL_MS = 7000;
 
   // On trade change, clear current trade message list immediately to avoid
   // briefly showing stale messages from a previously open chat.
@@ -470,13 +470,15 @@ const ChatBox: React.FC<{
 
     // Fetch initial messages once on mount
     if (messageType === 'p2p') {
-      // For P2P: WebSocket is primary, but add a light fallback poll to avoid delayed cross-user updates.
+      // For P2P: WebSocket is primary. Use fallback polling only when socket is disconnected.
       fetchMessages();
-      pollingIntervalRef.current = setInterval(() => {
-        // Only poll when tab is visible to reduce unnecessary network calls.
-        if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
-        fetchMessages();
-      }, P2P_FALLBACK_POLL_MS);
+      if (!wsConnected) {
+        pollingIntervalRef.current = setInterval(() => {
+          // Only poll when tab is visible to reduce unnecessary network calls.
+          if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
+          fetchMessages();
+        }, P2P_FALLBACK_POLL_MS);
+      }
     } else if (messageType === 'support') {
       // For support: Use API polling (only if not passed as props)
       if (!supportMessages || supportMessages.length === 0) {
@@ -494,7 +496,7 @@ const ChatBox: React.FC<{
         clearInterval(pollingIntervalRef.current);
       }
     };
-  }, [tradeId, messageType, fetchMessages, supportMessages, dispatch]);
+  }, [tradeId, messageType, fetchMessages, supportMessages, dispatch, wsConnected]);
 
   // Auto-refresh when websocket message may still be incomplete (media delayed by backend processing).
   const lastMessageIdRef = React.useRef<string | null>(null);

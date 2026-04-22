@@ -290,7 +290,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   const fromSingle = Array.isArray(singleOrder?.payment_details) ? singleOrder.payment_details : [];
   const fromConfirm = Array.isArray(confirmOrder?.payment_details) ? confirmOrder.payment_details : [];
   const fromUrl = Array.isArray(parsedOrderData?.payment_details) ? parsedOrderData.payment_details : [];
-  const paymentDetailsList = fromSingle.length > 0 ? fromSingle : fromConfirm.length > 0 ? fromConfirm : fromUrl;
+  const paymentDetailsList = fromConfirm.length > 0 ? fromConfirm : fromSingle.length > 0 ? fromSingle : fromUrl;
   // Range currency (KES or USD) for display - from order/trade/URL
   const rangeCurrency = ((singleOrder as any)?.range_currency || (confirmOrder as any)?.buy_order?.range_currency || (confirmOrder as any)?.sell_order?.range_currency || parsedOrderData?.range_currency || "USD")?.toString().toUpperCase();
   const rangeSuffix = rangeCurrency === "KES" ? "KES" : "USD";
@@ -651,7 +651,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
             <div className="rounded-[18px] flex flex-col p-2 md:p-4 gap-4 bg-gray-50 dark:bg-[var(--card-color)]">
               <div className="flex flex-col gap-4">
                 {paymentDetailsList.length > 0 ? (
-                  paymentDetailsList.map((paymentDetails: { id?: number; provider?: string; payment_method?: string; account_name?: string; account_number?: string; provider_logo?: string; logo?: string; logo_url?: string }) => (
+                  paymentDetailsList.map((paymentDetails: { id?: number; provider?: string; payment_method?: string; account_name?: string; account_number?: string; wallet_address?: string; provider_logo?: string; logo?: string; logo_url?: string }) => (
                     <div key={paymentDetails?.id ?? paymentDetails?.provider ?? Math.random()} className="flex flex-col gap-3 p-3 md:p-4 border border-gray-200 dark:border-[#3C3C47] rounded-2xl bg-white dark:bg-[var(--bg-color)]">
                       <div className="flex flex-col md:flex-row gap-3 md:gap-4">
                         <div className="flex flex-row gap-2 md:gap-3 items-center p-2 md:p-3 w-full md:w-auto md:min-w-[140px]">
@@ -728,6 +728,26 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                                 <Copy className="w-2 h-2 md:w-3 md:h-3" />
                               </button>
                             </div>
+                            {paymentDetails?.wallet_address ? (
+                              <div className="flex flex-col sm:flex-row w-full items-stretch sm:items-center gap-2 sm:gap-3">
+                                <div className="w-full flex flex-col min-w-0">
+                                  <span className="text-[#788099] text-xs md:text-sm mb-2">Wallet Address</span>
+                                  <span className="flex-1 min-w-0 px-3 md:px-4 py-2 rounded-full border border-[#1D8751] text-[#1D8751] bg-transparent font-semibold text-sm md:text-base flex items-center truncate">
+                                    <span className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-[#1D8751] inline-block mr-2 flex-shrink-0"></span>
+                                    <span className="truncate">{paymentDetails.wallet_address}</span>
+                                  </span>
+                                </div>
+                                <button
+                                  className="w-full sm:w-auto px-3 md:px-4 py-2 rounded-full border border-gray-200 dark:border-[#35353E] text-[#1D8751] bg-gray-100 dark:bg-[var(--card-color)] font-semibold text-sm flex items-center justify-center gap-1.5 flex-shrink-0"
+                                  onClick={() =>
+                                    handleCopyToClipboard(paymentDetails.wallet_address || "", `wallet-address-${paymentDetails?.id}`, setCopiedButton)
+                                  }
+                                >
+                                  {copiedButton === `wallet-address-${paymentDetails?.id}` ? "Copied!" : "Copy"}
+                                  <Copy className="w-2 h-2 md:w-3 md:h-3" />
+                                </button>
+                              </div>
+                            ) : null}
                           </div>
                         </div>
                       </div>
