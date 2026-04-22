@@ -987,6 +987,17 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
       : null) ??
     (Number.isFinite(wsNetCandidates.netAmount) ? wsNetCandidates.netAmount : null) ??
     ((effectiveTransactionData as any)?.receiveAmount ?? 0);
+  const resolvedDepositCode =
+    effectiveTransactionData?.type === "deposit" &&
+    !(effectiveTransactionData as any)?.isMoneyX
+      ? String(
+          (effectiveTransactionData as any)?.depositCode ||
+            (effectiveTransactionData as any)?.deposit_code ||
+            finalWebsocketData?.data?.deposit_code ||
+            finalWebsocketData?.data?.depositCode ||
+            ""
+        ).trim()
+      : "";
 
   return (
     <div className={`w-full ${isHomePage ? 'min-h-0' : 'min-h-screen'} flex flex-col items-center ${isHomePage ? 'pt-0 px-2 sm:px-4' : 'pt-2'}`}>
@@ -1090,6 +1101,15 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                   </p>
                 </div>
               ) : null}
+              {resolvedDepositCode && (
+                <div className="min-w-0">
+                  <p className={`text-xs font-medium mb-0.5 ${isDark ? "text-[#7B7B7B]" : "text-gray-500"}`}>Transaction Code</p>
+                  <p className={`text-base font-semibold flex items-center gap-2 ${isDark ? "text-white" : "text-gray-900"}`}>
+                    <code className="font-mono">{resolvedDepositCode}</code>
+                    <CopyButton value={resolvedDepositCode} className="shrink-0" />
+                  </p>
+                </div>
+              )}
             </div>
             {/* {liveAmount !== null &&
               liveAmount !== effectiveTransactionData?.amount && (
@@ -1171,19 +1191,6 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                     <span className="bg-[#1D8751] text-white text-xs font-medium px-2 py-0.5 rounded-full">{effectiveTransactionData?.asset?.network || effectiveTransactionData?.network?.network_type || "BSC"}</span>
                   </div>
                 </div>
-
-                {/* Wallet Address */}
-                {effectiveTransactionData?.walletAddress && (
-                  <div className="pt-2 border-t border-gray-200 dark:border-[#35353E]">
-                    <p className={`text-xs font-medium mb-1.5 ${isDark ? "text-[#7B7B7B]" : "text-gray-500"}`}>Wallet Address</p>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <code className={`text-sm font-mono break-all px-2 py-1 rounded-lg ${isDark ? "bg-[#2A2A30] text-white" : "bg-gray-100 text-gray-900"}`}>
-                        {effectiveTransactionData.walletAddress}
-                      </code>
-                      <CopyButton value={effectiveTransactionData.walletAddress} className="shrink-0" />
-                    </div>
-                  </div>
-                )}
 
                 {/* Bank Information */}
                 {effectiveTransactionData?.paymentDetail && effectiveTransactionData.paymentDetail.provider_name !== "direct" && (
@@ -1270,6 +1277,24 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
           })()}
         </div>
       </div>
+
+      {effectiveTransactionData?.type === "deposit" && effectiveTransactionData?.walletAddress && (
+        <div className={`w-full ${isHomePage ? '' : 'max-w-4xl'} mb-2 sm:mb-3`}>
+          <div
+            className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl border border-[#1D8751] ${
+              isDark ? "bg-[#1f1f25]" : "bg-gray-50"
+            }`}
+          >
+            <span className={`${isDark ? "text-[#1D8751]" : "text-[#1D8751]"} text-xs font-semibold whitespace-nowrap`}>
+              {getStableSendCurrency()} Wallet Address:
+            </span>
+            <code className={`${isDark ? "text-white" : "text-gray-900"} text-xs sm:text-sm font-mono break-all`}>
+              {effectiveTransactionData.walletAddress}
+            </code>
+            <CopyButton value={effectiveTransactionData.walletAddress} className="shrink-0" />
+          </div>
+        </div>
+      )}
 
       <div className={`flex items-center justify-between w-full ${isHomePage ? '' : 'max-w-4xl'} ${isHomePage ? 'mb-2 sm:mb-3 px-1' : 'mb-4'} relative overflow-x-auto`}>
         {/* Connecting Lines */}
