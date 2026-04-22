@@ -531,6 +531,17 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
       }
 
       if (wsData.status) {
+        const isWithdrawalFlow = effectiveTransactionData?.type === "withdrawal";
+        const wsOperationalStatus = String(wsData.operational_status || "")
+          .trim()
+          .toLowerCase();
+        const effectiveStatus =
+          isWithdrawalFlow &&
+          ["admin_approval_required", "approval_required", "agent_approve"].includes(
+            wsOperationalStatus
+          )
+            ? wsOperationalStatus
+            : wsData.status;
         const validStatuses = [
           "pending",
           "pending_review",
@@ -555,28 +566,37 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
         ];
 
         // Show failure modal for failed, rejected, or stopped statuses
-        if (["failed", "rejected", "stopped"].includes(wsData.status)) {
+        if (["failed", "rejected", "stopped"].includes(effectiveStatus)) {
           setFailureModal({
             isOpen: true,
-            status: wsData.status,
+            status: effectiveStatus,
             message:
               resolveExpressTransactionFailureMessage(data) ||
               getFailureMessage(wsData),
           });
-          setCurrentStatus(wsData.status);
+          setCurrentStatus(effectiveStatus);
           return;
         }
 
-        if (validStatuses.includes(wsData.status)) {
-          let uiStatus = wsData.status;
-          if (wsData.status === "pending_review" || wsData.status === "pending_blockchain") {
+        if (validStatuses.includes(effectiveStatus)) {
+          let uiStatus = effectiveStatus;
+          if (effectiveStatus === "pending_review" || effectiveStatus === "pending_blockchain") {
             uiStatus = "confirming";
-          } else if (wsData.status === "completed" || wsData.status === "finished" || wsData.status === "approved") {
+          } else if (effectiveStatus === "completed" || effectiveStatus === "finished" || effectiveStatus === "approved") {
             uiStatus = "completed";
           }
-          setCurrentStatus(uiStatus);
+          setCurrentStatus((prev) => {
+            if (
+              isWithdrawalFlow &&
+              prev === "sending" &&
+              ["pending", "confirming", "exchanging"].includes(uiStatus)
+            ) {
+              return prev;
+            }
+            return uiStatus;
+          });
 
-          if (wsData.status === "completed" || wsData.status === "finished" || wsData.status === "approved") {
+          if (effectiveStatus === "completed" || effectiveStatus === "finished" || effectiveStatus === "approved") {
             setFinalWebsocketData(data);
             setSnapshotWebsocketData(data);
             setTimeout(() => {
@@ -742,6 +762,21 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
           ];
 
           // Show failure modal for failed, rejected, or stopped statuses
+          const isWithdrawalFlow = effectiveTransactionData?.type === "withdrawal";
+          const wsOperationalStatus = String(
+            (data.data as any)?.operational_status || ""
+          )
+            .trim()
+            .toLowerCase();
+          if (
+            isWithdrawalFlow &&
+            ["admin_approval_required", "approval_required", "agent_approve"].includes(
+              wsOperationalStatus
+            )
+          ) {
+            status = wsOperationalStatus;
+          }
+
           if (status && ["failed", "rejected", "stopped"].includes(status)) {
             const wsData = data.data as any;
             setFailureModal({
@@ -781,7 +816,16 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
               uiStatus = "sending";
             }
 
-            setCurrentStatus(uiStatus);
+            setCurrentStatus((prev) => {
+              if (
+                isWithdrawalFlow &&
+                prev === "sending" &&
+                ["pending", "confirming", "exchanging"].includes(uiStatus)
+              ) {
+                return prev;
+              }
+              return uiStatus;
+            });
 
             const shouldAutoNavigate =
               uiStatus === "completed" || status === "completed" || status === "approved";

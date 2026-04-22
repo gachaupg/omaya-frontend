@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState, useRef } from "react";
-import { FaExchangeAlt, FaExclamationCircle, FaWallet, FaInfoCircle } from "react-icons/fa";
+import { FaExchangeAlt, FaExclamationCircle, FaWallet, FaInfoCircle, FaPaste } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import { AppDispatch } from "@/store";
@@ -326,6 +326,7 @@ export default function WithdrawalForm({
   const [isCalculatingFromPay, setIsCalculatingFromPay] = useState(true);
   const [walletAddress, setWalletAddress] = useState("");
   const [walletError, setWalletError] = useState<string | null>(null);
+  const [walletCopied, setWalletCopied] = useState(false);
   const [isNetworkDropdownOpen, setIsNetworkDropdownOpen] = useState(false);
 
   // Network options - only Binance Smart Chain BEP20
@@ -2957,18 +2958,52 @@ export default function WithdrawalForm({
                   setWalletAddress(pastedText);
                 }}
                 placeholder="Enter BEP20 wallet address (0x...)"
-                className={`w-full text-[#35353e] dark:bg-[var(--card-color)] dark:text-[#ffffff] rounded-xl sm:rounded-2xl px-8 sm:px-9 py-2.5 sm:py-2 text-sm sm:text-lg focus:outline-none border min-h-[44px] sm:min-h-0 ${walletError
+                className={`w-full text-[#35353e] dark:bg-[var(--card-color)] dark:text-[#ffffff] rounded-xl sm:rounded-2xl pl-11 sm:pl-12 pr-10 sm:pr-11 py-2.5 sm:py-2 text-sm sm:text-lg focus:outline-none border min-h-[44px] sm:min-h-0 ${walletError
                   ? "border-red-500 focus:border-red-500"
                   : walletAddress.trim() && !walletError
                     ? "border-green-500"
                     : "border-[#A2A4A9FF] dark:border-[#35353E]"
                   }`}
               />
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    if (!navigator?.clipboard?.readText) {
+                      showToast.error("Clipboard paste is not supported");
+                      return;
+                    }
+                    const pastedText = await navigator.clipboard.readText();
+                    if (!pastedText.trim()) return;
+                    setWalletAddress(pastedText.trim());
+                    setWalletCopied(true);
+                    setTimeout(() => setWalletCopied(false), 1800);
+                  } catch {
+                    showToast.error("Failed to paste wallet address");
+                  }
+                }}
+                className={`absolute right-3 top-1/2 -translate-y-1/2 transition-colors ${
+                  walletCopied
+                    ? "text-green-500 dark:text-green-400"
+                    : "text-[#7e7e8f] dark:text-[#788099] hover:text-[#1D8751]"
+                }`}
+                aria-label="Paste wallet address"
+              >
+                {walletCopied ? (
+                  <span className="text-xs sm:text-sm font-medium">Pasted</span>
+                ) : (
+                  <FaPaste className="w-4 h-4 sm:w-5 sm:h-5" />
+                )}
+              </button>
+              
             </div>
             {walletError && (
               <p className="text-red-500 text-sm mt-1">{walletError}</p>
             )}
-            {walletAddress.trim() && !walletError && (
+            {walletCopied && !walletError && (
+              <p className="text-green-500 text-sm mt-1 font-medium transition-all duration-200">Pasted</p>
+            )}
+            {walletAddress.trim() && !walletError && !walletCopied && (
               <p className="text-green-500 text-sm mt-1">
                 ✅ Valid BEP20 address
               </p>
