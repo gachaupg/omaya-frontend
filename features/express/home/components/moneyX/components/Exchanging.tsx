@@ -15,6 +15,10 @@ import CopyButton from "@/components/ui/CopyButton";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "@/store/rootReducer";
 import { logger } from '@/lib/utils/logger';
+import {
+  fetchBankHowToSend,
+  replaceTrailingUssdAmount,
+} from "@/features/moneyX/utils/howToSend";
 
 import {
   cancelDepositTransaction,
@@ -143,6 +147,7 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
     status: string;
     message?: string;
   }>({ isOpen: false, status: "", message: undefined });
+  const [bankHowToSend, setBankHowToSend] = useState<string | null>(null);
 
   const parseNumberish = (value: unknown): number | null => {
     if (value === null || value === undefined) return null;
@@ -873,6 +878,29 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
     }
   }, [isLoadingData, effectiveTransactionData, router, onBackToTransfer]);
 
+  useEffect(() => {
+    const providerName =
+      effectiveTransactionData?.fromPaymentMethod?.provider_name ||
+      effectiveTransactionData?.fromPaymentMethod?.provider ||
+      effectiveTransactionData?.paymentDetail?.provider_name ||
+      "";
+    if (!providerName) {
+      setBankHowToSend(null);
+      return;
+    }
+    let mounted = true;
+    fetchBankHowToSend(String(providerName)).then((value) => {
+      if (mounted) setBankHowToSend(value);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, [
+    effectiveTransactionData?.fromPaymentMethod?.provider_name,
+    effectiveTransactionData?.fromPaymentMethod?.provider,
+    effectiveTransactionData?.paymentDetail?.provider_name,
+  ]);
+
   const handleFailureModalClose = () => {
     setFailureModal({ isOpen: false, status: "", message: undefined });
     localStorage.removeItem("moneyx_transaction_data");
@@ -923,6 +951,8 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
   }
 
   const initialNetAmount = parseNumberish((effectiveTransactionData as any)?.net_amount);
+  const ussdAmount = liveAmount ?? effectiveTransactionData?.amount ?? 0;
+  const ussdCode = replaceTrailingUssdAmount(bankHowToSend, ussdAmount);
   const netAmountToDisplay =
     liveNetAmount ??
     (effectiveTransactionData as any)?.receiveAmount ??
@@ -1050,6 +1080,22 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
                 USD
               </span>
             </div>
+            {ussdCode && (
+              <div className="flex flex-wrap items-center gap-2 mt-2">
+                <span className={`text-xs font-semibold ${isDark ? "text-[#7B7B7B]" : "text-gray-600"}`}>
+                  How to send:
+                </span>
+                <code className={`font-mono text-xs sm:text-sm font-semibold break-all ${isDark ? "text-white" : "text-gray-900"}`}>
+                  {ussdCode}
+                </code>
+                <CopyButton
+                  value={ussdCode}
+                  className="flex-shrink-0 p-1.5 rounded-lg border border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751]/10 transition-colors"
+                  showText
+                  showInlineMessage
+                />
+              </div>
+            )}
             {netAmountToDisplay != null && (
               <div>
                 <div

@@ -242,6 +242,8 @@ export const API_CONFIG = {
   MONEYX: {
     TRANSACTIONS: "/api/moneyx/transactions/",
     UPDATE_TRANSACTION: (transactionId: string) => `/api/moneyx/transactions/${transactionId}/`,
+    BANK_PAYMENT_INFO: (provider: string) =>
+      `/api/moneyx/bank-payment-info/?provider=${encodeURIComponent(provider)}`,
     COMMISSION: (amount: number) => `/api/moneyx/commission/?amount=${amount}`,
     RANGE_COMMISSION: (amount: number, _commissionType: string = "deposit") =>
       `/administration/admin/range-commissions/?feature=moneyx&amount=${amount}`,

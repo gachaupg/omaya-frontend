@@ -30,7 +30,6 @@ const KYCVerificationModal: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Phone verification state
-  const [phoneNumber, setPhoneNumber] = useState("");
   const [otp, setOtp] = useState("");
   const [sendingOTP, setSendingOTP] = useState(false);
   const [verifyingOTP, setVerifyingOTP] = useState(false);
@@ -43,6 +42,8 @@ const KYCVerificationModal: React.FC = () => {
     documentType: '',
     documentNumber: '',
     email: user?.email || '',
+    firstName: user?.first_name || "",
+    lastName: user?.last_name || "",
   });
   const [currentStep, setCurrentStep] = useState(1);
   const [documentFrontImage, setDocumentFrontImage] = useState<File | null>(null);
@@ -107,14 +108,13 @@ const KYCVerificationModal: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    // Update email when user changes
-    if (user?.email) {
-      setVerificationData(prev => ({ ...prev, email: user.email }));
-    }
-    // Auto-populate phone from profile so it matches registered number
-    if (user?.phone_number && user.phone_number.trim()) {
-      setPhoneNumber(user.phone_number.trim());
-    }
+    // Update identity fields when user changes
+    setVerificationData((prev) => ({
+      ...prev,
+      email: user?.email || prev.email,
+      firstName: user?.first_name || prev.firstName,
+      lastName: user?.last_name || prev.lastName,
+    }));
     const preferredCountry = registeredCountry || storedCountry;
     if (preferredCountry) {
       setVerificationData((prev) => {
@@ -146,12 +146,8 @@ const KYCVerificationModal: React.FC = () => {
             dispatch(closeKYCModal());
             return;
           }
-          if (status.email_verified === true || status.phone_verified === true) {
+          if (status.email_verified === true) {
             setPhoneVerified(true);
-          }
-          // Keep phone field in sync with profile if API returns a phone
-          if (user?.phone_number?.trim()) {
-            setPhoneNumber(user.phone_number.trim());
           }
         }
       });
@@ -216,8 +212,7 @@ const KYCVerificationModal: React.FC = () => {
     // Check if email OTP is already verified
     if (
       phoneVerified ||
-      kycStatus?.email_verified === true ||
-      kycStatus?.phone_verified === true
+      kycStatus?.email_verified === true
     ) {
       // OTP already verified, start from step 1 (document info)
       setCurrentStep(1);
@@ -261,7 +256,7 @@ const KYCVerificationModal: React.FC = () => {
     setError(null);
     try {
       const result = await dispatch(verifyPhoneOTP({ otp })).unwrap();
-      if (result.email_verified || result.phone_verified) {
+      if (result.email_verified) {
         setPhoneVerified(true);
         showToast.success("Success", "Email verified successfully");
         
@@ -646,6 +641,8 @@ const KYCVerificationModal: React.FC = () => {
       documentType: '',
       documentNumber: '',
       email: user?.email || '',
+      firstName: user?.first_name || "",
+      lastName: user?.last_name || "",
     });
   };
 
@@ -654,12 +651,21 @@ const KYCVerificationModal: React.FC = () => {
   // Do not show KYC modal when user is not logged in
   if (!isAuthenticated || !user) return null;
 
+  const stepperItems = [
+    { key: "email", label: "Email" },
+    { key: "document", label: "ID Document" },
+    { key: "face", label: "Face Verify" },
+    { key: "submit", label: "Submit" },
+  ] as const;
+  const activeStepperIndex =
+    !phoneVerified && currentStep === 0 ? 0 : currentStep >= 3 ? 3 : 1;
+
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/50">
       
       {/* Success Modal - Submitted Successfully */}
       {showSuccessModal && (
-        <div className="bg-white dark:bg-[#1A1A1A] rounded-lg p-6 max-w-md w-full mx-4 border border-gray-200 dark:border-[#35353E] shadow-xl">
+        <div className="bg-white dark:bg-[#1A1A1A] rounded-lg p-6 max-w-md w-full mx-4 border border-[#35353E] shadow-xl">
           <div className="flex flex-col items-center justify-center text-center">
             <div className="flex items-center gap-2 mb-4">
               <svg className="w-8 h-8 text-[#1D8751]" fill="currentColor" viewBox="0 0 20 20">
@@ -687,7 +693,7 @@ const KYCVerificationModal: React.FC = () => {
 
       {/* Pending Verification Modal - Waiting for Admin Review */}
       {showPendingModal && (
-        <div className="bg-white dark:bg-[#1A1A1A] rounded-lg p-6 max-w-md w-full mx-4 border border-gray-200 dark:border-[#35353E] shadow-xl">
+        <div className="bg-white dark:bg-[#1A1A1A] rounded-lg p-6 max-w-md w-full mx-4 border border-[#35353E] shadow-xl">
           <div className="flex flex-col items-center justify-center text-center">
             {/* Animated pending icon */}
             <div className="relative mb-4">
@@ -749,28 +755,40 @@ const KYCVerificationModal: React.FC = () => {
 
       {/* Step-by-Step Verification Form */}
       {showManualVerification && !showSuccessModal && !showPendingModal && (
-        <div className="bg-white dark:bg-[#1A1A1A] rounded-lg p-4 max-w-2xl w-full mx-4 border border-gray-200 dark:border-[#35353E] max-h-[90vh] overflow-y-auto shadow-xl">
-          <div className="flex justify-between items-center mb-3">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Identity Verification - Step {phoneVerified ? currentStep : currentStep + 1} of {phoneVerified ? 3 : 4}
+        <div className="bg-white dark:bg-[var(--card-color)] rounded-[24px] p-0 max-w-5xl w-full mx-4 border border-[#35353E] max-h-[90vh] overflow-y-auto shadow-xl">
+          <div className="px-4 sm:px-6 pt-3 sm:pt-4 pb-3 border-b border-[#35353E]">
+            <div className="flex justify-between items-center mb-3">
+            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
+              KYC Verification
             </h2>
             <button
               onClick={handleClose}
-              className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+              className="text-[#8C94B2] hover:text-white transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
+            </div>
+            <p className="text-xs sm:text-sm text-[#6F7893] dark:text-[#8C94B2] mb-3">Secure your account with identity verification</p>
+            <div className="grid grid-cols-4 gap-2 sm:gap-3 items-start">
+              {stepperItems.map((step, idx) => {
+                const isActive = idx <= activeStepperIndex;
+                return (
+                  <div key={step.key} className="relative flex flex-col items-center gap-1.5">
+                    <div className={`w-9 h-9 rounded-full border flex items-center justify-center ${isActive ? "border-[#1D8751] text-[#1D8751]" : "border-[#35353E] text-[#94A3B8] dark:text-[#6F7893]"}`}>
+                      <span className="text-xs font-semibold">{idx + 1}</span>
+                    </div>
+                    <span className={`text-[11px] sm:text-xs ${isActive ? "text-[#1D8751]" : "text-[#64748B] dark:text-[#6F7893]"}`}>{step.label}</span>
+                    {idx < stepperItems.length - 1 && (
+                      <span className="hidden sm:block absolute top-4 left-[calc(50%+1.15rem)] w-[calc(100%-2.3rem)] h-px bg-[#35353E]" />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
-
-          {/* Progress Bar */}
-          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-4">
-            <div 
-              className="bg-[#1D8751] h-2 rounded-full transition-all duration-300" 
-              style={{ width: `${phoneVerified ? (currentStep / 3) * 100 : ((currentStep + 1) / 4) * 100}%` }}
-            ></div>
-          </div>
+          <div className="px-4 sm:px-6 py-4">
           
           {error && (
             <div className="bg-red-50 dark:bg-red-900/20 border border-red-400 dark:border-red-500 text-red-600 dark:text-red-400 p-2 rounded-lg mb-3 text-sm">
@@ -782,49 +800,62 @@ const KYCVerificationModal: React.FC = () => {
           {currentStep === 0 && !phoneVerified && (
             <div className="space-y-3">
               <div className="text-center mb-4">
-                <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-2">
-                  <svg className="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                <div className="w-12 h-12 bg-[#123526] rounded-full flex items-center justify-center mx-auto mb-2">
+                  <svg className="w-7 h-7 text-[#1D8751]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8m-18 8h18a2 2 0 002-2V8a2 2 0 00-2-2H3a2 2 0 00-2 2v6a2 2 0 002 2z" />
                   </svg>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">Email Verification</h3>
-                <p className="text-gray-500 dark:text-gray-400 text-xs">Verify your email address to continue</p>
+                <h3 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white mb-1">Email Verification</h3>
+                <p className="text-[#6F7893] dark:text-[#8C94B2] text-xs sm:text-sm">Enter your email address to receive a verification code</p>
               </div>
 
-              <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 mb-4">
-                <p className="text-sm text-green-700 dark:text-green-300">
-                  We'll send a verification code to your registered email address.
-                </p>
-              </div>
-
-              {/* Registered Email */}
               {!otpSent && (
-                <div className="space-y-3">
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-900 dark:text-white mb-1.5">First Name*</label>
+                      <input
+                        type="text"
+                        value={verificationData.firstName}
+                        readOnly
+                        className="w-full px-3 py-2 text-sm bg-white dark:bg-[var(--card-color)] border border-[#35353E] rounded-xl text-gray-700 dark:text-[#9EA7BE] focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-900 dark:text-white mb-1.5">Last Name*</label>
+                      <input
+                        type="text"
+                        value={verificationData.lastName}
+                        readOnly
+                        className="w-full px-3 py-2 text-sm bg-white dark:bg-[var(--card-color)] border border-[#35353E] rounded-xl text-gray-700 dark:text-[#9EA7BE] focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Registered Email</label>
+                    <label className="block text-sm font-medium text-gray-900 dark:text-white mb-1.5">Email Address*</label>
                     <input
                       type="email"
-                      value={user?.email || ""}
+                      value={verificationData.email || user?.email || ""}
                       readOnly
-                      className="w-full px-3 py-1.5 text-sm bg-gray-50 dark:bg-[#2A2A2A] border border-gray-300 dark:border-[#35353E] rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#1D8751]"
-                      disabled
+                      className="w-full px-3 py-2 text-sm bg-white dark:bg-[var(--card-color)] border border-[#35353E] rounded-xl text-gray-700 dark:text-[#9EA7BE] focus:outline-none"
                     />
                   </div>
-                </div>
+                </>
               )}
 
               {/* OTP Input */}
               {otpSent && !phoneVerified && (
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Enter OTP *</label>
+                    <label className="block text-xs font-medium text-gray-900 dark:text-white mb-1.5">Enter OTP *</label>
                     <input
                       type="text"
                       value={otp}
                       onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
                       placeholder="Enter 6-digit OTP"
                       maxLength={6}
-                      className="w-full px-3 py-1.5 text-sm bg-gray-50 dark:bg-[#2A2A2A] border border-gray-300 dark:border-[#35353E] rounded-lg text-gray-900 dark:text-white text-center text-lg tracking-widest focus:outline-none focus:border-[#1D8751]"
+                      className="w-full px-3 py-2 text-sm bg-white dark:bg-[var(--card-color)] border border-[#35353E] rounded-xl text-gray-900 dark:text-white text-center text-base tracking-widest focus:outline-none focus:border-[#1D8751]"
                       disabled={verifyingOTP}
                     />
                   </div>
@@ -832,7 +863,7 @@ const KYCVerificationModal: React.FC = () => {
                   {/* Resend OTP */}
                   <div className="text-center">
                     {resendTimer > 0 ? (
-                      <p className="text-xs text-gray-600 dark:text-gray-400">
+                      <p className="text-xs text-[#8C94B2]">
                         Resend OTP in{" "}
                         <span className="font-semibold text-[#1D8751]">
                           {formatTimer(resendTimer)}
@@ -871,7 +902,7 @@ const KYCVerificationModal: React.FC = () => {
 
           {/* Step 1: Document Information */}
           {currentStep === 1 && (
-            <div className="space-y-3">
+            <div className="space-y-3 rounded-2xl border border-[#35353E] bg-[#F8FAFC] dark:bg-[var(--card-color)] p-4">
               <div className="text-center mb-4">
                 <div className="w-12 h-12 bg-[#1D8751]/20 rounded-full flex items-center justify-center mx-auto mb-2">
                   <svg className="w-6 h-6 text-[#1D8751]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -888,7 +919,7 @@ const KYCVerificationModal: React.FC = () => {
                    <select
                      value={verificationData.country}
                      onChange={(e) => handleInputChange('country', e.target.value)}
-                     className="w-full px-3 py-1.5 text-sm bg-gray-50 dark:bg-[#2A2A2A] border border-gray-300 dark:border-[#35353E] rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#1D8751]"
+                     className="w-full px-3 py-1.5 text-sm bg-gray-50 dark:bg-[#2A2A2A] border border-[#35353E] rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#1D8751]"
                    >
                      <option value="Somalia">Somalia</option>
                      <option value="Kenya">Kenya</option>
@@ -908,7 +939,7 @@ const KYCVerificationModal: React.FC = () => {
                   <select
                     value={verificationData.documentType}
                     onChange={(e) => handleInputChange('documentType', e.target.value)}
-                    className="w-full px-3 py-1.5 text-sm bg-gray-50 dark:bg-[#2A2A2A] border border-gray-300 dark:border-[#35353E] rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#1D8751]"
+                    className="w-full px-3 py-1.5 text-sm bg-gray-50 dark:bg-[#2A2A2A] border border-[#35353E] rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#1D8751]"
                   >
                     <option value="">Select document type</option>
                     <option value="passport">Passport</option>
@@ -923,7 +954,7 @@ const KYCVerificationModal: React.FC = () => {
                     type="text"
                     value={verificationData.documentNumber}
                     onChange={(e) => handleInputChange('documentNumber', e.target.value)}
-                    className="w-full px-3 py-1.5 text-sm bg-gray-50 dark:bg-[#2A2A2A] border border-gray-300 dark:border-[#35353E] rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#1D8751]"
+                    className="w-full px-3 py-1.5 text-sm bg-gray-50 dark:bg-[#2A2A2A] border border-[#35353E] rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#1D8751]"
                     placeholder="Enter your document number"
                   />
                 </div>
@@ -933,7 +964,7 @@ const KYCVerificationModal: React.FC = () => {
 
           {/* Step 2: Document Upload */}
           {currentStep === 2 && (
-            <div className="space-y-3">
+            <div className="space-y-3 rounded-2xl border border-[#35353E] bg-[#F8FAFC] dark:bg-[var(--card-color)] p-4">
               <div className="text-center mb-4">
                 <div className="w-12 h-12 bg-[#1D8751]/20 rounded-full flex items-center justify-center mx-auto mb-2">
                   <svg className="w-6 h-6 text-[#1D8751]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -952,14 +983,14 @@ const KYCVerificationModal: React.FC = () => {
                   <span className="bg-[#1D8751] text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">1</span>
                   Front Side *
                 </h4>
-                <div className="border-2 border-dashed border-gray-300 dark:border-[#35353E] rounded-lg p-3 text-center">
+                <div className="border-2 border-dashed border-[#35353E] rounded-lg p-3 text-center">
                   {documentFrontImage && documentFrontPreview ? (
                     <div className="space-y-2">
                       <div className="relative inline-block">
                         <img
                           src={documentFrontPreview}
                           alt="Document front preview"
-                          className="max-w-full max-h-32 rounded-lg border border-gray-300 dark:border-[#35353E]"
+                          className="max-w-full max-h-32 rounded-lg border border-[#35353E]"
                         />
                         <button
                           onClick={() => {
@@ -1003,14 +1034,14 @@ const KYCVerificationModal: React.FC = () => {
                   <span className="bg-[#1D8751] text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">2</span>
                   Back Side *
                 </h4>
-                <div className="border-2 border-dashed border-gray-300 dark:border-[#35353E] rounded-lg p-3 text-center">
+                <div className="border-2 border-dashed border-[#35353E] rounded-lg p-3 text-center">
                   {documentBackImage && documentBackPreview ? (
                    <div className="space-y-2">
                      <div className="relative inline-block">
                        <img
                           src={documentBackPreview}
                           alt="Document back preview"
-                          className="max-w-full max-h-32 rounded-lg border border-gray-300 dark:border-[#35353E]"
+                          className="max-w-full max-h-32 rounded-lg border border-[#35353E]"
                        />
                        <button
                          onClick={() => {
@@ -1053,7 +1084,7 @@ const KYCVerificationModal: React.FC = () => {
 
            {/* Step 3: Face Verification with AI Detection */}
            {currentStep === 3 && (
-             <div className="space-y-3">
+             <div className="space-y-3 rounded-2xl border border-[#35353E] bg-[#F8FAFC] dark:bg-[var(--card-color)] p-4">
                <FaceDetectionKYC
                  onVerificationComplete={handleFaceDetectionComplete}
                 onRetake={() => {
@@ -1079,6 +1110,14 @@ const KYCVerificationModal: React.FC = () => {
                )}
              </div>
            )}
+
+          {currentStep === 3 && (
+            <div className="my-3 flex items-center gap-2">
+              <span className="h-px flex-1 bg-[#35353E]" />
+              <span className="text-[11px] text-[#6F7893]">Verify -&gt; Submit</span>
+              <span className="h-px flex-1 bg-[#35353E]" />
+            </div>
+          )}
 
           {/* Navigation Buttons */}
           <div className="flex gap-2 mt-4">
@@ -1158,12 +1197,13 @@ const KYCVerificationModal: React.FC = () => {
               </button>
             )}
           </div>
+          </div>
         </div>
       )}
 
       {/* Main KYC Modal */}
       {!showManualVerification && !showSuccessModal && !showPendingModal && (
-        <div className="bg-white dark:bg-[#1A1A1A] rounded-lg p-6 max-w-md w-full mx-4 border border-gray-200 dark:border-[#35353E] shadow-xl">
+        <div className="bg-white dark:bg-[#1A1A1A] rounded-lg p-6 max-w-md w-full mx-4 border border-[#35353E] shadow-xl">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
               {isRejectedKyc

@@ -995,6 +995,17 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
       : null) ??
     (Number.isFinite(wsNetCandidates.netAmount) ? wsNetCandidates.netAmount : null) ??
     ((effectiveTransactionData as any)?.receiveAmount ?? 0);
+  const resolvedDepositCode =
+    effectiveTransactionData?.type === "deposit" &&
+    !(effectiveTransactionData as any)?.isMoneyX
+      ? String(
+          (effectiveTransactionData as any)?.depositCode ||
+            (effectiveTransactionData as any)?.deposit_code ||
+            finalWebsocketData?.data?.deposit_code ||
+            finalWebsocketData?.data?.depositCode ||
+            ""
+        ).trim()
+      : "";
 
   return (
     <div className={`w-full min-h-screen flex flex-col items-center pt-2 `}>
@@ -1120,6 +1131,21 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                 </div>
               </div>
             )}
+            {resolvedDepositCode && (
+              <div>
+                <div
+                  className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"} text-xs font-semibold mb-0.5`}
+                >
+                  Transaction Code
+                </div>
+                <div
+                  className={`${isDark ? "text-white" : "text-gray-900"} text-base font-semibold flex items-center gap-2`}
+                >
+                  <code className="font-mono">{resolvedDepositCode}</code>
+                  <CopyButton value={resolvedDepositCode} className="shrink-0" />
+                </div>
+              </div>
+            )}
           </div>
             {/* {liveAmount !== null &&
               liveAmount !== effectiveTransactionData?.amount && (
@@ -1216,31 +1242,6 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                       "BSC"}
                   </span>
                 </div>
-
-                {/* Wallet Address (if provided) */}
-                {effectiveTransactionData?.walletAddress && (
-                  <>
-                    <div
-                      className={`${isDark ? "text-[#1D8751]" : "text-[#1D8751]"
-                        } text-sm font-semibold mb-1 mt-3`}
-                    >
-                      {getStableSendCurrency()} Wallet Address:
-                    </div>
-                    <div className="flex items-center mb-2 p-2 rounded-lg border border-[#1D8751]/30 bg-[#1D8751]/5">
-                      <span
-                        className={`${isDark ? "text-white" : "text-gray-900"
-                          } text-sm font-mono break-all flex-1 leading-relaxed`}
-                        style={{ wordBreak: 'break-all', lineHeight: '1.5' }}
-                      >
-                        {effectiveTransactionData.walletAddress}
-                      </span>
-                      <CopyButton
-                        value={effectiveTransactionData.walletAddress}
-                        className="ml-2 shrink-0"
-                      />
-                    </div>
-                  </>
-                )}
 
                 {/* Status from WebSocket */}
               </>
@@ -1378,6 +1379,24 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
           })()}
         </div>
       </div>
+
+      {effectiveTransactionData?.type === "deposit" && effectiveTransactionData?.walletAddress && (
+        <div className="w-full max-w-4xl mb-2 sm:mb-3">
+          <div
+            className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl border border-[#1D8751] ${
+              isDark ? "bg-[#1f1f25]" : "bg-gray-50"
+            }`}
+          >
+            <span className={`${isDark ? "text-[#1D8751]" : "text-[#1D8751]"} text-xs font-semibold whitespace-nowrap`}>
+              {getStableSendCurrency()} Wallet Address:
+            </span>
+            <code className={`${isDark ? "text-white" : "text-gray-900"} text-xs sm:text-sm font-mono break-all`}>
+              {effectiveTransactionData.walletAddress}
+            </code>
+            <CopyButton value={effectiveTransactionData.walletAddress} className="shrink-0" />
+          </div>
+        </div>
+      )}
 
       <div className="flex items-center justify-between w-full max-w-4xl mb-2 sm:mb-4 relative px-2 sm:px-0 overflow-x-auto">
         {/* Connecting Lines */}
