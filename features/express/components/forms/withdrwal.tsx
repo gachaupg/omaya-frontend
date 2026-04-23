@@ -1392,7 +1392,9 @@ export default function WithdrawalForm({
     }
 
     const resolveSwapPayload = (force: boolean): Promise<SupportedAsset[]> => {
-      return dispatch(fetchSupportedAssets(force)).then(
+      return dispatch(
+        fetchSupportedAssets({ forceRefresh: force, feature: "exchange" })
+      ).then(
         (action): SupportedAsset[] | Promise<SupportedAsset[]> => {
           if (fetchSupportedAssets.fulfilled.match(action)) {
             return action.payload;

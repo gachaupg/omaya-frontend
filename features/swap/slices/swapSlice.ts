@@ -135,12 +135,24 @@ const initialState: SwapState = {
 
 export const fetchSupportedAssets = createAsyncThunk<
   SupportedAsset[],
-  boolean | undefined,
+  | boolean
+  | undefined
+  | { forceRefresh?: boolean; feature?: "swap" | "exchange" },
   { state: { swap: SwapState } }
 >(
   "swap/fetchSupportedAssets",
-  async (forceRefresh: boolean = false, { rejectWithValue, getState }) => {
+  async (arg, { rejectWithValue, getState }) => {
     try {
+      const forceRefresh =
+        typeof arg === "object" && arg !== null
+          ? Boolean(arg.forceRefresh)
+          : Boolean(arg);
+      const feature =
+        typeof arg === "object" && arg !== null && arg.feature === "exchange"
+          ? "exchange"
+          : "swap";
+      const cacheKey = `fetchSupportedAssets_${feature}`;
+
       logger.debug('swap', "🔄 Starting fetchSupportedAssets...");
 
       // Serve fresh Redux state as a fulfilled result so callers using `.unwrap()`
@@ -169,24 +181,24 @@ export const fetchSupportedAssets = createAsyncThunk<
       if (forceRefresh) {
         logger.debug('swap', "🔄 Force refresh - bypassing cache...");
         // Clear cache first
-        await sliceCache.delete('swap', 'fetchSupportedAssets');
+        await sliceCache.delete('swap', cacheKey);
         // Fetch fresh data
-        const response = await getSupportedAssets();
+        const response = await getSupportedAssets(feature);
         logger.debug('swap', "✅ Force refresh API response received:", response?.length || 0, "assets");
         // Cache the fresh data
-        await sliceCache.set('swap', 'fetchSupportedAssets', response, undefined, 60 * 60 * 1000);
+        await sliceCache.set('swap', cacheKey, response, { feature }, 60 * 60 * 1000);
         data = response;
       } else {
         data = await sliceCache.getOrSet(
           'swap',
-          'fetchSupportedAssets',
+          cacheKey,
           async () => {
             logger.debug('swap', "🔄 Cache miss - fetching from API...");
-            const response = await getSupportedAssets();
+            const response = await getSupportedAssets(feature);
             logger.debug('swap', "✅ API response received:", response?.length || 0, "assets");
             return response;
           },
-          undefined, // no params
+          { feature },
           60 * 60 * 1000 // 1 hour cache
         );
       }

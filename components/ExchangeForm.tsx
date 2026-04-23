@@ -561,7 +561,12 @@ export default function ExchangeForm({
     if (isHomePage && !isAuthenticated) {
       return;
     }
-    withTimeout(dispatch(fetchSupportedAssets(false)).unwrap(), 15_000).catch(() => {});
+    withTimeout(
+      dispatch(
+        fetchSupportedAssets({ forceRefresh: false, feature: "exchange" })
+      ).unwrap(),
+      15_000
+    ).catch(() => {});
   }, [dispatch, isHomePage, isAuthenticated]);
 
   useEffect(() => {

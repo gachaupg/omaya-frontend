@@ -295,7 +295,12 @@ export default function WithdrawalForm({
   const handleForceRefreshAssets = async () => {
     try {
       logger.debug('p2p', "=== Force refreshing assets ===");
-      await withTimeout(dispatch(fetchSupportedAssets(true)).unwrap(), 15_000);
+      await withTimeout(
+        dispatch(
+          fetchSupportedAssets({ forceRefresh: true, feature: "exchange" })
+        ).unwrap(),
+        15_000
+      );
       logger.debug('p2p', "✅ Assets force refreshed");
     } catch (error) {
       console.error("❌ Force refresh failed:", error);
@@ -604,7 +609,7 @@ export default function WithdrawalForm({
   // Fetch swap assets
   useEffect(() => {
     logger.debug('p2p', "DEBUG: Starting to fetch swap assets...");
-    dispatch(fetchSupportedAssets(false))
+    dispatch(fetchSupportedAssets({ forceRefresh: false, feature: "exchange" }))
       .unwrap()
       .then((data) => {
         logger.debug('p2p', "DEBUG: Swap assets fetched successfully:", data);

@@ -744,7 +744,9 @@ export default function WithdrawalForm({
       await dispatch(fetchAssets(true)).unwrap();
 
 
-      await dispatch(fetchSupportedAssets(true)).unwrap();
+      await dispatch(
+        fetchSupportedAssets({ forceRefresh: true, feature: "exchange" })
+      ).unwrap();
 
     } catch (error) {
     }
@@ -753,7 +755,9 @@ export default function WithdrawalForm({
   // Force refresh assets
   const handleForceRefreshAssets = async () => {
     try {
-      await dispatch(fetchSupportedAssets(true)).unwrap();
+      await dispatch(
+        fetchSupportedAssets({ forceRefresh: true, feature: "exchange" })
+      ).unwrap();
     } catch (error) {
     }
   };
@@ -1321,7 +1325,7 @@ export default function WithdrawalForm({
       return;
     }
 
-    dispatch(fetchSupportedAssets(false))
+    dispatch(fetchSupportedAssets({ forceRefresh: false, feature: "exchange" }))
       .unwrap()
       .then((data) => {
         console.log("✅ Swap assets fetched successfully");
@@ -1331,7 +1335,9 @@ export default function WithdrawalForm({
         // If no assets in cache, try one force refresh (counts as a retry)
         if ((!data || data.length === 0) && swapAssetsRetryCount === 0) {
           setSwapAssetsRetryCount(1);
-          dispatch(fetchSupportedAssets(true)).unwrap()
+          dispatch(
+            fetchSupportedAssets({ forceRefresh: true, feature: "exchange" })
+          ).unwrap()
             .then(() => {
               setHasFetchedSwapAssets(true);
             })

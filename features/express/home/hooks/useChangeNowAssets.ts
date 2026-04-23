@@ -4,7 +4,14 @@ import { useEffect, useMemo, useState } from "react";
 
 import { API_CONFIG, CHANGE_NOW_PUBLIC_ASSET_ID_OVERRIDES } from "@/lib/appConfig";
 
-const CHANGE_NOW_API_URL = `${API_CONFIG.BASE_URL}${API_CONFIG.SWAP.SUPPORTED_ASSETS_PUBLIC}`;
+type ChangeNowAssetFeature = "exchange" | "swap";
+
+const getChangeNowApiUrl = (feature: ChangeNowAssetFeature) => {
+  if (feature === "exchange") {
+    return `${API_CONFIG.BASE_URL}${API_CONFIG.SWAP.SUPPORTED_ASSETS}?feature=exchange`;
+  }
+  return `${API_CONFIG.BASE_URL}${API_CONFIG.SWAP.SUPPORTED_ASSETS_PUBLIC}`;
+};
 
 interface ChangeNowApiAsset {
   ticker?: string;
@@ -19,6 +26,13 @@ interface ChangeNowApiAsset {
   isStable?: boolean;
   featured?: boolean;
   supportsFixedRate?: boolean;
+  supports_fixed_rate?: boolean;
+  has_external_id?: boolean;
+  is_extra_id_supported?: boolean;
+  is_fiat?: boolean;
+  is_stable?: boolean;
+  image_url?: string;
+  legacy_ticker?: string;
 }
 
 export interface ChangeNowMappedAsset {
@@ -45,21 +59,25 @@ export interface ChangeNowMappedAsset {
 
 // Cache for public supported-tokens response.
 // This avoids refetching when the user revisits deposit/withdraw dropdowns.
-const PUBLIC_ASSETS_CACHE_KEY =
-  "omaya_changenow_public_supported_tokens_v3";
+const PUBLIC_ASSETS_CACHE_KEY_BY_FEATURE: Record<ChangeNowAssetFeature, string> = {
+  exchange: "omaya_changenow_public_supported_tokens_exchange_v1",
+  swap: "omaya_changenow_public_supported_tokens_swap_v1",
+};
 const PUBLIC_ASSETS_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 
-let inMemoryPublicAssetsCache:
-  | { ts: number; assets: ChangeNowMappedAsset[] }
-  | null = null;
+const inMemoryPublicAssetsCache: Partial<
+  Record<ChangeNowAssetFeature, { ts: number; assets: ChangeNowMappedAsset[] }>
+> = {};
 
-function readPublicAssetsCacheFromLocalStorage(): {
+function readPublicAssetsCacheFromLocalStorageByFeature(
+  feature: ChangeNowAssetFeature
+): {
   ts: number;
   assets: ChangeNowMappedAsset[];
 } | null {
   if (typeof window === "undefined") return null;
   try {
-    const raw = window.localStorage.getItem(PUBLIC_ASSETS_CACHE_KEY);
+    const raw = window.localStorage.getItem(PUBLIC_ASSETS_CACHE_KEY_BY_FEATURE[feature]);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as {
       ts?: number;
@@ -72,11 +90,14 @@ function readPublicAssetsCacheFromLocalStorage(): {
   }
 }
 
-function writePublicAssetsCacheToLocalStorage(assets: ChangeNowMappedAsset[]) {
+function writePublicAssetsCacheToLocalStorageByFeature(
+  feature: ChangeNowAssetFeature,
+  assets: ChangeNowMappedAsset[]
+) {
   if (typeof window === "undefined") return;
   try {
     window.localStorage.setItem(
-      PUBLIC_ASSETS_CACHE_KEY,
+      PUBLIC_ASSETS_CACHE_KEY_BY_FEATURE[feature],
       JSON.stringify({ ts: Date.now(), assets })
     );
   } catch {
@@ -244,11 +265,14 @@ const mapChangeNowAsset = (
   const commissionValue = asset.isStable ? "1.5" : "2.0";
   const iconUrl =
     asset.image ||
+    asset.image_url ||
     `https://cryptoicons.org/api/icon/${ticker.toLowerCase()}/200`;
   const displayName = cleanAssetName(asset.name, ticker, networkId);
 
   const rawChangeNowTicker =
-    asset.legacyTicker?.trim().toLowerCase() || rawTicker;
+    asset.legacyTicker?.trim().toLowerCase() ||
+    asset.legacy_ticker?.trim().toLowerCase() ||
+    rawTicker;
   const apiAssetId = String(asset.asset_id || "").trim();
   const overrideKey = `${ticker.toLowerCase()}-${networkId}`;
   const overrideAssetId = String(
@@ -270,11 +294,15 @@ const mapChangeNowAsset = (
     networks: [{ network_id: networkId, network_type: networkId }],
     image_url: iconUrl,
     icon: iconUrl,
-    is_stable: Boolean(asset.isStable),
-    is_fiat: Boolean(asset.isFiat),
-    supportsFixedRate: Boolean(asset.supportsFixedRate),
-    hasExternalId: Boolean(asset.hasExternalId),
-    is_extra_id_supported: Boolean(asset.isExtraIdSupported),
+    is_stable: Boolean(asset.isStable ?? asset.is_stable),
+    is_fiat: Boolean(asset.isFiat ?? asset.is_fiat),
+    supportsFixedRate: Boolean(
+      asset.supportsFixedRate ?? asset.supports_fixed_rate
+    ),
+    hasExternalId: Boolean(asset.hasExternalId ?? asset.has_external_id),
+    is_extra_id_supported: Boolean(
+      asset.isExtraIdSupported ?? asset.is_extra_id_supported
+    ),
     range_commissions: [{ commission: commissionValue }],
     commission: commissionValue,
     fee_rate: commissionValue,
@@ -284,7 +312,10 @@ const mapChangeNowAsset = (
   };
 };
 
-export function useChangeNowAssets(shouldFetch: boolean) {
+export function useChangeNowAssets(
+  shouldFetch: boolean,
+  feature: ChangeNowAssetFeature = "exchange"
+) {
   const [assets, setAssets] = useState<ChangeNowMappedAsset[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -299,12 +330,13 @@ export function useChangeNowAssets(shouldFetch: boolean) {
     // Serve cached data immediately (public assets are relatively stable).
     // If cache is fresh, we don't refetch.
     const now = Date.now();
+    const featureCache = inMemoryPublicAssetsCache[feature] || null;
     const cached =
-      (inMemoryPublicAssetsCache &&
-        now - inMemoryPublicAssetsCache.ts < PUBLIC_ASSETS_CACHE_TTL_MS
-        ? inMemoryPublicAssetsCache
+      (featureCache &&
+        now - featureCache.ts < PUBLIC_ASSETS_CACHE_TTL_MS
+        ? featureCache
         : null) ||
-      readPublicAssetsCacheFromLocalStorage();
+      readPublicAssetsCacheFromLocalStorageByFeature(feature);
     const staleCached = cached && Array.isArray(cached.assets) ? cached.assets : [];
     const isFresh =
       !!cached &&
@@ -322,7 +354,7 @@ export function useChangeNowAssets(shouldFetch: boolean) {
       setError(null);
 
       try {
-        const response = await fetch(CHANGE_NOW_API_URL, {
+        const response = await fetch(getChangeNowApiUrl(feature), {
           signal: controller.signal,
         });
 
@@ -332,7 +364,14 @@ export function useChangeNowAssets(shouldFetch: boolean) {
           );
         }
 
-        const data = (await response.json()) as ChangeNowApiAsset[];
+        const raw = (await response.json()) as
+          | ChangeNowApiAsset[]
+          | { results?: ChangeNowApiAsset[] };
+        const data = Array.isArray(raw)
+          ? raw
+          : Array.isArray(raw?.results)
+            ? raw.results
+            : null;
 
         if (!Array.isArray(data)) {
           throw new Error("Invalid response format from ChangeNOW");
@@ -358,8 +397,11 @@ export function useChangeNowAssets(shouldFetch: boolean) {
         setAssets(finalAssets);
 
         // Save cache after successful fetch.
-        inMemoryPublicAssetsCache = { ts: Date.now(), assets: finalAssets };
-        writePublicAssetsCacheToLocalStorage(finalAssets);
+        inMemoryPublicAssetsCache[feature] = {
+          ts: Date.now(),
+          assets: finalAssets,
+        };
+        writePublicAssetsCacheToLocalStorageByFeature(feature, finalAssets);
       } catch (err) {
         if ((err as { name?: string })?.name === "AbortError") {
           return;
@@ -384,7 +426,7 @@ export function useChangeNowAssets(shouldFetch: boolean) {
     fetchAssets();
 
     return () => controller.abort();
-  }, [shouldFetch]);
+  }, [feature, shouldFetch]);
 
   return {
     // IMPORTANT: return the full asset list so dropdown search can find

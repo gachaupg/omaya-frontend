@@ -38,8 +38,15 @@ type PublicAssetLike = {
   supports_fixed_rate?: boolean;
 };
 
-const SWAP_PUBLIC_ASSETS_CACHE_KEY =
-  "omaya_changenow_public_supported_tokens_v3";
+type SupportedAssetsFeature = "swap" | "exchange";
+
+const SWAP_PUBLIC_ASSETS_CACHE_KEY_BY_FEATURE: Record<
+  SupportedAssetsFeature,
+  string
+> = {
+  swap: "omaya_changenow_public_supported_tokens_swap_v1",
+  exchange: "omaya_changenow_public_supported_tokens_exchange_v1",
+};
 const SWAP_PUBLIC_ASSETS_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 const mapPublicAssetToSupportedAsset = (
@@ -76,10 +83,15 @@ const mapPublicAssetToSupportedAsset = (
   };
 };
 
-const readSwapPublicAssetsCache = (allowStale: boolean): SupportedAsset[] => {
+const readSwapPublicAssetsCache = (
+  allowStale: boolean,
+  feature: SupportedAssetsFeature
+): SupportedAsset[] => {
   if (typeof window === "undefined") return [];
   try {
-    const raw = window.localStorage.getItem(SWAP_PUBLIC_ASSETS_CACHE_KEY);
+    const raw = window.localStorage.getItem(
+      SWAP_PUBLIC_ASSETS_CACHE_KEY_BY_FEATURE[feature]
+    );
     if (!raw) return [];
     const parsed = JSON.parse(raw) as {
       ts?: number;
@@ -100,11 +112,14 @@ const readSwapPublicAssetsCache = (allowStale: boolean): SupportedAsset[] => {
   }
 };
 
-const writeSwapPublicAssetsCache = (assets: PublicAssetLike[]) => {
+const writeSwapPublicAssetsCache = (
+  assets: PublicAssetLike[],
+  feature: SupportedAssetsFeature
+) => {
   if (typeof window === "undefined") return;
   try {
     window.localStorage.setItem(
-      SWAP_PUBLIC_ASSETS_CACHE_KEY,
+      SWAP_PUBLIC_ASSETS_CACHE_KEY_BY_FEATURE[feature],
       JSON.stringify({
         ts: Date.now(),
         assets,
@@ -115,8 +130,10 @@ const writeSwapPublicAssetsCache = (assets: PublicAssetLike[]) => {
   }
 };
 
-const fetchPublicSupportedAssetsFallback = async (): Promise<SupportedAsset[]> => {
-  const freshCached = readSwapPublicAssetsCache(false);
+const fetchPublicSupportedAssetsFallback = async (
+  feature: SupportedAssetsFeature = "swap"
+): Promise<SupportedAsset[]> => {
+  const freshCached = readSwapPublicAssetsCache(false, feature);
   if (freshCached.length > 0) {
     logger.debug(
       "swap",
@@ -127,7 +144,9 @@ const fetchPublicSupportedAssetsFallback = async (): Promise<SupportedAsset[]> =
 
   try {
     const response = await cachedGet<PublicAssetLike[]>(
-      API_CONFIG.SWAP.SUPPORTED_ASSETS_PUBLIC,
+      feature === "exchange"
+        ? `${API_CONFIG.SWAP.SUPPORTED_ASSETS_PUBLIC}?feature=exchange`
+        : API_CONFIG.SWAP.SUPPORTED_ASSETS_PUBLIC,
       { timeout: 15000 }
     );
     const payload = response?.data;
@@ -140,7 +159,7 @@ const fetchPublicSupportedAssetsFallback = async (): Promise<SupportedAsset[]> =
       .filter((item): item is SupportedAsset => Boolean(item));
 
     if (mapped.length > 0) {
-      writeSwapPublicAssetsCache(payload);
+      writeSwapPublicAssetsCache(payload, feature);
       logger.warn(
         "swap",
         `Using public supported-assets fallback (${mapped.length} assets)`
@@ -149,15 +168,17 @@ const fetchPublicSupportedAssetsFallback = async (): Promise<SupportedAsset[]> =
     return mapped;
   } catch (fallbackError) {
     logger.error("swap", "Public supported-assets fallback failed", fallbackError);
-    const staleCached = readSwapPublicAssetsCache(true);
+    const staleCached = readSwapPublicAssetsCache(true, feature);
     return staleCached;
   }
 };
 
-export const getSupportedAssets = async (): Promise<SupportedAsset[]> => {
+export const getSupportedAssets = async (
+  feature: SupportedAssetsFeature = "swap"
+): Promise<SupportedAsset[]> => {
   // Fast path: same caching behavior as Express public assets hook.
   // Serve cached list immediately and avoid blocking UI on network timeout.
-  const cachedPublicAssets = readSwapPublicAssetsCache(false);
+  const cachedPublicAssets = readSwapPublicAssetsCache(false, feature);
   if (cachedPublicAssets.length > 0) {
     logger.debug(
       "swap",
@@ -169,7 +190,9 @@ export const getSupportedAssets = async (): Promise<SupportedAsset[]> => {
   return withRetry(async () => {
     try {
       const response = await get<{ message: string; total_changenow_tokens: number; results: SupportedAsset[] }>(
-        API_CONFIG.SWAP.SUPPORTED_ASSETS,
+        feature === "exchange"
+          ? `${API_CONFIG.SWAP.SUPPORTED_ASSETS}?feature=exchange`
+          : API_CONFIG.SWAP.SUPPORTED_ASSETS,
         {
           timeout: 30000
         }
@@ -191,7 +214,7 @@ export const getSupportedAssets = async (): Promise<SupportedAsset[]> => {
       }
       
       console.warn("Unexpected supported-assets format, trying public fallback");
-      const fallbackAssets = await fetchPublicSupportedAssetsFallback();
+      const fallbackAssets = await fetchPublicSupportedAssetsFallback(feature);
       return fallbackAssets;
     } catch (error: any) {
       console.error("Failed to fetch supported assets:", error);
@@ -209,12 +232,12 @@ export const getSupportedAssets = async (): Promise<SupportedAsset[]> => {
 
       if (error.response?.status === 404) {
         console.warn("Endpoint not found, returning empty assets list");
-        return await fetchPublicSupportedAssetsFallback();
+        return await fetchPublicSupportedAssetsFallback(feature);
       }
 
       // For other errors, use public endpoint fallback (Express-style source)
       console.warn("Unknown error, trying public assets fallback");
-      return await fetchPublicSupportedAssetsFallback();
+      return await fetchPublicSupportedAssetsFallback(feature);
     }
   });
 };

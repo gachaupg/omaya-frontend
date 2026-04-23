@@ -112,7 +112,7 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
   const [debouncedToAmount, setDebouncedToAmount] = React.useState(toAmount);
   const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
   const { assets: homeSwapAssets, loading: homeAssetsLoading } =
-    useChangeNowAssets(true);
+    useChangeNowAssets(true, "swap");
   const combinedAssets =
     homeSwapAssets && homeSwapAssets.length > 0
       ? homeSwapAssets
