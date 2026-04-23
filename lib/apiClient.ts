@@ -58,7 +58,7 @@ const ENDPOINT_SPECIFIC_CONFIG: Record<string, Partial<ApiClientConfig>> = {
   // Swap/asset selection – fail fast so user can click elsewhere
   "/api/changenow/estimate": { timeout: 15000, retries: 1 },
   "/api/changenow/public/estimate": { timeout: 15000, retries: 1 },
-  "/api/changenow/supported-tokens": { timeout: 15000, retries: 1 },
+  "/api/changenow/supported-tokens": { timeout: 180000, retries: 1 },
 };
 
 

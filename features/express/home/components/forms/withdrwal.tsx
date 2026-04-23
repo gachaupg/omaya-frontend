@@ -428,7 +428,10 @@ export default function WithdrawalForm({
   const {
     assets: publicAssets,
     loading: publicAssetsLoading,
-  } = useChangeNowAssets(isHomePage);
+  } = useChangeNowAssets(isHomePage, {
+    feature: "exchange",
+    source: "public",
+  });
 
   // Add swap assets state
   const {

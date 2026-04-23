@@ -5,12 +5,37 @@ import { useEffect, useMemo, useState } from "react";
 import { API_CONFIG, CHANGE_NOW_PUBLIC_ASSET_ID_OVERRIDES } from "@/lib/appConfig";
 
 type ChangeNowAssetFeature = "exchange" | "swap";
+type ChangeNowAssetSource = "supported" | "public";
 
-const getChangeNowApiUrl = (feature: ChangeNowAssetFeature) => {
-  if (feature === "exchange") {
-    return `${API_CONFIG.BASE_URL}${API_CONFIG.SWAP.SUPPORTED_ASSETS}?feature=exchange`;
-  }
-  return `${API_CONFIG.BASE_URL}${API_CONFIG.SWAP.SUPPORTED_ASSETS_PUBLIC}`;
+type ChangeNowAssetsOptions = {
+  feature?: ChangeNowAssetFeature;
+  source?: ChangeNowAssetSource;
+  /** Optional backend filter (e.g. "fxp"). */
+  ticker?: string;
+};
+
+function buildQuery(params: Record<string, string | undefined>) {
+  const query = Object.entries(params)
+    .filter(([, v]) => v != null && String(v).trim() !== "")
+    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`)
+    .join("&");
+  return query ? `?${query}` : "";
+}
+
+const getChangeNowApiUrl = (opts: {
+  feature: ChangeNowAssetFeature;
+  source: ChangeNowAssetSource;
+  ticker?: string;
+}) => {
+  const base =
+    opts.source === "public"
+      ? `${API_CONFIG.BASE_URL}${API_CONFIG.SWAP.SUPPORTED_ASSETS_PUBLIC}`
+      : `${API_CONFIG.BASE_URL}${API_CONFIG.SWAP.SUPPORTED_ASSETS}`;
+
+  return `${base}${buildQuery({
+    feature: opts.feature === "exchange" ? "exchange" : undefined,
+    ticker: opts.ticker,
+  })}`;
 };
 
 interface ChangeNowApiAsset {
@@ -63,11 +88,22 @@ const PUBLIC_ASSETS_CACHE_KEY_BY_FEATURE: Record<ChangeNowAssetFeature, string> 
   exchange: "omaya_changenow_public_supported_tokens_exchange_v1",
   swap: "omaya_changenow_public_supported_tokens_swap_v1",
 };
-const PUBLIC_ASSETS_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+const PUBLIC_ASSETS_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+const ASSETS_FETCH_TIMEOUT_MS = 3 * 60 * 1000; // 3 minutes
 
-const inMemoryPublicAssetsCache: Partial<
-  Record<ChangeNowAssetFeature, { ts: number; assets: ChangeNowMappedAsset[] }>
+const inMemoryPublicAssetsCache: Record<
+  string,
+  { ts: number; assets: ChangeNowMappedAsset[] }
 > = {};
+
+const getAssetsCacheKey = (opts: {
+  feature: ChangeNowAssetFeature;
+  source: ChangeNowAssetSource;
+  ticker?: string;
+}) => {
+  const t = (opts.ticker || "all").toLowerCase();
+  return `omaya_changenow_assets_${opts.source}_${opts.feature}_${t}_v1`;
+};
 
 function readPublicAssetsCacheFromLocalStorageByFeature(
   feature: ChangeNowAssetFeature
@@ -102,6 +138,31 @@ function writePublicAssetsCacheToLocalStorageByFeature(
     );
   } catch {
     // ignore cache write failures (quota, privacy mode, etc.)
+  }
+}
+
+function readAssetsCacheFromLocalStorage(cacheKey: string): {
+  ts: number;
+  assets: ChangeNowMappedAsset[];
+} | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(cacheKey);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { ts?: number; assets?: ChangeNowMappedAsset[] };
+    if (!parsed.ts || !Array.isArray(parsed.assets)) return null;
+    return { ts: parsed.ts, assets: parsed.assets };
+  } catch {
+    return null;
+  }
+}
+
+function writeAssetsCacheToLocalStorage(cacheKey: string, assets: ChangeNowMappedAsset[]) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), assets }));
+  } catch {
+    // ignore
   }
 }
 
@@ -314,8 +375,18 @@ const mapChangeNowAsset = (
 
 export function useChangeNowAssets(
   shouldFetch: boolean,
-  feature: ChangeNowAssetFeature = "exchange"
+  options: ChangeNowAssetFeature | ChangeNowAssetsOptions = "exchange"
 ) {
+  const opts = useMemo(() => {
+    const normalized: ChangeNowAssetsOptions =
+      typeof options === "string" ? { feature: options } : options || {};
+    return {
+      feature: normalized.feature ?? "exchange",
+      source: normalized.source ?? (normalized.feature === "swap" ? "public" : "supported"),
+      ticker: normalized.ticker,
+    } as { feature: ChangeNowAssetFeature; source: ChangeNowAssetSource; ticker?: string };
+  }, [options]);
+
   const [assets, setAssets] = useState<ChangeNowMappedAsset[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -326,17 +397,22 @@ export function useChangeNowAssets(
     }
 
     const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), ASSETS_FETCH_TIMEOUT_MS);
+
+    const cacheKey = getAssetsCacheKey(opts);
 
     // Serve cached data immediately (public assets are relatively stable).
     // If cache is fresh, we don't refetch.
     const now = Date.now();
-    const featureCache = inMemoryPublicAssetsCache[feature] || null;
+    const featureCache = inMemoryPublicAssetsCache[cacheKey] || null;
     const cached =
       (featureCache &&
         now - featureCache.ts < PUBLIC_ASSETS_CACHE_TTL_MS
         ? featureCache
         : null) ||
-      readPublicAssetsCacheFromLocalStorageByFeature(feature);
+      readAssetsCacheFromLocalStorage(cacheKey) ||
+      // Legacy fallback (older keys)
+      readPublicAssetsCacheFromLocalStorageByFeature(opts.feature);
     const staleCached = cached && Array.isArray(cached.assets) ? cached.assets : [];
     const isFresh =
       !!cached &&
@@ -346,6 +422,7 @@ export function useChangeNowAssets(
       setAssets(cached!.assets);
       setLoading(false);
       setError(null);
+      window.clearTimeout(timeoutId);
       return () => controller.abort();
     }
 
@@ -354,7 +431,7 @@ export function useChangeNowAssets(
       setError(null);
 
       try {
-        const response = await fetch(getChangeNowApiUrl(feature), {
+        const response = await fetch(getChangeNowApiUrl(opts), {
           signal: controller.signal,
         });
 
@@ -397,11 +474,14 @@ export function useChangeNowAssets(
         setAssets(finalAssets);
 
         // Save cache after successful fetch.
-        inMemoryPublicAssetsCache[feature] = {
+        inMemoryPublicAssetsCache[cacheKey] = {
           ts: Date.now(),
           assets: finalAssets,
         };
-        writePublicAssetsCacheToLocalStorageByFeature(feature, finalAssets);
+        writeAssetsCacheToLocalStorage(cacheKey, finalAssets);
+
+        // Also keep the legacy per-feature key updated (helps older screens).
+        writePublicAssetsCacheToLocalStorageByFeature(opts.feature, finalAssets);
       } catch (err) {
         if ((err as { name?: string })?.name === "AbortError") {
           return;
@@ -419,14 +499,18 @@ export function useChangeNowAssets(
           prev.length ? prev : staleCached.length ? staleCached : []
         );
       } finally {
+        window.clearTimeout(timeoutId);
         setLoading(false);
       }
     };
 
     fetchAssets();
 
-    return () => controller.abort();
-  }, [feature, shouldFetch]);
+    return () => {
+      window.clearTimeout(timeoutId);
+      controller.abort();
+    };
+  }, [opts, shouldFetch]);
 
   return {
     // IMPORTANT: return the full asset list so dropdown search can find

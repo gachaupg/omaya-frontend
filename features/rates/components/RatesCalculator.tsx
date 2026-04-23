@@ -451,7 +451,10 @@ const getPaymentRestrictionMessage = (status?: string) =>
     assets: homeAssets,
     loading: homeAssetsLoading,
     error: homeAssetsError,
-  } = useChangeNowAssets(true);
+  } = useChangeNowAssets(true, {
+    feature: "exchange",
+    source: "public",
+  });
 
   const assetsDisplay = useAssetsDisplay(
     homeAssets,

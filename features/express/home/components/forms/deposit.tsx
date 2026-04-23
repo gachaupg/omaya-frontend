@@ -372,7 +372,10 @@ export default function DepositForm({
   const {
     assets: publicAssets,
     loading: publicAssetsLoading,
-  } = useChangeNowAssets(isHomePage);
+  } = useChangeNowAssets(isHomePage, {
+    feature: "exchange",
+    source: "public",
+  });
 
   // Add swap assets state
   const { supportedAssets: swapAssets, loading: swapAssetsLoading } =
