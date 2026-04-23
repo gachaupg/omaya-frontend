@@ -6,12 +6,14 @@ import { useDispatch, useSelector } from "react-redux";
 import { selectTransactionSummary } from "@/features/p2p/slices/transactionSummarySlice";
 import { fetchTransactionSummary } from "@/features/p2p/slices/transactionSummarySlice";
 import { RootState } from "@/store/rootReducer";
+import { useP2PWalletBalanceContext } from "@/features/p2p/context/P2PWalletBalanceProvider";
 
 const Overview = () => {
   const dispatch = useDispatch();
   const summary = useSelector(selectTransactionSummary);
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
-
+  const wsWallet = useP2PWalletBalanceContext();
+  console.log('wsWallet', wsWallet);
   const [buyDateFilter, setBuyDateFilter] = useState("ALL");
   const [sellDateFilter, setSellDateFilter] = useState("ALL");
 
@@ -30,12 +32,13 @@ const Overview = () => {
   };
 
   // Calculate totals for the pie chart using API data (ensure numbers for correct sum)
-  const deposits = Number(summary?.total_approved_p2p_deposits) || 0;
-  const withdrawals = Number(summary?.total_approved_p2p_withdrawals) || 0;
+  const deposits =
+  Number(wsWallet?.summary?.total_approved_p2p_deposits ?? 0);
+    const withdrawals = Number(wsWallet.summary.total_approved_p2p_withdrawals ?? summary?.total_approved_p2p_withdrawals) || 0;
   const inProgress =
-    (Number(summary?.total_pending_p2p_deposits) || 0) +
-    (Number(summary?.total_pending_p2p_withdrawals) || 0);
-  const p2p = Number(summary?.total_approved_p2p_volume ?? summary?.total_p2p_orders ?? 0) || 0;
+    (Number(wsWallet.summary.total_pending_p2p_deposits ?? summary?.total_pending_p2p_deposits) || 0) +
+    (Number(wsWallet.summary.total_pending_p2p_withdrawals ?? summary?.total_pending_p2p_withdrawals) || 0);
+  const p2p = Number(wsWallet.summary.total_approved_p2p_volume ?? summary?.total_approved_p2p_volume ?? summary?.total_p2p_orders ?? 0) || 0;
   const chartTotal = deposits + withdrawals + inProgress + p2p; // for pie segments
   const totalVolume = summary?.total_approved_volume ?? parseTotalVolume(summary?.total_volume) ?? 0;
   const circumference = 2 * Math.PI * 90;
@@ -44,6 +47,7 @@ const Overview = () => {
   const depositsDash = (deposits / chartTotal) * circumference;
   const withdrawalsDash = (withdrawals / chartTotal) * circumference;
   const p2pDash = (p2p / chartTotal) * circumference;
+
 
   // Calculate safe values to prevent NaN
   const safeTotal = chartTotal || 1; // Prevent division by zero

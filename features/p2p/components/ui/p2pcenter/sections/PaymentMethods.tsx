@@ -21,10 +21,9 @@ import { logger } from '@/lib/utils/logger';
 import { AdminPaymentMethod } from "@/features/p2p/types/paymentMethods";
 import { getHighResPaymentLogo, PAYMENT_LOGO_SIZE } from "@/features/express/utils/imageHelpers";
 
-// Types
 interface PaymentMethod {
   id: number;
-  user_payment_detail_id?: string; // UUID for /api/payments/ OTP endpoints
+  user_payment_detail_id?: string;
   payment_method_name: string;
   payment_provider_name: string;
   account_name: string;
