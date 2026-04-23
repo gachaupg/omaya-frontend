@@ -1180,15 +1180,30 @@ export default function DepositForm({
       return;
     }
 
-    withTimeout(dispatch(fetchSupportedAssets(false)).unwrap(), 15_000)
+    withTimeout(
+      dispatch(
+        fetchSupportedAssets({ forceRefresh: false, feature: "exchange" })
+      ).unwrap(),
+      15_000
+    )
       .then((data) => {
         if (!data || data.length === 0) {
-          return withTimeout(dispatch(fetchSupportedAssets(true)).unwrap(), 15_000);
+          return withTimeout(
+            dispatch(
+              fetchSupportedAssets({ forceRefresh: true, feature: "exchange" })
+            ).unwrap(),
+            15_000
+          );
         }
         return data;
       })
       .catch((error: unknown) => {
-        return withTimeout(dispatch(fetchSupportedAssets(true)).unwrap(), 15_000).catch(
+        return withTimeout(
+          dispatch(
+            fetchSupportedAssets({ forceRefresh: true, feature: "exchange" })
+          ).unwrap(),
+          15_000
+        ).catch(
           (refreshError: unknown) => {
             if (refreshError instanceof Error) {
               if (

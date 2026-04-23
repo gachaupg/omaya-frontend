@@ -237,7 +237,12 @@ export default function DepositForm({
       await withTimeout(dispatch(fetchAssets(true)).unwrap(), 15_000);
 
       logger.debug('p2p', "🔄 Force refreshing swap assets...");
-      await withTimeout(dispatch(fetchSupportedAssets(true)).unwrap(), 15_000);
+      await withTimeout(
+        dispatch(
+          fetchSupportedAssets({ forceRefresh: true, feature: "exchange" })
+        ).unwrap(),
+        15_000
+      );
 
       logger.debug('p2p', "✅ Assets force refreshed");
     } catch (error) {
@@ -794,7 +799,12 @@ export default function DepositForm({
   }, [dispatch, selectedAsset, selectedNetwork]);
 
   useEffect(() => {
-    withTimeout(dispatch(fetchSupportedAssets(false)).unwrap(), 15_000)
+    withTimeout(
+      dispatch(
+        fetchSupportedAssets({ forceRefresh: false, feature: "exchange" })
+      ).unwrap(),
+      15_000
+    )
       .then((data) => {
         logger.debug('p2p', "DEBUG: Swap assets loaded:", {
           hasAssets: !!data,
@@ -802,13 +812,23 @@ export default function DepositForm({
         });
         if (!data || data.length === 0) {
           logger.debug('p2p', "🔄 No swap assets in cache, forcing refresh...");
-          return withTimeout(dispatch(fetchSupportedAssets(true)).unwrap(), 15_000);
+          return withTimeout(
+            dispatch(
+              fetchSupportedAssets({ forceRefresh: true, feature: "exchange" })
+            ).unwrap(),
+            15_000
+          );
         }
         return data;
       })
       .catch((error: unknown) => {
         console.error("Failed to fetch swap assets from cache, trying force refresh:", error);
-        return withTimeout(dispatch(fetchSupportedAssets(true)).unwrap(), 15_000).catch(
+        return withTimeout(
+          dispatch(
+            fetchSupportedAssets({ forceRefresh: true, feature: "exchange" })
+          ).unwrap(),
+          15_000
+        ).catch(
           (refreshError: unknown) => {
             console.error("Failed to fetch swap assets even with force refresh:", refreshError);
 
