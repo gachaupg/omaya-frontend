@@ -47,7 +47,7 @@ const SWAP_PUBLIC_ASSETS_CACHE_KEY_BY_FEATURE: Record<
   swap: "omaya_changenow_public_supported_tokens_swap_v1",
   exchange: "omaya_changenow_public_supported_tokens_exchange_v1",
 };
-const SWAP_PUBLIC_ASSETS_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+const SWAP_PUBLIC_ASSETS_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
 const mapPublicAssetToSupportedAsset = (
   asset: PublicAssetLike
@@ -147,7 +147,7 @@ const fetchPublicSupportedAssetsFallback = async (
       feature === "exchange"
         ? `${API_CONFIG.SWAP.SUPPORTED_ASSETS_PUBLIC}?feature=exchange`
         : API_CONFIG.SWAP.SUPPORTED_ASSETS_PUBLIC,
-      { timeout: 15000 }
+      { timeout: 180000 }
     );
     const payload = response?.data;
     if (!Array.isArray(payload)) {
@@ -194,7 +194,7 @@ export const getSupportedAssets = async (
           ? `${API_CONFIG.SWAP.SUPPORTED_ASSETS}?feature=exchange`
           : API_CONFIG.SWAP.SUPPORTED_ASSETS,
         {
-          timeout: 30000
+          timeout: 180000
         }
       );
       

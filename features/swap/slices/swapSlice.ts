@@ -93,7 +93,7 @@ function estimateErrorStringFromRejectAction(action: {
 }
 
 /** Skip list refetch in UI when Redux already has data (avoids pending/loading + IndexedDB on every mount). */
-export const SUPPORTED_ASSETS_CLIENT_TTL_MS = 60 * 60 * 1000;
+export const SUPPORTED_ASSETS_CLIENT_TTL_MS = 10 * 60 * 1000;
 
 interface SwapState {
   fromAsset: SupportedAsset | null;
@@ -186,7 +186,7 @@ export const fetchSupportedAssets = createAsyncThunk<
         const response = await getSupportedAssets(feature);
         logger.debug('swap', "✅ Force refresh API response received:", response?.length || 0, "assets");
         // Cache the fresh data
-        await sliceCache.set('swap', cacheKey, response, { feature }, 60 * 60 * 1000);
+        await sliceCache.set('swap', cacheKey, response, { feature }, 10 * 60 * 1000);
         data = response;
       } else {
         data = await sliceCache.getOrSet(
@@ -199,7 +199,7 @@ export const fetchSupportedAssets = createAsyncThunk<
             return response;
           },
           { feature },
-          60 * 60 * 1000 // 1 hour cache
+          10 * 60 * 1000 // 10 minute cache
         );
       }
       
