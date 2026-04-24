@@ -110,7 +110,7 @@ const FailureStatusModal: React.FC<FailureStatusModalProps> = ({
                   >
                     Reason:
                   </span>{' '}
-                  <span className="font-medium">{reason}</span>
+                  <span className="font-medium">Amount you have sent is too small to complete the transaction.</span>
                 </p>
                 {detail ? (
                   <p className="whitespace-pre-line break-words border-t border-gray-200 pt-3 dark:border-[#35353E]">
