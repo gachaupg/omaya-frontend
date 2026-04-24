@@ -1020,6 +1020,7 @@ export default function WithdrawalForm({
   const [hasFetchedAssets, setHasFetchedAssets] = useState(false);
   const [hasFetchedSwapAssets, setHasFetchedSwapAssets] = useState(false);
   const MAX_RETRIES = 2;
+  const assetsFetchInFlightRef = useRef(false);
 
   // Filter user payment details based on selected provider
   // Match payment_provider_name from user payment details with provider_name from admin
@@ -1288,6 +1289,11 @@ export default function WithdrawalForm({
       return;
     }
 
+    // Prevent parallel asset fetch storms (StrictMode / rerenders / retries).
+    if (assetsFetchInFlightRef.current) {
+      return;
+    }
+
     // Prevent infinite retries - max 3 attempts
     if (assetsRetryCount >= MAX_RETRIES) {
       console.warn('⚠️ Max retries reached for assets');
@@ -1295,35 +1301,41 @@ export default function WithdrawalForm({
       return;
     }
 
-    // First try cache, then force refresh; timeout so slow API doesn't freeze the form
-    withTimeout(dispatch(fetchAssets(false)).unwrap(), 15_000)
-      .then((data) => {
+    const run = async () => {
+      assetsFetchInFlightRef.current = true;
+      try {
+        // First try cache, then force refresh; timeout so slow API doesn't freeze the form
+        const data = await withTimeout(dispatch(fetchAssets(false)).unwrap(), 15_000);
         console.log("✅ Assets fetched successfully");
         setHasFetchedAssets(true);
         setAssetsRetryCount(0);
 
         if ((!data?.assets || data.assets.length === 0) && assetsRetryCount === 0) {
-          setAssetsRetryCount(1);
-          withTimeout(dispatch(fetchAssets(true)).unwrap(), 15_000)
-            .then(() => setHasFetchedAssets(true))
-            .catch(() => setHasFetchedAssets(true));
+          // Force refresh once when initial payload is empty.
+          await withTimeout(dispatch(fetchAssets(true)).unwrap(), 15_000);
+          setHasFetchedAssets(true);
         }
-      })
-      .catch((error: unknown) => {
+      } catch (error: unknown) {
         if (isThunkConditionSkipError(error)) {
           // Redux thunk condition skip means we already have fresh cached assets.
           setHasFetchedAssets(true);
           return;
         }
         console.error(`❌ Failed to fetch assets (attempt ${assetsRetryCount + 1}/${MAX_RETRIES}):`, error);
-        setAssetsRetryCount(prev => prev + 1);
+        setAssetsRetryCount((prev) => prev + 1);
         if (assetsRetryCount + 1 >= MAX_RETRIES) {
-          if (!isHomePage) {
+          // Only toast if we truly have no assets in state.
+          if (!isHomePage && (!assets || assets.length === 0)) {
             showToast.error(`Failed to fetch assets after ${MAX_RETRIES} attempts`);
           }
           setHasFetchedAssets(true);
         }
-      });
+      } finally {
+        assetsFetchInFlightRef.current = false;
+      }
+    };
+
+    run();
   }, [dispatch, isHomePage, hasFetchedAssets, assetsRetryCount]);
 
   // Track previous authentication state to detect login

@@ -46,6 +46,9 @@ type PaginatedResponse<T> = {
   results?: T[];
 };
 
+// De-dupe concurrent pagination fetches (multiple components can mount at once).
+const inFlightFetchAllPages: Partial<Record<string, Promise<any[]>>> = {};
+
 const SWAP_PUBLIC_ASSETS_CACHE_KEY_BY_FEATURE: Record<
   SupportedAssetsFeature,
   string
@@ -172,7 +175,13 @@ const fetchAllPages = async <T>({
   timeout: number;
   search?: string;
 }): Promise<T[]> => {
-  const pageSize = 100;
+  const key = `supportedTokens:${endpoint}:${feature}:${(search || "").trim().toLowerCase() || "all"}`;
+  if (inFlightFetchAllPages[key]) {
+    return (await inFlightFetchAllPages[key]) as T[];
+  }
+
+  // Use a large page_size so this is usually one request.
+  const pageSize = 2000;
   let nextUrl: string | null = buildSupportedAssetsUrl(
     endpoint,
     feature,
@@ -180,25 +189,29 @@ const fetchAllPages = async <T>({
     pageSize,
     search
   );
-  const items: T[] = [];
-
-  while (nextUrl) {
-    const response = await cachedGet<T[] | PaginatedResponse<T>>(
-      toRelativeApiUrl(nextUrl),
-      { timeout }
-    );
-    const payload = response?.data as T[] | PaginatedResponse<T>;
-    if (Array.isArray(payload)) {
-      items.push(...payload);
-      nextUrl = null;
-      continue;
+  inFlightFetchAllPages[key] = (async () => {
+    const items: T[] = [];
+    while (nextUrl) {
+      const response = await cachedGet<T[] | PaginatedResponse<T>>(
+        toRelativeApiUrl(nextUrl),
+        { timeout }
+      );
+      const payload = response?.data as T[] | PaginatedResponse<T>;
+      if (Array.isArray(payload)) {
+        items.push(...payload);
+        nextUrl = null;
+        continue;
+      }
+      const pageItems = Array.isArray(payload?.results) ? payload.results : [];
+      items.push(...pageItems);
+      nextUrl = payload?.next || null;
     }
-    const pageItems = Array.isArray(payload?.results) ? payload.results : [];
-    items.push(...pageItems);
-    nextUrl = payload?.next || null;
-  }
+    return items;
+  })().finally(() => {
+    delete inFlightFetchAllPages[key];
+  });
 
-  return items;
+  return (await inFlightFetchAllPages[key]) as T[];
 };
 
 const fetchPublicSupportedAssetsFallback = async (

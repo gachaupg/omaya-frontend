@@ -264,7 +264,8 @@ const normalizeAssetsPayload = (payload: unknown): AssetsResponse => {
 const fetchAllExchangeAssetPages = async (
   endpoint: string
 ): Promise<AssetsResponse> => {
-  const pageSize = 100;
+  // Use a large page_size so this is usually one request.
+  const pageSize = 2000;
   let nextUrl: string | null = `${endpoint}?feature=exchange&page=1&page_size=${pageSize}`;
   const results: SupportedTokenApiAsset[] = [];
 
@@ -310,6 +311,7 @@ const fetchAllExchangeAssetPages = async (
 };
 
 // Async thunks
+let exchangeAssetsInFlight: Promise<AssetsResponse> | null = null;
 export const fetchAssets = createAsyncThunk<AssetsResponse, boolean | undefined>(
   "exchange/fetchAssets",
   async (forceRefresh: boolean = false, { rejectWithValue }) => {
@@ -337,24 +339,35 @@ export const fetchAssets = createAsyncThunk<AssetsResponse, boolean | undefined>
         await sliceCache.set('exchange', 'fetchAssets', response, undefined, 10 * 60 * 1000);
         data = response;
       } else {
+        // Dedupe concurrent callers (multiple components dispatching before first resolves).
+        if (exchangeAssetsInFlight) {
+          return await exchangeAssetsInFlight;
+        }
+
         // Use cached data if available; only refetch after 1 hour to avoid refetching at all cost
-        data = await sliceCache.getOrSet(
-          'exchange',
-          'fetchAssets',
-          async () => {
-            logger.debug('exchange', "🔄 Cache miss - fetching exchange assets from API...");
-            const response = await fetchAllExchangeAssetPages(endpoint);
-            logger.debug('exchange', "✅ API response received:", response?.assets?.length || 0, "assets");
-            return response;
-          },
-          undefined, // no params
-          10 * 60 * 1000 // 10 minute cache – refetch only after TTL
-        );
+        exchangeAssetsInFlight = sliceCache
+          .getOrSet(
+            'exchange',
+            'fetchAssets',
+            async () => {
+              logger.debug('exchange', "🔄 Cache miss - fetching exchange assets from API...");
+              const response = await fetchAllExchangeAssetPages(endpoint);
+              logger.debug('exchange', "✅ API response received:", response?.assets?.length || 0, "assets");
+              return response;
+            },
+            undefined, // no params
+            10 * 60 * 1000 // 10 minute cache – refetch only after TTL
+          )
+          .finally(() => {
+            exchangeAssetsInFlight = null;
+          });
+        data = await exchangeAssetsInFlight;
       }
 
       CircuitBreaker.onSuccess(endpoint);
       return data;
     } catch (error: any) {
+      exchangeAssetsInFlight = null;
       CircuitBreaker.onFailure(endpoint, error);
 
       // Suppress console warnings for 401s
@@ -369,6 +382,7 @@ export const fetchAssets = createAsyncThunk<AssetsResponse, boolean | undefined>
   {
     condition: (forceRefresh, { getState }) => {
       if (forceRefresh) return true;
+      if (exchangeAssetsInFlight) return false;
       const state = getState() as { exchange: ExchangeState };
       const rows = state.exchange.assets?.assets;
       const n = Array.isArray(rows) ? rows.length : 0;

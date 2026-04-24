@@ -440,11 +440,12 @@ export function useChangeNowAssets(
       return;
     }
 
-    const controller = new AbortController();
-    const timeoutId = window.setTimeout(
-      () => controller.abort(),
-      ASSETS_FETCH_TIMEOUT_MS
-    );
+    const timeoutId = window.setTimeout(() => {
+      // We intentionally do NOT abort shared in-flight requests.
+      // Aborting on unmount can cancel a shared promise and cause refetch storms.
+      setError("ChangeNOW request timed out");
+      setLoading(false);
+    }, ASSETS_FETCH_TIMEOUT_MS);
 
     const cacheKey = getAssetsCacheKey(opts);
 
@@ -470,7 +471,7 @@ export function useChangeNowAssets(
       setLoading(false);
       setError(null);
       window.clearTimeout(timeoutId);
-      return () => controller.abort();
+      return () => {};
     }
 
     const fetchAssets = async () => {
@@ -480,8 +481,9 @@ export function useChangeNowAssets(
       try {
         if (!inFlightAssetsFetch[cacheKey]) {
           inFlightAssetsFetch[cacheKey] = (async () => {
-            // Use larger page_size to reduce page=1..N churn.
-            const pageSize = 250;
+            // Use a much larger page_size so this is usually ONE request.
+            // Backend may still paginate; we still follow `next` if present.
+            const pageSize = 2000;
             const firstPageUrl = getChangeNowApiUrl({
               ...opts,
               page: 1,
@@ -491,9 +493,7 @@ export function useChangeNowAssets(
             let nextUrl: string | null = firstPageUrl;
 
             while (nextUrl) {
-              const response = await fetch(nextUrl, {
-                signal: controller.signal,
-              });
+              const response = await fetch(nextUrl);
 
               if (!response.ok) {
                 throw new Error(
@@ -552,10 +552,6 @@ export function useChangeNowAssets(
         // Also keep the legacy per-feature key updated (helps older screens).
         writePublicAssetsCacheToLocalStorageByFeature(opts.feature, finalAssets);
       } catch (err) {
-        if ((err as { name?: string })?.name === "AbortError") {
-          return;
-        }
-
         const message =
           err instanceof Error
             ? err.message
@@ -577,7 +573,6 @@ export function useChangeNowAssets(
 
     return () => {
       window.clearTimeout(timeoutId);
-      controller.abort();
     };
   }, [
     shouldFetch,
