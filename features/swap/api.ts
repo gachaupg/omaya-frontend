@@ -39,6 +39,12 @@ type PublicAssetLike = {
 };
 
 type SupportedAssetsFeature = "swap" | "exchange";
+type PaginatedResponse<T> = {
+  count?: number;
+  next?: string | null;
+  previous?: string | null;
+  results?: T[];
+};
 
 const SWAP_PUBLIC_ASSETS_CACHE_KEY_BY_FEATURE: Record<
   SupportedAssetsFeature,
@@ -130,6 +136,71 @@ const writeSwapPublicAssetsCache = (
   }
 };
 
+const toRelativeApiUrl = (url: string): string => {
+  if (!/^https?:\/\//i.test(url)) return url;
+  try {
+    const parsed = new URL(url);
+    return `${parsed.pathname}${parsed.search}`;
+  } catch {
+    return url;
+  }
+};
+
+const buildSupportedAssetsUrl = (
+  endpoint: string,
+  feature: SupportedAssetsFeature,
+  page: number,
+  pageSize: number,
+  search?: string
+) => {
+  const query = new URLSearchParams();
+  if (feature === "exchange") query.set("feature", "exchange");
+  query.set("page", String(page));
+  query.set("page_size", String(pageSize));
+  if (search && search.trim()) query.set("search", search.trim());
+  return `${endpoint}?${query.toString()}`;
+};
+
+const fetchAllPages = async <T>({
+  endpoint,
+  feature,
+  timeout,
+  search,
+}: {
+  endpoint: string;
+  feature: SupportedAssetsFeature;
+  timeout: number;
+  search?: string;
+}): Promise<T[]> => {
+  const pageSize = 100;
+  let nextUrl: string | null = buildSupportedAssetsUrl(
+    endpoint,
+    feature,
+    1,
+    pageSize,
+    search
+  );
+  const items: T[] = [];
+
+  while (nextUrl) {
+    const response = await cachedGet<T[] | PaginatedResponse<T>>(
+      toRelativeApiUrl(nextUrl),
+      { timeout }
+    );
+    const payload = response?.data as T[] | PaginatedResponse<T>;
+    if (Array.isArray(payload)) {
+      items.push(...payload);
+      nextUrl = null;
+      continue;
+    }
+    const pageItems = Array.isArray(payload?.results) ? payload.results : [];
+    items.push(...pageItems);
+    nextUrl = payload?.next || null;
+  }
+
+  return items;
+};
+
 const fetchPublicSupportedAssetsFallback = async (
   feature: SupportedAssetsFeature = "swap"
 ): Promise<SupportedAsset[]> => {
@@ -143,16 +214,11 @@ const fetchPublicSupportedAssetsFallback = async (
   }
 
   try {
-    const response = await cachedGet<PublicAssetLike[]>(
-      feature === "exchange"
-        ? `${API_CONFIG.SWAP.SUPPORTED_ASSETS_PUBLIC}?feature=exchange`
-        : API_CONFIG.SWAP.SUPPORTED_ASSETS_PUBLIC,
-      { timeout: 180000 }
-    );
-    const payload = response?.data;
-    if (!Array.isArray(payload)) {
-      return [];
-    }
+    const payload = await fetchAllPages<PublicAssetLike>({
+      endpoint: API_CONFIG.SWAP.SUPPORTED_ASSETS_PUBLIC,
+      feature,
+      timeout: 180000,
+    });
 
     const mapped = payload
       .map(mapPublicAssetToSupportedAsset)
@@ -189,33 +255,16 @@ export const getSupportedAssets = async (
 
   return withRetry(async () => {
     try {
-      const response = await get<{ message: string; total_changenow_tokens: number; results: SupportedAsset[] }>(
-        feature === "exchange"
-          ? `${API_CONFIG.SWAP.SUPPORTED_ASSETS}?feature=exchange`
-          : API_CONFIG.SWAP.SUPPORTED_ASSETS,
-        {
-          timeout: 180000
-        }
-      );
-      
-      // Type guard to check if response.data has the expected structure
-      const data = response.data as any;
-      
-      // Extract the results array from the ChangeNow response
-      if (data && data.results) {
-        logger.debug('swap', `Successfully retrieved ${data.total_changenow_tokens} ChangeNow tokens`);
-        return data.results;
+      const allResults = await fetchAllPages<SupportedAsset>({
+        endpoint: API_CONFIG.SWAP.SUPPORTED_ASSETS,
+        feature,
+        timeout: 180000,
+      });
+      if (allResults.length > 0) {
+        logger.debug('swap', `Successfully retrieved ${allResults.length} ChangeNow tokens`);
+        return allResults;
       }
-      
-      // Fallback: if response is directly an array (backward compatibility)
-      if (Array.isArray(data)) {
-        logger.debug('swap', `Retrieved ${data.length} supported assets`);
-        return data;
-      }
-      
-      console.warn("Unexpected supported-assets format, trying public fallback");
-      const fallbackAssets = await fetchPublicSupportedAssetsFallback(feature);
-      return fallbackAssets;
+      return await fetchPublicSupportedAssetsFallback(feature);
     } catch (error: any) {
       console.error("Failed to fetch supported assets:", error);
 

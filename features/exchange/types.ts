@@ -26,8 +26,10 @@ export interface RangeCommission {
 export interface Asset {
   asset_id: string;
   symbol: string;
+  ticker?: string;
   description: string;
   asset_image: string;
+  network?: string;
   networks: Network[];
   range_commissions: RangeCommission[];
   admin_accounts: AdminPaymentDetail[];

@@ -87,27 +87,9 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
     }
   }, [dispatch, isAuthenticated]);
 
-  // Use exact endpoint payload as priority source for this form.
-  useEffect(() => {
-    let mounted = true;
-    const loadDirectPublicMethods = async () => {
-      try {
-        const response = await fetch("https://dev.backend.omaya.io/payments/public/payment-methods/", {
-          method: "GET",
-          headers: { Accept: "application/json" },
-        });
-        if (!response.ok) return;
-        const data = await response.json();
-        if (mounted) setDirectPublicPaymentMethods(data);
-      } catch {
-        // Keep Redux source as fallback if direct request fails.
-      }
-    };
-    loadDirectPublicMethods();
-    return () => {
-      mounted = false;
-    };
-  }, []);
+  // Public payment methods are served by the cached Redux thunk dispatched above.
+  // No separate raw fetch needed — the thunk deduplicates concurrent calls and
+  // caches the result for 5 minutes.
 
   // Process payment methods from public API only.
   useEffect(() => {

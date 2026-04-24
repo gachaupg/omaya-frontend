@@ -84,23 +84,6 @@ const ASSET_ICON_FALLBACK_URL = "/assets/image_7_jijlik.png";
 const FX_PRIMUS_ASSET_ICON_URL = "/assets/fx-primus-custom.svg";
 
 /** When ChangeNOW public tokens omit FX Primus, still show it under Popular on home express withdrawal. */
-const homePopularFxPrimusFallback = (): SupportedAsset =>
-  ({
-    asset_id: "",
-    ticker: "FXP",
-    symbol: "FXP",
-    name: "FX Primus",
-    network: "bsc",
-    networks: [{ network_id: "bsc", network_type: "bsc" }],
-    image_url: FX_PRIMUS_ASSET_ICON_URL,
-    change_now_ticker: "fxp",
-    original_ticker: "fxp",
-    featured: true,
-    is_changenow_asset: true,
-    range_commissions: [{ commission: "2" }],
-    commission: "2",
-    fee_rate: "2",
-  }) as SupportedAsset;
 
 const getAssetDropdownIcon = (asset: any): string => {
   if (isForexPrimusAsset(asset)) {
@@ -148,6 +131,12 @@ const isUuid = (value: unknown): boolean =>
   );
 
 const extractApiErrorMessage = (error: any, fallback: string): string => {
+  const cleanMessage = (msg: string): string => {
+    const v = String(msg || "").trim();
+    if (!v) return "";
+    if (/request failed with status code 400/i.test(v)) return "";
+    return v;
+  };
   const toFrozenMessageIfNeeded = (message: string): string => {
     const normalized = message.toLowerCase();
     const isFrozenError =
@@ -170,9 +159,30 @@ const extractApiErrorMessage = (error: any, fallback: string): string => {
   const direct =
     responseData?.message ||
     responseData?.error ||
+    responseData?.response_data?.message ||
+    responseData?.response_data?.error ||
     responseData?.details ||
     responseData?.detail ||
     "";
+  const cleanedDirect = cleanMessage(direct);
+  if (cleanedDirect) {
+    return toFrozenMessageIfNeeded(cleanedDirect);
+  }
+
+  if (typeof error === "string") {
+    const cleanedStringError = cleanMessage(error);
+    if (cleanedStringError) {
+      return toFrozenMessageIfNeeded(cleanedStringError);
+    }
+  }
+
+  if (error?.message) {
+    const cleanedMessage = cleanMessage(String(error.message));
+    if (cleanedMessage) {
+      return toFrozenMessageIfNeeded(cleanedMessage);
+    }
+  }
+
   if (typeof direct === "string" && direct.trim()) {
     return toFrozenMessageIfNeeded(direct);
   }
@@ -191,9 +201,6 @@ const extractApiErrorMessage = (error: any, fallback: string): string => {
     }
   }
 
-  if (error?.message && String(error.message).trim()) {
-    return toFrozenMessageIfNeeded(String(error.message));
-  }
   return fallback;
 };
 
@@ -355,7 +362,8 @@ const getNetworkDisplayName = (network: string) => {
     'luna': 'Terra',
     'base': 'Base',
     'trc20': 'TRON',
-    'trx': 'TRON'
+    'trx': 'TRON',
+    'fxprimus': 'FXPrimus'
   };
 
   return networkMap[network?.toLowerCase()] || network || 'Unknown';
@@ -644,26 +652,8 @@ export default function WithdrawalForm({
     dispatch(fetchPublicPaymentMethods());
   }, [dispatch]);
 
-  // Directly use the same public endpoint requested for withdrawal payment methods.
-  useEffect(() => {
-    let mounted = true;
-    const loadDirectPublicMethods = async () => {
-      try {
-        const response = await fetch("https://dev.backend.omaya.io/payments/public/payment-methods/");
-        if (!response.ok) return;
-        const data = await response.json();
-        if (mounted) {
-          setDirectPublicPaymentMethods(data);
-        }
-      } catch {
-        // Keep Redux fallback path if direct request fails.
-      }
-    };
-    loadDirectPublicMethods();
-    return () => {
-      mounted = false;
-    };
-  }, []);
+  // Public payment methods are served by the cached Redux thunk dispatched above
+  // (fetchPublicPaymentMethods). No separate raw fetch needed here.
 
   // Initialize refs with cached data IMMEDIATELY on mount (runs only once)
   useEffect(() => {
@@ -2795,10 +2785,7 @@ export default function WithdrawalForm({
       (a) =>
         getCurrencyLower(a) === "usdc" && String(a?.network || "").toLowerCase() === "bsc"
     );
-    let fxprimusAsset = sourceAssets.find((a) => isForexPrimusAsset(a));
-    if (isHomePage && !fxprimusAsset) {
-      fxprimusAsset = homePopularFxPrimusFallback();
-    }
+    const fxprimusAsset = sourceAssets.find((a) => isForexPrimusAsset(a));
 
     return [usdtAsset, usdcAsset, fxprimusAsset].filter(Boolean) as SupportedAsset[];
   }, [assetsDisplay.displayData, isHomePage]);
@@ -2819,9 +2806,10 @@ export default function WithdrawalForm({
         sortedSwapAssets,
         assetSearchTerm,
         [],
-        allAssetsList
+        allAssetsList,
+        popularAssets
       ),
-    [sortedSwapAssets, assetSearchTerm, allAssetsList]
+    [sortedSwapAssets, assetSearchTerm, allAssetsList, popularAssets]
   );
 
   const renderAssetDropdown = () => {
@@ -3520,9 +3508,10 @@ export default function WithdrawalForm({
         }
         // Create withdrawal payload for express API
         const withdrawalPayload: ExpressWithdrawalPayload = {
-          asset:
-            selectedAsset.ticker?.toUpperCase() ||
-            selectedAsset.symbol?.toUpperCase(),
+          asset: isForexPrimusAsset(selectedAsset)
+            ? "fxprimus"
+            : selectedAsset.ticker?.toUpperCase() ||
+              selectedAsset.symbol?.toUpperCase(),
           asset_id: selectedAssetId,
           amount: payAmount.toString(),
           network:
@@ -3723,9 +3712,10 @@ export default function WithdrawalForm({
         }
         // Handle withdrawal submission
         const withdrawalPayload: ExpressWithdrawalPayload = {
-          asset:
-            selectedAsset.ticker?.toUpperCase() ||
-            selectedAsset.symbol?.toUpperCase(),
+          asset: isForexPrimusAsset(selectedAsset)
+            ? "fxprimus"
+            : selectedAsset.ticker?.toUpperCase() ||
+              selectedAsset.symbol?.toUpperCase(),
           asset_id: selectedAssetId,
           amount: payAmount.toString(),
           network:
@@ -3875,7 +3865,12 @@ export default function WithdrawalForm({
         if (!selectedAsset.asset_id) {
           throw new Error("Asset ID is missing");
         }
-        depositPayload.append("asset", selectedAsset.asset_id);
+        depositPayload.append(
+          "asset",
+          isForexPrimusAsset(selectedAsset)
+            ? "fxprimus"
+            : selectedAsset.asset_id
+        );
         depositPayload.append(
           "additional_info",
           `Account: ${selectedPaymentDetail.account_name}, Account Number: ${selectedPaymentDetail.account_number}`

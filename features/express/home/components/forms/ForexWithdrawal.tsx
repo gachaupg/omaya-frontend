@@ -99,7 +99,7 @@ export default function ForexWithdrawal({
         <div className="w-full mb-4">
           <div className="border border-[#D1D2D4FF] dark:border-[#35353E] rounded-2xl p-5 bg-white dark:bg-[#1D1D23]">
             {/* Company FXPRIMUS Address - Where to send FXP */}
-            <div className="mb-4 p-4 border-2 border-[#F79330] rounded-lg">
+            <div className="mb-4 p-4 border-2 border-[#D1D2D4FF] dark:border-[#35353E] rounded-lg">
               <div className="flex items-center gap-2 mb-3">
                 <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
                   <circle cx="12" cy="12" r="10" stroke="#F79330" strokeWidth="2" />
@@ -140,7 +140,7 @@ export default function ForexWithdrawal({
                   <span className="text-base font-semibold text-[#35353e] dark:text-white">OMAYA EXCHANGE LTD</span>
                 </div>
               </div>
-              <div className="mt-3 p-2 border border-[#F79330] rounded-lg">
+              <div className="mt-3 p-2 border border-[#D1D2D4FF] dark:border-[#35353E] rounded-lg">
                 <p className="text-xs text-[#35353e] dark:text-[#D1D2D4] font-medium">
                   ⚠️ Important: Please send {payAmount.toFixed(2)} FXP from your forex account to the above FXPRIMUS account before submitting this form.
                 </p>

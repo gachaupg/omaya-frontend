@@ -333,7 +333,8 @@ export function buildAssetDropdownRows(
   sortedSwapAssets: SupportedAsset[],
   assetSearchTerm: string,
   whitelistAssets: SupportedAsset[],
-  allAssetsList: SupportedAsset[]
+  allAssetsList: SupportedAsset[],
+  popularAssets?: SupportedAsset[]
 ): AssetDropdownRow[] {
   const rows: AssetDropdownRow[] = [];
   if (!sortedSwapAssets.length) return rows;
@@ -349,8 +350,13 @@ export function buildAssetDropdownRows(
     return rows;
   }
 
+  const effectivePopularAssets =
+    Array.isArray(popularAssets) && popularAssets.length > 0
+      ? popularAssets
+      : sortedSwapAssets.slice(0, 3);
+
   if (sortedSwapAssets.length <= 3) {
-    sortedSwapAssets.forEach((asset, i) => {
+    effectivePopularAssets.forEach((asset, i) => {
       rows.push({
         type: "asset",
         key: `short-${asset.asset_id}-${i}`,
@@ -361,7 +367,7 @@ export function buildAssetDropdownRows(
   }
 
   rows.push({ type: "section", key: "pop-h", label: "Popular" });
-  sortedSwapAssets.slice(0, 3).forEach((asset, i) => {
+  effectivePopularAssets.forEach((asset, i) => {
     rows.push({
       type: "asset",
       key: `pop-${asset.asset_id}-${i}`,

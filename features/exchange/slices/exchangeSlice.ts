@@ -32,7 +32,7 @@ import {
 } from "../types";
 
 /** Skip exchange asset list refetch when Redux already has rows and TTL not expired. */
-export const EXCHANGE_ASSETS_CLIENT_TTL_MS = 60 * 60 * 1000;
+export const EXCHANGE_ASSETS_CLIENT_TTL_MS = 10 * 60 * 1000;
 
 interface ExchangeState {
   deposits: TransactionsResponse | null;
@@ -46,6 +46,23 @@ interface ExchangeState {
   loading: boolean;
   error: string | null;
 }
+
+type PaginatedResponse<T> = {
+  count?: number;
+  next?: string | null;
+  previous?: string | null;
+  results?: T[];
+};
+
+type SupportedTokenApiAsset = {
+  asset_id?: string;
+  ticker?: string;
+  symbol?: string;
+  name?: string;
+  image?: string;
+  image_url?: string;
+  network?: string;
+};
 
 const initialState: ExchangeState = {
   deposits: null,
@@ -176,6 +193,122 @@ const handleApiError = (error: unknown): string => {
   return errorMessage;
 };
 
+const toRelativeApiUrl = (url: string): string => {
+  if (!/^https?:\/\//i.test(url)) return url;
+  try {
+    const parsed = new URL(url);
+    return `${parsed.pathname}${parsed.search}`;
+  } catch {
+    return url;
+  }
+};
+
+const mapSupportedTokenToExchangeAsset = (item: SupportedTokenApiAsset): Asset => {
+  const ticker = String(item.ticker || item.symbol || "").trim().toUpperCase();
+  const network = String(item.network || "mainnet").trim().toLowerCase();
+  const name = String(item.name || ticker || "Unknown Asset").trim();
+  const image = String(item.image || item.image_url || "").trim();
+  const assetId = String(item.asset_id || "").trim() || `${ticker}-${network}`;
+
+  return {
+    asset_id: assetId,
+    symbol: ticker,
+    ticker,
+    network,
+    description: name,
+    asset_image: image,
+    networks: [
+      {
+        network_id: network,
+        network_type: network,
+        deposit_fee: "0",
+        withdrawal_fee: "0",
+        logo: image,
+      },
+    ],
+    range_commissions: [],
+    admin_accounts: [],
+    name,
+  };
+};
+
+const normalizeAssetsPayload = (payload: unknown): AssetsResponse => {
+  const asAssetsResponse = payload as AssetsResponse;
+  if (Array.isArray(asAssetsResponse?.assets)) {
+    return {
+      total_wallet_balance: String(asAssetsResponse.total_wallet_balance || "0.00"),
+      assets: asAssetsResponse.assets,
+    };
+  }
+
+  const asPaginated = payload as PaginatedResponse<SupportedTokenApiAsset>;
+  if (Array.isArray(asPaginated?.results)) {
+    return {
+      total_wallet_balance: "0.00",
+      assets: asPaginated.results.map(mapSupportedTokenToExchangeAsset),
+    };
+  }
+
+  if (Array.isArray(payload)) {
+    return {
+      total_wallet_balance: "0.00",
+      assets: (payload as SupportedTokenApiAsset[]).map(
+        mapSupportedTokenToExchangeAsset
+      ),
+    };
+  }
+
+  return { total_wallet_balance: "0.00", assets: [] };
+};
+
+const fetchAllExchangeAssetPages = async (
+  endpoint: string
+): Promise<AssetsResponse> => {
+  const pageSize = 100;
+  let nextUrl: string | null = `${endpoint}?feature=exchange&page=1&page_size=${pageSize}`;
+  const results: SupportedTokenApiAsset[] = [];
+
+  while (nextUrl) {
+    const response = await cachedGet<
+      AssetsResponse | SupportedTokenApiAsset[] | PaginatedResponse<SupportedTokenApiAsset>
+    >(toRelativeApiUrl(nextUrl), {
+      timeout: 30000,
+      ttl: 10 * 60 * 1000,
+      cache: true,
+    });
+    const normalized = normalizeAssetsPayload(response.data);
+    if (Array.isArray(normalized.assets) && normalized.assets.length > 0) {
+      // If backend already responds in AssetsResponse shape, use it directly.
+      const data = response.data as AssetsResponse;
+      if (Array.isArray(data?.assets)) {
+        return normalized;
+      }
+      results.push(
+        ...normalized.assets.map((asset) => ({
+          asset_id: asset.asset_id,
+          ticker: asset.symbol,
+          symbol: asset.symbol,
+          name: asset.name,
+          image: asset.asset_image,
+          network: asset.networks?.[0]?.network_id,
+        }))
+      );
+    }
+
+    const paginated = response.data as PaginatedResponse<SupportedTokenApiAsset>;
+    if (Array.isArray(paginated?.results)) {
+      nextUrl = paginated.next || null;
+    } else {
+      nextUrl = null;
+    }
+  }
+
+  return {
+    total_wallet_balance: "0.00",
+    assets: results.map(mapSupportedTokenToExchangeAsset),
+  };
+};
+
 // Async thunks
 export const fetchAssets = createAsyncThunk<AssetsResponse, boolean | undefined>(
   "exchange/fetchAssets",
@@ -198,15 +331,11 @@ export const fetchAssets = createAsyncThunk<AssetsResponse, boolean | undefined>
         // Clear cache first
         await sliceCache.delete('exchange', 'fetchAssets');
         // Fetch fresh data
-        const response = await cachedGet<AssetsResponse>(endpoint, {
-          timeout: 30000,
-          ttl: 60 * 60 * 1000, // 1 hour cache for assets
-          cache: true
-        });
-        logger.debug('exchange', "✅ Force refresh API response received:", response?.data?.assets?.length || 0, "assets");
+        const response = await fetchAllExchangeAssetPages(endpoint);
+        logger.debug('exchange', "✅ Force refresh API response received:", response?.assets?.length || 0, "assets");
         // Cache the fresh data
-        await sliceCache.set('exchange', 'fetchAssets', response.data, undefined, 60 * 60 * 1000);
-        data = response.data;
+        await sliceCache.set('exchange', 'fetchAssets', response, undefined, 10 * 60 * 1000);
+        data = response;
       } else {
         // Use cached data if available; only refetch after 1 hour to avoid refetching at all cost
         data = await sliceCache.getOrSet(
@@ -214,16 +343,12 @@ export const fetchAssets = createAsyncThunk<AssetsResponse, boolean | undefined>
           'fetchAssets',
           async () => {
             logger.debug('exchange', "🔄 Cache miss - fetching exchange assets from API...");
-            const response = await cachedGet<AssetsResponse>(endpoint, {
-              timeout: 30000,
-              ttl: 60 * 60 * 1000, // 1 hour cache for assets
-              cache: true
-            });
-            logger.debug('exchange', "✅ API response received:", response?.data?.assets?.length || 0, "assets");
-            return response.data;
+            const response = await fetchAllExchangeAssetPages(endpoint);
+            logger.debug('exchange', "✅ API response received:", response?.assets?.length || 0, "assets");
+            return response;
           },
           undefined, // no params
-          60 * 60 * 1000 // 1 hour cache – refetch only after TTL
+          10 * 60 * 1000 // 10 minute cache – refetch only after TTL
         );
       }
 

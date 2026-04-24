@@ -99,6 +99,12 @@ const isUuid = (value: unknown): boolean =>
   );
 
 const extractApiErrorMessage = (error: any, fallback: string): string => {
+  const cleanMessage = (msg: string): string => {
+    const v = String(msg || "").trim();
+    if (!v) return "";
+    if (/request failed with status code 400/i.test(v)) return "";
+    return v;
+  };
   const toFrozenMessageIfNeeded = (message: string): string => {
     const normalized = message.toLowerCase();
     const isFrozenError =
@@ -121,9 +127,30 @@ const extractApiErrorMessage = (error: any, fallback: string): string => {
   const direct =
     responseData?.message ||
     responseData?.error ||
+    responseData?.response_data?.message ||
+    responseData?.response_data?.error ||
     responseData?.details ||
     responseData?.detail ||
     "";
+  const cleanedDirect = cleanMessage(direct);
+  if (cleanedDirect) {
+    return toFrozenMessageIfNeeded(cleanedDirect);
+  }
+
+  if (typeof error === "string") {
+    const cleanedStringError = cleanMessage(error);
+    if (cleanedStringError) {
+      return toFrozenMessageIfNeeded(cleanedStringError);
+    }
+  }
+
+  if (error?.message) {
+    const cleanedMessage = cleanMessage(String(error.message));
+    if (cleanedMessage) {
+      return toFrozenMessageIfNeeded(cleanedMessage);
+    }
+  }
+
   if (typeof direct === "string" && direct.trim()) {
     return toFrozenMessageIfNeeded(direct);
   }
@@ -142,10 +169,20 @@ const extractApiErrorMessage = (error: any, fallback: string): string => {
     }
   }
 
-  if (error?.message && String(error.message).trim()) {
-    return toFrozenMessageIfNeeded(String(error.message));
-  }
   return fallback;
+};
+
+const isThunkConditionSkipError = (error: unknown): boolean => {
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === "string"
+        ? error
+        : "";
+  return (
+    message.includes("Aborted due to condition callback returning false") ||
+    message.includes("ConditionError")
+  );
 };
 
 const FROZEN_ACCOUNT_MESSAGE =
@@ -336,7 +373,8 @@ const getNetworkDisplayName = (network: string) => {
     'luna': 'Terra',
     'base': 'Base',
     'trc20': 'TRON',
-    'trx': 'TRON'
+    'trx': 'TRON',
+    'fxprimus': 'FXPrimus'
   };
 
   return networkMap[network?.toLowerCase()] || network || 'Unknown';
@@ -624,26 +662,8 @@ export default function WithdrawalForm({
     dispatch(fetchPublicPaymentMethods());
   }, [dispatch]);
 
-  // Directly use the same public endpoint requested for withdrawal payment methods.
-  useEffect(() => {
-    let mounted = true;
-    const loadDirectPublicMethods = async () => {
-      try {
-        const response = await fetch("https://dev.backend.omaya.io/payments/public/payment-methods/");
-        if (!response.ok) return;
-        const data = await response.json();
-        if (mounted) {
-          setDirectPublicPaymentMethods(data);
-        }
-      } catch {
-        // Keep Redux fallback path if direct request fails.
-      }
-    };
-    loadDirectPublicMethods();
-    return () => {
-      mounted = false;
-    };
-  }, []);
+  // Public payment methods are served by the cached Redux thunk dispatched above
+  // (fetchPublicPaymentMethods). No separate raw fetch needed here.
 
   // Initialize refs with cached data IMMEDIATELY on mount (runs only once)
   useEffect(() => {
@@ -1280,6 +1300,11 @@ export default function WithdrawalForm({
         }
       })
       .catch((error: unknown) => {
+        if (isThunkConditionSkipError(error)) {
+          // Redux thunk condition skip means we already have fresh cached assets.
+          setHasFetchedAssets(true);
+          return;
+        }
         console.error(`❌ Failed to fetch assets (attempt ${assetsRetryCount + 1}/${MAX_RETRIES}):`, error);
         setAssetsRetryCount(prev => prev + 1);
         if (assetsRetryCount + 1 >= MAX_RETRIES) {
@@ -2566,7 +2591,7 @@ export default function WithdrawalForm({
 
   // Filter + sort only when data or search changes (not on every keystroke elsewhere)
   const filteredSwapAssets = useMemo(() => {
-    const data = assetsDisplay.displayData;
+    const data = [...(assetsDisplay.displayData || [])] as SupportedAsset[];
     if (!data?.length) return [] as SupportedAsset[];
     const term = assetSearchTerm.toUpperCase();
     if (!term) return data as SupportedAsset[];
@@ -2646,17 +2671,42 @@ export default function WithdrawalForm({
     return keys;
   }, [whitelistBookmarks]);
 
+  const popularAssets = useMemo(() => {
+    const normalize = (asset: any) =>
+      (asset?.ticker || asset?.symbol || asset?.name || "")
+        .toString()
+        .toLowerCase();
+    const network = (asset: any) => (asset?.network || "").toString().toLowerCase();
+    const usdtBsc = sortedSwapAssets.find(
+      (a) => normalize(a) === "usdt" && network(a) === "bsc"
+    );
+    const usdcBsc = sortedSwapAssets.find(
+      (a) => normalize(a) === "usdc" && network(a) === "bsc"
+    );
+    const fxp = sortedSwapAssets.find((a) => isForexPrimusAsset(a));
+    return [usdtBsc, usdcBsc, fxp].filter(Boolean) as SupportedAsset[];
+  }, [sortedSwapAssets]);
+
+  const popularSet = useMemo(
+    () =>
+      new Set(
+        popularAssets.map(
+          (a) =>
+            `${(a?.ticker || a?.symbol || a?.name || "")
+              .toString()
+              .toLowerCase()}|${(a?.network || "").toString().toLowerCase()}`
+        )
+      ),
+    [popularAssets]
+  );
+
   const whitelistAssets = useMemo(() => {
     if (whitelistKeys.size === 0) return [];
-    const popularSlice = sortedSwapAssets.slice(0, 3);
-    const popularSet = new Set(
-      popularSlice.map((a) => `${(a?.ticker || a?.symbol || a?.name || "").toString().toLowerCase()}|${(a?.network || "").toString().toLowerCase()}`)
-    );
     return sortedSwapAssets.filter((a) => {
       const key = `${(a?.ticker || a?.symbol || a?.name || "").toString().toLowerCase()}|${(a?.network || "").toString().toLowerCase()}`;
       return whitelistKeys.has(key) && !popularSet.has(key);
     });
-  }, [sortedSwapAssets, whitelistKeys]);
+  }, [sortedSwapAssets, whitelistKeys, popularSet]);
 
   const whitelistKeySet = useMemo(
     () => new Set(whitelistAssets.map((a) => `${(a?.ticker || a?.symbol || a?.name || "").toString().toLowerCase()}|${(a?.network || "").toString().toLowerCase()}`)),
@@ -2665,12 +2715,11 @@ export default function WithdrawalForm({
 
   const allAssetsList = useMemo(() => {
     if (assetSearchTerm) return sortedSwapAssets;
-    const excludePopular = sortedSwapAssets.slice(3);
-    return excludePopular.filter((a) => {
+    return sortedSwapAssets.filter((a) => {
       const key = `${(a?.ticker || a?.symbol || a?.name || "").toString().toLowerCase()}|${(a?.network || "").toString().toLowerCase()}`;
-      return !whitelistKeySet.has(key);
+      return !popularSet.has(key) && !whitelistKeySet.has(key);
     });
-  }, [assetSearchTerm, sortedSwapAssets, whitelistKeySet]);
+  }, [assetSearchTerm, sortedSwapAssets, whitelistKeySet, popularSet]);
 
   const assetDropdownRows = useMemo(
     () =>
@@ -2678,13 +2727,15 @@ export default function WithdrawalForm({
         sortedSwapAssets,
         assetSearchTerm,
         whitelistAssets,
-        allAssetsList
+        allAssetsList,
+        popularAssets
       ),
     [
       sortedSwapAssets,
       assetSearchTerm,
       whitelistAssets,
       allAssetsList,
+      popularAssets,
     ]
   );
 
@@ -3260,9 +3311,10 @@ export default function WithdrawalForm({
         }
         // Create withdrawal payload for express API
         const withdrawalPayload: ExpressWithdrawalPayload = {
-          asset:
-            selectedAsset.ticker?.toUpperCase() ||
-            selectedAsset.symbol?.toUpperCase(),
+          asset: isForexPrimusAsset(selectedAsset)
+            ? "fxprimus"
+            : selectedAsset.ticker?.toUpperCase() ||
+              selectedAsset.symbol?.toUpperCase(),
           asset_id: String((selectedAsset as any)?.asset_id || ""),
           amount: payAmount.toString(),
           network:
@@ -3465,9 +3517,10 @@ export default function WithdrawalForm({
         }
         // Handle withdrawal submission
         const withdrawalPayload: ExpressWithdrawalPayload = {
-          asset:
-            selectedAsset.ticker?.toUpperCase() ||
-            selectedAsset.symbol?.toUpperCase(),
+          asset: isForexPrimusAsset(selectedAsset)
+            ? "fxprimus"
+            : selectedAsset.ticker?.toUpperCase() ||
+              selectedAsset.symbol?.toUpperCase(),
           asset_id: String((selectedAsset as any)?.asset_id || ""),
           amount: payAmount.toString(),
           network:
@@ -3617,7 +3670,12 @@ export default function WithdrawalForm({
         if (!selectedAsset.asset_id) {
           throw new Error("Asset ID is missing");
         }
-        depositPayload.append("asset", selectedAsset.asset_id);
+        depositPayload.append(
+          "asset",
+          isForexPrimusAsset(selectedAsset)
+            ? "fxprimus"
+            : selectedAsset.asset_id
+        );
         depositPayload.append(
           "additional_info",
           `Account: ${selectedPaymentDetail.account_name}, Account Number: ${selectedPaymentDetail.account_number}`

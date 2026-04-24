@@ -119,6 +119,38 @@ const MISSING_USDT_USD_RATE_ERROR =
   "No exchange rate configured for USDT to USD";
 const MISSING_FXP_USD_RATE_ERROR =
   "No exchange rate configured for FXP to USD";
+
+const extractSubmitErrorMessage = (error: any, fallback: string): string => {
+  const clean = (value: unknown): string => {
+    const text = String(value ?? "").trim();
+    if (!text) return "";
+    if (/request failed with status code 400/i.test(text)) return "";
+    return text;
+  };
+
+  const responseData = error?.response?.data;
+  const direct =
+    responseData?.message ||
+    responseData?.error ||
+    responseData?.response_data?.message ||
+    responseData?.response_data?.error ||
+    responseData?.detail ||
+    responseData?.details;
+  const cleanedDirect = clean(direct);
+  if (cleanedDirect) return cleanedDirect;
+
+  if (typeof error === "string") {
+    const cleaned = clean(error);
+    if (cleaned) return cleaned;
+  }
+
+  if (error?.message) {
+    const cleaned = clean(error.message);
+    if (cleaned) return cleaned;
+  }
+
+  return fallback;
+};
 const getNetworkMatchKeys = (network: string): string[] => {
   const n = (network || "").toLowerCase();
   return NETWORK_ALIASES[n] ? [...NETWORK_ALIASES[n], n] : [n];
@@ -127,25 +159,6 @@ const getNetworkMatchKeys = (network: string): string[] => {
 // Use a local placeholder so missing icons always render in home flow.
 const ASSET_ICON_FALLBACK_URL = "/assets/image_7_jijlik.png";
 const FX_PRIMUS_ASSET_ICON_URL = "/assets/fx-primus-custom.svg";
-
-/** Keep FX Primus visible in Popular when ChangeNOW public assets omit it. */
-const homePopularFxPrimusFallback = (): SupportedAsset =>
-  ({
-    asset_id: "",
-    ticker: "FXP",
-    symbol: "FXP",
-    name: "FX Primus",
-    network: "bsc",
-    networks: [{ network_id: "bsc", network_type: "bsc" }],
-    image_url: FX_PRIMUS_ASSET_ICON_URL,
-    change_now_ticker: "fxp",
-    original_ticker: "fxp",
-    featured: true,
-    is_changenow_asset: true,
-    range_commissions: [{ commission: "2" }],
-    commission: "2",
-    fee_rate: "2",
-  }) as SupportedAsset;
 
 const getAssetDropdownIcon = (asset: any): string => {
   if (isForexPrimusAsset(asset)) {
@@ -169,7 +182,8 @@ const getNetworkDisplayName = (network: string) => {
     'luna': 'Terra',
     'base': 'Base',
     'trc20': 'TRON',
-    'trx': 'TRON'
+    'trx': 'TRON',
+    'fxprimus': 'FXPrimus'
   };
 
   return networkMap[network?.toLowerCase()] || network || 'Unknown';
@@ -2207,10 +2221,7 @@ export default function DepositForm({
       (a) => normalizeCurrency(a) === "usdc" && isBscLike(a)
     );
 
-    let fxprimusAsset = sourceAssets.find((a) => isForexPrimusAsset(a));
-    if (isHomePage && !fxprimusAsset) {
-      fxprimusAsset = homePopularFxPrimusFallback();
-    }
+    const fxprimusAsset = sourceAssets.find((a) => isForexPrimusAsset(a));
 
     const selected: SupportedAsset[] = [usdtAsset, usdcAsset, fxprimusAsset].filter(
       Boolean
@@ -2260,9 +2271,10 @@ export default function DepositForm({
         sortedSwapAssets,
         assetSearchTerm,
         whitelistAssets,
-        allAssetsList
+        allAssetsList,
+        popularAssets
       ),
-    [sortedSwapAssets, assetSearchTerm, whitelistAssets, allAssetsList]
+    [sortedSwapAssets, assetSearchTerm, whitelistAssets, allAssetsList, popularAssets]
   );
 
   const renderAssetDropdown = () => {
@@ -2868,7 +2880,10 @@ export default function DepositForm({
         if (!assetValue) {
           throw new Error("Asset information is missing");
         }
-        depositPayload.append("asset", assetValue);
+        depositPayload.append(
+          "asset",
+          isForexPrimusAsset(selectedAsset) ? "fxprimus" : assetValue
+        );
         depositPayload.append(
           "asset_id",
           resolvedMeta.assetId
@@ -2911,7 +2926,10 @@ export default function DepositForm({
         }, 100);
       } catch (error: any) {
 
-        let errorMessage = "Failed to submit deposit request";
+        let errorMessage = extractSubmitErrorMessage(
+          error,
+          "Failed to submit deposit request"
+        );
 
         if (error.response?.data) {
           // Try to extract specific error message from response
@@ -3346,7 +3364,10 @@ export default function DepositForm({
       if (!assetValue) {
         throw new Error("Asset information is missing");
       }
-      depositPayload.append("asset", assetValue);
+      depositPayload.append(
+        "asset",
+        isForexPrimusAsset(selectedAsset) ? "fxprimus" : assetValue
+      );
       depositPayload.append(
         "asset_id",
         resolvedMeta.assetId
@@ -3408,7 +3429,10 @@ export default function DepositForm({
       }
     } catch (error: any) {
 
-      let errorMessage = "Failed to submit deposit request";
+      let errorMessage = extractSubmitErrorMessage(
+        error,
+        "Failed to submit deposit request"
+      );
 
       if (error.response?.data) {
         // Try to extract specific error message from response
