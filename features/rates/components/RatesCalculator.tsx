@@ -782,12 +782,8 @@ const getPaymentRestrictionMessage = (status?: string) =>
             backendMessage || "Failed to fetch exchange rate"
           );
 
-          if (isForexPrimusAsset(selectedAsset) && (
-            normalizedMessage.includes(MISSING_FXP_FXP_RATE_ERROR) ||
-            normalizedMessage.includes(MISSING_FXP_USD_RATE_ERROR) ||
-            isFxpUnsupportedRateError(normalizedMessage)
-          )) {
-            // FXP: don't show errors; treat as no-commission and stop loading.
+          if (isForexPrimusAsset(selectedAsset)) {
+            // FXP: on any commission API error, keep user-entered amount and mirror it to the other field.
             setApiValidationError(null);
             if (isCalculatingFromPay) {
               setReceiveAmount(amount || "0");
@@ -908,22 +904,6 @@ const getPaymentRestrictionMessage = (status?: string) =>
             return;
           }
 
-          if ((errorMessage || "").includes(MISSING_FXP_USD_RATE_ERROR)) {
-            // For FXP without configured commission, fallback to zero-commission UI.
-            setApiValidationError(null);
-            setReceiveAmount(amount || "0");
-            setIsCalculating(false);
-            setIsCalculatingReceive(false);
-            return;
-          }
-          if ((errorMessage || "").includes(MISSING_FXP_FXP_RATE_ERROR)) {
-            // FXP withdrawal: if backend commission isn't configured, treat as no-commission and stop loading.
-            setApiValidationError(null);
-            setReceiveAmount(amount || "0");
-            setIsCalculating(false);
-            setIsCalculatingReceive(false);
-            return;
-          }
           setApiValidationError(errorMessage || "Failed to fetch exchange rate");
           setIsCalculating(false);
           setIsCalculatingReceive(false);

@@ -177,8 +177,9 @@ export const fetchCommissionDetails = async (
     const baseUrl = `${API_BASE_URL}${API_CONFIG.COMMISSION_LOOKUP_EXCHANGE(
       effectiveAmount,
       type,
+      "USDT",
       "USD",
-      "FXPRIMUS"
+      "fxprimus"
     )}`;
     const rawAssetId = String(from_asset_id || "").trim();
     const url = rawAssetId

@@ -1800,36 +1800,6 @@ export default function WithdrawalForm({
               setIsSupportModalOpen(true);
               return;
             }
-            if (normalizedMessage.includes(MISSING_FXP_USD_RATE_ERROR)) {
-              // For FXP without configured commission, fallback to zero-commission UI.
-              setApiValidationError(null);
-              if (isCalculatingFromPay) {
-                setGetAmount(amount);
-                setGetAmountInput(String(amount));
-              } else {
-                setPayAmount(amount);
-                setPayAmountInput(String(amount));
-              }
-              return;
-            }
-            if (normalizedMessage.includes(MISSING_FXP_FXP_RATE_ERROR)) {
-              // FXP withdrawal: if backend commission isn't configured, treat as no-commission and stop loading.
-              setApiValidationError(null);
-              if (isCalculatingFromPay) {
-                setGetAmount(amount);
-                setGetAmountInput(String(amount));
-                setPreviousValidAmount(String(amount));
-              } else {
-                setPayAmount(amount);
-                setPayAmountInput(String(amount));
-              }
-              setExchangeLookupResponse(null);
-              setApiCommission(0);
-              setApiCommissionDetails(null);
-              setIsCalculating(false);
-              setIsCalculatingReceive(false);
-              return;
-            }
             setApiValidationError(
               normalizedMessage
             );
@@ -1899,12 +1869,8 @@ export default function WithdrawalForm({
             backendMessage || "Failed to fetch exchange rate"
           );
 
-          if (
-            isForexAsset(selectedAsset) &&
-            (normalizedMessage.includes(MISSING_FXP_FXP_RATE_ERROR) ||
-              isFxpUnsupportedRateError(normalizedMessage))
-          ) {
-            // Same UX as Home: if FXP commission isn't configured, treat as no-commission.
+          if (isForexAsset(selectedAsset)) {
+            // FXP: on any commission API error, keep user-entered amount and mirror it to the other field.
             setApiValidationError(null);
             if (isCalculatingFromPay) {
               setGetAmount(amount);
