@@ -89,16 +89,25 @@ interface UserPaymentDetail {
 }
 
 const extractApiErrorMessage = (error: any, fallback: string): string => {
+  const cleanMessage = (msg: string): string => {
+    const v = String(msg || "").trim();
+    if (!v) return "";
+    if (/request failed with status code 400/i.test(v)) return "";
+    return v;
+  };
   const responseData = error?.response?.data;
   if (typeof responseData === "string" && responseData.trim()) return responseData;
 
   const direct =
     responseData?.message ||
     responseData?.error ||
+    responseData?.response_data?.message ||
+    responseData?.response_data?.error ||
     responseData?.details ||
     responseData?.detail ||
     "";
-  if (typeof direct === "string" && direct.trim()) return direct;
+  const cleanedDirect = cleanMessage(direct);
+  if (cleanedDirect) return cleanedDirect;
 
   const fieldErrors = responseData?.errors || responseData?.error;
   if (fieldErrors && typeof fieldErrors === "object" && !Array.isArray(fieldErrors)) {
@@ -114,7 +123,14 @@ const extractApiErrorMessage = (error: any, fallback: string): string => {
     }
   }
 
-  if (error?.message && String(error.message).trim()) return String(error.message);
+  if (typeof error === "string") {
+    const cleanedStringError = cleanMessage(error);
+    if (cleanedStringError) return cleanedStringError;
+  }
+  if (error?.message && String(error.message).trim()) {
+    const cleanedMessage = cleanMessage(String(error.message));
+    if (cleanedMessage) return cleanedMessage;
+  }
   return fallback;
 };
 
@@ -210,6 +226,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
       base: "Base",
       trc20: "TRON",
       trx: "TRON",
+      fxprimus: "FXPrimus",
     };
 
     return networkMap[network?.toLowerCase()] || network || "Unknown";
@@ -540,33 +557,15 @@ const getPaymentRestrictionMessage = (status?: string) =>
     // Fetch user payment details
     dispatch(fetchUserPaymentDetails());
 
-    // Fetch public payment methods (for non-authenticated users)
+    // Fetch public payment methods — served from 5-min in-memory cache after first load;
+    // no separate raw fetch needed.
     dispatch(fetchPublicPaymentMethods());
-
-    // Force exact public endpoint payload for rates payment methods.
-    let mounted = true;
-    (async () => {
-      try {
-        const response = await fetch("https://dev.backend.omaya.io/payments/public/payment-methods/", {
-          method: "GET",
-          headers: { Accept: "application/json" },
-        });
-        if (!response.ok) return;
-        const data = await response.json();
-        if (mounted) setDirectPublicPaymentMethods(data);
-      } catch {
-        // keep redux source as fallback
-      }
-    })();
 
     // Fetch admin wallet list for fallback (like express withdrawal)
     if (isAuthenticated) {
       dispatch(fetchAdminWalletList());
       dispatch(fetchAdminPaymentDetails());
     }
-    return () => {
-      mounted = false;
-    };
   }, [dispatch, isAuthenticated]);
 
   useEffect(() => {

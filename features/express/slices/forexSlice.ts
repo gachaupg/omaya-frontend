@@ -13,6 +13,23 @@ const initialState: ForexState = {
   error: null,
 };
 
+const extractForexErrorMessage = (error: any, fallback: string): string => {
+  const data = error?.response?.data;
+  const direct =
+    data?.message ||
+    data?.error ||
+    data?.response_data?.message ||
+    data?.response_data?.error ||
+    data?.detail ||
+    data?.details;
+  if (typeof direct === "string" && direct.trim()) return direct.trim();
+  if (typeof error?.message === "string" && error.message.trim()) {
+    if (/request failed with status code 400/i.test(error.message)) return fallback;
+    return error.message.trim();
+  }
+  return fallback;
+};
+
 // Async thunk to create forex exchange
 export const createForexExchangeThunk = createAsyncThunk<
   ForexExchangeResponse,
@@ -25,7 +42,7 @@ export const createForexExchangeThunk = createAsyncThunk<
       return response;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || error.message || "Failed to create forex exchange"
+        extractForexErrorMessage(error, "Failed to create forex exchange")
       );
     }
   }
@@ -43,7 +60,7 @@ export const fetchForexExchangeThunk = createAsyncThunk<
       return response;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || error.message || "Failed to load forex exchange details"
+        extractForexErrorMessage(error, "Failed to load forex exchange details")
       );
     }
   }

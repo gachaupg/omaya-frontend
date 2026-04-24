@@ -139,6 +139,38 @@ const MISSING_USDT_USD_RATE_ERROR =
   "No exchange rate configured for USDT to USD";
 const MISSING_FXP_USD_RATE_ERROR =
   "No exchange rate configured for FXP to USD";
+
+const extractSubmitErrorMessage = (error: any, fallback: string): string => {
+  const clean = (value: unknown): string => {
+    const text = String(value ?? "").trim();
+    if (!text) return "";
+    if (/request failed with status code 400/i.test(text)) return "";
+    return text;
+  };
+
+  const responseData = error?.response?.data;
+  const direct =
+    responseData?.message ||
+    responseData?.error ||
+    responseData?.response_data?.message ||
+    responseData?.response_data?.error ||
+    responseData?.detail ||
+    responseData?.details;
+  const cleanedDirect = clean(direct);
+  if (cleanedDirect) return cleanedDirect;
+
+  if (typeof error === "string") {
+    const cleaned = clean(error);
+    if (cleaned) return cleaned;
+  }
+
+  if (error?.message) {
+    const cleaned = clean(error.message);
+    if (cleaned) return cleaned;
+  }
+
+  return fallback;
+};
 const getNetworkMatchKeys = (network: string): string[] => {
   const n = (network || "").toLowerCase();
   return NETWORK_ALIASES[n] ? [...NETWORK_ALIASES[n], n] : [n];
@@ -2105,17 +2137,45 @@ export default function DepositForm({
     return keys;
   }, [whitelistBookmarks]);
 
+  const popularAssets = useMemo(() => {
+    const normalize = (asset: any) =>
+      (asset?.ticker || asset?.symbol || asset?.name || "")
+        .toString()
+        .toLowerCase();
+    const network = (asset: any) =>
+      (asset?.network || getAssetNetwork(asset) || "").toString().toLowerCase();
+    const usdtBsc = sortedSwapAssets.find(
+      (a) => normalize(a) === "usdt" && network(a) === "bsc"
+    );
+    const usdcBsc = sortedSwapAssets.find(
+      (a) => normalize(a) === "usdc" && network(a) === "bsc"
+    );
+    const fxp = sortedSwapAssets.find((a) => isForexPrimusAsset(a));
+    return [usdtBsc, usdcBsc, fxp].filter(Boolean) as SupportedAsset[];
+  }, [sortedSwapAssets]);
+
+  const popularSet = useMemo(
+    () =>
+      new Set(
+        popularAssets.map(
+          (a) =>
+            `${(a?.ticker || a?.symbol || a?.name || "")
+              .toString()
+              .toLowerCase()}|${(a?.network || getAssetNetwork(a) || "")
+              .toString()
+              .toLowerCase()}`
+        )
+      ),
+    [popularAssets]
+  );
+
   const whitelistAssets = useMemo(() => {
     if (whitelistKeys.size === 0) return [];
-    const popularSlice = sortedSwapAssets.slice(0, 3);
-    const popularSet = new Set(
-      popularSlice.map((a) => `${(a?.ticker || a?.symbol || a?.name || "").toString().toLowerCase()}|${(a?.network || getAssetNetwork(a) || "").toString().toLowerCase()}`)
-    );
     return sortedSwapAssets.filter((a) => {
       const key = `${(a?.ticker || a?.symbol || a?.name || "").toString().toLowerCase()}|${(a?.network || getAssetNetwork(a) || "").toString().toLowerCase()}`;
       return whitelistKeys.has(key) && !popularSet.has(key);
     });
-  }, [sortedSwapAssets, whitelistKeys]);
+  }, [sortedSwapAssets, whitelistKeys, popularSet]);
 
   const whitelistKeySet = useMemo(
     () => new Set(whitelistAssets.map((a) => `${(a?.ticker || a?.symbol || a?.name || "").toString().toLowerCase()}|${(a?.network || getAssetNetwork(a) || "").toString().toLowerCase()}`)),
@@ -2124,12 +2184,11 @@ export default function DepositForm({
 
   const allAssetsList = useMemo(() => {
     if (assetSearchTerm) return sortedSwapAssets;
-    const excludePopular = sortedSwapAssets.slice(3);
-    return excludePopular.filter((a) => {
+    return sortedSwapAssets.filter((a) => {
       const key = `${(a?.ticker || a?.symbol || a?.name || "").toString().toLowerCase()}|${(a?.network || getAssetNetwork(a) || "").toString().toLowerCase()}`;
-      return !whitelistKeySet.has(key);
+      return !popularSet.has(key) && !whitelistKeySet.has(key);
     });
-  }, [assetSearchTerm, sortedSwapAssets, whitelistKeySet]);
+  }, [assetSearchTerm, sortedSwapAssets, whitelistKeySet, popularSet]);
 
   const assetDropdownRows = useMemo(
     () =>
@@ -2137,9 +2196,10 @@ export default function DepositForm({
         sortedSwapAssets,
         assetSearchTerm,
         whitelistAssets,
-        allAssetsList
+        allAssetsList,
+        popularAssets
       ),
-    [sortedSwapAssets, assetSearchTerm, whitelistAssets, allAssetsList]
+    [sortedSwapAssets, assetSearchTerm, whitelistAssets, allAssetsList, popularAssets]
   );
 
   const renderAssetDropdown = () => {
@@ -2649,7 +2709,7 @@ export default function DepositForm({
           payment_method: effectivePaymentDetail.payment_method_type,
           currency: currencyValue,
           network: networkValue,
-          asset: assetValue,
+          asset: isForexPrimusAsset(selectedAsset) ? "fxprimus" : assetValue,
           asset_id: String((selectedAsset as any)?.asset_id || ""),
           network_id: null,
           additional_info: "Direct crypto deposit",
@@ -2682,7 +2742,10 @@ export default function DepositForm({
           }
         }, 100);
       } catch (error: any) {
-        let errorMessage = "Failed to submit deposit request";
+        let errorMessage = extractSubmitErrorMessage(
+          error,
+          "Failed to submit deposit request"
+        );
 
         if (error.response?.data) {
           // Try to extract specific error message from response
@@ -3183,7 +3246,7 @@ export default function DepositForm({
         payment_method: selectedPaymentDetail.payment_method_type,
         currency: currencyValue,
         network: networkValue,
-        asset: assetValue,
+        asset: isForexPrimusAsset(selectedAsset) ? "fxprimus" : assetValue,
         asset_id: String((selectedAsset as any)?.asset_id || ""),
         network_id: null,
         additional_info: `Account: ${selectedPaymentDetail.account_name}, Account Number: ${selectedPaymentDetail.account_number}`,
@@ -3235,7 +3298,10 @@ export default function DepositForm({
         onExchange(transactionData);
       }
     } catch (error: any) {
-      let errorMessage = "Failed to submit deposit request";
+      let errorMessage = extractSubmitErrorMessage(
+        error,
+        "Failed to submit deposit request"
+      );
 
       if (error.response?.data) {
         // Try to extract specific error message from response

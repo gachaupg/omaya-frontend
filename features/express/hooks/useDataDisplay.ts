@@ -98,9 +98,43 @@ export function useAssetsDisplay(
     return true;
   };
 
+  const getAssetNetwork = (asset: any): string => {
+    const direct = String(asset?.network || "").trim().toLowerCase();
+    if (direct) return direct;
+    const fromNetworks = String(
+      asset?.networks?.[0]?.network_type || asset?.networks?.[0]?.network_id || ""
+    )
+      .trim()
+      .toLowerCase();
+    return fromNetworks;
+  };
+
+  const getAssetTicker = (asset: any): string =>
+    String(asset?.ticker || asset?.symbol || "").trim().toLowerCase();
+
+  const getPinnedOrderRank = (asset: any): number => {
+    const ticker = getAssetTicker(asset);
+    const network = getAssetNetwork(asset);
+    if (ticker === "usdt" && network === "bsc") return 0;
+    if (ticker === "usdc" && network === "bsc") return 1;
+    if (ticker === "fxp") return 2;
+    return 99;
+  };
+
+  const normalizeDisplayAsset = (asset: any) => {
+    const ticker = String(asset?.ticker || asset?.symbol || "").trim().toUpperCase();
+    const network = getAssetNetwork(asset);
+    return {
+      ...asset,
+      ticker: ticker || asset?.ticker,
+      symbol: ticker || asset?.symbol,
+      network: network || asset?.network || "",
+    };
+  };
+
   // Combine both asset sources
   const combinedAssets = useMemo(() => {
-    const assets = [];
+    const assets: any[] = [];
     
     // Add exchange assets if available
     if (exchangeAssets && exchangeAssets.length > 0) {
@@ -116,7 +150,14 @@ export function useAssetsDisplay(
       assets.push(...uniqueSwapAssets);
     }
     
-    return assets;
+    const normalized = assets.map(normalizeDisplayAsset);
+
+    return normalized.sort((a, b) => {
+      const rankA = getPinnedOrderRank(a);
+      const rankB = getPinnedOrderRank(b);
+      if (rankA !== rankB) return rankA - rankB;
+      return 0;
+    });
   }, [exchangeAssets, swapAssets]);
 
   // Load real cached assets (never synthetic fallback assets)

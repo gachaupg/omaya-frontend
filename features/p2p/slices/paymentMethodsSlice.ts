@@ -27,20 +27,73 @@ export const fetchAdminPaymentMethods = createAsyncThunk<
   }
 });
 
+// ─── Public payment-methods cache ────────────────────────────────────────────
+/** Cache TTL: 5 minutes in ms */
+const PUBLIC_PM_TTL = 5 * 60 * 1000;
+
+/** In-memory cache entry (survives re-renders, resets on hard refresh) */
+let _publicPMCache: { data: any; fetchedAt: number } | null = null;
+
+/** In-flight promise deduplication – all concurrent dispatches share ONE request */
+let _publicPMInFlight: Promise<any> | null = null;
+
+/**
+ * Fetch public payment methods with a 5-minute cache.
+ *
+ * - If cached data is < 5 min old → returns it immediately (no network call).
+ * - If a request is already in flight → awaits the same promise (no duplicate requests).
+ * - Otherwise → fetches fresh data, stores it in cache, and updates Redux.
+ *
+ * Pass `forceRefresh: true` to bypass the cache (used by the background refetch hook).
+ */
 export const fetchPublicPaymentMethods = createAsyncThunk<
   any,
-  void,
+  { forceRefresh?: boolean } | void,
   { rejectValue: string }
 >(
   "paymentMethods/fetchPublicPaymentMethods",
-  async (_, { rejectWithValue }) => {
+  async (arg, { rejectWithValue }) => {
+    const forceRefresh = (arg as { forceRefresh?: boolean } | undefined)?.forceRefresh ?? false;
+
+    // ── 1. Return from cache if still fresh ──────────────────────────────────
+    if (
+      !forceRefresh &&
+      _publicPMCache &&
+      Date.now() - _publicPMCache.fetchedAt < PUBLIC_PM_TTL
+    ) {
+      return _publicPMCache.data;
+    }
+
+    // ── 2. Deduplicate concurrent requests ───────────────────────────────────
+    if (_publicPMInFlight) {
+      try {
+        return await _publicPMInFlight;
+      } catch (err: any) {
+        return rejectWithValue(err.message || "Failed to fetch public payment methods");
+      }
+    }
+
+    // ── 3. Fire the real network request ─────────────────────────────────────
+    _publicPMInFlight = getPublicPaymentMethods().finally(() => {
+      _publicPMInFlight = null;
+    });
+
     try {
-      return await getPublicPaymentMethods();
+      const data = await _publicPMInFlight;
+      // Store in in-memory cache
+      _publicPMCache = { data, fetchedAt: Date.now() };
+      return data;
     } catch (err: any) {
       return rejectWithValue(err.message || "Failed to fetch public payment methods");
     }
   }
 );
+
+/** Manually invalidate the in-memory cache (e.g. after adding a payment method). */
+export const invalidatePublicPaymentMethodsCache = () => {
+  _publicPMCache = null;
+  _publicPMInFlight = null;
+};
 
 const extractPaymentDetailError = (error: any): string => {
   const fallbackMessage = "Failed to operate on payment detail";
@@ -290,6 +343,8 @@ interface PaymentMethodsState {
   deleteError: string | null;
   publicMethodsLoading: boolean;
   publicMethodsError: string | null;
+  /** Unix timestamp (ms) of the last successful public-methods fetch, or null if never fetched. */
+  publicMethodsLastFetchedAt: number | null;
   patchLoading: boolean;
   patchError: string | null;
   patchSuccess: boolean;
@@ -313,6 +368,7 @@ const initialState: PaymentMethodsState = {
   deleteError: null,
   publicMethodsLoading: false,
   publicMethodsError: null,
+  publicMethodsLastFetchedAt: null,
   patchLoading: false,
   patchError: null,
   patchSuccess: false,
@@ -405,13 +461,16 @@ const paymentMethodsSlice = createSlice({
         state.deleteError = action.payload ?? null;
       })
       .addCase(fetchPublicPaymentMethods.pending, (state) => {
-        state.publicMethodsLoading = true;
+        // Only show the loading spinner when we have no data yet
+        if (!state.publicPaymentMethods || (state.publicPaymentMethods as any[]).length === 0) {
+          state.publicMethodsLoading = true;
+        }
         state.publicMethodsError = null;
       })
       .addCase(fetchPublicPaymentMethods.fulfilled, (state, action) => {
         state.publicMethodsLoading = false;
         state.publicPaymentMethods = action.payload;
-        console.log("🎯 Redux: Public payment methods stored:", action.payload);
+        state.publicMethodsLastFetchedAt = Date.now();
       })
       .addCase(fetchPublicPaymentMethods.rejected, (state, action) => {
         state.publicMethodsLoading = false;

@@ -14,6 +14,13 @@ type ChangeNowAssetsOptions = {
   ticker?: string;
 };
 
+type PaginatedResponse<T> = {
+  count?: number;
+  next?: string | null;
+  previous?: string | null;
+  results?: T[];
+};
+
 function buildQuery(params: Record<string, string | undefined>) {
   const query = Object.entries(params)
     .filter(([, v]) => v != null && String(v).trim() !== "")
@@ -26,6 +33,8 @@ const getChangeNowApiUrl = (opts: {
   feature: ChangeNowAssetFeature;
   source: ChangeNowAssetSource;
   ticker?: string;
+  page?: number;
+  pageSize?: number;
 }) => {
   const base =
     opts.source === "public"
@@ -34,8 +43,28 @@ const getChangeNowApiUrl = (opts: {
 
   return `${base}${buildQuery({
     feature: opts.feature === "exchange" ? "exchange" : undefined,
+    search: opts.ticker,
     ticker: opts.ticker,
+    page: opts.page ? String(opts.page) : undefined,
+    page_size: opts.pageSize ? String(opts.pageSize) : undefined,
   })}`;
+};
+
+const resolveNextUrl = (nextUrl: string, fallbackBaseUrl: string): string => {
+  if (/^https?:\/\//i.test(nextUrl)) {
+    return nextUrl;
+  }
+  const baseOrigin = (() => {
+    try {
+      return new URL(fallbackBaseUrl).origin;
+    } catch {
+      return "";
+    }
+  })();
+  if (baseOrigin) {
+    return `${baseOrigin}${nextUrl.startsWith("/") ? nextUrl : `/${nextUrl}`}`;
+  }
+  return nextUrl;
 };
 
 interface ChangeNowApiAsset {
@@ -377,15 +406,27 @@ export function useChangeNowAssets(
   shouldFetch: boolean,
   options: ChangeNowAssetFeature | ChangeNowAssetsOptions = "exchange"
 ) {
-  const opts = useMemo(() => {
-    const normalized: ChangeNowAssetsOptions =
-      typeof options === "string" ? { feature: options } : options || {};
-    return {
-      feature: normalized.feature ?? "exchange",
-      source: normalized.source ?? (normalized.feature === "swap" ? "public" : "supported"),
-      ticker: normalized.ticker,
-    } as { feature: ChangeNowAssetFeature; source: ChangeNowAssetSource; ticker?: string };
-  }, [options]);
+  const normalizedFeature: ChangeNowAssetFeature =
+    (typeof options === "string" ? options : options?.feature) ?? "exchange";
+  const normalizedSource: ChangeNowAssetSource =
+    (typeof options === "string" ? undefined : options?.source) ??
+    (normalizedFeature === "swap" ? "public" : "supported");
+  const normalizedTicker =
+    typeof options === "string" ? undefined : options?.ticker;
+
+  const opts = useMemo(
+    () =>
+      ({
+        feature: normalizedFeature,
+        source: normalizedSource,
+        ticker: normalizedTicker,
+      }) as {
+        feature: ChangeNowAssetFeature;
+        source: ChangeNowAssetSource;
+        ticker?: string;
+      },
+    [normalizedFeature, normalizedSource, normalizedTicker]
+  );
 
   const [assets, setAssets] = useState<ChangeNowMappedAsset[]>([]);
   const [loading, setLoading] = useState(false);
@@ -431,27 +472,41 @@ export function useChangeNowAssets(
       setError(null);
 
       try {
-        const response = await fetch(getChangeNowApiUrl(opts), {
-          signal: controller.signal,
+        const pageSize = 100;
+        const firstPageUrl = getChangeNowApiUrl({
+          ...opts,
+          page: 1,
+          pageSize,
         });
+        const data: ChangeNowApiAsset[] = [];
+        let nextUrl: string | null = firstPageUrl;
 
-        if (!response.ok) {
-          throw new Error(
-            `ChangeNOW request failed with status ${response.status}`
-          );
-        }
+        while (nextUrl) {
+          const response = await fetch(nextUrl, {
+            signal: controller.signal,
+          });
 
-        const raw = (await response.json()) as
-          | ChangeNowApiAsset[]
-          | { results?: ChangeNowApiAsset[] };
-        const data = Array.isArray(raw)
-          ? raw
-          : Array.isArray(raw?.results)
-            ? raw.results
+          if (!response.ok) {
+            throw new Error(
+              `ChangeNOW request failed with status ${response.status}`
+            );
+          }
+
+          const raw = (await response.json()) as
+            | ChangeNowApiAsset[]
+            | PaginatedResponse<ChangeNowApiAsset>;
+
+          if (Array.isArray(raw)) {
+            data.push(...raw);
+            nextUrl = null;
+            continue;
+          }
+
+          const pageResults = Array.isArray(raw?.results) ? raw.results : [];
+          data.push(...pageResults);
+          nextUrl = raw?.next
+            ? resolveNextUrl(raw.next, firstPageUrl)
             : null;
-
-        if (!Array.isArray(data)) {
-          throw new Error("Invalid response format from ChangeNOW");
         }
 
         const uniqueAssets = new Map<string, ChangeNowMappedAsset>();
@@ -510,7 +565,12 @@ export function useChangeNowAssets(
       window.clearTimeout(timeoutId);
       controller.abort();
     };
-  }, [opts, shouldFetch]);
+  }, [
+    shouldFetch,
+    opts.feature,
+    opts.source,
+    opts.ticker,
+  ]);
 
   return {
     // IMPORTANT: return the full asset list so dropdown search can find
