@@ -48,6 +48,8 @@ export interface CommissionLookupResponse {
   range_max: string;
   commission_mode?: "flat_fee" | "percentage" | string;
   fee?: string;
+  from_amount?: string;
+  to_amount?: string;
 }
 
 /** Exchange commission-lookup response (GET /administration/commission-lookup/ with from_currency, to_currency, from_network). Used for first 3 assets only. */
@@ -72,7 +74,9 @@ export interface ExchangeCommissionLookupResponse {
  *  - USDC on BSC/BEP20
  *  - BNB on BSC/BEP20
  *  - USDT on ETH/ERC20
- *  - FXP / FXPRIMUS (FOREX, no network)
+ *  NOTE: FXP / FXPRIMUS is intentionally excluded.
+ *  FXP must use legacy commission API (`fetchCommissionDetails` / `getCommissionApiAsset`)
+ *  and must not go through exchange commission-lookup.
  *  We detect network using either `asset.network` or the first entry in `asset.networks`.
  */
 export const isExchangeCommissionLookupAsset = (asset: {
@@ -94,19 +98,15 @@ export const isExchangeCommissionLookupAsset = (asset: {
 
   const isUsdt = ticker === "usdt";
   const isUsdc = ticker === "usdc";
-  const isFxp = isForexPrimusAsset(asset);
   const isBscLike = network === "bsc" || network === "bep20";
   const isEthLike = network === "eth" || network === "erc20";
 
   return (
     (isUsdt && isBscLike) || // USDT BSC/BEP20
     isUsdc ||                // Any USDC (we'll force BSC mapping below)
-    (isUsdt && isEthLike) || // USDT ETH/ERC20
-    isFxp                    // FXP / FXPRIMUS (FOREX, no network)
+    (isUsdt && isEthLike)    // USDT ETH/ERC20
   );
 };
-
-const FX_PRIMUS_DEFAULT_ASSET_ID = "22c346e6-4fa8-4da5-ac48-8c96ca8f934f";
 
 /** Map frontend asset (ticker + network) to API from_currency and from_network for exchange commission-lookup. Returns null if not one of the first 3 assets. */
 export const getExchangeLookupParams = (
@@ -150,15 +150,6 @@ export const getExchangeLookupParams = (
     return { from_currency: "USDT", from_network: "eth", from_asset_id: rawAssetId || undefined };
   }
 
-  // FXP / FXPRIMUS (FOREX) → from_currency=FOREX, no network
-  if (isForexPrimusAsset(asset)) {
-    return {
-      from_currency: "FOREX",
-      from_network: "",
-      from_asset_id: rawAssetId || FX_PRIMUS_DEFAULT_ASSET_ID,
-    };
-  }
-
   return null;
 };
 
@@ -176,9 +167,54 @@ export const fetchCommission = async (
 export const fetchCommissionDetails = async (
   _asset: string,
   amount: number,
-  type: "deposit" | "withdrawal"
+  type: "deposit" | "withdrawal",
+  from_asset_id?: string
 ): Promise<CommissionLookupResponse> => {
-  const url = `${API_BASE_URL}${API_CONFIG.COMMISSION_LOOKUP(amount, type)}`;
+  const normalizedAsset = String(_asset || "").toLowerCase().trim();
+  const isFxPrimus = normalizedAsset === "fxprimus" || normalizedAsset === "fxp";
+  const effectiveAmount = Number.isFinite(amount) ? Math.max(0, amount) : 0;
+  if (isFxPrimus) {
+    const baseUrl = `${API_BASE_URL}${API_CONFIG.COMMISSION_LOOKUP_EXCHANGE(
+      effectiveAmount,
+      type,
+      "USD",
+      "FXPRIMUS"
+    )}`;
+    const rawAssetId = String(from_asset_id || "").trim();
+    const url = rawAssetId
+      ? `${baseUrl}${baseUrl.includes("?") ? "&" : "?"}from_asset_id=${encodeURIComponent(rawAssetId)}`
+      : baseUrl;
+
+    // Simple short-lived cache to avoid refetching FXP commission when user toggles assets.
+    const FXP_CACHE_TTL_MS = 60 * 1000;
+    const key = `fxp:${type}:${effectiveAmount.toFixed(4)}:${rawAssetId || "no_asset_id"}`;
+    const g = globalThis as unknown as { __omayaFxpCommissionCache?: Map<string, { ts: number; data: CommissionLookupResponse }> };
+    if (!g.__omayaFxpCommissionCache) g.__omayaFxpCommissionCache = new Map();
+    const hit = g.__omayaFxpCommissionCache.get(key);
+    if (hit && Date.now() - hit.ts < FXP_CACHE_TTL_MS) {
+      return hit.data;
+    }
+
+    const response = await axios.get<ExchangeCommissionLookupResponse>(url);
+    const payload = response.data;
+
+    const commissionMode = payload?.crypto_commission?.commission_mode || "percentage";
+    const mapped: CommissionLookupResponse = {
+      commission_rate: String(payload?.crypto_commission?.rate ?? "0"),
+      is_percentage: String(commissionMode).toLowerCase() !== "flat_fee",
+      calculated_fee: String(payload?.crypto_commission?.fee ?? "0"),
+      range_min: "0",
+      range_max: "0",
+      commission_mode: commissionMode,
+      fee: String(payload?.crypto_commission?.fee ?? "0"),
+      from_amount: String(payload?.from_amount ?? ""),
+      to_amount: String(payload?.to_amount ?? ""),
+    };
+    g.__omayaFxpCommissionCache.set(key, { ts: Date.now(), data: mapped });
+    return mapped;
+  }
+
+  const url = `${API_BASE_URL}${API_CONFIG.COMMISSION_LOOKUP(effectiveAmount, type)}`;
   const response = await axios.get<CommissionLookupResponse>(url);
   return response.data;
 };

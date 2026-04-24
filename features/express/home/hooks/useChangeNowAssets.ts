@@ -44,7 +44,6 @@ const getChangeNowApiUrl = (opts: {
   return `${base}${buildQuery({
     feature: opts.feature === "exchange" ? "exchange" : undefined,
     search: opts.ticker,
-    ticker: opts.ticker,
     page: opts.page ? String(opts.page) : undefined,
     page_size: opts.pageSize ? String(opts.pageSize) : undefined,
   })}`;
@@ -124,6 +123,10 @@ const inMemoryPublicAssetsCache: Record<
   string,
   { ts: number; assets: ChangeNowMappedAsset[] }
 > = {};
+
+// In-flight request de-dupe (prevents StrictMode/double-mount refetch storms).
+// Keyed by the same cache key we use for localStorage.
+const inFlightAssetsFetch: Record<string, Promise<ChangeNowMappedAsset[]>> = {};
 
 const getAssetsCacheKey = (opts: {
   feature: ChangeNowAssetFeature;
@@ -438,7 +441,10 @@ export function useChangeNowAssets(
     }
 
     const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => controller.abort(), ASSETS_FETCH_TIMEOUT_MS);
+    const timeoutId = window.setTimeout(
+      () => controller.abort(),
+      ASSETS_FETCH_TIMEOUT_MS
+    );
 
     const cacheKey = getAssetsCacheKey(opts);
 
@@ -472,60 +478,68 @@ export function useChangeNowAssets(
       setError(null);
 
       try {
-        const pageSize = 100;
-        const firstPageUrl = getChangeNowApiUrl({
-          ...opts,
-          page: 1,
-          pageSize,
-        });
-        const data: ChangeNowApiAsset[] = [];
-        let nextUrl: string | null = firstPageUrl;
+        if (!inFlightAssetsFetch[cacheKey]) {
+          inFlightAssetsFetch[cacheKey] = (async () => {
+            // Use larger page_size to reduce page=1..N churn.
+            const pageSize = 250;
+            const firstPageUrl = getChangeNowApiUrl({
+              ...opts,
+              page: 1,
+              pageSize,
+            });
+            const data: ChangeNowApiAsset[] = [];
+            let nextUrl: string | null = firstPageUrl;
 
-        while (nextUrl) {
-          const response = await fetch(nextUrl, {
-            signal: controller.signal,
-          });
+            while (nextUrl) {
+              const response = await fetch(nextUrl, {
+                signal: controller.signal,
+              });
 
-          if (!response.ok) {
-            throw new Error(
-              `ChangeNOW request failed with status ${response.status}`
-            );
-          }
+              if (!response.ok) {
+                throw new Error(
+                  `ChangeNOW request failed with status ${response.status}`
+                );
+              }
 
-          const raw = (await response.json()) as
-            | ChangeNowApiAsset[]
-            | PaginatedResponse<ChangeNowApiAsset>;
+              const raw = (await response.json()) as
+                | ChangeNowApiAsset[]
+                | PaginatedResponse<ChangeNowApiAsset>;
 
-          if (Array.isArray(raw)) {
-            data.push(...raw);
-            nextUrl = null;
-            continue;
-          }
+              if (Array.isArray(raw)) {
+                data.push(...raw);
+                nextUrl = null;
+                continue;
+              }
 
-          const pageResults = Array.isArray(raw?.results) ? raw.results : [];
-          data.push(...pageResults);
-          nextUrl = raw?.next
-            ? resolveNextUrl(raw.next, firstPageUrl)
-            : null;
+              const pageResults = Array.isArray(raw?.results) ? raw.results : [];
+              data.push(...pageResults);
+              nextUrl = raw?.next
+                ? resolveNextUrl(raw.next, firstPageUrl)
+                : null;
+            }
+
+            const uniqueAssets = new Map<string, ChangeNowMappedAsset>();
+
+            for (const item of data) {
+              const mappedAsset = mapChangeNowAsset(item);
+              if (!mappedAsset) {
+                continue;
+              }
+
+              const key = `${mappedAsset.ticker}-${mappedAsset.network}`;
+              if (!uniqueAssets.has(key)) {
+                uniqueAssets.set(key, mappedAsset);
+              }
+            }
+
+            return Array.from(uniqueAssets.values());
+          })()
+            .finally(() => {
+              delete inFlightAssetsFetch[cacheKey];
+            });
         }
 
-        const uniqueAssets = new Map<string, ChangeNowMappedAsset>();
-
-        for (const item of data) {
-          const mappedAsset = mapChangeNowAsset(item);
-          if (!mappedAsset) {
-            continue;
-          }
-
-          const key = `${mappedAsset.ticker}-${mappedAsset.network}`;
-          if (!uniqueAssets.has(key)) {
-            uniqueAssets.set(key, mappedAsset);
-          }
-        }
-
-        const mappedAssets = Array.from(uniqueAssets.values());
-
-        const finalAssets = mappedAssets;
+        const finalAssets = await inFlightAssetsFetch[cacheKey];
         setAssets(finalAssets);
 
         // Save cache after successful fetch.

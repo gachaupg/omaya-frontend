@@ -350,6 +350,16 @@ const MISSING_USDT_USD_RATE_ERROR =
   "No exchange rate configured for USDT to USD";
 const MISSING_FXP_USD_RATE_ERROR =
   "No exchange rate configured for FXP to USD";
+const MISSING_FXP_FXP_RATE_ERROR =
+  "No exchange rate configured for FXP to FXP";
+const isFxpUnsupportedRateError = (message: string) => {
+  const m = String(message || "").toLowerCase();
+  return (
+    m.includes("not_valid_params") ||
+    m.includes("currency fxp is not supported") ||
+    m.includes("could not get rate for fxp/usdt")
+  );
+};
 const NEGATIVE_RECEIVE_ERROR =
   "Receive amount cannot be negative. Please adjust the amount.";
 const buildNegativeReceiveError = (value: number) =>
@@ -1590,8 +1600,10 @@ export default function WithdrawalForm({
         // For simple assets, calculate immediately
         calculateAmounts(payAmount, true);
       } else if (isForexAsset(selectedAsset)) {
-        // For FXP, calculate immediately without API
-        calculateAmounts(payAmount, true);
+        // FXP must use commission lookup API (not local math)
+        setIsCalculating(true);
+        setIsCalculatingReceive(true);
+        setEstimateLoading(false);
       } else {
         // For non-simple assets, the estimate useEffect will handle the API call
         // Just set loading states for visual feedback
@@ -1788,6 +1800,24 @@ export default function WithdrawalForm({
               }
               return;
             }
+            if (normalizedMessage.includes(MISSING_FXP_FXP_RATE_ERROR)) {
+              // FXP withdrawal: if backend commission isn't configured, treat as no-commission and stop loading.
+              setApiValidationError(null);
+              if (isCalculatingFromPay) {
+                setGetAmount(amount);
+                setGetAmountInput(String(amount));
+                setPreviousValidAmount(String(amount));
+              } else {
+                setPayAmount(amount);
+                setPayAmountInput(String(amount));
+              }
+              setExchangeLookupResponse(null);
+              setApiCommission(0);
+              setApiCommissionDetails(null);
+              setIsCalculating(false);
+              setIsCalculatingReceive(false);
+              return;
+            }
             setApiValidationError(
               normalizedMessage
             );
@@ -1803,19 +1833,87 @@ export default function WithdrawalForm({
       setApiCommissionDetails(null);
       return;
     }
+    const fxpSendAmount = isCalculatingFromPay
+      ? (parseLocalizedAmountString(payAmountInput) || payAmount)
+      : getFxpReversePayAmount((parseLocalizedAmountString(getAmountInput) || getAmount));
+    const commissionLookupAmount = isForexAsset(selectedAsset)
+      ? fxpSendAmount
+      : amount;
     if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
     commissionFetchTimeoutRef.current = setTimeout(() => {
       if (isExpressCancelled()) return;
-      fetchCommissionDetails(apiAsset, amount, "withdrawal")
+      fetchCommissionDetails(
+        apiAsset,
+        commissionLookupAmount,
+        "withdrawal",
+        isForexAsset(selectedAsset) ? selectedAsset?.asset_id : undefined
+      )
         .then((details) => {
           if (isExpressCancelled()) return;
           setApiCommission(Number(details?.commission_rate ?? 0));
           setApiCommissionDetails(details);
           setExchangeLookupResponse(null);
+          setIsCalculating(false);
+          setIsCalculatingReceive(false);
+          if (isForexAsset(selectedAsset)) {
+            const backendToAmount = Number(details?.to_amount);
+            const backendFromAmount = Number(details?.from_amount);
+            if (isCalculatingFromPay && Number.isFinite(backendToAmount)) {
+              const safeToAmount = Math.max(0, backendToAmount);
+              setGetAmount(safeToAmount);
+              setGetAmountInput(String(safeToAmount));
+              setPreviousValidAmount(String(safeToAmount));
+            } else if (!isCalculatingFromPay && Number.isFinite(backendFromAmount)) {
+              setPayAmount(Math.max(0, backendFromAmount));
+              setPayAmountInput(String(Math.max(0, backendFromAmount)));
+            }
+          }
         })
-        .catch(() => {
+        .catch((error: any) => {
+          const responseData = error?.response?.data;
+          const rawMessage =
+            responseData?.error ||
+            responseData?.message ||
+            error?.message;
+          const backendMessage =
+            typeof rawMessage === "string"
+              ? rawMessage
+              : Array.isArray(rawMessage)
+                ? rawMessage[0]
+                : rawMessage && typeof rawMessage === "object"
+                  ? JSON.stringify(rawMessage)
+                  : null;
+          const normalizedMessage = String(
+            backendMessage || "Failed to fetch exchange rate"
+          );
+
+          if (
+            isForexAsset(selectedAsset) &&
+            (normalizedMessage.includes(MISSING_FXP_FXP_RATE_ERROR) ||
+              isFxpUnsupportedRateError(normalizedMessage))
+          ) {
+            // Same UX as Home: if FXP commission isn't configured, treat as no-commission.
+            setApiValidationError(null);
+            if (isCalculatingFromPay) {
+              setGetAmount(amount);
+              setGetAmountInput(String(amount));
+              setPreviousValidAmount(String(amount));
+            } else {
+              setPayAmount(amount);
+              setPayAmountInput(String(amount));
+            }
+            setApiCommission(0);
+            setApiCommissionDetails(null);
+            setExchangeLookupResponse(null);
+            setIsCalculating(false);
+            setIsCalculatingReceive(false);
+            return;
+          }
+
           setApiCommission(null);
           setApiCommissionDetails(null);
+          setIsCalculating(false);
+          setIsCalculatingReceive(false);
         });
     }, 300);
     return () => {
@@ -1832,6 +1930,16 @@ export default function WithdrawalForm({
       return;
     if (isCommissionApiAsset(selectedAsset) && apiCommission !== null) {
       if (isCalculatingFromPay && payAmount > 0) {
+        if (isForexAsset(selectedAsset)) {
+          const backendToAmount = Number(apiCommissionDetails?.to_amount);
+          if (Number.isFinite(backendToAmount)) {
+            const safeAmount = Math.max(0, backendToAmount);
+            setGetAmount(safeAmount);
+            setGetAmountInput(String(safeAmount));
+            setPreviousValidAmount(String(safeAmount));
+            return;
+          }
+        }
         const commissionAmount = (payAmount * apiCommission) / 100;
         const calculatedGetAmount = Math.max(0, payAmount - commissionAmount);
         setGetAmount(calculatedGetAmount);
@@ -1839,7 +1947,9 @@ export default function WithdrawalForm({
         setPreviousValidAmount(calculatedGetAmount.toString());
       } else if (!isCalculatingFromPay && getAmount > 0) {
         const calculatedPayAmount = isForexAsset(selectedAsset)
-          ? getFxpReversePayAmount(getAmount)
+          ? (Number.isFinite(Number(apiCommissionDetails?.from_amount))
+              ? Number(apiCommissionDetails?.from_amount)
+              : getFxpReversePayAmount(getAmount))
           : getAmount / (1 - apiCommission / 100);
         setPayAmount(calculatedPayAmount);
         setPayAmountInput(calculatedPayAmount.toString());

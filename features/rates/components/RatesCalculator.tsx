@@ -69,6 +69,16 @@ import {
 
 const MISSING_FXP_USD_RATE_ERROR =
   "No exchange rate configured for FXP to USD";
+const MISSING_FXP_FXP_RATE_ERROR =
+  "No exchange rate configured for FXP to FXP";
+const isFxpUnsupportedRateError = (message: string) => {
+  const m = String(message || "").toLowerCase();
+  return (
+    m.includes("not_valid_params") ||
+    m.includes("currency fxp is not supported") ||
+    m.includes("could not get rate for fxp/usdt")
+  );
+};
 const NEGATIVE_RECEIVE_ERROR =
   "Receive amount cannot be negative. Please adjust the amount.";
 const EXPRESS_FIXED_MIN_AMOUNT = 5;
@@ -722,6 +732,12 @@ const getPaymentRestrictionMessage = (status?: string) =>
       return;
     }
     const amt = isCalculatingFromPay ? (parseFloat(amount) || 0) : (parseFloat(receiveAmount) || 0);
+    const fxpSendAmount = isCalculatingFromPay
+      ? (parseFloat(amount) || 0)
+      : ((parseFloat(receiveAmount) || 0) * 1.06);
+    const commissionLookupAmount = isForexPrimusAsset(selectedAsset)
+      ? fxpSendAmount
+      : amt;
     if (amt <= 0) {
       setApiCommission(null);
       setApiCommissionDetails(null);
@@ -729,12 +745,62 @@ const getPaymentRestrictionMessage = (status?: string) =>
     }
     if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
     commissionFetchTimeoutRef.current = setTimeout(() => {
-      fetchCommissionDetails(apiAsset, amt, isDepositMode ? "deposit" : "withdrawal")
+      fetchCommissionDetails(
+        apiAsset,
+        commissionLookupAmount,
+        isDepositMode ? "deposit" : "withdrawal",
+        isForexPrimusAsset(selectedAsset) ? (selectedAsset as any)?.asset_id : undefined
+      )
         .then((details) => {
           setApiCommission(Number(details?.commission_rate ?? 0));
           setApiCommissionDetails(details);
+          if (isForexPrimusAsset(selectedAsset)) {
+            const backendToAmount = Number(details?.to_amount);
+            const backendFromAmount = Number(details?.from_amount);
+            if (isCalculatingFromPay && Number.isFinite(backendToAmount)) {
+              setReceiveAmount(String(Math.max(0, backendToAmount)));
+            } else if (!isCalculatingFromPay && Number.isFinite(backendFromAmount)) {
+              setAmount(String(Math.max(0, backendFromAmount)));
+            }
+          }
         })
-        .catch(() => {
+        .catch((error: any) => {
+          const responseData = error?.response?.data;
+          const rawMessage =
+            responseData?.error ||
+            responseData?.message ||
+            error?.message;
+          const backendMessage =
+            typeof rawMessage === "string"
+              ? rawMessage
+              : Array.isArray(rawMessage)
+                ? rawMessage[0]
+                : rawMessage && typeof rawMessage === "object"
+                  ? JSON.stringify(rawMessage)
+                  : null;
+          const normalizedMessage = String(
+            backendMessage || "Failed to fetch exchange rate"
+          );
+
+          if (isForexPrimusAsset(selectedAsset) && (
+            normalizedMessage.includes(MISSING_FXP_FXP_RATE_ERROR) ||
+            normalizedMessage.includes(MISSING_FXP_USD_RATE_ERROR) ||
+            isFxpUnsupportedRateError(normalizedMessage)
+          )) {
+            // FXP: don't show errors; treat as no-commission and stop loading.
+            setApiValidationError(null);
+            if (isCalculatingFromPay) {
+              setReceiveAmount(amount || "0");
+            } else {
+              setAmount(receiveAmount || "0");
+            }
+            setApiCommission(0);
+            setApiCommissionDetails(null);
+            setIsCalculating(false);
+            setIsCalculatingReceive(false);
+            return;
+          }
+
           setApiCommission(null);
           setApiCommissionDetails(null);
         });
@@ -850,6 +916,14 @@ const getPaymentRestrictionMessage = (status?: string) =>
             setIsCalculatingReceive(false);
             return;
           }
+          if ((errorMessage || "").includes(MISSING_FXP_FXP_RATE_ERROR)) {
+            // FXP withdrawal: if backend commission isn't configured, treat as no-commission and stop loading.
+            setApiValidationError(null);
+            setReceiveAmount(amount || "0");
+            setIsCalculating(false);
+            setIsCalculatingReceive(false);
+            return;
+          }
           setApiValidationError(errorMessage || "Failed to fetch exchange rate");
           setIsCalculating(false);
           setIsCalculatingReceive(false);
@@ -914,13 +988,22 @@ const getPaymentRestrictionMessage = (status?: string) =>
       return;
     if (!usesLegacyPercentCommission(selectedAsset) || apiCommission === null) return;
     if (isCalculatingFromPay && parseFloat(amount) > 0) {
+      if (isForexPrimusAsset(selectedAsset)) {
+        const backendToAmount = Number(apiCommissionDetails?.to_amount);
+        if (Number.isFinite(backendToAmount)) {
+          setReceiveAmount(Math.max(0, backendToAmount).toFixed(2));
+          return;
+        }
+      }
       const amt = parseFloat(amount) || 0;
       const calculatedReceive = Math.max(0, amt * (1 - apiCommission / 100));
       setReceiveAmount(calculatedReceive.toFixed(2));
     } else if (!isCalculatingFromPay && parseFloat(receiveAmount) > 0) {
       const recv = parseFloat(receiveAmount) || 0;
       const calculatedAmount = isForexPrimusAsset(selectedAsset)
-        ? getFxpReverseAmount(recv)
+        ? (Number.isFinite(Number(apiCommissionDetails?.from_amount))
+            ? Number(apiCommissionDetails?.from_amount)
+            : getFxpReverseAmount(recv))
         : recv / (1 - apiCommission / 100);
       setAmount(calculatedAmount.toFixed(2));
     }
@@ -937,6 +1020,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
       selectedAsset &&
       !isSimpleCalculationAsset(selectedAsset) &&
       !isExchangeCommissionLookupAsset(selectedAsset) &&
+      !isForexPrimusAsset(selectedAsset) &&
       parseFloat(amount) > 0 &&
       isCalculatingFromPay
     ) {
@@ -1117,6 +1201,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
       selectedAsset &&
       !isSimpleCalculationAsset(selectedAsset) &&
       !isExchangeCommissionLookupAsset(selectedAsset) &&
+      !isForexPrimusAsset(selectedAsset) &&
       parseFloat(receiveAmount) > 0 &&
       !isCalculatingFromPay
     ) {
