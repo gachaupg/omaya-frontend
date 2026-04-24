@@ -1468,18 +1468,6 @@ export default function DepositForm({
               setIsSupportModalOpen(true);
               return;
             }
-            if (normalizedMessage.includes(MISSING_FXP_USD_RATE_ERROR)) {
-              // For FXP without configured commission, fallback to zero-commission UI.
-              setApiValidationError(null);
-              if (isCalculatingFromPay) {
-                setGetAmount(amount);
-                setGetAmountInput(String(amount));
-              } else {
-                setPayAmount(amount);
-                setPayAmountInput(String(amount));
-              }
-              return;
-            }
             setApiValidationError(
               normalizedMessage
             );
@@ -1496,6 +1484,10 @@ export default function DepositForm({
     const commissionLookupAmount = isForexAsset(selectedAsset)
       ? fxpSendAmount
       : amount;
+    if (isForexAsset(selectedAsset)) {
+      setIsCalculating(true);
+      setIsCalculatingReceive(true);
+    }
     commissionFetchTimeoutRef.current = setTimeout(() => {
       fetchCommissionDetails(
         apiAsset,
@@ -1507,6 +1499,10 @@ export default function DepositForm({
           setApiCommission(Number(details?.commission_rate ?? 0));
           setApiCommissionDetails(details);
           setExchangeLookupResponse(null);
+          if (isForexAsset(selectedAsset)) {
+            setIsCalculating(false);
+            setIsCalculatingReceive(false);
+          }
           if (isForexAsset(selectedAsset)) {
             const backendToAmount = Number(details?.to_amount);
             const backendFromAmount = Number(details?.from_amount);
@@ -1538,11 +1534,9 @@ export default function DepositForm({
           );
 
           if (
-            isForexAsset(selectedAsset) &&
-            (normalizedMessage.includes(MISSING_FXP_FXP_RATE_ERROR) ||
-              isFxpUnsupportedRateError(normalizedMessage))
+            isForexAsset(selectedAsset)
           ) {
-            // FXP deposit: if backend commission isn't configured, treat as no-commission.
+            // FXP: on any commission API error, keep user-entered amount and mirror it to the other field.
             setApiValidationError(null);
             if (isCalculatingFromPay) {
               setGetAmount(amount);
@@ -1554,6 +1548,8 @@ export default function DepositForm({
             setApiCommission(0);
             setApiCommissionDetails(null);
             setExchangeLookupResponse(null);
+            setIsCalculating(false);
+            setIsCalculatingReceive(false);
             return;
           }
 

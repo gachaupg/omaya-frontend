@@ -1507,18 +1507,6 @@ export default function DepositForm({
               setIsSupportModalOpen(true);
               return;
             }
-            if (normalizedMessage.includes(MISSING_FXP_USD_RATE_ERROR)) {
-              // For FXP without configured commission, fallback to zero-commission UI.
-              setApiValidationError(null);
-              if (isCalculatingFromPay) {
-                setGetAmount(amount);
-                setGetAmountInput(String(amount));
-              } else {
-                setPayAmount(amount);
-                setPayAmountInput(String(amount));
-              }
-              return;
-            }
             setApiValidationError(
               normalizedMessage
             );
@@ -1583,12 +1571,8 @@ export default function DepositForm({
             backendMessage || "Failed to fetch exchange rate"
           );
 
-          if (
-            isForexAsset(selectedAsset) &&
-            (normalizedMessage.includes(MISSING_FXP_FXP_RATE_ERROR) ||
-              isFxpUnsupportedRateError(normalizedMessage))
-          ) {
-            // FXP deposit: if backend commission isn't configured, treat as no-commission.
+          if (isForexAsset(selectedAsset)) {
+            // FXP: on any commission API error, keep user-entered amount and mirror it to the other field.
             setApiValidationError(null);
             if (isCalculatingFromPay) {
               setGetAmount(amount);
