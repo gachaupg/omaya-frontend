@@ -226,15 +226,25 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
               | string
               | undefined;
             if (detectedFailure) {
+              const rawFailureMessage =
+                msg?.data?.message ||
+                msg?.data?.api_message ||
+                msg?.data?.error ||
+                "";
+              const normalizedFailureMessage = String(rawFailureMessage || "").toLowerCase();
+              const isAmountTooSmall =
+                normalizedFailureMessage.includes("amount") &&
+                (normalizedFailureMessage.includes("too small") ||
+                  normalizedFailureMessage.includes("deposit_too_small") ||
+                  normalizedFailureMessage.includes("min amount"));
               setStatusObj(msg.data ?? msg);
               setFailureModal({
                 isOpen: true,
                 status: detectedFailure,
                 message:
-                  msg?.data?.message ||
-                  msg?.data?.api_message ||
-                  msg?.data?.error ||
-                  "Swap transaction failed.",
+                  isAmountTooSmall
+                    ? "Amount you have sent is too small to complete the transaction."
+                    : rawFailureMessage || "Swap transaction failed.",
               });
               return;
             }
