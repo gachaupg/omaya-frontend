@@ -228,11 +228,11 @@ const PaymentMethods = () => {
   // Handle Add - first send OTP, then show OTP step
   const handleAdd = async () => {
     if (!isAuthenticated) {
-      showToast.error("Please log in to add payment methods");
+      setInlineError("Please log in to add payment methods");
       return;
     }
     if (!selectedMethod || !selectedProvider || !accountName || !accountNumber) {
-      showToast.error("Please fill all required fields");
+      setInlineError("Please fill all required fields");
       return;
     }
     const payload = {
@@ -247,11 +247,11 @@ const PaymentMethods = () => {
     try {
       const result = await dispatch(sendPaymentDetailAddOtp() as any);
       if (sendPaymentDetailAddOtp.fulfilled.match(result)) {
-        showToast.success("OTP sent to your email address");
+        setInlineError(null);
         setPendingPayload(payload);
         setAddStep("otp");
       } else if (sendPaymentDetailAddOtp.rejected.match(result)) {
-        showToast.error((result.payload as string) || "Failed to send OTP");
+        setInlineError((result.payload as string) || "Failed to send OTP");
       }
     } finally {
       setSendOtpLoading(false);
@@ -261,17 +261,17 @@ const PaymentMethods = () => {
   // Handle OTP verify - then add payment detail
   const handleVerifyOtp = async () => {
     if (!pendingPayload || !otpCode.trim() || otpCode.length < 6) {
-      showToast.error("Please enter a valid 6-digit OTP");
+      setInlineError("Please enter a valid 6-digit OTP");
       return;
     }
     setVerifyOtpLoading(true);
     try {
       const verifyResult = await dispatch(verifyPaymentDetailAddOtp(otpCode) as any);
       if (verifyPaymentDetailAddOtp.fulfilled.match(verifyResult)) {
-        showToast.success("OTP verified successfully. You can now add your payment method.");
+        setInlineError(null);
         dispatch(postUserPaymentDetail(pendingPayload));
       } else if (verifyPaymentDetailAddOtp.rejected.match(verifyResult)) {
-        showToast.error((verifyResult.payload as string) || "Invalid OTP");
+        setInlineError((verifyResult.payload as string) || "Invalid OTP");
       }
     } finally {
       setVerifyOtpLoading(false);
@@ -302,7 +302,6 @@ const PaymentMethods = () => {
   // Close dropdown and reset form on success
   useEffect(() => {
     if (postSuccess) {
-      showToast.success("Payment method added!");
       setShowAddDropdown(false);
       setInlineError(null);
       setAddStep("form");

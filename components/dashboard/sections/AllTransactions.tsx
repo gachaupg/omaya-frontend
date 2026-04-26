@@ -258,7 +258,29 @@ const AllTransactions = () => {
     };
   };
 
-const getFromToLogos = (tx: AllTransactionItem): { fromLogo: string | null; toLogo: string | null } => {
+const extractAssetSymbolFromLabel = (label: string): string | null => {
+  const raw = String(label || "").trim();
+  if (!raw) return null;
+  // Common non-asset labels in From/To columns
+  const lower = raw.toLowerCase();
+  if (
+    lower.includes("bank") ||
+    lower.includes("wallet") ||
+    lower.includes("provider") ||
+    lower.includes("payment")
+  ) {
+    return null;
+  }
+  // Matches "USDT (bep20)" or "USDT" at start of label
+  const m = raw.match(/^([A-Za-z0-9]{2,12})\s*(?:\(|$)/);
+  if (!m) return null;
+  const symbol = String(m[1] || "").toUpperCase();
+  // Avoid accidentally treating addresses/ids as symbols
+  if (symbol.length > 8) return null;
+  return symbol;
+};
+
+const getFromToLogos = (tx: AllTransactionItem, fromLabel: string, toLabel: string): { fromLogo: string | null; toLogo: string | null } => {
   const paymentMethodLogo = String((tx as any)?.payment_method?.logo_url || "").trim() || null;
   const senderLogo = String((tx as any)?.sender_provider_logo || "").trim() || null;
   const receiverLogo = String((tx as any)?.receiver_provider_logo || "").trim() || null;
@@ -277,33 +299,55 @@ const getFromToLogos = (tx: AllTransactionItem): { fromLogo: string | null; toLo
       : null) || null;
   const genericLogo = paymentMethodLogo || paymentDetailLogo || providerLogo;
 
+  const fromAssetSymbol = tx.from_currency || extractAssetSymbolFromLabel(fromLabel);
+  const toAssetSymbol = tx.to_currency || extractAssetSymbolFromLabel(toLabel);
+  const fromAssetLogo = fromAssetSymbol ? getHighResAssetIcon({ ticker: fromAssetSymbol }) : null;
+  const toAssetLogo = toAssetSymbol ? getHighResAssetIcon({ ticker: toAssetSymbol }) : null;
+
   if (tx.type === "exchange") {
     const isDeposit = tx.sub_type === "deposit";
     return {
-      fromLogo: isDeposit ? genericLogo : null,
-      toLogo: isDeposit ? null : genericLogo,
+      // Exchange deposit: From is bank/provider, To is asset
+      // Exchange withdrawal: From is asset, To is bank/provider
+      fromLogo: isDeposit ? (genericLogo || fromAssetLogo) : (fromAssetLogo || genericLogo),
+      toLogo: isDeposit ? (toAssetLogo || genericLogo) : (genericLogo || toAssetLogo),
     };
   }
 
   if (tx.type === "moneyx") {
     return {
-      fromLogo: senderLogo || genericLogo,
-      toLogo: receiverLogo || genericLogo,
+      // MoneyX is provider-based; still prefer asset logo when label looks like a currency.
+      fromLogo: fromAssetLogo || senderLogo || genericLogo,
+      toLogo: toAssetLogo || receiverLogo || genericLogo,
+    };
+  }
+
+  if (tx.type === "swap") {
+    return {
+      fromLogo: fromAssetLogo,
+      toLogo: toAssetLogo,
+    };
+  }
+
+  if (tx.type === "p2p" && (fromAssetLogo || toAssetLogo)) {
+    return {
+      fromLogo: fromAssetLogo,
+      toLogo: toAssetLogo,
     };
   }
 
   // For "all" feed rows where backend provides payment details on other types,
   // prefer showing at least one provider logo in the payment side.
   if ((tx as any)?.sub_type === "withdrawal") {
-    return { fromLogo: null, toLogo: genericLogo };
+    return { fromLogo: fromAssetLogo, toLogo: toAssetLogo || genericLogo };
   }
   if ((tx as any)?.sub_type === "deposit") {
-    return { fromLogo: genericLogo, toLogo: null };
+    return { fromLogo: fromAssetLogo || genericLogo, toLogo: toAssetLogo };
   }
 
   return {
-    fromLogo: genericLogo,
-    toLogo: genericLogo,
+    fromLogo: fromAssetLogo || genericLogo,
+    toLogo: toAssetLogo || genericLogo,
   };
 };
 
@@ -348,7 +392,7 @@ const renderFromToValue = (label: string, logoUrl?: string | null) => {
         <img
           src={getHighResAssetIcon({ ticker })}
           alt={ticker}
-          className="w-7 h-7 sm:w-8 sm:h-8 rounded-full shadow-sm flex-shrink-0"
+          className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover shadow-sm flex-shrink-0"
           onError={(e) => {
             e.currentTarget.style.display = "none";
           }}
@@ -368,7 +412,7 @@ const renderFromToValue = (label: string, logoUrl?: string | null) => {
     const isExchange = tx.type === "exchange";
     const isDeposit = tx.sub_type === "deposit";
     const { from: fromDisplay, to: toDisplay } = getFromToDisplay(tx);
-    const { fromLogo, toLogo } = getFromToLogos(tx);
+    const { fromLogo, toLogo } = getFromToLogos(tx, fromDisplay, toDisplay);
 
     const assetName = getAssetName(tx.currency || tx.asset || "USDT");
     return (
@@ -431,7 +475,7 @@ const renderFromToValue = (label: string, logoUrl?: string | null) => {
     const isExchange = tx.type === "exchange";
     const isDeposit = tx.sub_type === "deposit";
     const { from: fromDisplay, to: toDisplay } = getFromToDisplay(tx);
-    const { fromLogo, toLogo } = getFromToLogos(tx);
+    const { fromLogo, toLogo } = getFromToLogos(tx, fromDisplay, toDisplay);
 
     const renderMobileAssetIcon = () => {
       if (tx.type === "moneyx" && !tx.asset_image) {

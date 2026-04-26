@@ -438,7 +438,7 @@ const ExchangeTransactions = ({ itemsPerPage = 10 }) => {
                   <img
                     src={tx?.asset_image || getHighResAssetIcon({ ticker: tx.currency })}
                     alt={tx.currency || "Asset"}
-                    className="w-10 h-10 rounded-full shadow-sm shrink-0"
+                    className="w-10 h-10 rounded-full object-cover shadow-sm shrink-0"
                     onError={(e) => {
                       swapToFallbackImage(
                         e,
@@ -478,7 +478,7 @@ const ExchangeTransactions = ({ itemsPerPage = 10 }) => {
                     <img
                       src={fromTo.from.logo}
                       alt={fromTo.from.label || "Asset"}
-                      className="w-6 h-6 rounded-full"
+                    className="w-6 h-6 rounded-full object-cover"
                       onError={(e) => {
                         swapToFallbackImage(
                           e,
@@ -497,7 +497,7 @@ const ExchangeTransactions = ({ itemsPerPage = 10 }) => {
                     <img
                       src={fromTo.to.logo}
                       alt={fromTo.to.label || "Payment"}
-                      className="w-6 h-6 rounded-full"
+                    className="w-6 h-6 rounded-full object-cover"
                       onError={(e) => {
                         swapToFallbackImage(
                           e,
@@ -644,9 +644,6 @@ const ExchangeTransactions = ({ itemsPerPage = 10 }) => {
                         <div className="flex items-center gap-1">
                           <span className="font-medium text-sm text-gray-900 dark:text-white">
                             {fromTo.from.label}
-                          </span>
-                          <span className="text-[10px] bg-[#1D8751] text-white px-2 py-1 rounded-full break-all whitespace-normal leading-tight max-w-[420px] min-w-[220px] inline-block">
-                            {paymentInfo.walletAddress || paymentInfo.transactionIdentifier || paymentInfo.assetNetwork}
                           </span>
                         </div>
                       </div>

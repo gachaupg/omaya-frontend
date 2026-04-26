@@ -31,6 +31,7 @@ import QRCode from "qrcode";
 const AddressQrImage: React.FC<{ value: string }> = ({ value }) => {
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [hasError, setHasError] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -72,14 +73,69 @@ const AddressQrImage: React.FC<{ value: string }> = ({ value }) => {
     };
   }, [value]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsOpen(false);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [isOpen]);
+
   if (!qrDataUrl || hasError) return null;
 
   return (
-    <img
-      src={qrDataUrl}
-      alt="Wallet QR"
-      className="w-9 h-9 rounded-lg border border-[#E3E6F0] dark:border-[#2A2A35] bg-white object-contain"
-    />
+    <>
+      <button
+        type="button"
+        onClick={() => setIsOpen(true)}
+        className="shrink-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1D8751]/40"
+        aria-label="Open QR code"
+      >
+        <img
+          src={qrDataUrl}
+          alt="Wallet QR"
+          className="w-9 h-9 rounded-lg border border-[#E3E6F0] dark:border-[#2A2A35] bg-white object-contain"
+        />
+      </button>
+
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4"
+          onClick={() => setIsOpen(false)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl bg-white dark:bg-[#18181D] border border-[#E3E6F0] dark:border-[#2A2A35] p-4 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <div className="text-sm font-semibold text-gray-900 dark:text-white">
+                Wallet QR
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsOpen(false)}
+                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-[#2D2D33] text-gray-500 dark:text-[#8B90A5] transition-colors"
+                aria-label="Close"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="flex items-center justify-center">
+              <img
+                src={qrDataUrl}
+                alt="Wallet QR large"
+                className="w-72 h-72 rounded-xl border border-[#E3E6F0] dark:border-[#2A2A35] bg-white object-contain"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 
@@ -106,9 +162,6 @@ const WalletAddressCard = ({
             }}
           />
         </span>
-        {addr.status === "pending" && (
-          <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-[#FF4D55] border-2 border-white dark:border-[#13131A]" />
-        )}
       </div>
       <div className="flex-1 flex items-center justify-between gap-3">
         <div>
@@ -116,7 +169,7 @@ const WalletAddressCard = ({
             {addr.account_name || addr.label}
           </p>
           <p className="text-xs text-gray-500 dark:text-[#8B90A5] mt-0.5">
-            {addr.network} • {addr.asset} • {addr.status}
+            {addr.network} • {addr.asset}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -553,6 +606,14 @@ const PaymentMethods = () => {
                 const isBankMethod =
                   (payment?.payment_method_name || "").toLowerCase().includes("bank") ||
                   (payment?.payment_provider_name || "").toLowerCase().includes("bank");
+                const rejectionMessage = String(
+                  payment?.rejection_reason ??
+                    (payment as any)?.rejectionReason ??
+                    (payment as any)?.reason ??
+                    (payment as any)?.comment ??
+                    (payment as any)?.note ??
+                    ""
+                ).trim();
                 const inputLabel = isBankMethod ? "Bank Account" : "Wallet Address";
                 const placeholderText = isBankMethod
                   ? "Type in here your bank account number"
@@ -586,7 +647,9 @@ const PaymentMethods = () => {
                         <div>
                           <div className="flex items-center gap-2 flex-wrap">
                             <p className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
-                              {payment?.payment_method_name}
+                              {isBankMethod
+                                ? (payment?.payment_provider_name || "Bank")
+                                : ((payment as any)?.account_name || payment?.payment_method_name)}
                             </p>
                             <span
                               className={`inline-flex px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold capitalize ${
@@ -601,8 +664,15 @@ const PaymentMethods = () => {
                             </span>
                           </div>
                           <p className="text-xs text-gray-500 dark:text-[#8B90A5] mt-0.5">
-                            {payment?.payment_provider_name}
+                            {isBankMethod
+                              ? (payment?.payment_method_name || "Bank")
+                              : (payment?.payment_provider_name || payment?.payment_method_name)}
                           </p>
+                          {isRejected && rejectionMessage && (
+                            <p className="mt-2 text-xs text-red-600 dark:text-red-400 max-w-[520px]">
+                              {rejectionMessage}
+                            </p>
+                          )}
                         </div>
                         <button
                           className="text-[#1D8751] hover:text-red-500 transition-colors"

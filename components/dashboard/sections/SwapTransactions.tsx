@@ -5,6 +5,7 @@ import { useSwapHistory } from "@/features/swap/hooks/useSwapHistory";
 import { SwapTransaction } from "@/features/swap/types";
 import { useDashboardI18n } from "@/lib/useDashboardI18n";
 import { SortArrowsIcon } from "@/components/ui/SortArrowsIcon";
+import { getHighResAssetIcon } from "@/features/express/utils/imageHelpers";
 
 const getStatusColor = (status: string) => {
   switch (status.toLowerCase()) {
@@ -31,6 +32,13 @@ const getStatusColor = (status: string) => {
 const formatRecentTime = (dateValue: string) => {
   const v = formatDistanceToNow(new Date(dateValue), { addSuffix: true });
   return /less than (a|1) minute ago/i.test(v) ? "now" : v;
+};
+
+const formatShortId = (value: unknown): string => {
+  const s = String(value || "").trim();
+  if (!s) return "-";
+  if (s.length <= 6) return s;
+  return `${s.slice(0, 3)}...${s.slice(-3)}`;
 };
 
 const SwapTransactions = () => {
@@ -120,7 +128,7 @@ const SwapTransactions = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <img
-                  src={transaction.from_currency_image}
+                  src={getHighResAssetIcon({ ticker: transaction.from_currency })}
                   alt={transaction.from_currency}
                   className="w-10 h-10 rounded-full flex-shrink-0"
                   onError={(e) => {
@@ -175,7 +183,13 @@ const SwapTransactions = () => {
           <thead>
             <tr className="border-b border-[#E8EFF5] dark:border-[#35353E]">
               <th className="text-left py-3 px-3 sm:px-4 text-xs sm:text-sm font-medium text-[#788099]">
-                <span className="inline-flex items-center">Transaction<SortArrowsIcon /></span>
+                <span className="inline-flex items-center">Asset<SortArrowsIcon /></span>
+              </th>
+              <th className="text-left py-3 px-3 sm:px-4 text-xs sm:text-sm font-medium text-[#788099]">
+                <span className="inline-flex items-center">From<SortArrowsIcon /></span>
+              </th>
+              <th className="text-left py-3 px-3 sm:px-4 text-xs sm:text-sm font-medium text-[#788099]">
+                <span className="inline-flex items-center">To<SortArrowsIcon /></span>
               </th>
               <th className="text-left py-3 px-3 sm:px-4 text-xs sm:text-sm font-medium text-[#788099]">
                 <span className="inline-flex items-center">Amount<SortArrowsIcon /></span>
@@ -184,7 +198,7 @@ const SwapTransactions = () => {
                 <span className="inline-flex items-center">Status<SortArrowsIcon /></span>
               </th>
               <th className="text-left py-3 px-3 sm:px-4 text-xs sm:text-sm font-medium text-[#788099]">
-                <span className="inline-flex items-center">Date<SortArrowsIcon /></span>
+                <span className="inline-flex items-center">When<SortArrowsIcon /></span>
               </th>
             </tr>
           </thead>
@@ -194,34 +208,59 @@ const SwapTransactions = () => {
                 key={transaction.id}
                 className="border-b border-[#E8EFF5] dark:border-[#35353E] hover:bg-[#F5F5F5] dark:hover:bg-[#23232B] transition-colors"
               >
+                {/* Asset (show only short id) */}
                 <td className="py-3 sm:py-4 px-3 sm:px-4">
                   <div className="flex items-center gap-2 sm:gap-3">
-                    <img
-                      src={transaction.from_currency_image}
-                      alt={transaction.from_currency}
-                      className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex-shrink-0"
-                      onError={(e) => {
-                        e.currentTarget.src = "/images/placeholder.svg";
-                      }}
-                    />
                     <div className="min-w-0">
                       <div className="font-medium text-xs sm:text-sm lg:text-base text-[#0D0D0D] dark:text-white truncate">
-                        {transaction.from_currency.toUpperCase()} → {transaction.to_currency.toUpperCase()}
-                      </div>
-                      <div className="text-xs text-[#788099] truncate">
-                        {transaction.from_network.toUpperCase()} → {transaction.to_network.toUpperCase()}
+                        {formatShortId(transaction.id)}
                       </div>
                     </div>
                   </div>
                 </td>
+
+                {/* From */}
+                <td className="py-3 sm:py-4 px-3 sm:px-4">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <img
+                      src={getHighResAssetIcon({ ticker: transaction.from_currency })}
+                      alt={transaction.from_currency}
+                      className="w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover flex-shrink-0"
+                      onError={(e) => {
+                        e.currentTarget.src = "/images/placeholder.svg";
+                      }}
+                    />
+                    <div className="text-[#0D0D0D] dark:text-white font-medium text-xs sm:text-sm lg:text-base truncate">
+                      {transaction.from_currency.toUpperCase()} ({transaction.from_network.toUpperCase()})
+                    </div>
+                  </div>
+                </td>
+
+                {/* To */}
+                <td className="py-3 sm:py-4 px-3 sm:px-4">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <img
+                      src={getHighResAssetIcon({ ticker: transaction.to_currency })}
+                      alt={transaction.to_currency}
+                      className="w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover flex-shrink-0"
+                      onError={(e) => {
+                        e.currentTarget.src = "/images/placeholder.svg";
+                      }}
+                    />
+                    <div className="text-[#0D0D0D] dark:text-white font-medium text-xs sm:text-sm lg:text-base truncate">
+                      {transaction.to_currency.toUpperCase()} ({transaction.to_network.toUpperCase()})
+                    </div>
+                  </div>
+                </td>
+
+                {/* Amount */}
                 <td className="py-3 sm:py-4 px-3 sm:px-4">
                   <div className="text-[#0D0D0D] dark:text-white font-medium text-xs sm:text-sm lg:text-base">
                     {parseFloat(transaction.amount_expected_from).toFixed(6)} {transaction.from_currency.toUpperCase()}
                   </div>
-                  <div className="text-xs text-[#788099]">
-                    ≈ {parseFloat(transaction.amount_expected_to).toFixed(2)} {transaction.to_currency.toUpperCase()}
-                  </div>
                 </td>
+
+                {/* Status */}
                 <td className="py-3 sm:py-4 px-3 sm:px-4">
                   <span
                     className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
@@ -231,6 +270,8 @@ const SwapTransactions = () => {
                     {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}
                   </span>
                 </td>
+
+                {/* When */}
                 <td className="py-3 sm:py-4 px-3 sm:px-4 border-b border-[#E8EFF5] dark:border-[#35353E] text-xs sm:text-sm text-gray-500 dark:text-[#A0A3BC]">
                   {formatRecentTime(transaction.created_at)}
                 </td>

@@ -4138,7 +4138,7 @@ export default function WithdrawalForm({
                             />
                             <div className="flex flex-col text-left">
                               <div className="flex items-center gap-2">
-                                <span className={`font-normal text-sm ${isDark ? "text-white" : "text-[#1F2937]"
+                                <span className={`font-medium text-base ${isDark ? "text-white" : "text-[#1F2937]"
                                   }`}>
                                   {(
                                     selectedAsset.ticker ||
@@ -4151,7 +4151,7 @@ export default function WithdrawalForm({
                                   {getNetworkDisplayName(selectedAsset.network)}
                                 </span>
                               </div>
-                              <span className="text-[#788099] text-xs">
+                              <span className="text-[#788099] text-sm">
                                 {selectedAsset.name ||
                                   selectedAsset.ticker ||
                                   selectedAsset.symbol ||
@@ -4167,7 +4167,7 @@ export default function WithdrawalForm({
                             <img
                               src="/images/tether.svg"
                               alt="asset icon"
-                              className="w-6 h-6"
+                              className="w-6 h-6 rounded-full object-cover"
                             />
                             <span className={`${isDark ? "text-[#788099]" : "text-[#64748B]"}`}>
                               {assetsDisplay.isLoading

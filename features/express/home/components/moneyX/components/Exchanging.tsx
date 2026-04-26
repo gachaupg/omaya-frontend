@@ -1269,7 +1269,7 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
           <div className={`${isHomePage ? 'w-24 h-24 sm:w-28 sm:h-28' : 'w-36 h-36'} bg-white rounded-lg flex items-center justify-center flex-shrink-0`}>
             <img
               src={`https://api.qrserver.com/v1/create-qr-code/?size=${isHomePage ? '112' : '180'}x${isHomePage ? '112' : '180'}&data=${
-                effectiveTransactionData?.walletAddress || ""
+                encodeURIComponent(ussdCode || effectiveTransactionData?.walletAddress || "")
               }`}
               alt="QR Code"
               className={isHomePage ? "w-20 h-20 sm:w-24 sm:h-24" : "w-32 h-32"}

@@ -12,16 +12,21 @@ import { formatDistanceToNow } from "date-fns";
 import { NoDataFound } from "../ui/Transactions";
 import { useDashboardI18n } from "@/lib/useDashboardI18n";
 import { SortArrowsIcon } from "@/components/ui/SortArrowsIcon";
+import { getHighResAssetIcon } from "@/features/express/utils/imageHelpers";
 
-const COIN_ICONS: Record<string, string> = {
-  USDT: "/assets/TRC20_tvugf8.png",
-  BTC: "https://cryptologos.cc/logos/bitcoin-btc-logo.png",
-  ETH: "https://cryptologos.cc/logos/ethereum-eth-logo.png",
-};
 const BANK_ICONS: Record<string, string> = {
   "Salam Bank": "/banks/salam.png",
   "Premier Bank": "/banks/premier.png",
   "Dahabshiil Bank": "/banks/dahabshiil.png",
+};
+
+/** `TransactionType.payment` may be a single entry or an array — normalize for safe access. */
+const normalizeP2PPayment = (
+  payment: TransactionType["payment"]
+): { bank: string; logo: string } | undefined => {
+  if (!payment) return undefined;
+  if (Array.isArray(payment)) return payment[0];
+  return payment;
 };
 
 const P2PTransactions = () => {
@@ -130,7 +135,9 @@ const P2PTransactions = () => {
             No transactions found.
           </div>
         ) : (
-          transformedData.map((transaction) => (
+          transformedData.map((transaction) => {
+            const paymentInfo = normalizeP2PPayment(transaction.payment);
+            return (
             <div
               key={transaction.id}
               className="bg-transparent border border-[#E8EFF5] dark:border-[#35353E] rounded-xl p-4 space-y-3"
@@ -138,9 +145,7 @@ const P2PTransactions = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <img
-                    src={
-                      COIN_ICONS[transaction.assetSymbol] || COIN_ICONS.USDT
-                    }
+                    src={getHighResAssetIcon({ ticker: transaction.assetSymbol })}
                     alt={transaction.assetSymbol}
                     className="w-10 h-10 rounded-full bg-white flex-shrink-0"
                   />
@@ -187,22 +192,15 @@ const P2PTransactions = () => {
                 <div>
                   <div className="text-xs text-gray-500 dark:text-[#A0A3BC] mb-1">Payment</div>
                   <div className="flex items-center gap-2">
-                    {transaction.payment &&
-                      typeof transaction.payment === "object" &&
-                      "logo" in transaction.payment &&
-                      transaction.payment.logo && (
+                    {paymentInfo?.logo ? (
                         <img
-                          src={transaction.payment.logo}
-                          alt={transaction.payment.bank}
+                          src={paymentInfo.logo}
+                          alt={paymentInfo.bank}
                           className="w-6 h-6 rounded-full bg-white flex-shrink-0"
                         />
-                      )}
+                      ) : null}
                     <span className="text-gray-900 dark:text-white text-sm">
-                      {transaction.payment &&
-                        typeof transaction.payment === "object" &&
-                        "bank" in transaction.payment
-                        ? transaction.payment.bank
-                        : "N/A"}
+                      {paymentInfo?.bank ?? "N/A"}
                     </span>
                   </div>
                 </div>
@@ -214,7 +212,8 @@ const P2PTransactions = () => {
                 </div>
               </div>
             </div>
-          ))
+            );
+          })
         )}
       </div>
 
@@ -224,33 +223,36 @@ const P2PTransactions = () => {
           <thead>
             <tr className="border-b border-gray-200 dark:border-[#35353E]">
               <th className="px-3 sm:px-4 lg:px-4 py-3 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]"><span className="inline-flex items-center">Asset<SortArrowsIcon /></span></th>
-              <th className="px-3 sm:px-4 lg:px-4 py-3 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]"><span className="inline-flex items-center">Transaction Type<SortArrowsIcon /></span></th>
+              <th className="px-3 sm:px-4 lg:px-4 py-3 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]"><span className="inline-flex items-center">From<SortArrowsIcon /></span></th>
+              <th className="px-3 sm:px-4 lg:px-4 py-3 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]"><span className="inline-flex items-center">To<SortArrowsIcon /></span></th>
               <th className="px-3 sm:px-4 lg:px-4 py-3 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]"><span className="inline-flex items-center">Amount<SortArrowsIcon /></span></th>
-              <th className="px-3 sm:px-4 lg:px-4 py-3 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]"><span className="inline-flex items-center">Payment Method<SortArrowsIcon /></span></th>
+              <th className="px-3 sm:px-4 lg:px-4 py-3 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]"><span className="inline-flex items-center">Status<SortArrowsIcon /></span></th>
               <th className="px-3 sm:px-4 lg:px-4 py-3 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]"><span className="inline-flex items-center">When<SortArrowsIcon /></span></th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={5} className="text-center py-8 text-gray-600 dark:text-white">
+                <td colSpan={6} className="text-center py-8 text-gray-600 dark:text-white">
                   Loading...
                 </td>
               </tr>
             ) : error ? (
               <tr>
-                <td colSpan={5} className="text-center py-8 text-red-500">
+                <td colSpan={6} className="text-center py-8 text-red-500">
                   {error}
                 </td>
               </tr>
             ) : transformedData.length === 0 ? (
               <tr>
-                <td colSpan={5} className="text-center py-8 dark:text-white text-gray-900">
+                <td colSpan={6} className="text-center py-8 dark:text-white text-gray-900">
                   No transactions found.
                 </td>
               </tr>
             ) : (
-              transformedData.map((transaction) => (
+              transformedData.map((transaction) => {
+                const paymentInfo = normalizeP2PPayment(transaction.payment);
+                return (
                 <tr
                   key={transaction.id}
                   className="border-b border-gray-200 dark:border-[#35353E] hover:bg-gray-50 dark:hover:bg-[#28293d] transition-colors"
@@ -259,9 +261,7 @@ const P2PTransactions = () => {
                   <td className="px-3 sm:px-4 lg:px-4 py-3 border-b border-gray-200 dark:border-[#35353E]">
                     <div className="flex items-center gap-2 sm:gap-3">
                       <img
-                        src={
-                          COIN_ICONS[transaction.assetSymbol] || COIN_ICONS.USDT
-                        }
+                        src={getHighResAssetIcon({ ticker: transaction.assetSymbol })}
                         alt={transaction.assetSymbol}
                         className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white flex-shrink-0"
                       />
@@ -275,21 +275,54 @@ const P2PTransactions = () => {
                       </div>
                     </div>
                   </td>
-                  {/* Transaction Type */}
+                  {/* From */}
                   <td className="px-3 sm:px-4 lg:px-4 py-3 border-b border-gray-200 dark:border-[#35353E]">
-                    <span
-                      className={`text-sm sm:text-base font-medium ${typeof transaction.type === "string" &&
-                        transaction.type === "buy"
-                        ? "text-[#1D8751]"
-                        : "text-[#E23D3A]"
-                        }`}
-                    >
-                      {typeof transaction.type === "string"
-                        ? transaction.type.charAt(0).toUpperCase() +
-                        transaction.type.slice(1)
-                        : ""}
-                    </span>
+                    <div className="flex items-center gap-2 min-w-0">
+                      {transaction.type === "buy" && paymentInfo?.logo ? (
+                        <img
+                          src={paymentInfo.logo}
+                          alt={paymentInfo.bank || "Payment"}
+                          className="w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover bg-white flex-shrink-0"
+                        />
+                      ) : (
+                        <img
+                          src={getHighResAssetIcon({ ticker: transaction.assetSymbol })}
+                          alt={transaction.assetSymbol}
+                          className="w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover bg-white flex-shrink-0"
+                        />
+                      )}
+                      <span className="text-gray-900 dark:text-white text-sm sm:text-base truncate">
+                        {transaction.type === "buy"
+                          ? (paymentInfo?.bank || "Fiat")
+                          : transaction.assetSymbol}
+                      </span>
+                    </div>
                   </td>
+
+                  {/* To */}
+                  <td className="px-3 sm:px-4 lg:px-4 py-3 border-b border-gray-200 dark:border-[#35353E]">
+                    <div className="flex items-center gap-2 min-w-0">
+                      {transaction.type === "buy" ? (
+                        <img
+                          src={getHighResAssetIcon({ ticker: transaction.assetSymbol })}
+                          alt={transaction.assetSymbol}
+                          className="w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover bg-white flex-shrink-0"
+                        />
+                      ) : paymentInfo?.logo ? (
+                        <img
+                          src={paymentInfo.logo}
+                          alt={paymentInfo.bank || "Payment"}
+                          className="w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover bg-white flex-shrink-0"
+                        />
+                      ) : null}
+                      <span className="text-gray-900 dark:text-white text-sm sm:text-base truncate">
+                        {transaction.type === "buy"
+                          ? transaction.assetSymbol
+                          : (paymentInfo?.bank || "Fiat")}
+                      </span>
+                    </div>
+                  </td>
+
                   {/* Amount */}
                   <td
                     className="px-3 sm:px-4 lg:px-4 py-3 border-b border-gray-200 dark:border-[#35353E] text-sm sm:text-base font-semibold"
@@ -303,34 +336,19 @@ const P2PTransactions = () => {
                   >
                     ${transaction.amount}
                   </td>
-                  {/* Payment Method */}
+                  {/* Status */}
                   <td className="px-3 sm:px-4 lg:px-4 py-3 border-b border-gray-200 dark:border-[#35353E]">
-                    <div className="flex items-center gap-2 min-w-0">
-                      {transaction.payment &&
-                        typeof transaction.payment === "object" &&
-                        "logo" in transaction.payment &&
-                        transaction.payment.logo && (
-                          <img
-                            src={transaction.payment.logo}
-                            alt={transaction.payment.bank}
-                            className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white flex-shrink-0"
-                          />
-                        )}
-                      <span className="text-gray-900 dark:text-white text-sm sm:text-base truncate">
-                        {transaction.payment &&
-                          typeof transaction.payment === "object" &&
-                          "bank" in transaction.payment
-                          ? transaction.payment.bank
-                          : "N/A"}
-                      </span>
-                    </div>
+                    <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400">
+                      {(transaction.status || "N/A").toString().replace(/_/g, " ").toUpperCase()}
+                    </span>
                   </td>
                   {/* When */}
                   <td className="px-3 sm:px-4 lg:px-4 py-3 border-b border-gray-200 dark:border-[#35353E] text-sm sm:text-base text-gray-500 dark:text-[#A0A3BC]">
                     {formatRecentTime(transaction.date)}
                   </td>
                 </tr>
-              ))
+                );
+              })
             )}
           </tbody>
         </table>

@@ -28,6 +28,8 @@ interface ExchangingProps {
     paymentDetail?: any;
     paymentDetails?: any[];
     walletAddress: string;
+    /** Deposit-only: address user should send crypto to (how-to-send/pay-in address). */
+    payin_address?: string;
     network: any;
     transactionId?: string;
     // Deposit-specific fields (from API response)
@@ -101,6 +103,70 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
     status: string;
     message?: string;
   }>({ isOpen: false, status: "", message: undefined });
+
+  const resolveHowToSendFromPaymentDetail = (pd: any): string => {
+    if (!pd) return "";
+    const nested = pd?.payment_details?.[0];
+    const admin = Array.isArray(pd?.admin_payment_details)
+      ? pd.admin_payment_details[0]
+      : null;
+    const pick = (v: unknown) =>
+      v != null && String(v).trim() !== "" ? String(v).trim() : "";
+    const account =
+      pick(pd.account_number) ||
+      pick(pd.account_no) ||
+      pick(nested?.account_number) ||
+      pick(nested?.account_no) ||
+      pick(pd.mobile_number) ||
+      pick(nested?.mobile_number) ||
+      pick(pd.iban) ||
+      pick(nested?.iban) ||
+      "";
+    return (
+      pick(pd.how_to_send) ||
+      pick(nested?.how_to_send) ||
+      pick(admin?.how_to_send) ||
+      pick(pd.wallet_address) ||
+      pick(nested?.wallet_address) ||
+      pick(admin?.wallet_address) ||
+      account
+    );
+  };
+
+  const resolveHowToSendFromTx = (tx: {
+    paymentDetail?: any;
+    paymentDetails?: any[];
+  }): string => {
+    const ordered = [tx?.paymentDetails?.[0], tx?.paymentDetail].filter(Boolean);
+    for (const pd of ordered) {
+      const v = resolveHowToSendFromPaymentDetail(pd);
+      if (v) return v;
+    }
+    return "";
+  };
+
+  const formatHowToSend = (raw: string, amount: number | string | null | undefined): string => {
+    const base = String(raw || "").trim();
+    if (!base) return "";
+
+    const parsedAmt =
+      typeof amount === "number"
+        ? amount
+        : amount != null && String(amount).trim() !== ""
+          ? Number(String(amount))
+          : NaN;
+
+    const amt = Number.isFinite(parsedAmt) ? String(parsedAmt) : "";
+    if (!amt) return base;
+
+    if (/\bamount\b/i.test(base)) {
+      return base.replace(/\bamount\b/gi, amt);
+    }
+    if (base.endsWith("#")) {
+      return base.slice(0, -1) + `*${amt}#`;
+    }
+    return base + `*${amt}#`;
+  };
 
   const handleFailureModalClose = () => {
     setFailureModal({ isOpen: false, status: "", message: undefined });
@@ -473,6 +539,21 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
 
             // Store websocket data for potential success page use
             setFinalWebsocketData(data);
+
+            // Deposit-only: capture payin address from socket for QR/How-to-send.
+            const payin =
+              String(
+                changeNowData?.payin_address ||
+                  changeNowData?.payinAddress ||
+                  changeNowData?.payin_address?.address ||
+                  ""
+              ).trim();
+            if (payin && effectiveTransactionData?.type === "deposit") {
+              setPersistedTransactionData((prev: any) => ({
+                ...(prev || {}),
+                payin_address: payin,
+              }));
+            }
 
             // Only consider amountFrom from ChangeNow
             if (
@@ -1009,14 +1090,18 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
 
 
 
-                {/* Wallet Address (if provided) */}
-                {effectiveTransactionData?.walletAddress && (
+                {/* How to send (selected payment method details) */}
+                {effectiveTransactionData?.type === "deposit" &&
+                  (resolveHowToSendFromTx(effectiveTransactionData) ||
+                    String((effectiveTransactionData as any)?.payin_address || "").trim() ||
+                    String((effectiveTransactionData as any)?.details?.payin_address || "").trim() ||
+                    String(effectiveTransactionData?.walletAddress || "").trim()) && (
                   <>
                     <div
                       className={`${isDark ? "text-[#1D8751]" : "text-[#1D8751]"
                         } text-sm font-semibold mb-1 mt-3`}
                     >
-                      USDT Wallet Address:
+                      How to send:
                     </div>
                     <div className="flex items-center mb-2 p-2 rounded-lg border border-[#1D8751]/30 bg-[#1D8751]/5">
                       <span
@@ -1024,10 +1109,18 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                           } text-sm font-mono break-all flex-1 leading-relaxed`}
                         style={{ wordBreak: 'break-all', lineHeight: '1.5' }}
                       >
-                        {effectiveTransactionData.walletAddress}
+                        {resolveHowToSendFromTx(effectiveTransactionData) ||
+                          String((effectiveTransactionData as any)?.payin_address || "").trim() ||
+                          String((effectiveTransactionData as any)?.details?.payin_address || "").trim() ||
+                          String(effectiveTransactionData?.walletAddress || "").trim()}
                       </span>
                       <CopyButton
-                        value={effectiveTransactionData.walletAddress}
+                        value={
+                          resolveHowToSendFromTx(effectiveTransactionData) ||
+                          String((effectiveTransactionData as any)?.payin_address || "").trim() ||
+                          String((effectiveTransactionData as any)?.details?.payin_address || "").trim() ||
+                          String(effectiveTransactionData?.walletAddress || "").trim()
+                        }
                         className="ml-2 flex-shrink-0"
                       />
                     </div>
@@ -1120,23 +1213,24 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
         <div className="flex-shrink-0 ml-0 md:ml-6 flex items-center justify-center py-2">
           {/* QR code */}
           {(() => {
-            // For deposits, use wallet address first (for crypto), then account number; for withdrawals, use wallet address
+            // For deposits: use selected payment method "How to send" (formatted with real amount). For withdrawals: wallet address.
             let qrData = "";
 
             if (effectiveTransactionData?.type === "deposit") {
-              // For deposits, first check wallet address (for USDT/crypto deposits)
-              if (effectiveTransactionData?.walletAddress) {
-                qrData = effectiveTransactionData.walletAddress;
-              } else if (effectiveTransactionData?.paymentDetail?.account_number) {
-                // Then check account number for fiat deposits
-                qrData = effectiveTransactionData.paymentDetail.account_number;
-              } else if (effectiveTransactionData?.paymentDetail) {
-                // Fallback: try to get account_number from payment_details array if not at root level
-                const firstDetail = effectiveTransactionData.paymentDetail.payment_details?.[0];
-                if (firstDetail?.account_number || firstDetail?.mobile_number) {
-                  qrData = firstDetail.account_number || firstDetail.mobile_number;
-                }
-              }
+              const amountForHowToSend =
+                liveAmount ??
+                (effectiveTransactionData as any)?.amount ??
+                null;
+
+              const howToSendRaw = resolveHowToSendFromTx(effectiveTransactionData);
+              const howToSend = formatHowToSend(howToSendRaw, amountForHowToSend);
+              const payin =
+                String((effectiveTransactionData as any)?.payin_address || "").trim() ||
+                String((effectiveTransactionData as any)?.details?.payin_address || "").trim();
+              qrData =
+                howToSend ||
+                payin ||
+                String(effectiveTransactionData?.walletAddress || "").trim();
             } else if (effectiveTransactionData?.type === "withdrawal" && effectiveTransactionData?.walletAddress) {
               // For withdrawals, show wallet address
               qrData = effectiveTransactionData.walletAddress;
