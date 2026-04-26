@@ -9,6 +9,7 @@ type BankPaymentInfoResponse = {
 };
 
 const TRAILING_USSD_AMOUNT_PATTERN = /\*[0-9]+(?:\.[0-9]+)?#\s*$/;
+const AMOUNT_PLACEHOLDER_PATTERN = /\bamount\b/gi;
 
 const normalizeAmount = (amount: number | string): string => {
   const raw = typeof amount === "number" ? String(amount) : String(amount ?? "").trim();
@@ -18,16 +19,35 @@ const normalizeAmount = (amount: number | string): string => {
   return Number.isInteger(parsed) ? String(parsed) : String(parsed);
 };
 
-export const replaceTrailingUssdAmount = (
+/**
+ * Formats MoneyX "how_to_send" codes with the real amount:
+ * - If code contains the word "Amount" (case-insensitive), replace it with the amount.
+ * - Else if code ends with "*<number>#", replace the trailing number with the amount.
+ * - Else inject "*{amount}#" at the end (before trailing "#", if present).
+ */
+export const formatHowToSend = (
   code: string | null | undefined,
   amount: number | string
 ): string | null => {
   if (!code || typeof code !== "string") return null;
   const trimmed = code.trim();
   if (!trimmed) return null;
-  if (!TRAILING_USSD_AMOUNT_PATTERN.test(trimmed)) return trimmed;
-  return trimmed.replace(TRAILING_USSD_AMOUNT_PATTERN, `*${normalizeAmount(amount)}#`);
+  const amt = normalizeAmount(amount);
+
+  if (AMOUNT_PLACEHOLDER_PATTERN.test(trimmed)) {
+    return trimmed.replace(AMOUNT_PLACEHOLDER_PATTERN, amt);
+  }
+  if (TRAILING_USSD_AMOUNT_PATTERN.test(trimmed)) {
+    return trimmed.replace(TRAILING_USSD_AMOUNT_PATTERN, `*${amt}#`);
+  }
+  if (trimmed.endsWith("#")) {
+    return trimmed.slice(0, -1) + `*${amt}#`;
+  }
+  return trimmed + `*${amt}#`;
 };
+
+// Backwards-compatible name used by older components.
+export const replaceTrailingUssdAmount = formatHowToSend;
 
 export const fetchBankHowToSend = async (provider: string): Promise<string | null> => {
   const providerName = String(provider || "").trim();

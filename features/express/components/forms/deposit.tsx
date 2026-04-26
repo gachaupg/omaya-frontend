@@ -122,6 +122,57 @@ const getNetworkDisplayName = (network: string) => {
   return networkMap[network?.toLowerCase()] || network || "Unknown";
 };
 
+const resolveSelectedPaymentHowToSend = (
+  selectedPaymentDetail: any,
+  exchangeAdminPaymentDetails: any
+): string => {
+  if (!selectedPaymentDetail) return "";
+  const pick = (v: unknown) =>
+    v != null && String(v).trim() !== "" ? String(v).trim() : "";
+
+  const direct =
+    pick(selectedPaymentDetail.how_to_send) ||
+    pick(selectedPaymentDetail.howToSend) ||
+    pick(selectedPaymentDetail?.admin_payment_details?.[0]?.how_to_send) ||
+    pick(selectedPaymentDetail?.admin_payment_details?.[0]?.howToSend);
+  if (direct) return direct;
+
+  const list: any[] = Array.isArray(exchangeAdminPaymentDetails)
+    ? exchangeAdminPaymentDetails
+    : Array.isArray(exchangeAdminPaymentDetails?.data)
+      ? exchangeAdminPaymentDetails.data
+      : [];
+
+  const providerName = pick(
+    selectedPaymentDetail.provider_name || selectedPaymentDetail.providerName
+  );
+  const methodType = pick(
+    selectedPaymentDetail.payment_method_type ||
+      selectedPaymentDetail.payment_method ||
+      selectedPaymentDetail.payment_type ||
+      selectedPaymentDetail.method
+  );
+  const accountNumber = pick(selectedPaymentDetail.account_number);
+  const mobileNumber = pick(selectedPaymentDetail.mobile_number);
+
+  const match = list.find((d) => {
+    const dProvider = pick(d?.provider_name || d?.providerName);
+    const dMethod = pick(
+      d?.payment_method_type ||
+        d?.payment_method ||
+        d?.payment_type ||
+        d?.method
+    );
+    if (providerName && dProvider && providerName !== dProvider) return false;
+    if (methodType && dMethod && methodType !== dMethod) return false;
+    if (accountNumber && pick(d?.account_number) === accountNumber) return true;
+    if (mobileNumber && pick(d?.mobile_number) === mobileNumber) return true;
+    return providerName && methodType ? true : false;
+  });
+
+  return pick(match?.how_to_send) || pick(match?.howToSend) || "";
+};
+
 // Network aliases for whitelist matching (bookmark may use trc20, swap uses trx, etc.)
 const NETWORK_ALIASES: Record<string, string[]> = {
   trc20: ["trx", "trc20"],
@@ -1132,6 +1183,19 @@ export default function DepositForm({
         return data;
       })
       .catch((error: unknown) => {
+        const message =
+          error instanceof Error
+            ? error.message
+            : typeof error === "string"
+              ? error
+              : "";
+        // Redux Toolkit createAsyncThunk condition skip; safe to ignore (usually happens on fast mode switch).
+        if (
+          message.includes("Aborted due to condition callback returning false") ||
+          message.includes("ConditionError")
+        ) {
+          return;
+        }
         return withTimeout(dispatch(fetchAssets(true)).unwrap(), 15_000).catch(
           (refreshError: unknown) => {
             showToast.error(`Failed to fetch assets: ${refreshError}`);
@@ -3086,10 +3150,18 @@ export default function DepositForm({
             selectedAsset.icon_url ||
             selectedAsset.image,
         },
-        paymentDetail: selectedPaymentDetail || {
+        paymentDetail: (selectedPaymentDetail
+          ? {
+              ...selectedPaymentDetail,
+              how_to_send: resolveSelectedPaymentHowToSend(
+                selectedPaymentDetail,
+                exchangeAdminPaymentDetails
+              ),
+            }
+          : {
           provider_name: "direct",
           payment_method_type: "crypto",
-        },
+        }) as any,
         walletAddress: walletAddress.trim() || "Not provided",
         network: selectedNetwork,
         transactionId: finalResponse.transaction_id,
@@ -3348,7 +3420,13 @@ export default function DepositForm({
               selectedAsset.icon_url ||
               selectedAsset.image,
           },
-          paymentDetail: selectedPaymentDetail,
+          paymentDetail: {
+            ...selectedPaymentDetail,
+            how_to_send: resolveSelectedPaymentHowToSend(
+              selectedPaymentDetail,
+              exchangeAdminPaymentDetails
+            ),
+          },
           walletAddress: walletAddress,
           network: selectedNetwork,
           transactionId: depositResponse.transaction_id,
@@ -4094,7 +4172,7 @@ export default function DepositForm({
               </label>
               <div className="relative" ref={assetDropdownRef}>
                 <div
-                  className={`h-[48px] w-full text-[#35353e] bg-transparent dark:bg-transparent dark:text-[#ffffff] rounded-2xl px-3 sm:px-4 text-base sm:text-lg border border-[#A2A4A9FF] dark:border-[#35353E] hover:border-blue-400 dark:hover:border-blue-400 flex items-center justify-between cursor-pointer transition-colors duration-200`}
+                  className={`h-[48px] w-full text-[#35353e] bg-transparent dark:bg-transparent dark:text-[#ffffff] rounded-2xl px-3 sm:px-4 text-base border border-[#A2A4A9FF] dark:border-[#35353E] hover:border-blue-400 dark:hover:border-blue-400 flex items-center justify-between cursor-pointer transition-colors duration-200`}
                   onClick={() => {
                     if (!isAssetDropdownOpen) {
                       updateAssetDropdownPosition();
@@ -4113,7 +4191,7 @@ export default function DepositForm({
                             selectedAsset?.symbol ||
                             "Asset"
                           }
-                          className={`${ASSET_ICON_BASE_CLASS} w-6 h-6`}
+                          className={`${ASSET_ICON_BASE_CLASS} w-6 h-6 rounded-full object-cover`}
                           loading="lazy"
                           onError={(e) => {
                             e.currentTarget.src = getHighResAssetIcon(null, 72);
@@ -4121,7 +4199,7 @@ export default function DepositForm({
                         />
                         <div className="flex flex-col">
                           <div className="flex items-center gap-2">
-                            <span className="text-[#35353e] dark:text-white font-medium">
+                            <span className="text-[#35353e] dark:text-white font-medium text-base">
                               {(
                                 selectedAsset.ticker ||
                                 selectedAsset.symbol ||
@@ -4135,7 +4213,7 @@ export default function DepositForm({
                               )}
                             </span>
                           </div>
-                          <span className="text-[#788099] text-xs">
+                          <span className="text-[#788099] text-sm">
                             {selectedAsset.name ||
                               selectedAsset.ticker ||
                               selectedAsset.symbol ||
@@ -4153,7 +4231,7 @@ export default function DepositForm({
                         <img
                           src={getHighResAssetIcon(null, 72)}
                           alt="asset icon"
-                          className={`${ASSET_ICON_BASE_CLASS} w-9 h-9`}
+                          className={`${ASSET_ICON_BASE_CLASS} w-6 h-6 rounded-full object-cover`}
                           loading="lazy"
                         />
                         <span className="text-[#7e7e8f] dark:text-[#788099]">
@@ -4333,7 +4411,7 @@ export default function DepositForm({
                           PAYMENT_LOGO_SIZE
                         )}
                         alt={`${effectivePaymentDetail.provider_name || "Bank"} Logo`}
-                        className={`${PAYMENT_LOGO_BASE_CLASS} w-9 h-9`}
+                        className="w-6 h-6 rounded-full object-cover"
                         loading="lazy"
                         onError={(e) => {
                           e.currentTarget.src = getHighResPaymentLogo(
@@ -4585,7 +4663,7 @@ export default function DepositForm({
                       PAYMENT_LOGO_SIZE
                     )}
                     alt={`${selectedPaymentDetail.provider_name || "Bank"} Logo`}
-                    className={`${PAYMENT_LOGO_BASE_CLASS} w-9 h-9`}
+                    className="w-6 h-6 rounded-full object-cover"
                     loading="lazy"
                     onError={(e) => {
                       e.currentTarget.src = getHighResPaymentLogo(

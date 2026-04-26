@@ -14,9 +14,9 @@ import { showToast } from "../../../../../../lib/utils/toast";
 import { logger } from '@/lib/utils/logger';
 import {
   getHighResPaymentLogo,
+  getHighResAssetIcon,
   PAYMENT_LOGO_SIZE,
 } from "@/features/express/utils/imageHelpers";
-import AddWalletAddressModal from "@/features/settings/components/tabs/AddWalletAddressModal";
 
 type PaymentDetailPayload = {
   account_name: string;
@@ -74,11 +74,13 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
   const [isClient, setIsClient] = useState(false);
   const [step, setStep] = useState<"form" | "otp">("form");
   const [otpCode, setOtpCode] = useState("");
-  const [showForexAddressModal, setShowForexAddressModal] = useState(false);
+  // Forex now uses broker + MT4/MT5 number (no address modal)
   const [pendingPayload, setPendingPayload] = useState<PaymentDetailPayload | null>(null);
   const [sendOtpLoading, setSendOtpLoading] = useState(false);
   const [verifyOtpLoading, setVerifyOtpLoading] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
+  const [otpFeedback, setOtpFeedback] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [forexBrokerDropdownOpen, setForexBrokerDropdownOpen] = useState(false);
   const RESEND_COOLDOWN_SECONDS = 60;
   const autoSendPreviouslyEnabled = React.useMemo(
     () =>
@@ -147,7 +149,6 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
        setAllowAutoSend(false);
        setStep("form");
        setOtpCode("");
-      setShowForexAddressModal(false);
        setPendingPayload(null);
        dispatch(clearPostStatus());
      }
@@ -270,31 +271,27 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
   const providersForTab = processedProvidersFiltered.filter((p: any) =>
     isMethodInTab(String(p?.payment_method_type || ""), methodTab)
   );
-  const forexAssetOptions = React.useMemo(() => {
-    const bankLike = ["bank", "account", "mobile", "money", "mpesa", "provider"];
-    const nonBank = processedProvidersFiltered.filter((p: any) => {
-      const name = String(p?.provider_name || "").toLowerCase();
-      const providerName = String(p?.provider || "").toLowerCase();
-      const methodName = String(p?.payment_method_type || "").toLowerCase();
-      return !bankLike.some(
-        (k) => name.includes(k) || providerName.includes(k) || methodName.includes(k)
-      );
+  const forexBrokerOptions = React.useMemo(() => {
+    const forex = processedProvidersFiltered.filter((p: any) => {
+      const methodName = String(
+        p?.payment_method_type || p?.payment_method_name || ""
+      ).toLowerCase();
+      return methodName.includes("forex");
     });
+    if (forex.length > 0) return forex;
 
-    if (nonBank.length > 0) return nonBank;
-
-    // Fallback so Forex tab always lets user add an Omaya address.
+    // Fallback so Forex tab always works even if backend omits forex providers.
     return [
       {
-        provider_name: "USDT",
-        provider: "USDT",
-        payment_method_type: "Forex Wallet",
+        provider_name: "FXPRIMUS",
+        provider: "FXPRIMUS",
+        payment_method_type: "Forex",
         wallet_address: null,
       },
     ];
   }, [processedProvidersFiltered]);
 
-  const providers = methodTab === "forex" ? forexAssetOptions : providersForTab;
+  const providers = methodTab === "forex" ? forexBrokerOptions : providersForTab;
 
   // When filtered to a single provider, auto-select its method and provider
   const singleFilteredProvider = processedProvidersFiltered.length === 1 ? processedProvidersFiltered[0] : null;
@@ -319,19 +316,24 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
   const isForexMethod = normalizedMethod.includes("forex");
   const isMobileMethod =
     normalizedMethod.includes("mobile") || normalizedMethod.includes("money") || normalizedMethod.includes("mpesa");
-  const shouldUseWalletAddressField =
-    isCryptoMethod || isForexMethod || methodTab === "forex";
+  const shouldUseWalletAddressField = isCryptoMethod;
 
-  const accountFieldLabel = shouldUseWalletAddressField
-    ? "Wallet Address"
-    : isMobileMethod
-      ? "Mobile Number"
-      : "Account Number";
-  const accountFieldPlaceholder = shouldUseWalletAddressField
-    ? "Enter wallet address"
-    : isMobileMethod
-      ? "0712345678"
-      : "Enter account number";
+  const accountFieldLabel =
+    methodTab === "forex"
+      ? "MT4/MT5 Number"
+      : shouldUseWalletAddressField
+        ? "Wallet Address"
+        : isMobileMethod
+          ? "Mobile Number"
+          : "Account Number";
+  const accountFieldPlaceholder =
+    methodTab === "forex"
+      ? "Enter MT4/MT5 number"
+      : shouldUseWalletAddressField
+        ? "Enter wallet address"
+        : isMobileMethod
+          ? "0712345678"
+          : "Enter account number";
 
    logger.debug('p2p', "DEBUG: publicPaymentMethods:", publicPaymentMethods);
    logger.debug('p2p', "DEBUG: processedProviders:", processedProviders);
@@ -342,16 +344,16 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
      // Handle Add - first send OTP, then show OTP step
    const handleAdd = async () => {
      logger.debug('p2p', "handleAdd called", { method, provider, name, account });
-     if (!isAuthenticated) {
-       logger.debug('p2p', "User not authenticated");
-       showToast.error("Please log in to add payment methods");
-       return;
-     }
-    if (!provider || !name || !account) {
-       logger.debug('p2p', "Validation failed", { method, provider, name, account });
-       showToast.error("Please fill all required fields");
-       return;
-     }
+    if (!isAuthenticated) {
+      logger.debug('p2p', "User not authenticated");
+      setOtpFeedback({ type: "error", text: "Please log in to add payment methods" });
+      return;
+    }
+   if (!provider || !account || (methodTab !== "forex" && !name)) {
+      logger.debug('p2p', "Validation failed", { method, provider, name, account });
+      setOtpFeedback({ type: "error", text: "Please fill all required fields" });
+      return;
+    }
      
    const selectedProvider = providers.find(
      (p: any) => p.provider_name === provider
@@ -368,18 +370,18 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
       (methodTab === "crypto"
         ? "Crypto Wallet"
         : methodTab === "forex"
-          ? "Forex Wallet"
+          ? "Forex"
           : "Bank Wallet");
 
     const payload: PaymentDetailPayload = {
-      account_name: name,
+      account_name: methodTab === "forex" ? (name || "FOREX") : name,
       account_number: account,
       payment_method_name: resolvedMethod,
       payment_provider_name: providerField,
       provider_name: providerField,
       wallet_address: shouldUseWalletAddressField
         ? account
-        : selectedProvider?.wallet_address || null,
+        : null,
     };
     payload.allow_auto_send = autoSendPreviouslyEnabled ? false : allowAutoSend;
 
@@ -387,11 +389,11 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
     try {
       const result = await dispatch(sendPaymentDetailAddOtp() as any);
       if (sendPaymentDetailAddOtp.fulfilled.match(result)) {
-        showToast.success("OTP sent to your email address");
+        setOtpFeedback({ type: "success", text: "OTP sent to your email address" });
         setPendingPayload(payload);
         setStep("otp");
       } else if (sendPaymentDetailAddOtp.rejected.match(result)) {
-        showToast.error((result.payload as string) || "Failed to send OTP");
+        setOtpFeedback({ type: "error", text: (result.payload as string) || "Failed to send OTP" });
       }
     } finally {
       setSendOtpLoading(false);
@@ -405,11 +407,11 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
      try {
        const result = await dispatch(sendPaymentDetailAddOtp() as any);
        if (sendPaymentDetailAddOtp.fulfilled.match(result)) {
-         showToast.success("OTP resent to your email address");
+         setOtpFeedback({ type: "success", text: "OTP resent to your email address" });
          setResendCooldown(RESEND_COOLDOWN_SECONDS);
          setOtpCode("");
        } else if (sendPaymentDetailAddOtp.rejected.match(result)) {
-         showToast.error((result.payload as string) || "Failed to resend OTP");
+         setOtpFeedback({ type: "error", text: (result.payload as string) || "Failed to resend OTP" });
        }
      } finally {
        setSendOtpLoading(false);
@@ -419,17 +421,17 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
    // Handle OTP verify - then add payment detail
    const handleVerifyOtp = async () => {
      if (!pendingPayload || !otpCode.trim() || otpCode.length < 6) {
-       showToast.error("Please enter a valid 6-digit OTP");
+       setOtpFeedback({ type: "error", text: "Please enter a valid 6-digit OTP" });
        return;
      }
      setVerifyOtpLoading(true);
      try {
        const verifyResult = await dispatch(verifyPaymentDetailAddOtp(otpCode) as any);
        if (verifyPaymentDetailAddOtp.fulfilled.match(verifyResult)) {
-         showToast.success("OTP verified successfully. You can now add your payment method.");
+         setOtpFeedback({ type: "success", text: "OTP verified successfully. Adding your payment method..." });
          dispatch(postUserPaymentDetail(pendingPayload));
        } else if (verifyPaymentDetailAddOtp.rejected.match(verifyResult)) {
-         showToast.error((verifyResult.payload as string) || "Invalid OTP");
+         setOtpFeedback({ type: "error", text: (verifyResult.payload as string) || "Invalid OTP" });
        }
      } finally {
        setVerifyOtpLoading(false);
@@ -441,7 +443,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
     logger.debug('p2p', "postSuccess effect triggered", postSuccess);
     if (postSuccess) {
       logger.debug('p2p', "Payment method added successfully!");
-      showToast.success("Payment method added!");
+      setOtpFeedback({ type: "success", text: "Payment method added!" });
       if (onAdd) onAdd();
       if (onAddSuccess) {
         onAddSuccess();
@@ -456,7 +458,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
   useEffect(() => {
     if (postError) {
       logger.debug('p2p', "Post error occurred:", postError);
-      showToast.error(postError);
+      setOtpFeedback({ type: "error", text: postError });
     }
   }, [postError]);
 
@@ -519,12 +521,28 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
               className="w-full p-2.5 sm:p-3 rounded-[24px] bg-white dark:bg-[#18181D] border border-gray-200 dark:border-[#35353E] text-gray-900 dark:text-white text-center text-lg tracking-[0.4em] focus:outline-none focus:ring-2 focus:ring-[#1D8751] placeholder:text-gray-400 dark:placeholder:text-[#788099]"
               maxLength={6}
             />
+            {otpFeedback && (
+              <div
+                className={`text-sm ${
+                  otpFeedback.type === "success"
+                    ? "text-[#1D8751]"
+                    : "text-red-600 dark:text-red-400"
+                }`}
+              >
+                {otpFeedback.text}
+              </div>
+            )}
             <div className="flex justify-center">
               <button
                 type="button"
                 onClick={handleResendOtp}
                 disabled={resendCooldown > 0 || sendOtpLoading}
-                className="text-sm text-[#1D8751] hover:text-[#156b3f] font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:text-gray-400 dark:disabled:text-gray-500"
+                className={`text-sm font-medium disabled:cursor-not-allowed ${
+                  // Keep "Sending..." green (not gray/blue) even while disabled.
+                  sendOtpLoading && resendCooldown === 0
+                    ? "text-[#1D8751] opacity-70"
+                    : "text-[#1D8751] hover:text-[#156b3f] disabled:opacity-50 disabled:text-gray-400 dark:disabled:text-gray-500"
+                }`}
               >
                 {resendCooldown > 0
                   ? `Resend OTP in ${resendCooldown}s`
@@ -540,6 +558,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                   setStep("form");
                   setOtpCode("");
                   setPendingPayload(null);
+                  setOtpFeedback(null);
                 }}
                 className="flex-1 rounded-xl border border-gray-200 dark:border-[#35353E] bg-transparent text-gray-700 dark:text-white py-2.5 sm:py-3 font-medium hover:bg-gray-50 dark:hover:bg-[#23232B] transition-colors text-sm sm:text-base"
                 disabled={verifyOtpLoading}
@@ -690,18 +709,117 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
            )}
 
           {methodTab === "forex" && (
-            <div className="rounded-2xl border border-[#E3E6F0] dark:border-[#2A2F40] bg-[#F8FAFC] dark:bg-[#171C2A] px-4 py-3">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-gray-900 dark:text-white text-sm font-semibold">Your Addresses</p>
-                <button
-                  type="button"
-                  onClick={() => setShowForexAddressModal(true)}
-                  className="text-xs sm:text-sm text-[#1D8751] hover:text-[#0f8f4d] font-medium"
-                >
-                  + Add New Address
-                </button>
+            <>
+              <div>
+                <label className="block text-gray-900 dark:text-white text-sm mb-2">
+                  FOREX Broker
+                </label>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setForexBrokerDropdownOpen((v) => !v)}
+                    disabled={publicMethodsLoading}
+                    className="w-full bg-white dark:bg-[#060913] text-gray-900 dark:text-white rounded-[14px] border border-[#E3E6F0] dark:border-[#2A2F40] px-3 sm:px-4 py-2.5 sm:py-3 focus:outline-none focus:ring-2 focus:ring-[#1D8751] text-sm flex items-center justify-between disabled:opacity-50"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      {provider ? (
+                        <img
+                          src={(() => {
+                            const normalized = String(provider || "")
+                              .toLowerCase()
+                              .replace(/\s+/g, "");
+                            if (
+                              normalized === "fxprimus" ||
+                              normalized === "fxp" ||
+                              normalized.includes("fxprimus")
+                            ) {
+                              return getHighResAssetIcon({ ticker: "fxp" }, 72);
+                            }
+                            return "/default-provider-logo.svg";
+                          })()}
+                          alt={`${provider} logo`}
+                          className="w-6 h-6 rounded-full object-cover flex-shrink-0"
+                          onError={(e) => {
+                            e.currentTarget.src = "/default-provider-logo.svg";
+                          }}
+                        />
+                      ) : (
+                        <img
+                          src="/default-provider-logo.svg"
+                          alt="broker logo"
+                          className="w-6 h-6 rounded-full object-cover flex-shrink-0 opacity-70"
+                        />
+                      )}
+                      <span className="truncate">
+                        {provider ? provider : "Select broker"}
+                      </span>
+                    </div>
+                    <svg
+                      className={`w-5 h-5 text-gray-400 transition-transform ${forexBrokerDropdownOpen ? "rotate-180" : ""}`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+
+                  {forexBrokerDropdownOpen && (
+                    <div className="absolute z-50 mt-2 w-full rounded-xl border border-[#E3E6F0] dark:border-[#2A2F40] bg-white dark:bg-[#060913] shadow-xl overflow-hidden">
+                      <div className="max-h-60 overflow-y-auto py-1">
+                        {providers.map((p: any, idx: number) => {
+                          const label = String(p?.provider || p?.provider_name || "").trim();
+                          if (!label) return null;
+                          const value = String(p?.provider_name || label);
+                          const normalized = value.toLowerCase().replace(/\s+/g, "");
+                          const logo =
+                            normalized === "fxprimus" || normalized === "fxp" || normalized.includes("fxprimus")
+                              ? getHighResAssetIcon({ ticker: "fxp" }, 72)
+                              : "/default-provider-logo.svg";
+                          const selected = provider === value;
+                          return (
+                            <button
+                              key={`${value}-${idx}`}
+                              type="button"
+                              onClick={() => {
+                                setProvider(value);
+                                setForexBrokerDropdownOpen(false);
+                              }}
+                              className={`w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-gray-50 dark:hover:bg-[#171C2A] transition-colors ${selected ? "bg-[#1D8751]/5" : ""}`}
+                            >
+                              <img
+                                src={logo}
+                                alt={`${value} logo`}
+                                className="w-6 h-6 rounded-full object-cover flex-shrink-0"
+                                onError={(e) => {
+                                  e.currentTarget.src = "/default-provider-logo.svg";
+                                }}
+                              />
+                              <span className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                                {label}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
+              <div>
+                <label className="block text-gray-900 dark:text-white text-sm mb-2">
+                  MT4/MT5 Number
+                </label>
+                <input
+                  className="w-full bg-white dark:bg-[#060913] text-gray-900 dark:text-white rounded-[14px] border border-[#E3E6F0] dark:border-[#2A2F40] px-3 sm:px-4 py-2.5 sm:py-3 focus:outline-none focus:ring-2 focus:ring-[#1D8751] placeholder:text-gray-400 dark:placeholder:text-[#6F7893] text-sm"
+                  placeholder="Enter MT4/MT5 number"
+                  value={account}
+                  onChange={(e) => setAccount(e.target.value)}
+                  disabled={publicMethodsLoading}
+                  inputMode="numeric"
+                />
+              </div>
+            </>
           )}
 
           {/* Name Input */}
@@ -779,7 +897,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
           {publicMethodsError && <div className="text-red-500 text-sm">{publicMethodsError}</div>}
           {postError && <div className="text-red-500 text-sm">{postError}</div>}
           {(sendOtpLoading || postLoading) && (
-            <div className="text-blue-500 text-sm">
+            <div className="text-[#1D8751] text-sm">
               {sendOtpLoading ? "Sending OTP..." : "Adding payment method..."}
             </div>
           )}
@@ -810,11 +928,16 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
             {isAuthenticated ? (
               methodTab === "forex" ? (
                 <button
-                  className="flex-1 rounded-xl bg-[#1D8751] text-white py-2.5 sm:py-3 font-medium hover:bg-[#17693f] transition-colors text-sm sm:text-base"
+                  className="flex-1 rounded-xl bg-[#1D8751] text-white py-2.5 sm:py-3 font-medium hover:bg-[#17693f] transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
                   type="button"
-                  onClick={() => setShowForexAddressModal(true)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleAdd();
+                  }}
+                  disabled={publicMethodsLoading || postLoading || sendOtpLoading || !provider || !account}
                 >
-                  + Add New Address
+                  {sendOtpLoading ? "Sending OTP..." : postLoading ? "Adding..." : "Add"}
                 </button>
               ) : (
               <button
@@ -853,14 +976,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
           </div>
         </form>
         )}
-        <AddWalletAddressModal
-          open={showForexAddressModal}
-          onClose={() => setShowForexAddressModal(false)}
-          onSuccess={() => {
-            setShowForexAddressModal(false);
-            onClose();
-          }}
-        />
+        {/* Forex address modal removed */}
       </div>
     </div>
   );

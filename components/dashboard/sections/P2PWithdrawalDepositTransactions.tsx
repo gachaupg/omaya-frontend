@@ -364,8 +364,8 @@ const P2PWithdrawalDepositTransactions = ({ filterByType = "all" }: P2PWithdrawa
             <tr className="border-b border-gray-200 dark:border-[#35353E]">
               {[
                 t("transactions.asset", "Asset"),
-                t("transactions.transactionId", "Transaction ID"),
-                t("transactions.transactionType", "Transaction Type"),
+                t("transactions.from", "From"),
+                t("transactions.to", "To"),
                 t("transactions.amount", "Amount"),
                 t("transactions.status", "Status"),
                 t("transactions.when", "When"),
@@ -385,6 +385,12 @@ const P2PWithdrawalDepositTransactions = ({ filterByType = "all" }: P2PWithdrawa
 
           <tbody className="divide-y divide-gray-200 dark:divide-[#2A2A35]">
             {paginatedResults.map((tx: any, index: number) => {
+              const symbol = (tx.currency || tx.asset_symbol || "USDT").toString().toUpperCase();
+              const txType = String(tx.transaction_type || "").toLowerCase();
+              const fromLabel =
+                txType === "withdrawal" ? `${symbol} · Wallet` : "Wallet / Address";
+              const toLabel =
+                txType === "withdrawal" ? "Wallet / Address" : `${symbol} · Wallet`;
               return (
                 <tr
                   key={tx.transaction_id || `tx-${index}`}
@@ -396,7 +402,7 @@ const P2PWithdrawalDepositTransactions = ({ filterByType = "all" }: P2PWithdrawa
                       <img
                         src={getHighResAssetIcon({ ticker: tx.currency || tx.asset_symbol })}
                         alt={tx.currency || tx.asset_symbol || "Asset"}
-                        className="w-7 h-7 sm:w-8 sm:h-8 rounded-full shadow-sm flex-shrink-0"
+                        className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover shadow-sm flex-shrink-0"
                         onError={(e) => {
                           e.currentTarget.style.display = 'none';
                         }}
@@ -412,16 +418,14 @@ const P2PWithdrawalDepositTransactions = ({ filterByType = "all" }: P2PWithdrawa
                     </div>
                   </td>
 
-                  {/* Transaction ID (second after Asset) */}
-                  <td className="px-3 sm:px-4 py-2 whitespace-normal break-words">
-                    <span className="font-mono text-xs sm:text-sm text-gray-700 dark:text-gray-200 inline-block" title={tx.transaction_id || ""}>
-                      {tx.transaction_id ? formatTransactionId(tx.transaction_id) : t("transactions.notAvailable", "N/A")}
-                    </span>
+                  {/* From */}
+                  <td className="px-3 sm:px-4 py-2 whitespace-normal break-words text-xs sm:text-sm text-gray-700 dark:text-gray-200">
+                    {fromLabel}
                   </td>
 
-                  {/* Type */}
-                  <td className="px-3 sm:px-4 py-2 text-xs sm:text-sm text-gray-500 dark:text-[#A0A3BC] capitalize">
-                    {tx.transaction_type}
+                  {/* To */}
+                  <td className="px-3 sm:px-4 py-2 whitespace-normal break-words text-xs sm:text-sm text-gray-700 dark:text-gray-200">
+                    {toLabel}
                   </td>
 
                   {/* Amount */}

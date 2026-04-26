@@ -14,6 +14,12 @@ export interface UserPaymentDetail {
   logo_url?: string;
   wallet_address?: string | null;
   status?: string;
+  /** Admin provided message when rejected/blocked */
+  rejection_reason?: string | null;
+  rejectionReason?: string | null;
+  reason?: string | null;
+  comment?: string | null;
+  note?: string | null;
   created_at?: string;
   updated_at?: string;
 }

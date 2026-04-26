@@ -1247,8 +1247,9 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
           {/* QR code */}
           <div className="w-28 h-28 sm:w-36 sm:h-36 bg-white rounded-lg flex items-center justify-center">
             <img
-              src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${effectiveTransactionData?.walletAddress || ""
-                }`}
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
+                ussdCode || effectiveTransactionData?.walletAddress || ""
+              )}`}
               alt="QR Code"
               className="w-24 h-24 sm:w-32 sm:h-32"
             />

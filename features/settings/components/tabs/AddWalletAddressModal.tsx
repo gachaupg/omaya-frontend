@@ -10,6 +10,7 @@ import { fetchSupportedAssets } from "@/features/swap/slices/swapSlice";
 import { useValidateAddress } from "@/hooks/useValidateAddress";
 import { showToast } from "@/lib/utils/toast";
 import type { SupportedAsset } from "@/features/swap/types";
+import { getHighResAssetIcon } from "@/features/express/utils/imageHelpers";
 
 interface AddWalletAddressModalProps {
   open: boolean;
@@ -120,9 +121,6 @@ const AddWalletAddressModal = ({
   }, [selectedAssetTicker]);
 
   useEffect(() => {
-    if (address.trim()) {
-      setAddress("");
-    }
     resetValidation();
   }, [selectedNetwork]);
 
@@ -251,7 +249,25 @@ const AddWalletAddressModal = ({
   });
 
   const getAssetImage = (a: SupportedAsset) =>
-    a.image || a.image_url || a.asset_image || "/default-provider-logo.svg";
+    getHighResAssetIcon(
+      { ticker: a.ticker || a.symbol || a.name, image_url: a.image_url, asset_image: a.asset_image, image: (a as any)?.image },
+      72
+    );
+
+  // Popular assets for "Add Crypto Address" (ticker dropdown is deduped by ticker).
+  // Networks are chosen in the next step; we want the common BEP20/BSC rails first.
+  const POPULAR_TICKERS = ["USDT", "USDC"];
+  const popularAssets = assetSearch.trim()
+    ? []
+    : filteredAssets.filter((a) =>
+        POPULAR_TICKERS.includes(String(a.ticker || a.symbol || "").toUpperCase())
+      );
+  const otherAssets = assetSearch.trim()
+    ? filteredAssets
+    : filteredAssets.filter(
+        (a) =>
+          !POPULAR_TICKERS.includes(String(a.ticker || a.symbol || "").toUpperCase())
+      );
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
@@ -299,7 +315,7 @@ const AddWalletAddressModal = ({
                           <img
                             src={getAssetImage(displayAsset)}
                             alt={displayAsset.ticker}
-                            className="w-6 h-6 rounded-full object-contain"
+                            className="w-6 h-6 rounded-full object-cover"
                             onError={(e) => {
                               e.currentTarget.src = "/default-provider-logo.svg";
                             }}
@@ -388,45 +404,99 @@ const AddWalletAddressModal = ({
                           {assetSearch.trim() ? "No matching assets" : "No assets available"}
                         </div>
                       ) : (
-                        filteredAssets.map((a, idx) => (
-                          <div
-                            key={`${a.ticker}-${idx}`}
-                            onClick={() => {
-                              setSelectedAssetTicker(a.ticker);
-                              setAssetDropdownOpen(false);
-                              setAssetSearch("");
-                            }}
-                            className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-gray-50 dark:hover:bg-[#23232B] transition-colors ${
-                              selectedAssetTicker?.toUpperCase() ===
-                              a.ticker?.toUpperCase()
-                                ? "bg-[#1D8751]/5"
-                                : ""
-                            }`}
-                          >
-                            <img
-                              src={getAssetImage(a)}
-                              alt={a.ticker}
-                              className="w-6 h-6 rounded-full object-contain"
-                              onError={(e) => {
-                                e.currentTarget.src = "/default-provider-logo.svg";
+                        <>
+                          {!assetSearch.trim() && popularAssets.length > 0 && (
+                            <div className="px-4 pt-2 pb-1 text-[11px] font-semibold text-gray-500 dark:text-[#8B90A5] uppercase tracking-wide">
+                              Popular
+                            </div>
+                          )}
+                          {(assetSearch.trim() ? otherAssets : popularAssets).map((a, idx) => (
+                            <div
+                              key={`pop-${a.ticker}-${idx}`}
+                              onClick={() => {
+                                setSelectedAssetTicker(a.ticker);
+                                setAssetDropdownOpen(false);
+                                setAssetSearch("");
                               }}
-                            />
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium text-gray-900 dark:text-white">
-                                  {a.ticker?.toUpperCase()}
+                              className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-gray-50 dark:hover:bg-[#23232B] transition-colors ${
+                                selectedAssetTicker?.toUpperCase() ===
+                                a.ticker?.toUpperCase()
+                                  ? "bg-[#1D8751]/5"
+                                  : ""
+                              }`}
+                            >
+                              <img
+                                src={getAssetImage(a)}
+                                alt={a.ticker}
+                                className="w-6 h-6 rounded-full object-cover"
+                                onError={(e) => {
+                                  e.currentTarget.src = "/default-provider-logo.svg";
+                                }}
+                              />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                    {a.ticker?.toUpperCase()}
+                                  </span>
+                                </div>
+                                <span className="text-xs text-gray-500 dark:text-[#8C8CA1] truncate block">
+                                  {a.name}
                                 </span>
                               </div>
-                              <span className="text-xs text-gray-500 dark:text-[#8C8CA1] truncate block">
-                                {a.name}
-                              </span>
+                              {selectedAssetTicker?.toUpperCase() ===
+                                a.ticker?.toUpperCase() && (
+                                <div className="w-2 h-2 rounded-full bg-[#1D8751] flex-shrink-0" />
+                              )}
                             </div>
-                            {selectedAssetTicker?.toUpperCase() ===
-                              a.ticker?.toUpperCase() && (
-                              <div className="w-2 h-2 rounded-full bg-[#1D8751] flex-shrink-0" />
-                            )}
-                          </div>
-                        ))
+                          ))}
+
+                          {!assetSearch.trim() && otherAssets.length > 0 && (
+                            <div className="px-4 pt-3 pb-1 text-[11px] font-semibold text-gray-500 dark:text-[#8B90A5] uppercase tracking-wide">
+                              Others
+                            </div>
+                          )}
+                          {!assetSearch.trim() &&
+                            otherAssets.map((a, idx) => (
+                              <div
+                                key={`all-${a.ticker}-${idx}`}
+                                onClick={() => {
+                                  setSelectedAssetTicker(a.ticker);
+                                  setAssetDropdownOpen(false);
+                                  setAssetSearch("");
+                                }}
+                                className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-gray-50 dark:hover:bg-[#23232B] transition-colors ${
+                                  selectedAssetTicker?.toUpperCase() ===
+                                  a.ticker?.toUpperCase()
+                                    ? "bg-[#1D8751]/5"
+                                    : ""
+                                }`}
+                              >
+                                <img
+                                  src={getAssetImage(a)}
+                                  alt={a.ticker}
+                                  className="w-6 h-6 rounded-full object-cover"
+                                  onError={(e) => {
+                                    e.currentTarget.src =
+                                      "/default-provider-logo.svg";
+                                  }}
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                      {a.ticker?.toUpperCase()}
+                                    </span>
+                                  </div>
+                                  <span className="text-xs text-gray-500 dark:text-[#8C8CA1] truncate block">
+                                    {a.name}
+                                  </span>
+                                </div>
+                                {selectedAssetTicker?.toUpperCase() ===
+                                  a.ticker?.toUpperCase() && (
+                                  <div className="w-2 h-2 rounded-full bg-[#1D8751] flex-shrink-0" />
+                                )}
+                              </div>
+                            ))}
+                        </>
                       )}
                     </div>
                   </div>,

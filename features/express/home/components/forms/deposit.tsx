@@ -199,6 +199,57 @@ const getNetworkDisplayName = (network: string) => {
   return networkMap[network?.toLowerCase()] || network || 'Unknown';
 };
 
+const resolveSelectedPaymentHowToSend = (
+  selectedPaymentDetail: any,
+  exchangeAdminPaymentDetails: any
+): string => {
+  if (!selectedPaymentDetail) return "";
+  const pick = (v: unknown) =>
+    v != null && String(v).trim() !== "" ? String(v).trim() : "";
+
+  const direct =
+    pick(selectedPaymentDetail.how_to_send) ||
+    pick(selectedPaymentDetail.howToSend) ||
+    pick(selectedPaymentDetail?.admin_payment_details?.[0]?.how_to_send) ||
+    pick(selectedPaymentDetail?.admin_payment_details?.[0]?.howToSend);
+  if (direct) return direct;
+
+  const list: any[] = Array.isArray(exchangeAdminPaymentDetails)
+    ? exchangeAdminPaymentDetails
+    : Array.isArray(exchangeAdminPaymentDetails?.data)
+      ? exchangeAdminPaymentDetails.data
+      : [];
+
+  const providerName = pick(
+    selectedPaymentDetail.provider_name || selectedPaymentDetail.providerName
+  );
+  const methodType = pick(
+    selectedPaymentDetail.payment_method_type ||
+      selectedPaymentDetail.payment_method ||
+      selectedPaymentDetail.payment_type ||
+      selectedPaymentDetail.method
+  );
+  const accountNumber = pick(selectedPaymentDetail.account_number);
+  const mobileNumber = pick(selectedPaymentDetail.mobile_number);
+
+  const match = list.find((d) => {
+    const dProvider = pick(d?.provider_name || d?.providerName);
+    const dMethod = pick(
+      d?.payment_method_type ||
+        d?.payment_method ||
+        d?.payment_type ||
+        d?.method
+    );
+    if (providerName && dProvider && providerName !== dProvider) return false;
+    if (methodType && dMethod && methodType !== dMethod) return false;
+    if (accountNumber && pick(d?.account_number) === accountNumber) return true;
+    if (mobileNumber && pick(d?.mobile_number) === mobileNumber) return true;
+    return providerName && methodType ? true : false;
+  });
+
+  return pick(match?.how_to_send) || pick(match?.howToSend) || "";
+};
+
 // Helper function to get network value from asset (handles both Asset and SupportedAsset types)
 const getAssetNetwork = (asset: any): string => {
   // For SupportedAsset (swap assets) - has network property
@@ -3204,7 +3255,15 @@ export default function DepositForm({
           ...selectedAsset,
           icon: selectedAsset.image_url || selectedAsset.asset_image || selectedAsset.icon_url || selectedAsset.image
         },
-        paymentDetail: selectedPaymentDetail || { provider_name: "direct", payment_method_type: "crypto" },
+        paymentDetail: (selectedPaymentDetail
+          ? {
+              ...selectedPaymentDetail,
+              how_to_send: resolveSelectedPaymentHowToSend(
+                selectedPaymentDetail,
+                exchangeAdminPaymentDetails
+              ),
+            }
+          : { provider_name: "direct", payment_method_type: "crypto" }) as any,
         walletAddress: walletAddress.trim() || "Not provided",
         network: selectedNetwork,
         transactionId: finalResponse.transaction_id,
@@ -3489,7 +3548,13 @@ export default function DepositForm({
             ...selectedAsset,
             icon: selectedAsset.image_url || selectedAsset.asset_image || selectedAsset.icon_url || selectedAsset.image
           },
-          paymentDetail: selectedPaymentDetail,
+          paymentDetail: {
+            ...selectedPaymentDetail,
+            how_to_send: resolveSelectedPaymentHowToSend(
+              selectedPaymentDetail,
+              exchangeAdminPaymentDetails
+            ),
+          },
           walletAddress: depositResponse.deposit_address || walletAddress,
           network: selectedNetwork,
           transactionId: depositResponse.transaction_id,

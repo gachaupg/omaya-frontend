@@ -94,7 +94,7 @@ const AssetRow = React.memo(function AssetRow({
         alt={
           asset?.name || asset?.ticker || asset?.symbol || "Asset"
         }
-        className="w-10 h-10 rounded-full object-cover shrink-0"
+        className="w-6 h-6 rounded-full object-cover shrink-0"
         loading="lazy"
         decoding="async"
         onError={(e) => {
@@ -102,19 +102,19 @@ const AssetRow = React.memo(function AssetRow({
         }}
       />
       <div className="flex-1 min-w-0">
-        <div className="text-[#1F2937] dark:text-[#ffffff] font-medium text-base flex items-center gap-2 flex-wrap">
+        <div className="text-[#1F2937] dark:text-[#ffffff] font-medium text-sm flex items-center gap-2 flex-wrap">
           {(asset.ticker || asset.symbol || asset.name || "Unknown").toUpperCase()}
-          <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-normal px-2 py-0.5 rounded-full shrink-0">
+          <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-[10px] font-normal px-2 py-0.5 rounded-full shrink-0">
             {getNetworkDisplayName(asset.network || "")}
           </span>
         </div>
-        <div className="text-sm text-gray-500 dark:text-gray-400 truncate">
+        <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
           {asset.name ||
             (asset.ticker || "").toUpperCase() ||
             (asset.symbol || "").toUpperCase() ||
             "Unknown Asset"}
           {asset.legacy_ticker && (
-            <span className="text-xs text-[#f7c624] dark:text-[#f7c624] bg-[#f7c6241a] px-1 py-0.5 rounded-full ml-1">
+            <span className="text-[10px] text-[#f7c624] dark:text-[#f7c624] bg-[#f7c6241a] px-1 py-0.5 rounded-full ml-1">
               {asset.legacy_ticker}
             </span>
           )}
