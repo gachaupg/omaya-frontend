@@ -213,6 +213,8 @@ const TradePreview: React.FC<TradePreviewProps> = ({
     );
   }, [paymentOptions, paymentSearchTerm]);
 
+  const shouldShowPaymentSearch = paymentOptions.length > 1;
+
   // User's payment methods that match the selected advertiser payment method (sell only, includes verified + pending)
   const matchingUserPaymentMethods = React.useMemo(() => {
     if (tradeType !== "sell" || !paymentMethod || !userPaymentDetails?.length) return [];
@@ -922,15 +924,17 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                           zIndex: 2147483647,
                         }}
                       >
-                        <div className="p-2 border-b border-gray-200 dark:border-[#35353E]">
-                          <input
-                            type="text"
-                            placeholder="Search payment method..."
-                            value={paymentSearchTerm}
-                            onChange={(e) => setPaymentSearchTerm(e.target.value)}
-                            className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-[#35353E] bg-gray-50 dark:bg-[#23232B] text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-[#788099] focus:outline-none focus:ring-2 focus:ring-[#1D8751]"
-                          />
-                        </div>
+                        {shouldShowPaymentSearch && (
+                          <div className="p-2 border-b border-gray-200 dark:border-[#35353E]">
+                            <input
+                              type="text"
+                              placeholder="Search payment method..."
+                              value={paymentSearchTerm}
+                              onChange={(e) => setPaymentSearchTerm(e.target.value)}
+                              className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-[#35353E] bg-gray-50 dark:bg-[#23232B] text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-[#788099] focus:outline-none focus:ring-2 focus:ring-[#1D8751]"
+                            />
+                          </div>
+                        )}
                         <div className="overflow-y-auto">
                           {paymentOptions.length === 0 ? (
                             <div className="px-4 py-3 text-sm text-gray-500 dark:text-[#788099]">
@@ -1018,15 +1022,17 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                           zIndex: 2147483647,
                         }}
                       >
-                        <div className="p-2 border-b border-gray-200 dark:border-[#35353E]">
-                          <input
-                            type="text"
-                            placeholder="Search payment method..."
-                            value={paymentSearchTerm}
-                            onChange={(e) => setPaymentSearchTerm(e.target.value)}
-                            className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-[#35353E] bg-gray-50 dark:bg-[#23232B] text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-[#788099] focus:outline-none focus:ring-2 focus:ring-[#1D8751]"
-                          />
-                        </div>
+                        {shouldShowPaymentSearch && (
+                          <div className="p-2 border-b border-gray-200 dark:border-[#35353E]">
+                            <input
+                              type="text"
+                              placeholder="Search payment method..."
+                              value={paymentSearchTerm}
+                              onChange={(e) => setPaymentSearchTerm(e.target.value)}
+                              className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-[#35353E] bg-gray-50 dark:bg-[#23232B] text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-[#788099] focus:outline-none focus:ring-2 focus:ring-[#1D8751]"
+                            />
+                          </div>
+                        )}
                         <div className="overflow-y-auto">
                           {paymentOptions.length === 0 ? (
                             <div className="px-4 py-3 text-sm text-gray-500 dark:text-[#788099]">

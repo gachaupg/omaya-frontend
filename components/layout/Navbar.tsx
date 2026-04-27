@@ -516,7 +516,7 @@ export default function Navbar() {
       href: "/dashboard/exchange",
       icon: "/assets/uil_exchange_1_okxkvb.png",
       title: (
-        <span className="flex items-center text-[#76777B] dark:text-white font-bold">
+        <span className="flex items-center text-[#76777B] dark:text-white font-bold uppercase">
           Money{" "}
           <span className="inline-flex">
             <img src="/images/x.png" alt="X" className="dark:hidden inline-block" />
@@ -529,19 +529,19 @@ export default function Navbar() {
     {
       href: "/dashboard/p2p",
       icon: "/assets/users-profiles-left_e2oejc.png",
-      title: "P2P",
+      title: <span className="font-bold uppercase">P2P</span>,
       description: "Buy and sell cryptocurrencies directly with flexible payment methods",
     },
     {
       href: "/dashboard/swap",
       icon: "/assets/Group_164002_fgt2kf.png",
-      title: "Swap",
+      title: <span className="font-bold uppercase">Swap</span>,
       description: "Exchange one cryptocurrency for another instantly and securely within your wallet",
     },
     {
       href: "/dashboard/account?tab=referral",
       icon: "/assets/users-profiles-left_e2oejc.png",
-      title: "Referral",
+      title: <span className="font-bold uppercase">Referral</span>,
       description: "Share your referral link and earn rewards from your referrals",
     },
   ];

@@ -789,6 +789,18 @@ export default function ExchangeForm({
     setPayAmount(numValue);
     setIsCalculatingFromPay(true);
 
+    // If user cleared input, clear the other side too (avoid stale converted values).
+    if (value.trim() === "") {
+      setGetAmount(0);
+      setGetAmountInput("");
+      setIsCalculating(false);
+      setCalculationError(null);
+      setEstimate(null);
+      setEstimateLoading(false);
+      setEstimateError(null);
+      return;
+    }
+
     // Calculate get amount
     calculateAmounts(
       numValue,
@@ -814,6 +826,18 @@ export default function ExchangeForm({
     const numValue = parseFloat(value) || 0;
     setGetAmount(numValue);
     setIsCalculatingFromPay(false);
+
+    // If user cleared input, clear the other side too (avoid stale converted values).
+    if (value.trim() === "") {
+      setPayAmount(0);
+      setPayAmountInput("");
+      setIsCalculating(false);
+      setCalculationError(null);
+      setEstimate(null);
+      setEstimateLoading(false);
+      setEstimateError(null);
+      return;
+    }
 
     // Calculate pay amount
     calculateAmounts(

@@ -149,11 +149,19 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
     const verticalOffset = dropdownOffsetY;
     const horizontalOffset = dropdownOffsetX;
     
-    if (targetCard && !dropdownMatchTriggerWidth) {
+    if (targetCard) {
       const cardRect = targetCard.getBoundingClientRect();
-      
-      // Calculate reduced width so dropdowns don't cover amount inputs (40% of card width)
-      let desiredWidth = Math.min(maxWidth, Math.max(minWidth, cardRect.width * 0.4));
+
+      // Width strategy:
+      // - When dropdownMatchTriggerWidth=true, match the Asset dropdown behavior:
+      //   clamp to [minWidth..maxWidth] based on trigger width.
+      // - Otherwise, keep the reduced dropdown width so it doesn't cover neighboring inputs.
+      let desiredWidth = dropdownMatchTriggerWidth
+        ? Math.min(maxWidth, Math.max(minWidth, triggerRect.width))
+        : Math.min(maxWidth, Math.max(minWidth, cardRect.width * 0.4));
+
+      // Ensure it doesn't exceed viewport width
+      desiredWidth = Math.min(desiredWidth, viewportWidth - minMargin * 2);
       
       // Position directly below the trigger button (from top)
       // Use getBoundingClientRect which gives viewport-relative coordinates (perfect for fixed positioning)
@@ -180,16 +188,19 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
         top = minTopPosition;
       }
       
-      // Position horizontally - align with trigger button's right edge
-      // This ensures the dropdown aligns with the trigger button, not the card edge
-      let left = triggerRect.right - desiredWidth; // Align right edge of dropdown with right edge of trigger
+      // Position horizontally
+      // - Match trigger width: align to trigger left edge
+      // - Reduced width: align right edge with trigger right edge
+      let left = dropdownMatchTriggerWidth
+        ? triggerRect.left
+        : triggerRect.right - desiredWidth; // Align right edge of dropdown with right edge of trigger
       
       // Apply horizontal offset (positive moves right, negative moves left)
       left += horizontalOffset;
       
-      // If there's a horizontal offset, allow dropdown to go outside card boundaries
-      // Otherwise, keep it within card bounds
-      if (horizontalOffset === 0) {
+      // If there's a horizontal offset, allow dropdown to go outside card boundaries.
+      // Otherwise, keep reduced-width dropdown within card bounds.
+      if (horizontalOffset === 0 && !dropdownMatchTriggerWidth) {
         // No offset - keep within card boundaries
         if (left < cardRect.left) {
           left = cardRect.left;

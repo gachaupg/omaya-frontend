@@ -747,7 +747,7 @@ const SwapWidget = () => {
 
   return (
     <div className="flex flex-col dark:text-white text-gray-900 w-full max-w-5xl mx-auto px-4 sm:px-6">
-      <h2 className="text-base sm:text-lg font-semibold   text-gray-900 dark:text-white">
+      <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white uppercase">
         Swap Crypto
       </h2>
 

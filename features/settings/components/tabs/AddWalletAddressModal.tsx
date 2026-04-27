@@ -6,11 +6,17 @@ import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "@/store";
 import { RootState } from "@/store/rootReducer";
 import { createUserWalletAddress } from "@/features/settings/slices/userWalletAddressesSlice";
+import { fetchUserWalletAddresses } from "@/features/settings/slices/userWalletAddressesSlice";
+import { fetchAssets } from "@/features/exchange/slices/exchangeSlice";
 import { fetchSupportedAssets } from "@/features/swap/slices/swapSlice";
 import { useValidateAddress } from "@/hooks/useValidateAddress";
 import { showToast } from "@/lib/utils/toast";
 import type { SupportedAsset } from "@/features/swap/types";
 import { getHighResAssetIcon } from "@/features/express/utils/imageHelpers";
+import {
+  sendPaymentDetailAddOtp,
+  verifyPaymentDetailAddOtp,
+} from "@/features/p2p/api";
 
 interface AddWalletAddressModalProps {
   open: boolean;
@@ -27,12 +33,25 @@ const AddWalletAddressModal = ({
   const { supportedAssets, loading: swapLoading } = useSelector(
     (s: RootState) => s.swap
   );
+  const { assets: exchangeAssetsResponse } = useSelector(
+    (s: RootState) => s.exchange
+  );
+  const { addresses: existingWalletAddresses } = useSelector(
+    (s: RootState) => s.userWalletAddresses
+  );
 
   const [selectedAssetTicker, setSelectedAssetTicker] = useState("");
   const [selectedNetwork, setSelectedNetwork] = useState("");
   const [address, setAddress] = useState("");
   const [accountName, setAccountName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [otp, setOtp] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpVerified, setOtpVerified] = useState(false);
+  const [sendOtpLoading, setSendOtpLoading] = useState(false);
+  const [verifyOtpLoading, setVerifyOtpLoading] = useState(false);
+  const [otpFeedback, setOtpFeedback] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   const [assetDropdownOpen, setAssetDropdownOpen] = useState(false);
   const [assetSearch, setAssetSearch] = useState("");
@@ -49,7 +68,47 @@ const AddWalletAddressModal = ({
   const [networkDropdownRect, setNetworkDropdownRect] = useState<{ top: number; left: number; width: number } | null>(null);
   const [assetLoadTimedOut, setAssetLoadTimedOut] = useState(false);
 
-  const allAssets: SupportedAsset[] = supportedAssets ?? [];
+  // Merge swap-supported assets with exchange assets (same list used by dashboard),
+  // so assets like FXP/FXPRIMUS show in this dropdown too.
+  const exchangeAssetsFlat: SupportedAsset[] = useMemo(() => {
+    const rows = exchangeAssetsResponse?.assets;
+    const assets = Array.isArray(rows) ? rows : [];
+    const out: SupportedAsset[] = [];
+    for (const a of assets as any[]) {
+      const ticker = a?.ticker || a?.symbol || a?.name;
+      const name = a?.name || a?.ticker || a?.symbol;
+      const image =
+        a?.image_url || a?.asset_image || a?.image || a?.icon_url || a?.icon;
+      const networks = Array.isArray(a?.networks) ? a.networks : [];
+      if (networks.length > 0) {
+        for (const n of networks as any[]) {
+          out.push({
+            ticker,
+            symbol: a?.symbol || ticker,
+            name,
+            network: n?.network_type || n?.network_id || n?.network || "",
+            image_url: image,
+            asset_image: image,
+          } as any);
+        }
+      } else {
+        out.push({
+          ticker,
+          symbol: a?.symbol || ticker,
+          name,
+          network: a?.network || "",
+          image_url: image,
+          asset_image: image,
+        } as any);
+      }
+    }
+    return out;
+  }, [exchangeAssetsResponse]);
+
+  const allAssets: SupportedAsset[] = useMemo(() => {
+    const swap = supportedAssets ?? [];
+    return [...swap, ...exchangeAssetsFlat];
+  }, [supportedAssets, exchangeAssetsFlat]);
 
   // Deduplicate assets by ticker for the asset dropdown (networks shown separately)
   const uniqueAssets = useMemo(() => {
@@ -103,6 +162,18 @@ const AddWalletAddressModal = ({
       dispatch(fetchSupportedAssets(false) as any);
     }
   }, [open, allAssets.length, swapLoading, dispatch]);
+
+  useEffect(() => {
+    if (open) {
+      dispatch(fetchAssets(false) as any);
+    }
+  }, [open, dispatch]);
+
+  useEffect(() => {
+    if (open) {
+      dispatch(fetchUserWalletAddresses() as any);
+    }
+  }, [open, dispatch]);
 
   // Timeout: if loading for 8+ seconds with no assets, show retry
   useEffect(() => {
@@ -168,9 +239,71 @@ const AddWalletAddressModal = ({
     }
   };
 
+  const handleSendOtp = async () => {
+    if (sendOtpLoading || verifyOtpLoading) return;
+    setOtpFeedback(null);
+    setSendOtpLoading(true);
+    try {
+      await sendPaymentDetailAddOtp();
+      setOtpSent(true);
+      setOtpVerified(false);
+      setOtp("");
+      setOtpFeedback({ type: "success", text: "OTP sent to your email." });
+    } catch (err: any) {
+      setOtpFeedback({
+        type: "error",
+        text: err?.message || "Failed to send OTP",
+      });
+    } finally {
+      setSendOtpLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (sendOtpLoading || verifyOtpLoading) return;
+    const code = otp.trim();
+    if (!/^\d{6}$/.test(code)) {
+      setOtpFeedback({ type: "error", text: "Enter a 6-digit OTP." });
+      return;
+    }
+    setOtpFeedback(null);
+    setVerifyOtpLoading(true);
+    try {
+      await verifyPaymentDetailAddOtp(code);
+      setOtpVerified(true);
+      setOtpFeedback({ type: "success", text: "OTP verified." });
+    } catch (err: any) {
+      setOtpVerified(false);
+      setOtpFeedback({
+        type: "error",
+        text: err?.message || "Invalid OTP",
+      });
+    } finally {
+      setVerifyOtpLoading(false);
+    }
+  };
+
   const addressIsValid = validationResult?.isValid === true;
   const addressIsInvalid =
     validationResult !== null && validationResult.isValid === false;
+
+  const addressAlreadyExists = useMemo(() => {
+    const v = address.trim().toLowerCase();
+    if (!v) return false;
+    const assetKey = selectedAssetTicker.trim().toUpperCase();
+    const networkKey = selectedNetwork.trim().toLowerCase();
+    return (existingWalletAddresses || []).some((a) => {
+      const aAddr = String(a?.address || "").trim().toLowerCase();
+      if (!aAddr || aAddr !== v) return false;
+      // If user hasn't selected asset/network yet, treat it as duplicate anyway.
+      if (!assetKey && !networkKey) return true;
+      const aAsset = String(a?.asset || "").trim().toUpperCase();
+      const aNet = String(a?.network || "").trim().toLowerCase();
+      const assetMatches = assetKey ? aAsset === assetKey : true;
+      const netMatches = networkKey ? aNet === networkKey : true;
+      return assetMatches && netMatches;
+    });
+  }, [address, existingWalletAddresses, selectedAssetTicker, selectedNetwork]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -187,6 +320,10 @@ const AddWalletAddressModal = ({
       showToast.error("Wallet address is required");
       return;
     }
+    if (addressAlreadyExists) {
+      showToast.error("This wallet address is already saved.");
+      return;
+    }
     if (address.trim().length >= 10 && !addressIsValid && !isValidating) {
       showToast.error("Please wait for address validation to complete");
       return;
@@ -197,6 +334,11 @@ const AddWalletAddressModal = ({
     }
     if (!accountName.trim()) {
       showToast.error("Account name is required");
+      return;
+    }
+
+    if (!otpVerified) {
+      showToast.error("Please verify the OTP sent to your email");
       return;
     }
 
@@ -229,6 +371,10 @@ const AddWalletAddressModal = ({
     setSelectedNetwork("");
     setAddress("");
     setAccountName("");
+    setOtp("");
+    setOtpSent(false);
+    setOtpVerified(false);
+    setOtpFeedback(null);
     setAssetSearch("");
     setAssetDropdownOpen(false);
     setNetworkDropdownOpen(false);
@@ -255,18 +401,24 @@ const AddWalletAddressModal = ({
     );
 
   // Popular assets for "Add Crypto Address" (ticker dropdown is deduped by ticker).
-  // Networks are chosen in the next step; we want the common BEP20/BSC rails first.
-  const POPULAR_TICKERS = ["USDT", "USDC"];
+  // Keep FXP as a single entry (avoid FXP/FXPRIMUS duplicates).
+  const POPULAR_TICKERS = ["USDT", "USDC", "FXP"];
+  const normalizePopularTicker = (v: unknown) => {
+    const t = String(v || "").trim().toUpperCase();
+    if (!t) return "";
+    if (t === "FXPRIMUS") return "FXP";
+    return t;
+  };
   const popularAssets = assetSearch.trim()
     ? []
     : filteredAssets.filter((a) =>
-        POPULAR_TICKERS.includes(String(a.ticker || a.symbol || "").toUpperCase())
+        POPULAR_TICKERS.includes(normalizePopularTicker(a.ticker || a.symbol))
       );
   const otherAssets = assetSearch.trim()
     ? filteredAssets
     : filteredAssets.filter(
         (a) =>
-          !POPULAR_TICKERS.includes(String(a.ticker || a.symbol || "").toUpperCase())
+          !POPULAR_TICKERS.includes(normalizePopularTicker(a.ticker || a.symbol))
       );
 
   return (
@@ -614,7 +766,9 @@ const AddWalletAddressModal = ({
                   onChange={handleAddressChange}
                   placeholder="Enter wallet address"
                   className={`w-full rounded-xl border pr-10 ${
-                    addressIsInvalid
+                    addressAlreadyExists
+                      ? "border-red-500 dark:border-red-500 focus:ring-red-500/50"
+                      : addressIsInvalid
                       ? "border-red-500 dark:border-red-500 focus:ring-red-500/50"
                       : addressIsValid
                         ? "border-[#1D8751] dark:border-[#1D8751] focus:ring-[#1D8751]/50"
@@ -655,6 +809,11 @@ const AddWalletAddressModal = ({
                   {validationResult?.message || "Invalid wallet address"}
                 </p>
               )}
+              {addressAlreadyExists && (
+                <p className="mt-1.5 text-xs text-red-500 dark:text-red-400">
+                  This wallet address is already saved.
+                </p>
+              )}
               {addressIsValid && (
                 <p className="mt-1.5 text-xs text-[#1D8751]">
                   Address is valid
@@ -680,6 +839,66 @@ const AddWalletAddressModal = ({
             </div>
           )}
 
+          {/* 5. Email OTP (required) */}
+          {selectedAsset && (
+            <div className="rounded-xl border border-[#E3E6F0] dark:border-[#2A2A35] bg-gray-50/40 dark:bg-[#23232B]/40 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold text-gray-900 dark:text-white">
+                    Email verification
+                  </div>
+                  <div className="text-xs text-gray-600 dark:text-[#8B90A5]">
+                    We&apos;ll send a 6-digit OTP to your email.
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleSendOtp}
+                  disabled={sendOtpLoading || verifyOtpLoading}
+                  className="shrink-0 px-3 py-2 rounded-lg border border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751]/10 transition-colors text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {sendOtpLoading ? "Sending..." : otpSent ? "Resend OTP" : "Send OTP"}
+                </button>
+              </div>
+
+              <div className="mt-3 flex items-center gap-2">
+                <input
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={6}
+                  value={otp}
+                  onChange={(e) => {
+                    setOtpVerified(false);
+                    setOtpFeedback(null);
+                    setOtp(e.target.value.replace(/\D/g, "").slice(0, 6));
+                  }}
+                  placeholder="Enter OTP"
+                  className="flex-1 rounded-xl border border-[#E3E6F0] dark:border-[#2A2A35] bg-white dark:bg-[var(--card-color)] px-4 py-3 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-[#5C6175] focus:outline-none focus:ring-2 focus:ring-[#1D8751]/50"
+                />
+                <button
+                  type="button"
+                  onClick={handleVerifyOtp}
+                  disabled={!otpSent || verifyOtpLoading || sendOtpLoading || otp.trim().length !== 6}
+                  className="px-3 py-3 rounded-xl bg-[#1D8751] text-white font-semibold hover:bg-[#0f8f4d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {verifyOtpLoading ? "Verifying..." : otpVerified ? "Verified" : "Verify"}
+                </button>
+              </div>
+
+              {otpFeedback && (
+                <div
+                  className={`mt-2 text-xs font-medium ${
+                    otpFeedback.type === "success"
+                      ? "text-[#1D8751]"
+                      : "text-red-500 dark:text-red-400"
+                  }`}
+                >
+                  {otpFeedback.text}
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="flex gap-3 pt-2">
             <button
               type="button"
@@ -695,9 +914,11 @@ const AddWalletAddressModal = ({
                 !selectedAssetTicker ||
                 !selectedNetwork ||
                 !address.trim() ||
+                addressAlreadyExists ||
                 addressIsInvalid ||
                 isValidating ||
-                (address.trim().length >= 10 && !addressIsValid)
+                (address.trim().length >= 10 && !addressIsValid) ||
+                !otpVerified
               }
               className="flex-1 px-4 py-3 rounded-xl bg-[#1D8751] text-white font-medium hover:bg-[#0f8f4d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >

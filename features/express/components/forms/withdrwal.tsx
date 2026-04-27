@@ -1598,6 +1598,9 @@ export default function WithdrawalForm({
 
   // Recalculate when asset changes
   useEffect(() => {
+    // Avoid auto-exchanging just from switching mode/asset (especially FXP).
+    // Only recalc after the user has actually typed an amount.
+    if (!isUserModifiedAmount) return;
     if (selectedAsset && payAmount > 0 && isCalculatingFromPay) {
       // Clear any existing estimate when asset changes
       setEstimate(null);
@@ -1624,7 +1627,7 @@ export default function WithdrawalForm({
         setEstimateLoading(true);
       }
     }
-  }, [selectedAsset]);
+  }, [selectedAsset, isUserModifiedAmount, payAmount, isCalculatingFromPay]);
 
   // Simplified estimate handler - UI updates now happen immediately in API response handlers
   // This just acts as a safety net to clear loading states if they get stuck
@@ -1697,7 +1700,9 @@ export default function WithdrawalForm({
     const network = (asset?.network || "").toLowerCase();
     return (ticker === "usdt" && network === "bsc") ||
       (ticker === "usdc" && network === "bsc") ||
-      isExchangeCommissionLookupAsset(asset);
+      isExchangeCommissionLookupAsset(asset) ||
+      // FXP should not blank inputs while calculating — treat as "simple" for UI flow.
+      isForexAsset(asset);
   };
   const isOtcPopupAsset = (asset: any) =>
     !!asset && !isSimpleCalculationAsset(asset) && !isForexAsset(asset);
@@ -1717,6 +1722,7 @@ export default function WithdrawalForm({
 
   // Fetch commission: first 3 assets use exchange commission-lookup; else USDT/USDC/FXP use legacy % API
   useEffect(() => {
+    let cancelled = false;
     if (isExpressCancelled()) return;
     if (!selectedAsset) {
       setApiCommission(null);
@@ -1749,6 +1755,7 @@ export default function WithdrawalForm({
         if (isExpressCancelled()) return;
         fetchExchangeCommissionLookup(amount, "withdrawal", params.from_currency, "USD", params.from_network, params.from_asset_id)
           .then((res) => {
+            if (cancelled) return;
             if (isExpressCancelled()) return;
             setExchangeLookupResponse(res);
             setApiCommission(null);
@@ -1772,6 +1779,7 @@ export default function WithdrawalForm({
             }
           })
           .catch((error: any) => {
+            if (cancelled) return;
             if (isExpressCancelled()) return;
             setExchangeLookupResponse(null);
             const responseData = error?.response?.data;
@@ -1806,6 +1814,7 @@ export default function WithdrawalForm({
           });
       }, 300);
       return () => {
+        cancelled = true;
         if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
       };
     }
@@ -1831,6 +1840,7 @@ export default function WithdrawalForm({
         isForexAsset(selectedAsset) ? selectedAsset?.asset_id : undefined
       )
         .then((details) => {
+          if (cancelled) return;
           if (isExpressCancelled()) return;
           setApiCommission(Number(details?.commission_rate ?? 0));
           setApiCommissionDetails(details);
@@ -1852,6 +1862,7 @@ export default function WithdrawalForm({
           }
         })
         .catch((error: any) => {
+          if (cancelled) return;
           const responseData = error?.response?.data;
           const rawMessage =
             responseData?.error ||
@@ -1895,6 +1906,7 @@ export default function WithdrawalForm({
         });
     }, 300);
     return () => {
+      cancelled = true;
       if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
     };
   }, [selectedAsset, payAmountInput, getAmountInput, payAmount, getAmount, isCalculatingFromPay]);
@@ -3855,10 +3867,6 @@ export default function WithdrawalForm({
         />
       ) : (
         <>
-          <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
-            {/* <span className="text-[#7e7e8f] dark:text-[#788099]">1-</span> Transaction Info */}
-          </h2>
-
           <div className="w-full text-white">
             {/* Top Section - You Send and You Get in one card */}
             <div className="relative mb-2 sm:mb-3 md:mb-4">
@@ -3915,6 +3923,18 @@ export default function WithdrawalForm({
                             setReceiveAmountError(null);
                             setApiValidationError(null);
                             setCalculationError(null);
+
+                            // If user cleared input, clear the other side too.
+                            if (inputValue.trim() === "") {
+                              // Invalidate any in-flight estimate requests so they can't repopulate inputs.
+                              estimateRequestSeqRef.current += 1;
+                              setGetAmount(0);
+                              setGetAmountInput("");
+                              setPreviousValidAmount("");
+                              setIsCalculating(false);
+                              setIsCalculatingReceive(false);
+                              return;
+                            }
 
                             // Only calculate if we have a valid amount and asset
                             if (selectedAsset && newValue >= 0) {
@@ -4255,6 +4275,23 @@ export default function WithdrawalForm({
                         }
 
                         if (value === "" || /^\d*[.,]?\d*$/.test(value)) {
+                          // If user cleared input, clear the other side too.
+                          if (value.trim() === "") {
+                            // Invalidate any in-flight estimate requests so they can't repopulate inputs.
+                            estimateRequestSeqRef.current += 1;
+                            setGetAmountInput("");
+                            setGetAmount(0);
+                            setPayAmountInput("");
+                            setPayAmount(0);
+                            setPreviousValidAmount("");
+                            setReceiveAmountError(null);
+                            setApiValidationError(null);
+                            setCalculationError(null);
+                            setIsCalculating(false);
+                            setIsCalculatingReceive(false);
+                            return;
+                          }
+
                           const normalizedForDecimals = value.replace(",", ".");
                           const decSep = normalizedForDecimals.includes(".")
                             ? normalizedForDecimals.split(".").slice(1).join("")

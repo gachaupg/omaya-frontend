@@ -10,6 +10,7 @@ import { SortArrowsIcon } from "@/components/ui/SortArrowsIcon";
 import { FaUniversity } from "react-icons/fa";
 import { getHighResAssetIcon } from "@/features/express/utils/imageHelpers";
 import type { AllTransactionItem } from "@/features/transactions/api";
+import { getMyTransactions as getMyP2PTransactions } from "@/features/p2p/api";
 
 const formatAmount = (amount: string | number | undefined | null): string => {
   if (amount === undefined || amount === null || amount === "") return "0.0000";
@@ -103,6 +104,8 @@ const AllTransactions = () => {
   const [currentPage, setCurrentPageLocal] = useState(1);
   const itemsPerPage = 50;
   const containerRef = React.useRef<HTMLDivElement>(null);
+  const [p2pAddressById, setP2pAddressById] = useState<Record<string, { from?: string | null; to?: string | null; receiver?: string | null }>>({});
+  const [p2pAddressByFingerprint, setP2pAddressByFingerprint] = useState<Record<string, { from?: string | null; to?: string | null; receiver?: string | null }>>({});
 
   useEffect(() => {
     dispatch(
@@ -127,6 +130,87 @@ const AllTransactions = () => {
     }
   };
 
+  const rawResults = data?.results ?? [];
+  const results = [...rawResults].sort((a, b) => {
+    const dateA = new Date(a.created_at || 0).getTime();
+    const dateB = new Date(b.created_at || 0).getTime();
+    return dateB - dateA;
+  });
+
+  const buildP2PFingerprint = (input: {
+    kind?: string;
+    amount?: unknown;
+    currency?: unknown;
+    network?: unknown;
+    ts?: unknown;
+  }): string => {
+    const kind = String(input.kind || "").toLowerCase().trim();
+    const amount = String(input.amount ?? "").trim();
+    const currency = String(input.currency ?? "").toUpperCase().trim();
+    const network = String(input.network ?? "").toUpperCase().trim();
+    const t = input.ts ? new Date(String(input.ts)) : null;
+    // Minute precision to avoid tiny backend differences.
+    const timeKey = t && !Number.isNaN(t.getTime()) ? t.toISOString().slice(0, 16) : "";
+    return [kind, amount, currency, network, timeKey].filter(Boolean).join("|");
+  };
+
+  // Enrich "All" feed P2P deposit/withdraw rows with on-chain from/to addresses.
+  // The all-transactions API often only provides deposit_address/withdrawal_address, while P2P endpoint provides from_address/to_address/receiver_wallet.
+  useEffect(() => {
+    const needsEnrichment = results.some((r) => r?.type === "p2p" && ["deposit", "withdrawal"].includes(String(r?.sub_type || (r as any)?.transaction_type || "").toLowerCase()));
+    if (!needsEnrichment) return;
+    if (Object.keys(p2pAddressById).length > 0 || Object.keys(p2pAddressByFingerprint).length > 0) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const map: Record<string, { from?: string | null; to?: string | null; receiver?: string | null }> = {};
+        const fpMap: Record<string, { from?: string | null; to?: string | null; receiver?: string | null }> = {};
+        // Load multiple pages so "All" can be enriched even when the matching P2P row isn't on page 1.
+        let page = 1;
+        let hasMore = true;
+        while (hasMore && page <= 20) {
+          const resp = await getMyP2PTransactions(page);
+          const rows = Array.isArray(resp?.results) ? resp.results : [];
+          for (const tx of rows) {
+            const id = String((tx as any)?.transaction_id || (tx as any)?.id || "").trim();
+            const kind = String((tx as any)?.transaction_type || (tx as any)?.type || "").toLowerCase();
+            const entry = {
+              from: (tx as any)?.from_address ? String((tx as any).from_address) : null,
+              to: (tx as any)?.to_address ? String((tx as any).to_address) : null,
+              receiver: (tx as any)?.receiver_wallet ? String((tx as any).receiver_wallet) : null,
+            };
+            if (id && !map[id]) {
+              map[id] = entry;
+            }
+            const fp = buildP2PFingerprint({
+              kind,
+              amount: (tx as any)?.amount,
+              currency: (tx as any)?.currency,
+              network: (tx as any)?.network,
+              ts: (tx as any)?.timestamp,
+            });
+            if (fp && !fpMap[fp]) {
+              fpMap[fp] = entry;
+            }
+          }
+          hasMore = !!resp?.next;
+          page++;
+        }
+        if (!cancelled) {
+          setP2pAddressById(map);
+          setP2pAddressByFingerprint(fpMap);
+        }
+      } catch {
+        // Ignore enrichment failure; UI will fall back to legacy fields.
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [results, p2pAddressById, p2pAddressByFingerprint]);
+
   if (loading && !data) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -143,12 +227,6 @@ const AllTransactions = () => {
     );
   }
 
-  const rawResults = data?.results ?? [];
-  const results = [...rawResults].sort((a, b) => {
-    const dateA = new Date(a.created_at || 0).getTime();
-    const dateB = new Date(b.created_at || 0).getTime();
-    return dateB - dateA;
-  });
   const totalCount = data?.count ?? 0;
   const totalPages = data?.total_pages ?? 1;
 
@@ -177,6 +255,37 @@ const AllTransactions = () => {
     const receiverProvider = clean((tx as any)?.receiver_provider);
     const recipientName = clean((tx as any)?.recipient_name);
     const fallbackAsset = clean(tx.currency || tx.asset) || "USD";
+
+    // P2P Withdrawal/Deposit sometimes arrive in the "all" feed without stable `type/sub_type`.
+    // Use wallet_type + transaction_type as a strong hint when present.
+    const walletType = (clean((tx as any)?.wallet_type) || "").toLowerCase();
+    const txTypeHint = (clean((tx as any)?.transaction_type) || "").toLowerCase();
+    if (walletType === "crypto" && txTypeHint.includes("withdraw")) {
+      return {
+        from: formatP2pCryptoLabel(tx) || (clean(tx.currency || tx.asset) || "USDT"),
+        to:
+          clean((tx as any)?.to_address) ||
+          clean(tx.withdrawal_address) ||
+          clean((tx as any)?.receiver_wallet) ||
+          "Wallet",
+      };
+    }
+    if (walletType === "p2p" && txTypeHint.includes("deposit")) {
+      return {
+        from:
+          clean((tx as any)?.from_address)
+            ? truncateAddress(String((tx as any).from_address))
+            : clean(tx.deposit_address)
+              ? truncateAddress(String(tx.deposit_address))
+              : "Source",
+        to:
+          clean((tx as any)?.to_address)
+            ? truncateAddress(String((tx as any).to_address))
+            : clean((tx as any)?.receiver_wallet)
+              ? truncateAddress(String((tx as any).receiver_wallet))
+              : formatP2pCryptoLabel(tx),
+      };
+    }
 
     if (tx.type === "swap") {
       return {
@@ -216,19 +325,81 @@ const AllTransactions = () => {
       };
     }
     const p2pSub = (tx.sub_type || "").toLowerCase();
-    if (tx.type === "p2p" && p2pSub === "withdrawal") {
-      const cryptoLabel = formatP2pCryptoLabel(tx);
+    const p2pTxType = String((tx as any)?.transaction_type || "").toLowerCase();
+    const idKey = String(tx.id || "").trim();
+    // Fingerprint uses raw subtype/transaction_type when present (more stable than inferred kind).
+    const fpKey = buildP2PFingerprint({
+      kind: p2pSub || p2pTxType,
+      amount: (tx as any)?.amount,
+      currency: (tx as any)?.currency || (tx as any)?.asset,
+      network: (tx as any)?.network,
+      ts: (tx as any)?.created_at,
+    });
+    const enrich =
+      (idKey ? p2pAddressById[idKey] : null) ||
+      (fpKey ? p2pAddressByFingerprint[fpKey] : null) ||
+      null;
+
+    const inferP2PKind = (): string => {
+      const raw = (p2pSub || p2pTxType || "").trim();
+      if (raw.includes("withdraw")) return "withdrawal";
+      if (raw.includes("deposit")) return "deposit";
+      if (raw.includes("buy")) return "buy";
+      if (raw.includes("sell")) return "sell";
+      // If enrichment exists but has only receiver_wallet (no from/to), it's a withdrawal payload.
+      if (enrich && !enrich.from && !enrich.to && !!enrich.receiver) return "withdrawal";
+      // Some "all" feed rows include wallet_type but not sub_type.
+      const walletType = String((tx as any)?.wallet_type || "").toLowerCase().trim();
+      if (walletType === "crypto") return "withdrawal";
+      if (walletType === "p2p") return "deposit";
+      // Heuristic: legacy "all" feed often only sets address fields
+      if (tx.withdrawal_address) return "withdrawal";
+      if (tx.deposit_address) return "deposit";
+      return raw;
+    };
+    const p2pKind = inferP2PKind(); // "deposit"/"withdrawal"/"buy"/"sell"
+
+    if (tx.type === "p2p" && p2pKind === "withdrawal") {
+      const fromLabel = formatP2pCryptoLabel(tx) || "USDT";
       return {
-        from: cryptoLabel,
-        to: tx.withdrawal_address
-          ? truncateAddress(tx.withdrawal_address)
-          : "Wallet",
+        // P2P Withdrawal: "From" is the crypto wallet asset label (currency + network),
+        // NOT an on-chain address. (Addresses belong in "To".)
+        from: fromLabel,
+        to:
+          enrich?.to
+            ? truncateAddress(enrich.to)
+            : (tx as any).to_address
+              ? truncateAddress(String((tx as any).to_address))
+            : tx.withdrawal_address
+              ? truncateAddress(tx.withdrawal_address)
+              : enrich?.receiver
+                ? truncateAddress(enrich.receiver)
+                : (tx as any).receiver_wallet
+                  ? truncateAddress(String((tx as any).receiver_wallet))
+                  : "Wallet",
       };
     }
-    if (tx.type === "p2p" && p2pSub === "deposit") {
+
+    if (tx.type === "p2p" && p2pKind === "deposit") {
       return {
-        from: tx.deposit_address ? truncateAddress(tx.deposit_address) : "Source",
-        to: formatP2pCryptoLabel(tx),
+        from:
+          enrich?.from
+            ? truncateAddress(enrich.from)
+            : (tx as any).from_address
+              ? truncateAddress(String((tx as any).from_address))
+            : tx.deposit_address
+              ? truncateAddress(tx.deposit_address)
+              : "Source",
+        to:
+          enrich?.to
+            ? truncateAddress(enrich.to)
+            : (tx as any).to_address
+              ? truncateAddress(String((tx as any).to_address))
+              : enrich?.receiver
+                ? truncateAddress(enrich.receiver)
+                : (tx as any).receiver_wallet
+                  ? truncateAddress(String((tx as any).receiver_wallet))
+                  : formatP2pCryptoLabel(tx),
       };
     }
     if (tx.type === "p2p" && p2pSub === "buy") {

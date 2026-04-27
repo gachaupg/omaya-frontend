@@ -25,7 +25,7 @@ const StepIndicator: React.FC<StepIndicatorProps> = ({ currentStep }) => {
           >
             1
           </div>
-          <span className="ml-1 sm:ml-2 text-xs sm:text-sm whitespace-nowrap">Transaction Info</span>
+          <span className="ml-1 sm:ml-2 text-xs sm:text-sm whitespace-nowrap">Details</span>
         </div>
         <div
           className={`w-4 sm:w-8 h-1 flex-shrink-0 ${

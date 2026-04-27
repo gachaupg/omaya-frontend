@@ -1133,7 +1133,7 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
   return (
     <div className="flex flex-col dark:bg-[var(--bg-color)] pl-0 pr-2 sm:pr-0 mr-0 sm:mr-40 w-full mx-auto">
       {/* Money X Page Title */}
-      <h1 className=" flex items-center text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-[#76777B] dark:text-white">
+      <h1 className=" flex items-center text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-[#76777B] dark:text-white uppercase">
         Money <span>
           {isDark ? <img src="/images/xwhite.png" alt="MoneyX" /> : <img src="/images/x.png" alt="MoneyX" />}
         </span>
