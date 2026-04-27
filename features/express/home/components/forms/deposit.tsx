@@ -1450,6 +1450,7 @@ export default function DepositForm({
   const isCommissionApiAsset = (asset: any) => !!getCommissionApiAsset(asset?.ticker || asset?.symbol || "");
 
   useEffect(() => {
+    let cancelled = false;
     if (isSubmitting) {
       if (commissionFetchTimeoutRef.current)
         clearTimeout(commissionFetchTimeoutRef.current);
@@ -1479,6 +1480,7 @@ export default function DepositForm({
         // Home: deposit = crypto -> USD with network for USDT/USDC
         fetchExchangeCommissionLookup(amount, "deposit", params.from_currency, "USD", params.from_network, params.from_asset_id)
           .then((res) => {
+            if (cancelled) return;
             setExchangeLookupResponse(res);
             setApiCommission(null);
             setApiCommissionDetails(null);
@@ -1492,6 +1494,7 @@ export default function DepositForm({
             }
           })
           .catch((error: any) => {
+            if (cancelled) return;
             setExchangeLookupResponse(null);
             const responseData = error?.response?.data;
             const responseInner = responseData?.response_data;
@@ -1524,7 +1527,10 @@ export default function DepositForm({
             );
           });
       }, 300);
-      return () => { if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current); };
+      return () => {
+        cancelled = true;
+        if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
+      };
     }
     const apiAsset = getCommissionApiAsset(selectedAsset.ticker || selectedAsset.symbol || "");
     if (!apiAsset) { setApiCommission(null); return; }
@@ -1547,6 +1553,7 @@ export default function DepositForm({
         isForexAsset(selectedAsset) ? selectedAsset?.asset_id : undefined
       )
         .then((details) => {
+          if (cancelled) return;
           setApiCommission(Number(details?.commission_rate ?? 0));
           setApiCommissionDetails(details);
           setExchangeLookupResponse(null);
@@ -1567,6 +1574,7 @@ export default function DepositForm({
           }
         })
         .catch((error: any) => {
+          if (cancelled) return;
           const responseData = error?.response?.data;
           const rawMessage =
             responseData?.error ||
@@ -1608,7 +1616,10 @@ export default function DepositForm({
           setApiCommissionDetails(null);
         });
     }, 300);
-    return () => { if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current); };
+    return () => {
+      cancelled = true;
+      if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
+    };
   }, [selectedAsset, payAmountInput, getAmountInput, payAmount, getAmount, isCalculatingFromPay, isSubmitting, commissionRefreshSeed]);
 
   useEffect(() => {
@@ -1693,6 +1704,7 @@ export default function DepositForm({
   const estimateDebounceMs = isHomePage ? 280 : 800;
 
   useEffect(() => {
+    let cancelled = false;
     if (isSubmitting) {
       setEstimateLoading(false);
       return;
@@ -1730,6 +1742,7 @@ export default function DepositForm({
           timeoutPromise
         ])
           .then((result: any) => {
+            if (cancelled) return;
             // Thunk always resolves; check fulfilled vs rejected
             if (result?.meta?.requestStatus === "fulfilled" && result.payload) {
               const payload = result.payload as any;
@@ -1829,6 +1842,7 @@ export default function DepositForm({
             setIsCalculatingReceive(false);
           })
           .catch((actionOrError: any) => {
+            if (cancelled) return;
             console.log("[EXPRESS HOME DEPOSIT] ESTIMATE CATCH", { actionOrError });
             // Thunk rejects with action { payload: { message, response_data } }; normalize to payload
             const error = actionOrError?.payload ?? actionOrError;
@@ -1943,12 +1957,14 @@ export default function DepositForm({
             setIsCalculatingReceive(false);
           })
           .finally(() => {
+            if (cancelled) return;
             setEstimateLoading(false);
           });
       }, estimateDebounceMs);
 
       // Cleanup function to clear debounce timer on unmount or dependency change
       return () => {
+        cancelled = true;
         clearTimeout(debounceTimer);
         setEstimateLoading(false);
       };
@@ -1962,6 +1978,7 @@ export default function DepositForm({
 
   // Fetch reverse estimate for non-direct assets when calculating from receive amount - debounced
   useEffect(() => {
+    let cancelled = false;
     if (isSubmitting) {
       setEstimateLoading(false);
       return;
@@ -1997,6 +2014,7 @@ export default function DepositForm({
           timeoutPromise
         ])
           .then((result: any) => {
+            if (cancelled) return;
             if (result?.meta?.requestStatus === "fulfilled" && result.payload) {
               const payload = result.payload as any;
               const requiredUsdtAmountRaw =
@@ -2017,6 +2035,7 @@ export default function DepositForm({
             setIsCalculatingReceive(false);
           })
           .catch((actionOrError: any) => {
+            if (cancelled) return;
             const error = actionOrError?.payload ?? actionOrError;
             const responseData = error?.response_data ?? actionOrError?.response_data;
             let errorMessage = "";
@@ -2123,12 +2142,14 @@ export default function DepositForm({
             setIsCalculatingReceive(false);
           })
           .finally(() => {
+            if (cancelled) return;
             setEstimateLoading(false);
           });
       }, estimateDebounceMs);
 
       // Cleanup function to clear debounce timer on unmount or dependency change
       return () => {
+        cancelled = true;
         clearTimeout(debounceTimer);
         setEstimateLoading(false);
       };
@@ -2453,7 +2474,8 @@ export default function DepositForm({
       // Width: match only the asset selector element (right column), not the full card
       // Increase width so it expands more to the right side.
       // Keep left anchored to the trigger so the panel grows rightwards.
-      let desiredWidth = Math.min(maxWidth, Math.max(minWidth, dropdownRect.width) * 1);
+      // Match Payment Method dropdown sizing behavior (no extra right-side growth).
+      let desiredWidth = Math.min(maxWidth, Math.max(minWidth, dropdownRect.width));
 
       // Position dropdown starting at the top of the card container
       let top = cardRect.top;
@@ -2648,6 +2670,14 @@ export default function DepositForm({
       setReceiveAmountError(null);
       setIsCalculating(false);
       setIsCalculatingReceive(false);
+      // Clearing either input should clear the other input too (avoid stale converted values).
+      if (fromPay) {
+        setGetAmount(0);
+        setGetAmountInput("");
+      } else {
+        setPayAmount(0);
+        setPayAmountInput("");
+      }
       return;
     }
 
@@ -3707,6 +3737,15 @@ export default function DepositForm({
                         // Mark that user has manually modified the amount
                         setIsUserModifiedAmount(true);
 
+                        // If user cleared input, clear the other side too.
+                        if (normalizedValue.trim() === "") {
+                          setGetAmount(0);
+                          setGetAmountInput("");
+                          setIsCalculatingReceive(false);
+                          setIsCalculating(false);
+                          return;
+                        }
+
                         // Show info modal if amount exceeds $15,000
                         if (isOtcPopupAsset(selectedAsset) && newAmount > 15000) {
                           setIsInfoModalOpen(true);
@@ -3840,6 +3879,8 @@ export default function DepositForm({
                   value={payBank}
                   logoSize={PAYMENT_LOGO_SIZE}
                   logoClassName={`${PAYMENT_LOGO_BASE_CLASS} rounded-full`}
+                  sizeMode="card"
+                  dropdownMatchTriggerWidth={true}
                   className="w-full"
                   placeholderClassName="text-white dark:text-white"
                   triggerClassName={`!px-4 !py-[8px] !min-h-0 text-sm font-medium border rounded-2xl bg-transparent !h-[44px] ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
@@ -3879,7 +3920,7 @@ export default function DepositForm({
                   searchable={true}
                   dropdownTitle="Select a payment methods"
                   dropdownOffsetY={-68}
-                  dropdownOffsetX={20}
+                  dropdownOffsetX={0}
                   largeDropdownItems={true}
                 />
               </div>
@@ -3974,6 +4015,15 @@ export default function DepositForm({
 
                         // Clear API validation error when user changes amount
                         setApiValidationError(null);
+
+                        // If user cleared input, clear the other side too.
+                        if (normalizedValue.trim() === "") {
+                          setPayAmount(0);
+                          setPayAmountInput("");
+                          setIsCalculatingReceive(false);
+                          setIsCalculating(false);
+                          return;
+                        }
 
                         if (selectedAsset && newAmount > 0 && isForexAsset(selectedAsset)) {
                           // For FXP, reverse uses commission when available.

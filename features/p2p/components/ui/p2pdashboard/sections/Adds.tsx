@@ -478,7 +478,8 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                           setErrors((prev) => ({ ...prev, commission: undefined }));
                         }
                       }}
-                      className="bg-transparent border-none text-gray-900 dark:text-white text-base focus:outline-none w-20"
+                      // Use ch-based width so "%" stays close to the number.
+                      className="bg-transparent border-none text-gray-900 dark:text-white text-base focus:outline-none w-[5ch] tabular-nums"
                       placeholder="1.00"
                     />
                     <span className="text-gray-900 dark:text-white text-base">%</span>

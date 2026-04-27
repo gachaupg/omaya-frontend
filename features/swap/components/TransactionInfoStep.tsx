@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { SupportedAsset, SwapEstimate } from "../types";
 import { useTheme } from "@/context/theme";
-import { FaExchangeAlt, FaSearch } from "react-icons/fa";
+import { FaSearch } from "react-icons/fa";
 import { useSwapI18n } from "@/lib/useSwapI18n";
 import { isNonEmptyInvalidZeroSwapAmount } from "@/lib/utils/swapAmountInput";
 
@@ -529,18 +529,14 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
 
   return (
     <div className="w-full flex flex-col dark:text-white text-gray-900">
-      <h2 className="text-base sm:text-lg md:text-xl font-semibold mb-2 sm:mb-3 md:mb-4 dark:text-[#9ba3c5] text-gray-700">
-        {t("swap.transactionInfo", "Transaction Info")}
-      </h2>
-
       {/* You Send */}
       <div className="relative mb-3 sm:mb-3 md:mb-4">
         <div className={`${baseCard} p-4 sm:p-5 md:p-6 lg:p-6 space-y-3 sm:space-y-3 md:space-y-4`} data-swap-card="true">
           <div className="flex flex-col sm:flex-row sm:items-end gap-3 sm:gap-3 md:gap-4">
             <div className="space-y-1 sm:flex-1">
-              <p className="text-base sm:text-base md:text-lg dark:text-[#7d7f95] text-gray-600 font-semibold">{t("swap.youSend", "You Send")}</p>
+              <p className="text-base sm:text-base md:text-lg text-white font-semibold">{t("swap.youSend", "You Send")}</p>
             </div>
-            <p className={`${labelCopy} md:text-lg ml-0 sm:ml-0 sm:flex-1`}>
+            <p className={`${labelCopy} md:text-lg ml-0 sm:ml-0 sm:flex-1 !text-white`}>
               {t("swap.asset", "Asset")}
             </p>
           </div>
@@ -577,15 +573,16 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
             className="flex items-center justify-center p-0 bg-transparent border-none shadow-none"
             aria-label="Swap selected assets"
           >
-            <span
-              className={`w-11 h-11 rounded-full flex items-center justify-center border ${
+            {/* Match Express switch icon styling */}
+            <img
+              src={
                 isDark
-                  ? "bg-[#1F1F26] border-[#35353E] text-[#C8C8D0]"
-                  : "bg-white border-gray-300 text-gray-700"
-              }`}
-            >
-              <FaExchangeAlt className="w-4 h-4" />
-            </span>
+                  ? "/assets/Frame_36261_ledmyw.png"
+                  : "/assets/Frame_36261_1_d9cnq1.png"
+              }
+              alt="swap icon"
+              className="w-11 h-11"
+            />
           </button>
         </div>
       </div>
@@ -595,9 +592,9 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
         <div className={`${baseCard} p-3 sm:p-4 md:p-5 lg:p-6 space-y-2 sm:space-y-3 md:space-y-4`} data-swap-card="true">
           <div className="flex flex-col sm:flex-row sm:items-end gap-2 sm:gap-3 md:gap-4">
             <div className="space-y-1 sm:flex-1">
-              <p className="text-sm sm:text-base md:text-lg dark:text-[#7d7f95] text-gray-600 font-semibold">{t("swap.youReceive", "You Receive")}</p>
+              <p className="text-sm sm:text-base md:text-lg text-white font-semibold">{t("swap.youReceive", "You Receive")}</p>
             </div>
-            <p className={`${labelCopy}  md:text-lg ml-4 sm:ml-0 sm:flex-1`}>
+            <p className={`${labelCopy}  md:text-lg ml-4 sm:ml-0 sm:flex-1 !text-white`}>
               {t("swap.asset", "Asset")}
             </p>
           </div>

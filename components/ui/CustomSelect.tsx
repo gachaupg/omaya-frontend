@@ -45,6 +45,12 @@ interface CustomSelectProps {
    */
   dropdownOffsetX?: number;
   /**
+   * Controls how the dropdown width is calculated.
+   * - "trigger": match the trigger button width (default)
+   * - "card": match the nearest `[data-select-card="true"]` container width when available
+   */
+  dropdownWidthMode?: "trigger" | "card";
+  /**
    * Whether to use larger dropdown items (bigger logos and text)
    */
   largeDropdownItems?: boolean;
@@ -75,6 +81,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   dropdownPosition = "below",
   dropdownTitle,
   dropdownOffsetX = 0,
+  dropdownWidthMode = "trigger",
   largeDropdownItems = false,
   selectedTextClassName,
   optionTextClassName,
@@ -221,19 +228,22 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
       // For card mode, match the trigger width exactly (not bigger)
       const triggerWidth = rect.width;
 
-      // Use trigger width exactly, not card width - ensure it never exceeds trigger width
-      let dropdownWidth = triggerWidth;
+      const canUseCardWidth = dropdownWidthMode === "card" && !!cardRect;
+      // Use trigger width by default; optionally match the full card width.
+      let dropdownWidth = canUseCardWidth ? cardRect!.width : triggerWidth;
 
       // Ensure the dropdown doesn't exceed viewport width
       if (viewportWidth) {
         const maxWidth = viewportWidth - minMargin * 2;
         dropdownWidth = Math.min(dropdownWidth, maxWidth);
-        // But also ensure it doesn't exceed the trigger width
-        dropdownWidth = Math.min(dropdownWidth, triggerWidth);
+        // When matching trigger width, never exceed it.
+        if (!canUseCardWidth) {
+          dropdownWidth = Math.min(dropdownWidth, triggerWidth);
+        }
       }
 
       // Calculate left position to align with trigger exactly
-      let leftPosition = rect.left;
+      let leftPosition = canUseCardWidth ? cardRect!.left : rect.left;
 
       // Ensure dropdown doesn't go off screen
       if (viewportWidth) {
@@ -243,8 +253,10 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
         if (leftPosition < minMargin) {
           leftPosition = minMargin;
           dropdownWidth = Math.min(dropdownWidth, viewportWidth - minMargin * 2);
-          // Still ensure it doesn't exceed trigger width
-          dropdownWidth = Math.min(dropdownWidth, triggerWidth);
+          // Still ensure it doesn't exceed trigger width (trigger mode only)
+          if (!canUseCardWidth) {
+            dropdownWidth = Math.min(dropdownWidth, triggerWidth);
+          }
         }
       }
 
@@ -451,7 +463,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
           <div
             id={dropdownId}
             ref={dropdownContentRef}
-            className="z-40 bg-white dark:bg-[#1D1D23] border border-border dark:border-accent rounded-2xl shadow-xl overflow-hidden"
+            className="z-[9999] bg-white dark:bg-[#1D1D23] border border-border dark:border-accent rounded-2xl shadow-xl overflow-hidden"
             role="listbox"
             style={{
               position: "fixed",
@@ -499,18 +511,19 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
                       disabled={option.disabled}
                       className={`
                     w-full text-left transition-colors duration-150
-                    hover:bg-blue-50 dark:hover:bg-blue-900/20
-                    focus:outline-none focus:bg-blue-50 dark:focus:bg-blue-900/20
+                    hover:bg-gray-50 dark:hover:bg-white/5
+                    focus:outline-none focus:bg-gray-50 dark:focus:bg-white/5
                     ${largeDropdownItems ? "px-4 py-3 sm:py-4" : "px-3 sm:px-4 py-2 sm:py-2.5"}
                     ${optionTextClassName || "text-sm"}
                     ${isSelected
-                          ? "bg-blue-100 dark:bg-blue-900/30 text-blue-900 dark:text-blue-100 font-medium"
+                          ? "bg-gray-100 dark:bg-white/10 text-gray-900 dark:text-white font-medium"
                           : "text-gray-900 dark:text-white"
                         }
                     ${option.disabled
                           ? "opacity-50 cursor-not-allowed hover:bg-transparent dark:hover:bg-transparent"
                           : "cursor-pointer"
                         }
+                    ${index < filteredOptions.length - 1 ? "border-b border-dotted border-gray-200 dark:border-[#2A2F40]" : ""}
                     ${optionClassName}
                   `}
                       style={{ minHeight: largeDropdownItems ? "56px" : "32px", marginBottom: "1px" }}

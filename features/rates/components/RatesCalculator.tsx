@@ -2165,14 +2165,16 @@ const getPaymentRestrictionMessage = (status?: string) =>
 
   // selectedPaymentDetail is now a state variable
 
+  const hasAssetSearch = assetSearchTerm.trim().length > 0;
   // Filter assets based on search term - search by ticker and name
   const filteredAssets =
     assetsDisplay.displayData?.filter((asset: any) => {
       const ticker = asset?.ticker?.toUpperCase() || "";
       const name = asset?.name?.toUpperCase() || "";
       const symbol = asset?.symbol?.toUpperCase() || "";
-      const searchTerm = assetSearchTerm.toUpperCase();
+      const searchTerm = assetSearchTerm.trim().toUpperCase();
 
+      if (!searchTerm) return true;
       return (
         ticker.includes(searchTerm) ||
         name.includes(searchTerm) ||
@@ -2240,6 +2242,57 @@ const getPaymentRestrictionMessage = (status?: string) =>
     return 0;
   });
 
+  const normalizePopularTicker = (value: unknown) => {
+    const t = String(value || "").trim().toUpperCase();
+    if (!t) return "";
+    if (t === "FXPRIMUS") return "FXP";
+    return t;
+  };
+  const POPULAR_TICKERS = ["USDT", "USDC", "FXP"];
+  const dedupeByKey = <T,>(items: T[], getKey: (item: T) => string): T[] => {
+    const seen = new Set<string>();
+    const out: T[] = [];
+    for (const item of items) {
+      const key = getKey(item);
+      if (!key) continue;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(item);
+    }
+    return out;
+  };
+
+  const getPopularKey = (asset: any) => {
+    const ticker = normalizePopularTicker(asset?.ticker || asset?.symbol || asset?.name);
+    const network = String(getAssetNetwork(asset) || asset?.network || "").trim().toLowerCase();
+    return `${ticker}:${network}`;
+  };
+
+  const popularAssets = dedupeByKey(
+    sortedAssets.filter((asset: any) =>
+      POPULAR_TICKERS.includes(
+        normalizePopularTicker(asset?.ticker || asset?.symbol || asset?.name)
+      )
+    ),
+    getPopularKey
+  );
+
+  const popularKeys = new Set(popularAssets.map(getPopularKey));
+  const otherAssets = dedupeByKey(
+    sortedAssets.filter((asset: any) => !popularKeys.has(getPopularKey(asset))),
+    (asset: any) => {
+      const ticker = String(asset?.ticker || asset?.symbol || asset?.name || "").trim().toUpperCase();
+      const network = String(getAssetNetwork(asset) || asset?.network || "").trim().toLowerCase();
+      return `${ticker}:${network}:${String(asset?.asset_id || asset?.id || "")}`;
+    }
+  );
+
+  // Show top 3 "Popular" assets, then everything else under "Others"
+  const POPULAR_LIMIT = 3;
+  const popularTop = popularAssets.slice(0, POPULAR_LIMIT);
+  const popularTopKeys = new Set(popularTop.map(getPopularKey));
+  const othersAfterTop = otherAssets.filter((asset: any) => !popularTopKeys.has(getPopularKey(asset)));
+
   // Extract nested ternary into a function
   const renderAssetDropdown = () => {
     if (assetsDisplay.isLoading) {
@@ -2254,68 +2307,100 @@ const getPaymentRestrictionMessage = (status?: string) =>
       );
     }
 
-    if (sortedAssets.length > 0) {
-      return sortedAssets.map((asset: any, index: number) => (
-        <div
-          key={`${asset.asset_id || "asset"}-${asset.symbol || asset.ticker || asset.name}-${asset.network || "unknown"}-${index}`}
-          className="flex items-center gap-3 p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E] last:border-b-0"
-          onClick={() => {
-            logger.debug('general', "Asset selected:", {
-              ticker: asset.ticker,
-              network: asset.network || "unknown",
-              image: asset.image_url || asset.asset_image,
-            });
-            handleAssetSelect(asset);
-            setIsAssetDropdownOpen(false);
-            setAssetSearchTerm("");
+    const renderRow = (asset: any, index: number) => (
+      <div
+        key={`${asset.asset_id || "asset"}-${asset.symbol || asset.ticker || asset.name}-${asset.network || "unknown"}-${index}`}
+        className="flex items-center gap-2 px-4 py-2.5 text-black dark:text-white hover:bg-gray-50 dark:hover:bg-[#23232B] cursor-pointer border-b border-gray-200 dark:border-[#35353E] last:border-b-0"
+        onClick={() => {
+          logger.debug('general', "Asset selected:", {
+            ticker: asset.ticker,
+            network: asset.network || "unknown",
+            image: asset.image_url || asset.asset_image,
+          });
+          handleAssetSelect(asset);
+          setIsAssetDropdownOpen(false);
+          setAssetSearchTerm("");
+        }}
+      >
+        <RatesAssetImage
+          remoteUrl={pickRatesAssetImageRaw(asset)}
+          alt={asset?.name || asset?.ticker || asset?.symbol || "Asset"}
+          className="w-6 h-6 rounded-full object-cover flex-shrink-0"
+          onError={() => {
+            logger.debug("general", "Image failed to load for asset:", asset);
           }}
-        >
-          <RatesAssetImage
-            remoteUrl={pickRatesAssetImageRaw(asset)}
-            alt={asset?.name || asset?.ticker || asset?.symbol || "Asset"}
-            className="w-8 h-8 rounded-full object-cover flex-shrink-0"
-            onError={() => {
-              logger.debug("general", "Image failed to load for asset:", asset);
-            }}
-          />
-          <div className="flex-1 min-w-0">
-            <div
-              className="text-[#35353e] dark:text-[#ffffff] font-medium flex items-center gap-2"
-              title={(
-                asset.ticker ||
-                asset.symbol ||
-                asset.name ||
-                "Unknown"
-              ).toUpperCase()}
-            >
+        />
+        <div className="flex-1 min-w-0">
+          <div
+            className="text-[#35353e] dark:text-white font-semibold text-sm flex items-center gap-2"
+            title={(
+              asset.ticker ||
+              asset.symbol ||
+              asset.name ||
+              "Unknown"
+            ).toUpperCase()}
+          >
+            <span className="truncate">
               {(
                 asset.ticker ||
                 asset.symbol ||
                 asset.name ||
                 "Unknown"
               ).toUpperCase()}
-              <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
-                {getNetworkDisplayName(getAssetNetwork(asset))}
-              </span>
-            </div>
-            <div
-              className="text-[#35353e] dark:text-[#788099] text-sm truncate"
-              title={asset.name ||
-                (asset.ticker || "").toUpperCase() ||
-                (asset.symbol || "").toUpperCase() ||
-                "Unknown Asset"}
-            >
-              {asset.name ||
-                (asset.ticker || "").toUpperCase() ||
-                (asset.symbol || "").toUpperCase() ||
-                "Unknown Asset"}
-            </div>
+            </span>
+            <span className="bg-[#1D8751] text-white text-[10px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0">
+              {getNetworkDisplayName(getAssetNetwork(asset))}
+            </span>
           </div>
-          {selectedAsset?.asset_id === asset.asset_id && (
-            <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
-          )}
+          <div
+            className="text-[#475569] dark:text-[#788099] text-xs truncate"
+            title={
+              asset.name ||
+              (asset.ticker || "").toUpperCase() ||
+              (asset.symbol || "").toUpperCase() ||
+              "Unknown Asset"
+            }
+          >
+            {asset.name ||
+              (asset.ticker || "").toUpperCase() ||
+              (asset.symbol || "").toUpperCase() ||
+              "Unknown Asset"}
+          </div>
         </div>
-      ));
+        {selectedAsset?.asset_id === asset.asset_id && (
+          <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
+        )}
+      </div>
+    );
+
+    if (sortedAssets.length > 0) {
+      return (
+        <>
+          {!hasAssetSearch && popularTop.length > 0 && (
+            <div className="px-4 pt-2 pb-1 text-[11px] font-semibold text-gray-500 dark:text-[#8B90A5] uppercase tracking-wide">
+              Popular
+            </div>
+          )}
+          {(hasAssetSearch ? sortedAssets : popularTop).map((asset: any, index: number) =>
+            renderRow(asset, index)
+          )}
+          {!hasAssetSearch && (
+            <div className="px-4 pt-3 pb-1 text-[11px] font-semibold text-gray-500 dark:text-[#8B90A5] uppercase tracking-wide">
+              Others
+            </div>
+          )}
+          {!hasAssetSearch &&
+            (othersAfterTop.length > 0 ? (
+              othersAfterTop.map((asset: any, index: number) =>
+                renderRow(asset, index + popularTop.length + 1000)
+              )
+            ) : (
+              <div className="px-4 py-3 text-xs text-gray-500 dark:text-[#788099]">
+                No other assets.
+              </div>
+            ))}
+        </>
+      );
     }
 
     return (
@@ -2367,8 +2452,10 @@ const getPaymentRestrictionMessage = (status?: string) =>
   };
 
   // Restore calculator state from localStorage
+  // NOTE: This should restore even when user is not logged in (so after redirect-back it still pre-fills).
+  // Payment-detail restoration is handled separately and remains gated by auth.
   useEffect(() => {
-    if (hasRestoredState.current || !isAuthenticated) return;
+    if (hasRestoredState.current) return;
 
     try {
       const savedState = localStorage.getItem("rates_calculator_state");
@@ -2412,7 +2499,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
   const assetRestoreAttempted = useRef(false);
 
   useEffect(() => {
-    if (!isAuthenticated || !assetsDisplay.displayData || assetsDisplay.displayData.length === 0) return;
+    if (!assetsDisplay.displayData || assetsDisplay.displayData.length === 0) return;
     if (assetRestoreAttempted.current) return; // Already attempted restoration
 
     const savedAsset = localStorage.getItem("rates_calculator_asset");
@@ -2951,12 +3038,21 @@ const getPaymentRestrictionMessage = (status?: string) =>
     isOtcPopupAsset(selectedAsset) &&
     (amountNum >= 15000 || receiveAmountNum >= 15000);
 
-  // Calculate fees and amounts - Network fee is always 0
-  const networkFee = 0;
+  // Network fee: prefer backend-provided `network_fee` (when present), otherwise fallback to asset network config.
+  const networkFee = (() => {
+    const fromEstimate = Number((estimate as any)?.network_fee);
+    if (Number.isFinite(fromEstimate) && fromEstimate >= 0) return fromEstimate;
+    const fromResponse = Number((responseData as any)?.network_fee);
+    if (Number.isFinite(fromResponse) && fromResponse >= 0) return fromResponse;
+    const fromAssetNetwork = Number((selectedAsset as any)?.networks?.[0]?.deposit_fee);
+    if (Number.isFinite(fromAssetNetwork) && fromAssetNetwork >= 0) return fromAssetNetwork;
+    return 0;
+  })();
 
-  // Use flat $2 fee for direct assets (USDT on BSC, USDC on BSC), percentage for other assets
+  // Commission: can be flat fee or percentage depending on backend config.
   let commissionAmount = 0;
   let commissionRate = 0;
+  let commissionDisplayMode: "flat_fee" | "percentage" = "percentage";
   const exchangeCommissionRule =
     (exchangeLookupResponse?.local_commission as any)?.commission_mode
       ? (exchangeLookupResponse?.local_commission as any)
@@ -2973,11 +3069,13 @@ const getPaymentRestrictionMessage = (status?: string) =>
     if (lc.commission_mode === "flat_fee") {
       const fee = lc.fee != null ? parseFloat(lc.fee) : 0;
       commissionAmount = Number.isNaN(fee) ? 0 : fee;
-      commissionRate = amountNum > 0 ? (commissionAmount / amountNum) * 100 : 0;
+      commissionRate = 0;
+      commissionDisplayMode = "flat_fee";
     } else if (lc.commission_mode === "percentage") {
       const rate = lc.rate != null ? parseFloat(lc.rate) : 0;
       commissionRate = Number.isNaN(rate) ? 0 : rate;
       commissionAmount = (amountNum * commissionRate) / 100;
+      commissionDisplayMode = "percentage";
     }
   } else if (
     selectedAsset &&
@@ -2988,12 +3086,31 @@ const getPaymentRestrictionMessage = (status?: string) =>
     commissionAmount = 0;
     commissionRate = 0;
   } else if (selectedAsset && usesLegacyPercentCommission(selectedAsset)) {
-    if (isForexPrimusAsset(selectedAsset) && apiCommission == null) {
-      commissionRate = 0;
-      commissionAmount = 0;
+    // FXP Primus can be configured as flat fee. Prefer explicit fee fields from the API response.
+    if (isForexPrimusAsset(selectedAsset)) {
+      const feeFromPayload = Number(
+        (apiCommissionDetails as any)?.calculated_fee ?? (apiCommissionDetails as any)?.fee
+      );
+      const mode = String((apiCommissionDetails as any)?.commission_mode || "").toLowerCase();
+      const isPercentageFlag = (apiCommissionDetails as any)?.is_percentage;
+      const treatAsFlatFee = mode === "flat_fee" || isPercentageFlag === false;
+      if (Number.isFinite(feeFromPayload) && feeFromPayload >= 0 && treatAsFlatFee) {
+        commissionAmount = feeFromPayload;
+        commissionRate = 0;
+        commissionDisplayMode = "flat_fee";
+      } else if (apiCommission == null) {
+        commissionRate = 0;
+        commissionAmount = 0;
+        commissionDisplayMode = "percentage";
+      } else {
+        commissionRate = apiCommission ?? 2;
+        commissionAmount = (amountNum * commissionRate) / 100;
+        commissionDisplayMode = "percentage";
+      }
     } else {
       commissionRate = apiCommission ?? 2;
       commissionAmount = (amountNum * commissionRate) / 100;
+      commissionDisplayMode = "percentage";
     }
   } else {
     // Fallback: try to use the asset-provided commission fields
@@ -3007,6 +3124,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
             : 2; // Default 2% commission for other assets
     commissionRate = Number.isNaN(rateFromAsset) ? 2 : rateFromAsset;
     commissionAmount = (amountNum * commissionRate) / 100;
+    commissionDisplayMode = "percentage";
   }
 
   const totalFees = networkFee + commissionAmount;
@@ -3423,7 +3541,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
                   </label>
                   <div className="relative" ref={assetDropdownRef}>
                     <div
-                      className={`w-full rounded-2xl px-4 py-2 text-base sm:text-lg focus:outline-none border flex items-center justify-between gap-3 cursor-pointer bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
+                      className={`w-full rounded-2xl px-4 py-2 text-sm focus:outline-none border flex items-center justify-between gap-3 cursor-pointer bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
                         }`}
                       onClick={() => setIsAssetDropdownOpen(!isAssetDropdownOpen)}
                     >
@@ -3438,12 +3556,12 @@ const getPaymentRestrictionMessage = (status?: string) =>
                                 selectedAsset?.symbol ||
                                 "Asset"
                               }
-                              className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                              className="w-6 h-6 rounded-full object-cover flex-shrink-0"
                             />
                             <div className="flex flex-col">
                               <div className="flex items-center gap-2">
                                 <span
-                                  className={`font-semibold ${isDark ? "text-white" : "text-[#111827]"}`}
+                                  className={`font-semibold text-sm ${isDark ? "text-white" : "text-[#111827]"}`}
                                   title={(
                                     selectedAsset.ticker ||
                                     selectedAsset.symbol ||
@@ -3459,7 +3577,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
                                   ).toUpperCase()}
                                 </span>
                                 <span
-                                  className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full"
+                                  className="bg-[#1D8751] text-white text-[10px] font-semibold px-2 py-0.5 rounded-full"
                                   title={getNetworkDisplayName(
                                     getAssetNetwork(selectedAsset)
                                   )}
@@ -3476,7 +3594,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
                             <img
                               src={RATES_ASSET_ICON_FALLBACK}
                               alt="asset icon"
-                              className="w-8 h-8 flex-shrink-0"
+                              className="w-6 h-6 flex-shrink-0"
                             />
                             <span className={`${isDark ? "text-[#788099]" : "text-[#64748B]"}`}>
                               {assetsDisplay.isLoading
@@ -3617,7 +3735,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
                   </label>
                   <div className="relative" ref={assetDropdownRef}>
                     <div
-                      className={`w-full rounded-2xl px-4 py-2 text-base sm:text-lg focus:outline-none border flex items-center justify-between gap-3 cursor-pointer bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
+                      className={`w-full rounded-2xl px-4 py-2 text-sm focus:outline-none border flex items-center justify-between gap-3 cursor-pointer bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
                         }`}
                       onClick={() => setIsAssetDropdownOpen(!isAssetDropdownOpen)}
                     >
@@ -3632,12 +3750,12 @@ const getPaymentRestrictionMessage = (status?: string) =>
                                 selectedAsset?.symbol ||
                                 "Asset"
                               }
-                              className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                              className="w-6 h-6 rounded-full object-cover flex-shrink-0"
                             />
                             <div className="flex flex-col">
                               <div className="flex items-center gap-2">
                                 <span
-                                  className={`font-semibold ${isDark ? "text-white" : "text-[#111827]"}`}
+                                  className={`font-semibold text-sm ${isDark ? "text-white" : "text-[#111827]"}`}
                                   title={(
                                     selectedAsset.ticker ||
                                     selectedAsset.symbol ||
@@ -3653,7 +3771,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
                                   ).toUpperCase()}
                                 </span>
                                 <span
-                                  className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full"
+                                  className="bg-[#1D8751] text-white text-[10px] font-semibold px-2 py-0.5 rounded-full"
                                   title={getNetworkDisplayName(
                                     getAssetNetwork(selectedAsset)
                                   )}
@@ -3670,7 +3788,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
                             <img
                               src={RATES_ASSET_ICON_FALLBACK}
                               alt="asset icon"
-                              className="w-8 h-8 flex-shrink-0"
+                              className="w-6 h-6 flex-shrink-0"
                             />
                             <span className={`${isDark ? "text-[#788099]" : "text-[#64748B]"}`}>
                               {assetsDisplay.isLoading
@@ -3897,7 +4015,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
                   <span className="bg-[#1D8751] text-white text-lg font-semibold rounded-full px-8 py-1 ml-2">
                     ${selectedAsset && !isSimpleCalculationAsset(selectedAsset) && estimate?.user_amount
                       ? estimate.user_amount.toFixed(2)
-                      : amountNum > 0 ? amountNum.toFixed(2) : estimate?.user_amount ? estimate.user_amount.toFixed(2) : estimate?.total_fee ? `$${estimate.total_fee}` : "0.00"}
+                      : amountNum > 0 ? assetAmount.toFixed(2) : estimate?.user_amount ? estimate.user_amount.toFixed(2) : estimate?.total_fee ? `$${estimate.total_fee}` : "0.00"}
                   </span>
                 </button>
               </div>
@@ -3910,14 +4028,24 @@ const getPaymentRestrictionMessage = (status?: string) =>
                 {t("rates.commission", "Commission:")}{" "}
                 {selectedAsset && !isSimpleCalculationAsset(selectedAsset) && estimate?.omaya_fee_percentage
                   ? `${estimate.omaya_fee_percentage}%`
-                  : amountNum > 0
-                    ? `${commissionRate.toFixed(2).replace(/\.?0+$/, "")}%`
-                    : "0%"}
+                  : commissionDisplayMode === "flat_fee"
+                    ? `$${commissionAmount.toFixed(2).replace(/\.00$/, "")}`
+                    : amountNum > 0
+                      ? `${commissionRate.toFixed(2).replace(/\.?0+$/, "")}%`
+                      : "0%"}
               </span>
               <span className="text-[#1D8751]">
                 {selectedAsset && !isSimpleCalculationAsset(selectedAsset) && estimate?.total_fee
                   ? `$${estimate.total_fee}`
                   : amountNum > 0 ? `$${commissionAmount.toFixed(2)}` : "$0.00"}
+              </span>
+            </div>
+            <div className="flex justify-between gap-20 text-sm mb-1">
+              <span className={isDark ? "text-[#E8EFF5]" : "text-[#051015]"}>
+                {t("rates.networkFee", "Network fee")}
+              </span>
+              <span className="text-[#1D8751]">
+                {amountNum > 0 ? `$${networkFee.toFixed(2)}` : "$0.00"}
               </span>
             </div>
             <div className={`border-t ${isDark ? "border-[#35353E]" : "border-[#E8EFF5]"} mt-2 pt-2 flex justify-between text-sm`}>
@@ -3927,7 +4055,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
               <span className="text-[#F79330] font-semibold">
                 {selectedAsset && !isSimpleCalculationAsset(selectedAsset) && estimate?.total_fee
                   ? `$${estimate.total_fee}`
-                  : amountNum > 0 ? `$${commissionAmount.toFixed(2)}` : "$0.00"}
+                  : amountNum > 0 ? `$${totalFees.toFixed(2)}` : "$0.00"}
               </span>
             </div>
           </div>

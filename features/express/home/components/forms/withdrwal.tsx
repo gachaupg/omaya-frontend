@@ -2941,9 +2941,10 @@ export default function WithdrawalForm({
       const isYouSend = currentCard.hasAttribute('data-asset-card');
 
       // Width: make the dropdown a bit wider and ensure it grows to the right.
+      // Match Payment Method dropdown sizing behavior (no extra right-side growth).
       let desiredWidth = Math.min(
         maxWidth,
-        Math.max(minWidth, dropdownRect.width) * 1.12
+        Math.max(minWidth, dropdownRect.width)
       );
 
       // Position dropdown starting at the top of the card container
@@ -4108,6 +4109,16 @@ export default function WithdrawalForm({
                             setApiValidationError(null);
                             setCalculationError(null);
 
+                            // If user cleared input, clear the other side too.
+                            if (inputValue.trim() === "") {
+                              setGetAmount(0);
+                              setGetAmountInput("");
+                              setPreviousValidAmount("");
+                              setIsCalculating(false);
+                              setIsCalculatingReceive(false);
+                              return;
+                            }
+
                             // Only calculate if we have a valid amount and asset
                             if (selectedAsset && newValue >= 0) {
                               // Check asset type first and handle accordingly
@@ -4435,6 +4446,21 @@ export default function WithdrawalForm({
 
                         // Only allow numbers and decimals (including 0.006 format)
                         if (value === "" || /^\d*\.?\d*$/.test(value)) {
+                          // If user cleared input, clear the other side too.
+                          if (value.trim() === "") {
+                            setGetAmountInput("");
+                            setGetAmount(0);
+                            setPayAmountInput("");
+                            setPayAmount(0);
+                            setPreviousValidAmount("");
+                            setReceiveAmountError(null);
+                            setApiValidationError(null);
+                            setCalculationError(null);
+                            setIsCalculating(false);
+                            setIsCalculatingReceive(false);
+                            return;
+                          }
+
                           // Check for decimal places validation
                           if (value.includes(".")) {
                             const decimalPart = value.split(".")[1];
@@ -4675,6 +4701,8 @@ export default function WithdrawalForm({
                           options={paymentMethodOptions}
                           logoSize={PAYMENT_LOGO_SIZE}
                           logoClassName={`${PAYMENT_LOGO_BASE_CLASS} rounded-full`}
+                          sizeMode="card"
+                          dropdownMatchTriggerWidth={true}
                           className="w-full"
                           triggerClassName={`px-4 py-2 text-sm font-medium border rounded-2xl bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
                             }`}
@@ -4715,7 +4743,7 @@ export default function WithdrawalForm({
                           searchable={true}
                           dropdownTitle="Select a payment methods"
                           dropdownOffsetY={-68}
-                          dropdownOffsetX={20}
+                          dropdownOffsetX={0}
                           largeDropdownItems={true}
                         />
                       );

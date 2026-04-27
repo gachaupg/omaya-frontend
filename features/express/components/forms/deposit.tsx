@@ -1506,6 +1506,7 @@ export default function DepositForm({
 
   // Fetch commission: for first 3 assets use exchange commission-lookup (to_amount); for USDT/USDC/FXP use legacy percentage API
   useEffect(() => {
+    let cancelled = false;
     if (!selectedAsset) {
       setApiCommission(null);
       setApiCommissionDetails(null);
@@ -1531,6 +1532,7 @@ export default function DepositForm({
       commissionFetchTimeoutRef.current = setTimeout(() => {
         fetchExchangeCommissionLookup(amount, "deposit", params.from_currency, "USD", params.from_network, params.from_asset_id)
           .then((res) => {
+            if (cancelled) return;
             setExchangeLookupResponse(res);
             setApiCommission(null);
             setApiCommissionDetails(null);
@@ -1544,6 +1546,7 @@ export default function DepositForm({
             }
           })
           .catch((error: any) => {
+            if (cancelled) return;
             setExchangeLookupResponse(null);
             const responseData = error?.response?.data;
             const responseInner = responseData?.response_data;
@@ -1577,6 +1580,7 @@ export default function DepositForm({
           });
       }, 300);
       return () => {
+        cancelled = true;
         if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
       };
     }
@@ -1602,6 +1606,7 @@ export default function DepositForm({
         isForexAsset(selectedAsset) ? selectedAsset?.asset_id : undefined
       )
         .then((details) => {
+          if (cancelled) return;
           setApiCommission(Number(details?.commission_rate ?? 0));
           setApiCommissionDetails(details);
           setExchangeLookupResponse(null);
@@ -1618,6 +1623,7 @@ export default function DepositForm({
           }
         })
         .catch((error: any) => {
+          if (cancelled) return;
           const responseData = error?.response?.data;
           const rawMessage =
             responseData?.error ||
@@ -1656,6 +1662,7 @@ export default function DepositForm({
         });
     }, 300);
     return () => {
+      cancelled = true;
       if (commissionFetchTimeoutRef.current) clearTimeout(commissionFetchTimeoutRef.current);
     };
   }, [selectedAsset, payAmountInput, getAmountInput, payAmount, getAmount, isCalculatingFromPay]);
@@ -1726,6 +1733,7 @@ export default function DepositForm({
 
   // Fetch estimate for non-direct assets - debounced to avoid rapid API calls
   useEffect(() => {
+    let cancelled = false;
     if (
       selectedAsset &&
       !isSimpleCalculationAsset(selectedAsset) &&
@@ -1757,6 +1765,7 @@ export default function DepositForm({
           timeoutPromise,
         ])
           .then((result: any) => {
+            if (cancelled) return;
             // Thunk always resolves; check fulfilled vs rejected
             if (result?.meta?.requestStatus === "fulfilled" && result.payload) {
               const payload = result.payload as any;
@@ -1858,6 +1867,7 @@ export default function DepositForm({
             setIsCalculatingReceive(false);
           })
           .catch((actionOrError: any) => {
+            if (cancelled) return;
             console.log("[EXPRESS DASHBOARD DEPOSIT] ESTIMATE CATCH", { actionOrError });
             const error = actionOrError?.payload ?? actionOrError;
             const responseData = error?.response_data ?? actionOrError?.response_data;
@@ -1977,12 +1987,16 @@ export default function DepositForm({
             setIsCalculatingReceive(false);
           })
           .finally(() => {
+            if (cancelled) return;
             setEstimateLoading(false);
           });
       }, 800); // 800ms debounce
 
       // Cleanup function to clear debounce timer on unmount or dependency change
-      return () => clearTimeout(debounceTimer);
+      return () => {
+        cancelled = true;
+        clearTimeout(debounceTimer);
+      };
     } else {
       // Clear estimate for USDT or when conditions not met
       setEstimate(null);
@@ -1992,6 +2006,7 @@ export default function DepositForm({
 
   // Fetch reverse estimate for non-direct assets when calculating from receive amount - debounced
   useEffect(() => {
+    let cancelled = false;
     if (
       selectedAsset &&
       !isSimpleCalculationAsset(selectedAsset) &&
@@ -2023,6 +2038,7 @@ export default function DepositForm({
           timeoutPromise,
         ])
           .then((result: any) => {
+            if (cancelled) return;
             if (result?.meta?.requestStatus === "fulfilled" && result.payload) {
               const payload = result.payload as any;
               const requiredUsdtAmountRaw =
@@ -2043,6 +2059,7 @@ export default function DepositForm({
             setIsCalculatingReceive(false);
           })
           .catch((actionOrError: any) => {
+            if (cancelled) return;
             const error = actionOrError?.payload ?? actionOrError;
             const responseData = error?.response_data ?? actionOrError?.response_data;
             let errorMessage = "";
@@ -2160,12 +2177,16 @@ export default function DepositForm({
             setIsCalculatingReceive(false);
           })
           .finally(() => {
+            if (cancelled) return;
             setEstimateLoading(false);
           });
       }, 800); // 800ms debounce
 
       // Cleanup function to clear debounce timer on unmount or dependency change
-      return () => clearTimeout(debounceTimer);
+      return () => {
+        cancelled = true;
+        clearTimeout(debounceTimer);
+      };
     }
   }, [selectedAsset, getAmount, isCalculatingFromPay]);
 
@@ -2420,6 +2441,14 @@ export default function DepositForm({
       setReceiveAmountError(null);
       setIsCalculating(false);
       setIsCalculatingReceive(false);
+      // User cleared input: clear the paired field too (show 0, not previous converted value).
+      if (fromPay) {
+        setGetAmount(0);
+        setGetAmountInput("0");
+      } else {
+        setPayAmount(0);
+        setPayAmountInput("0");
+      }
       return;
     }
 
@@ -3526,11 +3555,6 @@ export default function DepositForm({
 
   return (
     <div className="flex flex-col dark:bg-[var(--bg-color)] pl-0 pr-2 sm:pr-0 mr-0 sm:mr-40 w-full mx-auto">
-      <h2 className="text-xl font-bold mb-2 text-[#788099] dark:text-[#788099] inline-flex items-center gap-2">
-
-        {t("express.transactionInfo", "Transaction Info")}
-      </h2>
-
       <div className="w-full text-white">
         {/* Top Section - Amount and Bank/Payment Method in one card */}
         <div className="relative mb-2 sm:mb-3 md:mb-4">
@@ -3675,6 +3699,15 @@ export default function DepositForm({
                         setIsCalculatingFromPay(true);
                         setApiValidationError(null);
                         setIsUserModifiedAmount(true);
+
+                        // If user cleared input, clear the other side too (avoid stale converted values).
+                        if (normalizedValue.trim() === "") {
+                          setGetAmount(0);
+                          setGetAmountInput("");
+                          setIsCalculatingReceive(false);
+                          setIsCalculating(false);
+                          return;
+                        }
 
                         if (isOtcPopupAsset(selectedAsset) && newAmount > 15000) setIsInfoModalOpen(true);
 
@@ -3992,6 +4025,15 @@ export default function DepositForm({
 
                         // Clear API validation error when user changes amount
                         setApiValidationError(null);
+
+                        // If user cleared input, clear the other side too (avoid stale converted values).
+                        if (value.trim() === "") {
+                          setPayAmount(0);
+                          setPayAmountInput("");
+                          setIsCalculatingReceive(false);
+                          setIsCalculating(false);
+                          return;
+                        }
 
                         // For direct assets, reverse calculate (first 3 use exchange lookup in useEffect)
                         if (

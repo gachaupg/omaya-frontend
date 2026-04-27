@@ -19,7 +19,7 @@ import { formatNumber, formatBalance } from "@/utils/formatters";
 import { formatCurrency } from "@/lib/globalFormatter";
 import { DepositResponse } from "@/features/exchange/types";
 import { SupportedAsset } from "@/features/swap/types";
-import { FaSearch } from "react-icons/fa";
+// (no asset search UI in this dropdown)
 import { createP2PWithdrawal, fetchCommission, getCommissionApiAsset } from "../../api";
 import { P2PWithdrawalRequest, P2PWithdrawalResponse } from "../../types";
 import {
@@ -36,6 +36,33 @@ import { useExpressI18n } from "@/lib/useExpressI18n";
 import { useTheme } from "@/context/theme";
 import { TermsAndConditionsSummary } from "./TermsAndConditionsSummary";
 import { selectP2PWalletAmounts, selectTransactionSummary } from "@/features/p2p/selectors";
+
+const formatUnknownError = (error: unknown): string => {
+  if (!error) return "Unknown error";
+  if (typeof error === "string") return error;
+  if (error instanceof Error) return error.message || "Unknown error";
+  const anyErr = error as any;
+  const respMsg =
+    anyErr?.response?.data?.message ||
+    anyErr?.response?.data?.error ||
+    anyErr?.response?.data?.detail;
+  if (typeof respMsg === "string" && respMsg.trim()) return respMsg;
+  const msg = anyErr?.message;
+  if (typeof msg === "string" && msg.trim()) return msg;
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return String(error);
+  }
+};
+
+const isConditionAbortError = (error: unknown): boolean => {
+  const msg = formatUnknownError(error);
+  return (
+    typeof msg === "string" &&
+    msg.toLowerCase().includes("aborted due to condition callback returning false")
+  );
+};
 
 // Success Modal Component
 const SuccessModal = ({
@@ -360,7 +387,7 @@ export default function WithdrawalForm({
   const [transactionId, setTransactionId] = useState<string>("");
   // Asset selection state for search functionality
   const [isAssetDropdownOpen, setIsAssetDropdownOpen] = useState(false);
-  const [assetSearchTerm, setAssetSearchTerm] = useState("");
+  // No asset search: this screen only supports USDT on BSC.
   const assetDropdownRef = useRef<HTMLDivElement>(null);
 
   // Estimate calculation state
@@ -592,7 +619,9 @@ export default function WithdrawalForm({
     dispatch(fetchAssets())
       .unwrap()
       .catch((error: unknown) => {
-        showToast.error(`Failed to fetch assets: ${error}`);
+        // Redux Toolkit condition aborts are expected; don't show as errors.
+        if (isConditionAbortError(error)) return;
+        showToast.error(`Failed to fetch assets: ${formatUnknownError(error)}`);
       });
   }, [dispatch]);
 
@@ -602,7 +631,9 @@ export default function WithdrawalForm({
     dispatch(fetchUserPaymentDetails(false)) // false = don't force refresh
       .unwrap()
       .catch((error: unknown) => {
-        showToast.error(`Failed to fetch user payment details: ${error}`);
+        showToast.error(
+          `Failed to fetch user payment details: ${formatUnknownError(error)}`
+        );
       });
   }, [dispatch]);
 
@@ -1661,24 +1692,8 @@ export default function WithdrawalForm({
     },
   ];
 
-  // Filter based on search term if provided
-  const filteredSwapAssets = assetSearchTerm.trim()
-    ? exactAssets.filter((asset) => {
-      const searchTerm = assetSearchTerm.toUpperCase();
-      return (
-        asset.ticker.includes(searchTerm) ||
-        asset.name.toUpperCase().includes(searchTerm) ||
-        "TETHER".includes(searchTerm) ||
-        "USD COIN".includes(searchTerm) ||
-        "BSC".includes(searchTerm) ||
-        "BEP20".includes(searchTerm) ||
-        "BINANCE SMART CHAIN".includes(searchTerm)
-      );
-    })
-    : exactAssets;
-
   // Sort assets: USDT Tether first
-  const sortedSwapAssets = [...filteredSwapAssets].sort((a, b) => {
+  const sortedSwapAssets = [...exactAssets].sort((a, b) => {
     // USDT always comes first
     if (a.ticker === "USDT" && b.ticker !== "USDT") {
       return -1;
@@ -2513,20 +2528,6 @@ export default function WithdrawalForm({
                 {/* Asset Dropdown */}
                 {isAssetDropdownOpen && (
                   <div className="absolute top-full left-0 right-0 mt-1 bg-[#ffffff] dark:bg-[var(--card-color)] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-xl sm:rounded-2xl z-50 max-h-[60vh] sm:max-h-80 overflow-hidden">
-                    {/* Search Input */}
-                    <div className="p-2 sm:p-3 border-b border-[#A2A4A9FF] dark:border-[#35353E]">
-                      <div className="relative">
-                        <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#7e7e8f] w-4 h-4" />
-                        <input
-                          type="text"
-                          placeholder="Search assets..."
-                          className="w-full text-gray-900 dark:text-white dark:bg-[var(--card-color)] bg-white rounded-xl px-10 py-2.5 sm:py-2 text-sm sm:text-base focus:outline-none border dark:border-[#35353E] border-[#35353E] placeholder-gray-500 dark:placeholder-gray-400 min-h-[44px] sm:min-h-0"
-                          value={assetSearchTerm}
-                          onChange={(e) => setAssetSearchTerm(e.target.value)}
-                        />
-                      </div>
-                    </div>
-
                     {/* Asset List */}
                     <div className="max-h-60 overflow-y-auto">
                       {sortedSwapAssets.length > 0 ? (
@@ -2557,7 +2558,6 @@ export default function WithdrawalForm({
                                 network_type: "BSC",
                               });
                               setIsAssetDropdownOpen(false);
-                              setAssetSearchTerm("");
                               // Clear validation errors related to asset selection
                               setValidationErrors((prev) =>
                                 prev.filter(
@@ -2612,9 +2612,7 @@ export default function WithdrawalForm({
                         ))
                       ) : (
                         <div className="p-4 text-center text-[#7e7e8f] dark:text-[#788099]">
-                          {assetSearchTerm
-                            ? "No USDT Tether assets found matching your search"
-                            : "Only USDT Tether on BSC is available for withdrawal"}
+                          Only USDT Tether on BSC is available for withdrawal
                         </div>
                       )}
                     </div>

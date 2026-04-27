@@ -300,14 +300,42 @@ const PaymentMethods = () => {
       : bankTab === "rejected"
       ? bankRejected
       : bankApproved;
-  const totalPaymentPages = Math.max(1, Math.ceil(bankByTab.length / ITEMS_PER_PAGE));
+
+  const prioritizedBankByTab = useMemo(() => {
+    const rows = [...bankByTab];
+    const getProvider = (p: UserPaymentDetail) =>
+      String(p?.payment_provider_name || (p as any)?.provider_name || "").trim().toLowerCase();
+    const isEdahab = (p: UserPaymentDetail) => {
+      const v = getProvider(p).replace(/\s+/g, "");
+      // exact-ish match first, then fallback contains
+      return v === "edahab" || v === "edahabwallet" || v.includes("edahab");
+    };
+    const getCreatedAt = (p: UserPaymentDetail) => {
+      const raw = (p as any)?.created_at || (p as any)?.createdAt || "";
+      const t = Date.parse(String(raw));
+      return Number.isFinite(t) ? t : 0;
+    };
+    rows.sort((a, b) => {
+      const aTop = isEdahab(a) ? 0 : 1;
+      const bTop = isEdahab(b) ? 0 : 1;
+      if (aTop !== bTop) return aTop - bTop;
+      // Stable-ish: newest first within the same priority.
+      return getCreatedAt(b) - getCreatedAt(a);
+    });
+    return rows;
+  }, [bankByTab]);
+
+  const totalPaymentPages = Math.max(
+    1,
+    Math.ceil(prioritizedBankByTab.length / ITEMS_PER_PAGE)
+  );
   const paginatedBankPayments = useMemo(
     () =>
-      bankByTab.slice(
+      prioritizedBankByTab.slice(
         (paymentPage - 1) * ITEMS_PER_PAGE,
         paymentPage * ITEMS_PER_PAGE
       ),
-    [bankByTab, paymentPage]
+    [prioritizedBankByTab, paymentPage]
   );
 
   useEffect(() => {
@@ -606,7 +634,7 @@ const PaymentMethods = () => {
                 const isBankMethod =
                   (payment?.payment_method_name || "").toLowerCase().includes("bank") ||
                   (payment?.payment_provider_name || "").toLowerCase().includes("bank");
-                const rejectionMessage = String(
+                const rejectionMessageRaw = String(
                   payment?.rejection_reason ??
                     (payment as any)?.rejectionReason ??
                     (payment as any)?.reason ??
@@ -614,6 +642,7 @@ const PaymentMethods = () => {
                     (payment as any)?.note ??
                     ""
                 ).trim();
+                const rejectionMessage = rejectionMessageRaw || "No rejection reason provided.";
                 const inputLabel = isBankMethod ? "Bank Account" : "Wallet Address";
                 const placeholderText = isBankMethod
                   ? "Type in here your bank account number"
@@ -647,10 +676,12 @@ const PaymentMethods = () => {
                         <div>
                           <div className="flex items-center gap-2 flex-wrap">
                             <p className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
-                              {isBankMethod
-                                ? (payment?.payment_provider_name || "Bank")
-                                : ((payment as any)?.account_name || payment?.payment_method_name)}
+                              {payment?.payment_provider_name ||
+                                (payment as any)?.provider_name ||
+                                payment?.payment_method_name ||
+                                "Payment Method"}
                             </p>
+                            {/* account_name intentionally hidden to avoid repetition */}
                             <span
                               className={`inline-flex px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold capitalize ${
                                 isPending
@@ -666,9 +697,9 @@ const PaymentMethods = () => {
                           <p className="text-xs text-gray-500 dark:text-[#8B90A5] mt-0.5">
                             {isBankMethod
                               ? (payment?.payment_method_name || "Bank")
-                              : (payment?.payment_provider_name || payment?.payment_method_name)}
+                              : (payment?.payment_method_name || "Wallet")}
                           </p>
-                          {isRejected && rejectionMessage && (
+                          {isRejected && (
                             <p className="mt-2 text-xs text-red-600 dark:text-red-400 max-w-[520px]">
                               {rejectionMessage}
                             </p>

@@ -9,6 +9,7 @@ import { NoDataFound } from "../ui/Transactions";
 import { useDashboardI18n } from "@/lib/useDashboardI18n";
 import { SortArrowsIcon } from "@/components/ui/SortArrowsIcon";
 import { getHighResAssetIcon } from "@/features/express/utils/imageHelpers";
+import CopyButton from "@/components/ui/CopyButton";
 
 interface RootState {
   p2pWithdrawalDeposit: {
@@ -62,6 +63,51 @@ const formatRecentTime = (dateValue: string) => {
   const v = formatDistanceToNow(new Date(dateValue), { addSuffix: true });
   if (/less than (a|1) minute ago/i.test(v)) return "now";
   return v.replace(/^about\s+/i, "");
+};
+
+const formatAddress = (addr: string | null | undefined, start = 6, end = 4): string => {
+  if (!addr) return "—";
+  const s = String(addr).trim();
+  if (!s) return "—";
+  if (s.length <= start + end + 3) return s;
+  return `${s.slice(0, start)}...${s.slice(-end)}`;
+};
+
+const getTxFromTo = (tx: any): { from: string | null; to: string | null } => {
+  const txType = String(tx?.transaction_type || "").toLowerCase();
+  const symbol = String(tx?.currency || tx?.asset_symbol || "USDT").toUpperCase();
+  const network = String(tx?.network || "").toUpperCase();
+  const cryptoLabel = network ? `${symbol} (${network})` : symbol;
+
+  const fromRaw =
+    // Withdrawal: "From" should be the asset/network label (not an address)
+    (txType === "withdrawal" ? cryptoLabel : null) ||
+    tx?.from_address ||
+    tx?.sender_wallet ||
+    tx?.sender_address ||
+    // Legacy: some responses store "from" in a single address field
+    (txType === "withdrawal" ? tx?.deposit_address : null) ||
+    // Some endpoints omit `from_address` for deposits; use receiver_wallet as best available fallback.
+    (txType === "deposit" ? tx?.receiver_wallet : null) ||
+    // Some legacy rows may expose a single wallet field.
+    tx?.wallet_address ||
+    null;
+
+  const toRaw =
+    tx?.to_address ||
+    tx?.receiver_wallet ||
+    tx?.receiver_address ||
+    // Legacy: deposit/withdrawal address fields
+    (txType === "deposit" ? tx?.deposit_address : null) ||
+    (txType === "withdrawal" ? tx?.withdrawal_address : null) ||
+    // Legacy single-field fallback
+    tx?.wallet_address ||
+    null;
+
+  return {
+    from: fromRaw ? String(fromRaw) : null,
+    to: toRaw ? String(toRaw) : null,
+  };
 };
 
 const P2PWithdrawalDepositTransactions = ({ filterByType = "all" }: P2PWithdrawalDepositTransactionsProps) => {
@@ -283,6 +329,7 @@ const P2PWithdrawalDepositTransactions = ({ filterByType = "all" }: P2PWithdrawa
       {/* Mobile Card Layout */}
       <div className="block sm:hidden space-y-3 px-4 pt-4 pb-2">
         {paginatedResults.map((tx: any, index: number) => {
+          const { from, to } = getTxFromTo(tx);
           return (
             <div
               key={tx.transaction_id || `tx-${index}`}
@@ -332,6 +379,28 @@ const P2PWithdrawalDepositTransactions = ({ filterByType = "all" }: P2PWithdrawa
                   <div className="text-xs text-gray-500 dark:text-[#A0A3BC] mb-1">Type</div>
                   <div className="font-medium text-sm sm:text-base text-gray-500 dark:text-[#A0A3BC] capitalize">
                     {tx.transaction_type}
+                  </div>
+                </div>
+                <div className="col-span-2">
+                  <div className="text-xs text-gray-500 dark:text-[#A0A3BC] mb-1">From</div>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="font-mono font-medium text-xs text-gray-900 dark:text-white break-all" title={from || ""}>
+                      {formatAddress(from)}
+                    </div>
+                    {!!from && (
+                      <CopyButton value={from} className="text-gray-500 hover:text-gray-900 dark:text-[#A0A3BC] dark:hover:text-white" showInlineMessage={false} />
+                    )}
+                  </div>
+                </div>
+                <div className="col-span-2">
+                  <div className="text-xs text-gray-500 dark:text-[#A0A3BC] mb-1">To</div>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="font-mono font-medium text-xs text-gray-900 dark:text-white break-all" title={to || ""}>
+                      {formatAddress(to)}
+                    </div>
+                    {!!to && (
+                      <CopyButton value={to} className="text-gray-500 hover:text-gray-900 dark:text-[#A0A3BC] dark:hover:text-white" showInlineMessage={false} />
+                    )}
                   </div>
                 </div>
                 <div>
@@ -386,11 +455,7 @@ const P2PWithdrawalDepositTransactions = ({ filterByType = "all" }: P2PWithdrawa
           <tbody className="divide-y divide-gray-200 dark:divide-[#2A2A35]">
             {paginatedResults.map((tx: any, index: number) => {
               const symbol = (tx.currency || tx.asset_symbol || "USDT").toString().toUpperCase();
-              const txType = String(tx.transaction_type || "").toLowerCase();
-              const fromLabel =
-                txType === "withdrawal" ? `${symbol} · Wallet` : "Wallet / Address";
-              const toLabel =
-                txType === "withdrawal" ? "Wallet / Address" : `${symbol} · Wallet`;
+              const { from, to } = getTxFromTo(tx);
               return (
                 <tr
                   key={tx.transaction_id || `tx-${index}`}
@@ -420,12 +485,26 @@ const P2PWithdrawalDepositTransactions = ({ filterByType = "all" }: P2PWithdrawa
 
                   {/* From */}
                   <td className="px-3 sm:px-4 py-2 whitespace-normal break-words text-xs sm:text-sm text-gray-700 dark:text-gray-200">
-                    {fromLabel}
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-mono text-xs sm:text-sm truncate" title={from || ""}>
+                        {formatAddress(from)}
+                      </span>
+                      {!!from && (
+                        <CopyButton value={from} className="text-gray-500 hover:text-gray-900 dark:text-[#A0A3BC] dark:hover:text-white" showInlineMessage={false} />
+                      )}
+                    </div>
                   </td>
 
                   {/* To */}
                   <td className="px-3 sm:px-4 py-2 whitespace-normal break-words text-xs sm:text-sm text-gray-700 dark:text-gray-200">
-                    {toLabel}
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-mono text-xs sm:text-sm truncate" title={to || ""}>
+                        {formatAddress(to)}
+                      </span>
+                      {!!to && (
+                        <CopyButton value={to} className="text-gray-500 hover:text-gray-900 dark:text-[#A0A3BC] dark:hover:text-white" showInlineMessage={false} />
+                      )}
+                    </div>
                   </td>
 
                   {/* Amount */}

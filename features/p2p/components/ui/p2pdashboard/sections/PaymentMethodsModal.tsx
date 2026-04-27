@@ -17,6 +17,7 @@ import {
   getHighResAssetIcon,
   PAYMENT_LOGO_SIZE,
 } from "@/features/express/utils/imageHelpers";
+import CustomSelect from "@/components/ui/CustomSelect";
 
 type PaymentDetailPayload = {
   account_name: string;
@@ -312,11 +313,12 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
   }, [open, filterByProviderName, singleFilteredProvider?.payment_method_type, singleFilteredProvider?.provider_name]);
 
   const normalizedMethod = method.trim().toLowerCase();
-  const isCryptoMethod = normalizedMethod.includes("crypto");
+  // Use the selected tab as source of truth (method string may lag/omit "crypto").
+  const isCryptoMethod = methodTab === "crypto" || normalizedMethod.includes("crypto");
   const isForexMethod = normalizedMethod.includes("forex");
   const isMobileMethod =
     normalizedMethod.includes("mobile") || normalizedMethod.includes("money") || normalizedMethod.includes("mpesa");
-  const shouldUseWalletAddressField = isCryptoMethod;
+  const shouldUseWalletAddressField = methodTab === "crypto" || isCryptoMethod;
 
   const accountFieldLabel =
     methodTab === "forex"
@@ -374,8 +376,11 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
           : "Bank Wallet");
 
     const payload: PaymentDetailPayload = {
-      account_name: methodTab === "forex" ? (name || "FOREX") : name,
-      account_number: account,
+      account_name:
+        methodTab === "forex"
+          ? (name || "FOREX")
+          : name || (methodTab === "crypto" ? "Crypto Wallet" : ""),
+      account_number: shouldUseWalletAddressField ? "" : account,
       payment_method_name: resolvedMethod,
       payment_provider_name: providerField,
       provider_name: providerField,
@@ -634,29 +639,36 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                 Provider
                </label>
                <div className="relative">
-                 <select
-                   className="w-full p-3 rounded-[14px] bg-white dark:bg-[#060913] border border-[#E3E6F0] dark:border-[#2A2F40] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1D8751] appearance-none pr-10 text-sm [&_option]:bg-white dark:[&_option]:bg-[#060913] [&_option]:text-gray-900 dark:[&_option]:text-white"
+                 <CustomSelect
+                   options={[
+                     { value: "", label: "Select Provider" },
+                     ...providers.map((p: any, index: number) => ({
+                       value: String(p.provider_name || ""),
+                       label: String(p.provider_name || "Unknown"),
+                       subtitle: String(p.payment_method_type || p.method_display || p.method || "").trim() || undefined,
+                       logo: getHighResPaymentLogo(
+                         p.logo || p.provider_logo || undefined,
+                         undefined,
+                         PAYMENT_LOGO_SIZE
+                       ),
+                       disabled: !p.provider_name,
+                     })),
+                   ].filter((opt: any) => opt.value !== null)}
                    value={provider}
-                   onChange={(e) => setProvider(e.target.value)}
-                  disabled={publicMethodsLoading || providers.length === 0}
-                 >
-                   <option value="">
-                    Select Provider
-                   </option>
-                  {providers.map((p: any, index: number) => (
-                     <option
-                       key={`${p.provider_name}-${index}`}
-                       value={p.provider_name}
-                     >
-                       {p.provider_name}
-                     </option>
-                   ))}
-                 </select>
-                 <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                   <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                   </svg>
-                 </div>
+                   onChange={(value) => setProvider(String(value || ""))}
+                   disabled={publicMethodsLoading || providers.length === 0}
+                   searchable={true}
+                   emptyText="No providers found"
+                   loading={publicMethodsLoading}
+                   loadingText="Loading providers..."
+                   dropdownTitle="Select Provider"
+                   sizeMode="card"
+                   logoSize={PAYMENT_LOGO_SIZE}
+                   logoClassName="rounded-full object-cover"
+                   className="w-full"
+                   triggerClassName="w-full p-3 rounded-[14px] bg-white dark:bg-[#060913] border border-[#E3E6F0] dark:border-[#2A2F40] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1D8751] text-sm"
+                   largeDropdownItems={true}
+                 />
                </div>
                
                {/* Provider Preview with Logo */}

@@ -157,8 +157,8 @@ export default function Sidebar() {
                     {item.labelKey === "navigation.exchange" ? (
                       <>
                         <img
-                          className="-ml-1 w-8 h-8 object-contain flex-shrink-0"
-                          src="/images/exchange1.png"
+                          className="w-5 h-5 object-contain flex-shrink-0 scale-[1.35]"
+                          src="/assets/uil_exchange_1_okxkvb.png"
                           alt=""
                         />
                       </>
@@ -166,14 +166,12 @@ export default function Sidebar() {
                       <img
                         src={item.icon}
                         alt={label + " icon"}
-                        className="w-5 h-5 object-contain flex-shrink-0"
+                        className="w-[18px] h-[18px] object-contain flex-shrink-0"
                       />
                     )}
                     {item.labelKey === "navigation.exchange" ? (
-                      <span
-
-                      >
-                        <span className="flex items-center justify-center gap-0.5">
+                      <span>
+                        <span className="flex items-center gap-0.5 leading-none">
                           <span
                             className={
                               isActive
@@ -184,7 +182,7 @@ export default function Sidebar() {
                             Money
                           </span>
 
-                          <span className="relative mt-2">
+                          <span className="relative flex items-center">
                             {/* Light-mode image (always shown in light mode, and in dark mode when inactive) */}
                             <img
                               src="/images/x.png"
@@ -306,13 +304,13 @@ export default function Sidebar() {
                     {item.labelKey === "navigation.exchange" ? (
                       <>
                         <img
-                          className="-ml-1 w-8 h-8 object-contain flex-shrink-0"
+                          className="w-5 h-5 object-contain flex-shrink-0 scale-[1.35]"
                           src="/assets/uil_exchange_1_okxkvb.png"
                           alt=""
                         />
                         <span
                           className={clsx(
-                            "flex items-center justify-center gap-0.5 sm:gap-1",
+                            "flex items-center gap-0.5 sm:gap-1 leading-none",
                             isActive
                               ? "font-bold text-white text-sm sm:text-base"
                               : "font-normal text-[#727272] text-xs sm:text-sm"
@@ -322,7 +320,7 @@ export default function Sidebar() {
                             Money
                           </span>
                           <img
-                            className="mt-[4px] w-5 h-5 object-contain"
+                            className="w-5 h-5 object-contain"
                             src={isActive
 
                               ? isDark ? "/assets/Group_7_ichuyz.png"
@@ -338,7 +336,7 @@ export default function Sidebar() {
                         <img
                           src={item.icon}
                           alt={label + " icon"}
-                          className="w-4 h-4 sm:w-5 sm:h-5 object-contain shrink-0"
+                          className="w-4 h-4 sm:w-[18px] sm:h-[18px] object-contain shrink-0"
                         />
                         {item.labelKey === "navigation.express" ? (
                           <span
