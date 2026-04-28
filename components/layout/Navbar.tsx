@@ -1020,7 +1020,7 @@ export default function Navbar() {
         <div className="flex items-center min-w-0 flex-1">
           <div
             onClick={() => (window.location.href = '/')}
-            className="mr-4 sm:mr-8 md:mr-6 lg:mr-12 xl:mr-20 shrink-0 flex items-center h-full"
+            className="mr-2 sm:mr-8 md:mr-6 lg:mr-12 xl:mr-20 flex items-center h-full min-w-0"
           >
             {/* Optimized logo selection using memoized config */}
             {logoConfig && (
@@ -1029,7 +1029,7 @@ export default function Navbar() {
                 alt={logoConfig.alt}
                 width={150}
                 height={40}
-                className="h-8 w-28 sm:h-auto sm:w-32 md:w-28 lg:w-36 xl:w-40 2xl:w-48 dark:brightness-0 dark:invert object-contain"
+                className="h-8 w-20 sm:h-auto sm:w-32 md:w-28 lg:w-36 xl:w-40 2xl:w-48 dark:brightness-0 dark:invert object-contain"
                 priority
               />
             )}
@@ -1386,7 +1386,7 @@ export default function Navbar() {
 
         {/* Mobile Menu Button */}
         <button
-          className={`md:hidden p-1.5 sm:p-2 flex items-center justify-center rounded-md focus:outline-none transition-colors ${theme === "light"
+          className={`md:hidden p-1.5 sm:p-2 flex items-center justify-center rounded-md focus:outline-none transition-colors flex-shrink-0 ${theme === "light"
             ? "text-black" // Always black in light mode
             : isTransparentNavbar
               ? "text-white" // White when navbar is transparent in dark mode

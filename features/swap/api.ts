@@ -376,12 +376,18 @@ const buildSwapEstimateDisplayMessage = (
     body?.response_data && typeof body.response_data === "object"
       ? body.response_data
       : body;
+  const rootMessage =
+    typeof root?.message === "string" ? root.message.trim() : "";
+  const rootError = typeof root?.error === "string" ? root.error.trim() : "";
+  if (!msg && rootMessage) {
+    msg = rootMessage;
+  }
   const range = root?.range ?? root?.payload?.range;
   const min = range?.minAmount ?? range?.min_amount;
   const errStr =
     (typeof body?.error === "string" ? body.error : "") +
     (msg || "") +
-    (typeof root?.error === "string" ? root.error : "");
+    rootError;
   if (
     min != null &&
     String(min).trim() !== "" &&
@@ -415,7 +421,22 @@ export const getEstimateSwap = async (
       const data = raw?.data !== undefined && typeof raw.data === "object" ? raw.data : raw;
       // Backend can return 200 OK with error in body (e.g. deposit_too_small) – treat as error so UI shows it in red
       if (data?.error || data?.response_data?.error) {
-        const err = new Error(data?.error || data?.response_data?.error || "Exchange service error") as Error & { response_data?: any; response?: { status: number } };
+        const responseData =
+          data?.response_data && typeof data.response_data === "object"
+            ? data.response_data
+            : null;
+        const messageFromResponse =
+          typeof responseData?.message === "string"
+            ? responseData.message
+            : "";
+        const messageFromError =
+          typeof data?.error === "string" ? data.error : "";
+        const messageFromCode =
+          typeof responseData?.error === "string" ? responseData.error : "";
+
+        const err = new Error(
+          (messageFromResponse || messageFromError || messageFromCode || "Exchange service error").trim()
+        ) as Error & { response_data?: any; response?: { status: number } };
         // Attach full payload for UI (minAmount etc.); prefer nested response_data, fallback to full body
         err.response_data = data?.response_data ?? data;
         err.response = { status: 400 }; // so withRetry does not retry (only retries on !response or 5xx)

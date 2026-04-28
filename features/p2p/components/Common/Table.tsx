@@ -418,6 +418,68 @@ export const Table = forwardRef<TableExportRef, TableProps>(({
     return /tron/i.test(asset) ? "" : asset;
   };
 
+  const getP2PTradeDirection = (row: TransactionType): { from: string; to: string } => {
+    const t = String(row?.type ?? "").trim().toLowerCase();
+    // UI requirement: show Fiat side as "Fiat (P2P)" (not "USD").
+    const fiatLabel = "Fiat (P2P)";
+    if (t === "sell") return { from: "USDT", to: fiatLabel };
+    if (t === "buy") return { from: fiatLabel, to: "USDT" };
+    // Fallback: assume USDT is the base asset.
+    return { from: "USDT", to: fiatLabel };
+  };
+
+  const getAssetIconSrc = (ticker: string) => {
+    const t = String(ticker || "").trim().toUpperCase();
+    if (t === "USDT") return "/images/tether.svg";
+    // Fiat (P2P) icon (generic USD icon for now)
+    if (t === "FIAT(P2P)" || t === "FIAT" || t === "USD" || t.includes("FIAT")) return "/images/usd.svg";
+    // No dedicated icon yet (e.g., KES); use a safe fallback.
+    return "/default-provider-logo.svg";
+  };
+
+  const AssetDirectionCell = ({ row }: { row: TransactionType }) => {
+    if (type !== "p2p") {
+      return (
+        <div className="flex items-center gap-2">
+          <img
+            src="/images/tether.svg"
+            alt={row.asset || "Asset"}
+            className="w-6 h-6"
+          />
+        </div>
+      );
+    }
+
+    const dir = getP2PTradeDirection(row);
+    return (
+      <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center -space-x-2">
+          <img
+            src={getAssetIconSrc(dir.from)}
+            alt={dir.from}
+            className="w-6 h-6 rounded-full bg-white dark:bg-[#1d1d23] border border-gray-200 dark:border-[#35353E] object-cover"
+            onError={(e) => {
+              e.currentTarget.src = "/default-provider-logo.svg";
+            }}
+          />
+          <img
+            src={getAssetIconSrc(dir.to)}
+            alt={dir.to}
+            className="w-6 h-6 rounded-full bg-white dark:bg-[#1d1d23] border border-gray-200 dark:border-[#35353E] object-cover"
+            onError={(e) => {
+              e.currentTarget.src = "/default-provider-logo.svg";
+            }}
+          />
+        </div>
+        <div className="min-w-0">
+          <div className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+            {dir.from} <span className="text-gray-400">→</span> {dir.to}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const getStatusColor = (status: string | undefined | null) => {
     return "text-gray-500 dark:text-[#788099]";
   };
@@ -884,14 +946,7 @@ export const Table = forwardRef<TableExportRef, TableProps>(({
                         <div
                           className={`hidden md:grid ${desktopGridCols} mx-2 py-2 px-2 items-center hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors duration-200 bg-white dark:bg-[var(--card-color)] relative`}
                         >
-                          <div className="flex items-center gap-2">
-                            <img
-                              src="/images/tether.svg"
-                              alt={row.asset || "Asset"}
-                              className="w-6 h-6"
-                            />
-
-                          </div>
+                          <AssetDirectionCell row={row} />
                           {type === "p2p" && (
                             <div
                               className={`text-sm text-left text-gray-600 dark:text-[#788099] cursor-pointer relative -ml-4 pl-0`}
@@ -971,16 +1026,7 @@ export const Table = forwardRef<TableExportRef, TableProps>(({
                           {/* Top Row: Asset and Type */}
                           <div className="flex items-center justify-between gap-2">
                             <div className="flex items-center gap-2 min-w-0 flex-1">
-                              <img
-                                src="/images/tether.svg"
-                                alt={row.asset || "Asset"}
-                                className="w-6 h-6 flex-shrink-0"
-                              />
-                              {getAssetLabel(row.asset) && (
-                                <span className="text-sm font-medium text-[#1D8751] dark:text-[#1D8751] truncate">
-                                  {getAssetLabel(row.asset)}
-                                </span>
-                              )}
+                              <AssetDirectionCell row={row} />
                             </div>
                             <div
                               className={`text-sm font-semibold flex-shrink-0 ${getAmountColor(String(row.type))}`}

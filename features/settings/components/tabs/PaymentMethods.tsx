@@ -257,9 +257,19 @@ const PaymentMethods = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [walletSearchQuery, setWalletSearchQuery] = useState("");
 
-  const isCryptoWallet = (p: UserPaymentDetail) =>
-    p?.payment_method_name?.toLowerCase() === "crypto" ||
-    !!p?.wallet_address;
+  const isForexDetail = (p: UserPaymentDetail) => {
+    const method = String(p?.payment_method_name || "").toLowerCase();
+    const provider = String(p?.payment_provider_name || (p as any)?.provider_name || "").toLowerCase();
+    // Forex entries may include wallet_address (backend validation), but are not crypto wallets.
+    return method.includes("forex") || provider.includes("forex") || provider.replace(/\s+/g, "").includes("fxprimus");
+  };
+
+  const isCryptoWallet = (p: UserPaymentDetail) => {
+    const method = String(p?.payment_method_name || "").toLowerCase();
+    // Wallet-address based details are usually crypto, but Forex brokers can also send wallet_address.
+    if (isForexDetail(p)) return false;
+    return method === "crypto" || method.includes("crypto") || !!p?.wallet_address;
+  };
 
   const isBankAccount = (p: UserPaymentDetail) => {
     const name = (p?.payment_method_name || p?.payment_provider_name || "").toLowerCase();
@@ -631,6 +641,7 @@ const PaymentMethods = () => {
                 const statusCategory = getStatusCategory(payment);
                 const isPending = statusCategory === "pending";
                 const isRejected = statusCategory === "rejected";
+                const isForex = isForexDetail(payment);
                 const isBankMethod =
                   (payment?.payment_method_name || "").toLowerCase().includes("bank") ||
                   (payment?.payment_provider_name || "").toLowerCase().includes("bank");
@@ -643,10 +654,12 @@ const PaymentMethods = () => {
                     ""
                 ).trim();
                 const rejectionMessage = rejectionMessageRaw || "No rejection reason provided.";
-                const inputLabel = isBankMethod ? "Bank Account" : "Wallet Address";
-                const placeholderText = isBankMethod
-                  ? "Type in here your bank account number"
-                  : "Type in here your wallet address";
+                const inputLabel = isForex ? "MT4/MT5 Number" : isBankMethod ? "Bank Account" : "Wallet Address";
+                const placeholderText = isForex
+                  ? "Enter MT4/MT5 number"
+                  : isBankMethod
+                    ? "Type in here your bank account number"
+                    : "Type in here your wallet address";
                 // For crypto: use wallet_address; for bank: use account_number
                 const displayAddress =
                   payment?.wallet_address || payment?.account_number || "";

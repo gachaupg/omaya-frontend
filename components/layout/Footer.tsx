@@ -448,46 +448,42 @@ export default function Footer() {
             </div>
           </div>
           {/* App Download Section */}
-          <div className="flex flex-col gap-1 md:gap-2 lg:gap-3 items-start justify-start">
+          <div className="flex flex-col gap-15 md:gap-2 lg:gap-3 items-start justify-start">
             {/* Mobile: Show both QR codes in compact layout */}
-            <div className="flex md:hidden flex-col gap-2 items-start">
-              <div className="flex items-center gap-2">
-                <Image
-                  src="/assets/Appstore_nqe65y.png"
-                  alt="App Store"
-                  width={60}
-                  height={60}
-                  className="object-contain"
-                  style={{ width: "60px", height: "60px" }}
-                />
-                <Image
-                  src="/assets/qr-code-bc94057f452f4806af70fd34540f72ad_3_jk8lq1.png"
-                  alt="App Store QR Code"
-                  width={60}
-                  height={60}
-                  priority
-                  className="object-contain"
-                  style={{ width: "60px", height: "60px" }}
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <Image
-                  src="/images/playstore.webp"
-                  alt="Google Play"
-                  width={60}
-                  height={60}
-                  className="object-contain"
-                  style={{ width: "60px", height: "60px" }}
-                />
-                <Image
-                  src="/assets/qr-code-bc94057f452f4806af70fd34540f72ad_3_jk8lq1.png"
-                  alt="Google Play QR Code"
-                  width={60}
-                  height={60}
-                  className="object-contain"
-                  style={{ width: "60px", height: "60px" }}
-                />
-              </div>
+            <div className="grid md:hidden grid-cols-4 gap-5 place-items-between">
+              <Image
+                src="/assets/Appstore_nqe65y.png"
+                alt="App Store"
+                width={60}
+                height={60}
+                className="object-contain"
+                style={{ width: "56px", height: "56px" }}
+              />
+              <Image
+                src="/assets/qr-code-bc94057f452f4806af70fd34540f72ad_3_jk8lq1.png"
+                alt="App Store QR Code"
+                width={60}
+                height={60}
+                priority
+                className="object-contain"
+                style={{ width: "56px", height: "56px" }}
+              />
+              <Image
+                src="/images/playstore.webp"
+                alt="Google Play"
+                width={60}
+                height={60}
+                className="object-contain"
+                style={{ width: "56px", height: "56px" }}
+              />
+              <Image
+                src="/assets/qr-code-bc94057f452f4806af70fd34540f72ad_3_jk8lq1.png"
+                alt="Google Play QR Code"
+                width={60}
+                height={60}
+                className="object-contain"
+                style={{ width: "56px", height: "56px" }}
+              />
             </div>
             
             {/* App Download Section - Tablet and Desktop */}

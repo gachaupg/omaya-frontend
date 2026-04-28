@@ -223,6 +223,43 @@ const extractPaymentInfo = (tx: any) => {
 };
 
 const getFromToDisplay = (tx: any, paymentInfo: any) => {
+  // P2P (unified recent transactions): direction must follow sub_type and use from_asset/to_asset when present.
+  if (String(tx?.type || "").toLowerCase() === "p2p") {
+    const sub = normalizeSubType(tx?.sub_type || tx?.transaction_type || "");
+    const fromAsset = String(tx?.from_asset || "").trim();
+    const toAsset = String(tx?.to_asset || "").trim();
+    const fromLogo =
+      String(tx?.from_asset_logo || "").trim() ||
+      (fromAsset ? getHighResAssetIcon({ ticker: fromAsset }) : null) ||
+      null;
+    const toLogo =
+      String(tx?.to_asset_logo || "").trim() ||
+      (toAsset ? getHighResAssetIcon({ ticker: toAsset }) : null) ||
+      null;
+
+    // If backend provides explicit from/to, always use them.
+    if (fromAsset && toAsset) {
+      return {
+        from: { label: fromAsset, logo: fromLogo || getHighResAssetIcon({ ticker: fromAsset }) },
+        to: { label: toAsset, logo: toLogo || getHighResAssetIcon({ ticker: toAsset }) },
+      };
+    }
+
+    // Fallback mapping based on buy/sell when from/to missing.
+    if (sub === "buy") {
+      return {
+        from: { label: "USD", logo: getHighResAssetIcon({ ticker: "USD" }) },
+        to: { label: "USDT", logo: getHighResAssetIcon({ ticker: "USDT" }) },
+      };
+    }
+    if (sub === "sell") {
+      return {
+        from: { label: "USDT", logo: getHighResAssetIcon({ ticker: "USDT" }) },
+        to: { label: "USD", logo: getHighResAssetIcon({ ticker: "USD" }) },
+      };
+    }
+  }
+
   const fromSymbol = tx?.currency || paymentInfo?.assetSymbol || "USDT";
   const fromLogo = tx?.asset_image || getHighResAssetIcon({ ticker: fromSymbol });
 

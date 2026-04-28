@@ -1835,11 +1835,30 @@ export default function DepositForm({
                 setEstimateLoading(false);
                 return;
               }
+
+              // Any other backend error (e.g. not_valid_params / unsupported currency):
+              // show the message and stop loading.
+              const genericText =
+                (typeof errorDetails === "string" && errorDetails.trim())
+                  ? errorDetails.trim()
+                  : (typeof errorMessage === "string" && errorMessage.trim())
+                    ? errorMessage.trim()
+                    : "Could not calculate estimate for this pair.";
+
+              setApiValidationError(genericText);
+              setEstimateError(null);
+              setGetAmount(0);
+              setGetAmountInput("0");
+              setIsCalculating(false);
+              setIsCalculatingReceive(false);
+              setEstimateLoading(false);
+              return;
             }
 
             // Clear loading states after successful calculation
             setIsCalculating(false);
             setIsCalculatingReceive(false);
+            setEstimateLoading(false);
           })
           .catch((actionOrError: any) => {
             if (cancelled) return;
@@ -2104,6 +2123,24 @@ export default function DepositForm({
               setEstimateLoading(false);
               return;
             }
+
+            // Any other backend error (e.g. not_valid_params / unsupported currency):
+            // show the message and stop loading.
+            const genericText =
+              (typeof errorDetails === "string" && errorDetails.trim())
+                ? errorDetails.trim()
+                : (typeof errorMessage === "string" && errorMessage.trim())
+                  ? errorMessage.trim()
+                  : "Could not calculate estimate for this pair.";
+
+            setApiValidationError(genericText);
+            setEstimateError(null);
+            setPayAmount(0);
+            setPayAmountInput("0");
+            setIsCalculating(false);
+            setIsCalculatingReceive(false);
+            setEstimateLoading(false);
+            return;
 
             // Clear API validation errors for network/timeout issues
             setApiValidationError(null);

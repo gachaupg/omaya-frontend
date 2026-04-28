@@ -2138,6 +2138,31 @@ export default function WithdrawalForm({
           .then((result) => {
             if (isExpressCancelled()) return;
             if (!isMountedRef.current || requestSeq !== estimateRequestSeqRef.current) return;
+            if ((result as any)?.meta?.requestStatus === "rejected") {
+              const action: any = result;
+              const p = action?.payload ?? action;
+              const rd =
+                p?.response_data ??
+                p?.response?.data?.response_data ??
+                p?.response?.data;
+              const msg =
+                (typeof rd?.message === "string" && rd.message.trim())
+                  ? rd.message.trim()
+                  : (typeof p?.message === "string" && p.message.trim())
+                    ? p.message.trim()
+                    : (typeof rd?.error === "string" && rd.error.trim())
+                      ? rd.error.trim()
+                      : "Could not calculate estimate for this pair.";
+              // Show one message (avoid duplicating in multiple places)
+              setApiValidationError(msg);
+              setReceiveAmountError(null);
+              setCalculationError(null);
+              setEstimate(null);
+              setEstimateLoading(false);
+              setIsCalculating(false);
+              setIsCalculatingReceive(false);
+              return;
+            }
             if (result.payload) {
               setEstimate(result.payload);
               setCalculationError(null); // Clear any previous errors
@@ -2164,6 +2189,7 @@ export default function WithdrawalForm({
                 })
               );
             }
+            setEstimateLoading(false);
           })
           .catch((error) => {
             if (isExpressCancelled()) return;
@@ -2393,6 +2419,30 @@ export default function WithdrawalForm({
       ])
         .then((result: any) => {
           if (isExpressCancelled()) return;
+          if (result?.meta?.requestStatus === "rejected") {
+            const p = result?.payload as any;
+            const rd =
+              p?.response_data ??
+              p?.response?.data?.response_data ??
+              p?.response?.data;
+            const msg =
+              (typeof rd?.message === "string" && rd.message.trim())
+                ? rd.message.trim()
+                : (typeof p?.message === "string" && p.message.trim())
+                  ? p.message.trim()
+                  : (typeof rd?.error === "string" && rd.error.trim())
+                    ? rd.error.trim()
+                    : "Could not calculate estimate for this pair.";
+            // Show one message (avoid duplicating in multiple places)
+            setApiValidationError(msg);
+            setReceiveAmountError(null);
+            setCalculationError(null);
+            setEstimate(null);
+            setIsCalculating(false);
+            setIsCalculatingReceive(false);
+            setEstimateLoading(false);
+            return;
+          }
           if (result?.meta?.requestStatus === "fulfilled" && result.payload) {
             const payload = result.payload as any;
             const requiredUsdtAmountRaw =
@@ -4050,13 +4100,13 @@ export default function WithdrawalForm({
                           ? "Calculating..."
                           : "Enter amount"
                       }
-                      className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${apiValidationError
+                      className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent text-[#111827] dark:text-white ${apiValidationError
                         ? "border-red-500"
                         : isCalculating || isCalculatingReceive
                           ? "border-[#1D8751]"
                           : isDark
-                            ? "border-white/10 text-white"
-                            : "border-gray-200 text-[#111827]"
+                            ? "border-white/10"
+                            : "border-gray-200"
                         }`}
                     />
                     <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
@@ -4108,15 +4158,10 @@ export default function WithdrawalForm({
                       </div>
                     )}
                   </div>
-                  {/* Display calculation error below You Send input */}
-                  {calculationError && (
+                  {/* Display a single message below You Send input */}
+                  {(apiValidationError || calculationError) && (
                     <div className="mt-2 text-sm text-yellow-500 dark:text-yellow-400">
-                      {calculationError}
-                    </div>
-                  )}
-                  {apiValidationError && (
-                    <div className="mt-2 text-sm text-yellow-500 dark:text-yellow-400">
-                      {apiValidationError}
+                      {apiValidationError || calculationError}
                     </div>
                   )}
                 </div>
@@ -4429,7 +4474,7 @@ export default function WithdrawalForm({
                           ? "Calculating..."
                           : "Enter amount"
                       }
-                      className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${(receiveAmountError &&
+                      className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent text-[#111827] dark:text-white ${(receiveAmountError &&
                         (receiveAmountError.includes("Rough estimate") ||
                           receiveAmountError.includes("Using estimated rate"))) ||
                         (apiValidationError &&
@@ -4450,8 +4495,8 @@ export default function WithdrawalForm({
                           : isCalculating || isCalculatingReceive
                             ? "border-[#1D8751]"
                             : isDark
-                              ? "border-white/10 text-white"
-                              : "border-gray-200 text-[#111827]"
+                              ? "border-white/10"
+                              : "border-gray-200"
                         }`}
                     />
                     <div className="absolute right-4 top-1/2 transform -translate-y-1/2">

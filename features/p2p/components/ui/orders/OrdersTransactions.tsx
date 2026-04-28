@@ -64,7 +64,7 @@ const OrdersTransactions = ({
   return (
     <div className="w-full overflow-x-auto">
       <Table
-        type="orders"
+        type="p2p"
         title=""
         data={transformedData}
         loading={loading}

@@ -403,17 +403,19 @@ const AllTransactions = () => {
       };
     }
     if (tx.type === "p2p" && p2pSub === "buy") {
-      const cryptoLabel = formatP2pCryptoLabel(tx);
+      const fromAsset = String((tx as any)?.from_asset || "USD").trim() || "USD";
+      const toAsset = String((tx as any)?.to_asset || formatP2pCryptoLabel(tx) || "USDT").trim() || "USDT";
       return {
-        from: "Fiat (P2P)",
-        to: `${cryptoLabel} · Wallet`,
+        from: fromAsset,
+        to: toAsset,
       };
     }
     if (tx.type === "p2p" && p2pSub === "sell") {
-      const cryptoLabel = formatP2pCryptoLabel(tx);
+      const fromAsset = String((tx as any)?.from_asset || formatP2pCryptoLabel(tx) || "USDT").trim() || "USDT";
+      const toAsset = String((tx as any)?.to_asset || "USD").trim() || "USD";
       return {
-        from: `${cryptoLabel} · Wallet`,
-        to: "Fiat (P2P)",
+        from: fromAsset,
+        to: toAsset,
       };
     }
     if (tx.type === "p2p") {
@@ -452,6 +454,9 @@ const extractAssetSymbolFromLabel = (label: string): string | null => {
 };
 
 const getFromToLogos = (tx: AllTransactionItem, fromLabel: string, toLabel: string): { fromLogo: string | null; toLogo: string | null } => {
+  // P2P buy/sell (new unified endpoint) may provide explicit from/to asset logos.
+  const p2pFromLogo = String((tx as any)?.from_asset_logo || "").trim() || null;
+  const p2pToLogo = String((tx as any)?.to_asset_logo || "").trim() || null;
   const paymentMethodLogo = String((tx as any)?.payment_method?.logo_url || "").trim() || null;
   const senderLogo = String((tx as any)?.sender_provider_logo || "").trim() || null;
   const receiverLogo = String((tx as any)?.receiver_provider_logo || "").trim() || null;
@@ -497,6 +502,13 @@ const getFromToLogos = (tx: AllTransactionItem, fromLabel: string, toLabel: stri
     return {
       fromLogo: fromAssetLogo,
       toLogo: toAssetLogo,
+    };
+  }
+
+  if (tx.type === "p2p" && (p2pFromLogo || p2pToLogo)) {
+    return {
+      fromLogo: p2pFromLogo || fromAssetLogo,
+      toLogo: p2pToLogo || toAssetLogo,
     };
   }
 

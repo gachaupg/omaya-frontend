@@ -219,6 +219,25 @@ const calculateAmounts = (
         timeoutPromise,
       ])
         .then((result: any) => {
+          // Redux thunk always resolves to an action; handle rejected separately.
+          if (result?.meta?.requestStatus === "rejected") {
+            const p = result?.payload as any;
+            const rd = p?.response_data ?? p?.response?.data?.response_data ?? p?.response?.data;
+            const message =
+              (typeof rd?.message === "string" && rd.message.trim())
+                ? rd.message.trim()
+                : (typeof p?.message === "string" && p.message.trim())
+                  ? p.message.trim()
+                  : (typeof rd?.error === "string" && rd.error.trim())
+                    ? rd.error.trim()
+                    : "Could not calculate estimate for this pair.";
+            setEstimate(null);
+            setEstimateError(message);
+            setCalculationError(message);
+            setIsCalculating(false);
+            return;
+          }
+
           if (result.payload) {
             setEstimate(result.payload);
             if (fromPay) {

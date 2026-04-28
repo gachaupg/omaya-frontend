@@ -83,9 +83,10 @@ const P2PTransactions = () => {
             : rawOrderType
         : rawOrderType;
 
-    let assetSymbol =
-      typeof trade.currency === "string" ? trade.currency : "USDT";
-    let asset = typeof trade.currency === "string" ? trade.currency : "USDT";
+    // P2P trades are always USDT-based in this UI.
+    // Some APIs omit `currency`, so force consistent Asset display.
+    const assetSymbol = "USDT";
+    const asset = "Tether";
     let payment = undefined;
     if (Array.isArray(trade.payment_details) && trade.payment_details[0]) {
       payment = {
@@ -103,8 +104,30 @@ const P2PTransactions = () => {
       asset,
       assetSymbol,
       payment,
+      rawData: trade as any,
     };
   });
+
+  const getFiatTicker = (tx: TransactionType): "USD" | "KES" => {
+    const rc = String((tx as any)?.rawData?.range_currency || "").trim().toUpperCase();
+    return rc === "KES" ? "KES" : "USD";
+  };
+
+  const getDirection = (tx: TransactionType) => {
+    const fiat = getFiatTicker(tx);
+    const t = String(tx.type || "").toLowerCase().trim();
+    if (t === "sell") return { from: "USDT", to: fiat };
+    if (t === "buy") return { from: fiat, to: "USDT" };
+    return { from: "USDT", to: fiat };
+  };
+
+  const getTickerIcon = (ticker: string) => {
+    const t = String(ticker || "").trim().toUpperCase();
+    if (t === "USDT") return getHighResAssetIcon({ ticker: "USDT" });
+    if (t === "USD") return getHighResAssetIcon({ ticker: "USD" });
+    // No dedicated icon yet (KES etc.)
+    return "/default-provider-logo.svg";
+  };
 
   if (!paginatedData.length) {
     return (
@@ -137,6 +160,7 @@ const P2PTransactions = () => {
         ) : (
           transformedData.map((transaction) => {
             const paymentInfo = normalizeP2PPayment(transaction.payment);
+            const dir = getDirection(transaction);
             return (
             <div
               key={transaction.id}
@@ -148,6 +172,9 @@ const P2PTransactions = () => {
                     src={getHighResAssetIcon({ ticker: transaction.assetSymbol })}
                     alt={transaction.assetSymbol}
                     className="w-10 h-10 rounded-full bg-white flex-shrink-0"
+                    onError={(e) => {
+                      e.currentTarget.src = "/default-provider-logo.svg";
+                    }}
                   />
                   <div>
                     <div className="font-medium text-sm text-gray-900 dark:text-white">
@@ -186,7 +213,7 @@ const P2PTransactions = () => {
                           : "#E23D3A",
                     }}
                   >
-                    ${transaction.amount}
+                    {transaction.amount} USDT
                   </div>
                 </div>
                 <div>
@@ -252,6 +279,7 @@ const P2PTransactions = () => {
             ) : (
               transformedData.map((transaction) => {
                 const paymentInfo = normalizeP2PPayment(transaction.payment);
+                const dir = getDirection(transaction);
                 return (
                 <tr
                   key={transaction.id}
@@ -264,6 +292,9 @@ const P2PTransactions = () => {
                         src={getHighResAssetIcon({ ticker: transaction.assetSymbol })}
                         alt={transaction.assetSymbol}
                         className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white flex-shrink-0"
+                        onError={(e) => {
+                          e.currentTarget.src = "/default-provider-logo.svg";
+                        }}
                       />
                       <div className="min-w-0">
                         <div className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white truncate">
@@ -278,23 +309,16 @@ const P2PTransactions = () => {
                   {/* From */}
                   <td className="px-3 sm:px-4 lg:px-4 py-3 border-b border-gray-200 dark:border-[#35353E]">
                     <div className="flex items-center gap-2 min-w-0">
-                      {transaction.type === "buy" && paymentInfo?.logo ? (
-                        <img
-                          src={paymentInfo.logo}
-                          alt={paymentInfo.bank || "Payment"}
-                          className="w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover bg-white flex-shrink-0"
-                        />
-                      ) : (
-                        <img
-                          src={getHighResAssetIcon({ ticker: transaction.assetSymbol })}
-                          alt={transaction.assetSymbol}
-                          className="w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover bg-white flex-shrink-0"
-                        />
-                      )}
+                      <img
+                        src={getTickerIcon(dir.from)}
+                        alt={dir.from}
+                        className="w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover bg-white flex-shrink-0 border border-[#E8EFF5] dark:border-[#35353E]"
+                        onError={(e) => {
+                          e.currentTarget.src = "/default-provider-logo.svg";
+                        }}
+                      />
                       <span className="text-gray-900 dark:text-white text-sm sm:text-base truncate">
-                        {transaction.type === "buy"
-                          ? (paymentInfo?.bank || "Fiat")
-                          : transaction.assetSymbol}
+                        {dir.from}
                       </span>
                     </div>
                   </td>
@@ -302,23 +326,16 @@ const P2PTransactions = () => {
                   {/* To */}
                   <td className="px-3 sm:px-4 lg:px-4 py-3 border-b border-gray-200 dark:border-[#35353E]">
                     <div className="flex items-center gap-2 min-w-0">
-                      {transaction.type === "buy" ? (
-                        <img
-                          src={getHighResAssetIcon({ ticker: transaction.assetSymbol })}
-                          alt={transaction.assetSymbol}
-                          className="w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover bg-white flex-shrink-0"
-                        />
-                      ) : paymentInfo?.logo ? (
-                        <img
-                          src={paymentInfo.logo}
-                          alt={paymentInfo.bank || "Payment"}
-                          className="w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover bg-white flex-shrink-0"
-                        />
-                      ) : null}
+                      <img
+                        src={getTickerIcon(dir.to)}
+                        alt={dir.to}
+                        className="w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover bg-white flex-shrink-0 border border-[#E8EFF5] dark:border-[#35353E]"
+                        onError={(e) => {
+                          e.currentTarget.src = "/default-provider-logo.svg";
+                        }}
+                      />
                       <span className="text-gray-900 dark:text-white text-sm sm:text-base truncate">
-                        {transaction.type === "buy"
-                          ? transaction.assetSymbol
-                          : (paymentInfo?.bank || "Fiat")}
+                        {dir.to}
                       </span>
                     </div>
                   </td>
@@ -334,7 +351,7 @@ const P2PTransactions = () => {
                           : "#E23D3A",
                     }}
                   >
-                    ${transaction.amount}
+                    {transaction.amount} USDT
                   </td>
                   {/* Status */}
                   <td className="px-3 sm:px-4 lg:px-4 py-3 border-b border-gray-200 dark:border-[#35353E]">
