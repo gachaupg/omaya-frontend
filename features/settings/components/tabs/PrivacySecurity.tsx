@@ -1081,12 +1081,6 @@ const PrivacySecurity = () => {
                     API Error: {displaySessionError}
                   </div>
                 )}
-                {/* Debug info */}
-                <div className="mt-2 text-xs text-gray-500">
-                  Raw sessions: {deviceSessions?.length || 0} | Valid sessions:{" "}
-                  {validDeviceSessions.length} | Fallback:{" "}
-                  {fallbackSessions.length} | Total: {allSessions.length}
-                </div>
                 {/* Manual session creation button for testing */}
                 {isAuthenticated && (
                   <button
@@ -1144,63 +1138,130 @@ const PrivacySecurity = () => {
                 )}
               </div>
             ) : (
-              <div className="border-t dark:border-[#35353E] border-gray-200 rounded-xl overflow-hidden">
-                <div className="px-2 sm:px-3 md:px-4 py-3 text-xs font-semibold uppercase tracking-wide dark:text-[#8C8CA1] text-gray-500 space-y-1 bg-gray-50 dark:bg-[var(--card-color)]">
-                  <div>Signed In</div>
-                  <div>Location</div>
-                  <div>IP Address</div>
-                  <div>Browser</div>
-                </div>
-                <div className="divide-y dark:divide-[#2F2C3C] divide-gray-200 dark:text-white text-gray-800 bg-white dark:bg-[var(--card-color)]">
-                  {paginatedSessions.map((session: DeviceSession) => (
-                    <div key={session.session_id} className="px-2 sm:px-3 md:px-4 py-4 text-sm space-y-2 relative group">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 space-y-2">
-                          <p className="font-semibold">
-                            {formatRelativeTime(session.sign_in_time)}
-                            {session.is_current && (
-                              <span className="ml-2 text-xs px-2 py-0.5 rounded bg-[#1D8751]/20 text-[#1D8751] dark:bg-[#1D8751]/30 dark:text-[#1D8751]">
-                                Current
-                              </span>
-                            )}
-                          </p>
-                          <p>{session.location || "Unknown location"}</p>
-                          <p className="font-mono break-all">
-                            {session.ip_address || "Unknown IP"}
-                          </p>
-                          <p>
-                            {session.browser || "Unknown browser"}
-                            {session.device_type && ` (${session.device_type})`}
-                          </p>
-                        </div>
-                        <button
-                          onClick={() => handleRemoveSessionClick(session)}
-                          disabled={deletingSessionId === session.session_id}
-                          className="p-2 hover:bg-gray-100 dark:hover:bg-[#2A2A2A] rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                          title={session.is_current ? "Sign out this device" : "Delete session"}
-                        >
-                          {deletingSessionId === session.session_id ? (
-                            <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-[#1D8751]"></div>
-                          ) : (
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              className="w-5 h-5 text-red-500 cursor-pointer"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
+              <div className="border-t dark:border-[#35353E] border-gray-200 rounded-2xl overflow-hidden">
+                {/* Mobile list */}
+                <div className="md:hidden divide-y dark:divide-[#2F2C3C] divide-gray-200 bg-white dark:bg-[var(--card-color)]">
+                  {paginatedSessions.map((session: DeviceSession) => {
+                    const isDeleting = deletingSessionId === session.session_id;
+                    const signedIn = formatRelativeTime(session.sign_in_time);
+                    const location = session.location || "Unknown location";
+                    const ip = session.ip_address || "Unknown IP";
+                    const browserLabel = `${session.browser || "Unknown browser"}${session.device_type ? ` (${session.device_type})` : ""}`;
+                    return (
+                      <div key={session.session_id} className="px-3 sm:px-4 py-4">
+                        <div className="rounded-xl border border-[#E4E6F0] dark:border-[#35353E] bg-gray-50 dark:bg-[#15151b] p-3">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <div className="text-sm font-semibold text-gray-900 dark:text-white">
+                                {signedIn}
+                                {session.is_current && (
+                                  <span className="ml-2 inline-flex items-center rounded-full bg-[#1D8751]/15 text-[#1D8751] px-2 py-0.5 text-[11px] font-semibold">
+                                    Current
+                                  </span>
+                                )}
+                              </div>
+                              <div className="mt-2 space-y-1 text-sm text-gray-700 dark:text-[#D3D7E0]">
+                                <div className="flex gap-2">
+                                  <span className="w-20 shrink-0 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-[#8C8CA1]">
+                                    Location
+                                  </span>
+                                  <span className="min-w-0 break-words">{location}</span>
+                                </div>
+                                <div className="flex gap-2">
+                                  <span className="w-20 shrink-0 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-[#8C8CA1]">
+                                    IP
+                                  </span>
+                                  <span className="min-w-0 break-all font-mono">{ip}</span>
+                                </div>
+                                <div className="flex gap-2">
+                                  <span className="w-20 shrink-0 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-[#8C8CA1]">
+                                    Browser
+                                  </span>
+                                  <span className="min-w-0 break-words">{browserLabel}</span>
+                                </div>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => handleRemoveSessionClick(session)}
+                              disabled={isDeleting}
+                              className="shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-full border border-[#E4E6F0] dark:border-[#35353E] bg-white dark:bg-[#1d1d23] hover:bg-gray-100 dark:hover:bg-[#2A2A2A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              title={session.is_current ? "Sign out this device" : "Disconnect session"}
                             >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"
-                              />
-                            </svg>
-                          )}
-                        </button>
+                              {isDeleting ? (
+                                <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-[#1D8751]"></div>
+                              ) : (
+                                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2" />
+                                </svg>
+                              )}
+                            </button>
+                          </div>
+                        </div>
                       </div>
+                    );
+                  })}
+                </div>
+
+                {/* Desktop table (single scrollbar at bottom) */}
+                <div className="hidden md:block overflow-x-auto">
+                  <div className="min-w-[860px]">
+                    <div className="grid grid-cols-12 gap-3 px-4 py-3 text-xs font-semibold uppercase tracking-wide dark:text-[#8C8CA1] text-gray-500 bg-gray-50 dark:bg-[#15151b]">
+                      <div className="col-span-3">Signed In</div>
+                      <div className="col-span-3">Location</div>
+                      <div className="col-span-3">IP Address</div>
+                      <div className="col-span-2">Browser</div>
+                      <div className="col-span-1 text-right">Action</div>
                     </div>
-                  ))}
+
+                    <div className="divide-y dark:divide-[#2F2C3C] divide-gray-200 bg-white dark:bg-[var(--card-color)]">
+                      {paginatedSessions.map((session: DeviceSession) => {
+                        const isDeleting = deletingSessionId === session.session_id;
+                        const signedIn = formatRelativeTime(session.sign_in_time);
+                        const location = session.location || "Unknown location";
+                        const ip = session.ip_address || "Unknown IP";
+                        const browserLabel = `${session.browser || "Unknown browser"}${session.device_type ? ` (${session.device_type})` : ""}`;
+                        return (
+                          <div key={session.session_id} className="px-4 py-4">
+                            <div className="grid grid-cols-12 gap-3 items-center text-sm text-gray-900 dark:text-white">
+                              <div className="col-span-3 font-semibold">
+                                {signedIn}
+                                {session.is_current && (
+                                  <span className="ml-2 inline-flex items-center rounded-full bg-[#1D8751]/15 text-[#1D8751] px-2 py-0.5 text-[11px] font-semibold">
+                                    Current
+                                  </span>
+                                )}
+                              </div>
+                              <div className="col-span-3 text-gray-700 dark:text-[#D3D7E0]">
+                                {location}
+                              </div>
+                              <div className="col-span-3 font-mono text-gray-700 dark:text-[#D3D7E0] break-all">
+                                {ip}
+                              </div>
+                              <div className="col-span-2 text-gray-700 dark:text-[#D3D7E0]">
+                                {browserLabel}
+                              </div>
+                              <div className="col-span-1 flex justify-end">
+                                <button
+                                  onClick={() => handleRemoveSessionClick(session)}
+                                  disabled={isDeleting}
+                                  className="inline-flex items-center justify-center w-10 h-10 rounded-full border border-[#E4E6F0] dark:border-[#35353E] bg-white dark:bg-[#1d1d23] hover:bg-gray-100 dark:hover:bg-[#2A2A2A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                  title={session.is_current ? "Sign out this device" : "Disconnect session"}
+                                >
+                                  {isDeleting ? (
+                                    <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-[#1D8751]"></div>
+                                  ) : (
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2" />
+                                    </svg>
+                                  )}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
               </div>
             )}

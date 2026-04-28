@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import { logger } from '@/lib/utils/logger';
+import { idbDel, idbGet, idbSet } from '@/features/express/utils/indexedDbKv';
 
 interface UseDataDisplayProps<T> {
   data: T[] | null | undefined;
@@ -88,6 +89,9 @@ export function useAssetsDisplay(
 ) {
   const ASSETS_CACHE_KEY = "omaya_real_assets_cache_v1";
   const ASSETS_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+  // Keep localStorage payload bounded to avoid QuotaExceededError crashes.
+  const ASSETS_CACHE_MAX_ITEMS = 500;
+
   const areSameAssetIds = (a: any[], b: any[]) => {
     if (a.length !== b.length) return false;
     for (let i = 0; i < a.length; i += 1) {
@@ -132,6 +136,31 @@ export function useAssetsDisplay(
     };
   };
 
+  const shrinkAssetForCache = (asset: any) => {
+    const ticker = String(asset?.ticker || asset?.symbol || "").trim().toUpperCase();
+    const network = getAssetNetwork(asset);
+    return {
+      asset_id: asset?.asset_id,
+      ticker: ticker || asset?.ticker || asset?.symbol,
+      symbol: ticker || asset?.symbol || asset?.ticker,
+      name: asset?.name,
+      network: network || asset?.network || "",
+      image_url: asset?.image_url ?? asset?.asset_image ?? asset?.icon ?? asset?.icon_url ?? (asset as any)?.image ?? null,
+      range_commissions: Array.isArray(asset?.range_commissions)
+        ? asset.range_commissions.map((c: any) => ({ commission: c?.commission }))
+        : undefined,
+    };
+  };
+
+  const safeWriteAssetsCache = async (assetsToCache: any[]) => {
+    const ok = await idbSet(ASSETS_CACHE_KEY, { ts: Date.now(), assets: assetsToCache });
+    if (!ok) {
+      logger.warn("general", "Assets cache write failed (IndexedDB)", {
+        key: ASSETS_CACHE_KEY,
+      });
+    }
+  };
+
   // Combine both asset sources
   const combinedAssets = useMemo(() => {
     const assets: any[] = [];
@@ -164,31 +193,71 @@ export function useAssetsDisplay(
   const [cachedAssets, setCachedAssets] = useState<any[]>([]);
   useEffect(() => {
     if (typeof window === "undefined") return;
-    try {
-      const raw = localStorage.getItem(ASSETS_CACHE_KEY);
-      if (!raw) return;
-      const parsed = JSON.parse(raw) as { ts?: number; assets?: any[] };
-      const ts = Number(parsed?.ts || 0);
-      const assets = Array.isArray(parsed?.assets) ? parsed.assets : [];
-      const isFresh = Date.now() - ts <= ASSETS_CACHE_TTL_MS;
-      if (!isFresh) {
-        localStorage.removeItem(ASSETS_CACHE_KEY);
-        return;
+    let cancelled = false;
+
+    (async () => {
+      // 1) Try IndexedDB cache first
+      const parsed = await idbGet<{ ts?: number; assets?: any[] }>(ASSETS_CACHE_KEY);
+      if (!cancelled && parsed) {
+        const ts = Number(parsed?.ts || 0);
+        const assets = Array.isArray(parsed?.assets) ? parsed.assets : [];
+        const isFresh = Date.now() - ts <= ASSETS_CACHE_TTL_MS;
+        if (!isFresh) {
+          await idbDel(ASSETS_CACHE_KEY);
+        } else {
+          const uuidAssets = assets.filter((a: any) =>
+            /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+              String(a?.asset_id || "")
+            )
+          );
+          if (uuidAssets.length > 0) {
+            setCachedAssets((prev) => (areSameAssetIds(prev, uuidAssets) ? prev : uuidAssets));
+            return;
+          }
+        }
       }
-      // Keep only assets that look like real backend rows (UUID asset_id).
-      const uuidAssets = assets.filter((a: any) =>
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-          String(a?.asset_id || "")
-        )
-      );
-      if (uuidAssets.length > 0) {
-        setCachedAssets((prev) =>
-          areSameAssetIds(prev, uuidAssets) ? prev : uuidAssets
-        );
+
+      // 2) One-time migration from localStorage (older builds)
+      try {
+        const raw = localStorage.getItem(ASSETS_CACHE_KEY);
+        if (!raw) return;
+        const legacy = JSON.parse(raw) as { ts?: number; assets?: any[] };
+        const ts = Number(legacy?.ts || 0);
+        const assets = Array.isArray(legacy?.assets) ? legacy.assets : [];
+        const isFresh = Date.now() - ts <= ASSETS_CACHE_TTL_MS;
+        if (!isFresh) {
+          localStorage.removeItem(ASSETS_CACHE_KEY);
+          return;
+        }
+        const uuidAssets = assets
+          .filter((a: any) =>
+            /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+              String(a?.asset_id || "")
+            )
+          )
+          .slice(0, ASSETS_CACHE_MAX_ITEMS)
+          .map(shrinkAssetForCache);
+
+        if (uuidAssets.length > 0) {
+          await idbSet(ASSETS_CACHE_KEY, { ts, assets: uuidAssets });
+          localStorage.removeItem(ASSETS_CACHE_KEY);
+          if (!cancelled) {
+            setCachedAssets((prev) => (areSameAssetIds(prev, uuidAssets) ? prev : uuidAssets));
+          }
+        } else {
+          localStorage.removeItem(ASSETS_CACHE_KEY);
+        }
+      } catch {
+        // Ignore legacy cache issues
+        try {
+          localStorage.removeItem(ASSETS_CACHE_KEY);
+        } catch {}
       }
-    } catch {
-      // Ignore bad cache entries
-    }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Persist fresh real assets to cache.
@@ -201,20 +270,10 @@ export function useAssetsDisplay(
       )
     );
     if (uuidAssets.length === 0) return;
-    try {
-      setCachedAssets((prev) => {
-        if (areSameAssetIds(prev, uuidAssets)) {
-          return prev;
-        }
-        localStorage.setItem(
-          ASSETS_CACHE_KEY,
-          JSON.stringify({ ts: Date.now(), assets: uuidAssets })
-        );
-        return uuidAssets;
-      });
-    } catch {
-      // Ignore storage errors
-    }
+    // NOTE: don't write to localStorage inside setState updater (errors won't be caught).
+    const bounded = uuidAssets.slice(0, ASSETS_CACHE_MAX_ITEMS).map(shrinkAssetForCache);
+    setCachedAssets((prev) => (areSameAssetIds(prev, bounded) ? prev : bounded));
+    void safeWriteAssetsCache(bounded);
   }, [combinedAssets]);
 
   const isAnyLoading = exchangeLoading || swapLoading;

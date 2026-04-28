@@ -100,6 +100,19 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
     setIsClient(true);
   }, []);
 
+  // Close the Forex broker dropdown when clicking outside
+  useEffect(() => {
+    if (!forexBrokerDropdownOpen) return;
+    const onMouseDown = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+      const root = target.closest("[data-forex-broker-dropdown-root='true']");
+      if (!root) setForexBrokerDropdownOpen(false);
+    };
+    document.addEventListener("mousedown", onMouseDown);
+    return () => document.removeEventListener("mousedown", onMouseDown);
+  }, [forexBrokerDropdownOpen]);
+
   // Prevent body scroll when modal is open
   useEffect(() => {
     if (open) {
@@ -258,7 +271,10 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
       return m.includes("crypto");
     }
     if (tab === "forex") {
-      return m.includes("forex") || m.includes("wallet");
+      // Forex must match Forex only; do NOT allow generic "wallet" here,
+      // otherwise "Crypto Wallet" can be incorrectly treated as Forex and
+      // backend validation will require a wallet address.
+      return m.includes("forex");
     }
     return (
       m.includes("bank") ||
@@ -318,7 +334,11 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
   const isForexMethod = normalizedMethod.includes("forex");
   const isMobileMethod =
     normalizedMethod.includes("mobile") || normalizedMethod.includes("money") || normalizedMethod.includes("mpesa");
-  const shouldUseWalletAddressField = methodTab === "crypto" || isCryptoMethod;
+  // Treat tab as the source of truth for the account field type:
+  // - Crypto tab => wallet_address
+  // - Bank tab => account_number / mobile number
+  // - Forex tab => MT4/MT5 number (account_number)
+  const shouldUseWalletAddressField = methodTab === "crypto";
 
   const accountFieldLabel =
     methodTab === "forex"
@@ -372,7 +392,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
       (methodTab === "crypto"
         ? "Crypto Wallet"
         : methodTab === "forex"
-          ? "Forex"
+          ? "Forex Wallet"
           : "Bank Wallet");
 
     const payload: PaymentDetailPayload = {
@@ -384,10 +404,18 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
       payment_method_name: resolvedMethod,
       payment_provider_name: providerField,
       provider_name: providerField,
-      wallet_address: shouldUseWalletAddressField
-        ? account
-        : null,
+      // Backend validation may require `wallet_address` for some "wallet" method types.
+      // For Forex brokers, we treat MT4/MT5 number as the wallet identifier as well.
+      wallet_address:
+        methodTab === "forex"
+          ? account
+          : shouldUseWalletAddressField
+            ? account
+            : null,
     };
+    if (methodTab === "forex") {
+      payload.account_number = account;
+    }
     payload.allow_auto_send = autoSendPreviouslyEnabled ? false : allowAutoSend;
 
     setSendOtpLoading(true);
@@ -495,7 +523,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
       >
         <div className="flex items-center justify-between mb-4">
           <div className="text-gray-900 dark:text-white text-2xl leading-[1.1] font-semibold">
-            {methodTab === "forex" ? "Add My Omaya Address" : "Add Payment Method"}
+            {methodTab === "forex" ? "Add FOREX Broker" : "Add Payment Method"}
           </div>
                      <button
              onClick={(e) => {
@@ -591,7 +619,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                      {/* Payment Method Dropdown */}
            <div>
              <label className="block text-gray-900 dark:text-white text-base mb-2 font-medium">
-               {methodTab === "forex" ? "Address Type" : "Payment Type"}
+               Payment Type
              </label>
              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                {[
@@ -608,10 +636,14 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                        const nextTab = tab.key as PaymentTab;
                        setMethodTab(nextTab);
                        setProvider("");
-                       const firstForTab = processedProvidersFiltered.find((p: any) =>
-                         isMethodInTab(String(p?.payment_method_type || ""), nextTab)
-                       );
-                       setMethod(firstForTab?.payment_method_type || "");
+                       if (nextTab === "forex") {
+                         setMethod("Forex");
+                       } else {
+                         const firstForTab = processedProvidersFiltered.find((p: any) =>
+                           isMethodInTab(String(p?.payment_method_type || ""), nextTab)
+                         );
+                         setMethod(firstForTab?.payment_method_type || "");
+                       }
                      }}
                      disabled={publicMethodsLoading}
                     className={`rounded-[14px] border px-3 py-2 text-sm font-medium transition-colors ${
@@ -726,7 +758,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                 <label className="block text-gray-900 dark:text-white text-sm mb-2">
                   FOREX Broker
                 </label>
-                <div className="relative">
+                <div className="relative" data-forex-broker-dropdown-root="true">
                   <button
                     type="button"
                     onClick={() => setForexBrokerDropdownOpen((v) => !v)}

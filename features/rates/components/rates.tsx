@@ -59,7 +59,6 @@ const Rates = () => {
       window.localStorage.removeItem("moneyx_form_state");
       window.localStorage.removeItem(RATES_MONEYX_FORM_STATE_KEY);
       window.localStorage.removeItem("rates_calculator_state");
-      window.localStorage.removeItem("rates_calculator_asset");
       window.localStorage.removeItem("rates_calculator_payment_detail");
     }
   }, []);

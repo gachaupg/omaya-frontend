@@ -2546,14 +2546,6 @@ export default function WithdrawalForm({
             return;
           }
 
-          // Suppress all errors on home page (silently)
-          if (isHomePage) {
-            setEstimateError(null);
-            setIsCalculating(false);
-            setIsCalculatingReceive(false);
-            return;
-          }
-
           // Normalize thunk rejection (payload) vs axios error
           const err = error?.payload ?? error;
           const resData = err?.response_data ?? err?.response?.data?.response_data ?? err?.response?.data;
@@ -2570,6 +2562,38 @@ export default function WithdrawalForm({
           }
           if (errorMessage.includes("Exchange service error:")) {
             errorMessage = errorMessage.replace("Exchange service error: ", "");
+          }
+
+          // Home page: don't suppress real backend validation errors like not_valid_params.
+          // Only keep silent for transient network/timeout/server issues.
+          if (isHomePage) {
+            const maybeMsg =
+              (typeof errorDetails === "string" && errorDetails.trim())
+                ? errorDetails.trim()
+                : (typeof errorMessage === "string" && errorMessage.trim())
+                  ? errorMessage.trim()
+                  : "";
+            const m = maybeMsg.toLowerCase();
+            const isTransient =
+              m.includes("request timeout") ||
+              m.includes("network error") ||
+              m.includes("server error");
+            if (isTransient) {
+              setEstimateError(null);
+              setIsCalculating(false);
+              setIsCalculatingReceive(false);
+              setEstimateLoading(false);
+              return;
+            }
+            if (maybeMsg) {
+              setApiValidationError(maybeMsg);
+              setReceiveAmountError(maybeMsg);
+            }
+            setEstimateError(null);
+            setIsCalculating(false);
+            setIsCalculatingReceive(false);
+            setEstimateLoading(false);
+            return;
           }
 
           setIsCalculating(false);
@@ -4244,12 +4268,12 @@ export default function WithdrawalForm({
                           ? "Calculating..."
                           : "Enter amount"
                       }
-                      className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${
+                      className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent text-[#111827] dark:text-white ${
                         isCalculating || isCalculatingReceive
                           ? "border-[#1D8751]"
                           : isDark
-                            ? "border-white/10 text-white font-normal"
-                            : "border-gray-200 text-[#111827] font-bold"
+                            ? "border-white/10 font-normal"
+                            : "border-gray-200 font-bold"
                       }`}
                     />
                     <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
@@ -4620,12 +4644,12 @@ export default function WithdrawalForm({
                           ? "Calculating..."
                           : "Enter amount"
                       }
-                      className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${
+                      className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent text-[#111827] dark:text-white ${
                         isCalculating || isCalculatingReceive
                           ? "border-[#1D8751]"
                           : isDark
-                            ? "border-white/10 text-white font-normal"
-                            : "border-gray-200 text-[#111827] font-extrabold"
+                            ? "border-white/10 font-normal"
+                            : "border-gray-200 font-extrabold"
                       }`}
                     />
                     <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
@@ -4668,8 +4692,8 @@ export default function WithdrawalForm({
                             ? activePublicPaymentMethods
                             : [];
 
-                      if (!shouldHideGuestPaymentDetails && activePublicProviders.length > 0) {
-                        // Use public payment methods with logos
+                      if (activePublicProviders.length > 0) {
+                        // Use public payment methods with logos (available to guests too on home page).
                         paymentMethodOptions = activePublicProviders.map((provider: any) => {
                           const providerName = provider.provider_name || provider.payment_provider_name || "Unknown";
                           const methodName =
@@ -4708,9 +4732,6 @@ export default function WithdrawalForm({
                             }`}
                           placeholderClassName="text-white dark:text-white"
                           onChange={(value) => {
-                            if (shouldHideGuestPaymentDetails) {
-                              return;
-                            }
                             const selectedProvider = activePublicProviders.find(
                               (provider: any) =>
                                 (provider.provider_name || provider.payment_provider_name) === value
@@ -4725,20 +4746,16 @@ export default function WithdrawalForm({
                             setPaymentMethodError(null);
                           }}
                           placeholder={
-                            shouldHideGuestPaymentDetails
-                              ? "Login to view payment methods"
-                              : isLoading
+                            isLoading
                               ? "Loading payment methods..."
                               : "Payment Method"
                           }
-                          value={shouldHideGuestPaymentDetails ? "" : payBank}
-                          disabled={shouldHideGuestPaymentDetails || isLoading}
+                          value={payBank}
+                          disabled={isLoading}
                           loading={isLoading}
                           loadingText="Loading payment methods..."
                           emptyText={
-                            shouldHideGuestPaymentDetails
-                              ? "Login to view payment methods"
-                              : "No payment methods available"
+                            "No payment methods available"
                           }
                           searchable={true}
                           dropdownTitle="Select a payment methods"
@@ -4753,22 +4770,43 @@ export default function WithdrawalForm({
                   {paymentMethodError && <p className="text-red-500 text-sm mt-1">{paymentMethodError}</p>}
 
                   {/* Registered Account Section */}
-                  {!shouldHideGuestPaymentDetails && payBank && (
+                  {payBank && (
                     <div className="mt-3 w-full relative z-10">
                       <label className="block text-[17px] text-[#475569] dark:text-[#9CA3AF] mb-2 font-semibold">
                         Registered Account
                       </label>
-                      {(() => {
-                        // Check if user has ANY accounts at all (not just filtered ones)
-                        const allUserAccounts = (userPaymentMethodsDisplay.displayData && userPaymentMethodsDisplay.displayData.length > 0
-                          ? userPaymentMethodsDisplay.displayData
-                          : effectiveUserPaymentMethods) || [];
-                        const hasAnyAccounts = allUserAccounts.length > 0;
-                        const hasFilteredAccounts = enhancedFilteredUserPaymentDetails.length > 0;
+                      {!isAuthenticated ? (
+                        <p className="text-[#F79330] text-sm">
+                          Login to view your registered accounts.{" "}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              try {
+                                setAuthRedirectPath("/?mode=withdrawal");
+                              } catch {}
+                              router.push("/auth/login");
+                            }}
+                            className="hover:underline cursor-pointer font-medium"
+                          >
+                            Login
+                          </button>
+                        </p>
+                      ) : (
+                        <>
+                          {(() => {
+                            // Check if user has ANY accounts at all (not just filtered ones)
+                            const allUserAccounts =
+                              (userPaymentMethodsDisplay.displayData &&
+                              userPaymentMethodsDisplay.displayData.length > 0
+                                ? userPaymentMethodsDisplay.displayData
+                                : effectiveUserPaymentMethods) || [];
+                            const hasAnyAccounts = allUserAccounts.length > 0;
+                            const hasFilteredAccounts =
+                              enhancedFilteredUserPaymentDetails.length > 0;
 
-                        if (hasFilteredAccounts) {
-                          return (
-                            <div className="relative w-full z-10">
+                            if (hasFilteredAccounts) {
+                              return (
+                                <div className="relative w-full z-10">
                               <div className="flex items-center gap-2 mb-2">
                                 <span className="text-sm text-gray-600 dark:text-gray-400">
                                   {enhancedFilteredUserPaymentDetails.length} account(s) found
@@ -4894,37 +4932,39 @@ export default function WithdrawalForm({
                                   dropdownMatchTriggerWidth={true}
                                 />
                               </div>
-                            </div>
-                          );
-                        } else if (hasAnyAccounts) {
-                          // User has accounts but not for this payment method
-                          return (
-                            <p className="text-[#F79330] text-sm">
-                              No account found for this payment method.{" "}
-                              <button
-                                type="button"
-                                onClick={() => setIsPaymentModalOpen(true)}
-                                className="hover:underline cursor-pointer font-medium"
-                              >
-                                Add Account
-                              </button>
-                            </p>
-                          );
-                        } else {
-                          // User has no accounts at all
-                          return (
-                            <p className="text-[#F79330] text-sm">
-                              <button
-                                type="button"
-                                onClick={() => setIsPaymentModalOpen(true)}
-                                className="hover:underline cursor-pointer"
-                              >
-                                Don't have an account? Register Now
-                              </button>
-                            </p>
-                          );
-                        }
-                      })()}
+                                </div>
+                              );
+                            } else if (hasAnyAccounts) {
+                              // User has accounts but not for this payment method
+                              return (
+                                <p className="text-[#F79330] text-sm">
+                                  No account found for this payment method.{" "}
+                                  <button
+                                    type="button"
+                                    onClick={() => setIsPaymentModalOpen(true)}
+                                    className="hover:underline cursor-pointer font-medium"
+                                  >
+                                    Add Account
+                                  </button>
+                                </p>
+                              );
+                            } else {
+                              // User has no accounts at all
+                              return (
+                                <p className="text-[#F79330] text-sm">
+                                  <button
+                                    type="button"
+                                    onClick={() => setIsPaymentModalOpen(true)}
+                                    className="hover:underline cursor-pointer"
+                                  >
+                                    Don't have an account? Register Now
+                                  </button>
+                                </p>
+                              );
+                            }
+                          })()}
+                        </>
+                      )}
                     </div>
                   )}
                 </div>

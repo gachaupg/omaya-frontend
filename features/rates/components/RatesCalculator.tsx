@@ -1045,6 +1045,28 @@ const getPaymentRestrictionMessage = (status?: string) =>
 
         Promise.race([dispatch(fetchSwapEstimate(params)), timeoutPromise])
           .then((result: any) => {
+            if (result?.meta?.requestStatus === "rejected") {
+              const p = result?.payload as any;
+              const rd =
+                p?.response_data ??
+                p?.response?.data?.response_data ??
+                p?.response?.data;
+              const message =
+                (typeof rd?.message === "string" && rd.message.trim())
+                  ? rd.message.trim()
+                  : (typeof p?.message === "string" && p.message.trim())
+                    ? p.message.trim()
+                    : (typeof rd?.error === "string" && rd.error.trim())
+                      ? rd.error.trim()
+                      : "Could not calculate estimate for this pair.";
+              setApiValidationError(message);
+              setEstimateError(null);
+              setReceiveAmount("0");
+              setIsCalculating(false);
+              setIsCalculatingReceive(false);
+              setEstimateLoading(false);
+              return;
+            }
             if (result.payload) {
               setEstimate(result.payload);
               setEstimateCache((prev) =>
@@ -1128,6 +1150,21 @@ const getPaymentRestrictionMessage = (status?: string) =>
               setEstimateLoading(false);
               return;
             }
+
+            // Any other backend error (e.g. not_valid_params): show message and stop.
+            const genericText =
+              (typeof errorDetails === "string" && errorDetails.trim())
+                ? errorDetails.trim()
+                : (typeof errorMessage === "string" && errorMessage.trim())
+                  ? errorMessage.trim()
+                  : "Could not calculate estimate for this pair.";
+            setApiValidationError(genericText);
+            setEstimateError(null);
+            setReceiveAmount("0");
+            setIsCalculating(false);
+            setIsCalculatingReceive(false);
+            setEstimateLoading(false);
+            return;
 
             setEstimateError("Using fallback calculation");
             const commissionRate =
@@ -1226,11 +1263,30 @@ const getPaymentRestrictionMessage = (status?: string) =>
           setTimeout(() => reject(new Error("Request timeout")), 15000);
         });
 
-        Promise.race([
-          dispatch(fetchSwapEstimate(reverseParams)),
-          timeoutPromise,
-        ])
+        Promise.race([dispatch(fetchSwapEstimate(reverseParams)), timeoutPromise])
           .then((result: any) => {
+            if (result?.meta?.requestStatus === "rejected") {
+              const p = result?.payload as any;
+              const rd =
+                p?.response_data ??
+                p?.response?.data?.response_data ??
+                p?.response?.data;
+              const message =
+                (typeof rd?.message === "string" && rd.message.trim())
+                  ? rd.message.trim()
+                  : (typeof p?.message === "string" && p.message.trim())
+                    ? p.message.trim()
+                    : (typeof rd?.error === "string" && rd.error.trim())
+                      ? rd.error.trim()
+                      : "Could not calculate estimate for this pair.";
+              setApiValidationError(message);
+              setEstimateError(null);
+              setAmount("0");
+              setIsCalculating(false);
+              setIsCalculatingReceive(false);
+              setEstimateLoading(false);
+              return;
+            }
             if (result?.meta?.requestStatus === "fulfilled" && result.payload) {
               const payload = result.payload as any;
               const requiredAmountRaw =
@@ -1285,6 +1341,20 @@ const getPaymentRestrictionMessage = (status?: string) =>
               setEstimateLoading(false);
               return;
             }
+
+            const genericText =
+              (typeof errorDetails === "string" && errorDetails.trim())
+                ? errorDetails.trim()
+                : (typeof errorMessage === "string" && errorMessage.trim())
+                  ? errorMessage.trim()
+                  : "Could not calculate estimate for this pair.";
+            setApiValidationError(genericText);
+            setEstimateError(null);
+            setAmount("0");
+            setIsCalculating(false);
+            setIsCalculatingReceive(false);
+            setEstimateLoading(false);
+            return;
 
             if (
               errorMessage.includes("deposit_too_small") ||
@@ -2516,6 +2586,15 @@ const getPaymentRestrictionMessage = (status?: string) =>
         availableAssetsCount: assetsDisplay.displayData.length,
       });
 
+      const normalizeTickerForMatch = (value: unknown) => {
+        const raw = String(value ?? "").trim().toLowerCase();
+        if (!raw) return "";
+        const compact = raw.replace(/\s+/g, "");
+        // Treat FX Primus variants as the same ticker.
+        if (compact === "fxprimus" || compact === "fxp" || compact.includes("fxprimus")) return "fxp";
+        return compact;
+      };
+
       // Try multiple matching strategies
       const assetToRestore = assetsDisplay.displayData.find((asset: any) => {
         // Strategy 1: Match by asset_id (most reliable)
@@ -2535,12 +2614,12 @@ const getPaymentRestrictionMessage = (status?: string) =>
         }
 
         // Strategy 2: Match by ticker/symbol and network
-        const savedTicker = (state.ticker || state.symbol || "").toLowerCase().trim();
+        const savedTicker = normalizeTickerForMatch(state.ticker || state.symbol || state.name);
         const savedNetwork = (state.network || "").toLowerCase().trim();
 
         if (!savedTicker) return false;
 
-        const assetTicker = (asset.ticker || asset.symbol || "").toLowerCase().trim();
+        const assetTicker = normalizeTickerForMatch(asset.ticker || asset.symbol || asset.name);
         const assetNetwork = getAssetNetwork(asset).toLowerCase().trim();
 
         // Check if ticker matches
