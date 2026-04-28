@@ -1156,7 +1156,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                   className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
                     } text-[10px] sm:text-xs font-semibold mb-0.5 mt-2 sm:mt-3`}
                 >
-                  From Payment Method:
+                   Payment Method:
                 </div>
                 <div className="flex items-center mb-2 gap-1 sm:gap-2 w-full min-w-0">
                   {effectiveTransactionData.fromPaymentMethod.provider_logo ||
@@ -1190,7 +1190,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                   className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
                     } text-[10px] sm:text-xs font-semibold mb-0.5 mt-2 sm:mt-3`}
                 >
-                  To Payment Method:
+                   Payment Method:
                 </div>
                 <div className="flex items-center mb-2 gap-1 sm:gap-2 w-full min-w-0">
                   {effectiveTransactionData.toPaymentMethod.provider_logo ||

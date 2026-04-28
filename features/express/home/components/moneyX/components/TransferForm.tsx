@@ -1006,11 +1006,11 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
               </div>
             </div>
 
-            {/* From Payment Method Section */}
+            {/* Payment Method Section */}
             <div className="flex-1 min-w-0">
               <div className={`text-xs mb-1 mt-[30px] ${isDark ? "text-[#788099]" : "text-[#64748B]"
                 }`}>
-                From Payment Method
+                 Payment Method
               </div>
               <div className="relative">
                 <CustomSelect
@@ -1033,14 +1033,14 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
                   placeholder={
                     paymentMethodsDisplay.isLoading && finalPaymentMethods.length === 0
                       ? "Loading payment methods..."
-                      : "From Payment Method"
+                      : " Payment Method"
                   }
                   disabled={paymentMethodsDisplay.isLoading && finalPaymentMethods.length === 0}
                   loading={paymentMethodsDisplay.isLoading && finalPaymentMethods.length === 0}
                   loadingText="Loading payment methods..."
                   emptyText="No payment methods available"
                   searchable={true}
-                  dropdownTitle="From payment method"
+                  dropdownTitle=" payment method"
                   dropdownOffsetY={-68}
                   dropdownOffsetX={20}
                 />
@@ -1116,11 +1116,11 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
               </div>
             </div>
 
-            {/* To Payment Method Section */}
+            {/* Payment Method Section */}
             <div className="flex-1 min-w-0">
               <div className={`text-xs mb-1 mt-[30px] ${isDark ? "text-[#788099]" : "text-[#64748B]"
                 }`}>
-                To Payment Method
+                 Payment Method
               </div>
               <div className="relative">
                 <CustomSelect
@@ -1145,14 +1145,14 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
                   placeholder={
                     paymentMethodsDisplay.isLoading && finalPaymentMethods.length === 0
                       ? "Loading payment methods..."
-                      : "To Payment Method"
+                      : " Payment Method"
                   }
                   disabled={paymentMethodsDisplay.isLoading && finalPaymentMethods.length === 0}
                   loading={paymentMethodsDisplay.isLoading && finalPaymentMethods.length === 0}
                   loadingText="Loading payment methods..."
                   emptyText="No payment methods available"
                   searchable={true}
-                  dropdownTitle="To payment method"
+                  dropdownTitle=" payment method"
                   dropdownOffsetY={-68}
                   dropdownOffsetX={20}
                 />

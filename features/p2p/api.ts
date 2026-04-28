@@ -700,6 +700,61 @@ export const postTradeMessage = async (
 
 export type ThreadMessageType = "support" | "appeal";
 
+export type MessageDeleteType = "delete_for_me" | "delete_for_everyone";
+
+export const deleteTradeMessage = async (
+  tradeId: string,
+  messageId: string,
+  deleteType: MessageDeleteType
+): Promise<{ message: string; delete_type: MessageDeleteType }> => {
+  const t = String(tradeId || "").trim();
+  const m = String(messageId || "").trim();
+  if (!t) throw new Error("tradeId is required");
+  if (!m) throw new Error("messageId is required");
+  if (deleteType !== "delete_for_me" && deleteType !== "delete_for_everyone") {
+    throw new Error("Invalid delete_type");
+  }
+
+  return withRetry(async () => {
+    const response = await del<{ message: string; delete_type: MessageDeleteType }>(
+      `/trading_engine/trades/${encodeURIComponent(t)}/messages/${encodeURIComponent(m)}/`,
+      {
+        data: { delete_type: deleteType },
+      }
+    );
+    return response.data;
+  });
+};
+
+export const deleteThreadMessage = async (payload: {
+  type: ThreadMessageType;
+  message_id: string;
+  delete_type: MessageDeleteType;
+}): Promise<{ message: string; delete_type: MessageDeleteType }> => {
+  const type = payload?.type;
+  const messageId = String(payload?.message_id || "").trim();
+  const deleteType = payload?.delete_type;
+  if (type !== "support" && type !== "appeal") throw new Error("Invalid message type");
+  if (!messageId) throw new Error("message_id is required");
+  if (deleteType !== "delete_for_me" && deleteType !== "delete_for_everyone") {
+    throw new Error("Invalid delete_type");
+  }
+
+  return withRetry(async () => {
+    const response = await del<{ message: string; delete_type: MessageDeleteType }>(
+      `/trading_engine/messages/`,
+      {
+        data: {
+          type,
+          message_id: messageId,
+          delete_type: deleteType,
+        },
+      }
+    );
+    return response.data;
+  });
+};
+
 /**
  * Send support/appeal message using the unified messages endpoint.
  * POST /trading_engine/messages/

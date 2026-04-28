@@ -2194,7 +2194,7 @@ export default function DepositForm({
                   {isAssetDropdownOpen && (
                     <div className="absolute top-full left-0 right-0 mt-1 bg-[#ffffff] dark:bg-[var(--card-color)] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-xl sm:rounded-2xl z-50 max-h-[60vh] sm:max-h-80 overflow-hidden">
                       {/* Search Input */}
-                      <div className="p-2 sm:p-3 border-b border-[#A2A4A9FF] dark:border-accent">
+                      {/* <div className="p-2 sm:p-3 border-b border-[#A2A4A9FF] dark:border-accent">
                         <div className="relative">
                           <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#7e7e8f] w-4 h-4" />
                           <input
@@ -2205,7 +2205,7 @@ export default function DepositForm({
                             className="w-full pl-10 pr-4 py-2.5 sm:py-2 text-sm sm:text-base text-[#35353e] dark:bg-[#35353E] dark:text-[#ffffff] rounded-lg border border-[#A2A4A9FF] dark:border-[#35353E] focus:outline-none focus:border-[#1D8751] min-h-[44px] sm:min-h-0"
                           />
                         </div>
-                      </div>
+                      </div> */}
 
                       {/* Asset List */}
                       <div className="max-h-60 overflow-y-auto">
@@ -2244,7 +2244,7 @@ export default function DepositForm({
                               <div className="flex-1">
                                 <div className="text-[#35353e] dark:text-[#ffffff] font-medium flex items-center gap-2">
                                   {(asset.ticker || asset.symbol || asset.name || "Unknown").toUpperCase()}
-                                  <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
+                                  <span className="bg-gray-200 dark:bg-[#23232B] text-gray-900 dark:text-white text-xs font-semibold px-2 py-0.5 rounded-full border border-[#E3E6F0] dark:border-[#35353E]">
                                     BSC
                                   </span>
                                 </div>
@@ -2253,7 +2253,7 @@ export default function DepositForm({
                                 </div>
                               </div>
                               {selectedAsset?.asset_id === asset.asset_id && (
-                                <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
+                                <div className="w-2 h-2 rounded-full border border-[#A2A4A9FF] dark:border-[#35353E] bg-transparent"></div>
                               )}
                             </div>
                           ))
@@ -2275,7 +2275,7 @@ export default function DepositForm({
                 </label>
                 <div className="relative" ref={networkDropdownRef}>
                   <div
-                    className="w-full text-[#35353e] dark:bg-[var(--card-color)] dark:text-[#ffffff] rounded-xl sm:rounded-2xl px-3 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] flex items-center justify-between cursor-pointer hover:border-[#1D8751] dark:hover:border-[#1D8751] transition-colors min-h-[44px] sm:min-h-0"
+                    className="w-full text-[#35353e] dark:bg-[#18181D] dark:text-[#ffffff] rounded-xl sm:rounded-2xl px-3 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] flex items-center justify-between cursor-pointer hover:border-[#A2A4A9FF] dark:hover:border-[#35353E] transition-colors min-h-[44px] sm:min-h-0"
                     onClick={() => setIsNetworkDropdownOpen(!isNetworkDropdownOpen)}
                   >
                     <div className="flex items-center gap-3">
@@ -2300,45 +2300,46 @@ export default function DepositForm({
 
                   {/* Network Dropdown */}
                   {isNetworkDropdownOpen && (
-                    <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[var(--card-color)] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-xl sm:rounded-2xl shadow-lg z-50 max-h-[60vh] sm:max-h-60 overflow-y-auto">
-                      <div className="p-2">
-                        {availableNetworks.map((network, index) => (
-                          <div
-                            key={`${network.network_id}-${index}`}
-                            className={`flex items-center gap-3 p-2 sm:p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer rounded-xl transition-colors min-h-[44px] sm:min-h-0 ${selectedNetwork?.network_id === network.network_id
-                              ? 'bg-[#1D8751]/10 dark:bg-[#1D8751]/20 border border-[#1D8751]/30'
-                              : ''
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-[#ffffff] dark:bg-[var(--card-color)] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-xl sm:rounded-2xl z-50 max-h-[60vh] sm:max-h-60 overflow-hidden">
+                      <div className="max-h-60 overflow-y-auto">
+                        {availableNetworks.map((network, index) => {
+                          const selected =
+                            selectedNetwork?.network_id === network.network_id;
+                          return (
+                            <div
+                              key={`${network.network_id}-${index}`}
+                              className={`flex items-center gap-3 p-3 text-black dark:text-white hover:bg-gray-50 dark:hover:bg-[#23232B] cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E] last:border-b-0 ${
+                                selected ? "bg-gray-100 dark:bg-[#23232B]" : ""
                               }`}
-                            onClick={() => {
-                              setSelectedNetwork(network);
-                              setIsNetworkDropdownOpen(false);
-                            }}
-                          >
-                            <img
-                              src={network.icon}
-                              alt={`${network.name} icon`}
-                              className="w-6 h-6"
-                            />
-                            <div className="flex-1">
-                              <div className="font-medium text-[#35353e] dark:text-[#ffffff]">
-                                {network.name}
+                              onClick={() => {
+                                setSelectedNetwork(network);
+                                setIsNetworkDropdownOpen(false);
+                              }}
+                            >
+                              <img
+                                src={network.icon}
+                                alt={`${network.name} icon`}
+                                className="w-6 h-6"
+                              />
+                              <div className="flex-1">
+                                <div className="font-medium text-[#35353e] dark:text-[#ffffff]">
+                                  {network.name}
+                                </div>
+                                <div className="text-sm text-[#7e7e8f] dark:text-[#788099]">
+                                  {network.network_id}
+                                </div>
                               </div>
-                              <div className="text-sm text-[#7e7e8f] dark:text-[#788099]">
-                                {network.network_id}
-                              </div>
+                              {network.isDefault && (
+                                <span className="text-xs bg-gray-200 dark:bg-[#23232B] text-gray-900 dark:text-white px-2 py-1 rounded-full border border-[#E3E6F0] dark:border-[#35353E]">
+                                  Default
+                                </span>
+                              )}
+                              {selected && (
+                                <div className="w-2 h-2 rounded-full border border-[#A2A4A9FF] dark:border-[#35353E] bg-transparent" />
+                              )}
                             </div>
-                            {network.isDefault && (
-                              <span className="text-xs bg-[#1D8751] text-white px-2 py-1 rounded-full">
-                                Default
-                              </span>
-                            )}
-                            {selectedNetwork?.network_id === network.network_id && (
-                              <svg className="w-5 h-5 text-[#1D8751]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                            )}
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   )}

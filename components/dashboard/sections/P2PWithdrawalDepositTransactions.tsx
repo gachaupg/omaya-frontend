@@ -8,7 +8,7 @@ import { formatDistanceToNow } from "date-fns";
 import { NoDataFound } from "../ui/Transactions";
 import { useDashboardI18n } from "@/lib/useDashboardI18n";
 import { SortArrowsIcon } from "@/components/ui/SortArrowsIcon";
-import { getHighResAssetIcon } from "@/features/express/utils/imageHelpers";
+import { getHighResAssetIcon, getDefaultAssetIcon } from "@/features/express/utils/imageHelpers";
 import CopyButton from "@/components/ui/CopyButton";
 
 interface RootState {
@@ -43,6 +43,27 @@ const getAssetName = (symbol: string) => {
     default:
       return symbol;
   }
+};
+
+/**
+ * Some P2P endpoints return symbols like "USDT (BSC)".
+ * We want to keep the label, but always use the base asset logo (e.g. USDT).
+ */
+const getBaseTickerForIcon = (raw: unknown): string => {
+  const s = String(raw ?? "").trim();
+  if (!s) return "USDT";
+  // "USDT (BSC)" -> "USDT"
+  const idxParen = s.indexOf("(");
+  const base = (idxParen >= 0 ? s.slice(0, idxParen) : s).trim();
+  // Also handle "USDT-BSC" or "USDT_BSC" if ever returned.
+  return (base.split(/[-_\s]+/)[0] || base).toUpperCase();
+};
+
+const isAssetNetworkLabel = (value: unknown): boolean => {
+  const s = String(value ?? "").trim();
+  if (!s) return false;
+  // Matches: "USDT (BSC)", "BTC (TRC20)", etc.
+  return /^[A-Za-z0-9]+\s*\([A-Za-z0-9]+\)$/.test(s);
 };
 
 /** Display first 5 chars ... last 5 chars (full id in title for copy/hover) */
@@ -330,6 +351,8 @@ const P2PWithdrawalDepositTransactions = ({ filterByType = "all" }: P2PWithdrawa
       <div className="block sm:hidden space-y-3 px-4 pt-4 pb-2">
         {paginatedResults.map((tx: any, index: number) => {
           const { from, to } = getTxFromTo(tx);
+          const displaySymbol = tx.currency || tx.asset_symbol || "USDT";
+          const iconTicker = getBaseTickerForIcon(displaySymbol);
           return (
             <div
               key={tx.transaction_id || `tx-${index}`}
@@ -338,19 +361,23 @@ const P2PWithdrawalDepositTransactions = ({ filterByType = "all" }: P2PWithdrawa
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <img
-                    src={getHighResAssetIcon({ ticker: tx.currency || tx.asset_symbol })}
-                    alt={tx.currency || tx.asset_symbol || "Asset"}
+                    src={getHighResAssetIcon({ ticker: iconTicker })}
+                    alt={String(displaySymbol || "Asset")}
                     className="w-10 h-10 rounded-full shadow-sm flex-shrink-0"
                     onError={(e) => {
-                      e.currentTarget.style.display = 'none';
+                      const img = e.currentTarget;
+                      // Avoid infinite loops if default icon also fails.
+                      if (img.dataset.fallbackApplied === "1") return;
+                      img.dataset.fallbackApplied = "1";
+                      img.src = getDefaultAssetIcon();
                     }}
                   />
                   <div>
                     <div className="font-semibold text-sm uppercase tracking-wide text-gray-900 dark:text-white">
-                      {tx.currency || tx.asset_symbol || "USDT"}
+                      {displaySymbol}
                     </div>
                     <div className="text-xs text-gray-500 dark:text-gray-400">
-                      {getAssetName(tx.currency || tx.asset_symbol || "USDT")}
+                      {getAssetName(getBaseTickerForIcon(displaySymbol))}
                     </div>
                   </div>
                 </div>
@@ -384,22 +411,64 @@ const P2PWithdrawalDepositTransactions = ({ filterByType = "all" }: P2PWithdrawa
                 <div className="col-span-2">
                   <div className="text-xs text-gray-500 dark:text-[#A0A3BC] mb-1">From</div>
                   <div className="flex items-center justify-between gap-2">
-                    <div className="font-mono font-medium text-xs text-gray-900 dark:text-white break-all" title={from || ""}>
-                      {formatAddress(from)}
-                    </div>
-                    {!!from && (
-                      <CopyButton value={from} className="text-gray-500 hover:text-gray-900 dark:text-[#A0A3BC] dark:hover:text-white" showInlineMessage={false} />
+                    {isAssetNetworkLabel(from) ? (
+                      <div className="flex items-center gap-2 min-w-0" title={from || ""}>
+                        <img
+                          src={getHighResAssetIcon({ ticker: getBaseTickerForIcon(from) })}
+                          alt={String(from || "Asset")}
+                          className="w-5 h-5 rounded-full shadow-sm flex-shrink-0"
+                          onError={(e) => {
+                            const img = e.currentTarget;
+                            if (img.dataset.fallbackApplied === "1") return;
+                            img.dataset.fallbackApplied = "1";
+                            img.src = getDefaultAssetIcon();
+                          }}
+                        />
+                        <div className="font-medium text-xs text-gray-900 dark:text-white truncate">
+                          {String(from)}
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="font-mono font-medium text-xs text-gray-900 dark:text-white break-all" title={from || ""}>
+                          {formatAddress(from)}
+                        </div>
+                        {!!from && (
+                          <CopyButton value={from} className="text-gray-500 hover:text-gray-900 dark:text-[#A0A3BC] dark:hover:text-white" showInlineMessage={false} />
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
                 <div className="col-span-2">
                   <div className="text-xs text-gray-500 dark:text-[#A0A3BC] mb-1">To</div>
                   <div className="flex items-center justify-between gap-2">
-                    <div className="font-mono font-medium text-xs text-gray-900 dark:text-white break-all" title={to || ""}>
-                      {formatAddress(to)}
-                    </div>
-                    {!!to && (
-                      <CopyButton value={to} className="text-gray-500 hover:text-gray-900 dark:text-[#A0A3BC] dark:hover:text-white" showInlineMessage={false} />
+                    {isAssetNetworkLabel(to) ? (
+                      <div className="flex items-center gap-2 min-w-0" title={to || ""}>
+                        <img
+                          src={getHighResAssetIcon({ ticker: getBaseTickerForIcon(to) })}
+                          alt={String(to || "Asset")}
+                          className="w-5 h-5 rounded-full shadow-sm flex-shrink-0"
+                          onError={(e) => {
+                            const img = e.currentTarget;
+                            if (img.dataset.fallbackApplied === "1") return;
+                            img.dataset.fallbackApplied = "1";
+                            img.src = getDefaultAssetIcon();
+                          }}
+                        />
+                        <div className="font-medium text-xs text-gray-900 dark:text-white truncate">
+                          {String(to)}
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="font-mono font-medium text-xs text-gray-900 dark:text-white break-all" title={to || ""}>
+                          {formatAddress(to)}
+                        </div>
+                        {!!to && (
+                          <CopyButton value={to} className="text-gray-500 hover:text-gray-900 dark:text-[#A0A3BC] dark:hover:text-white" showInlineMessage={false} />
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
@@ -454,7 +523,9 @@ const P2PWithdrawalDepositTransactions = ({ filterByType = "all" }: P2PWithdrawa
 
           <tbody className="divide-y divide-gray-200 dark:divide-[#2A2A35]">
             {paginatedResults.map((tx: any, index: number) => {
-              const symbol = (tx.currency || tx.asset_symbol || "USDT").toString().toUpperCase();
+              const displaySymbol = tx.currency || tx.asset_symbol || "USDT";
+              const iconTicker = getBaseTickerForIcon(displaySymbol);
+              const symbol = String(displaySymbol).toUpperCase();
               const { from, to } = getTxFromTo(tx);
               return (
                 <tr
@@ -465,19 +536,22 @@ const P2PWithdrawalDepositTransactions = ({ filterByType = "all" }: P2PWithdrawa
                   <td className="px-3 sm:px-4 py-2 whitespace-normal break-words">
                     <div className="flex items-center gap-2">
                       <img
-                        src={getHighResAssetIcon({ ticker: tx.currency || tx.asset_symbol })}
-                        alt={tx.currency || tx.asset_symbol || "Asset"}
+                        src={getHighResAssetIcon({ ticker: iconTicker })}
+                        alt={String(displaySymbol || "Asset")}
                         className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover shadow-sm flex-shrink-0"
                         onError={(e) => {
-                          e.currentTarget.style.display = 'none';
+                          const img = e.currentTarget;
+                          if (img.dataset.fallbackApplied === "1") return;
+                          img.dataset.fallbackApplied = "1";
+                          img.src = getDefaultAssetIcon();
                         }}
                       />
                       <div className="flex flex-col min-w-0 leading-tight">
                         <span className="font-semibold uppercase tracking-wide text-xs sm:text-sm text-gray-700 dark:text-gray-200 truncate">
-                          {tx.currency || tx.asset_symbol || "USDT"}
+                          {displaySymbol}
                         </span>
                         <span className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                          {getAssetName(tx.currency || tx.asset_symbol || "USDT")}
+                          {getAssetName(getBaseTickerForIcon(displaySymbol))}
                         </span>
                       </div>
                     </div>
@@ -486,11 +560,30 @@ const P2PWithdrawalDepositTransactions = ({ filterByType = "all" }: P2PWithdrawa
                   {/* From */}
                   <td className="px-3 sm:px-4 py-2 whitespace-normal break-words text-xs sm:text-sm text-gray-700 dark:text-gray-200">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-mono text-xs sm:text-sm truncate" title={from || ""}>
-                        {formatAddress(from)}
-                      </span>
-                      {!!from && (
-                        <CopyButton value={from} className="text-gray-500 hover:text-gray-900 dark:text-[#A0A3BC] dark:hover:text-white" showInlineMessage={false} />
+                      {isAssetNetworkLabel(from) ? (
+                        <span className="inline-flex items-center gap-2 min-w-0" title={from || ""}>
+                          <img
+                            src={getHighResAssetIcon({ ticker: getBaseTickerForIcon(from) })}
+                            alt={String(from || "Asset")}
+                            className="w-5 h-5 rounded-full shadow-sm flex-shrink-0"
+                            onError={(e) => {
+                              const img = e.currentTarget;
+                              if (img.dataset.fallbackApplied === "1") return;
+                              img.dataset.fallbackApplied = "1";
+                              img.src = getDefaultAssetIcon();
+                            }}
+                          />
+                          <span className="font-medium truncate">{String(from)}</span>
+                        </span>
+                      ) : (
+                        <>
+                          <span className="font-mono text-xs sm:text-sm truncate" title={from || ""}>
+                            {formatAddress(from)}
+                          </span>
+                          {!!from && (
+                            <CopyButton value={from} className="text-gray-500 hover:text-gray-900 dark:text-[#A0A3BC] dark:hover:text-white" showInlineMessage={false} />
+                          )}
+                        </>
                       )}
                     </div>
                   </td>
@@ -498,11 +591,30 @@ const P2PWithdrawalDepositTransactions = ({ filterByType = "all" }: P2PWithdrawa
                   {/* To */}
                   <td className="px-3 sm:px-4 py-2 whitespace-normal break-words text-xs sm:text-sm text-gray-700 dark:text-gray-200">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-mono text-xs sm:text-sm truncate" title={to || ""}>
-                        {formatAddress(to)}
-                      </span>
-                      {!!to && (
-                        <CopyButton value={to} className="text-gray-500 hover:text-gray-900 dark:text-[#A0A3BC] dark:hover:text-white" showInlineMessage={false} />
+                      {isAssetNetworkLabel(to) ? (
+                        <span className="inline-flex items-center gap-2 min-w-0" title={to || ""}>
+                          <img
+                            src={getHighResAssetIcon({ ticker: getBaseTickerForIcon(to) })}
+                            alt={String(to || "Asset")}
+                            className="w-5 h-5 rounded-full shadow-sm flex-shrink-0"
+                            onError={(e) => {
+                              const img = e.currentTarget;
+                              if (img.dataset.fallbackApplied === "1") return;
+                              img.dataset.fallbackApplied = "1";
+                              img.src = getDefaultAssetIcon();
+                            }}
+                          />
+                          <span className="font-medium truncate">{String(to)}</span>
+                        </span>
+                      ) : (
+                        <>
+                          <span className="font-mono text-xs sm:text-sm truncate" title={to || ""}>
+                            {formatAddress(to)}
+                          </span>
+                          {!!to && (
+                            <CopyButton value={to} className="text-gray-500 hover:text-gray-900 dark:text-[#A0A3BC] dark:hover:text-white" showInlineMessage={false} />
+                          )}
+                        </>
                       )}
                     </div>
                   </td>

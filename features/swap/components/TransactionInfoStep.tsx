@@ -43,6 +43,8 @@ const strongBorder =
 const baseCard =
   `rounded-2xl ${strongBorder} bg-white dark:bg-[#18181D] dark:text-white text-gray-900`;
 const labelCopy = "text-[12px] tracking-wide dark:text-[#7d7f95] text-gray-600";
+// Swap card header text (make "You Send", "You Receive", and "Asset" identical)
+const headerCopy = `${labelCopy} md:text-lg`;
 
 /** User may type "0" while editing — don't show estimate API errors until amount is positive */
 const hasPositiveAmount = (s: string) => {
@@ -534,9 +536,9 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
         <div className={`${baseCard} p-4 sm:p-5 md:p-6 lg:p-6 space-y-3 sm:space-y-3 md:space-y-4`} data-swap-card="true">
           <div className="flex flex-col sm:flex-row sm:items-end gap-3 sm:gap-3 md:gap-4">
             <div className="space-y-1 sm:flex-1">
-              <p className="text-base sm:text-base md:text-lg text-white font-semibold">{t("swap.youSend", "You Send")}</p>
+              <p className={headerCopy}>{t("swap.youSend", "You Send")}</p>
             </div>
-            <p className={`${labelCopy} md:text-lg ml-0 sm:ml-0 sm:flex-1 !text-white`}>
+            <p className={`${headerCopy} ml-0 sm:ml-0 sm:flex-1`}>
               {t("swap.asset", "Asset")}
             </p>
           </div>
@@ -592,9 +594,9 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
         <div className={`${baseCard} p-3 sm:p-4 md:p-5 lg:p-6 space-y-2 sm:space-y-3 md:space-y-4`} data-swap-card="true">
           <div className="flex flex-col sm:flex-row sm:items-end gap-2 sm:gap-3 md:gap-4">
             <div className="space-y-1 sm:flex-1">
-              <p className="text-sm sm:text-base md:text-lg text-white font-semibold">{t("swap.youReceive", "You Receive")}</p>
+              <p className={headerCopy}>{t("swap.youReceive", "You Receive")}</p>
             </div>
-            <p className={`${labelCopy}  md:text-lg ml-4 sm:ml-0 sm:flex-1 !text-white`}>
+            <p className={`${headerCopy}  ml-4 sm:ml-0 sm:flex-1`}>
               {t("swap.asset", "Asset")}
             </p>
           </div>

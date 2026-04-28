@@ -3862,7 +3862,7 @@ export default function DepositForm({
                 className={`block text-[15px] mb-2 font-semibold flex items-center gap-2 ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"
                   }`}
               >
-                Bank/Payment Method
+                Payment Method
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
               </label>
               <div className={`text-xs mb-1 ${isDark ? "text-[#788099]" : "text-[#64748B]"

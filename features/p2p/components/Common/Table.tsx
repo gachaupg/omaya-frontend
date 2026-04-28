@@ -438,44 +438,17 @@ export const Table = forwardRef<TableExportRef, TableProps>(({
   };
 
   const AssetDirectionCell = ({ row }: { row: TransactionType }) => {
-    if (type !== "p2p") {
-      return (
-        <div className="flex items-center gap-2">
-          <img
-            src="/images/tether.svg"
-            alt={row.asset || "Asset"}
-            className="w-6 h-6"
-          />
-        </div>
-      );
-    }
-
-    const dir = getP2PTradeDirection(row);
+    // Requirement: In P2P Buy/Sell history, show only the USDT asset logo in "Asset" column.
     return (
-      <div className="flex items-center gap-2 min-w-0">
-        <div className="flex items-center -space-x-2">
-          <img
-            src={getAssetIconSrc(dir.from)}
-            alt={dir.from}
-            className="w-6 h-6 rounded-full bg-white dark:bg-[#1d1d23] border border-gray-200 dark:border-[#35353E] object-cover"
-            onError={(e) => {
-              e.currentTarget.src = "/default-provider-logo.svg";
-            }}
-          />
-          <img
-            src={getAssetIconSrc(dir.to)}
-            alt={dir.to}
-            className="w-6 h-6 rounded-full bg-white dark:bg-[#1d1d23] border border-gray-200 dark:border-[#35353E] object-cover"
-            onError={(e) => {
-              e.currentTarget.src = "/default-provider-logo.svg";
-            }}
-          />
-        </div>
-        <div className="min-w-0">
-          <div className="text-sm font-semibold text-gray-900 dark:text-white truncate">
-            {dir.from} <span className="text-gray-400">→</span> {dir.to}
-          </div>
-        </div>
+      <div className="flex items-center gap-2">
+        <img
+          src="/images/tether.svg"
+          alt="USDT"
+          className="w-6 h-6 rounded-full object-cover"
+          onError={(e) => {
+            e.currentTarget.src = "/default-provider-logo.svg";
+          }}
+        />
       </div>
     );
   };
@@ -681,10 +654,10 @@ export const Table = forwardRef<TableExportRef, TableProps>(({
                       type="button"
                       onClick={() => setIsDateDropdownOpen((prev) => !prev)}
                       disabled={loading}
-                      className={`w-full sm:w-auto px-3 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium bg-[#E6E7EC] dark:bg-[var(--bg-color)] flex items-center gap-1 border-none outline-none focus:outline-none focus:ring-0 ${isAllFilterSelected
-                        ? "text-[#8E939E] dark:text-[#8C8CA1]"
-                        : "text-[#1F1F23] dark:text-white"
-                        }`}
+                      className={`w-full sm:w-auto px-3 py-2 rounded-lg sm:rounded-[22px] text-xs sm:text-sm font-semibold flex items-center gap-1 border border-gray-200 dark:border-[#35353E] outline-none focus:outline-none focus:ring-2 focus:ring-[#1D8751]/50 bg-gray-100 dark:bg-[#18181D] ${isAllFilterSelected
+                        ? "text-gray-500 dark:text-[#7F889F]"
+                        : "text-gray-900 dark:text-white"
+                        } hover:border-[#1D8751] hover:bg-gray-50 dark:hover:bg-[#14141B] transition-colors`}
                     >
                       <span className="whitespace-nowrap">{dateFilter}</span>
                       <svg
@@ -717,7 +690,7 @@ export const Table = forwardRef<TableExportRef, TableProps>(({
                   )}
                 </div>
                 {isDateDropdownOpen && (
-                  <div className="absolute top-full left-0 mt-2 w-full sm:w-auto sm:min-w-[100px] rounded-xl bg-white dark:bg-[var(--bg-color)] text-gray-900 dark:text-white shadow-lg z-20 py-1 border border-gray-200 dark:border-[#35353E]">
+                  <div className="absolute top-full left-0 mt-2 w-full sm:w-auto sm:min-w-[140px] rounded-lg sm:rounded-2xl bg-white dark:bg-[#18181D] text-gray-900 dark:text-white shadow-2xl z-20 py-1 border border-gray-200 dark:border-[#35353E]">
                     {dateFilterOptions.map((option) => {
                       const isSelected = dateFilter === option;
                       return (
@@ -728,8 +701,8 @@ export const Table = forwardRef<TableExportRef, TableProps>(({
                             handleDateFilterChange(option);
                             setIsDateDropdownOpen(false);
                           }}
-                          className={`w-full flex items-center px-3 py-1.5 text-left hover:bg-gray-100 dark:hover:bg-[#1b1b22] ${isSelected
-                            ? "text-white bg-[#1D8751] dark:bg-[#1D8751]"
+                          className={`w-full flex items-center px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-[#14141B] transition-colors ${isSelected
+                            ? "bg-gray-200 text-gray-900 dark:bg-[#23232B] dark:text-white"
                             : "text-gray-700 dark:text-[#C7CAD1]"
                             }`}
                         >

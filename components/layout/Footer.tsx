@@ -450,14 +450,14 @@ export default function Footer() {
           {/* App Download Section */}
           <div className="flex flex-col gap-15 md:gap-2 lg:gap-3 items-start justify-start">
             {/* Mobile: Show both QR codes in compact layout */}
-            <div className="grid md:hidden grid-cols-4 gap-5 place-items-between">
+            <div className="grid md:hidden grid-cols-2 gap-x-6 gap-y-3 place-items-center">
               <Image
                 src="/assets/Appstore_nqe65y.png"
                 alt="App Store"
                 width={60}
                 height={60}
                 className="object-contain"
-                style={{ width: "56px", height: "56px" }}
+                style={{ width: "72px", height: "72px" }}
               />
               <Image
                 src="/assets/qr-code-bc94057f452f4806af70fd34540f72ad_3_jk8lq1.png"
@@ -466,7 +466,7 @@ export default function Footer() {
                 height={60}
                 priority
                 className="object-contain"
-                style={{ width: "56px", height: "56px" }}
+                style={{ width: "72px", height: "72px" }}
               />
               <Image
                 src="/images/playstore.webp"
@@ -474,7 +474,7 @@ export default function Footer() {
                 width={60}
                 height={60}
                 className="object-contain"
-                style={{ width: "56px", height: "56px" }}
+                style={{ width: "72px", height: "72px" }}
               />
               <Image
                 src="/assets/qr-code-bc94057f452f4806af70fd34540f72ad_3_jk8lq1.png"
@@ -482,7 +482,7 @@ export default function Footer() {
                 width={60}
                 height={60}
                 className="object-contain"
-                style={{ width: "56px", height: "56px" }}
+                style={{ width: "72px", height: "72px" }}
               />
             </div>
             

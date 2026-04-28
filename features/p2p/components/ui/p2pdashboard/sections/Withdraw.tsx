@@ -17,7 +17,7 @@ import {
   type Network,
   type AssetNetwork,
 } from "@/features/p2p/types";
-import Select from "../../../Common/Select";
+import CustomSelect from "@/components/ui/CustomSelect";
 import { fetchAssets } from "@/features/p2p/slices/assetsSlice";
 import { showToast } from "@/lib/utils/toast";
 import { useRouter } from "next/navigation";
@@ -239,32 +239,28 @@ const Withdraw: React.FC = () => {
               <label className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
                 Asset
               </label>
-              <div className="relative w-full">
-                {selectedAsset?.asset_image && (
-                  <img
-                    src={selectedAsset.asset_image}
-                    alt={selectedAsset.symbol}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full"
-                  />
-                )}
-                <Select
-                  options={assetOptions}
-                  value={selectedAssetId}
-                  onChange={(e) => {
-                    setSelectedAssetId(e.target.value);
-                    setSelectedNetworkId("");
-                  }}
-                  placeholder="Select Asset"
-                  className="w-full h-[46px] pl-10 rounded-[19px] pr-10"
-                  style={{ minHeight: 46, appearance: "none", background: "transparent" }}
-                />
-                {/* Custom filled arrow */}
-                <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 flex items-center">
-                  <svg width="20" height="20" fill="#ACACAC" viewBox="0 0 24 24">
-                    <path d="M7 10l5 5 5-5" />
-                  </svg>
-                </span>
-              </div>
+              <CustomSelect
+                options={[
+                  { value: "", label: "Select Asset" },
+                  ...assetOptions.map((o) => ({
+                    value: o.value,
+                    label: o.label,
+                    // Force consistent logo for USDT selection.
+                    logo: "/images/tether.svg",
+                  })),
+                ]}
+                value={selectedAssetId}
+                onChange={(val) => {
+                  setSelectedAssetId(String(val || ""));
+                  setSelectedNetworkId("");
+                }}
+                searchable={false}
+                sizeMode="card"
+                logoSize={24}
+                logoClassName="rounded-full object-cover"
+                placeholderClassName="text-gray-500 dark:text-gray-400"
+                triggerClassName="w-full h-[46px] rounded-[19px] pr-10"
+              />
             </div>
 
             {/* Network */}
@@ -272,24 +268,22 @@ const Withdraw: React.FC = () => {
               <label className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
                 Network
               </label>
-              <div className="relative w-full">
-                <Select
-                  options={networkOptions}
-                  value={selectedNetworkId}
-                  onChange={(e) => setSelectedNetworkId(e.target.value)}
-                  placeholder="Select Network"
-                  className="w-full h-[46px] rounded-[19px] pr-10"
-                  style={{ minHeight: 46, appearance: "none", background: "transparent" }}
-                  disabled={!selectedAssetId}
-                />
-                {/* Custom filled arrow */}
-                <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 flex items-center">
-                  <svg width="20" height="20" fill="#ACACAC" viewBox="0 0 24 24">
-                    <path d="M7 10l5 5 5-5" />
-                  </svg>
-                </span>
-
-              </div>
+              <CustomSelect
+                options={[
+                  { value: "", label: "Select Network" },
+                  ...networkOptions.map((o) => ({
+                    value: o.value,
+                    label: o.label,
+                  })),
+                ]}
+                value={selectedNetworkId}
+                onChange={(val) => setSelectedNetworkId(String(val || ""))}
+                disabled={!selectedAssetId}
+                searchable={false}
+                sizeMode="card"
+                placeholderClassName="text-gray-500 dark:text-gray-400"
+                triggerClassName="w-full h-[46px] rounded-[19px] pr-10"
+              />
             </div>
           </div>
 
