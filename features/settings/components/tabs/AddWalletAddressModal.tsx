@@ -231,7 +231,29 @@ const AddWalletAddressModal = ({
 
   const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
+    const duplicateNow = isDuplicateAddress(
+      value,
+      selectedAssetTicker,
+      selectedNetwork
+    );
     setAddress(value);
+    if (duplicateNow) {
+      // Skip validate API if we already have this address saved.
+      resetValidation();
+      const normalized = value.trim().toLowerCase();
+      if (normalized && lastDuplicateToastRef.current !== normalized) {
+        lastDuplicateToastRef.current = normalized;
+        showToast.error("This wallet address is already saved.");
+      }
+      return;
+    }
+
+    // Reset duplicate toast guard when user changes input.
+    const normalized = value.trim().toLowerCase();
+    if (lastDuplicateToastRef.current && lastDuplicateToastRef.current !== normalized) {
+      lastDuplicateToastRef.current = "";
+    }
+
     if (value.trim() && currencyForValidation) {
       validate(value, currencyForValidation, networkForValidation);
     } else {
@@ -325,23 +347,33 @@ const AddWalletAddressModal = ({
   const addressIsInvalid =
     validationResult !== null && validationResult.isValid === false;
 
+  const lastDuplicateToastRef = useRef<string>("");
+
   const addressAlreadyExists = useMemo(() => {
     const v = address.trim().toLowerCase();
     if (!v) return false;
-    const assetKey = selectedAssetTicker.trim().toUpperCase();
-    const networkKey = selectedNetwork.trim().toLowerCase();
     return (existingWalletAddresses || []).some((a) => {
       const aAddr = String(a?.address || "").trim().toLowerCase();
       if (!aAddr || aAddr !== v) return false;
-      // If user hasn't selected asset/network yet, treat it as duplicate anyway.
-      if (!assetKey && !networkKey) return true;
-      const aAsset = String(a?.asset || "").trim().toUpperCase();
-      const aNet = String(a?.network || "").trim().toLowerCase();
-      const assetMatches = assetKey ? aAsset === assetKey : true;
-      const netMatches = networkKey ? aNet === networkKey : true;
-      return assetMatches && netMatches;
+      // If the address matches any saved wallet, block it (regardless of asset/network),
+      // because the user is trying to add a duplicate saved address.
+      return true;
     });
   }, [address, existingWalletAddresses, selectedAssetTicker, selectedNetwork]);
+
+  const isDuplicateAddress = (
+    rawAddress: string,
+    assetTicker: string,
+    network: string
+  ) => {
+    const v = String(rawAddress || "").trim().toLowerCase();
+    if (!v) return false;
+    return (existingWalletAddresses || []).some((a) => {
+      const aAddr = String(a?.address || "").trim().toLowerCase();
+      if (!aAddr || aAddr !== v) return false;
+      return true;
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
