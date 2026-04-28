@@ -3829,7 +3829,7 @@ export default function DepositForm({
               className="flex-1 w-full sm:min-w-0 sm:pl-4 border-t sm:border-t-0 sm:border-l border-[#35353E] dark:border-[#35353E] pt-2 sm:pt-0 sm:border-none"
             >
               <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
-                {t("express.bankPaymentMethod", "Bank/Payment Method")}
+                {t("express.paymentMethod", "Payment Method")}
               </label>
               {/* <div>
                 hello

@@ -17,15 +17,16 @@ const SystemThemeSection: React.FC = () => {
       <section className="dark:bg-card bg-card rounded-xl dark:border-[#35353E] border-[#E8EFF5] border p-3 sm:p-4">
         <div className="flex gap-3">
           <button
-            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-2xl font-semibold text-sm transition-all ${
+            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-2xl font-semibold text-sm transition-all border bg-white dark:bg-[#18181D] hover:bg-gray-50 dark:hover:bg-[#14141B] ${
               isLight
-                ? "bg-[#1D8751] text-white"
-                : "border border-gray-400 bg-[#35353E] text-gray-300 hover:bg-[#35353E]/80"
+                ? "text-gray-900 dark:text-white border-[#1D8751] ring-2 ring-[#1D8751]/20"
+                : "text-gray-700 dark:text-[#C7CAD1] border-gray-300 dark:border-[#35353E]"
             }`}
             onClick={() => handleThemeChange("light")}
             aria-pressed={isLight}
             disabled={updating}
           >
+            <span className="w-4 h-4 rounded-full border border-gray-300 bg-white flex-shrink-0" />
             <svg
               width="18"
               height="18"
@@ -42,15 +43,16 @@ const SystemThemeSection: React.FC = () => {
             Light
           </button>
           <button
-            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-2xl font-semibold text-sm transition-all ${
+            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-2xl font-semibold text-sm transition-all border bg-white dark:bg-[#18181D] hover:bg-gray-50 dark:hover:bg-[#14141B] ${
               isDeem
-                ? "bg-[#1D8751] text-white"
-                : "border border-gray-400 bg-[#35353E] text-gray-300 hover:bg-[#35353E]/80"
+                ? "text-gray-900 dark:text-white border-[#1D8751] ring-2 ring-[#1D8751]/20"
+                : "text-gray-700 dark:text-[#C7CAD1] border-gray-300 dark:border-[#35353E]"
             }`}
             onClick={() => handleThemeChange("deem")}
             aria-pressed={isDeem}
             disabled={updating}
           >
+            <span className="w-4 h-4 rounded-full border border-[#35353E] bg-[#23232B] flex-shrink-0" />
             <svg
               width="18"
               height="18"
@@ -68,15 +70,16 @@ const SystemThemeSection: React.FC = () => {
             Dim
           </button>
           <button
-            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-2xl font-semibold text-sm transition-all ${
+            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-2xl font-semibold text-sm transition-all border bg-white dark:bg-[#18181D] hover:bg-gray-50 dark:hover:bg-[#14141B] ${
               currentTheme === "dark"
-                ? "bg-[#1D8751] text-white"
-                : "border border-gray-400 bg-[#35353E] text-gray-300 hover:bg-[#35353E]/80"
+                ? "text-gray-900 dark:text-white border-[#1D8751] ring-2 ring-[#1D8751]/20"
+                : "text-gray-700 dark:text-[#C7CAD1] border-gray-300 dark:border-[#35353E]"
             }`}
             onClick={() => handleThemeChange("dark")}
             aria-pressed={currentTheme === "dark"}
             disabled={updating}
           >
+            <span className="w-4 h-4 rounded-full border border-[#2F2F3A] bg-[#0F0F17] flex-shrink-0" />
             <svg
               width="18"
               height="18"

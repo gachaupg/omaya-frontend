@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState, useRef } from "react";
+import React, { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/rootReducer";
 import { useGroupedMessages } from "@/features/p2p/hooks/useGroupedMessages";
@@ -10,6 +10,11 @@ import {
   postThreadMessage,
   getTermsAccepted,
   acceptTerms,
+} from "@/features/p2p/api";
+import {
+  deleteTradeMessage,
+  deleteThreadMessage,
+  type MessageDeleteType,
 } from "@/features/p2p/api";
 import { getTradeMessagesWebSocket, cleanupTradeMessagesWebSocket } from "@/features/p2p/services/tradeMessagesWebSocket";
 import { cookieUtils } from "@/lib/utils/cookieUtils";
@@ -32,6 +37,7 @@ interface ConversationItemProps {
   isActive: boolean;
   unreadCount: number;
   onSelect: () => void;
+  onDeleteConversation: () => void;
 }
 
 const ConversationItem: React.FC<ConversationItemProps> = ({
@@ -42,6 +48,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
   unreadCount,
   onSelect,
   group,
+  onDeleteConversation,
 }) => {
   const [imageError, setImageError] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -69,13 +76,13 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
   };
 
   return (
-    <button
-      onClick={onSelect}
-      className={`w-full flex items-start gap-3 rounded-xl px-3 py-3 text-left transition-colors ${isActive
+    <div
+      className={`group relative w-full flex items-start gap-3 rounded-xl px-3 py-3 text-left transition-colors ${isActive
         ? "bg-gray-100 dark:bg-[#111827] border border-[#1D8751]"
         : "bg-transparent hover:bg-gray-50 dark:hover:bg-[#111827]/60 border border-transparent"
         }`}
     >
+      <button onClick={onSelect} className="absolute inset-0" aria-label="Open conversation" />
       <div className="flex-shrink-0">
         <div className="w-9 h-9 rounded-full bg-[#1D8751] flex items-center justify-center text-xs font-bold text-white overflow-hidden relative">
           {photoUrl && !imageError ? (
@@ -155,13 +162,55 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
           </span>
         </div>
       )}
-    </button>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onDeleteConversation();
+        }}
+        className="relative z-10 ml-2 hidden sm:flex opacity-0 group-hover:opacity-100 transition-opacity items-center justify-center w-8 h-8 rounded-full bg-white/90 dark:bg-[#23232B] border border-[#E3E6F0] dark:border-[#35353E]"
+        aria-label="Delete conversation"
+        title="Delete conversation"
+      >
+        <svg viewBox="0 0 24 24" className="w-4 h-4 text-red-600 dark:text-red-500" fill="none" stroke="currentColor" strokeWidth="2">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3 6h18M8 6V4h8v2m-1 0v14a2 2 0 01-2 2H9a2 2 0 01-2-2V6h10z" />
+        </svg>
+      </button>
+    </div>
   );
 };
 
 export const Chats: React.FC = () => {
   const { isAuthenticated, user } = useSelector(
     (state: RootState) => state.auth
+  );
+
+  const HIDDEN_CONVERSATIONS_KEY = "p2p_hidden_conversations";
+  const readHiddenConversations = (): Set<string> => {
+    if (typeof window === "undefined") return new Set();
+    try {
+      const raw = localStorage.getItem(HIDDEN_CONVERSATIONS_KEY);
+      const parsed = raw ? (JSON.parse(raw) as unknown) : [];
+      if (Array.isArray(parsed)) {
+        return new Set(parsed.map((v) => String(v)));
+      }
+    } catch {
+      // ignore
+    }
+    return new Set();
+  };
+  const persistHiddenConversations = (s: Set<string>) => {
+    if (typeof window === "undefined") return;
+    try {
+      localStorage.setItem(HIDDEN_CONVERSATIONS_KEY, JSON.stringify(Array.from(s)));
+    } catch {
+      // ignore
+    }
+  };
+
+  const [hiddenConversationIds, setHiddenConversationIds] = useState<Set<string>>(
+    () => readHiddenConversations()
   );
 
   const { groupedUsers, loading, error, refetch } = useGroupedMessages({
@@ -235,6 +284,16 @@ export const Chats: React.FC = () => {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const prevSelectedUserIdRef = useRef<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [hiddenMessageIdsByEntity, setHiddenMessageIdsByEntity] = useState<
+    Map<string, Set<string>>
+  >(new Map());
+  const [deleteMenu, setDeleteMenu] = useState<{
+    entityId: string;
+    messageId: string;
+    isSender: boolean;
+  } | null>(null);
+  const longPressTimerRef = useRef<number | null>(null);
 
   const isUuid = (value: unknown): boolean =>
     /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
@@ -381,6 +440,7 @@ export const Chats: React.FC = () => {
   const displayedMessages = useMemo(() => {
     if (!selectedUser || !selectedUser.entity_id) return [];
 
+    const hiddenForEntity = hiddenMessageIdsByEntity.get(selectedUser.entity_id) || new Set<string>();
     const realMessages = selectedUser.messages || [];
     const optimistic = optimisticMessages.get(selectedUser.entity_id) || [];
 
@@ -431,14 +491,117 @@ export const Chats: React.FC = () => {
       });
     }
 
-    return [...realMessages, ...filteredOptimistic];
+    const merged = [...realMessages, ...filteredOptimistic];
+    if (hiddenForEntity.size === 0) return merged;
+    return merged.filter((m: any) => !hiddenForEntity.has(String(m?.id ?? "")));
   }, [
     selectedUser?.messages,
     selectedUser?.entity_id,
     optimisticMessages,
+    hiddenMessageIdsByEntity,
     user?.id,
     user?.email,
   ]);
+
+  const isAdminUser = useMemo(() => {
+    const raw =
+      (user as any)?.user_type ??
+      (user as any)?.role ??
+      (user as any)?.type ??
+      "";
+    const s = String(raw).toLowerCase();
+    return (
+      s.includes("admin") ||
+      s.includes("staff") ||
+      Boolean((user as any)?.is_staff) ||
+      Boolean((user as any)?.is_superuser)
+    );
+  }, [user]);
+
+  const hideMessageLocally = useCallback((entityId: string, messageId: string) => {
+    const id = String(messageId || "").trim();
+    if (!entityId || !id) return;
+    setHiddenMessageIdsByEntity((prev) => {
+      const next = new Map(prev);
+      const existing = next.get(entityId) ? new Set(next.get(entityId)!) : new Set<string>();
+      existing.add(id);
+      next.set(entityId, existing);
+      return next;
+    });
+    // Also remove from optimistic map if it exists there.
+    setOptimisticMessages((prev) => {
+      const next = new Map(prev);
+      const list = next.get(entityId) || [];
+      const filtered = list.filter((m: any) => String(m?.id ?? "") !== id);
+      if (filtered.length === 0) next.delete(entityId);
+      else next.set(entityId, filtered);
+      return next;
+    });
+  }, []);
+
+  const handleDeleteMessage = useCallback(
+    async (msg: any, deleteType: MessageDeleteType) => {
+      if (!selectedUser) return;
+      const entityId = selectedUser.entity_id;
+      const messageId = String(msg?.id ?? "").trim();
+      if (!messageId) return;
+
+      // Optimistic/local-only rows can be removed immediately without hitting API.
+      if (messageId.startsWith("temp-")) {
+        hideMessageLocally(entityId, messageId);
+        setDeleteMenu(null);
+        return;
+      }
+
+      const messageType = String((selectedUser as any)?.message_type || "")
+        .trim()
+        .toLowerCase();
+      try {
+        if (messageType === "support" || messageType === "appeal") {
+          await deleteThreadMessage({
+            type: messageType as "support" | "appeal",
+            message_id: messageId,
+            delete_type: deleteType,
+          });
+        } else {
+          const tradeId = resolvedTradeId;
+          if (!tradeId) throw new Error("Missing trade id for this conversation");
+          await deleteTradeMessage(tradeId, messageId, deleteType);
+        }
+
+        hideMessageLocally(entityId, messageId);
+        setDeleteMenu(null);
+        showToast.success("Message deleted");
+      } catch (error: any) {
+        const apiMsg =
+          error?.response?.data?.error ||
+          error?.response?.data?.message ||
+          error?.message ||
+          "Failed to delete message";
+        showToast.error("Delete failed", String(apiMsg));
+      }
+    },
+    [hideMessageLocally, resolvedTradeId, selectedUser]
+  );
+
+  const startLongPress = useCallback(
+    (entityId: string, messageId: string, isSender: boolean) => {
+      if (longPressTimerRef.current) {
+        window.clearTimeout(longPressTimerRef.current);
+      }
+      longPressTimerRef.current = window.setTimeout(() => {
+        setDeleteMenu({ entityId, messageId, isSender });
+      }, 550);
+    },
+    []
+  );
+
+  const cancelLongPress = useCallback(() => {
+    if (longPressTimerRef.current) {
+      window.clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  }, []);
 
   // Auto-scroll to bottom when chat is opened or messages change
   useEffect(() => {
@@ -662,7 +825,11 @@ export const Chats: React.FC = () => {
     };
   }, [selectedUser?.entity_id, resolvedTradeId, isAuthenticated, refetch]);
 
-  const conversations = useMemo(() => groupedUsers || [], [groupedUsers]);
+  const conversations = useMemo(() => {
+    const list = groupedUsers || [];
+    if (hiddenConversationIds.size === 0) return list;
+    return list.filter((g: any) => !hiddenConversationIds.has(String(g?.entity_id ?? "")));
+  }, [groupedUsers, hiddenConversationIds]);
 
   const formatTimestamp = (timestamp: string) => {
     const date = new Date(timestamp);
@@ -1199,13 +1366,27 @@ export const Chats: React.FC = () => {
                 <div
                   className={`flex w-full ${isSender ? "justify-end" : "justify-start"}`}
                 >
-                <div
-                  className={
-                    isSender
-                      ? "bg-[#1D8751] text-white rounded-lg px-2.5 py-1 max-w-[85%] sm:max-w-xs min-w-[100px] sm:min-w-[120px]"
-                      : "bg-gray-200 dark:bg-[#35353E] text-gray-900 dark:text-white rounded-lg px-2.5 py-1 max-w-[85%] sm:max-w-xs min-w-[100px] sm:min-w-[120px]"
-                  }
-                >
+                <div className="relative group">
+                  <div
+                    onTouchStart={() =>
+                      startLongPress(selectedUser.entity_id, String(msg?.id ?? ""), isSender)
+                    }
+                    onTouchEnd={cancelLongPress}
+                    onTouchMove={cancelLongPress}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      setDeleteMenu({
+                        entityId: selectedUser.entity_id,
+                        messageId: String(msg?.id ?? ""),
+                        isSender,
+                      });
+                    }}
+                    className={
+                      isSender
+                        ? "bg-[#1D8751] text-white rounded-lg px-2.5 py-1 max-w-[85%] sm:max-w-xs min-w-[100px] sm:min-w-[120px]"
+                        : "bg-gray-200 dark:bg-[#35353E] text-gray-900 dark:text-white rounded-lg px-2.5 py-1 max-w-[85%] sm:max-w-xs min-w-[100px] sm:min-w-[120px]"
+                    }
+                  >
                   {/* Show sender username - "You" for own messages, username for their messages */}
                   <div className={`text-xs font-semibold mb-0 ${isSender ? "text-green-100" : "text-gray-900 dark:text-white"}`}>
                     {isSender ? "You" : displayName}
@@ -1268,6 +1449,62 @@ export const Chats: React.FC = () => {
                   <div className="text-[10px] opacity-75 text-right mt-0">
                     {msg.timestamp ? formatTimestamp(msg.timestamp) : ""}
                   </div>
+                  </div>
+
+                  {/* Delete icon (hover/long-press) */}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setDeleteMenu({
+                        entityId: selectedUser.entity_id,
+                        messageId: String(msg?.id ?? ""),
+                        isSender,
+                      })
+                    }
+                    className="absolute -top-2 -right-2 hidden sm:flex opacity-0 group-hover:opacity-100 transition-opacity items-center justify-center w-7 h-7 rounded-full bg-white/90 dark:bg-[#23232B] border border-[#E3E6F0] dark:border-[#35353E] shadow-sm"
+                    aria-label="Delete message"
+                  >
+                    <svg viewBox="0 0 24 24" className="w-4 h-4 text-gray-600 dark:text-[#8B90A5]" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 6h18M8 6V4h8v2m-1 0v14a2 2 0 01-2 2H9a2 2 0 01-2-2V6h10z" />
+                    </svg>
+                  </button>
+
+                  {/* Delete menu */}
+                  {deleteMenu &&
+                    deleteMenu.entityId === selectedUser.entity_id &&
+                    deleteMenu.messageId === String(msg?.id ?? "") && (
+                      <div
+                        className={`absolute z-50 mt-2 ${
+                          isSender ? "right-0" : "left-0"
+                        }`}
+                      >
+                        <div className="w-52 rounded-xl border border-[#E3E6F0] dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] shadow-xl overflow-hidden">
+                          <button
+                            type="button"
+                            className="w-full px-3 py-2 text-left text-sm text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-[#23232B]"
+                            onClick={() => handleDeleteMessage(msg, "delete_for_me")}
+                          >
+                            Delete for me
+                          </button>
+                          {(isSender || isAdminUser) && (
+                            <button
+                              type="button"
+                              className="w-full px-3 py-2 text-left text-sm text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-[#23232B]"
+                              onClick={() => handleDeleteMessage(msg, "delete_for_everyone")}
+                            >
+                              Delete for everyone
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            className="w-full px-3 py-2 text-left text-sm text-gray-600 dark:text-[#8B90A5] hover:bg-gray-50 dark:hover:bg-[#23232B]"
+                            onClick={() => setDeleteMenu(null)}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
                 </div>
               </div>
               </React.Fragment>
@@ -1403,6 +1640,23 @@ export const Chats: React.FC = () => {
                     setSelectedUser(group);
                     // On mobile/tablet, show chat view when a conversation is selected
                     setShowChatView(true);
+                  }}
+                  onDeleteConversation={() => {
+                    const entityId = String(group?.entity_id ?? "");
+                    if (!entityId) return;
+                    setHiddenConversationIds((prev) => {
+                      const next = new Set(prev);
+                      next.add(entityId);
+                      persistHiddenConversations(next);
+                      return next;
+                    });
+                    // If deleting the currently open conversation, close it.
+                    setSelectedUser((prev) => {
+                      if (!prev) return prev;
+                      return String((prev as any).entity_id) === entityId ? null : prev;
+                    });
+                    setShowChatView(false);
+                    showToast.success("Conversation deleted");
                   }}
                 />
               );

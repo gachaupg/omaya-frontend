@@ -442,7 +442,13 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
             order.payment_details?.map(
               (detail: any) => detail.payment_method
             ) || [],
-          isMerchant: Boolean(order.is_merchant),
+          // Merchant ads should be driven by the backend verified flag when available.
+          // Fallback to older field names to avoid breaking if API response differs.
+          isMerchant: Boolean(
+            (order as any)?.is_verified_merchant ??
+              (order as any)?.is_merchant ??
+              (order as any)?.verified_merchant
+          ),
           isMerchantBusiness: Boolean(order.is_merchant_business),
           minAmount,
           maxAmount,

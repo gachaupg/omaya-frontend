@@ -241,6 +241,30 @@ const AddWalletAddressModal = ({
 
   const handleSendOtp = async () => {
     if (sendOtpLoading || verifyOtpLoading) return;
+    // Restriction: user must provide a valid address before requesting OTP
+    if (!selectedAssetTicker || !selectedNetwork) {
+      setOtpFeedback({ type: "error", text: "Please select an asset and network first." });
+      return;
+    }
+    if (!address.trim()) {
+      setOtpFeedback({ type: "error", text: "Please enter a wallet address first." });
+      return;
+    }
+    if (addressAlreadyExists) {
+      setOtpFeedback({ type: "error", text: "This wallet address is already saved." });
+      return;
+    }
+    if (isValidating) {
+      setOtpFeedback({ type: "error", text: "Please wait for address validation to complete." });
+      return;
+    }
+    if (!addressIsValid) {
+      setOtpFeedback({
+        type: "error",
+        text: validationResult?.message || "Please enter a valid wallet address before requesting OTP.",
+      });
+      return;
+    }
     setOtpFeedback(null);
     setSendOtpLoading(true);
     try {
@@ -250,9 +274,16 @@ const AddWalletAddressModal = ({
       setOtp("");
       setOtpFeedback({ type: "success", text: "OTP sent to your email." });
     } catch (err: any) {
+      const data = err?.response?.data;
+      const message =
+        (typeof data?.message === "string" && data.message) ||
+        (typeof data?.error === "string" && data.error) ||
+        (typeof data?.detail === "string" && data.detail) ||
+        err?.message ||
+        "Failed to send OTP";
       setOtpFeedback({
         type: "error",
-        text: err?.message || "Failed to send OTP",
+        text: message,
       });
     } finally {
       setSendOtpLoading(false);
@@ -274,9 +305,16 @@ const AddWalletAddressModal = ({
       setOtpFeedback({ type: "success", text: "OTP verified." });
     } catch (err: any) {
       setOtpVerified(false);
+      const data = err?.response?.data;
+      const message =
+        (typeof data?.message === "string" && data.message) ||
+        (typeof data?.error === "string" && data.error) ||
+        (typeof data?.detail === "string" && data.detail) ||
+        err?.message ||
+        "Invalid OTP ,Try again later";
       setOtpFeedback({
         type: "error",
-        text: err?.message || "Invalid OTP",
+        text: message,
       });
     } finally {
       setVerifyOtpLoading(false);
@@ -511,7 +549,7 @@ const AddWalletAddressModal = ({
                 createPortal(
                   <div
                     ref={assetPortalRef}
-                    className="fixed z-[9999] bg-white dark:bg-[var(--card-color)] border border-[#E3E6F0] dark:border-[#2A2A35] rounded-xl shadow-xl"
+                    className="fixed z-[9999] bg-white dark:bg-[#18181D] border border-[#E3E6F0] dark:border-[#35353E] rounded-xl shadow-xl"
                     style={{
                       top: assetDropdownRect.top,
                       left: assetDropdownRect.left,
@@ -519,14 +557,14 @@ const AddWalletAddressModal = ({
                       minWidth: 280,
                     }}
                   >
-                    <div className="p-2 border-b border-[#E3E6F0] dark:border-[#2A2A35]">
+                    <div className="p-2 border-b border-[#E3E6F0] dark:border-[#35353E]">
                       <input
                         type="text"
                         placeholder="Search assets..."
                         value={assetSearch}
                         onChange={(e) => setAssetSearch(e.target.value)}
                         onClick={(e) => e.stopPropagation()}
-                        className="w-full bg-gray-50 dark:bg-[#23232B] border border-[#E3E6F0] dark:border-[#2A2A35] rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-[#5C6175] outline-none"
+                        className="w-full bg-gray-50 dark:bg-[#14141B] border border-[#E3E6F0] dark:border-[#35353E] rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-[#6E7081] outline-none focus:outline-none focus:ring-2 focus:ring-[#1D8751]/40"
                         autoFocus
                       />
                     </div>
@@ -570,10 +608,10 @@ const AddWalletAddressModal = ({
                                 setAssetDropdownOpen(false);
                                 setAssetSearch("");
                               }}
-                              className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-gray-50 dark:hover:bg-[#23232B] transition-colors ${
+                              className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-gray-50 dark:hover:bg-[#14141B] transition-colors ${
                                 selectedAssetTicker?.toUpperCase() ===
                                 a.ticker?.toUpperCase()
-                                  ? "bg-[#1D8751]/5"
+                                  ? "bg-gray-200 dark:bg-[#23232B]"
                                   : ""
                               }`}
                             >
@@ -597,7 +635,7 @@ const AddWalletAddressModal = ({
                               </div>
                               {selectedAssetTicker?.toUpperCase() ===
                                 a.ticker?.toUpperCase() && (
-                                <div className="w-2 h-2 rounded-full bg-[#1D8751] flex-shrink-0" />
+                                <div className="w-2 h-2 rounded-full bg-gray-500 dark:bg-[#8C8CA1] flex-shrink-0" />
                               )}
                             </div>
                           ))}
@@ -616,10 +654,10 @@ const AddWalletAddressModal = ({
                                   setAssetDropdownOpen(false);
                                   setAssetSearch("");
                                 }}
-                                className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-gray-50 dark:hover:bg-[#23232B] transition-colors ${
+                                className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-gray-50 dark:hover:bg-[#14141B] transition-colors ${
                                   selectedAssetTicker?.toUpperCase() ===
                                   a.ticker?.toUpperCase()
-                                    ? "bg-[#1D8751]/5"
+                                    ? "bg-gray-200 dark:bg-[#23232B]"
                                     : ""
                                 }`}
                               >
@@ -644,7 +682,7 @@ const AddWalletAddressModal = ({
                                 </div>
                                 {selectedAssetTicker?.toUpperCase() ===
                                   a.ticker?.toUpperCase() && (
-                                  <div className="w-2 h-2 rounded-full bg-[#1D8751] flex-shrink-0" />
+                                  <div className="w-2 h-2 rounded-full bg-gray-500 dark:bg-[#8C8CA1] flex-shrink-0" />
                                 )}
                               </div>
                             ))}
@@ -675,7 +713,7 @@ const AddWalletAddressModal = ({
                 >
                   {selectedNetwork ? (
                     <div className="flex items-center gap-2">
-                      <span className="bg-[#1D8751] text-white text-xs px-2 py-0.5 rounded-full">
+                      <span className="bg-gray-200 text-gray-900 dark:bg-[#23232B] dark:text-white text-xs px-2 py-0.5 rounded-full">
                         {selectedNetwork}
                       </span>
                     </div>
@@ -702,7 +740,7 @@ const AddWalletAddressModal = ({
                   createPortal(
                     <div
                       ref={networkPortalRef}
-                      className="fixed z-[9999] bg-white dark:bg-[var(--card-color)] border border-[#E3E6F0] dark:border-[#2A2A35] rounded-xl shadow-xl max-h-60 overflow-y-auto py-1"
+                      className="fixed z-[9999] bg-white dark:bg-[#18181D] border border-[#E3E6F0] dark:border-[#35353E] rounded-xl shadow-xl max-h-60 overflow-y-auto py-1"
                       style={{
                         top: networkDropdownRect.top,
                         left: networkDropdownRect.left,
@@ -717,10 +755,10 @@ const AddWalletAddressModal = ({
                           setSelectedNetwork(n.network);
                           setNetworkDropdownOpen(false);
                         }}
-                        className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-gray-50 dark:hover:bg-[#23232B] transition-colors ${
+                        className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-gray-50 dark:hover:bg-[#14141B] transition-colors ${
                           selectedNetwork?.toLowerCase() ===
                           n.network?.toLowerCase()
-                            ? "bg-[#1D8751]/5"
+                            ? "bg-gray-200 dark:bg-[#23232B]"
                             : ""
                         }`}
                       >
@@ -742,7 +780,7 @@ const AddWalletAddressModal = ({
                         </div>
                         {selectedNetwork?.toLowerCase() ===
                           n.network?.toLowerCase() && (
-                          <div className="w-2 h-2 rounded-full bg-[#1D8751] flex-shrink-0" />
+                          <div className="w-2 h-2 rounded-full bg-gray-500 dark:bg-[#8C8CA1] flex-shrink-0" />
                         )}
                       </div>
                     ))}
@@ -854,7 +892,16 @@ const AddWalletAddressModal = ({
                 <button
                   type="button"
                   onClick={handleSendOtp}
-                  disabled={sendOtpLoading || verifyOtpLoading}
+                  disabled={
+                    sendOtpLoading ||
+                    verifyOtpLoading ||
+                    !selectedAssetTicker ||
+                    !selectedNetwork ||
+                    !address.trim() ||
+                    addressAlreadyExists ||
+                    isValidating ||
+                    !addressIsValid
+                  }
                   className="shrink-0 px-3 py-2 rounded-lg border border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751]/10 transition-colors text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {sendOtpLoading ? "Sending..." : otpSent ? "Resend OTP" : "Send OTP"}

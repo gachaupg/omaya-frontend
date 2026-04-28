@@ -81,7 +81,6 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
   const [verifyOtpLoading, setVerifyOtpLoading] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
   const [otpFeedback, setOtpFeedback] = useState<{ type: "success" | "error"; text: string } | null>(null);
-  const [forexBrokerDropdownOpen, setForexBrokerDropdownOpen] = useState(false);
   const RESEND_COOLDOWN_SECONDS = 60;
   const autoSendPreviouslyEnabled = React.useMemo(
     () =>
@@ -99,19 +98,6 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
   useEffect(() => {
     setIsClient(true);
   }, []);
-
-  // Close the Forex broker dropdown when clicking outside
-  useEffect(() => {
-    if (!forexBrokerDropdownOpen) return;
-    const onMouseDown = (e: MouseEvent) => {
-      const target = e.target as HTMLElement | null;
-      if (!target) return;
-      const root = target.closest("[data-forex-broker-dropdown-root='true']");
-      if (!root) setForexBrokerDropdownOpen(false);
-    };
-    document.addEventListener("mousedown", onMouseDown);
-    return () => document.removeEventListener("mousedown", onMouseDown);
-  }, [forexBrokerDropdownOpen]);
 
   // Prevent body scroll when modal is open
   useEffect(() => {
@@ -758,96 +744,44 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                 <label className="block text-gray-900 dark:text-white text-sm mb-2">
                   FOREX Broker
                 </label>
-                <div className="relative" data-forex-broker-dropdown-root="true">
-                  <button
-                    type="button"
-                    onClick={() => setForexBrokerDropdownOpen((v) => !v)}
-                    disabled={publicMethodsLoading}
-                    className="w-full bg-white dark:bg-[#060913] text-gray-900 dark:text-white rounded-[14px] border border-[#E3E6F0] dark:border-[#2A2F40] px-3 sm:px-4 py-2.5 sm:py-3 focus:outline-none focus:ring-2 focus:ring-[#1D8751] text-sm flex items-center justify-between disabled:opacity-50"
-                  >
-                    <div className="flex items-center gap-2 min-w-0">
-                      {provider ? (
-                        <img
-                          src={(() => {
-                            const normalized = String(provider || "")
-                              .toLowerCase()
-                              .replace(/\s+/g, "");
-                            if (
-                              normalized === "fxprimus" ||
-                              normalized === "fxp" ||
-                              normalized.includes("fxprimus")
-                            ) {
-                              return getHighResAssetIcon({ ticker: "fxp" }, 72);
-                            }
-                            return "/default-provider-logo.svg";
-                          })()}
-                          alt={`${provider} logo`}
-                          className="w-6 h-6 rounded-full object-cover flex-shrink-0"
-                          onError={(e) => {
-                            e.currentTarget.src = "/default-provider-logo.svg";
-                          }}
-                        />
-                      ) : (
-                        <img
-                          src="/default-provider-logo.svg"
-                          alt="broker logo"
-                          className="w-6 h-6 rounded-full object-cover flex-shrink-0 opacity-70"
-                        />
-                      )}
-                      <span className="truncate">
-                        {provider ? provider : "Select broker"}
-                      </span>
-                    </div>
-                    <svg
-                      className={`w-5 h-5 text-gray-400 transition-transform ${forexBrokerDropdownOpen ? "rotate-180" : ""}`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
-
-                  {forexBrokerDropdownOpen && (
-                    <div className="absolute z-50 mt-2 w-full rounded-xl border border-[#E3E6F0] dark:border-[#2A2F40] bg-white dark:bg-[#060913] shadow-xl overflow-hidden">
-                      <div className="max-h-60 overflow-y-auto py-1">
-                        {providers.map((p: any, idx: number) => {
-                          const label = String(p?.provider || p?.provider_name || "").trim();
-                          if (!label) return null;
-                          const value = String(p?.provider_name || label);
-                          const normalized = value.toLowerCase().replace(/\s+/g, "");
-                          const logo =
-                            normalized === "fxprimus" || normalized === "fxp" || normalized.includes("fxprimus")
-                              ? getHighResAssetIcon({ ticker: "fxp" }, 72)
-                              : "/default-provider-logo.svg";
-                          const selected = provider === value;
-                          return (
-                            <button
-                              key={`${value}-${idx}`}
-                              type="button"
-                              onClick={() => {
-                                setProvider(value);
-                                setForexBrokerDropdownOpen(false);
-                              }}
-                              className={`w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-gray-50 dark:hover:bg-[#171C2A] transition-colors ${selected ? "bg-[#1D8751]/5" : ""}`}
-                            >
-                              <img
-                                src={logo}
-                                alt={`${value} logo`}
-                                className="w-6 h-6 rounded-full object-cover flex-shrink-0"
-                                onError={(e) => {
-                                  e.currentTarget.src = "/default-provider-logo.svg";
-                                }}
-                              />
-                              <span className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                                {label}
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
+                <div className="relative">
+                  <CustomSelect
+                    options={[
+                      { value: "", label: "Select broker" },
+                      ...providers.map((p: any, idx: number) => {
+                        const label = String(p?.provider || p?.provider_name || "").trim() || "Unknown";
+                        const value = String(p?.provider_name || p?.provider || label).trim();
+                        const normalized = value.toLowerCase().replace(/\s+/g, "");
+                        const logo =
+                          normalized === "fxprimus" ||
+                          normalized === "fxp" ||
+                          normalized.includes("fxprimus")
+                            ? getHighResAssetIcon({ ticker: "fxp" }, 72)
+                            : "/default-provider-logo.svg";
+                        return {
+                          value,
+                          label,
+                          logo,
+                          disabled: !value,
+                        };
+                      }),
+                    ]}
+                    value={provider}
+                    onChange={(value) => setProvider(String(value || ""))}
+                    disabled={publicMethodsLoading || providers.length === 0}
+                    searchable={true}
+                    emptyText="No brokers found"
+                    loading={publicMethodsLoading}
+                    loadingText="Loading brokers..."
+                    dropdownTitle="Select broker"
+                    sizeMode="card"
+                    logoSize={PAYMENT_LOGO_SIZE}
+                    logoClassName="rounded-full object-cover"
+                    className="w-full"
+                    triggerClassName="w-full p-3 rounded-[14px] bg-white dark:bg-[#060913] border border-[#E3E6F0] dark:border-[#2A2F40] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1D8751] text-sm"
+                    placeholderClassName="text-gray-500 dark:text-gray-400"
+                    largeDropdownItems={true}
+                  />
                 </div>
               </div>
               <div>

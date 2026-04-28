@@ -71,8 +71,23 @@ const P2PCharts = () => {
   const [mainTab, setMainTab] = useState<"p2p-buy-sell" | "p2p-withdrawal-deposit">("p2p-buy-sell");
   const [depositWithdrawTab, setDepositWithdrawTab] = useState<"all" | "deposit" | "withdrawal">("all");
   const [tableDateFilter, setTableDateFilter] = useState("ALL");
+  const [isHistoryDateOpen, setIsHistoryDateOpen] = useState(false);
+  const historyDateRef = useRef<HTMLDivElement>(null);
   const [showExportOptions, setShowExportOptions] = useState(false);
   const tableExportRef = useRef<TableExportRef>(null);
+
+  // Close P2P History date dropdown on outside click
+  useEffect(() => {
+    const onDown = (e: MouseEvent) => {
+      if (!isHistoryDateOpen) return;
+      const target = e.target as Node;
+      if (historyDateRef.current && !historyDateRef.current.contains(target)) {
+        setIsHistoryDateOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [isHistoryDateOpen]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -252,16 +267,46 @@ const P2PCharts = () => {
           <h3 className="text-base font-semibold dark:text-white text-gray-900 sm:mr-2">
             P2P History
           </h3>
-          <div className="relative">
-            <select
-              value={tableDateFilter}
-              onChange={(e) => setTableDateFilter(e.target.value)}
-              className="px-3 py-2 rounded-xl text-sm font-medium bg-[#E6E7EC] dark:bg-[var(--bg-color)] text-gray-900 dark:text-white border-none outline-none focus:ring-0"
+          <div className="relative" ref={historyDateRef}>
+            <button
+              type="button"
+              onClick={() => setIsHistoryDateOpen((p) => !p)}
+              className="px-3 py-2 rounded-lg sm:rounded-[22px] text-sm font-semibold bg-gray-100 dark:bg-[#18181D] text-gray-900 dark:text-white border border-gray-200 dark:border-[#35353E] outline-none focus:outline-none focus:ring-2 focus:ring-[#1D8751]/50 hover:border-[#1D8751] hover:bg-gray-50 dark:hover:bg-[#14141B] transition-colors inline-flex items-center gap-1"
             >
-              {["ALL", "Today", "Week", "Month", "Year"].map((opt) => (
-                <option key={opt} value={opt}>{opt}</option>
-              ))}
-            </select>
+              <span className="whitespace-nowrap">{tableDateFilter}</span>
+              <svg
+                className={`w-4 h-4 text-gray-500 dark:text-[#788099] transition-transform ${isHistoryDateOpen ? "rotate-180" : ""}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            {isHistoryDateOpen && (
+              <div className="absolute left-0 top-full mt-2 w-full min-w-[140px] rounded-lg sm:rounded-2xl bg-white dark:bg-[#18181D] shadow-2xl z-20 py-1 border border-gray-200 dark:border-[#35353E]">
+                {["ALL", "Today", "Week", "Month", "Year"].map((opt) => {
+                  const selected = tableDateFilter === opt;
+                  return (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => {
+                        setTableDateFilter(opt);
+                        setIsHistoryDateOpen(false);
+                      }}
+                      className={`w-full px-3 py-2 text-left text-sm font-medium transition-colors ${
+                        selected
+                          ? "bg-gray-200 text-gray-900 dark:bg-[#23232B] dark:text-white"
+                          : "text-gray-700 dark:text-[#C7CAD1] hover:bg-gray-50 dark:hover:bg-[#14141B]"
+                      }`}
+                    >
+                      {opt}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
           <div className="relative w-full sm:w-56">
             <input

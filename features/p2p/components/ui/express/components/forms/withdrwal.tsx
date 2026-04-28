@@ -2490,7 +2490,7 @@ export default function WithdrawalForm({
                             "Unknown"
                           ).toUpperCase()}
                         </span>
-                        <span className="ml-2 bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
+                        <span className="ml-2 bg-gray-200 dark:bg-[#23232B] text-gray-900 dark:text-white text-xs font-semibold px-2 py-0.5 rounded-full border border-[#E3E6F0] dark:border-[#35353E]">
                           {selectedAsset.network || "Unknown"}
                         </span>
                       </>
@@ -2534,7 +2534,7 @@ export default function WithdrawalForm({
                         sortedSwapAssets.map((asset: any, index: number) => (
                           <div
                             key={`${asset.asset_id}-${asset.ticker}-${asset.network}-${index}`}
-                            className="flex items-center gap-3 p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E] last:border-b-0"
+                            className="flex items-center gap-3 p-3 text-black dark:text-white hover:bg-gray-50 dark:hover:bg-[#23232B] cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E] last:border-b-0"
                             onClick={() => {
                               logger.debug('p2p', "Asset selected:", asset);
 
@@ -2589,7 +2589,7 @@ export default function WithdrawalForm({
                                   asset.name ||
                                   "Unknown"
                                 ).toUpperCase()}
-                                <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
+                                <span className="bg-gray-200 dark:bg-[#23232B] text-gray-900 dark:text-white text-xs font-semibold px-2 py-0.5 rounded-full border border-[#E3E6F0] dark:border-[#35353E]">
                                   {asset.network || "Unknown"}
                                 </span>
                               </div>
@@ -2606,7 +2606,7 @@ export default function WithdrawalForm({
                               </div>
                             </div>
                             {selectedAsset?.asset_id === asset.asset_id && (
-                              <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
+                              <div className="w-2 h-2 rounded-full border border-[#A2A4A9FF] dark:border-[#35353E] bg-transparent"></div>
                             )}
                           </div>
                         ))
@@ -2628,7 +2628,7 @@ export default function WithdrawalForm({
               </label>
               <div className="relative" ref={networkDropdownRef}>
                 <div
-                  className="w-full text-[#35353e] dark:bg-[var(--card-color)] dark:text-[#ffffff] rounded-xl sm:rounded-2xl px-3 sm:px-4 py-2.5 sm:py-2 text-sm sm:text-lg focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] flex items-center justify-between cursor-pointer hover:border-[#1D8751] dark:hover:border-[#1D8751] transition-colors min-h-[44px] sm:min-h-0"
+                  className="w-full text-[#35353e] dark:bg-[var(--card-color)] dark:text-[#ffffff] rounded-xl sm:rounded-2xl px-3 sm:px-4 py-2.5 sm:py-2 text-sm sm:text-lg focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] flex items-center justify-between cursor-pointer hover:border-[#A2A4A9FF] dark:hover:border-[#35353E] transition-colors min-h-[44px] sm:min-h-0"
                   onClick={() =>
                     setIsNetworkDropdownOpen(!isNetworkDropdownOpen)
                   }
@@ -2660,56 +2660,46 @@ export default function WithdrawalForm({
 
                 {/* Network Dropdown */}
                 {isNetworkDropdownOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[var(--card-color)] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-xl sm:rounded-2xl shadow-lg z-50 max-h-[60vh] sm:max-h-60 overflow-y-auto">
-                    <div className="p-2">
-                      {availableNetworks.map((network, index) => (
-                        <div
-                          key={`${network.network_id}-${index}`}
-                          className={`flex items-center gap-3 p-2 sm:p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer rounded-xl transition-colors min-h-[44px] sm:min-h-0 ${selectedNetwork?.network_id === network.network_id
-                            ? "bg-[#1D8751]/10 dark:bg-[#1D8751]/20 border border-[#1D8751]/30"
-                            : ""
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-[#ffffff] dark:bg-[var(--card-color)] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-xl sm:rounded-2xl z-50 max-h-[60vh] sm:max-h-80 overflow-hidden">
+                    <div className="max-h-60 overflow-y-auto">
+                      {availableNetworks.map((network, index) => {
+                        const selected =
+                          selectedNetwork?.network_id === network.network_id;
+                        return (
+                          <div
+                            key={`${network.network_id}-${index}`}
+                            className={`flex items-center gap-3 p-3 text-black dark:text-white hover:bg-gray-50 dark:hover:bg-[#23232B] cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E] last:border-b-0 ${
+                              selected ? "bg-gray-100 dark:bg-[#23232B]" : ""
                             }`}
-                          onClick={() => {
-                            setSelectedNetwork(network);
-                            setIsNetworkDropdownOpen(false);
-                          }}
-                        >
-                          <img
-                            src={network.icon}
-                            alt={`${network.name} icon`}
-                            className="w-6 h-6"
-                          />
-                          <div className="flex-1">
-                            <div className="font-medium text-[#35353e] dark:text-[#ffffff]">
-                              {network.name}
+                            onClick={() => {
+                              setSelectedNetwork(network);
+                              setIsNetworkDropdownOpen(false);
+                            }}
+                          >
+                            <img
+                              src={network.icon}
+                              alt={`${network.name} icon`}
+                              className="w-6 h-6"
+                            />
+                            <div className="flex-1">
+                              <div className="font-medium text-[#35353e] dark:text-[#ffffff]">
+                                {network.name}
+                              </div>
+                              <div className="text-sm text-[#7e7e8f] dark:text-[#788099]">
+                                {network.network_id}
+                              </div>
                             </div>
-                            <div className="text-sm text-[#7e7e8f] dark:text-[#788099]">
-                              {network.network_id}
-                            </div>
-                          </div>
-                          {network.isDefault && (
-                            <span className="text-xs bg-[#1D8751] text-white px-2 py-1 rounded-full">
-                              Default
-                            </span>
-                          )}
-                          {selectedNetwork?.network_id ===
-                            network.network_id && (
-                              <svg
-                                className="w-5 h-5 text-[#1D8751]"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M5 13l4 4L19 7"
-                                />
-                              </svg>
+                            {network.isDefault && (
+                              <span className="text-xs bg-gray-200 dark:bg-[#23232B] text-gray-900 dark:text-white px-2 py-1 rounded-full border border-[#E3E6F0] dark:border-[#35353E]">
+                                Default
+                              </span>
                             )}
-                        </div>
-                      ))}
+                            {selected && (
+                              <div className="w-2 h-2 rounded-full border border-[#A2A4A9FF] dark:border-[#35353E] bg-transparent" />
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -2918,7 +2908,7 @@ export default function WithdrawalForm({
                     }
                   }}
                   placeholder="Amount after fee"
-                  className={`w-full text-[#35353e] dark:bg-[var(--card-color)] dark:text-[#ffffff] rounded-xl sm:rounded-2xl px-3 sm:px-4 py-2.5 sm:py-2 pr-16 sm:pr-20 text-sm sm:text-lg focus:outline-none border appearance-none min-h-[44px] sm:min-h-0 border-[#A2A4A9FF] dark:border-[#35353E]`}
+                  className={`w-full bg-white text-[#111827] dark:bg-[var(--card-color)] dark:text-white rounded-xl sm:rounded-2xl px-3 sm:px-4 py-2.5 sm:py-2 pr-16 sm:pr-20 text-sm sm:text-lg focus:outline-none border appearance-none min-h-[44px] sm:min-h-0 border-[#A2A4A9FF] dark:border-[#35353E]`}
                 />
                 <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                   <span className="text-[#35353e] dark:text-[#ffffff] text-sm font-medium">

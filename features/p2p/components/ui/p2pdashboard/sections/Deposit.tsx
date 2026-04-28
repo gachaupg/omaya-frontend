@@ -19,7 +19,7 @@ import {
   type Network,
   type WalletType,
 } from "@/features/p2p/types";
-import Select from "../../../Common/Select";
+import CustomSelect from "@/components/ui/CustomSelect";
 import { fetchAssets } from "@/features/p2p/slices/assetsSlice";
 import { RootState } from "@/store/rootReducer";
 import { useRouter } from "next/navigation";
@@ -165,54 +165,48 @@ const Deposit: React.FC = () => {
               <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
                 Asset
               </label>
-              <div className="relative w-full">
-                {selectedAsset?.asset_image && (
-                  <img
-                    src={selectedAsset.asset_image}
-                    alt={selectedAsset.symbol}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full object-contain"
-                  />
-                )}
-                <Select
-                  options={assetOptions}
-                  value={selectedAssetId}
-                  onChange={(e) => {
-                    setSelectedAssetId(e.target.value);
-                    setSelectedNetworkId("");
-                  }}
-                  placeholder="Select Asset"
-                  className="w-full h-[24px] pl-12 rounded-[19px] text-base pr-10"
-                  style={{ minHeight: 46 , appearance: "none", background: "transparent" }}
-                />
-                 {/* Custom filled arrow */}
-                <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 flex items-center">
-                  <svg width="20" height="20" fill="#ACACAC" viewBox="0 0 24 24">
-                    <path d="M7 10l5 5 5-5" />
-                  </svg>
-                </span> 
-              </div>
+              <CustomSelect
+                options={[
+                  { value: "", label: "Select Asset" },
+                  ...assetOptions.map((o) => ({
+                    value: o.value,
+                    label: o.label,
+                    logo: "/images/tether.svg",
+                  })),
+                ]}
+                value={selectedAssetId}
+                onChange={(val) => {
+                  setSelectedAssetId(String(val || ""));
+                  setSelectedNetworkId("");
+                }}
+                searchable={false}
+                sizeMode="card"
+                logoSize={24}
+                logoClassName="rounded-full object-cover"
+                placeholderClassName="text-gray-500 dark:text-gray-400"
+                triggerClassName="w-full h-[46px] rounded-[19px] pr-10"
+              />
             </div>
             <div className="flex-1 flex flex-col">
               <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
                 Network
               </label>
-              <div className="relative w-full">
-                <Select
-                options={networkOptions}
+              <CustomSelect
+                options={[
+                  { value: "", label: "Select Network" },
+                  ...networkOptions.map((o) => ({
+                    value: o.value,
+                    label: o.label,
+                  })),
+                ]}
                 value={selectedNetworkId}
-                onChange={(e) => setSelectedNetworkId(e.target.value)}
-                placeholder="Select Network"
-                className="w-full h-[24px] rounded-[19px] text-base pr-10"
-                style={{ minHeight: 46, appearance: "none", background: "transparent" }}
+                onChange={(val) => setSelectedNetworkId(String(val || ""))}
                 disabled={!selectedAssetId}
+                searchable={false}
+                sizeMode="card"
+                placeholderClassName="text-gray-500 dark:text-gray-400"
+                triggerClassName="w-full h-[46px] rounded-[19px] pr-10"
               />
-                {/* Custom filled arrow */}
-              <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 flex items-center">
-                <svg width="20" height="20" fill="#ACACAC" viewBox="0 0 24 24">
-                  <path d="M7 10l5 5 5-5" />
-                </svg>
-              </span>
-              </div>
             </div>
           </div>
 

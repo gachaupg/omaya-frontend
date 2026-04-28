@@ -5,7 +5,7 @@ import { useSwapHistory } from "@/features/swap/hooks/useSwapHistory";
 import { SwapTransaction } from "@/features/swap/types";
 import { useDashboardI18n } from "@/lib/useDashboardI18n";
 import { SortArrowsIcon } from "@/components/ui/SortArrowsIcon";
-import { getHighResAssetIcon } from "@/features/express/utils/imageHelpers";
+import { getDefaultAssetIcon, getHighResAssetIcon } from "@/features/express/utils/imageHelpers";
 
 const getStatusColor = (status: string) => {
   switch (status.toLowerCase()) {
@@ -39,6 +39,15 @@ const formatShortId = (value: unknown): string => {
   if (!s) return "-";
   if (s.length <= 6) return s;
   return `${s.slice(0, 3)}...${s.slice(-3)}`;
+};
+
+const safeImgUrl = (value: unknown): string | undefined => {
+  const s = String(value ?? "").trim();
+  return s ? s : undefined;
+};
+
+const assetImgSrc = (ticker: unknown, remoteUrl: unknown): string => {
+  return safeImgUrl(remoteUrl) || getHighResAssetIcon({ ticker: String(ticker ?? "") }) || getDefaultAssetIcon();
 };
 
 const SwapTransactions = () => {
@@ -128,11 +137,14 @@ const SwapTransactions = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <img
-                  src={getHighResAssetIcon({ ticker: transaction.from_currency })}
+                  src={assetImgSrc(transaction.from_currency, (transaction as any).from_currency_image)}
                   alt={transaction.from_currency}
                   className="w-10 h-10 rounded-full flex-shrink-0"
                   onError={(e) => {
-                    e.currentTarget.src = "/images/placeholder.svg";
+                    const img = e.currentTarget;
+                    if (img.dataset.fallbackApplied === "1") return;
+                    img.dataset.fallbackApplied = "1";
+                    img.src = getDefaultAssetIcon();
                   }}
                 />
                 <div>
@@ -223,11 +235,14 @@ const SwapTransactions = () => {
                 <td className="py-3 sm:py-4 px-3 sm:px-4">
                   <div className="flex items-center gap-2 min-w-0">
                     <img
-                      src={getHighResAssetIcon({ ticker: transaction.from_currency })}
+                      src={assetImgSrc(transaction.from_currency, (transaction as any).from_currency_image)}
                       alt={transaction.from_currency}
                       className="w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover flex-shrink-0"
                       onError={(e) => {
-                        e.currentTarget.src = "/images/placeholder.svg";
+                        const img = e.currentTarget;
+                        if (img.dataset.fallbackApplied === "1") return;
+                        img.dataset.fallbackApplied = "1";
+                        img.src = getDefaultAssetIcon();
                       }}
                     />
                     <div className="text-[#0D0D0D] dark:text-white font-medium text-xs sm:text-sm lg:text-base truncate">
@@ -240,11 +255,14 @@ const SwapTransactions = () => {
                 <td className="py-3 sm:py-4 px-3 sm:px-4">
                   <div className="flex items-center gap-2 min-w-0">
                     <img
-                      src={getHighResAssetIcon({ ticker: transaction.to_currency })}
+                      src={assetImgSrc(transaction.to_currency, (transaction as any).to_currency_image)}
                       alt={transaction.to_currency}
                       className="w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover flex-shrink-0"
                       onError={(e) => {
-                        e.currentTarget.src = "/images/placeholder.svg";
+                        const img = e.currentTarget;
+                        if (img.dataset.fallbackApplied === "1") return;
+                        img.dataset.fallbackApplied = "1";
+                        img.src = getDefaultAssetIcon();
                       }}
                     />
                     <div className="text-[#0D0D0D] dark:text-white font-medium text-xs sm:text-sm lg:text-base truncate">

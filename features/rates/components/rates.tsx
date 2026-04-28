@@ -51,11 +51,18 @@ const Rates = () => {
 
   React.useEffect(() => {
     if (typeof window === "undefined") return;
-    // If no active transaction flow, clear stale persisted form states.
+    // If no active transaction flow AND no saved form progress, clear stale persisted form states.
+    // This must NOT wipe guest->login restore flows (MoneyXRates persists form progress intentionally).
     const hasActiveTx =
       !!window.localStorage.getItem("express_transaction_data") ||
       !!window.localStorage.getItem("moneyx_transaction_data");
-    if (!hasActiveTx) {
+    const hasSavedProgress =
+      !!window.localStorage.getItem("moneyx_form_state") ||
+      !!window.localStorage.getItem(RATES_MONEYX_FORM_STATE_KEY) ||
+      !!window.localStorage.getItem("rates_calculator_state") ||
+      !!window.localStorage.getItem("rates_calculator_payment_detail");
+
+    if (!hasActiveTx && !hasSavedProgress) {
       window.localStorage.removeItem("moneyx_form_state");
       window.localStorage.removeItem(RATES_MONEYX_FORM_STATE_KEY);
       window.localStorage.removeItem("rates_calculator_state");
