@@ -67,6 +67,7 @@ const AddWalletAddressModal = ({
   const [assetDropdownRect, setAssetDropdownRect] = useState<{ top: number; left: number; width: number } | null>(null);
   const [networkDropdownRect, setNetworkDropdownRect] = useState<{ top: number; left: number; width: number } | null>(null);
   const [assetLoadTimedOut, setAssetLoadTimedOut] = useState(false);
+  const [assetFetchStarted, setAssetFetchStarted] = useState(false);
 
   // Merge swap-supported assets with exchange assets (same list used by dashboard),
   // so assets like FXP/FXPRIMUS show in this dropdown too.
@@ -109,6 +110,10 @@ const AddWalletAddressModal = ({
     const swap = supportedAssets ?? [];
     return [...swap, ...exchangeAssetsFlat];
   }, [supportedAssets, exchangeAssetsFlat]);
+  const hasSwapAssets = Array.isArray(supportedAssets) && supportedAssets.length > 0;
+  const hasExchangeAssets =
+    Array.isArray(exchangeAssetsResponse?.assets) &&
+    exchangeAssetsResponse.assets.length > 0;
 
   // Deduplicate assets by ticker for the asset dropdown (networks shown separately)
   const uniqueAssets = useMemo(() => {
@@ -157,17 +162,41 @@ const AddWalletAddressModal = ({
   });
 
   useEffect(() => {
-    if (open && allAssets.length === 0 && !swapLoading) {
-      setAssetLoadTimedOut(false);
+    if (!open) return;
+    // Reset lazy-fetch guard on every modal open
+    setAssetFetchStarted(false);
+    setAssetLoadTimedOut(false);
+  }, [open]);
+
+  // Lazy fetching: fetch assets only when user opens the Asset dropdown.
+  // This avoids loading "everything" immediately when the modal opens.
+  useEffect(() => {
+    if (!open || !assetDropdownOpen) return;
+    if (assetFetchStarted) return;
+
+    const needsSwapAssets = !hasSwapAssets;
+    const needsExchangeAssets = !hasExchangeAssets;
+    if (!needsSwapAssets && !needsExchangeAssets) return;
+
+    setAssetFetchStarted(true);
+
+    // Prefer cached Redux data for instant dropdown rendering.
+    // Only fetch when cache is empty to avoid loading flicker on every open.
+    if (needsSwapAssets && !swapLoading) {
       dispatch(fetchSupportedAssets(false) as any);
     }
-  }, [open, allAssets.length, swapLoading, dispatch]);
-
-  useEffect(() => {
-    if (open) {
+    if (needsExchangeAssets) {
       dispatch(fetchAssets(false) as any);
     }
-  }, [open, dispatch]);
+  }, [
+    open,
+    assetDropdownOpen,
+    assetFetchStarted,
+    hasSwapAssets,
+    hasExchangeAssets,
+    swapLoading,
+    dispatch,
+  ]);
 
   useEffect(() => {
     if (open) {
@@ -177,13 +206,19 @@ const AddWalletAddressModal = ({
 
   // Timeout: if loading for 8+ seconds with no assets, show retry
   useEffect(() => {
-    if (!open || !swapLoading || allAssets.length > 0) {
+    if (
+      !open ||
+      !assetDropdownOpen ||
+      !assetFetchStarted ||
+      !swapLoading ||
+      allAssets.length > 0
+    ) {
       setAssetLoadTimedOut(false);
       return;
     }
     const timer = setTimeout(() => setAssetLoadTimedOut(true), 5000);
     return () => clearTimeout(timer);
-  }, [open, swapLoading, allAssets.length]);
+  }, [open, assetDropdownOpen, assetFetchStarted, swapLoading, allAssets.length]);
 
   useEffect(() => {
     setSelectedNetwork("");

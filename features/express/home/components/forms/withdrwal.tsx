@@ -2982,9 +2982,15 @@ export default function WithdrawalForm({
         left = minMargin;
       }
 
-      // Ensure it doesn't go off screen on the right by shrinking width (not shifting left)
-      const maxAllowedWidth = viewportWidth - left - minMargin;
-      desiredWidth = Math.max(0, Math.min(desiredWidth, maxAllowedWidth));
+      // Keep dropdown aligned to the right side and inside viewport/card.
+      desiredWidth = Math.max(0, Math.min(desiredWidth, viewportWidth - minMargin * 2));
+      if (left + desiredWidth > viewportWidth - minMargin) {
+        left = Math.max(minMargin, viewportWidth - desiredWidth - minMargin);
+      }
+      if (left < cardRect.left) left = cardRect.left;
+      if (left + desiredWidth > cardRect.right) {
+        left = Math.max(cardRect.left, cardRect.right - desiredWidth);
+      }
 
       dropdownStyle = {
         position: "fixed",

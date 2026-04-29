@@ -463,7 +463,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
           <div
             id={dropdownId}
             ref={dropdownContentRef}
-            className="z-[9999] bg-white dark:bg-[var(--card-color)] border border-border dark:border-accent rounded-2xl shadow-xl overflow-hidden"
+            className="z-[9999] bg-white dark:bg-[#1D1D23] border border-border dark:border-accent rounded-2xl shadow-xl overflow-hidden"
             role="listbox"
             style={{
               position: "fixed",
@@ -484,7 +484,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Search options..."
-                  className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-[#35353E]/40 focus:border-[#35353E] text-gray-900 dark:text-white"
+                  className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm bg-gray-50 dark:bg-[#23232B] border border-gray-300 dark:border-[#35353E] rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-[#35353E]/40 focus:border-[#35353E] text-gray-900 dark:text-white"
                 />
               </div>
             )}
