@@ -253,7 +253,7 @@ const DepositForm: React.FC<DepositFormProps> = ({
             currentAdminPaymentDetails.length > 0 &&
             selectedProvider && (
               <div className="mt-4 border border-[#35353E] rounded-xl p-4 bg-[#18181D]">
-                <h3 className="text-lg font-semibold text-white mb-4">
+                <h3 className="text-sm font-semibold text-white mb-4">
                   Account Details for {selectedProvider.provider_name}
                 </h3>
                 {currentAdminPaymentDetails

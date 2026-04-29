@@ -413,8 +413,8 @@ const FaceDetectionKYC: React.FC<FaceDetectionKYCProps> = ({
       </div>
 
       {/* Circular Video and Canvas */}
-      <div className="relative flex justify-center items-center mb-6">
-        <div className={`relative w-[350px] h-[350px] rounded-full overflow-hidden border-4 transition-colors ${
+      <div className="relative flex justify-center items-center mb-6 w-full px-3">
+        <div className={`relative w-[min(280px,90vw)] sm:w-[320px] md:w-[350px] aspect-square rounded-full overflow-hidden border-4 transition-colors ${
           isVerified
             ? 'border-[#4CAF50] shadow-[0_0_30px_rgba(76,175,80,0.9)]'
             : isFaceValid && faceCount === 1 

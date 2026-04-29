@@ -1160,7 +1160,7 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
           <div className="relative flex flex-col sm:flex-row border border-border dark:border-[#35353E] rounded-xl sm:rounded-2xl p-2 sm:p-3 md:p-4 overflow-visible gap-2 sm:gap-3 md:gap-0 bg-white dark:bg-[#18181D]">
             {/* Amount Section */}
             <div className="flex-1 sm:pr-4">
-              <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
+              <label className="block text-sm text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
                 {t("express.youSend", "You Send")}
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
               </label>
@@ -1183,7 +1183,7 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
               data-select-card="true"
               className="flex-1 sm:pl-4 border-t sm:border-t-0 sm:border-l border-border dark:border-[#35353E] pt-3 sm:pt-0 sm:border-none"
             >
-              <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
+              <label className="block text-sm text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
                 {t("express.paymentMethod", "Payment Method")}
                 <div className="w-2 h-2 opacity-0"></div>
               </label>
@@ -1264,7 +1264,7 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
           <div className="relative flex flex-col sm:flex-row border border-border dark:border-[#35353E] rounded-xl sm:rounded-2xl p-2 sm:p-3 md:p-4 overflow-visible gap-2 sm:gap-3 md:gap-0 bg-white dark:bg-[#18181D]">
             {/* You Receive Section */}
             <div className="flex-1 sm:pr-4">
-              <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
+              <label className="block text-sm text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
                 {t("express.youReceive", "You Receive")}
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
                 {!isCalculatingFromPay && (
@@ -1289,7 +1289,7 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
 
             {/* To Payment Method Section */}
             <div className="flex-1 sm:pl-4 border-t sm:border-t-0 sm:border-l border-border dark:border-[#35353E] pt-3 sm:pt-0 sm:border-none">
-              <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
+              <label className="block text-sm text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
                 {t("express.paymentMethod", "Payment Method")}
                 <div className="w-2 h-2 opacity-0"></div>
                 {!isCalculatingFromPay && (
@@ -1482,7 +1482,7 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
             className="flex flex-col bg-white dark:bg-[#18181D] border-2 border-border dark:border-[#35353E] rounded-2xl p-3 sm:p-4 md:p-5 shadow-lg w-full text-[#35353e] dark:text-[#788099] mb-4 sm:mb-6"
           >
             {/* Dynamic Address Label */}
-            <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
+            <label className="block text-sm text-[#7e7e8f] mb-2 font-semibold">
               {isMobileMethod(selectedToPaymentDetail)
                 ? `${getProviderName(selectedToPaymentDetail)} Number`
                 : `${getProviderName(selectedToPaymentDetail)} Account Number`}

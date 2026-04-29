@@ -225,20 +225,26 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
     }
 
     if (sizeMode === "card") {
+      const cardMargin = 6; // allow closer-to-edge alignment in card layouts (helps at browser zoom)
       // For card mode, match the trigger width exactly (not bigger)
       const triggerWidth = rect.width;
 
       const canUseCardWidth = dropdownWidthMode === "card" && !!cardRect;
       // Use trigger width by default; optionally match the full card width.
       let dropdownWidth = canUseCardWidth ? cardRect!.width : triggerWidth;
+      // Give card dropdowns a tiny bit of extra room (helps at browser zoom levels)
+      // while still clamping within the viewport below.
+      if (!canUseCardWidth) {
+        dropdownWidth = dropdownWidth + 12;
+      }
 
       // Ensure the dropdown doesn't exceed viewport width
       if (viewportWidth) {
-        const maxWidth = viewportWidth - minMargin * 2;
+        const maxWidth = viewportWidth - cardMargin * 2;
         dropdownWidth = Math.min(dropdownWidth, maxWidth);
-        // When matching trigger width, never exceed it.
+        // When matching trigger width, never exceed it (except the small +12px offset above).
         if (!canUseCardWidth) {
-          dropdownWidth = Math.min(dropdownWidth, triggerWidth);
+          dropdownWidth = Math.min(dropdownWidth, triggerWidth + 12);
         }
       }
 
@@ -247,15 +253,23 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
 
       // Ensure dropdown doesn't go off screen
       if (viewportWidth) {
-        if (leftPosition + dropdownWidth > viewportWidth - minMargin) {
-          leftPosition = Math.max(minMargin, viewportWidth - dropdownWidth - minMargin);
+        if (leftPosition + dropdownWidth > viewportWidth - cardMargin) {
+          // Prefer aligning the dropdown's RIGHT edge with the trigger/card RIGHT edge,
+          // then clamp within the viewport. This prevents a visible right-side gap
+          // when the dropdown is forced to shift left (common with browser zoom).
+          const anchorRight = canUseCardWidth ? cardRect!.right : rect.right;
+          leftPosition = anchorRight - dropdownWidth;
+          leftPosition = Math.min(
+            Math.max(cardMargin, leftPosition),
+            Math.max(cardMargin, viewportWidth - dropdownWidth - cardMargin)
+          );
         }
-        if (leftPosition < minMargin) {
-          leftPosition = minMargin;
-          dropdownWidth = Math.min(dropdownWidth, viewportWidth - minMargin * 2);
+        if (leftPosition < cardMargin) {
+          leftPosition = cardMargin;
+          dropdownWidth = Math.min(dropdownWidth, viewportWidth - cardMargin * 2);
           // Still ensure it doesn't exceed trigger width (trigger mode only)
           if (!canUseCardWidth) {
-            dropdownWidth = Math.min(dropdownWidth, triggerWidth);
+            dropdownWidth = Math.min(dropdownWidth, triggerWidth + 12);
           }
         }
       }
@@ -267,7 +281,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
         const dropdownHeight = dropdownMaxHeight || 300;
         topPosition = rect.top - dropdownHeight - 4 + verticalOffset;
         // If it would go above viewport, position it below instead
-        if (topPosition < minMargin) {
+        if (topPosition < cardMargin) {
           topPosition = rect.bottom + 4 + verticalOffset;
         }
       } else {
