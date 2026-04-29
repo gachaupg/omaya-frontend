@@ -198,25 +198,15 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
       // Apply horizontal offset (positive moves right, negative moves left)
       left += horizontalOffset;
       
-      // If there's a horizontal offset, allow dropdown to go outside card boundaries.
-      // Otherwise, keep reduced-width dropdown within card bounds.
-      if (horizontalOffset === 0 && !dropdownMatchTriggerWidth) {
-        // No offset - keep within card boundaries
-        if (left < cardRect.left) {
-          left = cardRect.left;
-        }
-        
-        // If dropdown would go off the right edge of the card, align with trigger's left edge instead
+      // When no horizontal offset is provided, keep the dropdown inside the card
+      // (even for dropdownMatchTriggerWidth=true). This makes the panel align to the
+      // right side of the card on small screens instead of drifting left/cutting off.
+      if (horizontalOffset === 0) {
+        if (left < cardRect.left) left = cardRect.left;
         if (left + desiredWidth > cardRect.right) {
-          left = triggerRect.left; // Align left edge of dropdown with left edge of trigger
-          
-          // If still goes off, position it to fit within card
-          if (left + desiredWidth > cardRect.right) {
-            left = cardRect.right - desiredWidth;
-          }
+          left = Math.max(cardRect.right - desiredWidth, cardRect.left);
         }
       }
-      // If horizontalOffset is set, allow dropdown to extend beyond card boundaries
       
       // Ensure dropdown doesn't go off screen horizontally
       if (left + desiredWidth > viewportWidth - minMargin) {

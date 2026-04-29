@@ -450,40 +450,47 @@ export default function Footer() {
           {/* App Download Section */}
           <div className="flex flex-col gap-15 md:gap-2 lg:gap-3 items-start justify-start">
             {/* Mobile: Show both QR codes in compact layout */}
-            <div className="grid md:hidden grid-cols-2 gap-x-6 gap-y-3 place-items-center">
-              <Image
-                src="/assets/Appstore_nqe65y.png"
-                alt="App Store"
-                width={60}
-                height={60}
-                className="object-contain"
-                style={{ width: "72px", height: "72px" }}
-              />
-              <Image
-                src="/assets/qr-code-bc94057f452f4806af70fd34540f72ad_3_jk8lq1.png"
-                alt="App Store QR Code"
-                width={60}
-                height={60}
-                priority
-                className="object-contain"
-                style={{ width: "72px", height: "72px" }}
-              />
-              <Image
-                src="/images/playstore.webp"
-                alt="Google Play"
-                width={60}
-                height={60}
-                className="object-contain"
-                style={{ width: "72px", height: "72px" }}
-              />
-              <Image
-                src="/assets/qr-code-bc94057f452f4806af70fd34540f72ad_3_jk8lq1.png"
-                alt="Google Play QR Code"
-                width={60}
-                height={60}
-                className="object-contain"
-                style={{ width: "72px", height: "72px" }}
-              />
+            <div className="grid md:hidden grid-cols-2 gap-x-4 gap-y-3 place-items-center">
+              {/* App Store (badge above QR) */}
+              <div className="flex flex-col items-center justify-center gap-[2px] shrink-0 leading-none">
+                <Image
+                  src="/assets/Appstore_nqe65y.png"
+                  alt="App Store"
+                  width={60}
+                  height={60}
+                  className="object-contain flex-shrink-0"
+                  style={{ width: "72px", height: "72px" }}
+                />
+                <Image
+                  src="/assets/qr-code-bc94057f452f4806af70fd34540f72ad_3_jk8lq1.png"
+                  alt="App Store QR Code"
+                  width={60}
+                  height={60}
+                  priority
+                  className="object-contain flex-shrink-0"
+                  style={{ width: "72px", height: "72px" }}
+                />
+              </div>
+
+              {/* Google Play (badge above QR) */}
+              <div className="flex flex-col items-center justify-center gap-[2px] shrink-0 leading-none">
+                <Image
+                  src="/images/playstore.webp"
+                  alt="Google Play"
+                  width={60}
+                  height={60}
+                  className="object-contain flex-shrink-0"
+                  style={{ width: "72px", height: "72px" }}
+                />
+                <Image
+                  src="/assets/qr-code-bc94057f452f4806af70fd34540f72ad_3_jk8lq1.png"
+                  alt="Google Play QR Code"
+                  width={60}
+                  height={60}
+                  className="object-contain flex-shrink-0"
+                  style={{ width: "72px", height: "72px" }}
+                />
+              </div>
             </div>
             
             {/* App Download Section - Tablet and Desktop */}

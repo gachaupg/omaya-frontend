@@ -18,6 +18,7 @@ import {
 import { getP2PProfileThunk } from "@/features/p2p/slices/orderSlice";
 import { useLanguageOptional } from "@/context/language";
 import { useTheme } from "@/context/theme";
+import FrozenAccountModal from "@/components/ui/FrozenAccountModal";
 
 const DefaultProfileIcon = () => (
   <div className="w-10 h-10 rounded-full flex items-center justify-center bg-[#1D8751] border-2 border-white">
@@ -489,6 +490,7 @@ export default function Navbar() {
   const [depositDropdownOpen, setDepositDropdownOpen] = useState(false);
   const [mobileDepositDropdownOpen, setMobileDepositDropdownOpen] =
     useState(false);
+  const [showFrozenModal, setShowFrozenModal] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
 
   const depositItems: DropdownItem[] = [
@@ -960,6 +962,15 @@ export default function Navbar() {
     const isProtectedRoute = protectedRoutes.some(route => href.startsWith(route));
 
     if (isProtectedRoute && isAuthenticated) {
+      // Frozen users should see a clear support message instead of navigating
+      // into pages that later fail with generic errors.
+      if ((user as any)?.freeze === true) {
+        e.preventDefault();
+        e.stopPropagation();
+        setShowFrozenModal(true);
+        return;
+      }
+
       // Check if user is verified
       const isUnverified = isVerified === false;
 
@@ -1800,6 +1811,10 @@ export default function Navbar() {
           </div>
         )
       }
+      <FrozenAccountModal
+        isOpen={showFrozenModal}
+        onClose={() => setShowFrozenModal(false)}
+      />
     </div>
   );
 }

@@ -72,6 +72,7 @@ const formatStatus = (status: string | undefined | null): string => {
     'pending': 'Pending',
     'pending_address': 'Pending',
     'pending_approval': 'Pending Approval',
+    'admin_approval_required': 'Processing',
     'completed': 'Completed',
     'approved': 'Approved',
     'rejected': 'Rejected',
@@ -102,7 +103,7 @@ const AllTransactions = () => {
     (state: RootState) => state.allTransactions
   );
   const [currentPage, setCurrentPageLocal] = useState(1);
-  const itemsPerPage = 50;
+  const itemsPerPage = 10;
   const containerRef = React.useRef<HTMLDivElement>(null);
   const [p2pAddressById, setP2pAddressById] = useState<Record<string, { from?: string | null; to?: string | null; receiver?: string | null }>>({});
   const [p2pAddressByFingerprint, setP2pAddressByFingerprint] = useState<Record<string, { from?: string | null; to?: string | null; receiver?: string | null }>>({});
@@ -637,6 +638,7 @@ const renderFromToValue = (label: string, logoUrl?: string | null) => {
                 : tx.status === "pending" ||
                   tx.status === "pending_address" ||
                   tx.status === "pending_approval" ||
+                  tx.status?.toLowerCase() === "admin_approval_required" ||
                   tx.status?.toLowerCase() === "otp_pending"
                   ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
                   : tx.status === "rejected" || tx.status === "error"
@@ -710,6 +712,7 @@ const renderFromToValue = (label: string, logoUrl?: string | null) => {
             className={`px-2 py-1 rounded-full text-xs font-medium ${tx.status === "completed"
                 ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
                 : tx.status === "pending" ||
+                  tx.status?.toLowerCase() === "admin_approval_required" ||
                   tx.status?.toLowerCase() === "otp_pending"
                   ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
                   : "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400"

@@ -18,6 +18,21 @@ import {
   PAYMENT_LOGO_SIZE,
 } from "@/features/express/utils/imageHelpers";
 import CustomSelect from "@/components/ui/CustomSelect";
+import { useValidateAddress } from "@/hooks/useValidateAddress";
+
+const extractCryptoNetworkForValidation = (source: string): string => {
+  const s = String(source || "").toLowerCase();
+  // Return a short network token that `validateAddress()` can normalize.
+  if (/(trc20|tron)/.test(s)) return "trc20";
+  if (/(bep20|bsc|binance smart chain)/.test(s)) return "bep20";
+  if (/(erc20|ethere?um|ethereum)/.test(s)) return "erc20";
+  if (/(polygon|matic)/.test(s)) return "polygon";
+  if (/(solana|sol)/.test(s)) return "solana";
+  if (/(arbitrum|arb)/.test(s)) return "arbitrum";
+  if (/(optimism|op)/.test(s)) return "optimism";
+  if (/(avalanche|avax)/.test(s)) return "avalanche";
+  return "";
+};
 
 type PaymentDetailPayload = {
   account_name: string;
@@ -343,6 +358,78 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
           ? "0712345678"
           : "Enter account number";
 
+  const isCryptoWalletProviderSelected =
+    shouldUseWalletAddressField && String(provider || "").trim().length > 0;
+
+  // --- Crypto Wallet address validation (API-based) ---
+  const selectedCryptoProvider = React.useMemo(() => {
+    if (!shouldUseWalletAddressField) return null;
+    return providers.find((p: any) => p?.provider_name === provider) || null;
+  }, [shouldUseWalletAddressField, providers, provider]);
+
+  const cryptoNetworkForValidation = React.useMemo(() => {
+    if (!shouldUseWalletAddressField) return "";
+    const source =
+      selectedCryptoProvider?.payment_method_type ||
+      selectedCryptoProvider?.payment_method_name ||
+      selectedCryptoProvider?.provider_name ||
+      selectedCryptoProvider?.provider ||
+      "";
+    return extractCryptoNetworkForValidation(source);
+  }, [shouldUseWalletAddressField, selectedCryptoProvider]);
+
+  const {
+    result: cryptoAddressValidationResult,
+    isValidating: cryptoAddressIsValidating,
+    validate: validateCryptoAddress,
+    reset: resetCryptoAddressValidation,
+  } = useValidateAddress({
+    currency: "usdt",
+    network: cryptoNetworkForValidation,
+    debounceMs: 400,
+    minLength: 10,
+  });
+
+  const cryptoAddressIsValid = cryptoAddressValidationResult?.isValid === true;
+  const cryptoAddressIsInvalid =
+    cryptoAddressValidationResult !== null &&
+    cryptoAddressValidationResult.isValid === false;
+  // Require validation once the user starts typing a long-enough address.
+  // We intentionally do NOT require network inference here, because other parts
+  // show the loader/message while typing even if network isn't fully inferred.
+  const shouldRequireCryptoValidation =
+    shouldUseWalletAddressField && String(account || "").trim().length >= 10;
+
+  // Validate crypto wallet address via API as the user types.
+  useEffect(() => {
+    // Only manage reset here.
+    // Actual validation is triggered from the input `onChange` for immediate UX.
+    if (!shouldUseWalletAddressField) {
+      resetCryptoAddressValidation();
+      return;
+    }
+
+    const trimmed = String(account || "").trim();
+    if (!trimmed || trimmed.length < 10) {
+      resetCryptoAddressValidation();
+    }
+  }, [
+    shouldUseWalletAddressField,
+    account,
+    resetCryptoAddressValidation,
+  ]);
+
+  // If provider/network inference changes (cryptoNetworkForValidation),
+  // re-validate the already-typed address once.
+  useEffect(() => {
+    if (!shouldUseWalletAddressField) return;
+
+    const trimmed = String(account || "").trim();
+    if (!trimmed || trimmed.length < 10) return;
+
+    void validateCryptoAddress(trimmed, "usdt", cryptoNetworkForValidation);
+  }, [cryptoNetworkForValidation, shouldUseWalletAddressField, validateCryptoAddress]);
+
    logger.debug('p2p', "DEBUG: publicPaymentMethods:", publicPaymentMethods);
    logger.debug('p2p', "DEBUG: processedProviders:", processedProviders);
    logger.debug('p2p', "DEBUG: methodTypes:", methodTypes);
@@ -361,6 +448,21 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
       logger.debug('p2p', "Validation failed", { method, provider, name, account });
       setOtpFeedback({ type: "error", text: "Please fill all required fields" });
       return;
+    }
+
+    // Client-side guard for Crypto Wallet address validation (API-based).
+    if (shouldUseWalletAddressField) {
+      if (shouldRequireCryptoValidation && cryptoAddressIsValidating) {
+        setOtpFeedback({ type: "error", text: "Please wait for address validation to complete." });
+        return;
+      }
+      if (shouldRequireCryptoValidation && !cryptoAddressIsValid) {
+        setOtpFeedback({
+          type: "error",
+          text: cryptoAddressValidationResult?.message || "Invalid wallet address",
+        });
+        return;
+      }
     }
      
    const selectedProvider = providers.find(
@@ -635,7 +737,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                     className={`rounded-[14px] border px-3 py-2 text-sm font-medium transition-colors ${
                        active
                          ? "bg-[#1D8751] border-[#1D8751] text-white"
-                         : "bg-[#F8FAFC] dark:bg-[#060913] border-[#E3E6F0] dark:border-[#2A2F40] text-[#4B5563] dark:text-[#9EA7BE] hover:text-gray-900 dark:hover:text-white"
+                        : "bg-[#F8FAFC] dark:bg-[var(--card-color)] border-[#E3E6F0] dark:border-[#35353E] text-[#4B5563] dark:text-[#9EA7BE] hover:text-gray-900 dark:hover:text-white"
                      }`}
                    >
                      {tab.label}
@@ -684,7 +786,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                    logoSize={PAYMENT_LOGO_SIZE}
                    logoClassName="rounded-full object-cover"
                    className="w-full"
-                   triggerClassName="w-full p-3 rounded-[14px] bg-white dark:bg-[#060913] border border-[#E3E6F0] dark:border-[#2A2F40] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1D8751] text-sm"
+                  triggerClassName="w-full p-3 rounded-[14px] bg-white dark:bg-[var(--card-color)] border border-[#E3E6F0] dark:border-[#35353E] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1D8751] text-sm"
                    largeDropdownItems={true}
                  />
                </div>
@@ -778,7 +880,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                     logoSize={PAYMENT_LOGO_SIZE}
                     logoClassName="rounded-full object-cover"
                     className="w-full"
-                    triggerClassName="w-full p-3 rounded-[14px] bg-white dark:bg-[#060913] border border-[#E3E6F0] dark:border-[#2A2F40] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1D8751] text-sm"
+                    triggerClassName="w-full p-3 rounded-[14px] bg-white dark:bg-[var(--card-color)] border border-[#E3E6F0] dark:border-[#35353E] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1D8751] text-sm"
                     placeholderClassName="text-gray-500 dark:text-gray-400"
                     largeDropdownItems={true}
                   />
@@ -789,7 +891,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                   MT4/MT5 Number
                 </label>
                 <input
-                  className="w-full bg-white dark:bg-[#060913] text-gray-900 dark:text-white rounded-[14px] border border-[#E3E6F0] dark:border-[#2A2F40] px-3 sm:px-4 py-2.5 sm:py-3 focus:outline-none focus:ring-2 focus:ring-[#1D8751] placeholder:text-gray-400 dark:placeholder:text-[#6F7893] text-sm"
+                  className="w-full bg-white dark:bg-[var(--card-color)] text-gray-900 dark:text-white rounded-[14px] border border-[#E3E6F0] dark:border-[#35353E] px-3 sm:px-4 py-2.5 sm:py-3 focus:outline-none focus:ring-2 focus:ring-[#1D8751] placeholder:text-gray-400 dark:placeholder:text-[#6F7893] text-sm"
                   placeholder="Enter MT4/MT5 number"
                   value={account}
                   onChange={(e) => setAccount(e.target.value)}
@@ -822,13 +924,45 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
               {accountFieldLabel}
             </label>
              <input
-               className="w-full bg-white dark:bg-[#060913] text-gray-900 dark:text-white rounded-[14px] border border-[#E3E6F0] dark:border-[#2A2F40] px-3 sm:px-4 py-2.5 sm:py-3 focus:outline-none focus:ring-2 focus:ring-[#1D8751] placeholder:text-gray-400 dark:placeholder:text-[#6F7893] text-sm"
+               className="w-full bg-white dark:bg-[var(--card-color)] text-gray-900 dark:text-white rounded-[14px] border border-[#E3E6F0] dark:border-[#35353E] px-3 sm:px-4 py-2.5 sm:py-3 focus:outline-none focus:ring-2 focus:ring-[#1D8751] placeholder:text-gray-400 dark:placeholder:text-[#6F7893] text-sm"
                placeholder={accountFieldPlaceholder}
                value={account}
-               onChange={(e) => setAccount(e.target.value)}
-               disabled={publicMethodsLoading}
-               maxLength={20}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  setAccount(next);
+
+                  if (!shouldUseWalletAddressField) return;
+
+                  const trimmed = String(next || "").trim();
+                  if (!trimmed || trimmed.length < 10) {
+                    resetCryptoAddressValidation();
+                    return;
+                  }
+
+                  // Trigger API validation immediately on typing.
+                  void validateCryptoAddress(trimmed, "usdt", cryptoNetworkForValidation);
+                }}
+               disabled={publicMethodsLoading || (shouldUseWalletAddressField && !isCryptoWalletProviderSelected)}
+               maxLength={shouldUseWalletAddressField ? 128 : 20}
              />
+
+              {shouldUseWalletAddressField &&
+                isCryptoWalletProviderSelected &&
+                String(account || "").trim().length > 0 &&
+                String(account || "").trim().length < 10 && (
+                  <p className="mt-2 text-xs text-red-500 dark:text-red-400">
+                    Address seems too short
+                  </p>
+                )}
+
+              {shouldUseWalletAddressField && account.trim().length >= 10 && cryptoAddressIsValidating && (
+                <p className="mt-2 text-xs text-[#1D8751]">Validating address...</p>
+              )}
+              {shouldUseWalletAddressField && account.trim().length >= 10 && cryptoAddressIsInvalid && (
+                <p className="mt-2 text-xs text-red-500 dark:text-red-400">
+                  {cryptoAddressValidationResult?.message || "Invalid wallet address"}
+                </p>
+              )}
            </div>
           )}
 
@@ -846,7 +980,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                   }
                   setAllowAutoSend(e.target.checked);
                 }}
-                className="w-4 h-4 text-[#1D8751] bg-white dark:bg-[#0D1320] border-[#C7D2E5] dark:border-[#2A2F40] rounded focus:ring-2 focus:ring-[#1D8751] cursor-pointer"
+                className="w-4 h-4 text-[#1D8751] bg-white dark:bg-[#23232B] border-[#C7D2E5] dark:border-[#35353E] rounded focus:ring-2 focus:ring-[#1D8751] cursor-pointer"
                 disabled={publicMethodsLoading || autoSendPreviouslyEnabled}
               />
               <label
@@ -927,7 +1061,9 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                   sendOtpLoading ||
                   !provider ||
                   !name ||
-                  !account
+                  !account ||
+                  (shouldRequireCryptoValidation &&
+                    (cryptoAddressIsValidating || !cryptoAddressIsValid))
                 }
               >
                 {sendOtpLoading
