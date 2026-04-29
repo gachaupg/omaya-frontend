@@ -2,12 +2,17 @@ import React from "react";
 import { useThemeToggle } from "../../../hooks/useThemeToggle";
 
 const SystemThemeSection: React.FC = () => {
-  const { theme, currentTheme, isDark, isLight, isDeem, updating, toggleTheme } =
+  const { theme, currentTheme, isDark, isLight, isDeem, isSystem, updating, toggleTheme } =
     useThemeToggle();
 
   const handleThemeChange = (mode: "light" | "dark" | "deem" | "system") => {
     toggleTheme(mode);
   };
+
+  const activeClass =
+    "text-gray-900 dark:text-white border-[color:var(--primary-color)] ring-2 ring-[color:var(--primary-color)]/20";
+  const inactiveClass =
+    "text-gray-700 dark:text-[#C7CAD1] border-gray-300 dark:border-[#35353E]";
 
   return (
     <>
@@ -19,8 +24,8 @@ const SystemThemeSection: React.FC = () => {
           <button
             className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-2xl font-semibold text-sm transition-all border bg-white dark:bg-[#18181D] hover:bg-gray-50 dark:hover:bg-[#14141B] ${
               isLight
-                ? "text-gray-900 dark:text-white border-[#1D8751] ring-2 ring-[#1D8751]/20"
-                : "text-gray-700 dark:text-[#C7CAD1] border-gray-300 dark:border-[#35353E]"
+                ? activeClass
+                : inactiveClass
             }`}
             onClick={() => handleThemeChange("light")}
             aria-pressed={isLight}
@@ -45,8 +50,8 @@ const SystemThemeSection: React.FC = () => {
           <button
             className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-2xl font-semibold text-sm transition-all border bg-white dark:bg-[#18181D] hover:bg-gray-50 dark:hover:bg-[#14141B] ${
               isDeem
-                ? "text-gray-900 dark:text-white border-[#1D8751] ring-2 ring-[#1D8751]/20"
-                : "text-gray-700 dark:text-[#C7CAD1] border-gray-300 dark:border-[#35353E]"
+                ? activeClass
+                : inactiveClass
             }`}
             onClick={() => handleThemeChange("deem")}
             aria-pressed={isDeem}
@@ -72,8 +77,8 @@ const SystemThemeSection: React.FC = () => {
           <button
             className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-2xl font-semibold text-sm transition-all border bg-white dark:bg-[#18181D] hover:bg-gray-50 dark:hover:bg-[#14141B] ${
               currentTheme === "dark"
-                ? "text-gray-900 dark:text-white border-[#1D8751] ring-2 ring-[#1D8751]/20"
-                : "text-gray-700 dark:text-[#C7CAD1] border-gray-300 dark:border-[#35353E]"
+                ? activeClass
+                : inactiveClass
             }`}
             onClick={() => handleThemeChange("dark")}
             aria-pressed={currentTheme === "dark"}
@@ -94,10 +99,46 @@ const SystemThemeSection: React.FC = () => {
             </svg>
             Dark
           </button>
+          <button
+            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-2xl font-semibold text-sm transition-all border bg-white dark:bg-[#18181D] hover:bg-gray-50 dark:hover:bg-[#14141B] ${
+              isSystem ? activeClass : inactiveClass
+            }`}
+            onClick={() => handleThemeChange("system")}
+            aria-pressed={isSystem}
+            disabled={updating}
+            title="Match your device theme"
+          >
+            <span className="w-4 h-4 rounded-full border border-gray-300 bg-gradient-to-br from-white to-[#0F0F17] flex-shrink-0" />
+            <svg
+              width="18"
+              height="18"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                d="M9 17H7a2 2 0 01-2-2V7a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2h-2"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M8 21h8"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+              <path
+                d="M12 17v4"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+            </svg>
+            System
+          </button>
         </div>
         {updating && (
           <div className="text-center py-2">
-            <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-[#1D8751] mx-auto"></div>
+            <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-[color:var(--primary-color)] mx-auto"></div>
             <span className="dark:text-[#808080] text-gray-500 text-xs ml-2">
               Updating theme...
             </span>

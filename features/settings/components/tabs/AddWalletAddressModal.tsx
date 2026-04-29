@@ -13,6 +13,7 @@ import { useValidateAddress } from "@/hooks/useValidateAddress";
 import { showToast } from "@/lib/utils/toast";
 import type { SupportedAsset } from "@/features/swap/types";
 import { getHighResAssetIcon } from "@/features/express/utils/imageHelpers";
+import { fetchP2PDepositAddresses } from "@/features/p2p/slices/p2pDepositAddressesSlice";
 import {
   sendPaymentDetailAddOtp,
   verifyPaymentDetailAddOtp,
@@ -38,6 +39,9 @@ const AddWalletAddressModal = ({
   );
   const { addresses: existingWalletAddresses } = useSelector(
     (s: RootState) => s.userWalletAddresses
+  );
+  const { addresses: p2pDepositAddresses } = useSelector(
+    (s: RootState) => (s as any).p2pDepositAddresses || { addresses: [] }
   );
 
   const [selectedAssetTicker, setSelectedAssetTicker] = useState("");
@@ -203,6 +207,15 @@ const AddWalletAddressModal = ({
       dispatch(fetchUserWalletAddresses() as any);
     }
   }, [open, dispatch]);
+
+  // Load P2P deposit addresses (includes defaults) so duplicate detection
+  // can block adding the same address again.
+  useEffect(() => {
+    if (!open) return;
+    const n = Array.isArray(p2pDepositAddresses) ? p2pDepositAddresses.length : 0;
+    if (n > 0) return;
+    dispatch(fetchP2PDepositAddresses() as any);
+  }, [open, dispatch, p2pDepositAddresses]);
 
   // Timeout: if loading for 8+ seconds with no assets, show retry
   useEffect(() => {
@@ -387,13 +400,20 @@ const AddWalletAddressModal = ({
   const addressAlreadyExists = useMemo(() => {
     const v = address.trim().toLowerCase();
     if (!v) return false;
-    return (existingWalletAddresses || []).some((a) => {
+    const inUserWallets = (existingWalletAddresses || []).some((a) => {
       const aAddr = String(a?.address || "").trim().toLowerCase();
       if (!aAddr || aAddr !== v) return false;
       // If the address matches any saved wallet, block it (regardless of asset/network),
       // because the user is trying to add a duplicate saved address.
       return true;
     });
+    if (inUserWallets) return true;
+
+    // Also block addresses that already exist as P2P deposit addresses (including defaults).
+    const inP2PDefaults = (Array.isArray(p2pDepositAddresses) ? p2pDepositAddresses : []).some(
+      (a: any) => String(a?.address || "").trim().toLowerCase() === v
+    );
+    return inP2PDefaults;
   }, [address, existingWalletAddresses, selectedAssetTicker, selectedNetwork]);
 
   const isDuplicateAddress = (
@@ -403,11 +423,16 @@ const AddWalletAddressModal = ({
   ) => {
     const v = String(rawAddress || "").trim().toLowerCase();
     if (!v) return false;
-    return (existingWalletAddresses || []).some((a) => {
+    const inUserWallets = (existingWalletAddresses || []).some((a) => {
       const aAddr = String(a?.address || "").trim().toLowerCase();
       if (!aAddr || aAddr !== v) return false;
       return true;
     });
+    if (inUserWallets) return true;
+
+    return (Array.isArray(p2pDepositAddresses) ? p2pDepositAddresses : []).some(
+      (a: any) => String(a?.address || "").trim().toLowerCase() === v
+    );
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

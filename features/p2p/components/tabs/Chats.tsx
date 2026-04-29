@@ -37,7 +37,6 @@ interface ConversationItemProps {
   isActive: boolean;
   unreadCount: number;
   onSelect: () => void;
-  onDeleteConversation: () => void;
 }
 
 const ConversationItem: React.FC<ConversationItemProps> = ({
@@ -48,7 +47,6 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
   unreadCount,
   onSelect,
   group,
-  onDeleteConversation,
 }) => {
   const [imageError, setImageError] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -162,21 +160,6 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
           </span>
         </div>
       )}
-      <button
-        type="button"
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          onDeleteConversation();
-        }}
-        className="relative z-10 ml-2 hidden sm:flex opacity-0 group-hover:opacity-100 transition-opacity items-center justify-center w-8 h-8 rounded-full bg-white/90 dark:bg-[#23232B] border border-[#E3E6F0] dark:border-[#35353E]"
-        aria-label="Delete conversation"
-        title="Delete conversation"
-      >
-        <svg viewBox="0 0 24 24" className="w-4 h-4 text-red-600 dark:text-red-500" fill="none" stroke="currentColor" strokeWidth="2">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M3 6h18M8 6V4h8v2m-1 0v14a2 2 0 01-2 2H9a2 2 0 01-2-2V6h10z" />
-        </svg>
-      </button>
     </div>
   );
 };
@@ -184,33 +167,6 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
 export const Chats: React.FC = () => {
   const { isAuthenticated, user } = useSelector(
     (state: RootState) => state.auth
-  );
-
-  const HIDDEN_CONVERSATIONS_KEY = "p2p_hidden_conversations";
-  const readHiddenConversations = (): Set<string> => {
-    if (typeof window === "undefined") return new Set();
-    try {
-      const raw = localStorage.getItem(HIDDEN_CONVERSATIONS_KEY);
-      const parsed = raw ? (JSON.parse(raw) as unknown) : [];
-      if (Array.isArray(parsed)) {
-        return new Set(parsed.map((v) => String(v)));
-      }
-    } catch {
-      // ignore
-    }
-    return new Set();
-  };
-  const persistHiddenConversations = (s: Set<string>) => {
-    if (typeof window === "undefined") return;
-    try {
-      localStorage.setItem(HIDDEN_CONVERSATIONS_KEY, JSON.stringify(Array.from(s)));
-    } catch {
-      // ignore
-    }
-  };
-
-  const [hiddenConversationIds, setHiddenConversationIds] = useState<Set<string>>(
-    () => readHiddenConversations()
   );
 
   const { groupedUsers, loading, error, refetch } = useGroupedMessages({
@@ -826,10 +782,8 @@ export const Chats: React.FC = () => {
   }, [selectedUser?.entity_id, resolvedTradeId, isAuthenticated, refetch]);
 
   const conversations = useMemo(() => {
-    const list = groupedUsers || [];
-    if (hiddenConversationIds.size === 0) return list;
-    return list.filter((g: any) => !hiddenConversationIds.has(String(g?.entity_id ?? "")));
-  }, [groupedUsers, hiddenConversationIds]);
+    return groupedUsers || [];
+  }, [groupedUsers]);
 
   const formatTimestamp = (timestamp: string) => {
     const date = new Date(timestamp);
@@ -1640,23 +1594,6 @@ export const Chats: React.FC = () => {
                     setSelectedUser(group);
                     // On mobile/tablet, show chat view when a conversation is selected
                     setShowChatView(true);
-                  }}
-                  onDeleteConversation={() => {
-                    const entityId = String(group?.entity_id ?? "");
-                    if (!entityId) return;
-                    setHiddenConversationIds((prev) => {
-                      const next = new Set(prev);
-                      next.add(entityId);
-                      persistHiddenConversations(next);
-                      return next;
-                    });
-                    // If deleting the currently open conversation, close it.
-                    setSelectedUser((prev) => {
-                      if (!prev) return prev;
-                      return String((prev as any).entity_id) === entityId ? null : prev;
-                    });
-                    setShowChatView(false);
-                    showToast.success("Conversation deleted");
                   }}
                 />
               );

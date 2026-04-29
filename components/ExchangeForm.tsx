@@ -1015,7 +1015,7 @@ export default function ExchangeForm({
     return (
       <div
         ref={paymentDropdownRef}
-        className="absolute top-full left-0 right-3 mt-2 bg-white dark:bg-[var(--bg-color)] border border-gray-200 dark:border-[#35353E] rounded-xl shadow-lg z-[9999] w-full"
+        className="absolute top-full left-0 mt-2 bg-white dark:bg-[var(--bg-color)] border border-gray-200 dark:border-[#35353E] rounded-xl shadow-lg z-[9999] w-[calc(100%+12px)] max-w-[calc(100vw-24px)]"
       >
         {/* Search Input */}
         <div className="p-3 border-b border-gray-200 dark:border-[#35353E]">

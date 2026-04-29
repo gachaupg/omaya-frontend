@@ -424,7 +424,7 @@ export default function MarketingPage() {
   return (
     <div>
       <section
-        className="relative min-h-[calc(100vh-80px)] lg:min-h-[calc(100vh-80px)] pt-22 sm:pt-24 lg:pt-20 pb-8 sm:pb-10 lg:pb-6 mx-auto overflow-visible bg-gradient-to-br from-gray-50 to-white dark:bg-[var(--bg-color)]"
+        className="relative min-h-[calc(100svh-80px)] pt-16 sm:pt-18 lg:pt-14 pb-6 sm:pb-8 lg:pb-4 mx-auto overflow-visible bg-gradient-to-br from-gray-50 to-white dark:bg-[var(--bg-color)]"
       >
 
         {/* Background styling - different for light and dark modes */}
@@ -484,8 +484,8 @@ export default function MarketingPage() {
           ></div>
         </div>
 
-        <div className="w-full max-w-[1600px] mx-auto px-2 sm:px-4 lg:px-8 xl:px-10 relative z-10 mt-2" style={{ paddingTop: 'clamp(1rem, 2.5vw, 1.75rem)' }}>
-          <div className="grid grid-cols-1 lg:grid-cols-2 items-start gap-y-4 md:gap-y-3 md:gap-x-6 lg:gap-x-8 xl:gap-x-10">
+        <div className="w-full max-w-[1600px] mx-auto px-2 sm:px-4 lg:px-8 xl:px-10 relative z-10 mt-0 lg:mt-0" style={{ paddingTop: 'clamp(0.75rem, 2vw, 1.25rem)' }}>
+          <div className="grid grid-cols-1 lg:grid-cols-2 items-start lg:items-center gap-y-4 md:gap-y-3 md:gap-x-6 lg:gap-x-8 xl:gap-x-10">
             <div className="space-y-2 md:space-y-2 pl-0 md:pl-4 lg:pl-5 text-center lg:text-left">
               {/* Green pill banner */}
               <div className="inline-flex items-center justify-center md:justify-start">
@@ -538,9 +538,9 @@ export default function MarketingPage() {
               </div>
 
               {/* Stats */}
-              <div className="flex flex-wrap gap-3 sm:gap-4 justify-center lg:justify-start pt-2 md:pt-3 w-full">
+              <div className="flex flex-wrap gap-2 sm:gap-3 justify-center lg:justify-start pt-2 md:pt-2 w-full">
                 {heroStats.map((stat, index) => (
-                  <div key={index} className="bg-white/5 dark:bg-white/5 backdrop-blur-sm rounded-2xl px-2 py-3 sm:px-5 sm:py-4 flex flex-col items-center sm:items-start gap-3 shadow-lg border border-white/10 flex-1 min-w-[120px] max-w-[180px]">
+                  <div key={index} className="bg-white/5 dark:bg-white/5 backdrop-blur-sm rounded-2xl px-2 py-2 sm:px-4 sm:py-3 flex flex-col items-center sm:items-start gap-2 shadow-lg border border-white/10 flex-1 min-w-[120px] max-w-[180px]">
                     <div className={`w-10 h-10 rounded-xl bg-linear-to-br ${stat.gradient} flex items-center justify-center shadow-lg`}>
                       <stat.icon className="w-5 h-5 text-white" />
                     </div>
@@ -587,8 +587,8 @@ export default function MarketingPage() {
         </div>
       </section>
 
-      <div className="pt-4 sm:pt-6 md:pt-8 pb-12 sm:pb-16 md:pb-20 px-4 md:px-[100px] bg-white dark:bg-(--card-color) relative z-10">
-        <div className="absolute -top-10 left-90 w-[200px] sm:w-[300px] h-[200px] sm:h-[300px] bg-[#1D8751]/10 blur-3xl rounded-full" />
+      <div className="pt-4 sm:pt-6 md:pt-8 pb-12 sm:pb-16 md:pb-20 px-4 md:px-10 lg:px-16 xl:px-[100px] bg-white dark:bg-(--card-color) relative z-10 overflow-hidden">
+        <div className="absolute top-0 left-90 w-[200px] sm:w-[300px] h-[200px] sm:h-[300px] bg-[#1D8751]/10 blur-3xl rounded-full" />
 
         <div className="absolute inset-0 overflow-hidden pointer-events-none -z-1">
           <div className="absolute w-[280px] sm:w-[300px] h-[600px] right-90 bottom-25 sm:h-24 blur-3xl bg-[#9810FA] rounded-full opacity-15" />
@@ -751,7 +751,7 @@ export default function MarketingPage() {
       {/* Supported Assets Section*/}
       <div
         id="supported-assets"
-        className="w-full bg-white dark:bg-[var(--bg-color)] pt-4 md:pt-6 pb-16 px-4 md:px-[100px] relative overflow-hidden"
+        className="w-full bg-white dark:bg-[var(--bg-color)] pt-4 md:pt-6 pb-16 px-4 md:px-10 lg:px-16 xl:px-[100px] relative overflow-hidden"
       >
         {/* Subtle green glowing dots background */}
         <div className="absolute inset-0 overflow-hidden">
@@ -1975,7 +1975,7 @@ export default function MarketingPage() {
       {/* Contact Us Section */}
       <section
         id="contact"
-        className="w-full bg-white dark:bg-[var(--bg-color)] text-gray-900 dark:text-white py-16 px-4 md:px-[100px]"
+        className="w-full bg-white dark:bg-[var(--bg-color)] text-gray-900 dark:text-white py-16 px-4 md:px-10 lg:px-16 xl:px-[100px]"
       >
         <div className="max-w-7xl 2xl:max-w-screen-2xl mx-auto">
           {/* Header Section */}

@@ -520,6 +520,45 @@ const getPaymentRestrictionMessage = (status?: string) =>
     return Array.isArray(rawUserDetails) ? rawUserDetails : [];
   })();
 
+  const [forexWhitelistOpen, setForexWhitelistOpen] = useState(false);
+  const forexWhitelistAnchorRef = useRef<HTMLButtonElement | null>(null);
+  const forexWhitelistDropdownRef = useRef<HTMLDivElement | null>(null);
+
+  const approvedForexPaymentMethods = useMemo(() => {
+    const list = Array.isArray(effectiveUserPaymentDetails)
+      ? effectiveUserPaymentDetails
+      : [];
+    return list.filter((d: any) => {
+      if (!isApprovedPaymentStatus(d?.status)) return false;
+      const method = String(
+        d?.payment_method_name || d?.payment_method || d?.payment_method_type || ""
+      ).toLowerCase();
+      const provider = String(
+        d?.provider_name || d?.payment_provider_name || d?.provider || ""
+      ).toLowerCase();
+      return (
+        method.includes("forex") ||
+        method.includes("fxp") ||
+        method.includes("fxprimus") ||
+        provider.includes("fxp") ||
+        provider.includes("fxprimus") ||
+        provider.includes("forex")
+      );
+    });
+  }, [effectiveUserPaymentDetails]);
+
+  useEffect(() => {
+    if (!forexWhitelistOpen) return;
+    const handleOutside = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (forexWhitelistAnchorRef.current?.contains(target)) return;
+      if (forexWhitelistDropdownRef.current?.contains(target)) return;
+      setForexWhitelistOpen(false);
+    };
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, [forexWhitelistOpen]);
+
   const paymentMethodsRef = useRef<any[]>([]);
   const userPaymentMethodsRef = useRef<any[]>([]);
   const walletListRef = useRef<any[]>([]);
@@ -4379,20 +4418,87 @@ const getPaymentRestrictionMessage = (status?: string) =>
                       "Your Forex Account Number"
                     )}
                   </label>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    value={forexAccountNumber}
-                    onChange={(e) =>
-                      setForexAccountNumber(e.target.value.replace(/\D/g, ""))
-                    }
-                    placeholder={t(
-                      "rates.forexAccountNumberPlaceholder",
-                      "Enter your forex account number"
+                  <div className="relative">
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={forexAccountNumber}
+                      onChange={(e) =>
+                        setForexAccountNumber(e.target.value.replace(/\D/g, ""))
+                      }
+                      placeholder={t(
+                        "rates.forexAccountNumberPlaceholder",
+                        "Enter your forex account number"
+                      )}
+                      className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 py-2 pr-11 text-lg focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E]"
+                    />
+                    <button
+                      ref={forexWhitelistAnchorRef}
+                      type="button"
+                      onClick={() => {
+                        // Lazy fetch: load user payment methods when opening the whitelist.
+                        setForexWhitelistOpen((v) => !v);
+                        if (!forexWhitelistOpen && effectiveUserPaymentDetails.length === 0) {
+                          dispatch(fetchUserPaymentDetails() as any);
+                        }
+                      }}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-8 h-8 rounded-full border border-[#A2A4A9FF] dark:border-[#35353E] text-gray-600 dark:text-[#A2A4A9] hover:bg-gray-50 dark:hover:bg-[#14141B] transition-colors"
+                      title="Load approved Forex accounts"
+                    >
+                      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                      </svg>
+                    </button>
+
+                    {forexWhitelistOpen && (
+                      <div
+                        ref={forexWhitelistDropdownRef}
+                        className="absolute right-0 top-full mt-2 z-[11000] w-full max-w-[420px] rounded-xl shadow-lg border bg-white dark:bg-[#1D1D23] border-gray-200 dark:border-[#35353E]"
+                      >
+                        <div className="p-2 max-h-[280px] overflow-y-auto">
+                          <div className="text-xs font-semibold px-2 py-1 text-[#788099]">
+                            Approved Forex accounts
+                          </div>
+                          {userDetailsLoading ? (
+                            <div className="flex items-center justify-center py-6">
+                              <span className="w-5 h-5 border-2 border-[#1D8751] border-t-transparent rounded-full animate-spin" />
+                            </div>
+                          ) : approvedForexPaymentMethods.length === 0 ? (
+                            <p className="text-sm py-4 text-center text-gray-500 dark:text-[#788099]">
+                              No approved Forex accounts found.
+                            </p>
+                          ) : (
+                            <div className="space-y-0.5">
+                              {approvedForexPaymentMethods.map((d: any, idx: number) => {
+                                const raw = String(d?.wallet_address || d?.account_number || "").trim();
+                                const display = raw.length > 16 ? `${raw.slice(0, 6)}...${raw.slice(-4)}` : raw;
+                                const title =
+                                  String(d?.provider_name || d?.payment_provider_name || d?.provider || "Forex").trim() ||
+                                  "Forex";
+                                return (
+                                  <button
+                                    key={`${d?.id || d?.user_payment_detail_id || idx}`}
+                                    type="button"
+                                    onClick={() => {
+                                      setForexAccountNumber(raw.replace(/\D/g, ""));
+                                      setForexWhitelistOpen(false);
+                                    }}
+                                    className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-left text-sm hover:bg-gray-100 dark:hover:bg-[#2A2A32] transition-colors text-gray-900 dark:text-white"
+                                  >
+                                    <span className="font-medium truncate">{title}</span>
+                                    <span className="text-xs font-mono text-gray-500 dark:text-[#788099]">
+                                      {display}
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     )}
-                    className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 py-2 text-lg focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E]"
-                  />
+                  </div>
                 </div>
 
                 <div className="flex flex-col bg-white dark:bg-[#18181D] border border-[#E2E8F0] dark:border-[#35353E] rounded-2xl p-3 sm:p-4 md:p-5 shadow-lg mb-6">
