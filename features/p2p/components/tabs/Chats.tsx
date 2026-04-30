@@ -1891,7 +1891,7 @@ export const Chats: React.FC = () => {
                       return normalizedStatus === "complete" || normalizedStatus === "completed" || normalizedStatus === "responded" || normalizedStatus === "cancelled";
                     })()
                   }
-                  className="w-full rounded-lg bg-black dark:bg-[#374151] border-0 px-4 py-2.5 text-xs sm:text-sm text-white dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1D8751]/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full rounded-lg bg-gray-100 dark:bg-[#374151] border border-gray-300 dark:border-[#374151] px-4 py-2.5 text-xs sm:text-sm text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1D8751]/50 disabled:opacity-50 disabled:cursor-not-allowed"
                 />
               </div>
 

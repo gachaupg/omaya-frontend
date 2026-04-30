@@ -43,6 +43,14 @@ interface TransferFormProps {
   commissionType?: "deposit" | "withdrawal";
 }
 
+const normalizeRestoredAmountInput = (raw: unknown): string => {
+  const s = String(raw ?? "").trim();
+  if (!s) return "";
+  // Avoid restoring "00" / "0.00" into inputs.
+  if (/^0+(\.0+)?$/.test(s)) return "";
+  return s;
+};
+
 export default function TransferForm({ isHomePage = false, onTransfer, commissionType = "deposit" }: TransferFormProps) {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
@@ -462,13 +470,15 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
         isRestoringRef.current = true;
 
         // Restore amounts immediately
-        if (state.amountInput !== undefined && state.amountInput !== null) {
-          setPayAmountInput(state.amountInput);
-          setPayAmount(state.amountValue || parseFloat(state.amountInput) || 0);
+        const restoredPayInput = normalizeRestoredAmountInput(state.amountInput);
+        if (restoredPayInput) {
+          setPayAmountInput(restoredPayInput);
+          setPayAmount(state.amountValue || parseFloat(restoredPayInput) || 0);
         }
-        if (state.receiveAmountInput !== undefined && state.receiveAmountInput !== null) {
-          setGetAmountInput(state.receiveAmountInput);
-          setGetAmount(state.receiveAmountValue || parseFloat(state.receiveAmountInput) || 0);
+        const restoredGetInput = normalizeRestoredAmountInput(state.receiveAmountInput);
+        if (restoredGetInput) {
+          setGetAmountInput(restoredGetInput);
+          setGetAmount(state.receiveAmountValue || parseFloat(restoredGetInput) || 0);
         }
 
         // Restore bank account address and expand form
@@ -715,6 +725,15 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
   // Calculate receive/send using commission percentage from API (receive = send - send*rate/100)
   const handleAmountChange = (value: string, isFromPay: boolean) => {
     if (value === "" || /^\d*\.?\d*$/.test(value)) {
+      // If user clears the input, keep both fields empty (avoid reformatting to "0" / "0.00")
+      if (value === "") {
+        setPayAmountInput("");
+        setPayAmount(0);
+        setGetAmountInput("");
+        setGetAmount(0);
+        setApiValidationError(null);
+        return;
+      }
       if (value.includes(".")) {
         const decimalPart = value.split(".")[1];
         if (decimalPart && decimalPart.length > 8) {

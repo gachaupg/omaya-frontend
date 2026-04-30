@@ -33,6 +33,8 @@ interface UserPaymentSelectorProps {
   onAddPaymentMethod?: () => void;
   onProviderSelect?: (provider: string | null) => void;
   hideSelected?: boolean;
+  /** When false, hides the Provider dropdown and shows all methods directly */
+  showProviderSelect?: boolean;
   /** Renders next to Provider select with equal width (e.g. Time Limit) */
   renderAside?: React.ReactNode;
 }
@@ -49,13 +51,18 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
   onAddPaymentMethod,
   onProviderSelect,
   hideSelected = false,
+  showProviderSelect = true,
   renderAside,
 }) => {
   const [selectedProvider, setSelectedProvider] = useState("");
 
   useEffect(() => {
+    if (!showProviderSelect) {
+      onProviderSelect?.(null);
+      return;
+    }
     onProviderSelect?.(selectedProvider || null);
-  }, [selectedProvider, onProviderSelect]);
+  }, [selectedProvider, onProviderSelect, showProviderSelect]);
 
   // Memoized options for providers - show all providers
   const providerOptions = useMemo(() => {
@@ -91,9 +98,9 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
   // Filtered details for selected provider - match by provider (method optional when provider-first)
   const filteredDetails = useMemo(
     () => {
-      let details = userPaymentDetails.filter(
-        (d) => d.payment_provider_name === selectedProvider
-      );
+      let details = showProviderSelect
+        ? userPaymentDetails.filter((d) => d.payment_provider_name === selectedProvider)
+        : [...userPaymentDetails];
 
       if (hideSelected) {
         details = details.filter(
@@ -103,7 +110,7 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
 
       return details;
     },
-    [userPaymentDetails, selectedProvider, selectedDetails, hideSelected]
+    [userPaymentDetails, selectedProvider, selectedDetails, hideSelected, showProviderSelect]
   );
 
   // Check if there are admin methods for the selected provider (to show "Add Account" message)
@@ -126,32 +133,36 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
   return (
     <div className="space-y-6">
       {/* Provider + Aside (e.g. Time Limit) - equal width */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="flex-1 min-w-0 space-y-2">
-          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            Provider
-          </label>
-          <CustomSelect
-            options={providerOptions}
-            value={selectedProvider}
-            onChange={(value) => setSelectedProvider(value)}
-            placeholder="Select Provider (e.g. Salam Bank, M-Pesa)"
-            logoSize={32}
-            logoClassName="rounded-full object-cover flex-shrink-0"
-            className="w-full"
-            sizeMode="card"
-            searchable
-          />
-        </div>
-        {renderAside && (
-          <div className="flex-1 min-w-0">
-            {renderAside}
+      {showProviderSelect ? (
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex-1 min-w-0 space-y-2">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Provider
+            </label>
+            <CustomSelect
+              options={providerOptions}
+              value={selectedProvider}
+              onChange={(value) => setSelectedProvider(value)}
+              placeholder="Select Provider (e.g. Salam Bank, M-Pesa)"
+              logoSize={32}
+              logoClassName="rounded-full object-cover flex-shrink-0"
+              className="w-full"
+              sizeMode="card"
+              searchable
+            />
           </div>
-        )}
-      </div>
+          {renderAside && (
+            <div className="flex-1 min-w-0">
+              {renderAside}
+            </div>
+          )}
+        </div>
+      ) : (
+        renderAside && <div>{renderAside}</div>
+      )}
 
       {/* detail cards + Add button - shown when provider is selected */}
-      {selectedProvider && (
+      {(!showProviderSelect || selectedProvider) && (
         <div className="flex flex-col gap-3 sm:gap-4">
           <p className="text-[10px] sm:text-xs text-gray-500 dark:text-[#788099]">
             Newly added methods may show as pending until verified.
@@ -238,9 +249,11 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
               ) : (
                 <div className="flex flex-col gap-3 rounded-lg p-3 sm:p-4 bg-[#1D8751]/10 dark:bg-[#1D8751]/20 border border-[#1D8751]/30">
                   <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 text-left">
-                    {hasAdminMethod
-                      ? `No payment account found for ${selectedProvider}. Please add a payment account first.`
-                      : "No payment details found for this combination."}
+                    {showProviderSelect
+                      ? hasAdminMethod
+                        ? `No payment account found for ${selectedProvider}. Please add a payment account first.`
+                        : "No payment details found for this combination."
+                      : "No payment methods found. Please add a payment method first."}
                   </p>
                 </div>
               )}

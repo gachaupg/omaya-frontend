@@ -11,6 +11,7 @@ import { FaUniversity } from "react-icons/fa";
 import { getHighResAssetIcon } from "@/features/express/utils/imageHelpers";
 import type { AllTransactionItem } from "@/features/transactions/api";
 import { getMyTransactions as getMyP2PTransactions } from "@/features/p2p/api";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 
 const formatAmount = (amount: string | number | undefined | null): string => {
   if (amount === undefined || amount === null || amount === "") return "0.0000";
@@ -22,6 +23,19 @@ const formatAmount = (amount: string | number | undefined | null): string => {
 const formatRecentTime = (dateValue: string) => {
   const v = formatDistanceToNow(new Date(dateValue), { addSuffix: true });
   return /less than (a|1) minute ago/i.test(v) ? "now" : v;
+};
+
+const normalizeStatusForBadge = (status: unknown): string => {
+  const s = String(status ?? "").trim();
+  if (!s) return "n/a";
+  const map: Record<string, string> = {
+    otp_pending: "pending",
+    pending_address: "pending",
+    pending_approval: "pending approval",
+    admin_approval_required: "processing",
+  };
+  const key = s.toLowerCase();
+  return map[key] ?? key.replace(/_/g, " ");
 };
 
 const getAssetName = (symbol: string) => {
@@ -632,22 +646,7 @@ const renderFromToValue = (label: string, logoUrl?: string | null) => {
           {formatAmount(tx.amount)}
         </td>
         <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E]">
-          <span
-            className={`px-2 py-1 rounded-full text-xs font-medium ${tx.status === "completed"
-                ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                : tx.status === "pending" ||
-                  tx.status === "pending_address" ||
-                  tx.status === "pending_approval" ||
-                  tx.status?.toLowerCase() === "admin_approval_required" ||
-                  tx.status?.toLowerCase() === "otp_pending"
-                  ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
-                  : tx.status === "rejected" || tx.status === "error"
-                    ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
-                    : "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400"
-              }`}
-          >
-            {formatStatus(tx.status)}
-          </span>
+          <StatusBadge status={normalizeStatusForBadge(tx.status)} />
         </td>
         <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E] text-sm sm:text-base text-gray-500 dark:text-[#A0A3BC]">
           {formatRecentTime(tx.created_at)}
@@ -708,18 +707,7 @@ const renderFromToValue = (label: string, logoUrl?: string | null) => {
               </span>
             </div>
           </div>
-          <span
-            className={`px-2 py-1 rounded-full text-xs font-medium ${tx.status === "completed"
-                ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                : tx.status === "pending" ||
-                  tx.status?.toLowerCase() === "admin_approval_required" ||
-                  tx.status?.toLowerCase() === "otp_pending"
-                  ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
-                  : "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400"
-              }`}
-          >
-            {formatStatus(tx.status)}
-          </span>
+          <StatusBadge status={normalizeStatusForBadge(tx.status)} />
         </div>
         <div className="grid grid-cols-2 gap-3 text-sm">
           <div>

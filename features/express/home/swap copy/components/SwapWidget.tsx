@@ -543,12 +543,33 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
     }
   };
 
+  // Validate amount: max 12 digits before decimal point (keep consistent with dashboard swap)
+  const validateAmount = (value: string): boolean => {
+    if (value === "" || value === ".") return true;
+    const parts = value.split(".");
+    const integerPart = parts[0] || "";
+    if (integerPart.length > 12) {
+      setLocalSwapError("Maximum 12 digits allowed before the decimal point.");
+      return false;
+    }
+    return true;
+  };
+
   const handleFromAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     // Only allow numbers and decimals
     if (value === "" || /^\d*\.?\d*$/.test(value)) {
+      if (!validateAmount(value)) return;
       setActiveInputField("from");
       setHasUserInteracted(true);
+      if (value === "") {
+        dispatch(setFromAmount(""));
+        dispatch(setToAmount(""));
+        dispatch(clearEstimate());
+        dispatch(clearEstimateError());
+        setLocalSwapError("");
+        return;
+      }
       dispatch(setFromAmount(value));
     }
   };
@@ -557,8 +578,17 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
     const value = e.target.value;
     // Only allow numbers and decimals
     if (value === "" || /^\d*\.?\d*$/.test(value)) {
+      if (!validateAmount(value)) return;
       setActiveInputField("to");
       setHasUserInteracted(true);
+      if (value === "") {
+        dispatch(setFromAmount(""));
+        dispatch(setToAmount(""));
+        dispatch(clearEstimate());
+        dispatch(clearEstimateError());
+        setLocalSwapError("");
+        return;
+      }
       dispatch(setToAmount(value));
     }
   };

@@ -79,7 +79,10 @@ const ExpressExchangeForm: React.FC<ExpressExchangeFormProps> = ({
   const handleModeChange = (newMode: "deposit" | "withdrawal", currentState?: any) => {
     // Save current state before switching
     if (currentState) {
-      setPreservedState(currentState);
+      // Mark state coming from an in-form mode toggle so child forms can
+      // restore fields without triggering "auto-expand" behaviors intended
+      // only for legal-return / auth-redirect prefill flows.
+      setPreservedState({ ...currentState, __source: "modeSwitch" });
     }
     setMode(newMode);
   };

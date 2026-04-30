@@ -1,15 +1,22 @@
 import React, { useState, useEffect } from "react";
 import { Dialog } from "@headlessui/react";
 import { editP2POrderThunk } from "@/features/p2p/slices/orderSlice";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store";
 import type { P2PResponse } from "@/features/p2p/types";
 import type { PayloadAction } from "@reduxjs/toolkit";
 import toast from "react-hot-toast";
 
 import { logger } from '@/lib/utils/logger';
+// Edit modal should not modify payment methods (only the ad fields).
+import type { RootState } from "@/store/rootReducer";
 
 const MIN_ORDER_AMOUNT = 10;
+const TIME_LIMITS = [
+  { label: "5 min", value: "5" },
+  { label: "10 min", value: "10" },
+  { label: "15 min", value: "15" },
+] as const;
 
 interface EditAdModalProps {
   isOpen: boolean;
@@ -26,6 +33,7 @@ const EditAdModal: React.FC<EditAdModalProps> = ({
 }) => {
   const dispatch = useDispatch<AppDispatch>();
   const [isLoading, setIsLoading] = useState(false);
+  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
   const [formData, setFormData] = useState({
     amount: "",
     commission_rate: "1",
@@ -34,11 +42,14 @@ const EditAdModal: React.FC<EditAdModalProps> = ({
     order_type: "",
     exchange_rate: "0.3",
     limit_duration: "10",
-    payment_details_ids: [initialData?.payment_details?.[0]?.id || "1"],
+    payment_details_ids: [] as Array<string | number>,
   });
 
   useEffect(() => {
     if (initialData) {
+      const initialPayments = Array.isArray(initialData?.payment_details)
+        ? (initialData.payment_details as any[])
+        : [];
       setFormData({
         amount: initialData.amount || "",
         commission_rate: initialData.commission_rate?.toString() || "1",
@@ -47,7 +58,9 @@ const EditAdModal: React.FC<EditAdModalProps> = ({
         order_type: initialData.order_type || "",
         exchange_rate: initialData.exchange_rate || "0.3",
         limit_duration: initialData.limit_duration?.toString() || "10",
-        payment_details_ids: [initialData?.payment_details?.[0]?.id || "1"],
+        payment_details_ids: initialPayments
+          .map((p) => (p as any)?.id)
+          .filter((id) => id != null && String(id).trim() !== ""),
       });
     }
   }, [initialData]);
@@ -89,7 +102,11 @@ const EditAdModal: React.FC<EditAdModalProps> = ({
         amount: parseFloat(formData.amount) || 0,
         min_order_amount: parseFloat(formData.min_order_amount) || 0,
         max_order_amount: parseFloat(formData.max_order_amount) || 0,
-        payment_details_ids: [initialData?.payment_details?.[0]?.id || "1"],
+        payment_details_ids:
+          Array.isArray(formData.payment_details_ids) &&
+          formData.payment_details_ids.length > 0
+            ? formData.payment_details_ids
+            : [initialData?.payment_details?.[0]?.id || "1"],
       };
 
     
@@ -266,20 +283,21 @@ const EditAdModal: React.FC<EditAdModalProps> = ({
 
                   <div>
                     <label className="block text-sm dark:text-[#8C8CA1] text-gray-600 mb-1.5">
-                      Time Limit (minutes)
+                      Time Limit
                     </label>
-                    <input
-                      type="number"
-                      min="1"
+                    <select
                       value={formData.limit_duration}
                       onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          limit_duration: e.target.value,
-                        })
+                        setFormData({ ...formData, limit_duration: e.target.value })
                       }
                       className="w-full px-3 py-2 dark:bg-[#35353E] bg-gray-100 rounded-lg dark:text-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1D8751] text-sm"
-                    />
+                    >
+                      {TIME_LIMITS.map((t) => (
+                        <option key={t.value} value={t.value}>
+                          {t.label}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
               </div>
@@ -331,6 +349,7 @@ const EditAdModal: React.FC<EditAdModalProps> = ({
           </div>
         </Dialog.Panel>
       </div>
+
     </Dialog>
   );
 };

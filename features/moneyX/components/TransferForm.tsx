@@ -36,6 +36,14 @@ interface TransferFormProps {
   commissionType?: "deposit" | "withdrawal";
 }
 
+const normalizeRestoredAmountInput = (raw: unknown): string => {
+  const s = String(raw ?? "").trim();
+  if (!s) return "";
+  // Avoid restoring "00" / "0.00" into inputs.
+  if (/^0+(\.0+)?$/.test(s)) return "";
+  return s;
+};
+
 export default function TransferForm({ onTransfer, initialState, commissionType = "deposit" }: TransferFormProps) {
   const dispatch = useDispatch<AppDispatch>();
   const { isDark } = useTheme();
@@ -465,14 +473,16 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
 
         isRestoringRef.current = true;
 
-        if (state.amountInput !== undefined && state.amountInput !== null && state.amountInput !== "") {
-          const sendAmount = state.amountValue || parseFloat(state.amountInput) || 0;
-          setPayAmountInput(state.amountInput);
+        const restoredPayInput = normalizeRestoredAmountInput(state.amountInput);
+        if (restoredPayInput) {
+          const sendAmount = state.amountValue || parseFloat(restoredPayInput) || 0;
+          setPayAmountInput(restoredPayInput);
           setPayAmount(sendAmount);
         }
-        if (state.receiveAmountInput !== undefined && state.receiveAmountInput !== null && state.receiveAmountInput !== "") {
-          const receiveAmount = state.receiveAmountValue || parseFloat(state.receiveAmountInput) || 0;
-          setGetAmountInput(state.receiveAmountInput);
+        const restoredGetInput = normalizeRestoredAmountInput(state.receiveAmountInput);
+        if (restoredGetInput) {
+          const receiveAmount = state.receiveAmountValue || parseFloat(restoredGetInput) || 0;
+          setGetAmountInput(restoredGetInput);
           setGetAmount(receiveAmount);
         }
 
@@ -523,13 +533,15 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
       const state = JSON.parse(saved);
       isRestoringRef.current = true;
 
-      if (state.payAmountInput !== undefined && state.payAmountInput !== null) {
-        setPayAmountInput(state.payAmountInput);
-        setPayAmount(state.payAmount ?? (parseFloat(state.payAmountInput) || 0));
+      const restoredPayInput = normalizeRestoredAmountInput(state.payAmountInput);
+      if (restoredPayInput) {
+        setPayAmountInput(restoredPayInput);
+        setPayAmount(state.payAmount ?? (parseFloat(restoredPayInput) || 0));
       }
-      if (state.getAmountInput !== undefined && state.getAmountInput !== null) {
-        setGetAmountInput(state.getAmountInput);
-        setGetAmount(state.getAmount ?? (parseFloat(state.getAmountInput) || 0));
+      const restoredGetInput = normalizeRestoredAmountInput(state.getAmountInput);
+      if (restoredGetInput) {
+        setGetAmountInput(restoredGetInput);
+        setGetAmount(state.getAmount ?? (parseFloat(restoredGetInput) || 0));
       }
       if (state.bankAccountAddress !== undefined) {
         setBankAccountAddress(state.bankAccountAddress || "");
@@ -1036,6 +1048,15 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
   // Calculate receive/send using commission percentage from API (receive = send - send*rate/100)
   const handleAmountChange = (value: string, isFromPay: boolean) => {
     if (value === "" || /^\d*\.?\d*$/.test(value)) {
+      // If user clears the input, keep both fields empty (avoid reformatting to "0" / "0.00")
+      if (value === "") {
+        setPayAmountInput("");
+        setPayAmount(0);
+        setGetAmountInput("");
+        setGetAmount(0);
+        setApiValidationError(null);
+        return;
+      }
       if (value.includes(".")) {
         const decimalPart = value.split(".")[1];
         if (decimalPart && decimalPart.length > 8) {
@@ -1133,7 +1154,7 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
   return (
     <div className="flex flex-col dark:bg-[var(--bg-color)] pl-0 pr-2 sm:pr-0 mr-0 sm:mr-40 w-full mx-auto">
       {/* Money X Page Title */}
-      <h1 className=" flex items-center text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-[#76777B] dark:text-white uppercase">
+      <h1 className="flex items-center text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-[#76777B] dark:text-white [.deem_&]:text-white uppercase">
         Money <span>
           {isDark ? <img src="/images/xwhite.png" alt="MoneyX" /> : <img src="/images/x.png" alt="MoneyX" />}
         </span>

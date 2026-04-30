@@ -3,6 +3,7 @@ import { Search, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import TransactionRow from './TransactionRow';
 import { useTransactionHistory } from './useTransactionHistroy';
 import { Transaction } from '@/features/exchange/types';
+import { StatusBadge } from '@/components/ui/StatusBadge';
 
 const ReceiptModal = ({ isOpen, onClose, transaction }: { isOpen: boolean; onClose: () => void; transaction: Transaction | null }) => {
   if (!isOpen || !transaction) return null;
@@ -67,7 +68,7 @@ const ReceiptModal = ({ isOpen, onClose, transaction }: { isOpen: boolean; onClo
             <div className="flex flex-col gap-2 p-2 border border-[#35353E] rounded-lg">
               <div className="flex justify-between items-center border-b border-dotted border-[#35353E]">
                 <span className="text-white text-sm">Status:</span>
-                <span className={`text-sm font-medium ${transaction.status === 'completed' ? 'text-[#10B981]' : transaction.status === 'pending' ? 'text-[#F59E0B]' : 'text-[#EF4444]'}`}>{transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}</span>
+                <StatusBadge status={transaction.status} />
               </div>
               {transaction.stages && (<div className="flex justify-between items-center border-b border-dotted border-[#35353E]"><span className="text-white text-sm">Stage:</span><span className="text-[#788099] text-sm">{transaction.stages}</span></div>)}
               {transaction.reason && (<div className="flex justify-between items-center border-b border-dotted border-[#35353E]"><span className="text-white text-sm">Reason:</span><span className="text-[#788099] text-sm">{transaction.reason}</span></div>)}

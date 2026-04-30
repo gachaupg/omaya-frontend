@@ -47,6 +47,7 @@ export default function Sidebar() {
     const normalized = href.replace(/\/$/, "");
     return (
       normalized === "/dashboard/exchange" ||
+      normalized === "/dashboard/p2p" ||
       normalized === "/dashboard/swap" ||
       normalized === "/dashboard/express-exchange"
     );
