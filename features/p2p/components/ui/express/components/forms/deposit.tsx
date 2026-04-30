@@ -2213,7 +2213,22 @@ export default function DepositForm({
                           sortedSwapAssets.map((asset: any, index: number) => (
                             <div
                               key={`${asset.asset_id || 'asset'}-${asset.symbol || asset.ticker || asset.name}-${asset.network}-${index}`}
-                              className="flex items-center gap-3 p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E] last:border-b-0"
+                              className={`flex items-center gap-3 p-3 text-black dark:text-white hover:bg-gray-50 dark:hover:bg-[#23232B] cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E] last:border-b-0 ${
+                                (selectedAsset?.asset_id &&
+                                  asset?.asset_id &&
+                                  String(selectedAsset.asset_id) ===
+                                    String(asset.asset_id)) ||
+                                (String(
+                                  selectedAsset?.ticker ||
+                                    selectedAsset?.symbol ||
+                                    ""
+                                ).toLowerCase() ===
+                                  String(asset?.ticker || asset?.symbol || "").toLowerCase() &&
+                                  String(selectedAsset?.network || "").toLowerCase() ===
+                                    String(asset?.network || "").toLowerCase())
+                                  ? "bg-gray-100 dark:bg-[#23232B]"
+                                  : ""
+                              }`}
                               onClick={() => {
                                 setSelectedAsset(asset);
 

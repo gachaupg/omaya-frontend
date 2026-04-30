@@ -8,24 +8,7 @@ import { NoDataFound } from "../ui/Transactions";
 import { useDashboardI18n } from "@/lib/useDashboardI18n";
 import { SortArrowsIcon } from "@/components/ui/SortArrowsIcon";
 import { formatCurrency } from "@/lib/globalFormatter";
-
-const getStatusColor = (status: string) => {
-  switch (status?.toLowerCase()) {
-    case "completed":
-    case "approved":
-    case "success":
-      return "bg-[#E0F2E8] text-[#1D8751] dark:bg-[#1D8751]/20 dark:text-[#1D8751]";
-    case "pending":
-    case "processing":
-      return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400";
-    case "failed":
-    case "rejected":
-    case "cancelled":
-      return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400";
-    default:
-      return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300";
-  }
-};
+import { StatusBadge } from "@/components/ui/StatusBadge";
 
 const formatRecentTime = (dateValue: string) => {
   const v = formatDistanceToNow(new Date(dateValue), { addSuffix: true });
@@ -148,13 +131,7 @@ const MoneyXTransactions = () => {
                   </span>
                 </td>
                 <td className="py-4 px-4 text-center">
-                  <span
-                    className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                      tx.status || "-"
-                    )}`}
-                  >
-                    {tx.status || "-"}
-                  </span>
+                  <StatusBadge status={tx.status || "-"} />
                 </td>
                 <td className="py-4 px-4 text-right">
                   <span className="text-xs sm:text-sm md:text-base text-gray-500 dark:text-[#A0A3BC]">
@@ -227,13 +204,7 @@ const MoneyXTransactions = () => {
               </div>
               <div>
                 <p className="text-xs dark:text-[#788099] text-gray-500">Status</p>
-                <span
-                  className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                    tx.status || "-"
-                  )}`}
-                >
-                  {tx.status || "-"}
-                </span>
+                <StatusBadge status={tx.status || "-"} />
               </div>
             </div>
             <div className="mt-3 pt-3 border-t dark:border-accent border-gray-200">

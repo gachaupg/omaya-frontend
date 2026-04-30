@@ -6,28 +6,7 @@ import { SwapTransaction } from "@/features/swap/types";
 import { useDashboardI18n } from "@/lib/useDashboardI18n";
 import { SortArrowsIcon } from "@/components/ui/SortArrowsIcon";
 import { getDefaultAssetIcon, getHighResAssetIcon } from "@/features/express/utils/imageHelpers";
-
-const getStatusColor = (status: string) => {
-  switch (status.toLowerCase()) {
-    case "finished":
-    case "completed":
-      return "bg-green-500/10 text-green-500";
-    case "waiting":
-    case "pending":
-      return "bg-yellow-500/10 text-yellow-500";
-    case "confirming":
-    case "exchanging":
-      return "bg-blue-500/10 text-blue-500";
-    case "sending":
-      return "bg-purple-500/10 text-purple-500";
-    case "failed":
-    case "refunded":
-    case "expired":
-      return "bg-red-500/10 text-red-500";
-    default:
-      return "bg-gray-500/10 text-gray-500";
-  }
-};
+import { StatusBadge } from "@/components/ui/StatusBadge";
 
 const formatRecentTime = (dateValue: string) => {
   const v = formatDistanceToNow(new Date(dateValue), { addSuffix: true });
@@ -156,13 +135,7 @@ const SwapTransactions = () => {
                   </div>
                 </div>
               </div>
-              <span
-                className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                  transaction.status
-                )}`}
-              >
-                {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}
-              </span>
+              <StatusBadge status={transaction.status} />
             </div>
 
             <div className="grid grid-cols-2 gap-3 text-sm">
@@ -280,13 +253,7 @@ const SwapTransactions = () => {
 
                 {/* Status */}
                 <td className="py-3 sm:py-4 px-3 sm:px-4">
-                  <span
-                    className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                      transaction.status
-                    )}`}
-                  >
-                    {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}
-                  </span>
+                  <StatusBadge status={transaction.status} />
                 </td>
 
                 {/* When */}

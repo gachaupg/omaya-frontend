@@ -4114,6 +4114,14 @@ export default function DepositForm({
                         if (normalizedValue.trim() === "") {
                           setPayAmount(0);
                           setPayAmountInput("");
+                          // Also clear any derived/calculated values so we don't keep stale state
+                          // when commission is 0 and the UI can appear "stuck".
+                          setGetAmount(0);
+                          setGetAmountInput("");
+                          setEstimate(null);
+                          setEstimateError(null);
+                          setEstimateLoading(false);
+                          setReceiveAmountError(null);
                           setIsCalculatingReceive(false);
                           setIsCalculating(false);
                           return;

@@ -9,6 +9,7 @@ import { NoDataFound } from "../ui/Transactions";
 import { useDashboardI18n } from "@/lib/useDashboardI18n";
 import { SortArrowsIcon } from "@/components/ui/SortArrowsIcon";
 import { getHighResAssetIcon } from "@/features/express/utils/imageHelpers";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 
 interface RootState {
   p2pTransactions: {
@@ -492,20 +493,7 @@ const ExchangeTransactions = ({ itemsPerPage = 10 }) => {
                     </div>
                   </div>
                 </div>
-                <span
-                  className={`px-2 py-1 rounded-full text-xs font-medium ${tx.status === "completed"
-                    ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                    : tx.status === "pending" || tx.status === "pending_address" || tx.status === "pending_approval"
-                      ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
-                      : tx.status === "rejected" || tx.status === "error"
-                        ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
-                        : tx.status === "waiting" || tx.status === "awaiting_payment"
-                          ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
-                          : "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400"
-                    }`}
-                >
-                  {tx.status?.replace(/_/g, " ").toUpperCase() || "N/A"}
-                </span>
+                <StatusBadge status={tx.status || "N/A"} />
               </div>
 
               <div className="grid grid-cols-2 gap-3 text-sm">
@@ -719,20 +707,7 @@ const ExchangeTransactions = ({ itemsPerPage = 10 }) => {
 
                   {/* Status */}
                   <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-accent">
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${tx.status === "completed"
-                        ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                        : tx.status === "pending" || tx.status === "pending_address" || tx.status === "pending_approval"
-                          ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
-                          : tx.status === "rejected" || tx.status === "error"
-                            ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
-                            : tx.status === "waiting" || tx.status === "awaiting_payment"
-                              ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
-                              : "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400"
-                        }`}
-                    >
-                      {tx.status?.replace(/_/g, " ").toUpperCase() || "N/A"}
-                    </span>
+                    <StatusBadge status={tx.status || "N/A"} />
                   </td>
 
                   {/* When */}

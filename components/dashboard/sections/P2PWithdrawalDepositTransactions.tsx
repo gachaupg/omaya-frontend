@@ -10,6 +10,7 @@ import { useDashboardI18n } from "@/lib/useDashboardI18n";
 import { SortArrowsIcon } from "@/components/ui/SortArrowsIcon";
 import { getHighResAssetIcon, getDefaultAssetIcon } from "@/features/express/utils/imageHelpers";
 import CopyButton from "@/components/ui/CopyButton";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 
 interface RootState {
   p2pWithdrawalDeposit: {
@@ -381,18 +382,7 @@ const P2PWithdrawalDepositTransactions = ({ filterByType = "all" }: P2PWithdrawa
                     </div>
                   </div>
                 </div>
-                <span
-                  className={`px-2 py-1 rounded-full text-xs font-medium ${tx.status === "completed" || tx.status === "approved"
-                    ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                    : tx.status === "pending" || tx.stages === "pending_review" || tx.status === "otp_pending"
-                      ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
-                      : tx.status === "rejected" || tx.status === "error"
-                        ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
-                        : "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400"
-                    }`}
-                >
-                  {tx.status?.replace(/_/g, " ").toUpperCase() || tx.stages?.replace(/_/g, " ").toUpperCase() || "N/A"}
-                </span>
+                <StatusBadge status={tx.status || tx.stages || "N/A"} />
               </div>
 
               <div className="grid grid-cols-2 gap-3 text-sm">
@@ -631,18 +621,7 @@ const P2PWithdrawalDepositTransactions = ({ filterByType = "all" }: P2PWithdrawa
 
                   {/* Status */}
                   <td className="px-3 sm:px-4 py-2 whitespace-normal break-words">
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${tx.status === "completed" || tx.status === "approved"
-                        ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                        : tx.status === "pending" || tx.stages === "pending_review" || tx.status === "otp_pending"
-                          ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
-                          : tx.status === "rejected" || tx.status === "error"
-                            ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
-                            : "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400"
-                        }`}
-                    >
-                      {tx.status?.replace(/_/g, " ").toUpperCase() || tx.stages?.replace(/_/g, " ").toUpperCase() || "N/A"}
-                    </span>
+                    <StatusBadge status={tx.status || tx.stages || "N/A"} />
                   </td>
 
                   {/* When */}

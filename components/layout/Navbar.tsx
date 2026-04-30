@@ -761,10 +761,18 @@ export default function Navbar() {
   };
 
   const toggleDepositDropdown = () => {
+    if ((user as any)?.freeze === true) {
+      setShowFrozenModal(true);
+      return;
+    }
     setDepositDropdownOpen(!depositDropdownOpen);
   };
 
   const toggleMobileDepositDropdown = () => {
+    if ((user as any)?.freeze === true) {
+      setShowFrozenModal(true);
+      return;
+    }
     setMobileDepositDropdownOpen(!mobileDepositDropdownOpen);
   };
 

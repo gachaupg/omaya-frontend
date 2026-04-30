@@ -23,6 +23,7 @@ import {
 import { div } from "framer-motion/client";
 import { storage } from "@/features/auth/utils/storage";
 import { TransactionHistorySkeleton } from "@/components/ui/Skeletons";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 
 import { logger } from "@/lib/utils/logger";
 
@@ -222,17 +223,7 @@ const ReceiptModal = ({
             <div className="flex flex-col gap-2 p-2 border border-[#35353E] rounded-lg">
               <div className="flex justify-between items-center border-b border-dotted border-[#35353E]">
                 <span className="text-white text-sm">Status:</span>
-                <span
-                  className={`text-sm font-medium ${transaction.status === "completed"
-                      ? "text-[#10B981]"
-                      : transaction.status === "pending"
-                        ? "text-[#F59E0B]"
-                        : "text-[#EF4444]"
-                    }`}
-                >
-                  {transaction.status.charAt(0).toUpperCase() +
-                    transaction.status.slice(1)}
-                </span>
+                <StatusBadge status={transaction.status} />
               </div>
 
               {transaction.stages && (
@@ -507,9 +498,7 @@ const TransactionHistoryTable: React.FC<TransactionHistoryTableProps> = () => {
 
                       {/* Status */}
                       <div className="col-span-2">
-                        <span className="text-[#788099] text-sm rounded-md text-xs truncate">
-                          {tx.status}
-                        </span>
+                        <StatusBadge status={tx.status} />
                       </div>
 
                       {/* Receipt */}

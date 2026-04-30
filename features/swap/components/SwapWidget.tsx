@@ -607,6 +607,14 @@ const SwapWidget = () => {
       // Validate max 12 digits before decimal
       if (!validateAmount(value)) return;
       setActiveInputField("from");
+      if (value === "") {
+        dispatch(setFromAmount(""));
+        dispatch(setToAmount(""));
+        dispatch(clearEstimate());
+        dispatch(clearEstimateError());
+        setLocalSwapError("");
+        return;
+      }
       dispatch(setFromAmount(value));
     }
   };
@@ -618,6 +626,14 @@ const SwapWidget = () => {
       // Validate max 12 digits before decimal
       if (!validateAmount(value)) return;
       setActiveInputField("to");
+      if (value === "") {
+        dispatch(setFromAmount(""));
+        dispatch(setToAmount(""));
+        dispatch(clearEstimate());
+        dispatch(clearEstimateError());
+        setLocalSwapError("");
+        return;
+      }
       dispatch(setToAmount(value));
     }
   };
@@ -747,7 +763,7 @@ const SwapWidget = () => {
 
   return (
     <div className="flex flex-col dark:text-white text-gray-900 w-full max-w-5xl mx-auto px-4 sm:px-6">
-      <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white uppercase">
+      <h2 className="mb-4 sm:mb-6 flex items-center text-xl sm:text-2xl font-bold text-[#76777B] dark:text-white [.deem_&]:text-white uppercase">
         Swap Crypto
       </h2>
 

@@ -108,6 +108,8 @@ interface SwapState {
   estimate: SwapEstimate | null;
   estimateLoading: boolean;
   estimateError: string | null;
+  /** Used to ignore stale estimate responses (e.g. user cleared input mid-request). */
+  estimateRequestKey: string | null;
   swapResponse: CreateSwapResponse | null;
   swapLoading: boolean;
   swapError: string | null;
@@ -127,6 +129,7 @@ const initialState: SwapState = {
   estimate: null,
   estimateLoading: false,
   estimateError: null,
+  estimateRequestKey: null,
   swapResponse: null,
   swapLoading: false,
   swapError: null,
@@ -334,6 +337,8 @@ const swapSlice = createSlice({
     clearEstimate: (state) => {
       state.estimate = null;
       state.estimateError = null;
+      state.estimateLoading = false;
+      state.estimateRequestKey = null;
     },
     clearEstimateError: (state) => {
       state.estimateError = null;
@@ -396,17 +401,90 @@ const swapSlice = createSlice({
           action.error.message || "Failed to fetch supported assets";
         state.hasShownErrorToast = true; // Mark that error toast has been shown
       })
-      .addCase(fetchSwapEstimate.pending, (state) => {
+      .addCase(fetchSwapEstimate.pending, (state, action) => {
         state.estimateLoading = true;
         state.estimateError = null;
         state.hasShownErrorToast = false;
+
+        const a = (action as any)?.meta?.arg as
+          | {
+              fromCurrency: string;
+              fromNetwork: string;
+              toCurrency: string;
+              toNetwork: string;
+              amount: number;
+              usePublicApi?: boolean;
+            }
+          | undefined;
+        if (a) {
+          state.estimateRequestKey = [
+            a.fromCurrency,
+            a.fromNetwork,
+            a.toCurrency,
+            a.toNetwork,
+            String(a.amount),
+            a.usePublicApi ? "public" : "auth",
+          ].join("|");
+        } else {
+          state.estimateRequestKey = null;
+        }
       })
       .addCase(fetchSwapEstimate.fulfilled, (state, action) => {
         state.estimateLoading = false;
+        const a = (action as any)?.meta?.arg as
+          | {
+              fromCurrency: string;
+              fromNetwork: string;
+              toCurrency: string;
+              toNetwork: string;
+              amount: number;
+              usePublicApi?: boolean;
+            }
+          | undefined;
+        const key = a
+          ? [
+              a.fromCurrency,
+              a.fromNetwork,
+              a.toCurrency,
+              a.toNetwork,
+              String(a.amount),
+              a.usePublicApi ? "public" : "auth",
+            ].join("|")
+          : null;
+
+        // If user cleared the inputs (or moved on), ignore late responses.
+        if ((state.fromAmount === "" && state.toAmount === "") || (key && state.estimateRequestKey && key !== state.estimateRequestKey)) {
+          return;
+        }
+
         state.estimate = action.payload;
       })
       .addCase(fetchSwapEstimate.rejected, (state, action) => {
         state.estimateLoading = false;
+        // Ignore stale rejected responses as well.
+        const a = (action as any)?.meta?.arg as
+          | {
+              fromCurrency: string;
+              fromNetwork: string;
+              toCurrency: string;
+              toNetwork: string;
+              amount: number;
+              usePublicApi?: boolean;
+            }
+          | undefined;
+        const key = a
+          ? [
+              a.fromCurrency,
+              a.fromNetwork,
+              a.toCurrency,
+              a.toNetwork,
+              String(a.amount),
+              a.usePublicApi ? "public" : "auth",
+            ].join("|")
+          : null;
+        if ((state.fromAmount === "" && state.toAmount === "") || (key && state.estimateRequestKey && key !== state.estimateRequestKey)) {
+          return;
+        }
         state.estimateError = estimateErrorStringFromRejectAction(action);
         state.hasShownErrorToast = true;
       })

@@ -13,6 +13,7 @@ import { NoDataFound } from "../ui/Transactions";
 import { useDashboardI18n } from "@/lib/useDashboardI18n";
 import { SortArrowsIcon } from "@/components/ui/SortArrowsIcon";
 import { getHighResAssetIcon } from "@/features/express/utils/imageHelpers";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 
 const BANK_ICONS: Record<string, string> = {
   "Salam Bank": "/banks/salam.png",
@@ -355,9 +356,7 @@ const P2PTransactions = () => {
                   </td>
                   {/* Status */}
                   <td className="px-3 sm:px-4 lg:px-4 py-3 border-b border-gray-200 dark:border-[#35353E]">
-                    <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400">
-                      {(transaction.status || "N/A").toString().replace(/_/g, " ").toUpperCase()}
-                    </span>
+                    <StatusBadge status={transaction.status || "N/A"} />
                   </td>
                   {/* When */}
                   <td className="px-3 sm:px-4 lg:px-4 py-3 border-b border-gray-200 dark:border-[#35353E] text-sm sm:text-base text-gray-500 dark:text-[#A0A3BC]">

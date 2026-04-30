@@ -35,6 +35,14 @@ import { BookmarkDropdown } from "@/features/express/components/forms/BookmarkDr
 
 const RATES_MONEYX_FORM_STATE_KEY = "rates_moneyx_form_state";
 
+const normalizeRestoredAmountInput = (raw: unknown): string => {
+  const s = String(raw ?? "").trim();
+  if (!s) return "";
+  // Avoid showing "00" / "0.00" after restore; treat as empty so defaults stay.
+  if (/^0+(\.0+)?$/.test(s)) return "";
+  return s;
+};
+
 const MoneyXRates = ({
   commissionType = "deposit",
 }: {
@@ -214,13 +222,20 @@ const MoneyXRates = ({
       }
       const state = JSON.parse(saved);
 
-      if (state?.amountInput != null) setPayAmountInput(String(state.amountInput));
-      if (state?.amountValue != null && !Number.isNaN(Number(state.amountValue))) {
+      const restoredPayInput = normalizeRestoredAmountInput(state?.amountInput);
+      if (restoredPayInput) setPayAmountInput(restoredPayInput);
+      if (
+        restoredPayInput &&
+        state?.amountValue != null &&
+        !Number.isNaN(Number(state.amountValue))
+      ) {
         setPayAmount(Number(state.amountValue));
       }
 
-      if (state?.receiveAmountInput != null) setGetAmountInput(String(state.receiveAmountInput));
+      const restoredGetInput = normalizeRestoredAmountInput(state?.receiveAmountInput);
+      if (restoredGetInput) setGetAmountInput(restoredGetInput);
       if (
+        restoredGetInput &&
         state?.receiveAmountValue != null &&
         !Number.isNaN(Number(state.receiveAmountValue))
       ) {
@@ -244,9 +259,9 @@ const MoneyXRates = ({
     if (!isStateHydrated) return;
     const state = {
       mode: "moneyx",
-      amountInput: payAmountInput,
+      amountInput: normalizeRestoredAmountInput(payAmountInput),
       amountValue: payAmount,
-      receiveAmountInput: getAmountInput,
+      receiveAmountInput: normalizeRestoredAmountInput(getAmountInput),
       receiveAmountValue: getAmount,
       fromPaymentMethod,
       toPaymentMethod,
@@ -552,6 +567,15 @@ const MoneyXRates = ({
   // Calculate amounts using commission percentage (receive = send - send*rate/100)
   const handleAmountChange = (value: string, isFromPay: boolean) => {
     if (value === "" || /^\d*\.?\d*$/.test(value)) {
+      // If user clears the input, keep both fields empty (avoid reformatting to "0.00")
+      if (value === "") {
+        setPayAmountInput("");
+        setPayAmount(0);
+        setGetAmountInput("");
+        setGetAmount(0);
+        setValidationErrors([]);
+        return;
+      }
       if (value.includes(".")) {
         const decimalPart = value.split(".")[1];
         if (decimalPart && decimalPart.length > 8) {

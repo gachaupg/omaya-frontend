@@ -1,4 +1,5 @@
 import React from "react";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 
 interface PaymentInfo {
   bankName: string;
@@ -150,7 +151,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
       <div className="rounded-xl bg-[#23242B] p-3 sm:p-4">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-0 mb-2">
           <span className="text-xs sm:text-sm text-[#788099]">Status:</span>
-          <span className="text-[#1D8751] font-medium text-xs sm:text-sm">{status}</span>
+          <StatusBadge status={status} className="ml-auto sm:ml-0" />
         </div>
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-0 mb-2">
           <span className="text-xs sm:text-sm text-[#788099]">Receipt:</span>

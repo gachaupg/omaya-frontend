@@ -33,6 +33,7 @@ export default function DashboardLayout({
 
     const blockedRoutes = [
       "/dashboard/exchange",
+      "/dashboard/p2p",
       "/dashboard/swap",
       "/dashboard/express-exchange",
     ];

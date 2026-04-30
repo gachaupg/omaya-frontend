@@ -80,12 +80,10 @@ const Express = ({ isHomePage = false }: ExpressProps) => {
             title={`Switch to ${currentMode === "deposit" ? "withdrawal" : "deposit"} mode`}
           >
             <span
-              className="flex items-center justify-center"
+              className="flex items-center justify-center text-xl sm:text-2xl font-bold text-[#76777B] dark:text-white [.deem_&]:text-white uppercase"
               suppressHydrationWarning
             >
-              <span className="text-[#76777B] dark:text-white text-base uppercase font-bold">
-                E
-              </span>
+              <span>E</span>
               {mounted && (
                 <>
                   {isDark ? (
@@ -95,9 +93,7 @@ const Express = ({ isHomePage = false }: ExpressProps) => {
                   )}
                 </>
               )}
-              <span className="text-[#76777B] dark:text-white text-base uppercase font-bold ml-[-3px]">
-                CHANGE
-              </span>
+              <span className="ml-[-3px]">CHANGE</span>
             </span>
           </button>
           {/* <div className="mt-2 text-sm text-gray-600">

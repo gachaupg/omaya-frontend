@@ -3069,6 +3069,12 @@ export default function DepositForm({
       return;
     }
 
+    // When switching modes inside the Express form, we preserve state to keep
+    // user inputs — but we should NOT auto-expand sections.
+    if ((initialState as any)?.__source === "modeSwitch") {
+      return;
+    }
+
     if (!selectedAsset) {
       return;
     }

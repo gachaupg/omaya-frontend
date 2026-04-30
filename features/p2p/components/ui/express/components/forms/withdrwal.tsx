@@ -2527,14 +2527,29 @@ export default function WithdrawalForm({
 
                 {/* Asset Dropdown */}
                 {isAssetDropdownOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-[#ffffff] dark:bg-[var(--card-color)] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-xl sm:rounded-2xl z-50 max-h-[60vh] sm:max-h-80 overflow-hidden">
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-[#ffffff] dark:bg-[var(--card-color)]  border border-[#A2A4A9FF] dark:border-[#35353E] rounded-xl sm:rounded-2xl z-50 max-h-[60vh] sm:max-h-80 overflow-hidden">
                     {/* Asset List */}
                     <div className="max-h-60 overflow-y-auto">
                       {sortedSwapAssets.length > 0 ? (
                         sortedSwapAssets.map((asset: any, index: number) => (
                           <div
                             key={`${asset.asset_id}-${asset.ticker}-${asset.network}-${index}`}
-                            className="flex items-center gap-3 p-3 text-black dark:text-white hover:bg-gray-50 dark:hover:bg-[#23232B] cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E] last:border-b-0"
+                            className={`flex items-center gap-3 p-3 text-black dark:text-white hover:bg-gray-50 dark:hover:bg-[#23232B] cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E] last:border-b-0 ${
+                              (selectedAsset?.asset_id &&
+                                asset?.asset_id &&
+                                String(selectedAsset.asset_id) ===
+                                  String(asset.asset_id)) ||
+                              (String(
+                                selectedAsset?.ticker ||
+                                  selectedAsset?.symbol ||
+                                  ""
+                              ).toLowerCase() ===
+                                String(asset?.ticker || asset?.symbol || "").toLowerCase() &&
+                                String(selectedAsset?.network || "").toLowerCase() ===
+                                  String(asset?.network || "").toLowerCase())
+                                ? "bg-gray-100 dark:bg-[#23232B]"
+                                : ""
+                            }`}
                             onClick={() => {
                               logger.debug('p2p', "Asset selected:", asset);
 
@@ -2627,8 +2642,7 @@ export default function WithdrawalForm({
                 Network
               </label>
               <div className="relative" ref={networkDropdownRef}>
-                <div
-                  className="w-full text-[#35353e] dark:bg-[var(--card-color)] dark:text-[#ffffff] rounded-xl sm:rounded-2xl px-3 sm:px-4 py-2.5 sm:py-2 text-sm sm:text-lg focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] flex items-center justify-between cursor-pointer hover:border-[#A2A4A9FF] dark:hover:border-[#35353E] transition-colors min-h-[44px] sm:min-h-0"
+                <div className="w-full text-[#35353e] dark:bg-[var(--card-color)] dark:text-[#ffffff] rounded-xl sm:rounded-2xl px-3 sm:px-4 py-2.5 sm:py-2 text-sm sm:text-lg focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] flex items-center justify-between cursor-pointer hover:border-[#A2A4A9FF] dark:hover:border-[#35353E] transition-colors min-h-[44px] sm:min-h-0"
                   onClick={() =>
                     setIsNetworkDropdownOpen(!isNetworkDropdownOpen)
                   }
