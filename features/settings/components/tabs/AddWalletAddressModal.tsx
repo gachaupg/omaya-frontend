@@ -19,6 +19,14 @@ import {
   verifyPaymentDetailAddOtp,
 } from "@/features/p2p/api";
 
+const POPULAR_TICKERS = ["USDT", "USDC", "FXP"];
+const normalizePopularTicker = (v: unknown) => {
+  const t = String(v || "").trim().toUpperCase();
+  if (!t) return "";
+  if (t === "FXPRIMUS") return "FXP";
+  return t;
+};
+
 interface AddWalletAddressModalProps {
   open: boolean;
   onClose: () => void;
@@ -131,11 +139,25 @@ const AddWalletAddressModal = ({
     return Array.from(seen.values());
   }, [allAssets]);
 
-  // Get all network variations for the selected ticker
+  // One row per network for the selected ticker. Merged swap + exchange data can
+  // contain many duplicate (ticker, network) rows; rendering them all made this UI very slow.
   const networksForAsset = useMemo(() => {
     if (!selectedAssetTicker) return [];
-    return allAssets.filter(
-      (a) => a.ticker?.toUpperCase() === selectedAssetTicker.toUpperCase()
+    const tickerU = selectedAssetTicker.toUpperCase();
+    const byNetwork = new Map<string, SupportedAsset>();
+    for (const a of allAssets) {
+      if (a.ticker?.toUpperCase() !== tickerU) continue;
+      const net = String(a.network ?? "").trim();
+      if (!net) continue;
+      const key = net.toLowerCase();
+      if (!byNetwork.has(key)) {
+        byNetwork.set(key, a);
+      }
+    }
+    return Array.from(byNetwork.values()).sort((x, y) =>
+      String(x.network).localeCompare(String(y.network), undefined, {
+        sensitivity: "base",
+      })
     );
   }, [allAssets, selectedAssetTicker]);
 
@@ -512,17 +534,38 @@ const AddWalletAddressModal = ({
     onClose();
   };
 
-  if (!open) return null;
-
-  const filteredAssets = uniqueAssets.filter((a) => {
-    if (!assetSearch.trim()) return true;
+  const filteredAssets = useMemo(() => {
+    if (!assetSearch.trim()) return uniqueAssets;
     const q = assetSearch.toLowerCase();
-    return (
-      a.ticker?.toLowerCase().includes(q) ||
-      a.name?.toLowerCase().includes(q) ||
-      a.symbol?.toLowerCase().includes(q)
+    return uniqueAssets.filter(
+      (a) =>
+        a.ticker?.toLowerCase().includes(q) ||
+        a.name?.toLowerCase().includes(q) ||
+        a.symbol?.toLowerCase().includes(q)
     );
-  });
+  }, [uniqueAssets, assetSearch]);
+
+  const popularAssets = useMemo(
+    () =>
+      assetSearch.trim()
+        ? []
+        : filteredAssets.filter((a) =>
+            POPULAR_TICKERS.includes(normalizePopularTicker(a.ticker || a.symbol))
+          ),
+    [filteredAssets, assetSearch]
+  );
+  const otherAssets = useMemo(
+    () =>
+      assetSearch.trim()
+        ? filteredAssets
+        : filteredAssets.filter(
+            (a) =>
+              !POPULAR_TICKERS.includes(
+                normalizePopularTicker(a.ticker || a.symbol)
+              )
+          ),
+    [filteredAssets, assetSearch]
+  );
 
   const getAssetImage = (a: SupportedAsset) =>
     getHighResAssetIcon(
@@ -530,26 +573,7 @@ const AddWalletAddressModal = ({
       72
     );
 
-  // Popular assets for "Add Crypto Address" (ticker dropdown is deduped by ticker).
-  // Keep FXP as a single entry (avoid FXP/FXPRIMUS duplicates).
-  const POPULAR_TICKERS = ["USDT", "USDC", "FXP"];
-  const normalizePopularTicker = (v: unknown) => {
-    const t = String(v || "").trim().toUpperCase();
-    if (!t) return "";
-    if (t === "FXPRIMUS") return "FXP";
-    return t;
-  };
-  const popularAssets = assetSearch.trim()
-    ? []
-    : filteredAssets.filter((a) =>
-        POPULAR_TICKERS.includes(normalizePopularTicker(a.ticker || a.symbol))
-      );
-  const otherAssets = assetSearch.trim()
-    ? filteredAssets
-    : filteredAssets.filter(
-        (a) =>
-          !POPULAR_TICKERS.includes(normalizePopularTicker(a.ticker || a.symbol))
-      );
+  if (!open) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
