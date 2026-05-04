@@ -32,8 +32,37 @@ import Exchanging from "@/features/express/home/components/moneyX/components/Exc
 import { checkKYCStatus, openKYCModal } from "@/features/auth/slices/authSlice";
 import { useBookmarkedAddresses } from "@/features/express/hooks/useBookmarkedAddresses";
 import { BookmarkDropdown } from "@/features/express/components/forms/BookmarkDropdown";
+import { getHighResPaymentLogo } from "@/features/express/utils/imageHelpers";
 
 const RATES_MONEYX_FORM_STATE_KEY = "rates_moneyx_form_state";
+
+/** Public payment payloads often nest logos under `provider` or `payment_details[0]`. */
+const resolvePaymentMethodLogo = (payment: any): string | undefined => {
+  if (!payment || typeof payment !== "object") return undefined;
+  const d0 = Array.isArray(payment.payment_details)
+    ? payment.payment_details[0]
+    : undefined;
+  const candidates = [
+    payment.provider_logo,
+    payment.logo,
+    payment.image_url,
+    payment.icon_url,
+    payment.provider?.provider_logo,
+    payment.provider?.logo,
+    payment.provider?.image_url,
+    payment.method?.logo,
+    payment.method?.icon,
+    d0?.provider_logo,
+    d0?.logo,
+    d0?.bank_logo,
+    d0?.image_url,
+    d0?.icon_url,
+  ];
+  for (const c of candidates) {
+    if (typeof c === "string" && c.trim()) return c.trim();
+  }
+  return undefined;
+};
 
 const normalizeRestoredAmountInput = (raw: unknown): string => {
   const s = String(raw ?? "").trim();
@@ -132,16 +161,20 @@ const MoneyXRates = ({
             payment.is_active === "1"
           );
         })
-        .map((payment: any) => ({
-          ...payment,
-          logo: payment.logo || payment.provider_logo || undefined,
-          provider_logo: payment.provider_logo || payment.logo || undefined,
-          provider_name:
-            payment.provider_name ||
-            payment.provider?.provider_name ||
-            payment.method?.method_name ||
-            payment.payment_method_name,
-        }));
+        .map((payment: any) => {
+          const resolvedLogo = resolvePaymentMethodLogo(payment);
+          return {
+            ...payment,
+            logo: resolvedLogo || payment.logo || payment.provider_logo || undefined,
+            provider_logo:
+              resolvedLogo || payment.provider_logo || payment.logo || undefined,
+            provider_name:
+              payment.provider_name ||
+              payment.provider?.provider_name ||
+              payment.method?.method_name ||
+              payment.payment_method_name,
+          };
+        });
 
       const deduped = Array.from(
         new Map(
@@ -376,6 +409,28 @@ const MoneyXRates = ({
 
     return providerName;
   }, []);
+
+  // Auto-selected or restored rows: keep detail object in sync with the canonical API list so logos show.
+  useEffect(() => {
+    if (!Array.isArray(finalPaymentMethods) || finalPaymentMethods.length === 0)
+      return;
+    if (!fromPaymentMethod) return;
+    const match = finalPaymentMethods.find(
+      (m: any) => getProviderName(m) === fromPaymentMethod
+    );
+    if (match) setSelectedFromPaymentDetail(match);
+  }, [finalPaymentMethods, fromPaymentMethod, getProviderName]);
+
+  useEffect(() => {
+    if (!Array.isArray(finalPaymentMethods) || finalPaymentMethods.length === 0)
+      return;
+    if (!toPaymentMethod) return;
+    const match = finalPaymentMethods.find(
+      (m: any) => getProviderName(m) === toPaymentMethod
+    );
+    if (match) setSelectedToPaymentDetail(match);
+  }, [finalPaymentMethods, toPaymentMethod, getProviderName]);
+
   const currentBankAsset = selectedToPaymentDetail
     ? getProviderName(selectedToPaymentDetail)
     : "";
@@ -1026,10 +1081,7 @@ const MoneyXRates = ({
           >
             {/* Amount Section */}
             <div className="flex-1 min-w-0">
-              <label
-                className={`block text-sm mb-2 font-semibold flex items-center gap-2 ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"
-                  }`}
-              >
+              <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
                 {t("rates.youSend", "You Send")}
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
               </label>
@@ -1050,10 +1102,7 @@ const MoneyXRates = ({
 
             {/* Bank/Payment Method Section */}
             <div className="flex-1 min-w-0" ref={fromDropdownRef}>
-              <label
-                className={`block text-[15px] mb-2 font-semibold ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"
-                  }`}
-              >
+              <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
                 Bank/Payment Method
               </label>
               <div className="relative">
@@ -1069,15 +1118,15 @@ const MoneyXRates = ({
                     }`}
                 >
                   <div className="flex items-center gap-3">
-                    {selectedFromPaymentDetail?.provider_logo ||
-                      selectedFromPaymentDetail?.logo ? (
+                    {resolvePaymentMethodLogo(selectedFromPaymentDetail) ? (
                       <img
-                        src={
-                          selectedFromPaymentDetail.provider_logo ||
-                          selectedFromPaymentDetail.logo
-                        }
+                        src={getHighResPaymentLogo(
+                          resolvePaymentMethodLogo(selectedFromPaymentDetail),
+                          null,
+                          64
+                        )}
                         alt={fromPaymentMethod || "Bank"}
-                        className="w-8 h-8 rounded-full"
+                        className="w-8 h-8 rounded-full object-cover"
                       />
                     ) : (
                       <div className="w-8 h-8 rounded-full bg-[#1D8751] flex items-center justify-center text-white text-xs font-semibold">
@@ -1128,11 +1177,15 @@ const MoneyXRates = ({
                             className={`w-full px-3 py-2 rounded-lg flex items-center gap-3 hover:bg-opacity-50 ${isDark ? "hover:bg-[#2F2F3A]" : "hover:bg-gray-100"
                               }`}
                           >
-                            {method.provider_logo || method.logo ? (
+                            {resolvePaymentMethodLogo(method) ? (
                               <img
-                                src={method.provider_logo || method.logo}
+                                src={getHighResPaymentLogo(
+                                  resolvePaymentMethodLogo(method),
+                                  null,
+                                  64
+                                )}
                                 alt={getProviderName(method)}
-                                className="w-8 h-8 rounded-full"
+                                className="w-8 h-8 rounded-full object-cover"
                               />
                             ) : (
                               <div className="w-8 h-8 rounded-full bg-[#1D8751] flex items-center justify-center text-white text-xs font-semibold">
@@ -1188,10 +1241,7 @@ const MoneyXRates = ({
           >
             {/* Amount Section */}
             <div className="flex-1 min-w-0">
-              <label
-                className={`block text-sm mb-2 font-semibold flex items-center gap-2 ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"
-                  }`}
-              >
+              <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
                 {t("rates.youGet", "You Get")}
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
               </label>
@@ -1212,10 +1262,7 @@ const MoneyXRates = ({
 
             {/* Provider Section */}
             <div className="flex-1 min-w-0" ref={toDropdownRef}>
-              <label
-                className={`block text-[15px] mb-2 font-semibold ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"
-                  }`}
-              >
+              <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
                 Bank/Payment Method
               </label>
               <div className="relative">
@@ -1231,15 +1278,15 @@ const MoneyXRates = ({
                     }`}
                 >
                   <div className="flex items-center gap-3">
-                    {selectedToPaymentDetail?.provider_logo ||
-                      selectedToPaymentDetail?.logo ? (
+                    {resolvePaymentMethodLogo(selectedToPaymentDetail) ? (
                       <img
-                        src={
-                          selectedToPaymentDetail.provider_logo ||
-                          selectedToPaymentDetail.logo
-                        }
+                        src={getHighResPaymentLogo(
+                          resolvePaymentMethodLogo(selectedToPaymentDetail),
+                          null,
+                          64
+                        )}
                         alt={toPaymentMethod || "Bank"}
-                        className="w-8 h-8 rounded-full"
+                        className="w-8 h-8 rounded-full object-cover"
                       />
                     ) : (
                       <div className="w-8 h-8 rounded-full bg-[#1D8751] flex items-center justify-center text-white text-xs font-semibold">
@@ -1290,11 +1337,15 @@ const MoneyXRates = ({
                             className={`w-full px-3 py-2 rounded-lg flex items-center gap-3 hover:bg-opacity-50 ${isDark ? "hover:bg-[#2F2F3A]" : "hover:bg-gray-100"
                               }`}
                           >
-                            {method.provider_logo || method.logo ? (
+                            {resolvePaymentMethodLogo(method) ? (
                               <img
-                                src={method.provider_logo || method.logo}
+                                src={getHighResPaymentLogo(
+                                  resolvePaymentMethodLogo(method),
+                                  null,
+                                  64
+                                )}
                                 alt={getProviderName(method)}
-                                className="w-8 h-8 rounded-full"
+                                className="w-8 h-8 rounded-full object-cover"
                               />
                             ) : (
                               <div className="w-8 h-8 rounded-full bg-[#1D8751] flex items-center justify-center text-white text-xs font-semibold">

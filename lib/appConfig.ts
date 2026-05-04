@@ -35,6 +35,9 @@ export const API_CONFIG = {
     SUMSUB_TOKEN: "/api/sumsub/token/",
     ENABLE_2FA: "/api/2fa/enable/",
     VERIFY_2FA_SETUP: "/api/2fa/verify-setup/",
+    /** Account freeze/unfreeze pushes `{ type: "freeze_status_update", data: { freeze, message } }` */
+    FREEZE_STATUS_WS: (token: string) =>
+      `${getWebSocketBaseUrl()}/ws/freeze-status/?token=${encodeURIComponent(token)}`,
   },
   BLOG: {
     BLOGS: "/administration/blogs/blog/",
