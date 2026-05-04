@@ -3322,6 +3322,13 @@ const getPaymentRestrictionMessage = (status?: string) =>
                       // Only allow numbers and decimals
                       if (value === "" || /^\d*\.?\d*$/.test(value)) {
                         setAmount(value);
+                        if (value === "") {
+                          setReceiveAmount("");
+                          setReceiveAmountError(null);
+                          setIsCalculating(false);
+                          setIsCalculatingReceive(false);
+                          return;
+                        }
                         const newAmount = parseFloat(value) || 0;
                         setIsCalculatingFromPay(true);
                         if (
@@ -3790,6 +3797,13 @@ const getPaymentRestrictionMessage = (status?: string) =>
                       // Only allow numbers and decimals
                       if (value === "" || /^\d*\.?\d*$/.test(value)) {
                         setReceiveAmount(value);
+                        if (value === "") {
+                          setAmount("");
+                          setReceiveAmountError(null);
+                          setIsCalculating(false);
+                          setIsCalculatingReceive(false);
+                          return;
+                        }
                         const newAmount = parseFloat(value) || 0;
                         setIsCalculatingFromPay(false);
 

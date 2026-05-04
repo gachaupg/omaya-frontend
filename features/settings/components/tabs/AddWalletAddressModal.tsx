@@ -9,6 +9,7 @@ import { createUserWalletAddress } from "@/features/settings/slices/userWalletAd
 import { fetchUserWalletAddresses } from "@/features/settings/slices/userWalletAddressesSlice";
 import { fetchAssets } from "@/features/exchange/slices/exchangeSlice";
 import { fetchSupportedAssets } from "@/features/swap/slices/swapSlice";
+import { withTimeout } from "@/features/express/utils/fetchWithTimeout";
 import { useValidateAddress } from "@/hooks/useValidateAddress";
 import { showToast } from "@/lib/utils/toast";
 import type { SupportedAsset } from "@/features/swap/types";
@@ -18,14 +19,24 @@ import {
   sendPaymentDetailAddOtp,
   verifyPaymentDetailAddOtp,
 } from "@/features/p2p/api";
+import { useAssetsDisplay } from "@/features/express/hooks/useDataDisplay";
+import { isForexPrimusAsset } from "@/features/express/api";
 
-const POPULAR_TICKERS = ["USDT", "USDC", "FXP"];
-const normalizePopularTicker = (v: unknown) => {
-  const t = String(v || "").trim().toUpperCase();
-  if (!t) return "";
-  if (t === "FXPRIMUS") return "FXP";
-  return t;
+/** Same network resolution as Express deposit (`deposit.tsx`). */
+const getAssetNetwork = (asset: any): string => {
+  if (asset?.network) return asset.network;
+  if (asset?.networks?.length > 0) {
+    return (
+      asset.networks[0].network_type ||
+      asset.networks[0].network_id ||
+      ""
+    );
+  }
+  return "";
 };
+
+const assetRowKey = (a: any) =>
+  `${(a?.ticker || a?.symbol || a?.name || "").toString().toLowerCase()}|${(a?.network || getAssetNetwork(a) || "").toString().toLowerCase()}`;
 
 interface AddWalletAddressModalProps {
   open: boolean;
@@ -39,11 +50,25 @@ const AddWalletAddressModal = ({
   onSuccess,
 }: AddWalletAddressModalProps) => {
   const dispatch = useDispatch<AppDispatch>();
-  const { supportedAssets, loading: swapLoading } = useSelector(
-    (s: RootState) => s.swap
-  );
-  const { assets: exchangeAssetsResponse } = useSelector(
-    (s: RootState) => s.exchange
+  const {
+    supportedAssets,
+    loading: swapLoading,
+    error: swapError,
+  } = useSelector((s: RootState) => s.swap);
+  const {
+    assets: exchangeAssetsResponse,
+    loading: exchangeAssetsLoading,
+    error: exchangeError,
+  } = useSelector((s: RootState) => s.exchange);
+  const assetsListLoading = swapLoading || exchangeAssetsLoading;
+
+  const assetsDisplay = useAssetsDisplay(
+    exchangeAssetsResponse?.assets,
+    supportedAssets,
+    exchangeAssetsLoading,
+    swapLoading,
+    exchangeError,
+    swapError
   );
   const { addresses: existingWalletAddresses } = useSelector(
     (s: RootState) => s.userWalletAddresses
@@ -79,75 +104,119 @@ const AddWalletAddressModal = ({
   const [assetDropdownRect, setAssetDropdownRect] = useState<{ top: number; left: number; width: number } | null>(null);
   const [networkDropdownRect, setNetworkDropdownRect] = useState<{ top: number; left: number; width: number } | null>(null);
   const [assetLoadTimedOut, setAssetLoadTimedOut] = useState(false);
-  const [assetFetchStarted, setAssetFetchStarted] = useState(false);
+  const assetsBootstrapForOpenRef = useRef(false);
 
-  // Merge swap-supported assets with exchange assets (same list used by dashboard),
-  // so assets like FXP/FXPRIMUS show in this dropdown too.
-  const exchangeAssetsFlat: SupportedAsset[] = useMemo(() => {
-    const rows = exchangeAssetsResponse?.assets;
-    const assets = Array.isArray(rows) ? rows : [];
-    const out: SupportedAsset[] = [];
-    for (const a of assets as any[]) {
-      const ticker = a?.ticker || a?.symbol || a?.name;
-      const name = a?.name || a?.ticker || a?.symbol;
-      const image =
-        a?.image_url || a?.asset_image || a?.image || a?.icon_url || a?.icon;
-      const networks = Array.isArray(a?.networks) ? a.networks : [];
-      if (networks.length > 0) {
-        for (const n of networks as any[]) {
-          out.push({
-            ticker,
-            symbol: a?.symbol || ticker,
-            name,
-            network: n?.network_type || n?.network_id || n?.network || "",
-            image_url: image,
-            asset_image: image,
-          } as any);
-        }
-      } else {
-        out.push({
-          ticker,
-          symbol: a?.symbol || ticker,
-          name,
-          network: a?.network || "",
-          image_url: image,
-          asset_image: image,
-        } as any);
+  /** Same merged + cached list as Express deposit (`useAssetsDisplay`). */
+  const expressAssetRows = assetsDisplay.displayData || [];
+
+  /** Same ordering as Express deposit asset dropdown (`sortedSwapAssets`). */
+  const sortedExpressAssets = useMemo(() => {
+    return [...expressAssetRows].sort((a, b) => {
+      const tickerA = (a?.ticker || a?.symbol || a?.name || "")
+        .toString()
+        .toLowerCase();
+      const tickerB = (b?.ticker || b?.symbol || b?.name || "")
+        .toString()
+        .toLowerCase();
+      const networkA = (a?.network || getAssetNetwork(a) || "")
+        .toString()
+        .toLowerCase();
+      const networkB = (b?.network || getAssetNetwork(b) || "")
+        .toString()
+        .toLowerCase();
+
+      if (
+        tickerA === "usdt" &&
+        networkA === "bsc" &&
+        !(tickerB === "usdt" && networkB === "bsc")
+      ) {
+        return -1;
       }
-    }
-    return out;
-  }, [exchangeAssetsResponse]);
-
-  const allAssets: SupportedAsset[] = useMemo(() => {
-    const swap = supportedAssets ?? [];
-    return [...swap, ...exchangeAssetsFlat];
-  }, [supportedAssets, exchangeAssetsFlat]);
-  const hasSwapAssets = Array.isArray(supportedAssets) && supportedAssets.length > 0;
-  const hasExchangeAssets =
-    Array.isArray(exchangeAssetsResponse?.assets) &&
-    exchangeAssetsResponse.assets.length > 0;
-
-  // Deduplicate assets by ticker for the asset dropdown (networks shown separately)
-  const uniqueAssets = useMemo(() => {
-    const seen = new Map<string, SupportedAsset>();
-    for (const a of allAssets) {
-      const key = a.ticker?.toUpperCase();
-      if (key && !seen.has(key)) {
-        seen.set(key, a);
+      if (
+        tickerB === "usdt" &&
+        networkB === "bsc" &&
+        !(tickerA === "usdt" && networkA === "bsc")
+      ) {
+        return 1;
       }
-    }
-    return Array.from(seen.values());
-  }, [allAssets]);
 
-  // One row per network for the selected ticker. Merged swap + exchange data can
-  // contain many duplicate (ticker, network) rows; rendering them all made this UI very slow.
+      if (
+        tickerA === "usdc" &&
+        networkA === "bsc" &&
+        !(tickerB === "usdc" && networkB === "bsc")
+      ) {
+        return -1;
+      }
+      if (
+        tickerB === "usdc" &&
+        networkB === "bsc" &&
+        !(tickerA === "usdc" && networkA === "bsc")
+      ) {
+        return 1;
+      }
+
+      const isFxpA = tickerA === "fxp" || tickerA === "fxprimus";
+      const isFxpB = tickerB === "fxp" || tickerB === "fxprimus";
+      if (isFxpA && !isFxpB) return -1;
+      if (isFxpB && !isFxpA) return 1;
+
+      return 0;
+    });
+  }, [expressAssetRows]);
+
+  const sortedFilteredBySearch = useMemo(() => {
+    const q = assetSearch.trim().toUpperCase();
+    if (!q) return sortedExpressAssets;
+    return sortedExpressAssets.filter((a) => {
+      const ticker = a?.ticker?.toUpperCase() || "";
+      const name = a?.name?.toUpperCase() || "";
+      const symbol = a?.symbol?.toUpperCase() || "";
+      const net = (a?.network || getAssetNetwork(a) || "").toUpperCase();
+      return (
+        ticker.includes(q) ||
+        name.includes(q) ||
+        symbol.includes(q) ||
+        net.includes(q)
+      );
+    });
+  }, [sortedExpressAssets, assetSearch]);
+
+  const popularAssets = useMemo(() => {
+    const normalize = (asset: any) =>
+      (asset?.ticker || asset?.symbol || asset?.name || "")
+        .toString()
+        .toLowerCase();
+    const network = (asset: any) =>
+      (asset?.network || getAssetNetwork(asset) || "")
+        .toString()
+        .toLowerCase();
+    const usdtBsc = sortedExpressAssets.find(
+      (a) => normalize(a) === "usdt" && network(a) === "bsc"
+    );
+    const usdcBsc = sortedExpressAssets.find(
+      (a) => normalize(a) === "usdc" && network(a) === "bsc"
+    );
+    const fxp = sortedExpressAssets.find((a) => isForexPrimusAsset(a));
+    return [usdtBsc, usdcBsc, fxp].filter(Boolean) as SupportedAsset[];
+  }, [sortedExpressAssets]);
+
+  const popularKeySet = useMemo(
+    () => new Set(popularAssets.map((a) => assetRowKey(a))),
+    [popularAssets]
+  );
+
+  const otherAssets = useMemo(() => {
+    if (assetSearch.trim()) return sortedFilteredBySearch;
+    return sortedFilteredBySearch.filter((a) => !popularKeySet.has(assetRowKey(a)));
+  }, [sortedFilteredBySearch, assetSearch, popularKeySet]);
+
   const networksForAsset = useMemo(() => {
     if (!selectedAssetTicker) return [];
     const tickerU = selectedAssetTicker.toUpperCase();
     const byNetwork = new Map<string, SupportedAsset>();
-    for (const a of allAssets) {
+    for (const a of sortedExpressAssets) {
       if (a.ticker?.toUpperCase() !== tickerU) continue;
-      const net = String(a.network ?? "").trim();
+      const net = String(a.network ?? getAssetNetwork(a) ?? "").trim();
       if (!net) continue;
       const key = net.toLowerCase();
       if (!byNetwork.has(key)) {
@@ -159,18 +228,19 @@ const AddWalletAddressModal = ({
         sensitivity: "base",
       })
     );
-  }, [allAssets, selectedAssetTicker]);
+  }, [sortedExpressAssets, selectedAssetTicker]);
 
   const selectedAsset = useMemo(() => {
     if (!selectedAssetTicker || !selectedNetwork) return null;
+    const net = selectedNetwork.toLowerCase();
     return (
-      allAssets.find(
+      sortedExpressAssets.find(
         (a) =>
           a.ticker?.toUpperCase() === selectedAssetTicker.toUpperCase() &&
-          a.network?.toLowerCase() === selectedNetwork.toLowerCase()
+          (a.network || getAssetNetwork(a) || "").toLowerCase() === net
       ) ?? null
     );
-  }, [allAssets, selectedAssetTicker, selectedNetwork]);
+  }, [sortedExpressAssets, selectedAssetTicker, selectedNetwork]);
 
   const currencyForValidation = selectedAssetTicker?.toLowerCase() || "";
   const networkForValidation = selectedNetwork?.toLowerCase() || "";
@@ -188,41 +258,64 @@ const AddWalletAddressModal = ({
   });
 
   useEffect(() => {
-    if (!open) return;
-    // Reset lazy-fetch guard on every modal open
-    setAssetFetchStarted(false);
-    setAssetLoadTimedOut(false);
-  }, [open]);
-
-  // Lazy fetching: fetch assets only when user opens the Asset dropdown.
-  // This avoids loading "everything" immediately when the modal opens.
-  useEffect(() => {
-    if (!open || !assetDropdownOpen) return;
-    if (assetFetchStarted) return;
-
-    const needsSwapAssets = !hasSwapAssets;
-    const needsExchangeAssets = !hasExchangeAssets;
-    if (!needsSwapAssets && !needsExchangeAssets) return;
-
-    setAssetFetchStarted(true);
-
-    // Prefer cached Redux data for instant dropdown rendering.
-    // Only fetch when cache is empty to avoid loading flicker on every open.
-    if (needsSwapAssets && !swapLoading) {
-      dispatch(fetchSupportedAssets(false) as any);
+    if (!open) {
+      assetsBootstrapForOpenRef.current = false;
+      setAssetLoadTimedOut(false);
+      return;
     }
-    if (needsExchangeAssets) {
-      dispatch(fetchAssets(false) as any);
-    }
-  }, [
-    open,
-    assetDropdownOpen,
-    assetFetchStarted,
-    hasSwapAssets,
-    hasExchangeAssets,
-    swapLoading,
-    dispatch,
-  ]);
+    if (assetsBootstrapForOpenRef.current) return;
+    assetsBootstrapForOpenRef.current = true;
+
+    // Same asset APIs as Express deposit (dashboard): exchange `fetchAssets` + swap `fetchSupportedAssets` with feature "exchange"
+    void withTimeout(dispatch(fetchAssets(false)).unwrap(), 15_000)
+      .then((data) => {
+        if (!data?.assets || data.assets.length === 0) {
+          return withTimeout(dispatch(fetchAssets(true)).unwrap(), 15_000);
+        }
+        return data;
+      })
+      .catch((error: unknown) => {
+        const message =
+          error instanceof Error
+            ? error.message
+            : typeof error === "string"
+              ? error
+              : "";
+        if (
+          message.includes("Aborted due to condition callback returning false") ||
+          message.includes("ConditionError")
+        ) {
+          return;
+        }
+        return withTimeout(dispatch(fetchAssets(true)).unwrap(), 15_000).catch(() => {});
+      });
+
+    void withTimeout(
+      dispatch(
+        fetchSupportedAssets({ forceRefresh: false, feature: "exchange" })
+      ).unwrap(),
+      35_000
+    )
+      .then((data) => {
+        if (!data || data.length === 0) {
+          return withTimeout(
+            dispatch(
+              fetchSupportedAssets({ forceRefresh: true, feature: "exchange" })
+            ).unwrap(),
+            35_000
+          );
+        }
+        return data;
+      })
+      .catch((error: unknown) => {
+        return withTimeout(
+          dispatch(
+            fetchSupportedAssets({ forceRefresh: true, feature: "exchange" })
+          ).unwrap(),
+          35_000
+        ).catch(() => {});
+      });
+  }, [open, dispatch]);
 
   useEffect(() => {
     if (open) {
@@ -239,21 +332,20 @@ const AddWalletAddressModal = ({
     dispatch(fetchP2PDepositAddresses() as any);
   }, [open, dispatch, p2pDepositAddresses]);
 
-  // Timeout: if loading for 8+ seconds with no assets, show retry
+  // Timeout: if loading with no assets in dropdown, show retry
   useEffect(() => {
     if (
       !open ||
       !assetDropdownOpen ||
-      !assetFetchStarted ||
-      !swapLoading ||
-      allAssets.length > 0
+      !assetsListLoading ||
+      sortedExpressAssets.length > 0
     ) {
       setAssetLoadTimedOut(false);
       return;
     }
     const timer = setTimeout(() => setAssetLoadTimedOut(true), 5000);
     return () => clearTimeout(timer);
-  }, [open, assetDropdownOpen, assetFetchStarted, swapLoading, allAssets.length]);
+  }, [open, assetDropdownOpen, assetsListLoading, sortedExpressAssets.length]);
 
   useEffect(() => {
     setSelectedNetwork("");
@@ -534,39 +626,6 @@ const AddWalletAddressModal = ({
     onClose();
   };
 
-  const filteredAssets = useMemo(() => {
-    if (!assetSearch.trim()) return uniqueAssets;
-    const q = assetSearch.toLowerCase();
-    return uniqueAssets.filter(
-      (a) =>
-        a.ticker?.toLowerCase().includes(q) ||
-        a.name?.toLowerCase().includes(q) ||
-        a.symbol?.toLowerCase().includes(q)
-    );
-  }, [uniqueAssets, assetSearch]);
-
-  const popularAssets = useMemo(
-    () =>
-      assetSearch.trim()
-        ? []
-        : filteredAssets.filter((a) =>
-            POPULAR_TICKERS.includes(normalizePopularTicker(a.ticker || a.symbol))
-          ),
-    [filteredAssets, assetSearch]
-  );
-  const otherAssets = useMemo(
-    () =>
-      assetSearch.trim()
-        ? filteredAssets
-        : filteredAssets.filter(
-            (a) =>
-              !POPULAR_TICKERS.includes(
-                normalizePopularTicker(a.ticker || a.symbol)
-              )
-          ),
-    [filteredAssets, assetSearch]
-  );
-
   const getAssetImage = (a: SupportedAsset) =>
     getHighResAssetIcon(
       { ticker: a.ticker || a.symbol || a.name, image_url: a.image_url, asset_image: a.asset_image, image: (a as any)?.image },
@@ -611,11 +670,13 @@ const AddWalletAddressModal = ({
                 {selectedAssetTicker ? (
                   <div className="flex items-center gap-3">
                     {(() => {
-                      const displayAsset = uniqueAssets.find(
-                        (a) =>
-                          a.ticker?.toUpperCase() ===
-                          selectedAssetTicker.toUpperCase()
-                      );
+                      const displayAsset =
+                        selectedAsset ||
+                        sortedExpressAssets.find(
+                          (a) =>
+                            a.ticker?.toUpperCase() ===
+                            selectedAssetTicker.toUpperCase()
+                        );
                       return displayAsset ? (
                         <>
                           <img
@@ -629,6 +690,12 @@ const AddWalletAddressModal = ({
                           <div className="flex flex-col">
                             <span className="text-sm font-medium text-gray-900 dark:text-white">
                               {displayAsset.ticker?.toUpperCase()}
+                              {selectedNetwork ? (
+                                <span className="text-gray-500 dark:text-[#8C8CA1] font-normal">
+                                  {" "}
+                                  · {selectedNetwork}
+                                </span>
+                              ) : null}
                             </span>
                             <span className="text-xs text-gray-500 dark:text-[#8C8CA1]">
                               {displayAsset.name}
@@ -685,11 +752,11 @@ const AddWalletAddressModal = ({
                       />
                     </div>
                     <div className="max-h-60 overflow-y-auto py-1">
-                      {swapLoading && filteredAssets.length === 0 && !assetLoadTimedOut ? (
+                      {assetsListLoading && sortedExpressAssets.length === 0 && !assetLoadTimedOut ? (
                         <div className="px-4 py-3 text-sm text-gray-400 text-center">
                           Loading tokens...
                         </div>
-                      ) : assetLoadTimedOut && filteredAssets.length === 0 ? (
+                      ) : assetLoadTimedOut && sortedExpressAssets.length === 0 ? (
                         <div className="px-4 py-3 text-center">
                           <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
                             Failed to load assets.
@@ -698,110 +765,185 @@ const AddWalletAddressModal = ({
                             type="button"
                             onClick={() => {
                               setAssetLoadTimedOut(false);
-                              dispatch(fetchSupportedAssets(true) as any);
+                              void withTimeout(dispatch(fetchAssets(true)).unwrap(), 15_000).catch(
+                                () => {}
+                              );
+                              void withTimeout(
+                                dispatch(
+                                  fetchSupportedAssets({
+                                    forceRefresh: true,
+                                    feature: "exchange",
+                                  })
+                                ).unwrap(),
+                                35_000
+                              ).catch(() => {});
                             }}
                             className="text-sm font-medium text-[#1D8751] hover:underline"
                           >
                             Retry
                           </button>
                         </div>
-                      ) : filteredAssets.length === 0 ? (
+                      ) : (assetSearch.trim() ? sortedFilteredBySearch : sortedExpressAssets)
+                          .length === 0 ? (
                         <div className="px-4 py-3 text-sm text-gray-400 text-center">
                           {assetSearch.trim() ? "No matching assets" : "No assets available"}
                         </div>
                       ) : (
                         <>
-                          {!assetSearch.trim() && popularAssets.length > 0 && (
-                            <div className="px-4 pt-2 pb-1 text-[11px] font-semibold text-gray-500 dark:text-[#8B90A5] uppercase tracking-wide">
-                              Popular
-                            </div>
-                          )}
-                          {(assetSearch.trim() ? otherAssets : popularAssets).map((a, idx) => (
-                            <div
-                              key={`pop-${a.ticker}-${idx}`}
-                              onClick={() => {
-                                setSelectedAssetTicker(a.ticker);
-                                setAssetDropdownOpen(false);
-                                setAssetSearch("");
-                              }}
-                              className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-gray-50 dark:hover:bg-[#14141B] transition-colors ${
-                                selectedAssetTicker?.toUpperCase() ===
-                                a.ticker?.toUpperCase()
-                                  ? "bg-gray-200 dark:bg-[#23232B]"
-                                  : ""
-                              }`}
-                            >
-                              <img
-                                src={getAssetImage(a)}
-                                alt={a.ticker}
-                                className="w-6 h-6 rounded-full object-cover"
-                                onError={(e) => {
-                                  e.currentTarget.src = "/default-provider-logo.svg";
-                                }}
-                              />
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-sm font-medium text-gray-900 dark:text-white">
-                                    {a.ticker?.toUpperCase()}
-                                  </span>
-                                </div>
-                                <span className="text-xs text-gray-500 dark:text-[#8C8CA1] truncate block">
-                                  {a.name}
-                                </span>
-                              </div>
-                              {selectedAssetTicker?.toUpperCase() ===
-                                a.ticker?.toUpperCase() && (
-                                <div className="w-2 h-2 rounded-full bg-gray-500 dark:bg-[#8C8CA1] flex-shrink-0" />
-                              )}
-                            </div>
-                          ))}
-
-                          {!assetSearch.trim() && otherAssets.length > 0 && (
-                            <div className="px-4 pt-3 pb-1 text-[11px] font-semibold text-gray-500 dark:text-[#8B90A5] uppercase tracking-wide">
-                              Others
-                            </div>
-                          )}
-                          {!assetSearch.trim() &&
-                            otherAssets.map((a, idx) => (
-                              <div
-                                key={`all-${a.ticker}-${idx}`}
-                                onClick={() => {
-                                  setSelectedAssetTicker(a.ticker);
-                                  setAssetDropdownOpen(false);
-                                  setAssetSearch("");
-                                }}
-                                className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-gray-50 dark:hover:bg-[#14141B] transition-colors ${
-                                  selectedAssetTicker?.toUpperCase() ===
-                                  a.ticker?.toUpperCase()
-                                    ? "bg-gray-200 dark:bg-[#23232B]"
-                                    : ""
-                                }`}
-                              >
-                                <img
-                                  src={getAssetImage(a)}
-                                  alt={a.ticker}
-                                  className="w-6 h-6 rounded-full object-cover"
-                                  onError={(e) => {
-                                    e.currentTarget.src =
-                                      "/default-provider-logo.svg";
+                          {assetSearch.trim() ? (
+                            sortedFilteredBySearch.map((a, idx) => {
+                              const net = (a.network || getAssetNetwork(a) || "").trim();
+                              const tick = (a.ticker || a.symbol || "").trim();
+                              const rowSelected =
+                                selectedAssetTicker?.toUpperCase() === tick.toUpperCase() &&
+                                selectedNetwork?.toLowerCase() === net.toLowerCase();
+                              return (
+                                <div
+                                  key={`search-${assetRowKey(a)}-${idx}`}
+                                  onClick={() => {
+                                    setSelectedAssetTicker(tick);
+                                    setSelectedNetwork(net);
+                                    setAssetDropdownOpen(false);
+                                    setAssetSearch("");
                                   }}
-                                />
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-sm font-medium text-gray-900 dark:text-white">
-                                      {a.ticker?.toUpperCase()}
+                                  className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-gray-50 dark:hover:bg-[#14141B] transition-colors ${
+                                    rowSelected ? "bg-gray-200 dark:bg-[#23232B]" : ""
+                                  }`}
+                                >
+                                  <img
+                                    src={getAssetImage(a)}
+                                    alt={tick}
+                                    className="w-6 h-6 rounded-full object-cover"
+                                    onError={(e) => {
+                                      e.currentTarget.src = "/default-provider-logo.svg";
+                                    }}
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                        {tick.toUpperCase()}
+                                      </span>
+                                      <span className="text-xs text-gray-500 dark:text-[#8C8CA1] uppercase">
+                                        {net}
+                                      </span>
+                                    </div>
+                                    <span className="text-xs text-gray-500 dark:text-[#8C8CA1] truncate block">
+                                      {a.name}
                                     </span>
                                   </div>
-                                  <span className="text-xs text-gray-500 dark:text-[#8C8CA1] truncate block">
-                                    {a.name}
-                                  </span>
+                                  {rowSelected ? (
+                                    <div className="w-2 h-2 rounded-full bg-gray-500 dark:bg-[#8C8CA1] flex-shrink-0" />
+                                  ) : null}
                                 </div>
-                                {selectedAssetTicker?.toUpperCase() ===
-                                  a.ticker?.toUpperCase() && (
-                                  <div className="w-2 h-2 rounded-full bg-gray-500 dark:bg-[#8C8CA1] flex-shrink-0" />
-                                )}
-                              </div>
-                            ))}
+                              );
+                            })
+                          ) : (
+                            <>
+                              {popularAssets.length > 0 && (
+                                <div className="px-4 pt-2 pb-1 text-[11px] font-semibold text-gray-500 dark:text-[#8B90A5] uppercase tracking-wide">
+                                  Popular
+                                </div>
+                              )}
+                              {popularAssets.map((a, idx) => {
+                                const net = (a.network || getAssetNetwork(a) || "").trim();
+                                const tick = (a.ticker || a.symbol || "").trim();
+                                const rowSelected =
+                                  selectedAssetTicker?.toUpperCase() === tick.toUpperCase() &&
+                                  selectedNetwork?.toLowerCase() === net.toLowerCase();
+                                return (
+                                  <div
+                                    key={`pop-${assetRowKey(a)}-${idx}`}
+                                    onClick={() => {
+                                      setSelectedAssetTicker(tick);
+                                      setSelectedNetwork(net);
+                                      setAssetDropdownOpen(false);
+                                      setAssetSearch("");
+                                    }}
+                                    className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-gray-50 dark:hover:bg-[#14141B] transition-colors ${
+                                      rowSelected ? "bg-gray-200 dark:bg-[#23232B]" : ""
+                                    }`}
+                                  >
+                                    <img
+                                      src={getAssetImage(a)}
+                                      alt={tick}
+                                      className="w-6 h-6 rounded-full object-cover"
+                                      onError={(e) => {
+                                        e.currentTarget.src = "/default-provider-logo.svg";
+                                      }}
+                                    />
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                          {tick.toUpperCase()}
+                                        </span>
+                                        <span className="text-xs text-gray-500 dark:text-[#8C8CA1] uppercase">
+                                          {net}
+                                        </span>
+                                      </div>
+                                      <span className="text-xs text-gray-500 dark:text-[#8C8CA1] truncate block">
+                                        {a.name}
+                                      </span>
+                                    </div>
+                                    {rowSelected ? (
+                                      <div className="w-2 h-2 rounded-full bg-gray-500 dark:bg-[#8C8CA1] flex-shrink-0" />
+                                    ) : null}
+                                  </div>
+                                );
+                              })}
+
+                              {otherAssets.length > 0 && (
+                                <div className="px-4 pt-3 pb-1 text-[11px] font-semibold text-gray-500 dark:text-[#8B90A5] uppercase tracking-wide">
+                                  Others
+                                </div>
+                              )}
+                              {otherAssets.map((a, idx) => {
+                                const net = (a.network || getAssetNetwork(a) || "").trim();
+                                const tick = (a.ticker || a.symbol || "").trim();
+                                const rowSelected =
+                                  selectedAssetTicker?.toUpperCase() === tick.toUpperCase() &&
+                                  selectedNetwork?.toLowerCase() === net.toLowerCase();
+                                return (
+                                  <div
+                                    key={`oth-${assetRowKey(a)}-${idx}`}
+                                    onClick={() => {
+                                      setSelectedAssetTicker(tick);
+                                      setSelectedNetwork(net);
+                                      setAssetDropdownOpen(false);
+                                      setAssetSearch("");
+                                    }}
+                                    className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-gray-50 dark:hover:bg-[#14141B] transition-colors ${
+                                      rowSelected ? "bg-gray-200 dark:bg-[#23232B]" : ""
+                                    }`}
+                                  >
+                                    <img
+                                      src={getAssetImage(a)}
+                                      alt={tick}
+                                      className="w-6 h-6 rounded-full object-cover"
+                                      onError={(e) => {
+                                        e.currentTarget.src = "/default-provider-logo.svg";
+                                      }}
+                                    />
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                          {tick.toUpperCase()}
+                                        </span>
+                                        <span className="text-xs text-gray-500 dark:text-[#8C8CA1] uppercase">
+                                          {net}
+                                        </span>
+                                      </div>
+                                      <span className="text-xs text-gray-500 dark:text-[#8C8CA1] truncate block">
+                                        {a.name}
+                                      </span>
+                                    </div>
+                                    {rowSelected ? (
+                                      <div className="w-2 h-2 rounded-full bg-gray-500 dark:bg-[#8C8CA1] flex-shrink-0" />
+                                    ) : null}
+                                  </div>
+                                );
+                              })}
+                            </>
+                          )}
                         </>
                       )}
                     </div>

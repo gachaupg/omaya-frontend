@@ -393,14 +393,26 @@ const authSlice = createSlice({
     },
     updateUser: (
       state,
-      action: PayloadAction<{ email?: string; phone_number?: string }>
+      action: PayloadAction<{
+        email?: string;
+        phone_number?: string;
+        freeze?: boolean;
+      }>
     ) => {
       if (!state.user) return;
-      const { email, phone_number } = action.payload;
+      const { email, phone_number, freeze } = action.payload;
       if (email !== undefined) state.user.email = email;
       if (phone_number !== undefined) state.user.phone_number = phone_number;
+      if (freeze !== undefined) state.user.freeze = freeze;
       if (typeof window !== "undefined" && state.user) {
         localStorage.setItem("user", JSON.stringify(state.user));
+        if (state.tokens?.access) {
+          storage.setProfile({
+            user: state.user,
+            tokens: state.tokens,
+            profile: state.profile || undefined,
+          });
+        }
       }
     },
     updateTokens: (

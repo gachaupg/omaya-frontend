@@ -999,10 +999,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
           >
             {/* Amount Section */}
             <div className="flex-1 min-w-0">
-              <label
-                className={`block text-[15px] mb-2 font-semibold flex items-center gap-2 ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"
-                  }`}
-              >
+              <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
                 You Send
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
               </label>
@@ -1027,9 +1024,15 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
 
             {/* Payment Method Section */}
             <div className="flex-1 min-w-0">
-              <div className={`text-xs mb-1 mt-[30px] ${isDark ? "text-[#788099]" : "text-[#64748B]"
-                }`}>
-                 Payment Method
+              <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
+                Payment Method
+                <div className="w-2 h-2 opacity-0" aria-hidden />
+              </label>
+              <div
+                className={`text-xs mb-1 invisible select-none ${isDark ? "text-[#788099]" : "text-[#64748B]"}`}
+                aria-hidden
+              >
+                Amount
               </div>
               <div className="relative">
                 <CustomSelect
@@ -1109,10 +1112,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
           >
             {/* You Receive Section */}
             <div className="flex-1 min-w-0">
-              <label
-                className={`block text-[15px] mb-2 font-semibold flex items-center gap-2 ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"
-                  }`}
-              >
+              <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
                 You Receive
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
               </label>
@@ -1137,9 +1137,15 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
 
             {/* Payment Method Section */}
             <div className="flex-1 min-w-0">
-              <div className={`text-xs mb-1 mt-[30px] ${isDark ? "text-[#788099]" : "text-[#64748B]"
-                }`}>
-                 Payment Method
+              <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
+                Payment Method
+                <div className="w-2 h-2 opacity-0" aria-hidden />
+              </label>
+              <div
+                className={`text-xs mb-1 invisible select-none ${isDark ? "text-[#788099]" : "text-[#64748B]"}`}
+                aria-hidden
+              >
+                Amount
               </div>
               <div className="relative">
                 <CustomSelect

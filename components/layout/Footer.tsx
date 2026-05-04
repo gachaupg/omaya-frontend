@@ -447,12 +447,12 @@ export default function Footer() {
               </div>
             </div>
           </div>
-          {/* App Download Section */}
-          <div className="flex flex-col gap-15 md:gap-2 lg:gap-3 items-start justify-start">
-            {/* Mobile: Show both QR codes in compact layout */}
-            <div className="grid md:hidden grid-cols-2 gap-x-4 gap-y-3 place-items-center">
+          {/* App Download — full-width row only on small screens (2-col grid); md+ uses normal grid cell */}
+          <div className="flex flex-col gap-6 md:gap-4 w-full min-w-0 col-span-2 md:col-span-1">
+            {/* Mobile: badge + QR pairs spaced across the row */}
+            <div className="flex md:hidden flex-row justify-between items-end w-full gap-3 sm:gap-6">
               {/* App Store (badge above QR) */}
-              <div className="flex flex-col items-center justify-center gap-[2px] shrink-0 leading-none">
+              <div className="flex flex-col items-center justify-center gap-[2px] shrink-0 leading-none min-w-0 flex-1 max-w-[48%]">
                 <Image
                   src="/assets/Appstore_nqe65y.png"
                   alt="App Store"
@@ -473,7 +473,7 @@ export default function Footer() {
               </div>
 
               {/* Google Play (badge above QR) */}
-              <div className="flex flex-col items-center justify-center gap-[2px] shrink-0 leading-none">
+              <div className="flex flex-col items-center justify-center gap-[2px] shrink-0 leading-none min-w-0 flex-1 max-w-[48%]">
                 <Image
                   src="/images/playstore.webp"
                   alt="Google Play"
@@ -492,70 +492,42 @@ export default function Footer() {
                 />
               </div>
             </div>
-            
-            {/* App Download Section - Tablet and Desktop */}
-            <div className="hidden md:flex flex-col items-start justify-center">
-              <table className="border-collapse" style={{ width: 'auto' }}>
-                <tbody>
-                  <tr>
-                    <td style={{ padding: 0, width: '70px', height: '70px' }} className="lg:w-[84px] lg:h-[84px]">
-                      <Image
-                        src="/assets/Appstore_nqe65y.png"
-                        alt="App Store QR Code"
-                        width={84}
-                        height={84}
-                        className="object-contain"
-                        style={{ width: "100%", height: "auto" }}
-                      />
-                    </td>
-                    <td style={{ padding: 0, paddingLeft: '8px' }} className="lg:pl-3">
-                      <div style={{ width: '70px', height: '70px' }} className="lg:w-[84px] lg:h-[84px]">
-                        <Image
-                          src="/assets/qr-code-bc94057f452f4806af70fd34540f72ad_3_jk8lq1.png"
-                          alt="App Store QR Code"
-                          width={84}
-                          height={84}
-                          priority
-                          className="object-contain"
-                          style={{ width: "100%", height: "auto" }}
-                        />
-                      </div>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
 
-            {/* Google Play Download - Tablet and Desktop */}
-            <div className="hidden md:flex flex-col items-start justify-center">
-              <table className="border-collapse" style={{ width: 'auto' }}>
-                <tbody>
-                  <tr>
-                    <td style={{ padding: 0, width: '70px', height: '70px' }} className="lg:w-[84px] lg:h-[84px]">
-                      <Image
-                        src="/images/playstore.webp"
-                        alt="Google Play QR Code"
-                        width={84}
-                        height={84}
-                        className="object-contain"
-                        style={{ width: "100%", height: "auto" }}
-                      />
-                    </td>
-                    <td style={{ padding: 0, paddingLeft: '8px' }} className="lg:pl-3">
-                      <div style={{ width: '70px', height: '70px' }} className="lg:w-[84px] lg:h-[84px]">
-                        <Image
-                          src="/assets/qr-code-bc94057f452f4806af70fd34540f72ad_3_jk8lq1.png"
-                          alt="Google Play QR Code"
-                          width={84}
-                          height={84}
-                          className="object-contain"
-                          style={{ width: "100%", height: "auto" }}
-                        />
-                      </div>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+            {/* Tablet and Desktop: column — App Store block, then Google Play; each badge above QR */}
+            <div className="hidden md:flex flex-col w-full items-start gap-4 lg:gap-5 leading-none">
+              <div className="flex flex-col items-start justify-center gap-[2px] shrink-0">
+                <Image
+                  src="/assets/Appstore_nqe65y.png"
+                  alt="App Store"
+                  width={84}
+                  height={84}
+                  className="object-contain w-[70px] h-[70px] lg:w-[84px] lg:h-[84px]"
+                />
+                <Image
+                  src="/assets/qr-code-bc94057f452f4806af70fd34540f72ad_3_jk8lq1.png"
+                  alt="App Store QR Code"
+                  width={84}
+                  height={84}
+                  priority
+                  className="object-contain w-[70px] h-[70px] lg:w-[84px] lg:h-[84px]"
+                />
+              </div>
+              <div className="flex flex-col items-start justify-center gap-[2px] shrink-0">
+                <Image
+                  src="/images/playstore.webp"
+                  alt="Google Play"
+                  width={84}
+                  height={84}
+                  className="object-contain w-[70px] h-[70px] lg:w-[84px] lg:h-[84px]"
+                />
+                <Image
+                  src="/assets/qr-code-bc94057f452f4806af70fd34540f72ad_3_jk8lq1.png"
+                  alt="Google Play QR Code"
+                  width={84}
+                  height={84}
+                  className="object-contain w-[70px] h-[70px] lg:w-[84px] lg:h-[84px]"
+                />
+              </div>
             </div>
           </div>
         </div>
