@@ -122,6 +122,11 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
   const [transactionExpiryMs, setTransactionExpiryMs] = useState<number | null>(null);
   const [timeRemaining, setTimeRemaining] = useState<number>(15 * 60);
   const [timerActive, setTimerActive] = useState<boolean>(true);
+  const [approvalGate, setApprovalGate] = useState<{
+    active: boolean;
+    status?: string;
+    message?: string;
+  }>({ active: false, status: undefined, message: undefined });
 
   // Store final websocket data for success page
   const [finalWebsocketData, setFinalWebsocketData] = useState<any>(null);
@@ -283,9 +288,20 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
     if (timeRemaining !== 0 || hasRedirectedOnExpiry.current) return;
     const txId = effectiveDataForExpiry?.transactionId || effectiveDataForExpiry?.moneyxTransactionId;
     if (!txId) return;
+    // Withdrawals may wait for admin approval longer than the client timer.
+    // Don't auto-cancel withdrawals or anything already in an approval gate.
+    const type = effectiveDataForExpiry?.type;
+    const status = String(currentStatus || "").toLowerCase();
+    if (
+      type === "withdrawal" ||
+      ["admin_approval_required", "approval_required", "agent_approve"].includes(status)
+    ) {
+      setTimerActive(false);
+      return;
+    }
     hasRedirectedOnExpiry.current = true;
     handleCancelTransaction();
-  }, [timeRemaining, effectiveDataForExpiry?.transactionId, effectiveDataForExpiry?.moneyxTransactionId]);
+  }, [timeRemaining, effectiveDataForExpiry?.transactionId, effectiveDataForExpiry?.moneyxTransactionId, effectiveDataForExpiry?.type, currentStatus]);
 
   // Format time as MM:SS
   const formatTime = (seconds: number) => {
@@ -331,9 +347,10 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
     }
   };
 
-  // Stop timer when transaction is completed
+  // Stop timer when transaction is completed or waiting for admin/agent approval
   useEffect(() => {
-    if (currentStatus === "completed" || showSuccess) {
+    const s = String(currentStatus || "").toLowerCase();
+    if (s === "completed" || showSuccess || ["admin_approval_required", "approval_required", "agent_approve"].includes(s)) {
       setTimerActive(false);
       localStorage.removeItem("moneyx_transaction_expiry");
       setTransactionExpiryMs(null);
@@ -535,13 +552,25 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
         const wsOperationalStatus = String(wsData.operational_status || "")
           .trim()
           .toLowerCase();
-        const effectiveStatus =
+        // IMPORTANT: Do NOT replace the UI-driving status with `operational_status`.
+        // Backend may keep operational_status pinned at an approval gate while `status`
+        // continues through confirming/exchanging/sending. Follow `status` for progress.
+        const effectiveStatus = wsData.status;
+        if (
           isWithdrawalFlow &&
           ["admin_approval_required", "approval_required", "agent_approve"].includes(
             wsOperationalStatus
           )
-            ? wsOperationalStatus
-            : wsData.status;
+        ) {
+          // Stop timer immediately once backend enters approval gate.
+          // UI may map this to "sending", but we should never auto-cancel.
+          setTimerActive(false);
+          setApprovalGate({
+            active: true,
+            status: wsOperationalStatus,
+            message: wsData.message || undefined,
+          });
+        }
         const validStatuses = [
           "pending",
           "pending_review",
@@ -582,6 +611,18 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
           let uiStatus = effectiveStatus;
           if (effectiveStatus === "pending_review" || effectiveStatus === "pending_blockchain") {
             uiStatus = "confirming";
+          } else if (effectiveStatus === "processing") {
+            uiStatus = "confirming";
+          } else if (effectiveStatus === "exchanging") {
+            uiStatus = "sending"; // skip exchanging step (match dashboard UX)
+          } else if (effectiveStatus === "processing_transfer") {
+            uiStatus = "sending";
+          } else if (
+            effectiveStatus === "approval_required" ||
+            effectiveStatus === "admin_approval_required" ||
+            effectiveStatus === "agent_approve"
+          ) {
+            uiStatus = "sending";
           } else if (effectiveStatus === "completed" || effectiveStatus === "finished" || effectiveStatus === "approved") {
             uiStatus = "completed";
           }
@@ -1091,6 +1132,23 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
                 EAT
               </span>
             ) : null}
+          </div>
+        </div>
+      )}
+
+      {/* Approval gate banner (withdrawal) */}
+      {approvalGate.active && (
+        <div
+          className={`w-full ${isHomePage ? "mb-2 sm:mb-3" : "mb-4"} border-2 rounded-2xl ${
+            isHomePage ? "p-2 sm:p-3" : "p-4"
+          } bg-[#1D8751]/10 border-[#1D8751]`}
+        >
+          <div className={`text-sm font-semibold ${isDark ? "text-white" : "text-gray-900"}`}>
+            Awaiting admin approval
+          </div>
+          <div className={`text-xs mt-1 ${isDark ? "text-gray-300" : "text-gray-700"}`}>
+            Your withdrawal is in review. This step can take longer than the timer.{" "}
+            {approvalGate.message ? `(${approvalGate.message})` : ""}
           </div>
         </div>
       )}

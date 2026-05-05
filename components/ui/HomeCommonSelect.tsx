@@ -47,11 +47,6 @@ interface CustomSelectProps {
    */
   dropdownMatchTriggerWidth?: boolean;
   /**
-   * Optional min width (px) for dropdown panel.
-   * Useful when the trigger is narrow on large screens but the list needs space.
-   */
-  dropdownMinWidth?: number;
-  /**
    * Optional max width (px) for dropdown panel.
    * Useful for wide home-card payment method pickers.
    */
@@ -82,7 +77,6 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   dropdownOffsetX = 0,
   largeDropdownItems = false,
   dropdownMatchTriggerWidth = false,
-  dropdownMinWidth,
   dropdownMaxWidth,
   logoSize,
   logoClassName,
@@ -143,7 +137,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
     const viewportWidth = window.innerWidth || 0;
     const viewportHeight = window.innerHeight || 0;
     const minMargin = 16;
-    const minWidth = dropdownMinWidth ?? 280;
+    const minWidth = 280;
     const maxWidth = dropdownMaxWidth ?? 450;
     
     // Get trigger button position - get fresh values
@@ -211,10 +205,9 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
       left += horizontalOffset;
       
       // When no horizontal offset is provided, keep the dropdown inside the card
-      // ONLY for the "reduced width" mode. When dropdownMatchTriggerWidth=true and we
-      // intentionally widen the panel (e.g., payment methods), we want it to stay
-      // anchored to the trigger and grow to the RIGHT, not shift left to fit the card.
-      if (horizontalOffset === 0 && !dropdownMatchTriggerWidth) {
+      // (even for dropdownMatchTriggerWidth=true). This makes the panel align to the
+      // right side of the card on small screens instead of drifting left/cutting off.
+      if (horizontalOffset === 0) {
         if (left < cardRect.left) left = cardRect.left;
         if (left + desiredWidth > cardRect.right) {
           left = Math.max(cardRect.right - desiredWidth, cardRect.left);

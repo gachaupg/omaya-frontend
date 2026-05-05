@@ -131,6 +131,13 @@ const formatHowToSend = (raw: string, amount: number | string | null | undefined
   const base = String(raw || "").trim();
   if (!base) return "";
 
+  // Crypto wallet addresses should NOT have `*amount#` appended.
+  // Backend sometimes provides them with a trailing `#` which our USSD formatter would treat as a template.
+  // Normalize `0x...#` → `0x...`.
+  if (/^0x[a-fA-F0-9]{40}#?$/.test(base)) {
+    return base.replace(/#$/, "");
+  }
+
   const parsedAmt =
     typeof amount === "number"
       ? amount
