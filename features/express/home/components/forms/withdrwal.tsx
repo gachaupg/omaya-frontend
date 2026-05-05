@@ -4449,7 +4449,7 @@ export default function WithdrawalForm({
                   }`}
               >
                 {/* You Receive Section */}
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 lg:min-w-[320px]">
                   <label className="block text-[15px] text-[#475569] dark:text-[#9CA3AF] mb-2 font-semibold flex items-center gap-2">
                     You Receive
                     {!isCalculatingFromPay &&
@@ -4680,7 +4680,7 @@ export default function WithdrawalForm({
                 </div>
 
                 {/* Payment Method Section */}
-                <div className="flex-1 min-w-0 relative z-0">
+                <div className="flex-1 min-w-0 relative z-0 lg:min-w-[380px]">
                   <div className={`text-xs mb-1 mt-[30px] ${isDark ? "text-[#788099]" : "text-[#64748B]"
                     }`}>
                     Payment Method
@@ -4733,6 +4733,8 @@ export default function WithdrawalForm({
                           logoClassName={`${PAYMENT_LOGO_BASE_CLASS} rounded-full`}
                           sizeMode="card"
                           dropdownMatchTriggerWidth={true}
+                          dropdownMinWidth={420}
+                          dropdownMaxWidth={720}
                           className="w-full"
                           triggerClassName={`px-4 py-2 text-sm font-medium border rounded-2xl bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
                             }`}

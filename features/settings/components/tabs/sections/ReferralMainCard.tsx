@@ -85,16 +85,16 @@ const ReferralMainCard: React.FC<Props> = ({
           onClick={() => setShowQRCode(false)}
         >
           <div
-            className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl"
+            className="bg-white dark:bg-[#1A1A1F] rounded-2xl p-6 max-w-sm w-full shadow-xl border border-[#E2E8F0] dark:border-[#35353e]"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-[#0B0F23]">
+              <h3 className="text-lg font-semibold text-[#0B0F23] dark:text-white">
                 Referral Code QR
               </h3>
               <button
                 onClick={() => setShowQRCode(false)}
-                className="text-[#4C526A] hover:text-[#0B0F23] transition-colors"
+                className="text-[#4C526A] hover:text-[#0B0F23] dark:text-[#A3AED0] dark:hover:text-white transition-colors"
                 aria-label="Close"
               >
                 <X size={20} />
@@ -102,23 +102,24 @@ const ReferralMainCard: React.FC<Props> = ({
             </div>
             {qrCodeDataUrl ? (
               <div className="flex flex-col items-center">
-                <div className="bg-white p-4 rounded-lg border border-[#E2E8F0] mb-4">
+                {/* Keep QR background white for readability in dark mode */}
+                <div className="bg-white p-4 rounded-lg border border-[#E2E8F0] dark:border-[#35353e] mb-4">
                   <img
                     src={qrCodeDataUrl}
                     alt="Referral Code QR Code"
                     className="w-64 h-64"
                   />
                 </div>
-                <p className="text-sm text-[#4C526A] text-center mb-2">
+                <p className="text-sm text-[#4C526A] dark:text-[#A3AED0] text-center mb-2">
                   Scan this QR code to share your referral code
                 </p>
-                <p className="text-xs text-[#4C526A] text-center font-mono">
+                <p className="text-xs text-[#4C526A] dark:text-[#A3AED0] text-center font-mono">
                   {referralCode}
                 </p>
               </div>
             ) : (
               <div className="flex items-center justify-center py-8">
-                <p className="text-sm text-[#4C526A]">
+                <p className="text-sm text-[#4C526A] dark:text-[#A3AED0]">
                   Generating QR code...
                 </p>
               </div>

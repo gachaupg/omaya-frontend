@@ -57,6 +57,7 @@ import ForexWithdrawal from "../../express/components/forms/ForexWithdrawal";
 import InfoModal from "../../express/components/forms/info";
 import { useBookmarkedAddresses } from "../../express/hooks/useBookmarkedAddresses";
 import { BookmarkDropdown } from "../../express/components/forms/BookmarkDropdown";
+import FrozenAccountModal from "@/components/ui/FrozenAccountModal";
 
 import { logger } from '@/lib/utils/logger';
 import { useChangeNowAssets } from "@/features/express/home/hooks/useChangeNowAssets";
@@ -216,9 +217,11 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
   const router = useRouter();
   const [internalActiveTab, setInternalActiveTab] = useState("deposit");
   const [isDepositMode, setIsDepositMode] = useState(true);
+  const [showFrozenModal, setShowFrozenModal] = useState(false);
 
   // Get authentication state and user (for verification check)
   const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
+  const isFrozenUser = isAuthenticated && user?.freeze === true;
 
   // Network mapping function
   const getNetworkDisplayName = (network: string) => {
@@ -3265,13 +3268,57 @@ const getPaymentRestrictionMessage = (status?: string) =>
 
   // If MoneyX tab is active, render MoneyX rates component (check first, after all hooks)
   if (activeTab === 'moneyx') {
-    return <MoneyXRates commissionType={isDepositMode ? "deposit" : "withdrawal"} />;
+    return (
+      <>
+        <div
+          onSubmitCapture={(e) => {
+            if (!isFrozenUser) return;
+            e.preventDefault();
+            e.stopPropagation();
+            setShowFrozenModal(true);
+          }}
+          onClickCapture={(e) => {
+            if (!isFrozenUser) return;
+            const target = e.target as HTMLElement | null;
+            const button = target?.closest?.("button");
+            if (!button || (button as HTMLButtonElement).disabled) return;
+            e.preventDefault();
+            e.stopPropagation();
+            setShowFrozenModal(true);
+          }}
+        >
+          <MoneyXRates commissionType={isDepositMode ? "deposit" : "withdrawal"} />
+        </div>
+        <FrozenAccountModal
+          isOpen={showFrozenModal}
+          onClose={() => setShowFrozenModal(false)}
+        />
+      </>
+    );
   }
 
   return (
-    <div className="bg-white dark:bg-[#18181D] p-3 sm:p-4 lg:p-6 rounded-xl sm:rounded-xl lg:rounded-2xl border-[1.5px] border-gray-200 dark:border-[#35353E] shadow-md container mx-auto">
-      <div className="mb-2" />
-      <div className={`w-full ${isDark ? "text-white" : "text-[#1F2937]"}`}>
+    <>
+      <div
+        onSubmitCapture={(e) => {
+          if (!isFrozenUser) return;
+          e.preventDefault();
+          e.stopPropagation();
+          setShowFrozenModal(true);
+        }}
+        onClickCapture={(e) => {
+          if (!isFrozenUser) return;
+          const target = e.target as HTMLElement | null;
+          const button = target?.closest?.("button");
+          if (!button || (button as HTMLButtonElement).disabled) return;
+          e.preventDefault();
+          e.stopPropagation();
+          setShowFrozenModal(true);
+        }}
+      >
+        <div className="bg-white dark:bg-[#18181D] p-3 sm:p-4 lg:p-6 rounded-xl sm:rounded-xl lg:rounded-2xl border-[1.5px] border-gray-200 dark:border-[#35353E] shadow-md container mx-auto">
+          <div className="mb-2" />
+          <div className={`w-full ${isDark ? "text-white" : "text-[#1F2937]"}`}>
         {/* Top Section - You Send: Amount and Bank/Payment Method in one card */}
         <div className="relative mb-0 pb-2">
           {/* Swap Indicator - Clickable */}
@@ -4791,7 +4838,13 @@ const getPaymentRestrictionMessage = (status?: string) =>
           window.open("https://wa.me/252615066247", "_blank");
         }}
       />
-    </div>
+        </div>
+      </div>
+      <FrozenAccountModal
+        isOpen={showFrozenModal}
+        onClose={() => setShowFrozenModal(false)}
+      />
+    </>
   );
 };
 

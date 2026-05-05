@@ -1699,14 +1699,25 @@ export default function ExchangeForm({
             : "max-w-none"
           }`}>
         {renderTabs()}
-        <div className="pt-5 sm:pt-5 px-3 sm:px-4 md:px-5 py-3 border-l border-r border-b border-border dark:border-accent rounded-b-2xl">
-          {isFrozenUser ? (
-            <div className="rounded-xl border border-[#E23D3A]/40 bg-[#E23D3A]/10 p-4 text-sm text-[#E23D3A]">
-              Your account is frozen. Please contact Customer Support to unfreeze and continue transactions.
-            </div>
-          ) : (
-            <SwapWidget usePublicApi={isHomePage} />
-          )}
+        <div
+          className="pt-5 sm:pt-5 px-3 sm:px-4 md:px-5 py-3 border-l border-r border-b border-border dark:border-accent rounded-b-2xl"
+          onSubmitCapture={(e) => {
+            if (!isFrozenUser) return;
+            e.preventDefault();
+            e.stopPropagation();
+            setShowFrozenModal(true);
+          }}
+          onClickCapture={(e) => {
+            if (!isFrozenUser) return;
+            const target = e.target as HTMLElement | null;
+            const button = target?.closest?.("button");
+            if (!button || (button as HTMLButtonElement).disabled) return;
+            e.preventDefault();
+            e.stopPropagation();
+            setShowFrozenModal(true);
+          }}
+        >
+          <SwapWidget usePublicApi={isHomePage} />
         </div>
         <FrozenAccountModal
           isOpen={showFrozenModal}
@@ -1726,14 +1737,25 @@ export default function ExchangeForm({
             : "max-w-none"
           }`}>
         {renderTabs()}
-        <div className="pt-2 sm:pt-3 px-3 sm:px-4 md:px-5 py-3 border-l border-r border-b border-border dark:border-accent rounded-b-2xl">
-          {isFrozenUser ? (
-            <div className="rounded-xl border border-[#E23D3A]/40 bg-[#E23D3A]/10 p-4 text-sm text-[#E23D3A]">
-              Your account is frozen. Please contact Customer Support to unfreeze and continue transactions.
-            </div>
-          ) : (
-            <MoneyX isHomePage={isHomePage} commissionType="deposit" />
-          )}
+        <div
+          className="pt-2 sm:pt-3 px-3 sm:px-4 md:px-5 py-3 border-l border-r border-b border-border dark:border-accent rounded-b-2xl"
+          onSubmitCapture={(e) => {
+            if (!isFrozenUser) return;
+            e.preventDefault();
+            e.stopPropagation();
+            setShowFrozenModal(true);
+          }}
+          onClickCapture={(e) => {
+            if (!isFrozenUser) return;
+            const target = e.target as HTMLElement | null;
+            const button = target?.closest?.("button");
+            if (!button || (button as HTMLButtonElement).disabled) return;
+            e.preventDefault();
+            e.stopPropagation();
+            setShowFrozenModal(true);
+          }}
+        >
+          <MoneyX isHomePage={isHomePage} commissionType="deposit" />
         </div>
         <FrozenAccountModal
           isOpen={showFrozenModal}
@@ -1753,14 +1775,25 @@ export default function ExchangeForm({
         }`}>
       {renderTabs()}
       {/* Express Exchange Content */}
-      <div className="pt-2 sm:pt-3 px-3 sm:px-4 md:px-5 py-3 border-l border-r border-b border-border dark:border-accent rounded-b-2xl">
-        {isFrozenUser ? (
-          <div className="rounded-xl border border-[#E23D3A]/40 bg-[#E23D3A]/10 p-4 text-sm text-[#E23D3A]">
-            Your account is frozen. Please contact Customer Support to unfreeze and continue transactions.
-          </div>
-        ) : (
-          <Express isHomePage={isHomePage} />
-        )}
+      <div
+        className="pt-2 sm:pt-3 px-3 sm:px-4 md:px-5 py-3 border-l border-r border-b border-border dark:border-accent rounded-b-2xl"
+        onSubmitCapture={(e) => {
+          if (!isFrozenUser) return;
+          e.preventDefault();
+          e.stopPropagation();
+          setShowFrozenModal(true);
+        }}
+        onClickCapture={(e) => {
+          if (!isFrozenUser) return;
+          const target = e.target as HTMLElement | null;
+          const button = target?.closest?.("button");
+          if (!button || (button as HTMLButtonElement).disabled) return;
+          e.preventDefault();
+          e.stopPropagation();
+          setShowFrozenModal(true);
+        }}
+      >
+        <Express isHomePage={isHomePage} />
       </div>
       <FrozenAccountModal
         isOpen={showFrozenModal}
