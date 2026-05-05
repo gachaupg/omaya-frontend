@@ -32,6 +32,7 @@ interface ExchangingProps {
     payin_address?: string;
     network: any;
     transactionId?: string;
+    receiveAmount?: number; // Net amount user will receive (form's "You Receive")
     // Deposit-specific fields (from API response)
     depositCode?: string;
     totalAmountDue?: string;
@@ -46,6 +47,9 @@ interface ExchangingProps {
       network_fee: string;
       total_fees: string;
     };
+    /** Rates / FX Primus — from express deposit parity */
+    user_forex_account?: string;
+    user_notes?: string;
     // Additional fields for different transaction types
     status?: string;
     message?: string;
@@ -59,11 +63,116 @@ interface ExchangingProps {
       estimated_amount?: number;
       changenow_id?: string;
     };
-    receiveAmount?: number; // Net amount user will receive (form's "You Receive")
-    createdAt?: number;
   };
   isHomePage?: boolean;
 }
+
+/** Matches `deposit.tsx`: bank lines are often under `payment_details[0]`, not root. */
+const paymentDetailsNested = (pd: any) => pd?.payment_details?.[0];
+
+const resolvePaymentAccountNumber = (pd: any): string => {
+  if (!pd) return "";
+  const n = paymentDetailsNested(pd);
+  const pick = (v: unknown) =>
+    v != null && String(v).trim() !== "" ? String(v).trim() : "";
+  return (
+    pick(pd.account_number) ||
+    pick(pd.account_no) ||
+    pick(n?.account_number) ||
+    pick(n?.account_no) ||
+    pick(pd.mobile_number) ||
+    pick(n?.mobile_number) ||
+    pick(pd.iban) ||
+    pick(n?.iban) ||
+    ""
+  );
+};
+
+const resolvePaymentAccountName = (pd: any): string => {
+  if (!pd) return "";
+  const n = paymentDetailsNested(pd);
+  const pick = (v: unknown) =>
+    v != null && String(v).trim() !== "" ? String(v).trim() : "";
+  return pick(pd.account_name) || pick(n?.account_name) || "";
+};
+
+/**
+ * Deposit "How to send" should come from the user's selected payment method details:
+ * - Crypto: wallet_address
+ * - Bank/Mobile: account_number / mobile_number / iban
+ */
+const resolveHowToSendFromPaymentDetail = (pd: any): string => {
+  if (!pd) return "";
+  const n = paymentDetailsNested(pd);
+  const admin = Array.isArray(pd?.admin_payment_details) ? pd.admin_payment_details[0] : null;
+  const pick = (v: unknown) =>
+    v != null && String(v).trim() !== "" ? String(v).trim() : "";
+  return (
+    pick(pd.how_to_send) ||
+    pick(n?.how_to_send) ||
+    pick(admin?.how_to_send) ||
+    pick(pd.wallet_address) ||
+    pick(n?.wallet_address) ||
+    pick(admin?.wallet_address) ||
+    resolvePaymentAccountNumber(pd) ||
+    ""
+  );
+};
+
+const resolveHowToSendFromTx = (tx: { paymentDetail?: any; paymentDetails?: any[] }): string => {
+  const ordered = [tx?.paymentDetails?.[0], tx?.paymentDetail].filter(Boolean);
+  for (const pd of ordered) {
+    const v = resolveHowToSendFromPaymentDetail(pd);
+    if (v) return v;
+  }
+  return "";
+};
+
+const formatHowToSend = (raw: string, amount: number | string | null | undefined): string => {
+  const base = String(raw || "").trim();
+  if (!base) return "";
+
+  // Crypto wallet addresses should NOT have `*amount#` appended.
+  // Backend sometimes provides them with a trailing `#` which our USSD formatter would treat as a template.
+  // Normalize `0x...#` → `0x...`.
+  if (/^0x[a-fA-F0-9]{40}#?$/.test(base)) {
+    return base.replace(/#$/, "");
+  }
+
+  const parsedAmt =
+    typeof amount === "number"
+      ? amount
+      : amount != null && String(amount).trim() !== ""
+        ? Number(String(amount))
+        : NaN;
+
+  const amt = Number.isFinite(parsedAmt) ? String(parsedAmt) : "";
+  if (!amt) return base;
+
+  // Replace any 'Amount' placeholder (case-insensitive).
+  if (/\bamount\b/i.test(base)) {
+    return base.replace(/\bamount\b/gi, amt);
+  }
+
+  // If no placeholder exists, inject "*{amt}" before trailing '#', or append it.
+  if (base.endsWith("#")) {
+    return base.slice(0, -1) + `*${amt}#`;
+  }
+  return base + `*${amt}#`;
+};
+
+/** Deposit "From" bank or withdrawal payout: try paymentDetails[0] then paymentDetail. */
+const resolveBankAccountFromTx = (tx: {
+  paymentDetail?: any;
+  paymentDetails?: any[];
+}): string => {
+  const ordered = [tx?.paymentDetails?.[0], tx?.paymentDetail].filter(Boolean);
+  for (const pd of ordered) {
+    const v = resolvePaymentAccountNumber(pd);
+    if (v) return v;
+  }
+  return "";
+};
 
 export default function Exchanging({ transactionData, isHomePage = false }: ExchangingProps) {
   const searchParams = useSearchParams();
@@ -74,6 +183,7 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
   const token = tokens?.access ?? cookieUtils.getCookie("access_token") ?? (typeof window !== "undefined" ? localStorage.getItem("access_token") : null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [currentStatus, setCurrentStatus] = useState<string>("pending");
+  const [expandedTerms, setExpandedTerms] = useState(false);
   const [persistedTransactionData, setPersistedTransactionData] =
     useState<any>(null);
   const [wsError, setWsError] = useState<string | null>(null);
@@ -100,115 +210,48 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
     Array<{ amount: number; timestamp: string; currency: string }>
   >([]);
   const [previousAmount, setPreviousAmount] = useState<number | null>(null);
-  const [fallbackPolling, setFallbackPolling] = useState<boolean>(false);
-  const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(
-    null
-  );
-  const [expandedTerms, setExpandedTerms] = useState(false);
+  // Socket-only: no fallback polling
   const [failureModal, setFailureModal] = useState<{
     isOpen: boolean;
     status: string;
     message?: string;
   }>({ isOpen: false, status: "", message: undefined });
 
-  const resolveHowToSendFromPaymentDetail = (pd: any): string => {
-    if (!pd) return "";
-    const nested = pd?.payment_details?.[0];
-    const admin = Array.isArray(pd?.admin_payment_details) ? pd.admin_payment_details[0] : null;
-    const pick = (v: unknown) =>
-      v != null && String(v).trim() !== "" ? String(v).trim() : "";
-    const account =
-      pick(pd.account_number) ||
-      pick(pd.account_no) ||
-      pick(nested?.account_number) ||
-      pick(nested?.account_no) ||
-      pick(pd.mobile_number) ||
-      pick(nested?.mobile_number) ||
-      pick(pd.iban) ||
-      pick(nested?.iban) ||
-      "";
-    return (
-      pick(pd.how_to_send) ||
-      pick(nested?.how_to_send) ||
-      pick(admin?.how_to_send) ||
-      pick(pd.wallet_address) ||
-      pick(nested?.wallet_address) ||
-      pick(admin?.wallet_address) ||
-      account
-    );
-  };
-
-  const resolveHowToSendFromTx = (tx: { paymentDetail?: any; paymentDetails?: any[] }): string => {
-    const ordered = [tx?.paymentDetails?.[0], tx?.paymentDetail].filter(Boolean);
-    for (const pd of ordered) {
-      const v = resolveHowToSendFromPaymentDetail(pd);
-      if (v) return v;
-    }
-    return "";
-  };
-
-  const formatHowToSend = (raw: string, amount: number | string | null | undefined): string => {
-    const base = String(raw || "").trim();
-    if (!base) return "";
-
-    const parsedAmt =
-      typeof amount === "number"
-        ? amount
-        : amount != null && String(amount).trim() !== ""
-          ? Number(String(amount))
-          : NaN;
-
-    const amt = Number.isFinite(parsedAmt) ? String(parsedAmt) : "";
-    if (!amt) return base;
-
-    if (/\bamount\b/i.test(base)) {
-      return base.replace(/\bamount\b/gi, amt);
-    }
-    if (base.endsWith("#")) {
-      return base.slice(0, -1) + `*${amt}#`;
-    }
-    return base + `*${amt}#`;
-  };
-
-  // Fallback polling function
-  const startFallbackPolling = () => {
-    if (pollingInterval) {
-      clearInterval(pollingInterval);
-    }
-
-    const poll = async () => {
-      if (!effectiveTransactionData?.transactionId) return;
-
-      try {
-      } catch (error) {
-        // logger.error('general', "Fallback polling error:", error);
+  // For dashboard deposit status, payout is fiat to bank and should remain USD.
+  const getStableReceiveCurrency = React.useCallback(
+    (fallback?: string) => {
+      const currentTx = transactionData || persistedTransactionData;
+      if (currentTx?.type === "deposit" || currentTx?.type === "withdrawal") {
+        return "USD";
       }
-    };
-
-    // Poll every 10 seconds
-    const interval = setInterval(poll, 10000);
-    setPollingInterval(interval);
-
-    // Initial poll
-    poll();
-  };
-
-  const stopFallbackPolling = () => {
-    if (pollingInterval) {
-      clearInterval(pollingInterval);
-      setPollingInterval(null);
-      setFallbackPolling(false);
-    }
-  };
-
-  // Cleanup polling on unmount
-  useEffect(() => {
-    return () => {
-      if (pollingInterval) {
-        clearInterval(pollingInterval);
+      const detailsToCurrency = currentTx?.details?.to_currency?.toString().toUpperCase();
+      if (detailsToCurrency) {
+        return detailsToCurrency;
       }
-    };
-  }, [pollingInterval]);
+      return fallback || "USD";
+    },
+    [transactionData, persistedTransactionData]
+  );
+
+  const getStableSendCurrency = React.useCallback(
+    (fallback?: string) => {
+      const currentTx = transactionData || persistedTransactionData;
+      const detailsFromCurrency = currentTx?.details?.from_currency?.toString().toUpperCase();
+      if (detailsFromCurrency) {
+        return detailsFromCurrency;
+      }
+      return (
+        fallback ||
+        currentTx?.asset?.ticker ||
+        currentTx?.asset?.symbol ||
+        currentTx?.asset?.name ||
+        "USD"
+      );
+    },
+    [transactionData, persistedTransactionData]
+  );
+
+  // Socket-only: removed fallback polling helpers/cleanup
 
   // Compute remaining time from wall-clock (immune to tab throttling)
   const computeTimeRemaining = React.useCallback(() => {
@@ -217,12 +260,21 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
     return Math.max(0, Math.ceil((expiry - Date.now()) / 1000));
   }, []);
 
+  // Normalize tx id (some flows persist snake_case `transaction_id`)
+  const effectiveTransactionData = transactionData || persistedTransactionData;
+  const effectiveTransactionId = String(
+    (effectiveTransactionData as any)?.transactionId ||
+      (effectiveTransactionData as any)?.transaction_id ||
+      liveTransactionId ||
+      ""
+  ).trim();
+
   // Initialize expiry timestamp when we have transaction data
-  const effectiveDataForTimer = transactionData || persistedTransactionData;
+  const effectiveDataForTimer = effectiveTransactionData;
   useEffect(() => {
-    if (!effectiveDataForTimer?.transactionId || !timerActive || showSuccess) return;
+    if (!effectiveTransactionId || !timerActive || showSuccess) return;
     const storageKey = "express_transaction_expiry";
-    const txId = effectiveDataForTimer.transactionId;
+    const txId = effectiveTransactionId;
     if (!expiryTimestampRef.current) {
       try {
         const stored = localStorage.getItem(storageKey);
@@ -245,7 +297,7 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
       localStorage.setItem(storageKey, JSON.stringify({ transactionId: txId, expiry }));
     }
     setTimeRemaining(computeTimeRemaining());
-  }, [effectiveDataForTimer?.transactionId, timerActive, showSuccess, computeTimeRemaining]);
+  }, [effectiveTransactionId, timerActive, showSuccess, computeTimeRemaining]);
 
   // Timer: wall-clock + Page Visibility for tab-inactive accuracy
   useEffect(() => {
@@ -338,7 +390,7 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
 
             return;
           }
-        } catch (error) {}
+        } catch (error) { }
       }
 
       // If no persisted data found, create a basic transaction data object
@@ -367,92 +419,19 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
     }
   }, [searchParams]);
 
-  // Use persisted data if no transactionData is provided (page reload scenario)
-  const effectiveTransactionData = transactionData || persistedTransactionData;
+  // effectiveTransactionData is already normalized above (tx id + persisted data)
 
-  const getStableReceiveCurrency = React.useCallback(
-    (fallback?: string) => {
-      if (
-        effectiveTransactionData?.type === "deposit" ||
-        effectiveTransactionData?.type === "withdrawal"
-      ) {
-        return "USD";
-      }
-      const detailsToCurrency = effectiveTransactionData?.details?.to_currency
-        ?.toString()
-        .toUpperCase();
-      if (detailsToCurrency) {
-        return detailsToCurrency;
-      }
-      return fallback || "USD";
-    },
-    [effectiveTransactionData]
-  );
-
-  const getStableSendCurrency = React.useCallback(
-    (fallback?: string) => {
-      const detailsFromCurrency = effectiveTransactionData?.details?.from_currency
-        ?.toString()
-        .toUpperCase();
-      if (detailsFromCurrency) {
-        return detailsFromCurrency;
-      }
-      return (
-        fallback ||
-        effectiveTransactionData?.asset?.ticker ||
-        effectiveTransactionData?.asset?.symbol ||
-        effectiveTransactionData?.asset?.name ||
-        "USD"
-      );
-    },
-    [effectiveTransactionData]
-  );
-
-  // Initialize timer based on transaction creation time
-  useEffect(() => {
-    if (effectiveTransactionData?.createdAt && typeof effectiveTransactionData.createdAt === 'number') {
-      const TIMER_DURATION = 15 * 60 * 1000; // 15 minutes in milliseconds
-      const elapsed = Date.now() - effectiveTransactionData.createdAt;
-      const remaining = Math.max(0, TIMER_DURATION - elapsed);
-      const remainingSeconds = Math.floor(remaining / 1000);
-      setTimeRemaining(remainingSeconds);
-      
-      // If timer has already expired, set to 0 and disable timer
-      if (remainingSeconds <= 0) {
-        setTimerActive(false);
-      } else {
-        setTimerActive(true);
-      }
-    } else {
-      // If no creation time, start with full 15 minutes
-      setTimeRemaining(15 * 60);
-      setTimerActive(true);
-    }
-  }, [effectiveTransactionData?.createdAt, effectiveTransactionData?.transactionId]);
-
-  // Store transaction data in localStorage when it's provided (include createdAt if missing)
+  // Store transaction data in localStorage when it's provided
   useEffect(() => {
     if (transactionData && transactionData.transactionId) {
-      // Ensure createdAt is stored if not already present
-      const dataToStore = {
-        ...transactionData,
-        createdAt: transactionData.createdAt || Date.now(),
-      };
       localStorage.setItem(
         "express_transaction_data",
-        JSON.stringify(dataToStore)
+        JSON.stringify(transactionData)
       );
     }
   }, [transactionData]);
 
-  // Clear localStorage when transaction is completed
-  useEffect(() => {
-    if (showSuccess) {
-      localStorage.removeItem("express_transaction_data");
-    }
-  }, [showSuccess]);
-
-  // Net amount from props (form's "You Receive")
+  // Net amount from props (form's "You Receive") - no API, just props
   useEffect(() => {
     const recv = (effectiveTransactionData as any)?.receiveAmount;
     if (recv != null) {
@@ -480,9 +459,16 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
     }
   }, [effectiveTransactionData?.transactionId, effectiveTransactionData?.type]);
 
+  // Clear localStorage when transaction is completed
+  useEffect(() => {
+    if (showSuccess) {
+      localStorage.removeItem("express_transaction_data");
+    }
+  }, [showSuccess]);
+
   // Use WebSocket for both deposit and withdrawal transactions
   const shouldUseWebSocket =
-    effectiveTransactionData?.transactionId &&
+    !!effectiveTransactionId &&
     (effectiveTransactionData?.type === "withdrawal" ||
       effectiveTransactionData?.type === "deposit");
 
@@ -519,7 +505,7 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
   const finalWebsocketUrl = websocketUrl;
   const { isConnected, lastMessage, disconnect, sendMessage } =
     useTransactionStatusWebSocket(
-      effectiveTransactionData?.transactionId || "",
+      effectiveTransactionId,
       effectiveTransactionData?.type || "withdrawal",
       finalWebsocketUrl,
       {
@@ -556,7 +542,7 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
           // Store websocket data for potential success page use
           setFinalWebsocketData(data);
 
-          // Check regular amount format
+          // Check regular amount format (amount + net_amount from socket)
           if (statusPayload?.amount != null) {
             const amount = parseFloat(String(statusPayload.amount));
             if (!isNaN(amount)) {
@@ -564,6 +550,20 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
               currencyToUpdate =
                 statusPayload?.currency ||
                 getStableSendCurrency();
+            }
+          }
+          if (statusPayload?.net_amount != null && statusPayload?.net_amount !== undefined) {
+            const netAmt = parseFloat(String(statusPayload.net_amount));
+            const d = statusPayload as Record<string, unknown>;
+            if (!isNaN(netAmt)) {
+              setLiveNetAmount(netAmt);
+              setLiveNetCurrency(
+                getStableReceiveCurrency(
+                  (d.to_currency || d.currency || "")?.toString().toUpperCase() ||
+                    effectiveTransactionData?.asset?.ticker ||
+                    "USD"
+                )
+              );
             }
           }
 
@@ -595,19 +595,18 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
               }
             }
 
+            // Websocket can override net amount (before websocket, form's receiveAmount is shown)
             const toCurrencyLabel =
               wsData.to_currency?.toUpperCase() ||
               wsData.currency?.toUpperCase() ||
-              getStableReceiveCurrency(
-                effectiveTransactionData?.asset?.ticker ||
-                  effectiveTransactionData?.asset?.symbol ||
-                  "USD"
-              );
+              (effectiveTransactionData?.type === "deposit"
+                ? effectiveTransactionData?.asset?.ticker || "USDT"
+                : "USD");
             const amountTo = parseFloat(String(wsData.amount_to ?? ""));
-            const netAmount = parseFloat(String(wsData.net_amount ?? ""));
+            const netAmt = parseFloat(String(wsData.net_amount ?? ""));
             const estimatedAmount = parseFloat(String(wsData.estimated_amount ?? ""));
             const expectedAmountTo = parseFloat(String(wsData.amount_expected_to ?? ""));
-            // Prefer non-zero receive values for pending ChangeNOW responses.
+            // Prefer non-zero receive values for ChangeNOW-style pending updates.
             const preferredNetAmount =
               (Number.isFinite(amountTo) && amountTo > 0 ? amountTo : null) ??
               (Number.isFinite(estimatedAmount) && estimatedAmount > 0
@@ -616,7 +615,7 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
               (Number.isFinite(expectedAmountTo) && expectedAmountTo > 0
                 ? expectedAmountTo
                 : null) ??
-              (Number.isFinite(netAmount) ? netAmount : null);
+              (Number.isFinite(netAmt) ? netAmt : null);
             if (preferredNetAmount !== null) {
               setLiveNetAmount(preferredNetAmount);
               setLiveNetCurrency(getStableReceiveCurrency(toCurrencyLabel));
@@ -651,26 +650,7 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
               }
             }
 
-            // Handle estimated_amount for direct flows
-            if (
-              wsData.estimated_amount !== null &&
-              wsData.estimated_amount !== undefined
-            ) {
-              const estimatedAmount = parseFloat(wsData.estimated_amount);
-              if (!isNaN(estimatedAmount)) {
-                setLiveNetAmount(estimatedAmount);
-                setLiveNetCurrency(
-                  getStableReceiveCurrency(
-                    wsData.to_currency?.toUpperCase() ||
-                      effectiveTransactionData?.asset?.ticker ||
-                      effectiveTransactionData?.asset?.symbol ||
-                      "USD"
-                  )
-                );
-              }
-            }
-
-            // amount_expected_to can contain the pending receive estimate.
+            // amount_expected_to can be the best receive estimate while pending.
             if (
               wsData.amount_expected_to !== null &&
               wsData.amount_expected_to !== undefined
@@ -682,7 +662,6 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                   getStableReceiveCurrency(
                     wsData.to_currency?.toUpperCase() ||
                       effectiveTransactionData?.asset?.ticker ||
-                      effectiveTransactionData?.asset?.symbol ||
                       "USD"
                   )
                 );
@@ -768,14 +747,10 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
             .toLowerCase();
           const isWithdrawalFlow = effectiveTransactionData?.type === "withdrawal";
 
-          if (
-            isWithdrawalFlow &&
-            ["admin_approval_required", "approval_required", "agent_approve"].includes(
-              wsOperationalStatus
-            )
-          ) {
-            status = wsOperationalStatus;
-          }
+          // IMPORTANT: Do NOT replace `status` with `operational_status` here.
+          // Backend may keep `operational_status` pinned at an approval gate while `status`
+          // continues to move through confirming/exchanging/sending. The UI progress should
+          // follow `status`, and we use `operational_status` only for the approval banner/timer.
 
           // Process statuses for both deposit and withdrawal
           const validStatuses = [
@@ -821,9 +796,14 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                 : typeof wsNotificationReason === "number"
                   ? String(wsNotificationReason)
                   : "";
+            // Some backends put the rejection payload directly under `data.data`,
+            // so try both wrapper and inner payload shapes.
             let failureMessage =
               (wsNotificationReasonText || undefined) ??
-              resolveExpressTransactionFailureMessage(data) ?? message;
+              resolveExpressTransactionFailureMessage(data) ??
+              resolveExpressTransactionFailureMessage((data as any)?.data) ??
+              resolveExpressTransactionFailureMessage({ data: (data as any)?.data }) ??
+              message;
             if (
               !failureMessage &&
               status === "rejected" &&
@@ -894,16 +874,30 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
               }
             }
 
-            // Prevent backward UI jumps for withdrawal pipeline after it reaches sending.
-            if (
-              isWithdrawalFlow &&
-              currentStatus === "sending" &&
-              ["pending", "confirming", "exchanging"].includes(uiStatus)
-            ) {
-              return;
-            }
+            // Keep UI step in the known set to avoid "all grey" progress.
+            const allowedUi = new Set([
+              "pending",
+              "waiting",
+              "confirming",
+              "exchanging",
+              "sending",
+              "completed",
+              "finished",
+            ]);
 
-            setCurrentStatus(uiStatus);
+            setCurrentStatus((prev) => {
+              const next = allowedUi.has(uiStatus) ? uiStatus : prev;
+
+              // Prevent backward UI jumps for withdrawal pipeline after it reaches sending.
+              if (
+                isWithdrawalFlow &&
+                prev === "sending" &&
+                ["pending", "confirming", "exchanging"].includes(next)
+              ) {
+                return prev;
+              }
+              return next;
+            });
 
             // Auto-navigate to success page when transaction is completed
             // Navigate on ANY completed status - whether from ChangeNow or direct transfer
@@ -988,20 +982,13 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
           // Only show error in UI after multiple attempts
           // This prevents showing errors for initial connection attempts
           if (!isConnected && connectionAttempts > 2) {
-            const userFriendlyError = `Connection issue (attempt ${connectionAttempts}). ${
-              finalWebsocketUrl ? "Retrying..." : "No WebSocket URL available"
-            }`;
+            const userFriendlyError = `Connection issue (attempt ${connectionAttempts}). ${finalWebsocketUrl ? "Retrying..." : "No WebSocket URL available"
+              }`;
 
             setWsError(userFriendlyError);
 
             // Clear error after 5 seconds
             setTimeout(() => setWsError(null), 5000);
-
-            // Start fallback polling after 5 failed attempts
-            if (connectionAttempts >= 5 && !fallbackPolling) {
-              setFallbackPolling(true);
-              startFallbackPolling();
-            }
           }
 
           // Don't crash the component on WebSocket errors
@@ -1011,12 +998,7 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
       }
     );
 
-  // Stop polling when WebSocket reconnects successfully
-  useEffect(() => {
-    if (isConnected && fallbackPolling) {
-      stopFallbackPolling();
-    }
-  }, [isConnected, fallbackPolling]);
+  // Socket-only: no polling fallback to stop on reconnect
 
   // Debug logging
   useEffect(() => {
@@ -1038,7 +1020,7 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
   // If showing success page, render it with real transaction data and snapshot websocket data
   if (showSuccess) {
     return (
-      <div className="w-full min-h-screen flex flex-col items-center justify-center pt-2">
+      <div className="w-full min-h-screen flex flex-col items-center justify-center pt-0 sm:pt-1 md:pt-2 px-0 sm:px-2 md:px-0">
         <SuccessPage
           transactionData={effectiveTransactionData}
           websocketData={snapshotWebsocketData || finalWebsocketData}
@@ -1051,9 +1033,8 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
   if (!effectiveTransactionData) {
     return (
       <div
-        className={`w-full min-h-screen flex flex-col items-center justify-center pt-2 ${
-          isDark ? "bg-[#0A0A0A]" : "bg-gray-50"
-        }`}
+        className={`w-full min-h-screen flex flex-col items-center justify-center pt-0 sm:pt-1 md:pt-2 px-0 sm:px-2 md:px-0 ${isDark ? "bg-[#0A0A0A]" : "bg-gray-50"
+          }`}
       >
         <div className={`${isDark ? "text-white" : "text-gray-900"} text-lg`}>
           Loading transaction data...
@@ -1100,27 +1081,25 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
       : "";
 
   return (
-    <div className={`w-full ${isHomePage ? 'min-h-0' : 'min-h-screen'} flex flex-col items-center ${isHomePage ? 'pt-0 px-2 sm:px-4' : 'pt-2'}`}>
+    <div className={`w-full min-h-screen flex flex-col items-center pt-2 `}>
       {/* Timer Banner */}
       {timerActive && timeRemaining > 0 && (
         <div
-          className={`w-full ${isHomePage ? 'mb-2 sm:mb-3' : 'max-w-4xl mb-4'} ${
-            timeRemaining <= 60
-              ? "bg-red-500/20 border-red-500"
-              : timeRemaining <= 300
-                ? "bg-orange-500/20 border-orange-500"
-                : "bg-[#1D8751]/20 border-[#1D8751]"
-          } border-2 rounded-2xl ${isHomePage ? 'p-2 sm:p-3' : 'p-4'} flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2`}
+          className={`w-full max-w-4xl mb-4 ${timeRemaining <= 60
+            ? "bg-red-500/20 border-red-500"
+            : timeRemaining <= 300
+              ? "bg-orange-500/20 border-orange-500"
+              : "bg-[#1D8751]/20 border-[#1D8751]"
+            } border-2 rounded-2xl p-2 sm:p-3 md:p-4 flex items-center justify-between`}
         >
           <div className="flex items-center gap-3">
             <svg
-              className={`w-6 h-6 ${
-                timeRemaining <= 60
-                  ? "text-red-500"
-                  : timeRemaining <= 300
-                    ? "text-orange-500"
-                    : "text-[#1D8751]"
-              }`}
+              className={`w-6 h-6 ${timeRemaining <= 60
+                ? "text-red-500"
+                : timeRemaining <= 300
+                  ? "text-orange-500"
+                  : "text-[#1D8751]"
+                }`}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -1134,16 +1113,14 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
             </svg>
             <div>
               <div
-                className={`text-sm font-semibold ${
-                  isDark ? "text-white" : "text-gray-900"
-                }`}
+                className={`text-sm font-semibold ${isDark ? "text-white" : "text-gray-900"
+                  }`}
               >
                 Transaction Timeout
               </div>
               <div
-                className={`text-xs ${
-                  isDark ? "text-gray-300" : "text-gray-600"
-                }`}
+                className={`text-xs ${isDark ? "text-gray-300" : "text-gray-600"
+                  }`}
               >
                 {timeRemaining <= 60
                   ? "Transaction will be cancelled soon!"
@@ -1152,13 +1129,12 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
             </div>
           </div>
           <div
-            className={`${isHomePage ? 'text-lg sm:text-xl' : 'text-2xl'} font-bold ${
-              timeRemaining <= 60
-                ? "text-red-500"
-                : timeRemaining <= 300
-                  ? "text-orange-500"
-                  : "text-[#1D8751]"
-            } self-start sm:self-auto`}
+            className={`text-2xl font-bold ${timeRemaining <= 60
+              ? "text-red-500"
+              : timeRemaining <= 300
+                ? "text-orange-500"
+                : "text-[#1D8751]"
+              }`}
           >
             {formatTime(timeRemaining)}
           </div>
@@ -1167,50 +1143,83 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
 
       {/* Top Card */}
       <div
-        className={`flex flex-col md:flex-row justify-between items-stretch bg-[#FFFFFF] dark:${
-          isDark
-            ? "bg-[#23232B]  border:[#E8EFF5] dark:border-[#35353E]"
-            : "bg-white border-gray-200"
-        } border-2 rounded-2xl ${isHomePage ? 'p-2 sm:p-3' : 'p-4'} shadow-lg w-full ${isHomePage ? '' : 'max-w-4xl'} ${isHomePage ? 'mb-2 sm:mb-3' : 'mb-4'} ${isHomePage ? 'min-h-[120px] sm:min-h-[140px]' : 'min-h-[180px]'} overflow-hidden`}
+        className={`flex flex-col md:flex-row justify-between items-stretch bg-[#FFFFFF] dark:${isDark
+          ? "bg-[#23232B]  border:[#E8EFF5] dark:border-[#35353E]"
+          : "bg-white border-gray-200"
+          } border-2 rounded-2xl p-3 sm:p-4 shadow-lg w-full max-w-4xl mb-2 sm:mb-4 min-h-[180px]`}
       >
-        <div className={`flex-1 flex flex-col justify-between ${isHomePage ? 'py-1 sm:py-2 pr-0 sm:pr-2' : 'py-2 pr-2'} min-w-0`}>
-          <div className="space-y-3 sm:space-y-4">
-            {/* Amount row */}
-            <div className="flex flex-wrap gap-4 sm:gap-6">
-              <div className="min-w-0">
-                <p className={`text-xs font-medium mb-0.5 ${isDark ? "text-[#7B7B7B]" : "text-gray-500"}`}>Amount</p>
-                <p className={`text-base font-semibold truncate ${isDark ? "text-white" : "text-gray-900"}`}>
-                  {liveAmount !== null ? liveAmount : effectiveTransactionData?.amount || 0}{" "}
-                  {(liveCurrency ||
-                    getStableSendCurrency(
-                      effectiveTransactionData?.asset?.ticker ||
-                        effectiveTransactionData?.asset?.symbol ||
-                        effectiveTransactionData?.asset?.name
-                    )).toUpperCase()}
-                </p>
+        <div className="flex-1 flex flex-col justify-between py-2 pr-2">
+          <div className="flex flex-row flex-wrap gap-x-6 gap-y-2 items-baseline">
+            <div>
+              <div
+                className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                  } text-xs font-semibold mb-0.5`}
+              >
+                Amount you&apos;re sending:
               </div>
-              {(effectiveTransactionData as any)?.receiveAmount != null ||
-              liveNetAmount != null ? (
-                <div className="min-w-0">
-                  <p className={`text-xs font-medium mb-0.5 ${isDark ? "text-[#7B7B7B]" : "text-gray-500"}`}>Net amount you&apos;ll receive</p>
-                  <p className="text-base font-semibold text-[#1D8751]">
-                    {(resolvedDisplayNetAmount).toFixed(8).replace(/\.?0+$/, "")}{" "}
-                    <span className="uppercase">
-                      {liveNetCurrency || getStableReceiveCurrency()}
-                    </span>
-                  </p>
-                </div>
-              ) : null}
-              {resolvedDepositCode && (
-                <div className="min-w-0">
-                  <p className={`text-xs font-medium mb-0.5 ${isDark ? "text-[#7B7B7B]" : "text-gray-500"}`}>Transaction Code</p>
-                  <p className={`text-base font-semibold flex items-center gap-2 ${isDark ? "text-white" : "text-gray-900"}`}>
-                    <code className="font-mono">{resolvedDepositCode}</code>
-                    <CopyButton value={resolvedDepositCode} className="shrink-0" />
-                  </p>
-                </div>
-              )}
+              <div
+                className={`${isDark ? "text-white" : "text-gray-900"
+                  } text-base font-semibold flex items-center gap-2`}
+              >
+                <span>
+                  {liveAmount !== null
+                    ? liveAmount
+                    : effectiveTransactionData?.amount || 0}{" "}
+                  <span className="uppercase">
+                    {liveCurrency ||
+                      getStableSendCurrency(
+                        effectiveTransactionData?.asset?.ticker ||
+                          effectiveTransactionData?.asset?.symbol ||
+                          effectiveTransactionData?.asset?.name
+                      )}
+                  </span>
+                </span>
+              </div>
             </div>
+            {((effectiveTransactionData as any)?.receiveAmount != null ||
+              liveNetAmount != null) && (
+              <div>
+                <div
+                  className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                    } text-xs font-semibold mb-0.5`}
+                >
+                  Net amount you&apos;ll receive:
+                </div>
+                <div
+                  className={`${isDark ? "text-[#1D8751]" : "text-[#15803D]"
+                    } text-base font-semibold flex items-center gap-2`}
+                >
+                  <span>
+                    {(resolvedDisplayNetAmount
+                    )
+                      .toFixed(8)
+                      .replace(/\.?0+$/, "")}{" "}
+                    <span className="uppercase">
+                      {liveNetCurrency ||
+                        (effectiveTransactionData?.type === "deposit"
+                          ? "USD"
+                          : "USD")}
+                    </span>
+                  </span>
+                </div>
+              </div>
+            )}
+            {resolvedDepositCode && (
+              <div>
+                <div
+                  className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"} text-xs font-semibold mb-0.5`}
+                >
+                  Transaction Code
+                </div>
+                <div
+                  className={`${isDark ? "text-white" : "text-gray-900"} text-base font-semibold flex items-center gap-2`}
+                >
+                  <code className="font-mono">{resolvedDepositCode}</code>
+                  <CopyButton value={resolvedDepositCode} className="shrink-0" />
+                </div>
+              </div>
+            )}
+          </div>
             {/* {liveAmount !== null &&
               liveAmount !== effectiveTransactionData?.amount && (
                 <div className={`${
@@ -1226,23 +1235,20 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
               liveAmount !== null &&
               previousAmount !== liveAmount && (
                 <div
-                  className={`mt-2 p-2 ${
-                    isDark
-                      ? "bg-[#1A1A1A] border-[#35353E]"
-                      : "bg-gray-100 border-gray-300"
-                  } rounded border`}
+                  className={`mt-2 p-2 ${isDark
+                    ? "bg-[var(--card-color)] border-[#35353E]"
+                    : "bg-gray-100 border-gray-300"
+                    } rounded border`}
                 >
                   <div
-                    className={`${
-                      isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                    } text-xs font-semibold mb-1`}
+                    className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                      } text-xs font-semibold mb-1`}
                   >
                     Amount Change:
                   </div>
                   <div
-                    className={`${
-                      isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                    } text-xs mb-0.5`}
+                    className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                      } text-xs mb-0.5`}
                   >
                     Previous: {previousAmount.toFixed(8)}{" "}
                     {liveCurrency ||
@@ -1264,76 +1270,141 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
             {/* Deposit-specific information display */}
             {effectiveTransactionData?.type === "deposit" && (
               <>
-                {/* Asset and Network */}
-                <div className="pt-2 border-t border-gray-200 dark:border-[#35353E]">
-                  <p className={`text-xs font-medium mb-1.5 ${isDark ? "text-[#7B7B7B]" : "text-gray-500"}`}>Asset & Network</p>
-                  <div className="flex items-center gap-2">
-                    <img
-                      src={
-                        effectiveTransactionData?.asset?.icon ||
-                        effectiveTransactionData?.asset?.icon_url ||
-                        effectiveTransactionData?.asset?.image_url ||
-                        effectiveTransactionData?.asset?.image ||
-                        "/assets/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
-                      }
-                      alt={effectiveTransactionData?.asset?.ticker || effectiveTransactionData?.asset?.symbol || effectiveTransactionData?.asset?.name || "Asset"}
-                      className="w-5 h-5 rounded-full shrink-0"
-                      onError={(e) => {
-                        e.currentTarget.src = "/assets/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
-                      }}
-                    />
-                    <span className={`text-sm font-medium ${isDark ? "text-white" : "text-gray-900"}`}>
-                      {effectiveTransactionData?.asset?.ticker ||
-                        effectiveTransactionData?.asset?.symbol ||
-                        effectiveTransactionData?.asset?.name ||
-                        getStableSendCurrency()}
-                    </span>
-                    <span className="bg-[#1D8751] text-white text-xs font-medium px-2 py-0.5 rounded-full">{effectiveTransactionData?.asset?.network || effectiveTransactionData?.network?.network_type || "BSC"}</span>
-                  </div>
+                {/* Deposit Code - Most important for deposits */}
+
+                {/* Asset and Network Information */}
+                <div
+                  className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                    } text-xs font-semibold mb-0.5 mt-3`}
+                >
+                  Asset & Network:
+                </div>
+                <div className="flex items-center mb-2">
+                  <img
+                    src={
+                      effectiveTransactionData?.asset?.icon ||
+                      effectiveTransactionData?.asset?.icon_url ||
+                      effectiveTransactionData?.asset?.image_url ||
+                      effectiveTransactionData?.asset?.image ||
+                      "/assets/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                    }
+                    alt={
+                      effectiveTransactionData?.asset?.ticker ||
+                      effectiveTransactionData?.asset?.symbol ||
+                      effectiveTransactionData?.asset?.name ||
+                      "Asset"
+                    }
+                    className="w-6 h-6 rounded-full mr-2"
+                    onError={(e) => {
+                      e.currentTarget.src =
+                        "/assets/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                    }}
+                  />
+                  <span
+                    className={`${isDark ? "text-white" : "text-gray-900"
+                      } text-sm font-semibold uppercase`}
+                  >
+                    {effectiveTransactionData?.asset?.ticker ||
+                      effectiveTransactionData?.asset?.symbol ||
+                      effectiveTransactionData?.asset?.name ||
+                      getStableSendCurrency()}
+                  </span>
+                  <span className="ml-2 bg-[#1D8751] text-white text-xs font-semibold px-2 py-0.5 rounded-full">
+                    {effectiveTransactionData?.asset?.network ||
+                      effectiveTransactionData?.network?.network_type ||
+                      "BSC"}
+                  </span>
                 </div>
 
-                {/* Bank Information */}
-                {effectiveTransactionData?.paymentDetail && effectiveTransactionData.paymentDetail.provider_name !== "direct" && (
-                  <div className="pt-2 border-t border-gray-200 dark:border-[#35353E]">
-                    <p className={`text-xs font-medium mb-1.5 ${isDark ? "text-[#7B7B7B]" : "text-gray-500"}`}>Bank</p>
-                    <div className="flex items-center gap-2 mb-2">
-                      <img
-                        src="/assets/image_7_jijlik.png"
-                        alt={effectiveTransactionData.paymentDetail.provider_name}
-                        className="w-5 h-5 rounded-full shrink-0"
-                      />
-                      <span className={`text-sm font-medium ${isDark ? "text-white" : "text-gray-900"}`}>{effectiveTransactionData.paymentDetail.provider_name}</span>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <p className={`text-xs font-medium mb-0.5 ${isDark ? "text-[#7B7B7B]" : "text-gray-500"}`}>Account Name</p>
-                        <p className={`text-sm font-medium ${isDark ? "text-white" : "text-gray-900"}`}>{effectiveTransactionData.paymentDetail.account_name}</p>
-                      </div>
-                      <div>
-                        <p className={`text-xs font-medium mb-0.5 ${isDark ? "text-[#7B7B7B]" : "text-gray-500"}`}>Account Number</p>
-                        <p className={`text-sm font-mono font-medium ${isDark ? "text-white" : "text-gray-900"}`}>{effectiveTransactionData.paymentDetail.account_number}</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                {/* Status from WebSocket */}
               </>
             )}
-            {effectiveTransactionData?.type === "withdrawal" && effectiveTransactionData?.walletAddress && (
-              <div className="pt-2 border-t border-gray-200 dark:border-[#35353E]">
-                <p className={`text-xs font-medium mb-1.5 ${isDark ? "text-[#7B7B7B]" : "text-gray-500"}`}>Wallet Address</p>
-                <code className={`text-sm font-mono break-all block px-2 py-1 rounded-lg ${isDark ? "bg-[#2A2A30] text-white" : "bg-gray-100 text-gray-900"}`}>
-                  {effectiveTransactionData.walletAddress}
-                </code>
-              </div>
+
+            {/* Bank Information (for non-direct deposits) */}
+            {effectiveTransactionData?.type === "deposit" &&
+              effectiveTransactionData?.paymentDetail &&
+              effectiveTransactionData.paymentDetail.provider_name !==
+              "direct" && (
+                <>
+                  <div
+                    className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                      } text-xs font-semibold mb-0.5 mt-3`}
+                  >
+                    Bank:
+                  </div>
+                  <div className="flex items-center mb-1">
+                    <img
+                      src={effectiveTransactionData.paymentDetail.logo_url || effectiveTransactionData.paymentDetail.logo || effectiveTransactionData.paymentDetail.provider_logo || "/assets/image_7_jijlik.png"}
+                      alt={effectiveTransactionData.paymentDetail.provider_name}
+                      className="w-6 h-6 rounded-full mr-2"
+                    />
+                    <span
+                      className={`${isDark ? "text-white" : "text-gray-900"
+                        } text-sm font-semibold`}
+                    >
+                      {effectiveTransactionData.paymentDetail.provider_name}
+                    </span>
+                  </div>
+                  <div
+                    className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                      } text-xs font-semibold mb-0.5`}
+                  >
+                    Account Name:
+                  </div>
+                  <div
+                    className={`${isDark ? "text-white" : "text-gray-900"
+                      } text-sm mb-1`}
+                  >
+                    {resolvePaymentAccountName(
+                      effectiveTransactionData.paymentDetail
+                    ) || "N/A"}
+                  </div>
+                  <div
+                    className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                      } text-xs font-semibold mb-0.5`}
+                  >
+                    Account Number:
+                  </div>
+                  <div
+                    className={`${isDark ? "text-white" : "text-gray-900"
+                      } text-sm font-mono`}
+                  >
+                    {resolvePaymentAccountNumber(
+                      effectiveTransactionData.paymentDetail
+                    ) || "N/A"}
+                  </div>
+                </>
+              )}
+            {effectiveTransactionData?.type === "withdrawal" && (
+              <>
+                <div
+                  className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                    } text-xs font-semibold mb-0.5`}
+                >
+                  Wallet Address:
+                </div>
+                <div className="flex items-center mb-2 p-2 rounded-lg border border-[#1D8751]/30 bg-[#1D8751]/5">
+                  <span
+                    className={`${isDark ? "text-white" : "text-gray-900"
+                      } text-sm font-mono break-all flex-1 leading-relaxed`}
+                    style={{ wordBreak: 'break-all', lineHeight: '1.5' }}
+                  >
+                    {effectiveTransactionData.walletAddress}
+                  </span>
+                  <CopyButton
+                    value={effectiveTransactionData.walletAddress}
+                    className="ml-2 shrink-0"
+                  />
+                </div>
+              </>
             )}
           </div>
-        </div>
-        <div className={`flex-shrink-0 ${isHomePage ? 'ml-0 mt-2 md:mt-0 md:ml-3' : 'ml-0 md:ml-6'} flex items-center justify-center ${isHomePage ? 'py-1 sm:py-2' : 'py-2'}`}>
+        <div className="flex-shrink-0 ml-0 md:ml-6 flex items-center justify-center py-2">
           {/* QR code */}
           {(() => {
             // For deposits: use selected payment method "How to send" (bank/mobile/crypto). For withdrawals: wallet address.
             let qrData = "";
-            
+
             if (effectiveTransactionData?.type === "deposit") {
               const howToSend = resolveHowToSendFromTx(effectiveTransactionData);
               const payin =
@@ -1350,13 +1421,16 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                 payin ||
                 String(effectiveTransactionData?.walletAddress || "").trim();
             } else if (effectiveTransactionData?.type === "withdrawal" && effectiveTransactionData?.walletAddress) {
-              // For withdrawals, show wallet address
               qrData = effectiveTransactionData.walletAddress;
             }
-            
+
+            if (!qrData) {
+              qrData = liveTransactionId || effectiveTransactionData?.transactionId || "";
+            }
+
             if (!qrData) {
               return (
-                <div className={`${isHomePage ? 'w-24 h-24 sm:w-28 sm:h-28' : 'w-36 h-36'} bg-white rounded-lg flex items-center justify-center flex-shrink-0`}>
+                <div className="w-36 h-36 bg-white rounded-lg flex items-center justify-center">
                   <span className="text-gray-400 text-xs">No QR data</span>
                 </div>
               );
@@ -1364,11 +1438,11 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
 
             const encodedData = encodeURIComponent(qrData);
             return (
-              <div className={`${isHomePage ? 'w-24 h-24 sm:w-28 sm:h-28' : 'w-36 h-36'} bg-white rounded-lg flex items-center justify-center flex-shrink-0`}>
+              <div className="w-36 h-36 bg-white rounded-lg flex items-center justify-center">
                 <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=${isHomePage ? '112' : '180'}x${isHomePage ? '112' : '180'}&data=${encodedData}`}
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodedData}`}
                   alt="QR Code"
-                  className={isHomePage ? "w-20 h-20 sm:w-24 sm:h-24" : "w-32 h-32"}
+                  className="w-32 h-32"
                   onError={(e) => {
                     // Fallback if QR code fails to load
                     e.currentTarget.style.display = 'none';
@@ -1385,11 +1459,16 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
       </div>
 
       {effectiveTransactionData?.type === "deposit" &&
-        (resolveHowToSendFromTx(effectiveTransactionData) ||
-          String((effectiveTransactionData as any)?.payin_address || "").trim() ||
-          String((effectiveTransactionData as any)?.details?.payin_address || "").trim() ||
-          String(effectiveTransactionData?.walletAddress || "").trim()) && (
-        <div className={`w-full ${isHomePage ? '' : 'max-w-4xl'} mb-2 sm:mb-3`}>
+        (() => {
+          const rawHowToSend = resolveHowToSendFromTx(effectiveTransactionData);
+          const amountForHowToSend =
+            liveAmount ?? (effectiveTransactionData as any)?.amount ?? null;
+          const formatted = formatHowToSend(rawHowToSend, amountForHowToSend);
+          // Don't show crypto wallet addresses inside "How to send" (this row is for USSD/bank instructions).
+          const isEvmAddress = /^0x[a-fA-F0-9]{40}$/.test(String(formatted || "").trim());
+          return Boolean(formatted) && !isEvmAddress;
+        })() && (
+        <div className="w-full max-w-4xl mb-2 sm:mb-3">
           <div
             className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl border border-[#1D8751] ${
               isDark ? "bg-[#1f1f25]" : "bg-gray-50"
@@ -1404,11 +1483,7 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                 liveAmount ??
                 (effectiveTransactionData as any)?.amount ??
                 null;
-              const payin =
-                String((effectiveTransactionData as any)?.payin_address || "").trim() ||
-                String((effectiveTransactionData as any)?.details?.payin_address || "").trim() ||
-                String(effectiveTransactionData?.walletAddress || "").trim();
-              const value = formatHowToSend(howToSend, amountForHowToSend) || payin;
+              const value = formatHowToSend(howToSend, amountForHowToSend);
               return (
                 <>
                   <code className={`${isDark ? "text-white" : "text-gray-900"} text-xs sm:text-sm font-mono break-all`}>
@@ -1422,59 +1497,57 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
         </div>
       )}
 
-      <div className={`flex items-center justify-between w-full ${isHomePage ? '' : 'max-w-4xl'} ${isHomePage ? 'mb-2 sm:mb-3 px-1' : 'mb-4'} relative overflow-x-auto`}>
+      <div className="flex items-center justify-between w-full max-w-4xl mb-2 sm:mb-4 relative px-2 sm:px-0 overflow-x-auto">
         {/* Connecting Lines */}
-        <div className={`absolute ${isHomePage ? 'top-3 sm:top-4' : 'top-5'} left-[12.5%] right-[12.5%] h-0.5 z-0 hidden sm:block`}>
+        <div className="absolute top-5 left-[12.5%] right-[12.5%] h-0.5 z-0 hidden sm:block">
           <div
-            className={`h-0.5 transition-all duration-500 ${
-              currentStatus === "completed" || currentStatus === "finished"
+            className={`h-0.5 transition-all duration-500 ${currentStatus === "completed" || currentStatus === "finished"
+              ? "bg-[#1D8751] w-full"
+              : currentStatus === "sending"
                 ? "bg-[#1D8751] w-full"
-                : currentStatus === "sending"
-                  ? "bg-[#1D8751] w-full"
-                  : currentStatus === "exchanging"
-                    ? "bg-[#FF9500] w-3/4"
-                    : currentStatus === "confirming"
-                      ? "bg-[#FF9500] w-1/2"
-                      : currentStatus === "pending" ||
-                          currentStatus === "waiting"
-                        ? "bg-[#FF9500] w-1/4"
-                        : "bg-[#7B7B7B] w-0"
-            }`}
+                : currentStatus === "exchanging"
+                  ? "bg-[#FF9500] w-3/4"
+                  : currentStatus === "confirming"
+                    ? "bg-[#FF9500] w-1/2"
+                    : currentStatus === "pending" ||
+                      currentStatus === "waiting"
+                      ? "bg-[#FF9500] w-1/4"
+                      : "bg-[#7B7B7B] w-0"
+              }`}
           ></div>
         </div>
 
         {/* Step 1: Awaiting Deposit */}
-        <div className={`flex flex-col items-center ${isHomePage ? 'flex-shrink-0 min-w-[70px] sm:min-w-[80px]' : 'flex-1'} relative z-10`}>
+        <div className="flex flex-col items-center flex-1 relative z-10 min-w-[70px] sm:min-w-0">
           <div
-            className={`${isHomePage ? 'w-7 h-7 sm:w-8 sm:h-8' : 'w-10 h-10'} rounded-full flex items-center justify-center ${isHomePage ? 'mb-0.5 sm:mb-1' : 'mb-1'} border-4 ${
-              currentStatus === "pending" ||
+            className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center mb-1 border-2 sm:border-4 ${currentStatus === "pending" ||
               currentStatus === "waiting" ||
               !shouldUseWebSocket
-                ? "bg-[#FF9500] border-[#FF95001A]"
-                : currentStatus === "confirming" ||
-                    currentStatus === "exchanging" ||
-                    currentStatus === "sending" ||
-                    currentStatus === "completed" ||
-                    currentStatus === "finished"
-                  ? "bg-[#1D8751] border-[#1D87511A]"
-                  : "bg-[#23232B] border-[#35353E]"
-            }`}
+              ? "bg-[#FF9500] border-[#FF95001A]"
+              : currentStatus === "confirming" ||
+                currentStatus === "exchanging" ||
+                currentStatus === "sending" ||
+                currentStatus === "completed" ||
+                currentStatus === "finished"
+                ? "bg-[#1D8751] border-[#1D87511A]"
+                : "bg-[#23232B] border-[#35353E]"
+              }`}
           >
-            <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
+            <svg width="20" height="20" className="sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24">
               <circle
                 cx="12"
                 cy="12"
                 r="10"
                 stroke={
                   currentStatus === "pending" ||
-                  currentStatus === "waiting" ||
-                  !shouldUseWebSocket
+                    currentStatus === "waiting" ||
+                    !shouldUseWebSocket
                     ? "#fff"
                     : currentStatus === "confirming" ||
-                        currentStatus === "exchanging" ||
-                        currentStatus === "sending" ||
-                        currentStatus === "completed" ||
-                        currentStatus === "finished"
+                      currentStatus === "exchanging" ||
+                      currentStatus === "sending" ||
+                      currentStatus === "completed" ||
+                      currentStatus === "finished"
                       ? "#fff"
                       : "#7B7B7B"
                 }
@@ -1484,13 +1557,13 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                 d="M12 8v4l2 2"
                 stroke={
                   currentStatus === "pending" ||
-                  currentStatus === "waiting" ||
-                  !shouldUseWebSocket
+                    currentStatus === "waiting" ||
+                    !shouldUseWebSocket
                     ? "#fff"
                     : currentStatus === "exchanging" ||
-                        currentStatus === "sending" ||
-                        currentStatus === "completed" ||
-                        currentStatus === "finished"
+                      currentStatus === "sending" ||
+                      currentStatus === "completed" ||
+                      currentStatus === "finished"
                       ? "#fff"
                       : "#7B7B7B"
                 }
@@ -1500,86 +1573,85 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
               />
             </svg>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5 sm:gap-1 flex-wrap justify-center">
             <span
-              className={`font-semibold text-base ${
-                currentStatus === "pending" ||
+              className={`font-semibold text-[10px] sm:text-base text-center ${currentStatus === "pending" ||
                 currentStatus === "waiting" ||
                 !shouldUseWebSocket
-                  ? "text-[#FF9500]"
-                  : currentStatus === "confirming" ||
-                      currentStatus === "exchanging" ||
-                      currentStatus === "sending" ||
-                      currentStatus === "completed" ||
-                      currentStatus === "finished"
-                    ? "text-[#1D8751]"
-                    : "text-[#7B7B7B]"
-              }`}
+                ? "text-[#FF9500]"
+                : currentStatus === "confirming" ||
+                  currentStatus === "exchanging" ||
+                  currentStatus === "sending" ||
+                  currentStatus === "completed" ||
+                  currentStatus === "finished"
+                  ? "text-[#1D8751]"
+                  : "text-[#7B7B7B]"
+                }`}
             >
-              Awaiting Deposit
+              <span className="hidden sm:inline">Awaiting Deposit</span>
+              <span className="sm:hidden">Awaiting</span>
             </span>
             {(currentStatus === "pending" ||
               currentStatus === "waiting" ||
               !shouldUseWebSocket) && (
-              <div className="flex gap-1">
-                <span
-                  className="w-2 h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
-                  style={{ animationDelay: "0ms" }}
-                ></span>
-                <span
-                  className="w-2 h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
-                  style={{ animationDelay: "150ms" }}
-                ></span>
-                <span
-                  className="w-2 h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
-                  style={{ animationDelay: "300ms" }}
-                ></span>
-              </div>
-            )}
+                <div className="flex gap-0.5 sm:gap-1">
+                  <span
+                    className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
+                    style={{ animationDelay: "0ms" }}
+                  ></span>
+                  <span
+                    className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
+                    style={{ animationDelay: "150ms" }}
+                  ></span>
+                  <span
+                    className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
+                    style={{ animationDelay: "300ms" }}
+                  ></span>
+                </div>
+              )}
             {(currentStatus === "confirming" ||
               currentStatus === "exchanging" ||
               currentStatus === "sending" ||
               currentStatus === "completed" ||
               currentStatus === "finished") && (
-              <div className="flex items-center gap-1">
-                <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
-                  <path
-                    d="M9 12l2 2 4-4"
-                    stroke="#1D8751"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
-            )}
+                <div className="flex items-center gap-1">
+                  <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
+                    <path
+                      d="M9 12l2 2 4-4"
+                      stroke="#1D8751"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
+              )}
           </div>
         </div>
         {/* Step 2: Confirming */}
-        <div className={`flex flex-col items-center ${isHomePage ? 'flex-shrink-0 min-w-[70px] sm:min-w-[80px]' : 'flex-1'} relative z-10`}>
+        <div className="flex flex-col items-center flex-1 relative z-10 min-w-[70px] sm:min-w-0">
           <div
-            className={`${isHomePage ? 'w-7 h-7 sm:w-8 sm:h-8' : 'w-10 h-10'} rounded-full flex items-center justify-center ${isHomePage ? 'mb-0.5 sm:mb-1' : 'mb-1'} border-4 ${
-              currentStatus === "confirming"
-                ? "bg-[#FF9500] border-[#FF95001A]"
-                : currentStatus === "exchanging" ||
-                    currentStatus === "sending" ||
-                    currentStatus === "completed" ||
-                    currentStatus === "finished"
-                  ? "bg-[#1D8751] border-[#1D87511A]"
-                  : `${isDark ? "bg-[#23232B] border-[#35353E]" : "bg-gray-200 border-gray-300"}`
-            }`}
+            className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center mb-1 border-2 sm:border-4 ${currentStatus === "confirming"
+              ? "bg-[#FF9500] border-[#FF95001A]"
+              : currentStatus === "exchanging" ||
+                currentStatus === "sending" ||
+                currentStatus === "completed" ||
+                currentStatus === "finished"
+                ? "bg-[#1D8751] border-[#1D87511A]"
+                : `${isDark ? "bg-[#23232B] border-[#35353E]" : "bg-gray-200 border-gray-300"}`
+              }`}
           >
-            <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
+            <svg width="20" height="20" className="sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24">
               <circle
                 cx="12"
                 cy="12"
                 r="10"
                 stroke={
                   currentStatus === "confirming" ||
-                  currentStatus === "exchanging" ||
-                  currentStatus === "sending" ||
-                  currentStatus === "completed" ||
-                  currentStatus === "finished"
+                    currentStatus === "exchanging" ||
+                    currentStatus === "sending" ||
+                    currentStatus === "completed" ||
+                    currentStatus === "finished"
                     ? "#fff"
                     : "#7B7B7B"
                 }
@@ -1589,10 +1661,10 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                 d="M9 12l2 2 4-4"
                 stroke={
                   currentStatus === "confirming" ||
-                  currentStatus === "exchanging" ||
-                  currentStatus === "sending" ||
-                  currentStatus === "completed" ||
-                  currentStatus === "finished"
+                    currentStatus === "exchanging" ||
+                    currentStatus === "sending" ||
+                    currentStatus === "completed" ||
+                    currentStatus === "finished"
                     ? "#fff"
                     : "#7B7B7B"
                 }
@@ -1602,33 +1674,32 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
               />
             </svg>
           </div>
-          <div className={`flex items-center gap-1 ${isHomePage ? 'flex-wrap justify-center' : ''}`}>
+          <div className="flex items-center gap-0.5 sm:gap-1 flex-wrap justify-center">
             <span
-              className={`font-semibold ${isHomePage ? 'text-xs sm:text-sm' : 'text-base'} ${
-                currentStatus === "confirming"
-                  ? "text-[#FF9500]"
-                  : currentStatus === "exchanging" ||
-                      currentStatus === "sending" ||
-                      currentStatus === "completed" ||
-                      currentStatus === "finished"
-                    ? "text-[#1D8751]"
-                    : "text-[#7B7B7B]"
-              }`}
+              className={`font-semibold text-[10px] sm:text-base text-center ${currentStatus === "confirming"
+                ? "text-[#FF9500]"
+                : currentStatus === "exchanging" ||
+                  currentStatus === "sending" ||
+                  currentStatus === "completed" ||
+                  currentStatus === "finished"
+                  ? "text-[#1D8751]"
+                  : "text-[#7B7B7B]"
+                }`}
             >
               Confirming
             </span>
             {currentStatus === "confirming" && (
-              <div className="flex gap-1">
+              <div className="flex gap-0.5 sm:gap-1">
                 <span
-                  className="w-2 h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
+                  className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
                   style={{ animationDelay: "0ms" }}
                 ></span>
                 <span
-                  className="w-2 h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
+                  className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
                   style={{ animationDelay: "150ms" }}
                 ></span>
                 <span
-                  className="w-2 h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
+                  className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
                   style={{ animationDelay: "300ms" }}
                 ></span>
               </div>
@@ -1637,43 +1708,42 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
               currentStatus === "sending" ||
               currentStatus === "completed" ||
               currentStatus === "finished") && (
-              <div className="flex items-center gap-1">
-                <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
-                  <path
-                    d="M9 12l2 2 4-4"
-                    stroke="#1D8751"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
-            )}
+                <div className="flex items-center gap-1">
+                  <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
+                    <path
+                      d="M9 12l2 2 4-4"
+                      stroke="#1D8751"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
+              )}
           </div>
         </div>
         {/* Step 3: Exchanging */}
-        <div className={`flex flex-col items-center ${isHomePage ? 'flex-shrink-0 min-w-[70px] sm:min-w-[80px]' : 'flex-1'} relative z-10`}>
+        <div className="flex flex-col items-center flex-1 relative z-10 min-w-[70px] sm:min-w-0">
           <div
-            className={`${isHomePage ? 'w-7 h-7 sm:w-8 sm:h-8' : 'w-10 h-10'} rounded-full flex items-center justify-center ${isHomePage ? 'mb-0.5 sm:mb-1' : 'mb-1'} border-4 ${
-              currentStatus === "exchanging"
-                ? "bg-[#FF9500] border-[#FF95001A]"
-                : currentStatus === "sending" ||
-                    currentStatus === "completed" ||
-                    currentStatus === "finished"
-                  ? "bg-[#1D8751] border-[#1D87511A]"
-                  : "bg-[#23232B] border-[#35353E]"
-            }`}
+            className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center mb-1 border-2 sm:border-4 ${currentStatus === "exchanging"
+              ? "bg-[#FF9500] border-[#FF95001A]"
+              : currentStatus === "sending" ||
+                currentStatus === "completed" ||
+                currentStatus === "finished"
+                ? "bg-[#1D8751] border-[#1D87511A]"
+                : "bg-[#23232B] border-[#35353E]"
+              }`}
           >
-            <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
+            <svg width="20" height="20" className="sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24">
               <circle
                 cx="12"
                 cy="12"
                 r="10"
                 stroke={
                   currentStatus === "exchanging" ||
-                  currentStatus === "sending" ||
-                  currentStatus === "completed" ||
-                  currentStatus === "finished"
+                    currentStatus === "sending" ||
+                    currentStatus === "completed" ||
+                    currentStatus === "finished"
                     ? "#fff"
                     : "#7B7B7B"
                 }
@@ -1683,9 +1753,9 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                 d="M8 12h8M12 8v8"
                 stroke={
                   currentStatus === "exchanging" ||
-                  currentStatus === "sending" ||
-                  currentStatus === "completed" ||
-                  currentStatus === "finished"
+                    currentStatus === "sending" ||
+                    currentStatus === "completed" ||
+                    currentStatus === "finished"
                     ? "#fff"
                     : "#7B7B7B"
                 }
@@ -1694,32 +1764,31 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
               />
             </svg>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5 sm:gap-1 flex-wrap justify-center">
             <span
-              className={`font-semibold text-base ${
-                currentStatus === "exchanging"
-                  ? "text-[#FF9500]"
-                  : currentStatus === "sending" ||
-                      currentStatus === "completed" ||
-                      currentStatus === "finished"
-                    ? "text-[#1D8751]"
-                    : "text-[#7B7B7B]"
-              }`}
+              className={`font-semibold text-[10px] sm:text-base text-center ${currentStatus === "exchanging"
+                ? "text-[#FF9500]"
+                : currentStatus === "sending" ||
+                  currentStatus === "completed" ||
+                  currentStatus === "finished"
+                  ? "text-[#1D8751]"
+                  : "text-[#7B7B7B]"
+                }`}
             >
               Exchanging
             </span>
             {currentStatus === "exchanging" && (
-              <div className="flex gap-1">
+              <div className="flex gap-0.5 sm:gap-1">
                 <span
-                  className="w-2 h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
+                  className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
                   style={{ animationDelay: "0ms" }}
                 ></span>
                 <span
-                  className="w-2 h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
+                  className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
                   style={{ animationDelay: "150ms" }}
                 ></span>
                 <span
-                  className="w-2 h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
+                  className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
                   style={{ animationDelay: "300ms" }}
                 ></span>
               </div>
@@ -1727,32 +1796,31 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
             {(currentStatus === "sending" ||
               currentStatus === "completed" ||
               currentStatus === "finished") && (
-              <div className="flex items-center gap-1">
-                <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
-                  <path
-                    d="M9 12l2 2 4-4"
-                    stroke="#1D8751"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
-            )}
+                <div className="flex items-center gap-1">
+                  <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
+                    <path
+                      d="M9 12l2 2 4-4"
+                      stroke="#1D8751"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
+              )}
           </div>
         </div>
         {/* Step 4: Sending to you */}
-        <div className={`flex flex-col items-center ${isHomePage ? 'flex-shrink-0 min-w-[70px] sm:min-w-[80px]' : 'flex-1'} relative z-10`}>
+        <div className="flex flex-col items-center flex-1 relative z-10 min-w-[70px] sm:min-w-0">
           <div
-            className={`${isHomePage ? 'w-7 h-7 sm:w-8 sm:h-8' : 'w-10 h-10'} rounded-full flex items-center justify-center ${isHomePage ? 'mb-0.5 sm:mb-1' : 'mb-1'} border-4 ${
-              currentStatus === "sending"
-                ? "bg-[#FF9500] border-[#FF95001A]"
-                : currentStatus === "completed" || currentStatus === "finished"
-                  ? "bg-[#1D8751] border-[#1D87511A]"
-                  : "bg-[#23232B] border-[#35353E]"
-            }`}
+            className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center mb-1 border-2 sm:border-4 ${currentStatus === "sending"
+              ? "bg-[#FF9500] border-[#FF95001A]"
+              : currentStatus === "completed" || currentStatus === "finished"
+                ? "bg-[#1D8751] border-[#1D87511A]"
+                : "bg-[#23232B] border-[#35353E]"
+              }`}
           >
-            <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
+            <svg width="20" height="20" className="sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24">
               <circle
                 cx="12"
                 cy="12"
@@ -1761,7 +1829,7 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                   currentStatus === "sending"
                     ? "#fff"
                     : currentStatus === "completed" ||
-                        currentStatus === "finished"
+                      currentStatus === "finished"
                       ? "#fff"
                       : "#7B7B7B"
                 }
@@ -1773,7 +1841,7 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                   currentStatus === "sending"
                     ? "#fff"
                     : currentStatus === "completed" ||
-                        currentStatus === "finished"
+                      currentStatus === "finished"
                       ? "#fff"
                       : "#7B7B7B"
                 }
@@ -1782,33 +1850,32 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
               />
             </svg>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5 sm:gap-1 flex-wrap justify-center">
             <span
-              className={`font-semibold text-base ${
-                currentStatus === "sending"
-                  ? "text-[#FF9500]"
-                  : currentStatus === "completed" ||
-                      currentStatus === "finished"
-                    ? "text-[#1D8751]"
-                    : "text-[#7B7B7B]"
-              }`}
+              className={`font-semibold text-[10px] sm:text-base text-center ${currentStatus === "sending"
+                ? "text-[#FF9500]"
+                : currentStatus === "completed" ||
+                  currentStatus === "finished"
+                  ? "text-[#1D8751]"
+                  : "text-[#7B7B7B]"
+                }`}
             >
               {currentStatus === "completed"
-                ? "Transaction Completed"
-                : "Sending to you"}
+                ? <><span className="hidden sm:inline">Transaction Completed</span><span className="sm:hidden">Complete</span></>
+                : <><span className="hidden sm:inline">Sending to you</span><span className="sm:hidden">Sending</span></>}
             </span>
             {currentStatus === "sending" && (
-              <div className="flex gap-1">
+              <div className="flex gap-0.5 sm:gap-1">
                 <span
-                  className="w-2 h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
+                  className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
                   style={{ animationDelay: "0ms" }}
                 ></span>
                 <span
-                  className="w-2 h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
+                  className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
                   style={{ animationDelay: "150ms" }}
                 ></span>
                 <span
-                  className="w-2 h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
+                  className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
                   style={{ animationDelay: "300ms" }}
                 ></span>
               </div>
@@ -1831,18 +1898,18 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
             )}
             {(currentStatus === "completed" ||
               currentStatus === "finished") && (
-              <div className="flex items-center gap-1">
-                <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
-                  <path
-                    d="M9 12l2 2 4-4"
-                    stroke="#1D8751"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
-            )}
+                <div className="flex items-center gap-1">
+                  <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
+                    <path
+                      d="M9 12l2 2 4-4"
+                      stroke="#1D8751"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
+              )}
           </div>
         </div>
       </div>
@@ -1850,32 +1917,28 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
 
       {/* Transaction Details Card */}
       <div
-        className={`${
-          isDark ? "bg-[#23232B] border-[#35353E]" : "bg-white border-gray-200"
-        } border-2 rounded-2xl ${isHomePage ? 'p-3 sm:p-4' : 'p-6'} shadow-lg w-full ${isHomePage ? '' : 'max-w-4xl'} ${isHomePage ? 'mb-2 sm:mb-3' : 'mb-4'} overflow-hidden`}
+        className={`${isDark ? "bg-[var(--card-color)] border-[#35353E]" : "bg-white border-gray-200"
+          } border-2 rounded-2xl p-3 sm:p-4 md:p-6 shadow-lg w-full max-w-4xl mb-2 sm:mb-4 overflow-hidden`}
       >
         {/* Title */}
         <div
-          className={`${
-            isDark ? "text-white" : "text-gray-900"
-          } ${isHomePage ? 'text-lg sm:text-xl' : 'text-2xl'} font-semibold ${isHomePage ? 'mb-2 sm:mb-3' : 'mb-4'}`}
+          className={`${isDark ? "text-white" : "text-gray-900"
+            } text-lg sm:text-xl md:text-2xl font-semibold mb-3 sm:mb-4`}
         >
           Transaction Details
         </div>
         {/* Transaction ID Row */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mb-1 min-w-0">
           <div
-            className={`${
-              isDark ? "text-[#7B7B7B]" : "text-gray-600"
-            } text-sm sm:text-base font-medium flex-shrink-0`}
+            className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+              } text-sm sm:text-base font-medium flex-shrink-0`}
           >
             Transaction ID
           </div>
           <div className="flex items-center gap-2 min-w-0 flex-1 sm:flex-initial sm:justify-end">
             <span
-              className={`${
-                isDark ? "text-white" : "text-gray-900"
-              } text-xs sm:text-sm md:text-base font-mono font-semibold truncate min-w-0`}
+              className={`${isDark ? "text-white" : "text-gray-900"
+                } text-xs sm:text-sm md:text-base font-mono font-semibold truncate min-w-0`}
             >
               {liveTransactionId || effectiveTransactionData?.transactionId}
             </span>
@@ -1887,28 +1950,26 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
               }
               className="text-[#FFA200] hover:text-[#FFB833] transition-colors flex-shrink-0"
               showIcon={true}
+              showInlineMessage={true}
             />
           </div>
         </div>
         {/* Dashed Divider */}
         <div
-          className={`border-t border-dashed ${
-            isDark ? "border-[#7B7B7B]" : "border-gray-400"
-          } mb-4`}
+          className={`border-t border-dashed ${isDark ? "border-[#7B7B7B]" : "border-gray-400"
+            } mb-4`}
         ></div>
         {/* From (left) | To (start of second part) — aligned UI */}
         <div className="flex mb-2">
           <div
-            className={`flex-shrink-0 w-1/2 ${
-              isDark ? "text-[#7B7B7B]" : "text-gray-600"
-            } text-sm sm:text-base font-medium`}
+            className={`flex-shrink-0 w-1/2 ${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+              } text-sm sm:text-base font-medium`}
           >
             From
           </div>
           <div
-            className={`flex-1 min-w-0 text-left pl-2 sm:pl-4 ${
-              isDark ? "text-[#7B7B7B]" : "text-gray-600"
-            } text-sm sm:text-base font-medium`}
+            className={`flex-1 min-w-0 text-left pl-2 sm:pl-4 ${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+              } text-sm sm:text-base font-medium`}
           >
             To
           </div>
@@ -1917,27 +1978,37 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
           {/* Left: From */}
           <div className="flex items-start gap-3 min-w-0 w-1/2 flex-shrink-0 pr-2 sm:pr-4">
             {effectiveTransactionData?.type === "deposit" &&
-            effectiveTransactionData?.paymentDetail ? (
+              effectiveTransactionData?.paymentDetail ? (
               <>
                 <img
-                  src="/assets/image_7_jijlik.png"
+                  src={
+                    effectiveTransactionData.paymentDetail.logo_url ||
+                    effectiveTransactionData.paymentDetail.logo ||
+                    effectiveTransactionData.paymentDetail.provider_logo ||
+                    "/assets/image_7_jijlik.png"
+                  }
                   alt={effectiveTransactionData.paymentDetail.provider_name}
                   className="w-8 h-8 rounded-full flex-shrink-0 mt-0.5"
+                  onError={(e) => {
+                    e.currentTarget.src =
+                      "/assets/image_7_jijlik.png";
+                  }}
                 />
                 <div className="min-w-0 flex-1 space-y-0.5">
                   <div
-                    className={`${
-                      isDark ? "text-white" : "text-gray-900"
-                    } text-sm sm:text-base font-semibold truncate`}
+                    className={`${isDark ? "text-white" : "text-gray-900"
+                      } text-sm sm:text-base font-semibold truncate`}
                   >
                     {effectiveTransactionData.paymentDetail.provider_name}
                   </div>
                   <div
-                    className={`${
-                      isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                    } text-xs sm:text-sm font-mono truncate`}
+                    className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                      } text-xs sm:text-sm font-mono break-all max-w-[200px] sm:max-w-[250px] leading-tight`}
+                    style={{ wordBreak: 'break-all', lineHeight: '1.3' }}
                   >
-                    {effectiveTransactionData.paymentDetail.account_number}
+                    {resolvePaymentAccountNumber(
+                      effectiveTransactionData.paymentDetail
+                    ) || "N/A"}
                   </div>
                 </div>
               </>
@@ -1966,24 +2037,33 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                   }}
                 />
                 <div className="min-w-0 flex-1 space-y-0.5">
-                  <div
-                    className={`${
-                      isDark ? "text-white" : "text-gray-900"
-                    } text-sm sm:text-base font-semibold truncate`}
-                  >
-                    {effectiveTransactionData?.asset?.ticker ||
-                      effectiveTransactionData?.asset?.symbol ||
-                      effectiveTransactionData?.asset?.name ||
-                      (effectiveTransactionData?.type === "deposit"
-                        ? "USD"
-                        : effectiveTransactionData?.type === "withdrawal"
+                  <div className="flex items-center gap-1 flex-wrap">
+                    <div
+                      className={`${isDark ? "text-white" : "text-gray-900"
+                        } text-sm sm:text-base font-semibold truncate uppercase`}
+                    >
+                      {effectiveTransactionData?.asset?.ticker ||
+                        effectiveTransactionData?.asset?.symbol ||
+                        effectiveTransactionData?.asset?.name ||
+                        (effectiveTransactionData?.type === "deposit"
                           ? "USD"
-                          : "USDT")}
+                          : effectiveTransactionData?.type === "withdrawal"
+                            ? "USD"
+                            : "USDT")}
+                    </div>
+                    {effectiveTransactionData?.asset?.description && (
+                      <span
+                        className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                          } text-xs sm:text-sm font-normal truncate`}
+                      >
+                        {effectiveTransactionData?.asset?.description}
+                      </span>
+                    )}
                   </div>
                   <div
-                    className={`${
-                      isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                    } text-xs sm:text-sm font-mono break-all`}
+                    className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                      } text-xs sm:text-sm font-mono break-all max-w-[200px] sm:max-w-[250px] leading-tight`}
+                    style={{ wordBreak: 'break-all', lineHeight: '1.3' }}
                   >
                     {effectiveTransactionData?.walletAddress ||
                       "TQn9Y2khEsLJW1ChVWFM...RDow5oRP7bX"}
@@ -2019,33 +2099,26 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                   }}
                 />
                 <div className="min-w-0 flex-1 space-y-0.5">
-                  <div
-                    className={`${
-                      isDark ? "text-white" : "text-gray-900"
-                    } text-sm sm:text-base font-semibold truncate`}
-                  >
-                    {effectiveTransactionData?.asset?.ticker ||
-                      effectiveTransactionData?.asset?.symbol ||
-                      effectiveTransactionData?.asset?.name ||
-                      (effectiveTransactionData?.type === "deposit"
-                        ? "USD"
-                        : effectiveTransactionData?.type === "withdrawal"
-                          ? "USD"
-                          : "USDT")}
-                  </div>
-                  {effectiveTransactionData?.asset?.description && (
-                    <span
-                      className={`${
-                        isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                      } text-xs sm:text-sm font-normal block truncate`}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <div
+                      className={`${isDark ? "text-white" : "text-gray-900"
+                        } text-sm sm:text-base font-semibold uppercase truncate`}
                     >
-                      {effectiveTransactionData?.asset?.description}
-                    </span>
-                  )}
+                      {effectiveTransactionData?.asset?.ticker ||
+                        effectiveTransactionData?.asset?.symbol ||
+                        effectiveTransactionData?.asset?.name ||
+                        "USDT"}
+                    </div>
+                    {effectiveTransactionData?.network?.network_type && (
+                      <span className="bg-[#1D8751] text-white text-xs px-2 py-0.5 rounded-full font-medium">
+                        {effectiveTransactionData?.network?.network_type}
+                      </span>
+                    )}
+                  </div>
                   <div
-                    className={`${
-                      isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                    } text-xs sm:text-sm font-mono break-all mt-1`}
+                    className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                      } text-xs sm:text-sm font-mono break-all max-w-[200px] sm:max-w-[300px] leading-tight`}
+                    style={{ wordBreak: 'break-all', lineHeight: '1.3' }}
                   >
                     {effectiveTransactionData?.walletAddress ||
                       "TQn9Y2khEsLJW1ChVWFM...RDow5oRP7bX"}
@@ -2055,32 +2128,42 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
             ) : (
               <>
                 <img
-                  src="/assets/image_7_jijlik.png"
-                  alt="Bank"
+                  src={
+                    effectiveTransactionData?.paymentDetails?.[0]?.logo_url ||
+                    effectiveTransactionData?.paymentDetails?.[0]?.logo ||
+                    effectiveTransactionData?.paymentDetails?.[0]?.provider_logo ||
+                    effectiveTransactionData?.paymentDetail?.logo_url ||
+                    effectiveTransactionData?.paymentDetail?.logo ||
+                    effectiveTransactionData?.paymentDetail?.provider_logo ||
+                    "/assets/image_7_jijlik.png"
+                  }
+                  alt={
+                    effectiveTransactionData?.paymentDetails?.[0]?.provider_name ||
+                    effectiveTransactionData?.paymentDetail?.provider_name ||
+                    "Bank"
+                  }
                   className="w-8 h-8 rounded-full flex-shrink-0 mt-0.5"
+                  onError={(e) => {
+                    e.currentTarget.src =
+                      "/assets/image_7_jijlik.png";
+                  }}
                 />
                 <div className="min-w-0 flex-1 space-y-0.5">
                   <div
-                    className={`${
-                      isDark ? "text-white" : "text-gray-900"
-                    } text-sm sm:text-base font-semibold truncate`}
+                    className={`${isDark ? "text-white" : "text-gray-900"
+                      } text-sm sm:text-base font-semibold truncate`}
                   >
-                    Bank Transfer
+                    {effectiveTransactionData?.paymentDetails?.[0]?.provider_name ||
+                      effectiveTransactionData?.paymentDetail?.provider_name ||
+                      "Bank Transfer"}
                   </div>
-                  <span
-                    className={`${
-                      isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                    } text-xs sm:text-sm font-normal block truncate`}
-                  >
-                    To your account
-                  </span>
                   <div
-                    className={`${
-                      isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                    } text-xs sm:text-sm font-mono break-all mt-1`}
+                    className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                      } text-xs sm:text-sm font-mono break-all max-w-[200px] sm:max-w-[250px] leading-tight`}
+                    style={{ wordBreak: 'break-all', lineHeight: '1.3' }}
                   >
-                    {effectiveTransactionData?.paymentDetails?.[0]
-                      ?.account_number || "Account Number"}
+                    {resolveBankAccountFromTx(effectiveTransactionData) ||
+                      "N/A"}
                   </div>
                 </div>
               </>
@@ -2089,14 +2172,14 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
         </div>
       </div>
 
-      <div className={`w-full ${isHomePage ? "" : "max-w-4xl"} rounded-2xl flex`}>
+      <div className="w-full max-w-4xl rounded-2xl flex">
         <div className={`w-full border border-[#1D8751] rounded-xl overflow-hidden transition-all duration-300 ${isDark ? "bg-[#1D1D23]" : "bg-[#F8FAFF]"}`}>
-          <div className={`flex flex-col ${isHomePage ? "gap-1 sm:gap-2 p-2 sm:p-3" : "gap-2 p-3"}`}>
+          <div className="flex flex-col gap-2 p-3">
             <div className="flex items-center gap-2">
               <svg className="w-5 h-5 text-[#1D8751]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <h3 className={`font-medium ${isHomePage ? "text-sm sm:text-base" : "text-base"} ${isDark ? "text-white" : "text-gray-900"}`}>
+              <h3 className={`font-medium text-sm sm:text-base ${isDark ? "text-white" : "text-gray-900"}`}>
                 Terms & Conditions
               </h3>
             </div>

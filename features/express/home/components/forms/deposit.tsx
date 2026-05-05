@@ -3774,7 +3774,7 @@ export default function DepositForm({
               }`}
           >
             {/* Amount Section */}
-            <div className="flex-1 min-w-0 lg:min-w-[320px]">
+            <div className="flex-1 min-w-0">
               <label
                 className={`block text-[15px] mb-2 font-semibold flex items-center gap-2 ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"
                   }`}
@@ -3914,7 +3914,7 @@ export default function DepositForm({
             </div>
 
             {/* Bank/Payment Method Section */}
-            <div className="flex-1 min-w-0 lg:min-w-[380px]">
+            <div className="flex-1 min-w-0">
               <label
                 className={`block text-[15px] mb-2 font-semibold flex items-center gap-2 ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"
                   }`}
@@ -3975,8 +3975,7 @@ export default function DepositForm({
                   logoClassName={`${PAYMENT_LOGO_BASE_CLASS} rounded-full`}
                   sizeMode="card"
                   dropdownMatchTriggerWidth={true}
-                  dropdownMinWidth={420}
-                  dropdownMaxWidth={720}
+                  dropdownMaxWidth={640}
                   className="w-full"
                   placeholderClassName="text-white dark:text-white"
                   triggerClassName={`!px-4 !py-[8px] !min-h-0 text-sm font-medium border rounded-2xl bg-transparent !h-[44px] ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"

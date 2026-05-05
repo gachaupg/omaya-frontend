@@ -281,6 +281,21 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
     hasRedirectedOnExpiry.current = true;
 
     const onTimeExpired = async () => {
+      // Only auto-cancel deposits. Withdrawals can legitimately wait for admin approval
+      // longer than the client timer and should not be marked as failed/canceled.
+      if (effectiveData?.type && effectiveData.type !== "deposit") {
+        setTimerActive(false);
+        return;
+      }
+      // If we reached an admin/agent approval gate, do not auto-cancel.
+      if (
+        ["admin_approval_required", "approval_required", "agent_approve"].includes(
+          String(currentStatus || "").toLowerCase()
+        )
+      ) {
+        setTimerActive(false);
+        return;
+      }
       const txId = effectiveData?.transactionId;
       if (txId) {
         try {
@@ -295,7 +310,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
     };
 
     onTimeExpired();
-  }, [timeRemaining, effectiveData?.transactionId, dispatch, router]);
+  }, [timeRemaining, effectiveData?.transactionId, effectiveData?.type, currentStatus, dispatch, router]);
 
   // Format time as MM:SS
   const formatTime = (seconds: number) => {
@@ -324,9 +339,10 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
     }
   };
 
-  // Stop timer when transaction is completed
+  // Stop timer when transaction is completed or waiting for admin/agent approval
   useEffect(() => {
-    if (currentStatus === "completed") {
+    const s = String(currentStatus || "").toLowerCase();
+    if (s === "completed" || ["admin_approval_required", "approval_required", "agent_approve"].includes(s)) {
       setTimerActive(false);
       localStorage.removeItem("express_transaction_expiry");
     }
@@ -653,6 +669,19 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
             // Legacy format
             status = data.status;
             message = (data as any).message;
+          }
+
+          // Withdrawal approval gate can live in `operational_status` even when the UI status is mapped.
+          const opStatus = String((data.data as any)?.operational_status || "")
+            .trim()
+            .toLowerCase();
+          if (
+            effectiveTransactionData?.type === "withdrawal" &&
+            ["admin_approval_required", "approval_required", "agent_approve"].includes(
+              opStatus
+            )
+          ) {
+            setTimerActive(false);
           }
 
           if (status && ["failed", "rejected", "stopped"].includes(status)) {

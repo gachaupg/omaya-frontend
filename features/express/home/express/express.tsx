@@ -31,6 +31,13 @@ const Express = ({ isHomePage = false }: ExpressProps) => {
     setMounted(true);
   }, []);
 
+  // Home UX: if user navigates away/refreshes, return to the main form (do not restore exchanging).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.removeItem("express_transaction_data");
+    window.localStorage.removeItem("express_transaction_expiry");
+  }, []);
+
   const handleModeToggle = () => {
     // If on home page and not authenticated, navigate to login (include saved amount/asset)
     if (isHomePage && !isAuthenticated) {
