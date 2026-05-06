@@ -1123,8 +1123,8 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
     String(liveTransactionId || effectiveTransactionData?.transactionId || "").trim();
   const netAmountToDisplay =
     liveNetAmount ??
-    (effectiveTransactionData as any)?.receiveAmount ??
-    initialNetAmount;
+    initialNetAmount ??
+    (effectiveTransactionData as any)?.receiveAmount;
   const netCurrencyToDisplay =
     liveNetCurrency ||
     effectiveTransactionData?.toPaymentMethod?.currency ||
@@ -1288,7 +1288,7 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
                     isDark ? "text-[#7B7B7B]" : "text-gray-600"
                   } text-xs font-semibold mb-0.5`}
                 >
-                  Net amount you&apos;ll receive:
+                  Amount you&apos;ll receive (after fees):
                 </div>
                 <div
                   className={`${

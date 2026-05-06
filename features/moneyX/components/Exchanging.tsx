@@ -1119,7 +1119,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
             {netAmountToDisplay != null && (
               <>
                 <div className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"} text-[10px] sm:text-xs font-semibold mb-0.5 mt-2`}>
-                  Net amount you&apos;ll receive:
+                  Amount you&apos;ll receive (after fees):
                 </div>
                 <div className={`${isDark ? "text-[#1D8751]" : "text-[#15803D]"} text-sm sm:text-base font-semibold mb-1 flex items-center gap-2`}>
                   <span>
