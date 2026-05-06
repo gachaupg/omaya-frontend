@@ -4,6 +4,9 @@ import React, { useEffect, useMemo, useState, useRef, useCallback } from "react"
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/rootReducer";
 import { useGroupedMessages } from "@/features/p2p/hooks/useGroupedMessages";
+import { useTradeStatusWebSocket } from "@/features/p2p/hooks/useTradeStatusWebSocket";
+import { useUnreadMessagesWebSocket } from "@/features/p2p/hooks/useUnreadMessagesWebSocket";
+import { RecentMessage } from "@/features/p2p/services/unreadMessagesWebSocket";
 import {
   GroupedUser,
   postTradeMessage,
@@ -177,7 +180,87 @@ export const Chats: React.FC = () => {
     refetchInterval: undefined,
   });
 
+  // Keep chat list/messages live from unread-messages socket updates.
+  // This updates conversation previews and new incoming messages without reload.
+  useUnreadMessagesWebSocket({
+    enabled: isAuthenticated,
+    onNewMessage: () => {
+      refetch();
+    },
+    onRecentMessages: (messages: RecentMessage[]) => {
+      if (!Array.isArray(messages) || messages.length === 0) return;
+
+      const latestByEntity = new Map<string, RecentMessage>();
+      for (const msg of messages) {
+        const entityId = String(msg?.entity_id ?? "").trim();
+        if (!entityId) continue;
+        const existing = latestByEntity.get(entityId);
+        if (
+          !existing ||
+          new Date(String(msg.timestamp || 0)).getTime() >
+            new Date(String(existing.timestamp || 0)).getTime()
+        ) {
+          latestByEntity.set(entityId, msg);
+        }
+      }
+      if (latestByEntity.size === 0) return;
+
+      setLiveGroupedUsers((prev) => {
+        if (!prev || prev.length === 0) return prev;
+        const next = [...prev];
+        let changed = false;
+
+        for (let i = 0; i < next.length; i++) {
+          const group: any = next[i];
+          const entityId = String(group?.entity_id ?? "").trim();
+          const recent = latestByEntity.get(entityId);
+          if (!recent) continue;
+
+          const incomingMessage: any = {
+            id: String(recent.id),
+            content: String(recent.content ?? ""),
+            message: String(recent.content ?? ""),
+            sender_id: recent.sender_id,
+            sender_name: recent.sender_name,
+            sender_email: recent.sender_email,
+            timestamp: String(recent.timestamp ?? new Date().toISOString()),
+            images: Array.isArray(recent.images) ? recent.images : [],
+            audios: [],
+          };
+
+          const existingMessages = Array.isArray(group.messages)
+            ? [...group.messages]
+            : [];
+          const exists = existingMessages.some(
+            (m: any) => String(m?.id) === incomingMessage.id
+          );
+          if (exists) continue;
+
+          next[i] = {
+            ...group,
+            messages: [incomingMessage, ...existingMessages],
+          } as GroupedUser;
+          changed = true;
+        }
+
+        if (!changed) return prev;
+
+        next.sort((a: any, b: any) => {
+          const aTs = new Date(
+            String(a?.messages?.[0]?.timestamp || 0)
+          ).getTime();
+          const bTs = new Date(
+            String(b?.messages?.[0]?.timestamp || 0)
+          ).getTime();
+          return bTs - aTs;
+        });
+        return next;
+      });
+    },
+  });
+
   const [selectedUser, setSelectedUser] = useState<GroupedUser | null>(null);
+  const [liveGroupedUsers, setLiveGroupedUsers] = useState<GroupedUser[]>([]);
 
   // State for terms acceptance - use localStorage for instant display, API for source of truth
   const P2P_TERMS_KEY = "p2p_terms_accepted";
@@ -235,6 +318,7 @@ export const Chats: React.FC = () => {
   const wsRef = useRef<any>(null);
   const mediaRefetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [optimisticMessages, setOptimisticMessages] = useState<Map<string, any[]>>(new Map());
+  const [statusOverridesByEntity, setStatusOverridesByEntity] = useState<Map<string, string>>(new Map());
   const justAddedOptimisticRef = useRef<boolean>(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -250,6 +334,10 @@ export const Chats: React.FC = () => {
     isSender: boolean;
   } | null>(null);
   const longPressTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    setLiveGroupedUsers(groupedUsers || []);
+  }, [groupedUsers]);
 
   const isUuid = (value: unknown): boolean =>
     /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
@@ -319,6 +407,83 @@ export const Chats: React.FC = () => {
     return "";
   }, [selectedUser, resolvedTradeId]);
 
+  const normalizeChatStatus = useCallback((value: unknown): string => {
+    const s = String(value || "").trim().toLowerCase();
+    if (!s) return "";
+    if (s === "canceled") return "cancelled";
+    if (s === "complete") return "completed";
+    return s;
+  }, []);
+
+  const getEffectiveChatStatus = useCallback(
+    (userObj: GroupedUser | null | undefined): string => {
+      if (!userObj) return "";
+      const entityId = String((userObj as any)?.entity_id || "").trim();
+      const override = entityId ? statusOverridesByEntity.get(entityId) : undefined;
+      const base =
+        override ??
+        (userObj as any)?.status ??
+        (userObj as any)?.trade_status ??
+        (userObj as any)?.order_status ??
+        (Array.isArray((userObj as any)?.messages) &&
+        (userObj as any).messages.length > 0
+          ? (userObj as any).messages[0]?.status ??
+            (userObj as any).messages[0]?.trade_status ??
+            (userObj as any).messages[0]?.order_status
+          : "");
+      return normalizeChatStatus(base);
+    },
+    [normalizeChatStatus, statusOverridesByEntity]
+  );
+
+  const handleRealtimeTradeStatusUpdate = useCallback(
+    (statusUpdate: any) => {
+      const incomingTradeId = String(
+        statusUpdate?.trade_id ?? statusUpdate?.id ?? ""
+      ).trim();
+      if (
+        resolvedTradeId &&
+        incomingTradeId &&
+        incomingTradeId !== String(resolvedTradeId)
+      ) {
+        return;
+      }
+
+      const normalized = normalizeChatStatus(
+        statusUpdate?.status ??
+          statusUpdate?.trade_status ??
+          statusUpdate?.order_status
+      );
+      if (!normalized) return;
+
+      const currentEntityId = String(selectedUser?.entity_id || "").trim();
+      if (currentEntityId) {
+        setStatusOverridesByEntity((prev) => {
+          const next = new Map(prev);
+          next.set(currentEntityId, normalized);
+          return next;
+        });
+      }
+
+      setSelectedUser((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          status: normalized,
+        } as GroupedUser;
+      });
+    },
+    [normalizeChatStatus, resolvedTradeId, selectedUser?.entity_id]
+  );
+
+  useTradeStatusWebSocket({
+    tradeId: resolvedTradeId,
+    enabled:
+      Boolean(isAuthenticated && selectedUser && resolvedTradeId) &&
+      String((selectedUser as any)?.message_type || "").toLowerCase() === "p2p",
+    onStatusUpdate: handleRealtimeTradeStatusUpdate,
+  });
+
   // Close emoji picker when clicking outside or when no conversation is selected
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -345,10 +510,9 @@ export const Chats: React.FC = () => {
 
   // Compute if chat is closed (trade completed/cancelled)
   const isChatClosed = useMemo(() => {
-    const chatStatus = selectedUser ? (selectedUser as any).status : null;
-    const normalizedStatus = chatStatus ? String(chatStatus).toLowerCase() : null;
-    return normalizedStatus === "complete" || normalizedStatus === "completed" || normalizedStatus === "responded" || normalizedStatus === "cancelled";
-  }, [selectedUser]);
+    const normalizedStatus = getEffectiveChatStatus(selectedUser);
+    return normalizedStatus === "complete" || normalizedStatus === "completed" || normalizedStatus === "resolved" || normalizedStatus === "cancelled";
+  }, [getEffectiveChatStatus, selectedUser]);
 
   // Close emoji picker when chat becomes closed
   useEffect(() => {
@@ -387,10 +551,10 @@ export const Chats: React.FC = () => {
   }, [groupedUsers, error, hasLoadedOnce]);
 
   useEffect(() => {
-    if (!selectedUser && groupedUsers && groupedUsers.length > 0) {
-      setSelectedUser(groupedUsers[0]);
+    if (!selectedUser && liveGroupedUsers && liveGroupedUsers.length > 0) {
+      setSelectedUser(liveGroupedUsers[0]);
     }
-  }, [groupedUsers, selectedUser]);
+  }, [liveGroupedUsers, selectedUser]);
 
   // Compute displayed messages by merging real messages with optimistic ones
   const displayedMessages = useMemo(() => {
@@ -592,26 +756,29 @@ export const Chats: React.FC = () => {
       return;
     }
 
-    if (selectedUser && selectedUser.entity_id && groupedUsers) {
-      const updatedUser = groupedUsers.find(
+    if (selectedUser && selectedUser.entity_id && liveGroupedUsers) {
+      const updatedUser = liveGroupedUsers.find(
         (user) => user.entity_id === selectedUser.entity_id
       );
       if (updatedUser && updatedUser.messages) {
         // Only update if messages actually changed to avoid unnecessary re-renders
         const currentMessageIds = (selectedUser.messages || []).map(m => m.id).join(',');
         const newMessageIds = updatedUser.messages.map(m => m.id).join(',');
+        const currentStatus = getEffectiveChatStatus(selectedUser);
+        const nextStatus = getEffectiveChatStatus(updatedUser as GroupedUser);
 
-        if (currentMessageIds !== newMessageIds) {
-          // Merge messages instead of replacing entire object
+        if (currentMessageIds !== newMessageIds || currentStatus !== nextStatus) {
+          // Merge messages/status instead of replacing entire object
           setSelectedUser(prev => prev ? {
             ...prev,
-            messages: updatedUser.messages
+            messages: updatedUser.messages,
+            status: nextStatus || (updatedUser as any).status || (prev as any).status,
           } : updatedUser);
         }
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [groupedUsers]);
+  }, [getEffectiveChatStatus, liveGroupedUsers]);
 
 
   // WebSocket connection for selected user
@@ -651,7 +818,47 @@ export const Chats: React.FC = () => {
         wsMessage?.data && typeof wsMessage.data === "object"
           ? wsMessage.data
           : wsMessage;
-      if (!payload || !payload.id) return;
+      if (!payload) return;
+
+      const incomingTradeId = String(
+        payload?.trade_id ?? payload?.trade ?? resolvedTradeId ?? ""
+      ).trim();
+      const isCurrentTrade =
+        !incomingTradeId ||
+        !resolvedTradeId ||
+        incomingTradeId === String(resolvedTradeId);
+
+      // Handle status updates (e.g. resolved/cancelled/completed) in real-time so
+      // closed-state UI updates without requiring a manual page reload.
+      const statusFromPayloadRaw =
+        payload?.status ??
+        payload?.trade_status ??
+        payload?.order_status ??
+        wsMessage?.status ??
+        wsMessage?.trade_status ??
+        wsMessage?.order_status;
+      const statusFromPayload = normalizeChatStatus(statusFromPayloadRaw);
+      const isStatusEvent =
+        wsMessage?.type === "status_update" || statusFromPayload.length > 0;
+      if (isStatusEvent && isCurrentTrade) {
+        const currentEntityId = String(selectedUser?.entity_id || "").trim();
+        if (currentEntityId && statusFromPayload) {
+          setStatusOverridesByEntity((prev) => {
+            const next = new Map(prev);
+            next.set(currentEntityId, statusFromPayload);
+            return next;
+          });
+        }
+        setSelectedUser((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            status: statusFromPayload || (prev as any).status,
+          } as GroupedUser;
+        });
+        // Keep grouped conversations list in sync with latest status.
+        refetch();
+      }
 
       // Accept both explicit message types and message-shaped payloads.
       const isMessageEvent =
@@ -661,6 +868,8 @@ export const Chats: React.FC = () => {
         Array.isArray(payload?.images) ||
         Array.isArray(payload?.audios);
       if (!isMessageEvent) return;
+
+      if (!payload?.id) return;
 
       const incomingTrade =
         String(payload.trade_id ?? payload.trade ?? resolvedTradeId ?? "").trim();
@@ -779,11 +988,11 @@ export const Chats: React.FC = () => {
       // Don't cleanup WebSocket here as it might be used elsewhere
       // cleanupTradeMessagesWebSocket(selectedUser.entity_id);
     };
-  }, [selectedUser?.entity_id, resolvedTradeId, isAuthenticated, refetch]);
+  }, [selectedUser?.entity_id, resolvedTradeId, isAuthenticated, normalizeChatStatus, refetch]);
 
   const conversations = useMemo(() => {
-    return groupedUsers || [];
-  }, [groupedUsers]);
+    return liveGroupedUsers || [];
+  }, [liveGroupedUsers]);
 
   const formatTimestamp = (timestamp: string) => {
     const date = new Date(timestamp);
@@ -1252,10 +1461,9 @@ export const Chats: React.FC = () => {
     // Use displayedMessages which includes optimistic messages
     const allMessages = displayedMessages;
 
-    // Check if chat is closed - disable if status is "Complete"/"completed", "Responded"/"responded", or "Cancelled"/"cancelled"
-    const chatStatus = selectedUser ? (selectedUser as any).status : null;
-    const normalizedStatus = chatStatus ? String(chatStatus).toLowerCase() : null;
-    const isChatClosed = normalizedStatus === "complete" || normalizedStatus === "completed" || normalizedStatus === "responded" || normalizedStatus === "cancelled";
+    // Check if chat is closed - disable if status is complete/resolved/cancelled
+    const normalizedStatus = getEffectiveChatStatus(selectedUser);
+    const isChatClosed = normalizedStatus === "complete" || normalizedStatus === "completed" || normalizedStatus === "resolved" || normalizedStatus === "cancelled";
 
     if (allMessages.length === 0) {
       return (
@@ -1487,7 +1695,7 @@ export const Chats: React.FC = () => {
               <div className="flex-1">
                 <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">Chat Closed</h3>
                 <p className="text-xs text-gray-600 dark:text-gray-500 leading-relaxed">
-                  This chat is now closed as the trade has been {normalizedStatus === "cancelled" ? "cancelled" : "completed"}.
+                  This chat is now closed as the trade has been {normalizedStatus === "cancelled" ? "cancelled" : normalizedStatus === "resolved" ? "resolved" : "completed"}.
                 </p>
                 <p className="text-xs text-gray-600 dark:text-gray-500 leading-relaxed mt-1">
                   Please note that the chat will automatically reopen only when there is a new order between you and this user.
@@ -1870,12 +2078,9 @@ export const Chats: React.FC = () => {
                       ? "Select a conversation to start chatting"
                       : !termsAccepted
                         ? "Accept terms to start chatting"
-                        : (() => {
-                          const status = selectedUser ? (selectedUser as any).status : null;
-                          const normalizedStatus = status ? String(status).toLowerCase() : null;
-                          const isClosed = normalizedStatus === "complete" || normalizedStatus === "completed" || normalizedStatus === "responded" || normalizedStatus === "cancelled";
-                          return isClosed ? "Chat is closed - Trade completed or cancelled" : "Type your message...";
-                        })()
+                        : isChatClosed
+                          ? "Chat is closed - Trade completed, resolved, or cancelled"
+                          : "Type your message..."
                   }
                   value={messageInput}
                   onChange={(e) => setMessageInput(e.target.value)}
@@ -1885,11 +2090,7 @@ export const Chats: React.FC = () => {
                     !termsAccepted ||
                     isSending ||
                     isRecording ||
-                    (() => {
-                      const status = selectedUser ? (selectedUser as any).status : null;
-                      const normalizedStatus = status ? String(status).toLowerCase() : null;
-                      return normalizedStatus === "complete" || normalizedStatus === "completed" || normalizedStatus === "responded" || normalizedStatus === "cancelled";
-                    })()
+                    isChatClosed
                   }
                   className="w-full rounded-lg bg-gray-100 dark:bg-[#374151] border border-gray-300 dark:border-[#374151] px-4 py-2.5 text-xs sm:text-sm text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1D8751]/50 disabled:opacity-50 disabled:cursor-not-allowed"
                 />
@@ -1952,22 +2153,13 @@ export const Chats: React.FC = () => {
                   !termsAccepted ||
                   (!messageInput.trim() && uploadedImages.length === 0) ||
                   isSending ||
-                  (() => {
-                    const status = selectedUser ? (selectedUser as any).status : null;
-                    const normalizedStatus = status ? String(status).toLowerCase() : null;
-                    return normalizedStatus === "complete" || normalizedStatus === "completed" || normalizedStatus === "responded" || normalizedStatus === "cancelled";
-                  })()
+                  isChatClosed
                 }
-                className={`w-10 h-8 flex-shrink-0 rounded-lg bg-[#1D8751] text-white flex items-center justify-center transition-all ${(() => {
-                  const status = selectedUser ? (selectedUser as any).status : null;
-                  const normalizedStatus = status ? String(status).toLowerCase() : null;
-                  const isClosed = normalizedStatus === "complete" || normalizedStatus === "completed" || normalizedStatus === "responded" || normalizedStatus === "cancelled";
-                  return selectedUser &&
-                    termsAccepted &&
-                    (messageInput.trim() || uploadedImages.length > 0) &&
-                    !isSending &&
-                    !isClosed;
-                })()
+                className={`w-10 h-8 flex-shrink-0 rounded-lg bg-[#1D8751] text-white flex items-center justify-center transition-all ${selectedUser &&
+                  termsAccepted &&
+                  (messageInput.trim() || uploadedImages.length > 0) &&
+                  !isSending &&
+                  !isChatClosed
                   ? "opacity-100 hover:bg-[#15803D] cursor-pointer"
                   : "opacity-60 cursor-not-allowed"
                   }`}
@@ -1976,12 +2168,9 @@ export const Chats: React.FC = () => {
                     ? "Select a conversation to send messages"
                     : !termsAccepted
                       ? "Accept terms to send messages"
-                      : (() => {
-                        const status = selectedUser ? (selectedUser as any).status : null;
-                        const normalizedStatus = status ? String(status).toLowerCase() : null;
-                        const isClosed = normalizedStatus === "complete" || normalizedStatus === "completed" || normalizedStatus === "responded" || normalizedStatus === "cancelled";
-                        return isClosed ? "Chat is closed" : (isSending ? "Sending..." : "Send message");
-                      })()
+                      : isChatClosed
+                        ? "Chat is closed"
+                        : (isSending ? "Sending..." : "Send message")
                 }
               >
                 <svg
