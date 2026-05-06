@@ -3250,7 +3250,8 @@ const getPaymentRestrictionMessage = (status?: string) =>
 
   const totalFees = networkFee + commissionAmount;
 
-  const assetAmount = amountNum + totalFees;
+  // In rates summary, Total Amount should always match "You Send".
+  const totalAmount = amountNum;
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -3345,7 +3346,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
             className={`relative rounded-2xl p-4 sm:p-6 overflow-visible border-[1.5px] ${isDark ? "border-[#2F2F3A]" : "border-[#E2E8F0] shadow-sm"
               } bg-transparent`}
           >
-            <div className={`text-sm mb-4 font-semibold flex items-center gap-2 ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"}`}>
+            <div className="text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
               {t("rates.youSend", "You Send")}
               <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
             </div>
@@ -3473,7 +3474,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
               {!isFieldsSwapped ? (
                 /* Bank/Payment Method Section - exact as express withdrawal */
                 <div className="flex-1 min-w-0">
-                  <label className={`block text-[15px] mb-2 font-semibold ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"}`}>
+                  <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
                     {t("rates.bankPaymentMethod", "Bank/Payment Method")}
                   </label>
                   <div className="relative z-0">
@@ -3536,7 +3537,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
                     <div className="mt-3 w-full relative z-10">
                       <div className="flex items-center gap-2 mb-2">
                         <label
-                          className={`block text-[17px] font-semibold ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"}`}
+                          className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] font-semibold"
                         >
                           {t("rates.registeredAccount", "Registered Account")}
                         </label>
@@ -3706,8 +3707,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
                 /* Asset Section (when swapped) */
                 <div className="flex-1 min-w-0">
                   <label
-                    className={`block text-[15px] mb-2 font-semibold ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"
-                      }`}
+                    className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold"
                   >
                     {t("rates.provider", "Provider")}
                   </label>
@@ -3820,7 +3820,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
             className={`relative rounded-2xl p-4 sm:p-6 overflow-visible border-[1.5px] ${isDark ? "border-[#2F2F3A]" : "border-[#E2E8F0] shadow-sm"
               } bg-transparent`}
           >
-            <div className={`text-sm mb-4 font-semibold flex items-center gap-2 ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"}`}>
+            <div className="text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
               {t("rates.youGet", "You Get")}
               <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
             </div>
@@ -3906,10 +3906,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
               {!isFieldsSwapped ? (
                 /* Asset Section */
                 <div className="flex-1 min-w-0">
-                  <label
-                    className={`block text-[15px] mb-2 font-semibold ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"
-                      }`}
-                  >
+                  <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
                     {t("rates.provider", "Provider")}
                   </label>
                   <div className="relative" ref={assetDropdownRef}>
@@ -4011,7 +4008,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
               ) : (
                 /* Payment Method Section (when swapped) - same CustomSelect as above */
                 <div className="flex-1 min-w-0">
-                  <label className={`block text-[15px] mb-2 font-semibold ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"}`}>
+                  <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
                     {t("rates.bankPaymentMethod", "Bank/Payment Method")}
                   </label>
                   <div className="relative z-0">
@@ -4066,7 +4063,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
                   {!isDepositMode && payBank && (
                     <div className="mt-3 w-full">
                       <div className="flex items-center gap-2 mb-2">
-                        <label className={`block text-sm font-semibold ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"}`}>
+                        <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] font-semibold">
                           {t("rates.registeredAccount", "Registered Account")}
                         </label>
                         {(() => {
@@ -4186,15 +4183,10 @@ const getPaymentRestrictionMessage = (status?: string) =>
               <div className={`w-full ${isDark ? "bg-[#35353E]" : "bg-white"} border ${isDark ? "border-[#35353E]" : "border-[#E8EFF5]"} rounded-2xl flex items-center px-2 py-2`}>
                 <button className="flex-1 flex items-center justify-center bg-transparent">
                   <span className={`${isDark ? "text-[#BDF4D8]" : "text-[#051015]"} text-sm ml-4`}>
-                    {t(
-                      "rates.amountIncludingFees",
-                      "Amount including Total Fees"
-                    )}
+                    {t("rates.totalAmount", "Total Amount")}
                   </span>
                   <span className="bg-[#1D8751] text-white text-lg font-semibold rounded-full px-8 py-1 ml-2">
-                    ${selectedAsset && !isSimpleCalculationAsset(selectedAsset) && estimate?.user_amount
-                      ? estimate.user_amount.toFixed(2)
-                      : amountNum > 0 ? assetAmount.toFixed(2) : estimate?.user_amount ? estimate.user_amount.toFixed(2) : estimate?.total_fee ? `$${estimate.total_fee}` : "0.00"}
+                    ${amountNum > 0 ? totalAmount.toFixed(2) : "0.00"}
                   </span>
                 </button>
               </div>

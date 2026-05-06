@@ -1055,6 +1055,9 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
   };
   const resolvedDisplayNetAmount =
     (liveNetAmount != null && liveNetAmount > 0 ? liveNetAmount : null) ??
+    (Number.isFinite(wsNetCandidates.netAmount) && wsNetCandidates.netAmount > 0
+      ? wsNetCandidates.netAmount
+      : null) ??
     (Number.isFinite(wsNetCandidates.amountTo) && wsNetCandidates.amountTo > 0
       ? wsNetCandidates.amountTo
       : null) ??
@@ -1066,7 +1069,6 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
     wsNetCandidates.expectedAmountTo > 0
       ? wsNetCandidates.expectedAmountTo
       : null) ??
-    (Number.isFinite(wsNetCandidates.netAmount) ? wsNetCandidates.netAmount : null) ??
     ((effectiveTransactionData as any)?.receiveAmount ?? 0);
   const resolvedDepositCode =
     effectiveTransactionData?.type === "deposit" &&
@@ -1183,7 +1185,7 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                   className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
                     } text-xs font-semibold mb-0.5`}
                 >
-                  Net amount you&apos;ll receive:
+                  Amount you&apos;ll receive (after fees):
                 </div>
                 <div
                   className={`${isDark ? "text-[#1D8751]" : "text-[#15803D]"

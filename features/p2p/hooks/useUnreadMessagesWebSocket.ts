@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/store";
 import {
   getUnreadMessagesWebSocket,
+  RecentMessage,
   WebSocketMessage,
 } from "../services/unreadMessagesWebSocket";
 import { updateUnreadCount, setRecentMessages } from "../slices/unreadMessagesSlice";
@@ -12,6 +13,7 @@ import { logger } from "@/lib/utils/logger";
 interface UseUnreadMessagesWebSocketOptions {
   enabled?: boolean;
   onNewMessage?: (count: number) => void;
+  onRecentMessages?: (messages: RecentMessage[]) => void;
   onConnectionChange?: (connected: boolean) => void;
 }
 
@@ -24,7 +26,12 @@ interface UseUnreadMessagesWebSocketOptions {
 export const useUnreadMessagesWebSocket = (
   options: UseUnreadMessagesWebSocketOptions = {}
 ) => {
-  const { enabled = true, onNewMessage, onConnectionChange } = options;
+  const {
+    enabled = true,
+    onNewMessage,
+    onRecentMessages,
+    onConnectionChange,
+  } = options;
   const dispatch = useDispatch<AppDispatch>();
   const [isConnected, setIsConnected] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
@@ -116,6 +123,9 @@ export const useUnreadMessagesWebSocket = (
             if (onNewMessage) {
               onNewMessage(count);
             }
+            if (onRecentMessages) {
+              onRecentMessages(recentMessagesList);
+            }
             break;
 
           case "error":
@@ -173,7 +183,7 @@ export const useUnreadMessagesWebSocket = (
       unsubscribeClose();
       unsubscribeError();
     };
-  }, [enabled, dispatch, onNewMessage, onConnectionChange]);
+  }, [enabled, dispatch, onNewMessage, onRecentMessages, onConnectionChange]);
 
   return {
     isConnected,

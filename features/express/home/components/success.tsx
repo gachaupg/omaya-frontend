@@ -453,7 +453,7 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
                 isDark ? "text-gray-400" : "text-gray-600"
               }`}>You Received</div>
               <div className="font-bold flex items-center justify-end gap-2" style={{ color: GREEN }}>
-                <span>{isDeposit ? realData.netAmount : realData.netAmount} </span>
+                <span>{realData.receivedAmount}</span>
                 <span>{isDeposit ? realData.receivedCurrency :'USD'}</span>
               </div>
             </div>
@@ -483,7 +483,7 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
               <div className={`text-sm ${
                 isDark ? "text-white" : "text-gray-900"
               }`}>
-                Net Amount Processed
+                Final Amount (after fees)
               </div>
               <div className="font-mono flex items-center gap-2" style={{ color: GREEN }}>
                 {transactionData?.asset?.icon && (
