@@ -153,6 +153,12 @@ const formatHowToSend = (raw: string, amount: number | string | null | undefined
     return base.replace(/\bamount\b/gi, amt);
   }
 
+  // Only USSD-like templates (with "*") should receive amount injection.
+  // Plain codes/account numbers (even ending with "#") must stay unchanged.
+  if (!base.includes("*")) {
+    return base;
+  }
+
   // If no placeholder exists, inject "*{amt}" before trailing '#', or append it.
   if (base.endsWith("#")) {
     return base.slice(0, -1) + `*${amt}#`;

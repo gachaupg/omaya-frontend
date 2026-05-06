@@ -51,6 +51,11 @@ interface CustomSelectProps {
    * Useful for wide home-card payment method pickers.
    */
   dropdownMaxWidth?: number;
+  /**
+   * Optional minimum width (px) for dropdown panel.
+   * Useful when trigger width is small but dropdown should be wider.
+   */
+  dropdownMinWidth?: number;
   logoSize?: number;
   logoClassName?: string;
 }
@@ -78,6 +83,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   largeDropdownItems = false,
   dropdownMatchTriggerWidth = false,
   dropdownMaxWidth,
+  dropdownMinWidth,
   logoSize,
   logoClassName,
 }) => {
@@ -137,7 +143,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
     const viewportWidth = window.innerWidth || 0;
     const viewportHeight = window.innerHeight || 0;
     const minMargin = 16;
-    const minWidth = 280;
+    const minWidth = dropdownMinWidth ?? 280;
     const maxWidth = dropdownMaxWidth ?? 450;
     
     // Get trigger button position - get fresh values

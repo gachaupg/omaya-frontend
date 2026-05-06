@@ -39,12 +39,12 @@ interface TransactionInfoStepProps {
 }
 
 const strongBorder =
-  "border-[1.5px] border-gray-200 dark:border-[#35353E]";
+  "border border-[#A2A4A9] dark:border-[#35353E]";
 const baseCard =
-  `rounded-2xl ${strongBorder} bg-white dark:bg-[#18181D] dark:text-white text-gray-900`;
-const labelCopy = "text-[12px] tracking-wide dark:text-[#7d7f95] text-gray-600";
+  `rounded-xl sm:rounded-2xl ${strongBorder} bg-white dark:bg-[#18181D] dark:text-white text-[#35353e]`;
+const labelCopy = "text-sm sm:text-[17px] font-semibold dark:text-[#ffffff] text-[#7e7e8f]";
 // Swap card header text (make "You Send", "You Receive", and "Asset" identical)
-const headerCopy = `${labelCopy} md:text-lg`;
+const headerCopy = labelCopy;
 
 /** User may type "0" while editing — don't show estimate API errors until amount is positive */
 const hasPositiveAmount = (s: string) => {
@@ -53,7 +53,7 @@ const hasPositiveAmount = (s: string) => {
 };
 
 const inputBase =
-  `rounded-lg sm:rounded-xl md:rounded-2xl bg-transparent dark:bg-transparent ${strongBorder} dark:text-white text-[#35353e] px-2 sm:px-3 md:px-4 py-2 w-full text-sm sm:text-base md:text-lg dark:placeholder:text-[#5f6070] placeholder:text-gray-400 focus:outline-none h-[42px] sm:h-[46px] md:h-[48px]`;
+  `rounded-xl sm:rounded-2xl bg-transparent dark:bg-transparent ${strongBorder} dark:text-white text-[#35353e] px-3 sm:px-4 py-2 w-full text-base sm:text-lg dark:placeholder:text-[#5f6070] placeholder:text-[#7e7e8f] focus:outline-none h-[42px] sm:h-[46px] md:h-[48px]`;
 
 const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
   const { isDark } = useTheme();
@@ -328,12 +328,12 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
         <div
           ref={isFrom ? fromAssetDropdownContentRef : toAssetDropdownContentRef}
           data-asset-dropdown="true"
-          className="flex flex-col bg-white dark:bg-[#18181D] border border-gray-300 dark:border-accent rounded-2xl shadow-xl z-45 max-h-[70vh] sm:max-h-[60vh]"
+          className="flex flex-col bg-white dark:bg-[#18181D] border border-[#A2A4A9] dark:border-accent rounded-2xl shadow-xl z-45 max-h-[70vh] sm:max-h-[60vh]"
           style={dropdownStyle}
         >
           {/* Dropdown Title */}
           <div className="flex items-center justify-between px-2 sm:px-3 md:px-4 py-2 sm:py-3 border-b border-gray-200 dark:border-gray-600">
-            <h3 className="text-base font-semibold text-gray-900 dark:text-white">{t("swap.currencyFrom", "Currency from")}</h3>
+            <h3 className="text-base font-semibold text-[#35353e] dark:text-white">{t("swap.currencyFrom", "Currency from")}</h3>
             <button
               onClick={toggle}
               className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
@@ -354,7 +354,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
                 placeholder={t("swap.typeCurrency", "Type a currency")}
                 value={searchValue}
                 onChange={(e) => onSearchChange(e.target.value)}
-                className="w-full text-gray-900 dark:text-white dark:bg-gray-800 bg-gray-50 rounded-lg px-10 py-1.5 sm:py-2 text-xs sm:text-sm focus:outline-none border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400"
+                className="w-full text-[#35353e] dark:text-white dark:bg-gray-800 bg-gray-50 rounded-lg px-10 py-1.5 sm:py-2 text-xs sm:text-sm focus:outline-none border border-[#A2A4A9] dark:border-gray-600 placeholder-[#7e7e8f] dark:placeholder-gray-400"
               />
             </div>
           </div>
@@ -456,7 +456,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
                   "/images/tether.svg";
               }}
             />
-            <p className="text-base sm:text-lg dark:text-white text-gray-900 font-semibold truncate">
+            <p className="text-base sm:text-lg dark:text-white text-[#35353e] font-semibold truncate">
               {asset
                 ? asset.ticker?.toUpperCase() ||
                 asset.symbol?.toUpperCase() ||
@@ -465,7 +465,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
             </p>
           </div>
           <svg
-            className={`w-5 h-5 dark:text-[#7d7f95] text-gray-500 transition-transform flex-shrink-0 ${isOpen ? "rotate-180" : ""
+            className={`w-5 h-5 dark:text-[#7d7f95] text-[#7e7e8f] transition-transform flex-shrink-0 ${isOpen ? "rotate-180" : ""
               }`}
             fill="none"
             stroke="currentColor"
@@ -628,7 +628,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
       </div>
 
       {/* Disclaimer */}
-      <div className="flex items-center gap-2 text-xs sm:text-sm dark:text-[#d5d7e2] text-gray-600 mb-3">
+      <div className="flex items-center gap-2 text-xs sm:text-sm dark:text-[#d5d7e2] text-[#35353e] mb-3">
         <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-[#E23D3A] rounded-full flex items-center justify-center flex-shrink-0">
           <span className="text-[#E23D3A] text-[10px] font-bold">i</span>
         </div>

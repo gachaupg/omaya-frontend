@@ -15,10 +15,7 @@ import CopyButton from "@/components/ui/CopyButton";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "@/store/rootReducer";
 import { logger } from '@/lib/utils/logger';
-import {
-  fetchBankHowToSend,
-  replaceTrailingUssdAmount,
-} from "@/features/moneyX/utils/howToSend";
+import { fetchBankHowToSend } from "@/features/moneyX/utils/howToSend";
 
 import {
   cancelDepositTransaction,
@@ -81,10 +78,78 @@ interface ExchangingProps {
     isMoneyX?: boolean;
     moneyXTransaction?: any;
     createdAt?: number;
+    payin_address?: string;
   };
   onBackToTransfer?: () => void;
   isHomePage?: boolean;
 }
+
+const paymentDetailsNested = (pd: any) => pd?.payment_details?.[0];
+
+const resolveHowToSendFromPaymentDetail = (pd: any): string => {
+  if (!pd) return "";
+  const n = paymentDetailsNested(pd);
+  const admin = Array.isArray(pd?.admin_payment_details) ? pd.admin_payment_details[0] : null;
+  const pick = (v: unknown) =>
+    v != null && String(v).trim() !== "" ? String(v).trim() : "";
+  return (
+    pick(pd.how_to_send) ||
+    pick(n?.how_to_send) ||
+    pick(admin?.how_to_send) ||
+    ""
+  );
+};
+
+const resolveHowToSendFromTx = (tx: any): string => {
+  const ordered = [
+    tx?.paymentDetails?.[0],
+    tx?.paymentDetail,
+  ].filter(Boolean);
+  for (const pd of ordered) {
+    const value = resolveHowToSendFromPaymentDetail(pd);
+    if (value) return value;
+  }
+  return "";
+};
+
+const isValidHowToSendInstruction = (value: string): boolean => {
+  const trimmed = String(value || "").trim();
+  if (!trimmed) return false;
+  // Reject plain numeric account-like values (e.g. "37060018", "37060018#")
+  if (/^\d+#?$/.test(trimmed)) return false;
+  return true;
+};
+
+const formatHowToSend = (raw: string, amount: number | string | null | undefined): string => {
+  const base = String(raw || "").trim();
+  if (!base) return "";
+
+  if (/^0x[a-fA-F0-9]{40}#?$/.test(base)) {
+    return base.replace(/#$/, "");
+  }
+
+  const parsedAmt =
+    typeof amount === "number"
+      ? amount
+      : amount != null && String(amount).trim() !== ""
+        ? Number(String(amount))
+        : NaN;
+  const amt = Number.isFinite(parsedAmt) ? String(parsedAmt) : "";
+  if (!amt) return base;
+
+  if (/\bamount\b/i.test(base)) {
+    return base.replace(/\bamount\b/gi, amt);
+  }
+
+  if (!base.includes("*")) {
+    return base;
+  }
+
+  if (base.endsWith("#")) {
+    return base.slice(0, -1) + `*${amt}#`;
+  }
+  return base + `*${amt}#`;
+};
 
 export default function Exchanging({ transactionData, onBackToTransfer, isHomePage = false }: ExchangingProps) {
   const searchParams = useSearchParams();
@@ -951,18 +1016,6 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
     }
   }, [isConnected, fallbackPolling]);
 
-  // Redirect to exchange page if no transaction data found after loading
-  useEffect(() => {
-    if (!isLoadingData && !effectiveTransactionData) {
-      // Use callback if provided (tab mode), otherwise use router (standalone mode)
-      if (onBackToTransfer) {
-        onBackToTransfer();
-      } else {
-        router.push("/dashboard/exchange/");
-      }
-    }
-  }, [isLoadingData, effectiveTransactionData, router, onBackToTransfer]);
-
   useEffect(() => {
     const providerName =
       effectiveTransactionData?.fromPaymentMethod?.provider_name ||
@@ -985,6 +1038,18 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
     effectiveTransactionData?.fromPaymentMethod?.provider,
     effectiveTransactionData?.paymentDetail?.provider_name,
   ]);
+
+  // Redirect to exchange page if no transaction data found after loading
+  useEffect(() => {
+    if (!isLoadingData && !effectiveTransactionData) {
+      // Use callback if provided (tab mode), otherwise use router (standalone mode)
+      if (onBackToTransfer) {
+        onBackToTransfer();
+      } else {
+        router.push("/dashboard/exchange/");
+      }
+    }
+  }, [isLoadingData, effectiveTransactionData, router, onBackToTransfer]);
 
   const handleFailureModalClose = () => {
     setFailureModal({ isOpen: false, status: "", message: undefined });
@@ -1037,7 +1102,25 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
 
   const initialNetAmount = parseNumberish((effectiveTransactionData as any)?.net_amount);
   const ussdAmount = liveAmount ?? effectiveTransactionData?.amount ?? 0;
-  const ussdCode = replaceTrailingUssdAmount(bankHowToSend, ussdAmount);
+  const txHowToSend = resolveHowToSendFromTx(effectiveTransactionData);
+  const bankHowToSendWithAmount = formatHowToSend(bankHowToSend || "", ussdAmount);
+  const txHowToSendWithAmount = formatHowToSend(txHowToSend, ussdAmount);
+  const validTxHowToSend = isValidHowToSendInstruction(txHowToSendWithAmount)
+    ? txHowToSendWithAmount
+    : "";
+  const validBankHowToSend = isValidHowToSendInstruction(bankHowToSendWithAmount)
+    ? bankHowToSendWithAmount
+    : "";
+  const payinAddress =
+    String((effectiveTransactionData as any)?.payin_address || "").trim() ||
+    String((effectiveTransactionData as any)?.details?.payin_address || "").trim();
+  const howToSendValue =
+    validTxHowToSend ||
+    validBankHowToSend ||
+    payinAddress;
+  const qrPayload =
+    howToSendValue ||
+    String(liveTransactionId || effectiveTransactionData?.transactionId || "").trim();
   const netAmountToDisplay =
     liveNetAmount ??
     (effectiveTransactionData as any)?.receiveAmount ??
@@ -1182,16 +1265,16 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
                 USD
               </span>
             </div>
-            {ussdCode && (
+            {howToSendValue && (
               <div className="flex flex-wrap items-center gap-2 mt-2">
                 <span className={`text-xs font-semibold ${isDark ? "text-[#7B7B7B]" : "text-gray-600"}`}>
                   How to send:
                 </span>
                 <code className={`font-mono text-xs sm:text-sm font-semibold break-all ${isDark ? "text-white" : "text-gray-900"}`}>
-                  {ussdCode}
+                  {howToSendValue}
                 </code>
                 <CopyButton
-                  value={ussdCode}
+                  value={howToSendValue}
                   className="flex-shrink-0 p-1.5 rounded-lg border border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751]/10 transition-colors"
                   showText
                   showInlineMessage
@@ -1327,7 +1410,7 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
           <div className={`${isHomePage ? 'w-24 h-24 sm:w-28 sm:h-28' : 'w-36 h-36'} bg-white rounded-lg flex items-center justify-center flex-shrink-0`}>
             <img
               src={`https://api.qrserver.com/v1/create-qr-code/?size=${isHomePage ? '112' : '180'}x${isHomePage ? '112' : '180'}&data=${
-                encodeURIComponent(ussdCode || effectiveTransactionData?.walletAddress || "")
+                encodeURIComponent(qrPayload)
               }`}
               alt="QR Code"
               className={isHomePage ? "w-20 h-20 sm:w-24 sm:h-24" : "w-32 h-32"}

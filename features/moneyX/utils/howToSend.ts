@@ -10,6 +10,7 @@ type BankPaymentInfoResponse = {
 
 const TRAILING_USSD_AMOUNT_PATTERN = /\*[0-9]+(?:\.[0-9]+)?#\s*$/;
 const AMOUNT_PLACEHOLDER_PATTERN = /\bamount\b/gi;
+const USSD_LIKE_PATTERN = /\*/;
 
 const normalizeAmount = (amount: number | string): string => {
   const raw = typeof amount === "number" ? String(amount) : String(amount ?? "").trim();
@@ -23,7 +24,7 @@ const normalizeAmount = (amount: number | string): string => {
  * Formats MoneyX "how_to_send" codes with the real amount:
  * - If code contains the word "Amount" (case-insensitive), replace it with the amount.
  * - Else if code ends with "*<number>#", replace the trailing number with the amount.
- * - Else inject "*{amount}#" at the end (before trailing "#", if present).
+ * - Else inject "*{amount}#" only for real USSD patterns containing "*".
  */
 export const formatHowToSend = (
   code: string | null | undefined,
@@ -36,6 +37,10 @@ export const formatHowToSend = (
 
   if (AMOUNT_PLACEHOLDER_PATTERN.test(trimmed)) {
     return trimmed.replace(AMOUNT_PLACEHOLDER_PATTERN, amt);
+  }
+  // If this is not a USSD-like template, keep as-is (e.g. plain account numbers).
+  if (!USSD_LIKE_PATTERN.test(trimmed)) {
+    return trimmed;
   }
   if (TRAILING_USSD_AMOUNT_PATTERN.test(trimmed)) {
     return trimmed.replace(TRAILING_USSD_AMOUNT_PATTERN, `*${amt}#`);
