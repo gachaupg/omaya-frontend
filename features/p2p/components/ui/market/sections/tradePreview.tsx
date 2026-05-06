@@ -119,9 +119,9 @@ const TradePreview: React.FC<TradePreviewProps> = ({
   const minAmount = advertiserData.minAmount;
   const maxAmount = advertiserData.maxAmount;
   const rangeLimitSuffix = advertiserData.range_currency?.toUpperCase() === "KES" ? "KES" : "USD";
-  // For buy flow, convert ad min/max into the display/range currency when needed.
-  const buyRangeMin = rangeLimitSuffix === "KES" && commissionRate > 0 ? minAmount * commissionRate : minAmount;
-  const buyRangeMax = rangeLimitSuffix === "KES" && commissionRate > 0 ? maxAmount * commissionRate : maxAmount;
+  // Buy flow limits are already returned in their range currency (KES/USD).
+  const buyRangeMin = minAmount;
+  const buyRangeMax = maxAmount;
   const availableAmount = advertiserData.availableAmount || 0;
   // When commissionRate is 0, limits are treated as already in USDT (legacy).
   const effectiveSellMinUsdt =
@@ -136,9 +136,11 @@ const TradePreview: React.FC<TradePreviewProps> = ({
           availableAmount * commissionRate
         ).toFixed(2)} KES)`
       : `${availableAmount.toFixed(2)} USDT`;
-  // Keep buy preview range identical to table "Limit" text.
-  const displayedLimitRange =
-    advertiserData.limit || `${buyRangeMin.toFixed(2)} - ${buyRangeMax.toFixed(2)} ${rangeLimitSuffix}`;
+  // Keep buy preview range aligned with active currency logic (not stale table text).
+  const displayedBuyRangeSuffix = rangeLimitSuffix === "KES" ? "KES" : "USDT";
+  const displayedLimitRange = `${buyRangeMin.toFixed(2)} - ${buyRangeMax.toFixed(
+    2
+  )} ${displayedBuyRangeSuffix}`;
   // Sell input and limits are both in USDT.
   const sellRangeMinUsdt = effectiveSellMinUsdt;
   const sellRangeMaxUsdt = effectiveSellMaxUsdt;
