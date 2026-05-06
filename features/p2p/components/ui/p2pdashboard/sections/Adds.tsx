@@ -191,6 +191,77 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
     prevTypeRef.current = type;
   }, [type]);
 
+  // Re-validate dependent fields whenever currency/rate/amount bounds change.
+  // This prevents stale USD/KES errors when user switches currency.
+  useEffect(() => {
+    setErrors((prev) => {
+      const next = { ...prev };
+      const amountNum = Number(amount);
+      const minNum = Number(orderMin);
+      const maxNum = Number(orderMax);
+      const rate = Number(commission) || 0;
+      const hasAmount = Number.isFinite(amountNum) && amountNum > 0;
+      const hasMin = orderMin.trim() !== "" && Number.isFinite(minNum);
+      const hasMax = orderMax.trim() !== "" && Number.isFinite(maxNum);
+      const kesMaxAllowed = rate * amountNum;
+
+      // reset currency-dependent errors first
+      if (next.orderMin) delete next.orderMin;
+      if (next.orderMax) delete next.orderMax;
+      if (next.amount) delete next.amount;
+
+      if (hasMin) {
+        if (minNum < 10) {
+          next.orderMin = "Minimum order amount must be at least 10";
+        } else if (
+          activeCurrency === "KES" &&
+          hasAmount &&
+          Number.isFinite(kesMaxAllowed) &&
+          rate > 0 &&
+          minNum > kesMaxAllowed
+        ) {
+          next.orderMin = `Minimum order amount cannot exceed KSh ${formatLargeNumber(
+            kesMaxAllowed
+          )}`;
+        } else if (activeCurrency !== "KES" && hasAmount && minNum > amountNum) {
+          next.orderMin = "Minimum order amount cannot be greater than amount";
+        }
+      }
+
+      if (hasMax) {
+        if (maxNum <= 0) {
+          next.orderMax = "Maximum order amount must be greater than 0";
+        } else if (maxNum < 10) {
+          next.orderMax = "Maximum order amount must be at least 10";
+        } else if (hasMin && maxNum <= minNum) {
+          next.orderMax = "Maximum order amount must be greater than minimum order amount";
+        } else if (
+          activeCurrency === "KES" &&
+          hasAmount &&
+          Number.isFinite(kesMaxAllowed) &&
+          rate > 0 &&
+          maxNum > kesMaxAllowed
+        ) {
+          next.orderMax = `Maximum order amount cannot exceed rate * amount (KSh ${formatLargeNumber(
+            kesMaxAllowed
+          )})`;
+        } else if (activeCurrency !== "KES" && hasAmount && maxNum > amountNum) {
+          next.orderMax = "Maximum order amount cannot be greater than amount";
+        }
+      }
+
+      if (hasAmount && hasMin) {
+        if (activeCurrency === "KES" && rate > 0 && minNum > kesMaxAllowed) {
+          next.amount = "Amount/rate combination is too low for current minimum order amount";
+        } else if (activeCurrency !== "KES" && minNum > amountNum) {
+          next.amount = "Amount must be greater than or equal to minimum order amount";
+        }
+      }
+
+      return next;
+    });
+  }, [activeCurrency, amount, orderMin, orderMax, commission]);
+
   const validateForm = () => {
     const newErrors: ValidationErrors = {};
     let isValid = true;
@@ -225,20 +296,47 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
       isValid = false;
     }
 
+    // For KES: min can be from 10 to (rate * amount).
+    // For USD: min cannot be greater than amount.
+    if (orderMin && amount) {
+      const minNum = Number(orderMin);
+      const amountNum = Number(amount);
+      if (Number.isFinite(minNum) && Number.isFinite(amountNum)) {
+        if (minNum < 10) {
+          newErrors.orderMin = "Minimum order amount must be at least 10";
+          isValid = false;
+        } else if (activeCurrency === "KES") {
+          const rateNum = Number(commission) || 0;
+          const maxAllowed = rateNum * amountNum;
+          if (
+            Number.isFinite(maxAllowed) &&
+            maxAllowed > 0 &&
+            minNum > maxAllowed
+          ) {
+            newErrors.orderMin = `Minimum order amount cannot be greater than maximum allowed (KSh ${formatLargeNumber(maxAllowed)})`;
+            isValid = false;
+          }
+        } else if (minNum > amountNum) {
+          newErrors.orderMin = "Minimum order amount cannot be greater than amount";
+          isValid = false;
+        }
+      }
+    }
+
     const maxOrderError = validateP2PAd.maxOrderAmount(orderMax, orderMin);
     if (maxOrderError) {
       newErrors.orderMax = maxOrderError;
       isValid = false;
     }
 
-    // When KES: Order Max cannot exceed rate × amount (using Rate at top)
+    // When KES: Order Max cannot exceed rate * amount (using Rate at top)
     if (activeCurrency === "KES" && orderMax && amount && commission) {
       const rate = Number(commission) || 0;
       const amountNum = Number(amount) || 0;
       const maxNum = Number(orderMax) || 0;
       const maxAllowed = rate * amountNum;
       if (!isNaN(maxNum) && !isNaN(maxAllowed) && maxNum > maxAllowed) {
-        newErrors.orderMax = `Maximum order amount cannot exceed rate × amount (KSh ${formatLargeNumber(maxAllowed)})`;
+        newErrors.orderMax = `Maximum order amount cannot exceed rate * amount (KSh ${formatLargeNumber(maxAllowed)})`;
         isValid = false;
       }
     }
@@ -604,10 +702,25 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                           }));
                         }
                         // Check if orderMin is greater than amount
-                        else if (orderMin && !isNaN(Number(orderMin)) && Number(orderMin) > amountNum) {
+                        else if (
+                          orderMin &&
+                          !isNaN(Number(orderMin)) &&
+                          ((activeCurrency === "KES" &&
+                            (() => {
+                              const rate = Number(commission) || 0;
+                              const maxAllowed = rate * amountNum;
+                              if (!Number.isFinite(rate) || rate <= 0 || amountNum <= 0) return false;
+                              return Number(orderMin) > maxAllowed;
+                            })()) ||
+                            (activeCurrency !== "KES" &&
+                              Number(orderMin) > amountNum))
+                        ) {
                           setErrors((prev) => ({
                             ...prev,
-                            amount: "Amount must be greater than or equal to minimum order amount"
+                            amount:
+                              activeCurrency === "KES"
+                                ? "Amount/rate combination is too low for current minimum order amount"
+                                : "Amount must be greater than or equal to minimum order amount"
                           }));
                         }
                         // When USD: check if orderMax is greater than amount
@@ -623,11 +736,32 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                           // Re-validate orderMin and orderMax if they exist
                           if (orderMin) {
                             const minNum = Number(orderMin);
-                            if (!isNaN(minNum) && minNum > amountNum) {
+                            if (
+                              !isNaN(minNum) &&
+                              ((activeCurrency === "KES" &&
+                                (() => {
+                                  const rate = Number(commission) || 0;
+                                  const maxAllowed = rate * amountNum;
+                                  if (!Number.isFinite(rate) || rate <= 0 || amountNum <= 0) return false;
+                                  return minNum > maxAllowed;
+                                })()) ||
+                                (activeCurrency !== "KES" && minNum > amountNum))
+                            ) {
                               setErrors((prev) => ({
                                 ...prev,
-                                orderMin: "Minimum order amount cannot be greater than amount"
+                                orderMin:
+                                  activeCurrency === "KES"
+                                    ? `Minimum order amount cannot exceed KSh ${formatLargeNumber(
+                                        (Number(commission) || 0) * amountNum
+                                      )}`
+                                    : "Minimum order amount cannot be greater than amount"
                               }));
+                            } else if (
+                              errors.orderMin &&
+                              (errors.orderMin.includes("cannot exceed rate * amount") ||
+                                errors.orderMin.includes("cannot be greater than amount"))
+                            ) {
+                              setErrors((prev) => ({ ...prev, orderMin: undefined }));
                             }
                           }
                           if (activeCurrency === "USD" && orderMax) {
@@ -646,7 +780,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                             if (!isNaN(maxNum) && !isNaN(maxAllowed) && maxNum > maxAllowed) {
                               setErrors((prev) => ({
                                 ...prev,
-                                orderMax: `Maximum order amount cannot exceed rate × amount (KSh ${formatLargeNumber(maxAllowed)})`
+                                orderMax: `Maximum order amount cannot exceed rate * amount (KSh ${formatLargeNumber(maxAllowed)})`
                               }));
                             }
                           }
@@ -728,10 +862,27 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                           }));
                         }
                         // Check if it's greater than amount (if amount is set)
-                        else if (amount && !isNaN(Number(amount)) && valueNum > Number(amount)) {
+                        else if (
+                          amount &&
+                          !isNaN(Number(amount)) &&
+                          ((activeCurrency === "KES" &&
+                            (() => {
+                              const rate = Number(commission) || 0;
+                              const maxAllowed = rate * Number(amount);
+                              if (!Number.isFinite(rate) || rate <= 0 || Number(amount) <= 0) return false;
+                              return valueNum > maxAllowed;
+                            })()) ||
+                            (activeCurrency !== "KES" &&
+                              valueNum > Number(amount)))
+                        ) {
                           setErrors((prev) => ({
                             ...prev,
-                            orderMin: "Minimum order amount cannot be greater than amount"
+                                orderMin:
+                                  activeCurrency === "KES"
+                                ? `Minimum order amount cannot exceed KSh ${formatLargeNumber(
+                                    (Number(commission) || 0) * (Number(amount) || 0)
+                                  )}`
+                                    : "Minimum order amount cannot be greater than amount"
                           }));
                         }
                         // Check if it's greater than or equal to max order amount (if max is set)
@@ -831,16 +982,16 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                             orderMax: "Maximum order amount must be greater than minimum order amount"
                           }));
                         }
-                        // When KES: Order Max cannot exceed rate × amount (Rate at top)
+                        // When KES: Order Max cannot exceed rate * amount (Rate at top)
                         else if (activeCurrency === "KES" && amount && commission) {
                           const rate = Number(commission) || 0;
                           const amountNum = Number(amount) || 0;
                           const maxAllowed = rate * amountNum;
                           if (!isNaN(maxAllowed) && valueNum > maxAllowed) {
-                            setErrors((prev) => ({
-                              ...prev,
-                              orderMax: `Maximum order amount cannot exceed rate × amount (KSh ${formatLargeNumber(maxAllowed)})`
-                            }));
+                          setErrors((prev) => ({
+                            ...prev,
+                            orderMax: `Maximum order amount cannot exceed rate * amount (KSh ${formatLargeNumber(maxAllowed)})`
+                          }));
                           } else {
                             setErrors((prev) => ({ ...prev, orderMax: undefined }));
                             if (orderMin && !isNaN(Number(orderMin))) {
