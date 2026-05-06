@@ -54,14 +54,6 @@ const formatRateWithoutCurrency = (raw: string | undefined | null): string => {
   return Number.isFinite(n2) ? n2.toFixed(2) : noSuffix || "—";
 };
 
-const normalizeAvailableAssetsLabel = (raw: string | undefined | null): string => {
-  if (raw == null) return "—";
-  const value = String(raw).trim();
-  if (!value) return "—";
-  // Available assets should be shown in USD (never KES) on this preview.
-  return value.replace(/\bKES\b/gi, "USD");
-};
-
 const TradePreview: React.FC<TradePreviewProps> = ({
   advertiserData,
   onClose,
@@ -127,32 +119,33 @@ const TradePreview: React.FC<TradePreviewProps> = ({
   const minAmount = advertiserData.minAmount;
   const maxAmount = advertiserData.maxAmount;
   const rangeLimitSuffix = advertiserData.range_currency?.toUpperCase() === "KES" ? "KES" : "USD";
+  // For buy flow, convert ad min/max into the display/range currency when needed.
+  const buyRangeMin = rangeLimitSuffix === "KES" && commissionRate > 0 ? minAmount * commissionRate : minAmount;
+  const buyRangeMax = rangeLimitSuffix === "KES" && commissionRate > 0 ? maxAmount * commissionRate : maxAmount;
   const availableAmount = advertiserData.availableAmount || 0;
   // When commissionRate is 0, limits are treated as already in USDT (legacy).
   const effectiveSellMinUsdt =
     commissionRate <= 0 && availableAmount < minAmount ? 0.01 : minAmount;
   const effectiveSellMaxUsdt = (() => {
-    if (commissionRate > 0) {
-      return Math.min(maxAmount / commissionRate, availableAmount);
-    }
-    const cappedByAd = Math.min(maxAmount, availableAmount);
-    if (availableAmount < minAmount) return cappedByAd;
-    return Math.max(0, Math.min(cappedByAd, availableAmount - minAmount));
+    // Sell-side ad limits are in USDT, same unit as available assets.
+    return Math.max(0, Math.min(maxAmount, availableAmount));
   })();
   const displayedAvailableAssets =
-    tradeType === "sell"
-      ? `${availableAmount.toFixed(2)} USDT`
-      : normalizeAvailableAssetsLabel(advertiserData.available);
+    rangeLimitSuffix === "KES" && commissionRate > 0
+      ? `${availableAmount.toFixed(2)} USDT (${(
+          availableAmount * commissionRate
+        ).toFixed(2)} KES)`
+      : `${availableAmount.toFixed(2)} USDT`;
   // Keep buy preview range identical to table "Limit" text.
   const displayedLimitRange =
-    advertiserData.limit || `${minAmount.toFixed(2)} - ${maxAmount.toFixed(2)} ${rangeLimitSuffix}`;
-  // Sell input is USDT; advertiser min/max are in range currency (USD/KES). Convert with rate; cap by pool.
-  const sellRangeMinUsdt =
-    commissionRate > 0 ? minAmount / commissionRate : effectiveSellMinUsdt;
-  const sellRangeMaxUsdt =
-    commissionRate > 0
-      ? Math.min(maxAmount / commissionRate, availableAmount)
-      : effectiveSellMaxUsdt;
+    advertiserData.limit || `${buyRangeMin.toFixed(2)} - ${buyRangeMax.toFixed(2)} ${rangeLimitSuffix}`;
+  // Sell input and limits are both in USDT.
+  const sellRangeMinUsdt = effectiveSellMinUsdt;
+  const sellRangeMaxUsdt = effectiveSellMaxUsdt;
+  const displayedSellRange =
+    rangeLimitSuffix === "KES"
+      ? `${minAmount.toFixed(2)} - ${maxAmount.toFixed(2)} KES`
+      : `${sellRangeMinUsdt.toFixed(2)} - ${sellRangeMaxUsdt.toFixed(2)} USDT`;
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -325,11 +318,18 @@ const TradePreview: React.FC<TradePreviewProps> = ({
     (transactionSummary?.total_pending_p2p_withdrawals || 0) +
     (transactionSummary?.total_sell_orders_by_status?.pending || 0);
 
-  const fallbackWalletBalance = profileBalance - totalLocked;
-  const walletBalance =
-    tradeType === "sell" && summaryAmounts != null
-      ? summaryAmounts.availableAmount
-      : fallbackWalletBalance;
+  const fallbackWalletBalance = Math.max(0, profileBalance - totalLocked);
+  const summaryAvailableBalance = summaryAmounts?.availableAmount ?? 0;
+  const directWalletBalance = Math.max(0, baseWalletBalance);
+  const totalWalletBalance = Math.max(0, totalBalance);
+  // Prefer a non-zero source to avoid false "0.00 USDT" when one source lags.
+  const walletBalanceCandidates = [
+    summaryAvailableBalance,
+    fallbackWalletBalance,
+    directWalletBalance,
+    totalWalletBalance,
+  ].filter((v) => Number.isFinite(v) && v >= 0);
+  const walletBalance = Math.max(0, ...walletBalanceCandidates, 0);
   const handleSendAmountChange = (value: string) => {
     setActiveField("send");
 
@@ -364,7 +364,13 @@ const TradePreview: React.FC<TradePreviewProps> = ({
       // Check balance first
       if (numericAmount > walletBalance) {
         setIsAmountValid(false);
-        setErrorMessage(`Insufficient balance. Available: ${walletBalance.toFixed(2)} USDT`);
+        const summaryAvailableForDisplay =
+          summaryAmounts?.availableAmount ?? walletBalance;
+        setErrorMessage(
+          `Insufficient balance. Available: ${summaryAvailableForDisplay.toFixed(
+            2
+          )} USDT`
+        );
         return;
       }
 
@@ -380,7 +386,12 @@ const TradePreview: React.FC<TradePreviewProps> = ({
 
       if (numericAmount > maxUsdt) {
         setIsAmountValid(false);
-        setErrorMessage(`Maximum allowed is ${maxUsdt.toFixed(2)} USDT`);
+        const maxFiat = maxUsdt * commissionRate;
+        setErrorMessage(
+          `Maximum allowed is ${maxUsdt.toFixed(2)} USDT (${maxFiat.toFixed(
+            2
+          )} ${rangeLimitSuffix})`
+        );
         return;
       }
 
@@ -390,7 +401,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
       return;
     } else {
       // For buy orders: send is in range currency (KES/USD), receive is USDT
-      // minAmount and maxAmount are in range currency (KES/USD) - same as send field
+      // Use buy-range currency limits (KES/USD), already converted for KES.
       if (isNaN(numericAmount)) {
         setReceiveAmount("");
         setIsAmountValid(true);
@@ -402,9 +413,9 @@ const TradePreview: React.FC<TradePreviewProps> = ({
       const calculatedReceive = numericAmount / commissionRate;
       const maxSendAmount = availableAmount * commissionRate;
 
-      // When available < range min, allow buying full available (range min cannot be met)
-      const effectiveMin = maxSendAmount < minAmount ? 0.01 : minAmount;
-      const effectiveMax = Math.min(maxAmount, maxSendAmount);
+      // Buy minimum is fixed at 10 in selected range currency.
+      const effectiveMin = 10;
+      const effectiveMax = Math.min(buyRangeMax, maxSendAmount);
 
       if (numericAmount < effectiveMin) {
         setIsAmountValid(false);
@@ -414,7 +425,12 @@ const TradePreview: React.FC<TradePreviewProps> = ({
 
       if (numericAmount > effectiveMax) {
         setIsAmountValid(false);
-        setErrorMessage(`Maximum available is ${availableAmount.toFixed(2)} USDT (${effectiveMax.toFixed(2)} ${rangeLimitSuffix})`);
+        const maxInRangeCurrency = effectiveMax;
+        setErrorMessage(
+          `Maximum available is ${availableAmount.toFixed(
+            2
+          )} USDT (${maxInRangeCurrency.toFixed(2)} ${rangeLimitSuffix})`
+        );
         return;
       }
 
@@ -470,7 +486,13 @@ const TradePreview: React.FC<TradePreviewProps> = ({
       // Check balance first
       if (calculatedSendUsdt > walletBalance) {
         setIsAmountValid(false);
-        setErrorMessage(`Insufficient balance. Available: ${walletBalance.toFixed(2)} USDT`);
+        const summaryAvailableForDisplay =
+          summaryAmounts?.availableAmount ?? walletBalance;
+        setErrorMessage(
+          `Insufficient balance. Available: ${summaryAvailableForDisplay.toFixed(
+            2
+          )} USDT`
+        );
         return;
       }
 
@@ -497,7 +519,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
       setErrorMessage("");
     } else {
       // For buy: receiveAmount is USDT, sendAmount is in range currency (KES/USD)
-      // numericAmount is USDT (what user typed), minAmount/maxAmount are in KES/USD
+      // numericAmount is USDT; compare send side against converted buy-range limits.
       const calculatedSendKes = numericAmount * commissionRate;
       const maxSendAmount = availableAmount * commissionRate;
 
@@ -508,9 +530,9 @@ const TradePreview: React.FC<TradePreviewProps> = ({
         return;
       }
 
-      // When available < range min, allow buying full available
-      const effectiveMin = maxSendAmount < minAmount ? 0.01 : minAmount;
-      const effectiveMax = Math.min(maxAmount, maxSendAmount);
+      // Buy minimum is fixed at 10 in selected range currency.
+      const effectiveMin = 10;
+      const effectiveMax = Math.min(buyRangeMax, maxSendAmount);
 
       if (calculatedSendKes < effectiveMin) {
         setIsAmountValid(false);
@@ -521,7 +543,12 @@ const TradePreview: React.FC<TradePreviewProps> = ({
 
       if (calculatedSendKes > effectiveMax) {
         setIsAmountValid(false);
-        setErrorMessage(`Maximum available is ${availableAmount.toFixed(2)} USDT (${effectiveMax.toFixed(2)} ${rangeLimitSuffix})`);
+        const maxInRangeCurrency = effectiveMax;
+        setErrorMessage(
+          `Maximum available is ${availableAmount.toFixed(
+            2
+          )} USDT (${maxInRangeCurrency.toFixed(2)} ${rangeLimitSuffix})`
+        );
         setSendAmount("");
         return;
       }
@@ -736,7 +763,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                   </div>
                   <div className="flex flex-col gap-2 sm:gap-2">
                     <div className="text-sm text-gray-500 dark:text-[#788099] pl-0 sm:pl-2 font-medium">
-                      Range: {sellRangeMinUsdt.toFixed(2)}-{sellRangeMaxUsdt.toFixed(2)} USDT
+                      Range: {displayedSellRange}
                     </div>
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                       <span className="text-2xl sm:text-3xl text-[#1D8751] font-semibold flex-shrink-0">

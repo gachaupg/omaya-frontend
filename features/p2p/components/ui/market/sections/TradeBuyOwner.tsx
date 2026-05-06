@@ -506,7 +506,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 border border-gray-200 dark:border-accent p-3 sm:p-4 rounded-xl mt-4 bg-white dark:bg-[var(--card-color)]">
               {/* Buy: I want to Send = fiat (KES/USD) */}
               <div className="flex flex-col gap-2 w-full">
-                <p className="text-[#788099] text-xs sm:text-sm">I want to Send</p>
+                <p className="text-[#788099] text-xs sm:text-sm">I will receive</p>
                 <div className="flex flex-row items-center justify-between w-full bg-[#EEF1F4] dark:bg-accent rounded-xl px-3 sm:px-4 py-2.5 min-h-[52px]">
                   <div className="flex items-center gap-1.5 min-w-0">
                     <span className="text-[#1D8751] text-lg sm:text-xl font-bold shrink-0">{rangeSymbol}</span>
@@ -535,7 +535,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
 
               {/* I want to Receive = USDT */}
               <div className="flex flex-col gap-2 w-full">
-                <p className="text-[#788099] text-xs sm:text-sm">I want to Receive</p>
+                <p className="text-[#788099] text-xs sm:text-sm">I will send</p>
                 <div className="flex flex-row justify-between w-full items-center bg-[#EEF1F4] dark:bg-accent rounded-xl px-3 sm:px-4 py-2.5 min-h-[52px]">
                   <div className="flex flex-row items-center gap-2 min-w-0">
                     <Image

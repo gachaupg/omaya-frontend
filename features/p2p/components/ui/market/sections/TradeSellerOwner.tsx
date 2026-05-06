@@ -474,7 +474,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
               {/* Sell: I want to Send = USDT, I want to Receive = fiat (KES/USD) */}
               <div className="flex-1 flex flex-col mb-2 md:mb-0">
                 <div className="mb-1 text-gray-600 dark:text-[#788099] text-[0.95rem] font-medium">
-                  I want to Send
+                  I want to Receive
                 </div>
                 <div className="flex items-center h-[46px] rounded-2xl border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] px-2">
                   <span className="text-[#1D8751] text-2xl mr-2">
@@ -491,12 +491,12 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
               {/* I want to Receive */}
               <div className="flex-1 flex flex-col mb-2 md:mb-0">
                 <div className="mb-1 text-gray-600 dark:text-[#788099] text-[0.95rem] font-medium">
-                  I want to Receive
+                  I want to Send
                 </div>
                 <div className="flex items-center h-[46px] rounded-2xl border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] px-2">
                   <span className="text-[#1D8751] text-2xl mr-2">{rangeSymbol}</span>
                   <span className="text-[#1D8751] text-xl font-semibold">
-                    {formatAmount(Math.round(Number(sendAmount) / Number(commissionRate) * 100) / 100)}
+                    {formatAmount(Math.round(Number(sendAmount) * Number(commissionRate) * 100) / 100)}
                   </span>
                   <span className="ml-2 text-gray-900 dark:text-white text-base font-medium">
                     {rangeSuffix}
