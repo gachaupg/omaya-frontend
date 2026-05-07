@@ -164,9 +164,17 @@ const Orders = memo(() => {
             }
             break;
           case "month":
-            const monthAgo = new Date(today);
-            monthAgo.setMonth(today.getMonth() - 1);
-            if (tradeDate < monthAgo) {
+            // "This month" should mean current calendar month, not "last 30 days".
+            const startOfThisMonth = new Date(
+              today.getFullYear(),
+              today.getMonth(),
+              1,
+              0,
+              0,
+              0,
+              0
+            );
+            if (tradeDate < startOfThisMonth) {
               return false;
             }
             break;
@@ -226,6 +234,11 @@ const Orders = memo(() => {
     };
   });
 
+  const hasActiveLocalFilters =
+    filters.type !== "all" ||
+    filters.date !== "all" ||
+    (filters.status !== "all" && filters.status !== "processing");
+
   // Show skeleton while loading initial data
   if (loading && trades.results.length === 0) {
     return <OrdersListSkeleton count={6} />;
@@ -251,6 +264,7 @@ const Orders = memo(() => {
             currentPage={currentPage}
             handlePageChange={handlePageChange}
             trades={trades}
+            hasActiveLocalFilters={hasActiveLocalFilters}
           />
         )}
       </div>

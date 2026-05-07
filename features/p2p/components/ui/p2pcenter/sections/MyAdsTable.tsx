@@ -61,7 +61,7 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
   /** Utils */
   const getActionOptions = (trade: any) => {
     const baseOptions = ["Edit", "Delete"];
-    const statusOption = trade.status === "pending" ? "Put Offline" : "Publish";
+    const statusOption = trade.status === "published" ? "Put Offline" : "Publish";
     const options = [...baseOptions];
     if (trade.status === "completed") options.unshift("Duplicate");
     options.unshift(statusOption);

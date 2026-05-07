@@ -211,6 +211,13 @@ const P2PCenter: React.FC = () => {
         .filter((trade: any) => trade && typeof trade === 'object' && !Array.isArray(trade)) // Filter out null/undefined/arrays
         .map((trade: any) => {
           try {
+            // Backend uses `pending` for ads that are live/published.
+            // Normalize so UI filtering + labels are consistent.
+            const normalizedAdStatus =
+              typeof trade?.status === "string" && trade.status.toLowerCase() === "pending"
+                ? "published"
+                : trade?.status;
+
             // Safely extract payment_details, filtering out null/undefined items with extra checks
             const safePaymentDetails = Array.isArray(trade.payment_details)
               ? trade.payment_details.filter((detail: any) =>
@@ -249,6 +256,7 @@ const P2PCenter: React.FC = () => {
 
             return {
               ...trade,
+              status: normalizedAdStatus,
               assetSymbol: typeof trade?.currency === 'string' ? trade.currency : '',
               assetImage:
                 (typeof trade?.asset_image === 'string' && trade.asset_image) ||

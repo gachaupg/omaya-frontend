@@ -57,8 +57,9 @@ const FilterTabs: React.FC<FilterTabsProps> = ({
   const adStatusIndicators = useMemo(() => {
     // Ensure myOrders is an array before filtering
     const safeMyOrders = Array.isArray(myOrders) ? myOrders : [];
-    const liveAds = safeMyOrders.filter((order: any) =>
-      order && typeof order === 'object' && (order.status === 'published' || order.status === 'pending')
+    const liveAds = safeMyOrders.filter(
+      (order: any) =>
+        order && typeof order === "object" && order.status === "published"
     );
     const offlineAds = safeMyOrders.filter((order: any) =>
       order && typeof order === 'object' && order.status === 'offline'
@@ -112,14 +113,15 @@ const FilterTabs: React.FC<FilterTabsProps> = ({
         trade.order_type.toLowerCase() !== filters.type.toLowerCase()
       )
         return false;
-      if (
-        filters.status !== "Status" &&
-        filters.status !== "All" &&
-        trade.status &&
-        typeof trade.status === 'string' &&
-        trade.status.toLowerCase() !== filters.status.toLowerCase()
-      )
-        return false;
+      if (filters.status !== "Status" && filters.status !== "All") {
+        const s =
+          typeof trade.status === "string" ? trade.status.toLowerCase() : "";
+        const selected = filters.status.toLowerCase();
+
+        if (selected === "published" && s !== "published") return false;
+        if (selected === "pending" && s !== "pending") return false;
+        if (selected === "offline" && s !== "offline") return false;
+      }
       if (filters.date !== "Date" && filters.date !== "All" && trade.created_on) {
         try {
           const tradeDate = new Date(trade.created_on);
