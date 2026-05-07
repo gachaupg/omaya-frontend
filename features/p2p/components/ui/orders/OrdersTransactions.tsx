@@ -13,6 +13,7 @@ const OrdersTransactions = ({
   currentPage,
   handlePageChange,
   trades,
+  hasActiveLocalFilters,
 }: {
   transformedData: TransactionType[];
   loading: boolean;
@@ -20,6 +21,7 @@ const OrdersTransactions = ({
   currentPage: number;
   handlePageChange: (page: number) => void;
   trades: { count: number };
+  hasActiveLocalFilters: boolean;
 }) => {
   const [selectedTransaction, setSelectedTransaction] =
     useState<TransactionType | null>(null);
@@ -61,6 +63,8 @@ const OrdersTransactions = ({
     );
   }
 
+  const totalPages = hasActiveLocalFilters ? 1 : Math.ceil(trades.count / 10);
+
   return (
     <div className="w-full overflow-x-auto">
       <Table
@@ -70,7 +74,7 @@ const OrdersTransactions = ({
         loading={loading}
         error={error}
         currentPage={currentPage}
-        totalPages={Math.ceil(trades.count / 10)}
+        totalPages={totalPages}
         onPageChange={handlePageChange}
         onViewTransaction={handleViewTransaction}
         showExportButton={false}

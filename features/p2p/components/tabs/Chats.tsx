@@ -415,6 +415,14 @@ export const Chats: React.FC = () => {
     return s;
   }, []);
 
+  const isTerminalChatStatus = useCallback(
+    (value: unknown): boolean => {
+      const s = normalizeChatStatus(value);
+      return s === "completed" || s === "resolved" || s === "cancelled";
+    },
+    [normalizeChatStatus]
+  );
+
   const getEffectiveChatStatus = useCallback(
     (userObj: GroupedUser | null | undefined): string => {
       if (!userObj) return "";
@@ -460,6 +468,11 @@ export const Chats: React.FC = () => {
       if (currentEntityId) {
         setStatusOverridesByEntity((prev) => {
           const next = new Map(prev);
+          const existing = normalizeChatStatus(next.get(currentEntityId));
+          // Never downgrade terminal states (completed/resolved/cancelled).
+          if (isTerminalChatStatus(existing) && !isTerminalChatStatus(normalized)) {
+            return prev;
+          }
           next.set(currentEntityId, normalized);
           return next;
         });
@@ -467,13 +480,18 @@ export const Chats: React.FC = () => {
 
       setSelectedUser((prev) => {
         if (!prev) return prev;
+        const prevStatus = normalizeChatStatus((prev as any)?.status);
+        const mergedStatus =
+          isTerminalChatStatus(prevStatus) && !isTerminalChatStatus(normalized)
+            ? prevStatus
+            : normalized;
         return {
           ...prev,
-          status: normalized,
+          status: mergedStatus,
         } as GroupedUser;
       });
     },
-    [normalizeChatStatus, resolvedTradeId, selectedUser?.entity_id]
+    [isTerminalChatStatus, normalizeChatStatus, resolvedTradeId, selectedUser?.entity_id]
   );
 
   useTradeStatusWebSocket({
@@ -769,16 +787,28 @@ export const Chats: React.FC = () => {
 
         if (currentMessageIds !== newMessageIds || currentStatus !== nextStatus) {
           // Merge messages/status instead of replacing entire object
-          setSelectedUser(prev => prev ? {
-            ...prev,
-            messages: updatedUser.messages,
-            status: nextStatus || (updatedUser as any).status || (prev as any).status,
-          } : updatedUser);
+          setSelectedUser(prev => {
+            if (!prev) return updatedUser;
+            const prevStatus = normalizeChatStatus((prev as any).status);
+            const incomingStatus =
+              nextStatus || (updatedUser as any).status || (prev as any).status;
+            const normalizedIncomingStatus = normalizeChatStatus(incomingStatus);
+            const mergedStatus =
+              isTerminalChatStatus(prevStatus) &&
+              !isTerminalChatStatus(normalizedIncomingStatus)
+                ? prevStatus
+                : incomingStatus;
+            return {
+              ...prev,
+              messages: updatedUser.messages,
+              status: mergedStatus,
+            } as GroupedUser;
+          });
         }
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [getEffectiveChatStatus, liveGroupedUsers]);
+  }, [getEffectiveChatStatus, isTerminalChatStatus, liveGroupedUsers, normalizeChatStatus]);
 
 
   // WebSocket connection for selected user
@@ -845,15 +875,28 @@ export const Chats: React.FC = () => {
         if (currentEntityId && statusFromPayload) {
           setStatusOverridesByEntity((prev) => {
             const next = new Map(prev);
+            const existing = normalizeChatStatus(next.get(currentEntityId));
+            if (
+              isTerminalChatStatus(existing) &&
+              !isTerminalChatStatus(statusFromPayload)
+            ) {
+              return prev;
+            }
             next.set(currentEntityId, statusFromPayload);
             return next;
           });
         }
         setSelectedUser((prev) => {
           if (!prev) return prev;
+          const prevStatus = normalizeChatStatus((prev as any)?.status);
+          const mergedStatus =
+            isTerminalChatStatus(prevStatus) &&
+            !isTerminalChatStatus(statusFromPayload)
+              ? prevStatus
+              : statusFromPayload || (prev as any).status;
           return {
             ...prev,
-            status: statusFromPayload || (prev as any).status,
+            status: mergedStatus,
           } as GroupedUser;
         });
         // Keep grouped conversations list in sync with latest status.
@@ -988,7 +1031,7 @@ export const Chats: React.FC = () => {
       // Don't cleanup WebSocket here as it might be used elsewhere
       // cleanupTradeMessagesWebSocket(selectedUser.entity_id);
     };
-  }, [selectedUser?.entity_id, resolvedTradeId, isAuthenticated, normalizeChatStatus, refetch]);
+  }, [isTerminalChatStatus, selectedUser?.entity_id, resolvedTradeId, isAuthenticated, normalizeChatStatus, refetch]);
 
   const conversations = useMemo(() => {
     return liveGroupedUsers || [];
