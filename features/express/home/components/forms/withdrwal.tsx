@@ -2985,11 +2985,13 @@ export default function WithdrawalForm({
       // Keep dropdown aligned to the right side and inside viewport/card.
       desiredWidth = Math.max(0, Math.min(desiredWidth, viewportWidth - minMargin * 2));
       if (left + desiredWidth > viewportWidth - minMargin) {
-        left = Math.max(minMargin, viewportWidth - desiredWidth - minMargin);
+        // Keep left edge fixed; shrink from the right if needed.
+        desiredWidth = Math.max(0, viewportWidth - minMargin - left);
       }
       if (left < cardRect.left) left = cardRect.left;
       if (left + desiredWidth > cardRect.right) {
-        left = Math.max(cardRect.left, cardRect.right - desiredWidth);
+        // Keep left edge fixed; shrink from the right inside card bounds.
+        desiredWidth = Math.max(0, cardRect.right - left);
       }
 
       dropdownStyle = {
@@ -4733,7 +4735,8 @@ export default function WithdrawalForm({
                           logoClassName={`${PAYMENT_LOGO_BASE_CLASS} rounded-full`}
                           sizeMode="card"
                           dropdownMatchTriggerWidth={true}
-                          dropdownMaxWidth={640}
+                          dropdownMinWidth={460}
+                          dropdownMaxWidth={460}
                           className="w-full"
                           triggerClassName={`px-4 py-2 text-sm font-medium border rounded-2xl bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
                             }`}
@@ -4937,6 +4940,8 @@ export default function WithdrawalForm({
                                     }`}
                                   largeDropdownItems={true}
                                   dropdownMatchTriggerWidth={true}
+                                  dropdownMinWidth={460}
+                                  dropdownMaxWidth={460}
                                 />
                               </div>
                                 </div>

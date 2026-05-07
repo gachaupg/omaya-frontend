@@ -1041,8 +1041,8 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
                   logoSize={PAYMENT_LOGO_SIZE}
                   logoClassName={`${PAYMENT_LOGO_BASE_CLASS} rounded-full`}
                   dropdownMatchTriggerWidth={true}
-                  dropdownMinWidth={420}
-                  dropdownMaxWidth={640}
+                  dropdownMinWidth={460}
+                  dropdownMaxWidth={460}
                   className="w-full"
                   placeholderClassName="text-white dark:text-white"
                   triggerClassName={`px-4 py-2 text-sm font-medium border rounded-2xl bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
@@ -1067,7 +1067,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
                   searchable={true}
                   dropdownTitle=" payment method"
                   dropdownOffsetY={-68}
-                  dropdownOffsetX={48}
+                  dropdownOffsetX={0}
                 />
               </div>
               {paymentMethodsError && (
@@ -1159,8 +1159,8 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
                   logoSize={PAYMENT_LOGO_SIZE}
                   logoClassName={`${PAYMENT_LOGO_BASE_CLASS} rounded-full`}
                   dropdownMatchTriggerWidth={true}
-                  dropdownMinWidth={420}
-                  dropdownMaxWidth={640}
+                  dropdownMinWidth={460}
+                  dropdownMaxWidth={460}
                   className="w-full"
                   placeholderClassName="text-white dark:text-white"
                   triggerClassName={`px-4 py-2 text-sm font-medium border rounded-2xl bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
@@ -1185,7 +1185,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
                   searchable={true}
                   dropdownTitle=" payment method"
                   dropdownOffsetY={-68}
-                  dropdownOffsetX={48}
+                  dropdownOffsetX={0}
                 />
               </div>
               {paymentMethodsError && (
