@@ -2923,8 +2923,8 @@ export default function WithdrawalForm({
 
     const viewportWidth = typeof window !== "undefined" ? window.innerWidth : 0;
     const minMargin = 16;
-    const minWidth = 340;
-    const maxWidth = 760;
+    const minWidth = 280;
+    const maxWidth = 450;
 
     // Find the card that contains the asset dropdown trigger
     const assetDropdownElement = assetDropdownRef.current;
@@ -4733,8 +4733,7 @@ export default function WithdrawalForm({
                           logoClassName={`${PAYMENT_LOGO_BASE_CLASS} rounded-full`}
                           sizeMode="card"
                           dropdownMatchTriggerWidth={true}
-                          dropdownMinWidth={340}
-                          dropdownMaxWidth={760}
+                          dropdownMaxWidth={640}
                           className="w-full"
                           triggerClassName={`px-4 py-2 text-sm font-medium border rounded-2xl bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
                             }`}
@@ -4768,7 +4767,7 @@ export default function WithdrawalForm({
                           searchable={true}
                           dropdownTitle="Select a payment methods"
                           dropdownOffsetY={-68}
-                          dropdownOffsetX={1}
+                          dropdownOffsetX={0}
                           largeDropdownItems={true}
                         />
                       );
@@ -4938,9 +4937,6 @@ export default function WithdrawalForm({
                                     }`}
                                   largeDropdownItems={true}
                                   dropdownMatchTriggerWidth={true}
-                                  dropdownMinWidth={340}
-                                  dropdownMaxWidth={760}
-                                  dropdownOffsetX={1}
                                 />
                               </div>
                                 </div>
