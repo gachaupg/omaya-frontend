@@ -216,13 +216,16 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
       if (horizontalOffset === 0) {
         if (left < cardRect.left) left = cardRect.left;
         if (left + desiredWidth > cardRect.right) {
-          left = Math.max(cardRect.right - desiredWidth, cardRect.left);
+          // Keep left edge fixed and shrink width instead of shifting left.
+          // This preserves "left stays the same, grow to the right" behavior.
+          desiredWidth = Math.max(0, cardRect.right - left);
         }
       }
       
       // Ensure dropdown doesn't go off screen horizontally
       if (left + desiredWidth > viewportWidth - minMargin) {
-        left = viewportWidth - desiredWidth - minMargin;
+        // Keep left edge fixed and shrink width instead of shifting left.
+        desiredWidth = Math.max(0, viewportWidth - minMargin - left);
       }
       if (left < minMargin) {
         left = minMargin;
