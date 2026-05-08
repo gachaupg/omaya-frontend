@@ -1826,7 +1826,7 @@ export default function WithdrawalForm({
     }
     const fxpSendAmount = isCalculatingFromPay
       ? (parseLocalizedAmountString(payAmountInput) || payAmount)
-      : getFxpReversePayAmount((parseLocalizedAmountString(getAmountInput) || getAmount));
+      : (parseLocalizedAmountString(getAmountInput) || getAmount);
     const commissionLookupAmount = isForexAsset(selectedAsset)
       ? fxpSendAmount
       : amount;
@@ -1856,8 +1856,14 @@ export default function WithdrawalForm({
               setGetAmountInput(String(safeToAmount));
               setPreviousValidAmount(String(safeToAmount));
             } else if (!isCalculatingFromPay && Number.isFinite(backendFromAmount)) {
-              setPayAmount(Math.max(0, backendFromAmount));
-              setPayAmountInput(String(Math.max(0, backendFromAmount)));
+              const requestedGetAmount =
+                parseLocalizedAmountString(getAmountInput) || getAmount;
+              const normalizedFromAmount =
+                Number.isFinite(backendToAmount) && backendToAmount > 0
+                  ? requestedGetAmount * (backendFromAmount / backendToAmount)
+                  : backendFromAmount;
+              setPayAmount(Math.max(0, normalizedFromAmount));
+              setPayAmountInput(String(Math.max(0, normalizedFromAmount)));
             }
           }
         })

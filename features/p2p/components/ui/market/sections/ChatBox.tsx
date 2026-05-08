@@ -12,6 +12,7 @@ import {
 import { getTradeMessages, postTradeMessage, GroupedMessage } from "@/features/p2p/api";
 import { MdAccountCircle } from "react-icons/md";
 import { useTradeMessagesWebSocket } from "@/features/p2p/hooks/useTradeMessagesWebSocket";
+import { useUnreadMessagesWebSocket } from "@/features/p2p/hooks/useUnreadMessagesWebSocket";
 import P2PTradeCanceledModal from "./P2PTradeCanceledModal";
 import { useTheme } from "@/context/theme";
 import { P2P_TRADE_CANCELED_EVENT } from "@/features/p2p/constants/tradeSocketEvents";
@@ -214,20 +215,10 @@ const ChatBox: React.FC<{
 
   // Sort messages by timestamp and filter out duplicate optimistic messages
   const sortedMessages = React.useMemo(() => {
-    const numericTradeId = Number(tradeId);
-    const canMatchNumericTrade = Number.isFinite(numericTradeId) && tradeId.trim() !== "";
-    const messages = [...messagesFromRedux].filter((msg: any) => {
-      // If backend provides explicit trade_id (string/uuid), use it.
-      if (msg?.trade_id != null) {
-        return String(msg.trade_id) === String(tradeId);
-      }
-      // If this chat uses numeric trade IDs, match by numeric `trade`.
-      if (canMatchNumericTrade && msg?.trade != null) {
-        return Number(msg.trade) === numericTradeId;
-      }
-      // Otherwise keep message (prevents hiding optimistic/WS messages on uuid trades).
-      return true;
-    });
+    // Messages are already partitioned in Redux by the current tradeId key.
+    // Do not hard-filter by payload trade fields here; some WS payloads carry
+    // alternate IDs and would be incorrectly hidden (appearing as "delayed").
+    const messages = [...messagesFromRedux];
 
     // Separate temp messages from real messages
     const tempMessages = messages.filter(msg => msg.id.toString().startsWith('temp-'));
@@ -317,6 +308,24 @@ const ChatBox: React.FC<{
       setTradeCanceledModal((prev) =>
         prev.open ? prev : { open: true, message: cancelMsg }
       );
+    },
+  });
+
+  // Secondary real-time channel: unread-messages socket.
+  // If trade-messages socket misses/defers an event, this channel still nudges an immediate refresh.
+  useUnreadMessagesWebSocket({
+    enabled: isAuthenticated && messageType === "p2p" && !!tradeId,
+    onRecentMessages: (recent) => {
+      if (!Array.isArray(recent) || recent.length === 0) return;
+      const currentTrade = String(tradeId || "").trim();
+      if (!currentTrade) return;
+      const hasCurrentTradeUpdate = recent.some((m: any) => {
+        const entity = String(m?.entity_id ?? "").trim();
+        return entity && entity === currentTrade;
+      });
+      if (hasCurrentTradeUpdate) {
+        fetchMessages();
+      }
     },
   });
 
@@ -436,7 +445,7 @@ const ChatBox: React.FC<{
   // Polling interval for support/fallback refresh
   const pollingIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
   const SUPPORT_POLL_MS = 5000;
-  const P2P_FALLBACK_POLL_MS = 7000;
+  const P2P_FALLBACK_POLL_MS = 1500;
 
   // On trade change, clear current trade message list immediately to avoid
   // briefly showing stale messages from a previously open chat.
@@ -470,15 +479,14 @@ const ChatBox: React.FC<{
 
     // Fetch initial messages once on mount
     if (messageType === 'p2p') {
-      // For P2P: WebSocket is primary. Use fallback polling only when socket is disconnected.
+      // For P2P: WebSocket is primary, but keep a lightweight polling safety net
+      // even while connected. Some backend deployments emit partial WS payloads
+      // and this ensures message UI stays near-instant.
       fetchMessages();
-      if (!wsConnected) {
-        pollingIntervalRef.current = setInterval(() => {
-          // Only poll when tab is visible to reduce unnecessary network calls.
-          if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
-          fetchMessages();
-        }, P2P_FALLBACK_POLL_MS);
-      }
+      pollingIntervalRef.current = setInterval(() => {
+        if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
+        fetchMessages();
+      }, P2P_FALLBACK_POLL_MS);
     } else if (messageType === 'support') {
       // For support: Use API polling (only if not passed as props)
       if (!supportMessages || supportMessages.length === 0) {
