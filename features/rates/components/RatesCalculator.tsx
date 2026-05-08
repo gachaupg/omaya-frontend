@@ -181,7 +181,26 @@ const isSimpleCalculationAsset = (asset: any) => {
   );
 };
 
-const isCommissionApiAsset = (asset: any) => !!getCommissionApiAsset(asset?.ticker || asset?.symbol || "");
+const resolveCommissionApiAsset = (asset: any): string | null => {
+  const candidates = [
+    asset?.ticker,
+    asset?.symbol,
+    asset?.name,
+    (asset as any)?.legacyTicker,
+    (asset as any)?.legacy_ticker,
+    (asset as any)?.original_ticker,
+    (asset as any)?.change_now_ticker,
+  ];
+  for (const c of candidates) {
+    const resolved = getCommissionApiAsset(String(c || ""));
+    if (resolved) return resolved;
+  }
+  // Last fallback: FX Primus detector is more tolerant (e.g. "FX Primus")
+  if (isForexPrimusAsset(asset)) return "fxprimus";
+  return null;
+};
+
+const isCommissionApiAsset = (asset: any) => !!resolveCommissionApiAsset(asset);
 
 /** Commission % via fetchCommission — crypto exchange-lookup assets use lookup; FX Primus uses legacy API only (lookup returns "no FXP rate" when unset). */
 const usesLegacyPercentCommission = (asset: any) =>
@@ -339,6 +358,16 @@ const getPaymentRestrictionMessage = (status?: string) =>
     !isDepositMode && !!selectedAsset && isForexPrimusAsset(selectedAsset);
   const getFxpReverseAmount = (receiveValue: number): number => {
     if (!Number.isFinite(receiveValue)) return 0;
+    const backendFromAmount = Number(apiCommissionDetails?.from_amount);
+    const backendToAmount = Number(apiCommissionDetails?.to_amount);
+    if (
+      Number.isFinite(backendFromAmount) &&
+      Number.isFinite(backendToAmount) &&
+      backendFromAmount > 0 &&
+      backendToAmount > 0
+    ) {
+      return receiveValue * (backendFromAmount / backendToAmount);
+    }
     const feeFromPayload = Number(apiCommissionDetails?.calculated_fee ?? apiCommissionDetails?.fee);
     if (Number.isFinite(feeFromPayload) && feeFromPayload >= 0) {
       return receiveValue + feeFromPayload;
@@ -354,6 +383,116 @@ const getPaymentRestrictionMessage = (status?: string) =>
       return receiveValue / (1 - rate / 100);
     }
     return receiveValue;
+  };
+
+  const sanitizeNumericInput = (raw: string): string => {
+    if (!raw) return "";
+    const compact = raw
+      .replace(/,/g, "")
+      .replace(/\s+/g, "")
+      .replace(/[^\d.]/g, "");
+    if (!compact) return "";
+    const firstDot = compact.indexOf(".");
+    if (firstDot === -1) return compact;
+    const intPart = compact.slice(0, firstDot + 1);
+    const fracPart = compact.slice(firstDot + 1).replace(/\./g, "");
+    return `${intPart}${fracPart}`;
+  };
+
+  const applyReceiveAmountInput = (rawValue: string) => {
+    const normalizedValue = sanitizeNumericInput(rawValue);
+    logger.debug('general', "You Get input changed:", {
+      rawValue,
+      normalizedValue,
+      selectedAsset: selectedAsset?.ticker,
+    });
+
+    if (normalizedValue === "" || /^\d*\.?\d*$/.test(normalizedValue)) {
+      setReceiveAmount(normalizedValue);
+      if (normalizedValue === "") {
+        setAmount("");
+        setReceiveAmountError(null);
+        setIsCalculating(false);
+        setIsCalculatingReceive(false);
+        return;
+      }
+      const newAmount = parseFloat(normalizedValue) || 0;
+      setIsCalculatingFromPay(false);
+
+      // Force FX Primus reverse path first (paste + typing).
+      // This avoids any branch skips from generic asset guards.
+      if (selectedAsset && newAmount > 0 && isForexPrimusAsset(selectedAsset)) {
+        const apiAsset = resolveCommissionApiAsset(selectedAsset) || "fxprimus";
+        setIsCalculating(true);
+        setIsCalculatingReceive(true);
+        console.log("[Rates FXP reverse] force request commission", {
+          apiAsset,
+          amount: newAmount,
+          mode: isDepositMode ? "deposit" : "withdrawal",
+          assetId: (selectedAsset as any)?.asset_id,
+          selectedAsset,
+        });
+        fetchCommissionDetails(
+          apiAsset,
+          newAmount,
+          isDepositMode ? "deposit" : "withdrawal",
+          (selectedAsset as any)?.asset_id
+        )
+          .then((details) => {
+            setApiCommission(Number(details?.commission_rate ?? 0));
+            setApiCommissionDetails(details);
+            const backendToAmount = Number(details?.to_amount);
+            const backendFromAmount = Number(details?.from_amount);
+            if (
+              Number.isFinite(backendFromAmount) &&
+              Number.isFinite(backendToAmount) &&
+              backendToAmount > 0
+            ) {
+              const normalizedFromAmount =
+                newAmount * (backendFromAmount / backendToAmount);
+              setAmount(Math.max(0, normalizedFromAmount).toFixed(2));
+            } else if (Number.isFinite(backendFromAmount)) {
+              setAmount(Math.max(0, backendFromAmount).toFixed(2));
+            } else {
+              setAmount(Math.max(0, getFxpReverseAmount(newAmount)).toFixed(2));
+            }
+          })
+          .catch(() => {
+            setAmount(Math.max(0, getFxpReverseAmount(newAmount)).toFixed(2));
+          })
+          .finally(() => {
+            setIsCalculating(false);
+            setIsCalculatingReceive(false);
+          });
+        return;
+      }
+
+      if (
+        selectedAsset &&
+        newAmount > 0 &&
+        isExchangeCommissionLookupAsset(selectedAsset)
+      ) {
+        setIsCalculating(true);
+        setIsCalculatingReceive(true);
+      } else if (
+        selectedAsset &&
+        newAmount > 0 &&
+        usesLegacyPercentCommission(selectedAsset)
+      ) {
+        const calculatedSendAmount = isForexPrimusAsset(selectedAsset)
+          ? getFxpReverseAmount(newAmount)
+          : newAmount / (1 - (apiCommission ?? 2) / 100);
+        setAmount(calculatedSendAmount.toFixed(2));
+        setIsCalculating(false);
+        setIsCalculatingReceive(false);
+      } else if (selectedAsset && newAmount > 0) {
+        setIsCalculating(true);
+        setIsCalculatingReceive(true);
+      } else {
+        setIsCalculatingReceive(false);
+        setIsCalculating(false);
+      }
+    }
   };
 
   // Shared address validation (same API + messages as other pages).
@@ -759,7 +898,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
 
   // Legacy commission % API — crypto exchange-lookup assets skip this; FX Primus uses it (no FOREX commission-lookup).
   useEffect(() => {
-    const apiAsset = selectedAsset ? getCommissionApiAsset(selectedAsset.ticker || selectedAsset.symbol || "") : null;
+    const apiAsset = selectedAsset ? resolveCommissionApiAsset(selectedAsset) : null;
     if (!apiAsset || !selectedAsset) {
       setApiCommission(null);
       return;
@@ -776,7 +915,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
     const amt = isCalculatingFromPay ? (parseFloat(amount) || 0) : (parseFloat(receiveAmount) || 0);
     const fxpSendAmount = isCalculatingFromPay
       ? (parseFloat(amount) || 0)
-      : ((parseFloat(receiveAmount) || 0) * 1.06);
+      : (parseFloat(receiveAmount) || 0);
     const commissionLookupAmount = isForexPrimusAsset(selectedAsset)
       ? fxpSendAmount
       : amt;
@@ -802,7 +941,19 @@ const getPaymentRestrictionMessage = (status?: string) =>
             if (isCalculatingFromPay && Number.isFinite(backendToAmount)) {
               setReceiveAmount(String(Math.max(0, backendToAmount)));
             } else if (!isCalculatingFromPay && Number.isFinite(backendFromAmount)) {
-              setAmount(String(Math.max(0, backendFromAmount)));
+              const requestedReceive = parseFloat(receiveAmount) || 0;
+              // Normalize reverse calc to the exact requested "You Get" amount using backend ratio.
+              if (
+                requestedReceive > 0 &&
+                Number.isFinite(backendToAmount) &&
+                backendToAmount > 0
+              ) {
+                const normalizedFromAmount =
+                  requestedReceive * (backendFromAmount / backendToAmount);
+                setAmount(String(Math.max(0, normalizedFromAmount)));
+              } else {
+                setAmount(String(Math.max(0, backendFromAmount)));
+              }
             }
           }
         })
@@ -1023,9 +1174,22 @@ const getPaymentRestrictionMessage = (status?: string) =>
     } else if (!isCalculatingFromPay && parseFloat(receiveAmount) > 0) {
       const recv = parseFloat(receiveAmount) || 0;
       const calculatedAmount = isForexPrimusAsset(selectedAsset)
-        ? (Number.isFinite(Number(apiCommissionDetails?.from_amount))
-            ? Number(apiCommissionDetails?.from_amount)
-            : getFxpReverseAmount(recv))
+        ? (() => {
+            const backendFromAmount = Number(apiCommissionDetails?.from_amount);
+            const backendToAmount = Number(apiCommissionDetails?.to_amount);
+            if (
+              Number.isFinite(backendFromAmount) &&
+              Number.isFinite(backendToAmount) &&
+              backendFromAmount > 0 &&
+              backendToAmount > 0
+            ) {
+              return recv * (backendFromAmount / backendToAmount);
+            }
+            if (Number.isFinite(backendFromAmount) && backendFromAmount > 0) {
+              return backendFromAmount;
+            }
+            return getFxpReverseAmount(recv);
+          })()
         : recv / (1 - apiCommission / 100);
       setAmount(calculatedAmount.toFixed(2));
     }
@@ -1867,7 +2031,13 @@ const getPaymentRestrictionMessage = (status?: string) =>
           return;
         }
 
-        const FXP_EXCHANGE_RATE = 1.06;
+        const FXP_EXCHANGE_RATE = payNum > 0 ? recvNum / payNum : 0;
+        if (!Number.isFinite(FXP_EXCHANGE_RATE) || FXP_EXCHANGE_RATE <= 0) {
+          showToast.error(
+            t("rates.invalidForexRate", "Invalid forex rate. Please re-enter amounts.")
+          );
+          return;
+        }
         const providerLabel =
           selectedPaymentDetail.provider_name ||
           selectedPaymentDetail.payment_provider_name ||
@@ -3362,22 +3532,24 @@ const getPaymentRestrictionMessage = (status?: string) =>
                     value={amount}
                     onChange={(e) => {
                       const value = e.target.value;
+                      const normalizedValue = value.replace(/,/g, "").trim();
                       logger.debug('general', "You Send input changed:", {
                         value,
+                        normalizedValue,
                         selectedAsset: selectedAsset?.ticker,
                       });
 
                       // Only allow numbers and decimals
-                      if (value === "" || /^\d*\.?\d*$/.test(value)) {
-                        setAmount(value);
-                        if (value === "") {
+                      if (normalizedValue === "" || /^\d*\.?\d*$/.test(normalizedValue)) {
+                        setAmount(normalizedValue);
+                        if (normalizedValue === "") {
                           setReceiveAmount("");
                           setReceiveAmountError(null);
                           setIsCalculating(false);
                           setIsCalculatingReceive(false);
                           return;
                         }
-                        const newAmount = parseFloat(value) || 0;
+                        const newAmount = parseFloat(normalizedValue) || 0;
                         setIsCalculatingFromPay(true);
                         if (
                           selectedAsset &&
@@ -3834,52 +4006,11 @@ const getPaymentRestrictionMessage = (status?: string) =>
                     type="text"
                     inputMode="decimal"
                     value={receiveAmount}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      logger.debug('general', "You Get input changed:", {
-                        value,
-                        selectedAsset: selectedAsset?.ticker,
-                      });
-
-                      // Only allow numbers and decimals
-                      if (value === "" || /^\d*\.?\d*$/.test(value)) {
-                        setReceiveAmount(value);
-                        if (value === "") {
-                          setAmount("");
-                          setReceiveAmountError(null);
-                          setIsCalculating(false);
-                          setIsCalculatingReceive(false);
-                          return;
-                        }
-                        const newAmount = parseFloat(value) || 0;
-                        setIsCalculatingFromPay(false);
-
-                        if (
-                          selectedAsset &&
-                          newAmount > 0 &&
-                          isExchangeCommissionLookupAsset(selectedAsset)
-                        ) {
-                          setIsCalculating(true);
-                          setIsCalculatingReceive(true);
-                        } else if (
-                          selectedAsset &&
-                          newAmount > 0 &&
-                          usesLegacyPercentCommission(selectedAsset)
-                        ) {
-                          const calculatedSendAmount = isForexPrimusAsset(selectedAsset)
-                            ? getFxpReverseAmount(newAmount)
-                            : newAmount / (1 - (apiCommission ?? 2) / 100);
-                          setAmount(calculatedSendAmount.toFixed(2));
-                          setIsCalculating(false);
-                          setIsCalculatingReceive(false);
-                        } else if (selectedAsset && newAmount > 0) {
-                          setIsCalculating(true);
-                          setIsCalculatingReceive(true);
-                        } else {
-                          setIsCalculatingReceive(false);
-                          setIsCalculating(false);
-                        }
-                      }
+                    onChange={(e) => applyReceiveAmountInput(e.target.value)}
+                    onPaste={(e) => {
+                      e.preventDefault();
+                      const pastedText = e.clipboardData?.getData("text") ?? "";
+                      applyReceiveAmountInput(pastedText);
                     }}
                     placeholder={t("rates.enterAmount", "Enter amount")}
                     className={`w-full rounded-2xl px-4 py-2 pr-16 text-base sm:text-lg focus:outline-none border appearance-none bg-transparent ${(isCalculating || isCalculatingReceive) &&

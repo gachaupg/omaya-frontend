@@ -44,7 +44,47 @@ const messageSlice = createSlice({
     },
     // WebSocket actions
     setMessages(state, action: PayloadAction<{ tradeId: string; messages: TradeMessage[] }>) {
-      state.messages[action.payload.tradeId] = action.payload.messages;
+      const { tradeId, messages } = action.payload;
+      const existing = state.messages[tradeId] || [];
+
+      // Merge instead of replace so websocket-delivered messages are not lost
+      // when API polling returns stale data that hasn't indexed the latest message yet.
+      const byId = new Map<string, TradeMessage>();
+      for (const msg of existing) {
+        byId.set(String(msg.id), msg);
+      }
+      for (const msg of messages) {
+        const id = String(msg.id);
+        const prev = byId.get(id);
+        if (!prev) {
+          byId.set(id, msg);
+          continue;
+        }
+        byId.set(id, {
+          ...prev,
+          ...msg,
+          message:
+            String((msg as any).message ?? "").trim() !== ""
+              ? msg.message
+              : prev.message,
+          images:
+            Array.isArray((msg as any).images) && (msg as any).images.length > 0
+              ? (msg as any).images
+              : prev.images || [],
+          audios:
+            Array.isArray((msg as any).audios) && (msg as any).audios.length > 0
+              ? (msg as any).audios
+              : (prev as any).audios || [],
+          audio_url: (msg as any).audio_url || (prev as any).audio_url,
+          audio: (msg as any).audio || (prev as any).audio,
+        } as TradeMessage);
+      }
+
+      state.messages[tradeId] = Array.from(byId.values()).sort(
+        (a, b) =>
+          new Date(String(a.timestamp || 0)).getTime() -
+          new Date(String(b.timestamp || 0)).getTime()
+      );
     },
     addMessageFromWS(state, action: PayloadAction<{ tradeId: string; message: TradeMessage }>) {
       const { tradeId, message } = action.payload;

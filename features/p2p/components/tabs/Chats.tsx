@@ -324,6 +324,7 @@ export const Chats: React.FC = () => {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const prevSelectedUserIdRef = useRef<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const closedEntityIdsRef = useRef<Set<string>>(new Set());
 
   const [hiddenMessageIdsByEntity, setHiddenMessageIdsByEntity] = useState<
     Map<string, Set<string>>
@@ -344,8 +345,15 @@ export const Chats: React.FC = () => {
       String(value ?? "").trim()
     );
 
-  const isValidTradeIdForMessages = (value: unknown): boolean =>
-    isUuid(value);
+  const isValidTradeIdForMessages = (value: unknown): boolean => {
+    const v = String(value ?? "").trim();
+    if (!v) return false;
+    const lower = v.toLowerCase();
+    if (lower === "undefined" || lower === "null" || lower === "support") return false;
+    // Support both UUID and numeric/string trade identifiers so WS can attach
+    // regardless of backend ID format.
+    return isUuid(v) || /^[0-9]+$/.test(v) || /^[0-9a-z-]+$/i.test(v);
+  };
 
   const extractIdFromMessageId = (value: unknown): string => {
     const v = String(value ?? "").trim();
@@ -444,6 +452,64 @@ export const Chats: React.FC = () => {
     [normalizeChatStatus, statusOverridesByEntity]
   );
 
+  const closeConversationInstantly = useCallback(
+    (entityId: string, status: string) => {
+      const normalizedStatus = normalizeChatStatus(status);
+      if (!entityId || !isTerminalChatStatus(normalizedStatus)) return;
+      if (closedEntityIdsRef.current.has(entityId)) return;
+      closedEntityIdsRef.current.add(entityId);
+
+      const statusLabel =
+        normalizedStatus === "cancelled"
+          ? "cancelled"
+          : normalizedStatus === "resolved"
+          ? "resolved"
+          : "completed";
+
+      setLiveGroupedUsers((prev) =>
+        Array.isArray(prev)
+          ? prev.filter(
+              (group: any) =>
+                String(group?.entity_id ?? "").trim() !== String(entityId).trim()
+            )
+          : prev
+      );
+
+      setStatusOverridesByEntity((prev) => {
+        if (!prev.has(entityId)) return prev;
+        const next = new Map(prev);
+        next.delete(entityId);
+        return next;
+      });
+
+      setOptimisticMessages((prev) => {
+        if (!prev.has(entityId)) return prev;
+        const next = new Map(prev);
+        next.delete(entityId);
+        return next;
+      });
+
+      setHiddenMessageIdsByEntity((prev) => {
+        if (!prev.has(entityId)) return prev;
+        const next = new Map(prev);
+        next.delete(entityId);
+        return next;
+      });
+
+      setSelectedUser((prev) => {
+        if (!prev) return prev;
+        const prevEntityId = String((prev as any)?.entity_id ?? "").trim();
+        if (prevEntityId !== String(entityId).trim()) return prev;
+        return null;
+      });
+
+      setShowChatView(false);
+      setShowEmojiPicker(false);
+      showToast.info("Chat closed", `This chat was ${statusLabel} by admin.`);
+    },
+    [isTerminalChatStatus, normalizeChatStatus]
+  );
+
   const handleRealtimeTradeStatusUpdate = useCallback(
     (statusUpdate: any) => {
       const incomingTradeId = String(
@@ -478,6 +544,10 @@ export const Chats: React.FC = () => {
         });
       }
 
+      if (currentEntityId && isTerminalChatStatus(normalized)) {
+        closeConversationInstantly(currentEntityId, normalized);
+      }
+
       setSelectedUser((prev) => {
         if (!prev) return prev;
         const prevStatus = normalizeChatStatus((prev as any)?.status);
@@ -491,7 +561,13 @@ export const Chats: React.FC = () => {
         } as GroupedUser;
       });
     },
-    [isTerminalChatStatus, normalizeChatStatus, resolvedTradeId, selectedUser?.entity_id]
+    [
+      closeConversationInstantly,
+      isTerminalChatStatus,
+      normalizeChatStatus,
+      resolvedTradeId,
+      selectedUser?.entity_id,
+    ]
   );
 
   useTradeStatusWebSocket({
@@ -899,6 +975,9 @@ export const Chats: React.FC = () => {
             status: mergedStatus,
           } as GroupedUser;
         });
+        if (currentEntityId && isTerminalChatStatus(statusFromPayload)) {
+          closeConversationInstantly(currentEntityId, statusFromPayload);
+        }
         // Keep grouped conversations list in sync with latest status.
         refetch();
       }
@@ -1031,7 +1110,15 @@ export const Chats: React.FC = () => {
       // Don't cleanup WebSocket here as it might be used elsewhere
       // cleanupTradeMessagesWebSocket(selectedUser.entity_id);
     };
-  }, [isTerminalChatStatus, selectedUser?.entity_id, resolvedTradeId, isAuthenticated, normalizeChatStatus, refetch]);
+  }, [
+    closeConversationInstantly,
+    isTerminalChatStatus,
+    selectedUser?.entity_id,
+    resolvedTradeId,
+    isAuthenticated,
+    normalizeChatStatus,
+    refetch,
+  ]);
 
   const conversations = useMemo(() => {
     return liveGroupedUsers || [];

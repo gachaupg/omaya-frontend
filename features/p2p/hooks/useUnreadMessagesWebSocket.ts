@@ -9,6 +9,7 @@ import {
 import { updateUnreadCount, setRecentMessages } from "../slices/unreadMessagesSlice";
 import { cookieUtils } from "@/lib/utils/cookieUtils";
 import { logger } from "@/lib/utils/logger";
+import { API_CONFIG } from "@/lib/appConfig";
 
 interface UseUnreadMessagesWebSocketOptions {
   enabled?: boolean;
@@ -171,7 +172,13 @@ export const useUnreadMessagesWebSocket = (
       setConnectionError("Connection error");
     });
 
-    // Connect to WebSocket
+    // Log and connect to WebSocket (helps verify exact socket endpoint in runtime).
+    try {
+      const wsUrl = API_CONFIG.P2P.SOCKETS.RECENT_MESSAGES(token);
+      console.log("[P2P unread-messages WS] connecting URL:", wsUrl);
+    } catch (e) {
+      console.warn("[P2P unread-messages WS] failed to build URL for logging");
+    }
     logger.debug("unread-messages", "🔌 Connecting to unread messages WebSocket...");
     ws.connect({ token });
 

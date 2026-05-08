@@ -13,6 +13,7 @@ import {
 } from "../services/tradeMessagesWebSocket";
 import type { WebSocketMessage } from "../services/tradeMessagesWebSocket";
 import { cookieUtils } from "@/lib/utils/cookieUtils";
+import { API_CONFIG } from "@/lib/appConfig";
 
 import { logger } from '@/lib/utils/logger';
 import { parseTradeMessagesCancelPayload } from "../utils/tradeMessagesCancelDetection";
@@ -136,6 +137,62 @@ export const useTradeMessagesWebSocket = (options: UseTradeMessagesWebSocketOpti
       try {
         const msgAny = message as Record<string, unknown>;
         console.log("[P2P trade-messages WS] handler tradeId=%s payload=", tradeId, msgAny);
+        const candidatePayload: any =
+          (message as any)?.data && typeof (message as any).data === "object"
+            ? (message as any).data
+            : (message as any);
+        const normalizeStatus = (value: unknown): string => {
+          const s = String(value ?? "").trim().toLowerCase();
+          if (!s) return "";
+          if (s === "canceled") return "cancelled";
+          if (s === "complete") return "completed";
+          return s;
+        };
+        const statusNow = normalizeStatus(
+          candidatePayload?.status ??
+            candidatePayload?.trade_status ??
+            candidatePayload?.order_status ??
+            (message as any)?.status ??
+            (message as any)?.trade_status ??
+            (message as any)?.order_status
+        );
+        const isTerminalStatus =
+          statusNow === "cancelled" ||
+          statusNow === "resolved" ||
+          statusNow === "completed";
+        const payloadTradeId = String(
+          candidatePayload?.trade_id ??
+            candidatePayload?.trade ??
+            (message as any)?.trade_id ??
+            ""
+        ).trim();
+        const isForCurrentTrade =
+          !payloadTradeId ||
+          !tradeId ||
+          payloadTradeId.toLowerCase() === String(tradeId).trim().toLowerCase();
+        if (isTerminalStatus && isForCurrentTrade && statusNow === "cancelled" && tradeId?.trim()) {
+          if (!cancelModalFiredRef.current) {
+            cancelModalFiredRef.current = true;
+            const terminalDetail = String(
+              candidatePayload?.message ?? (message as any)?.message ?? ""
+            ).trim();
+            onTradeCanceledRef.current?.({
+              status: statusNow,
+              message: terminalDetail || undefined,
+            });
+            if (typeof window !== "undefined") {
+              window.dispatchEvent(
+                new CustomEvent(P2P_TRADE_CANCELED_EVENT, {
+                  detail: {
+                    tradeId,
+                    message: terminalDetail || undefined,
+                    source: "trade-messages-ws-fastpath",
+                  },
+                })
+              );
+            }
+          }
+        }
 
         const { shouldNotify, status: statusRaw, message: detail } =
           parseTradeMessagesCancelPayload(msgAny, tradeId);
@@ -162,31 +219,49 @@ export const useTradeMessagesWebSocket = (options: UseTradeMessagesWebSocketOpti
 
         // Accept message payloads even when backend uses non-standard `type`
         // or puts message fields at root instead of `data`.
-        const candidatePayload: any =
-          (message as any)?.data && typeof (message as any).data === "object"
-            ? (message as any).data
-            : (message as any);
-        const looksLikeChatMessage =
+        const hasMessageBodyOrMedia =
           candidatePayload &&
-          candidatePayload.id != null &&
           (candidatePayload.message != null ||
+            candidatePayload.content != null ||
             Array.isArray(candidatePayload.images) ||
             Array.isArray(candidatePayload.uploaded_images) ||
             Array.isArray(candidatePayload.audios) ||
             Array.isArray(candidatePayload.uploaded_audios) ||
             candidatePayload.audio_url != null ||
             candidatePayload.audio != null);
+        const looksLikeChatMessage = Boolean(hasMessageBodyOrMedia);
         if (looksLikeChatMessage) {
+          const resolvedId =
+            candidatePayload.id ??
+            candidatePayload.message_id ??
+            candidatePayload.uuid ??
+            `${String(
+              candidatePayload.trade_id ?? candidatePayload.trade ?? tradeId
+            )}-${String(
+              candidatePayload.timestamp ?? new Date().toISOString()
+            )}-${String(
+              candidatePayload.sender_id ??
+                candidatePayload.sender ??
+                candidatePayload.sender_name ??
+                "unknown"
+            )}`;
           const normalized: TradeMessage = {
-            id: candidatePayload.id,
+            id: String(resolvedId),
             trade:
               candidatePayload.trade ||
               candidatePayload.trade_id ||
               parseInt(tradeId),
             trade_id: candidatePayload.trade_id ?? tradeId,
-            sender: candidatePayload.sender,
-            sender_name: candidatePayload.sender_name,
-            message: candidatePayload.message || "",
+            sender:
+              candidatePayload.sender ??
+              candidatePayload.sender_id ??
+              candidatePayload.sender_name ??
+              "",
+            sender_name:
+              candidatePayload.sender_name ??
+              candidatePayload.sender_email ??
+              String(candidatePayload.sender ?? ""),
+            message: candidatePayload.message ?? candidatePayload.content ?? "",
             images:
               candidatePayload.images ||
               candidatePayload.uploaded_images ||
@@ -240,7 +315,12 @@ export const useTradeMessagesWebSocket = (options: UseTradeMessagesWebSocketOpti
           case "new_message":
           case "message_received":
             // New message received - the data IS the message itself
-            if (message.data && message.data.id) {
+            if (
+              message.data &&
+              (message.data.id != null ||
+                message.data.message_id != null ||
+                message.data.uuid != null)
+            ) {
               // Log detailed info about incoming message
               logger.debug('p2p', "📨 New message received via WebSocket:", {
                 id: message.data.id,
@@ -252,12 +332,23 @@ export const useTradeMessagesWebSocket = (options: UseTradeMessagesWebSocketOpti
               });
               
               const newMessage: TradeMessage = {
-                id: message.data.id,
+                id: String(
+                  message.data.id ??
+                    message.data.message_id ??
+                    message.data.uuid
+                ),
                 trade: message.data.trade || parseInt(tradeId),
                 trade_id: message.data.trade_id ?? tradeId,
-                sender: message.data.sender,
-                sender_name: message.data.sender_name,
-                message: message.data.message,
+                sender:
+                  message.data.sender ??
+                  message.data.sender_id ??
+                  message.data.sender_name ??
+                  "",
+                sender_name:
+                  message.data.sender_name ??
+                  message.data.sender_email ??
+                  String(message.data.sender ?? ""),
+                message: message.data.message ?? message.data.content ?? "",
                 // IMPORTANT: Set images array even if empty - this signals that refresh is needed
                 images: message.data.images || [],
                 audios: message.data.audios || message.data.uploaded_audios || [],
@@ -326,7 +417,13 @@ export const useTradeMessagesWebSocket = (options: UseTradeMessagesWebSocketOpti
       // Silent open handling
     });
 
-    // Connect to WebSocket
+    // Log and connect to WebSocket (helps verify exact socket endpoint in runtime).
+    try {
+      const wsUrl = API_CONFIG.P2P.SOCKETS.TRADE_MESSAGES(tradeId, token);
+      console.log("[P2P trade-messages WS] connecting URL:", wsUrl);
+    } catch (e) {
+      console.warn("[P2P trade-messages WS] failed to build URL for logging");
+    }
     ws.connect(tradeId, token);
 
     // Cleanup function
