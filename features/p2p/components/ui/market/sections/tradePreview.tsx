@@ -332,6 +332,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
     totalWalletBalance,
   ].filter((v) => Number.isFinite(v) && v >= 0);
   const walletBalance = Math.max(0, ...walletBalanceCandidates, 0);
+  const absoluteMinimumAmount = 10;
   const handleSendAmountChange = (value: string) => {
     setActiveField("send");
 
@@ -376,6 +377,13 @@ const TradePreview: React.FC<TradePreviewProps> = ({
         return;
       }
 
+      // Global minimum regardless of ad limits.
+      if (numericAmount < absoluteMinimumAmount) {
+        setIsAmountValid(false);
+        setErrorMessage(`Amount cannot be less than ${absoluteMinimumAmount.toFixed(2)} USDT`);
+        return;
+      }
+
       // Same bounds as displayed "Range: … USDT" (fiat limits → USDT; do not mix fiat min with USDT remainder).
       const minUsdt = sellRangeMinUsdt;
       const maxUsdt = sellRangeMaxUsdt;
@@ -415,8 +423,15 @@ const TradePreview: React.FC<TradePreviewProps> = ({
       const calculatedReceive = numericAmount / commissionRate;
       const maxSendAmount = availableAmount * commissionRate;
 
-      // Buy minimum is fixed at 10 in selected range currency.
-      const effectiveMin = 10;
+      // Global minimum regardless of ad limits.
+      if (numericAmount < absoluteMinimumAmount) {
+        setIsAmountValid(false);
+        setErrorMessage(`Amount cannot be less than ${absoluteMinimumAmount.toFixed(2)} ${rangeLimitSuffix}`);
+        return;
+      }
+
+      // Use the same min/max shown in the UI range for live validation.
+      const effectiveMin = buyRangeMin;
       const effectiveMax = Math.min(buyRangeMax, maxSendAmount);
 
       if (numericAmount < effectiveMin) {
@@ -498,6 +513,22 @@ const TradePreview: React.FC<TradePreviewProps> = ({
         return;
       }
 
+      // Global minimum for typed receive amount in the current range currency (USD/KES).
+      if (numericAmount < absoluteMinimumAmount) {
+        setIsAmountValid(false);
+        setErrorMessage(
+          `Amount cannot be less than ${absoluteMinimumAmount.toFixed(2)} ${rangeLimitSuffix}`
+        );
+        return;
+      }
+
+      // Global minimum regardless of ad limits (normalized to USDT).
+      if (calculatedSendUsdt < absoluteMinimumAmount) {
+        setIsAmountValid(false);
+        setErrorMessage(`Amount cannot be less than ${absoluteMinimumAmount.toFixed(2)} USDT`);
+        return;
+      }
+
       const minUsdt = sellRangeMinUsdt;
       const maxUsdt = sellRangeMaxUsdt;
       const minUsd = minUsdt * commissionRate;
@@ -525,6 +556,14 @@ const TradePreview: React.FC<TradePreviewProps> = ({
       const calculatedSendKes = numericAmount * commissionRate;
       const maxSendAmount = availableAmount * commissionRate;
 
+      // Global minimum regardless of ad limits.
+      if (numericAmount < absoluteMinimumAmount) {
+        setIsAmountValid(false);
+        setErrorMessage(`Amount cannot be less than ${absoluteMinimumAmount.toFixed(2)} USDT`);
+        setSendAmount("");
+        return;
+      }
+
       if (numericAmount > availableAmount) {
         setIsAmountValid(false);
         setErrorMessage(`Amount cannot exceed available (${availableAmount.toFixed(2)} USDT)`);
@@ -532,8 +571,8 @@ const TradePreview: React.FC<TradePreviewProps> = ({
         return;
       }
 
-      // Buy minimum is fixed at 10 in selected range currency.
-      const effectiveMin = 10;
+      // Use the same min/max shown in the UI range for live validation.
+      const effectiveMin = buyRangeMin;
       const effectiveMax = Math.min(buyRangeMax, maxSendAmount);
 
       if (calculatedSendKes < effectiveMin) {
