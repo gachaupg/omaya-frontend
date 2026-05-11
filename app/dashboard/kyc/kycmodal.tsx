@@ -208,6 +208,15 @@ const KYCVerificationModal: React.FC = () => {
 
   const handleManualVerificationClick = async () => {
     setError(null);
+    // Always reset image capture state when starting/resubmitting manual KYC.
+    // This prevents stale "Face Verification Complete" status from previous attempts.
+    setDocumentFrontImage(null);
+    setDocumentBackImage(null);
+    setFaceImage(null);
+    setFaceDetectionData(null);
+    setDocumentFrontPreview(null);
+    setDocumentBackPreview(null);
+    setFacePreview(null);
     
     // Check if email OTP is already verified
     if (
@@ -328,8 +337,12 @@ const KYCVerificationModal: React.FC = () => {
           showToast.error("Please complete face verification");
           return false;
         }
-        // Face image validation is optional - face detection data is sufficient
-        // The image will be included if available, but not required for submission
+        // Require an actual selfie image file so resubmissions always include a face image.
+        if (!(faceImage instanceof File)) {
+          setError("Please capture your face image before submitting");
+          showToast.error("Please capture your face image before submitting");
+          return false;
+        }
         return true;
       default:
         return true;
@@ -469,11 +482,13 @@ const KYCVerificationModal: React.FC = () => {
       if (documentBackImage) {
         formData.append('kyc_images', documentBackImage, 'document-back.jpg');
       }
-      // Only add face image if it has been successfully converted to a File
+      // Face image is mandatory for manual_with_face_detection submissions.
       if (faceImage && faceImage instanceof File) {
         formData.append('kyc_images', faceImage, 'face-verification.jpg');
-      } else if (facePreview) {
-        // If face image File is not ready but we have preview, include it as base64 in face_data
+      } else {
+        setError("Please capture your face image before submitting");
+        showToast.error("Please capture your face image before submitting");
+        return;
       }
       
       // Add face detection data
@@ -486,6 +501,11 @@ const KYCVerificationModal: React.FC = () => {
       const kycImages = [documentFrontImage, documentBackImage, faceImage].filter(
         (img): img is File => img instanceof File
       );
+      if (kycImages.length < 3) {
+        setError("Please provide all required images: front, back, and face");
+        showToast.error("Please provide all required images: front, back, and face");
+        return;
+      }
       
      
       const result = await dispatch(verifyKYCStatus({

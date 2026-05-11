@@ -229,7 +229,19 @@ export const useTradeMessagesWebSocket = (options: UseTradeMessagesWebSocketOpti
             Array.isArray(candidatePayload.uploaded_audios) ||
             candidatePayload.audio_url != null ||
             candidatePayload.audio != null);
-        const looksLikeChatMessage = Boolean(hasMessageBodyOrMedia);
+        const rawType = String((message as any)?.type ?? "").trim().toLowerCase();
+        const payloadMessageText = String(
+          candidatePayload?.message ?? candidatePayload?.content ?? ""
+        )
+          .trim()
+          .toLowerCase();
+        const isSystemConnectionPayload =
+          rawType === "connection_established" ||
+          payloadMessageText === "websocket connected for p2p trade messages" ||
+          payloadMessageText === "websocket connected";
+        const looksLikeChatMessage = Boolean(
+          hasMessageBodyOrMedia && !isSystemConnectionPayload
+        );
         if (looksLikeChatMessage) {
           const resolvedId =
             candidatePayload.id ??

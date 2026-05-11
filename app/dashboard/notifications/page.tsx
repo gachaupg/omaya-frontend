@@ -7,6 +7,7 @@ import { FaUserCircle, FaChevronRight } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import { fetchMatchedTrades } from "@/features/p2p/slices/matchedTradesSlice";
 import { MatchedTradesResponse } from "@/features/p2p/types";
+import { useMatchedTradesWebSocket } from "@/features/p2p/hooks/useMatchedTradesWebSocket";
 import { div } from "framer-motion/client";
 
 /** When owner === logged user: show order_type as-is (Buy/Sell). When not owner: show counterparty action (buy ad → Sell, sell ad → Buy). */
@@ -43,6 +44,12 @@ const Notifications = () => {
   );
   const { user } = useSelector((state: RootState) => state.auth);
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
+  // Keep notifications in sync with the bell using the same matched-trades socket.
+  useMatchedTradesWebSocket({
+    enabled: isAuthenticated,
+    fallbackToPolling: true,
+    pollingInterval: 30000,
+  });
 
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);

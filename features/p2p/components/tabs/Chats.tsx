@@ -185,7 +185,12 @@ export const Chats: React.FC = () => {
   useUnreadMessagesWebSocket({
     enabled: isAuthenticated,
     onNewMessage: () => {
-      refetch();
+      if (unreadRefetchTimeoutRef.current) {
+        clearTimeout(unreadRefetchTimeoutRef.current);
+      }
+      unreadRefetchTimeoutRef.current = setTimeout(() => {
+        refetch();
+      }, 1200);
     },
     onRecentMessages: (messages: RecentMessage[]) => {
       if (!Array.isArray(messages) || messages.length === 0) return;
@@ -213,6 +218,9 @@ export const Chats: React.FC = () => {
         for (let i = 0; i < next.length; i++) {
           const group: any = next[i];
           const entityId = String(group?.entity_id ?? "").trim();
+          if (entityId && closedEntityIdsRef.current.has(entityId)) {
+            continue;
+          }
           const recent = latestByEntity.get(entityId);
           if (!recent) continue;
 
@@ -258,6 +266,14 @@ export const Chats: React.FC = () => {
       });
     },
   });
+
+  useEffect(() => {
+    return () => {
+      if (unreadRefetchTimeoutRef.current) {
+        clearTimeout(unreadRefetchTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const [selectedUser, setSelectedUser] = useState<GroupedUser | null>(null);
   const [liveGroupedUsers, setLiveGroupedUsers] = useState<GroupedUser[]>([]);
@@ -317,6 +333,7 @@ export const Chats: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const wsRef = useRef<any>(null);
   const mediaRefetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const unreadRefetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [optimisticMessages, setOptimisticMessages] = useState<Map<string, any[]>>(new Map());
   const [statusOverridesByEntity, setStatusOverridesByEntity] = useState<Map<string, string>>(new Map());
   const justAddedOptimisticRef = useRef<boolean>(false);
@@ -337,7 +354,60 @@ export const Chats: React.FC = () => {
   const longPressTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
-    setLiveGroupedUsers(groupedUsers || []);
+    setLiveGroupedUsers((prev) => {
+      const incoming = (groupedUsers || []).filter((g: any) => {
+        const entityId = String(g?.entity_id ?? "").trim();
+        return !entityId || !closedEntityIdsRef.current.has(entityId);
+      });
+      if (!prev || prev.length === 0) return incoming;
+
+      const byEntity = new Map<string, any>();
+      for (const p of prev as any[]) {
+        const entityId = String(p?.entity_id ?? "").trim();
+        if (entityId && closedEntityIdsRef.current.has(entityId)) continue;
+        byEntity.set(entityId, p);
+      }
+
+      for (const g of incoming as any[]) {
+        const entityId = String(g?.entity_id ?? "").trim();
+        if (!entityId) continue;
+        if (closedEntityIdsRef.current.has(entityId)) continue;
+        const existing = byEntity.get(entityId);
+        if (!existing) {
+          byEntity.set(entityId, g);
+          continue;
+        }
+
+        const existingMessages = Array.isArray(existing?.messages)
+          ? existing.messages
+          : [];
+        const incomingMessages = Array.isArray(g?.messages) ? g.messages : [];
+        const mergedById = new Map<string, any>();
+        for (const m of existingMessages) mergedById.set(String(m?.id ?? ""), m);
+        for (const m of incomingMessages) {
+          const id = String(m?.id ?? "");
+          const prevMsg = mergedById.get(id);
+          mergedById.set(id, prevMsg ? { ...prevMsg, ...m } : m);
+        }
+        const mergedMessages = Array.from(mergedById.values()).sort(
+          (a: any, b: any) =>
+            new Date(String(b?.timestamp || 0)).getTime() -
+            new Date(String(a?.timestamp || 0)).getTime()
+        );
+
+        byEntity.set(entityId, {
+          ...existing,
+          ...g,
+          messages: mergedMessages,
+        });
+      }
+
+      return Array.from(byEntity.values()).sort((a: any, b: any) => {
+        const aTs = new Date(String(a?.messages?.[0]?.timestamp || 0)).getTime();
+        const bTs = new Date(String(b?.messages?.[0]?.timestamp || 0)).getTime();
+        return bTs - aTs;
+      });
+    });
   }, [groupedUsers]);
 
   const isUuid = (value: unknown): boolean =>
@@ -456,56 +526,8 @@ export const Chats: React.FC = () => {
     (entityId: string, status: string) => {
       const normalizedStatus = normalizeChatStatus(status);
       if (!entityId || !isTerminalChatStatus(normalizedStatus)) return;
-      if (closedEntityIdsRef.current.has(entityId)) return;
-      closedEntityIdsRef.current.add(entityId);
-
-      const statusLabel =
-        normalizedStatus === "cancelled"
-          ? "cancelled"
-          : normalizedStatus === "resolved"
-          ? "resolved"
-          : "completed";
-
-      setLiveGroupedUsers((prev) =>
-        Array.isArray(prev)
-          ? prev.filter(
-              (group: any) =>
-                String(group?.entity_id ?? "").trim() !== String(entityId).trim()
-            )
-          : prev
-      );
-
-      setStatusOverridesByEntity((prev) => {
-        if (!prev.has(entityId)) return prev;
-        const next = new Map(prev);
-        next.delete(entityId);
-        return next;
-      });
-
-      setOptimisticMessages((prev) => {
-        if (!prev.has(entityId)) return prev;
-        const next = new Map(prev);
-        next.delete(entityId);
-        return next;
-      });
-
-      setHiddenMessageIdsByEntity((prev) => {
-        if (!prev.has(entityId)) return prev;
-        const next = new Map(prev);
-        next.delete(entityId);
-        return next;
-      });
-
-      setSelectedUser((prev) => {
-        if (!prev) return prev;
-        const prevEntityId = String((prev as any)?.entity_id ?? "").trim();
-        if (prevEntityId !== String(entityId).trim()) return prev;
-        return null;
-      });
-
-      setShowChatView(false);
-      setShowEmojiPicker(false);
-      showToast.info("Chat closed", `This chat was ${statusLabel} by admin.`);
+      // Keep cancelled/resolved/completed chats visible in the list.
+      // We only keep status updated; no auto-removal/no auto-navigation.
     },
     [isTerminalChatStatus, normalizeChatStatus]
   );

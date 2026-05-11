@@ -215,10 +215,26 @@ const ChatBox: React.FC<{
 
   // Sort messages by timestamp and filter out duplicate optimistic messages
   const sortedMessages = React.useMemo(() => {
-    // Messages are already partitioned in Redux by the current tradeId key.
-    // Do not hard-filter by payload trade fields here; some WS payloads carry
-    // alternate IDs and would be incorrectly hidden (appearing as "delayed").
-    const messages = [...messagesFromRedux];
+    const numericTradeId = Number(tradeId);
+    const hasNumericTradeId = Number.isFinite(numericTradeId) && String(tradeId).trim() !== "";
+
+    // Keep this chat isolated to the current trade.
+    // We still allow optimistic temp rows that may not carry trade identifiers yet.
+    const messages = [...messagesFromRedux].filter((msg: any) => {
+      const messageId = String(msg?.id ?? "").trim();
+      if (messageId.startsWith("temp-")) return true;
+
+      if (msg?.trade_id != null) {
+        return String(msg.trade_id).trim() === String(tradeId).trim();
+      }
+
+      if (msg?.trade != null && hasNumericTradeId) {
+        const msgTradeNum = Number(msg.trade);
+        return Number.isFinite(msgTradeNum) && msgTradeNum === numericTradeId;
+      }
+
+      return false;
+    });
 
     // Separate temp messages from real messages
     const tempMessages = messages.filter(msg => msg.id.toString().startsWith('temp-'));
@@ -246,6 +262,16 @@ const ChatBox: React.FC<{
     // Final dedupe pass for near-identical messages from WS + API races.
     const seen = new Set<string>();
     return combined.filter((msg) => {
+      const systemText = String((msg as any)?.message ?? "").trim().toLowerCase();
+      const senderName = String((msg as any)?.sender_name ?? "").trim().toLowerCase();
+      const isSystemConnectionRow =
+        systemText === "websocket connected for p2p trade messages" ||
+        systemText === "websocket connected" ||
+        (senderName === "unknown user" &&
+          (systemText.includes("websocket connected") ||
+            systemText.includes("connection established")));
+      if (isSystemConnectionRow) return false;
+
       const key = `${msg.sender_name || ""}|${msg.message || ""}|${new Date(msg.timestamp).getTime()}`;
       if (seen.has(key)) return false;
       seen.add(key);
