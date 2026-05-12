@@ -241,15 +241,30 @@ const ChatBox: React.FC<{
     const realMessages = messages.filter(msg => !msg.id.toString().startsWith('temp-'));
 
     // Remove temp messages that have a matching real message (same content and similar timestamp)
-    const filteredTempMessages = tempMessages.filter(tempMsg => {
-      const hasDuplicate = realMessages.some(realMsg => {
-        const isSameSender = realMsg.sender_name === tempMsg.sender_name;
-        const isSameMessage = realMsg.message === tempMsg.message;
+    const normalize = (v: unknown) => String(v ?? "").trim().toLowerCase();
+    const currentUserNorm = normalize(currentUserEmail);
+    const isMine = (msg: any) => {
+      const senderName = normalize(msg?.sender_name);
+      const sender = normalize(msg?.sender);
+      return !!currentUserNorm && (senderName === currentUserNorm || sender === currentUserNorm);
+    };
+    const filteredTempMessages = tempMessages.filter((tempMsg) => {
+      const hasDuplicate = realMessages.some((realMsg) => {
+        const sameText = normalize(realMsg.message) === normalize(tempMsg.message);
+        const sameSender =
+          normalize(realMsg.sender_name) === normalize(tempMsg.sender_name) ||
+          normalize(realMsg.sender) === normalize(tempMsg.sender) ||
+          (isMine(realMsg) && isMine(tempMsg));
+        const sameMediaShape =
+          (Array.isArray((realMsg as any).images) ? (realMsg as any).images.length : 0) ===
+            (Array.isArray((tempMsg as any).images) ? (tempMsg as any).images.length : 0) &&
+          (Array.isArray((realMsg as any).audios) ? (realMsg as any).audios.length : 0) ===
+            (Array.isArray((tempMsg as any).audios) ? (tempMsg as any).audios.length : 0);
         const timeDiff = Math.abs(
           new Date(realMsg.timestamp).getTime() - new Date(tempMsg.timestamp).getTime()
         );
-        // Consider it a duplicate if sent within 10 seconds
-        return isSameSender && isSameMessage && timeDiff < 10000;
+        // Treat optimistic + server-echo as duplicate within short send window.
+        return sameText && sameSender && sameMediaShape && timeDiff < 15000;
       });
       return !hasDuplicate;
     });
@@ -277,7 +292,7 @@ const ChatBox: React.FC<{
       seen.add(key);
       return true;
     });
-  }, [messagesFromRedux, tradeId]);
+  }, [messagesFromRedux, tradeId, currentUserEmail]);
 
   const apiTradeId = React.useMemo(() => {
     if (isValidTradeIdForMessages(tradeId)) return tradeId;

@@ -806,8 +806,32 @@ export const Chats: React.FC = () => {
         }
 
         hideMessageLocally(entityId, messageId);
+        // Immediately update current chat + conversation list preview to the next
+        // remaining message so the sidebar doesn't keep showing the deleted one.
+        setSelectedUser((prev) => {
+          if (!prev) return prev;
+          const existing = Array.isArray((prev as any).messages)
+            ? (prev as any).messages
+            : [];
+          return {
+            ...prev,
+            messages: existing.filter((m: any) => String(m?.id ?? "") !== messageId),
+          } as GroupedUser;
+        });
+        setLiveGroupedUsers((prev) =>
+          (prev || []).map((g: any) => {
+            if (String(g?.entity_id ?? "").trim() !== String(entityId).trim()) return g;
+            const existing = Array.isArray(g?.messages) ? g.messages : [];
+            return {
+              ...g,
+              messages: existing.filter((m: any) => String(m?.id ?? "") !== messageId),
+            };
+          })
+        );
         setDeleteMenu(null);
         showToast.success("Message deleted");
+        // Keep backend/frontend in sync after local instant update.
+        refetch();
       } catch (error: any) {
         const apiMsg =
           error?.response?.data?.error ||
@@ -1004,6 +1028,48 @@ export const Chats: React.FC = () => {
         refetch();
       }
 
+      // Realtime delete propagation: remove deleted messages for both users immediately.
+      const deleteType = String(wsMessage?.type ?? payload?.type ?? "")
+        .trim()
+        .toLowerCase();
+      const deleteFlag =
+        Boolean((payload as any)?.deleted) ||
+        Boolean((payload as any)?.is_deleted) ||
+        deleteType.includes("delete");
+      const deletedMessageId = String(
+        (payload as any)?.message_id ??
+        (payload as any)?.id ??
+        (payload as any)?.deleted_message_id ??
+        ""
+      ).trim();
+      if (deleteFlag && deletedMessageId && isCurrentTrade) {
+        const currentEntityId = String(selectedUser?.entity_id || "").trim();
+        if (currentEntityId) {
+          hideMessageLocally(currentEntityId, deletedMessageId);
+          setSelectedUser((prev) => {
+            if (!prev) return prev;
+            const existing = Array.isArray((prev as any).messages) ? (prev as any).messages : [];
+            return {
+              ...prev,
+              messages: existing.filter((m: any) => String(m?.id ?? "") !== deletedMessageId),
+            } as GroupedUser;
+          });
+          setLiveGroupedUsers((prev) =>
+            (prev || []).map((g: any) => {
+              if (String(g?.entity_id || "").trim() !== currentEntityId) return g;
+              const existing = Array.isArray(g?.messages) ? g.messages : [];
+              return {
+                ...g,
+                messages: existing.filter((m: any) => String(m?.id ?? "") !== deletedMessageId),
+              };
+            })
+          );
+        }
+        // Safety refetch in case backend sends tombstone/placeholder updates.
+        refetch();
+        return;
+      }
+
       // Accept both explicit message types and message-shaped payloads.
       const isMessageEvent =
         wsMessage?.type === "new_message" ||
@@ -1107,6 +1173,64 @@ export const Chats: React.FC = () => {
           ...prev,
           messages: [normalizedMessage as any, ...existing],
         } as GroupedUser;
+      });
+      // Keep conversation sidebar in sync immediately for incoming messages too.
+      setLiveGroupedUsers((prev) => {
+        const list = Array.isArray(prev) ? [...prev] : [];
+        const entityId = String(selectedUser?.entity_id ?? "").trim();
+        if (!entityId) return prev;
+        const idx = list.findIndex(
+          (g: any) => String(g?.entity_id ?? "").trim() === entityId
+        );
+        if (idx === -1) return prev;
+        const group: any = list[idx];
+        const existing = Array.isArray(group?.messages) ? group.messages : [];
+        const existingIndex = existing.findIndex(
+          (m: any) => String(m?.id ?? "") === String(normalizedMessage.id)
+        );
+        let nextMessages: any[];
+        if (existingIndex !== -1) {
+          const current = existing[existingIndex] || {};
+          const merged = {
+            ...current,
+            ...normalizedMessage,
+            content:
+              normalizedMessage.content?.trim() ||
+              current.content ||
+              current.message ||
+              "",
+            message:
+              normalizedMessage.message?.trim() ||
+              current.message ||
+              current.content ||
+              "",
+            images:
+              Array.isArray(normalizedMessage.images) &&
+              normalizedMessage.images.length > 0
+                ? normalizedMessage.images
+                : Array.isArray(current.images)
+                  ? current.images
+                  : [],
+            audios:
+              Array.isArray(normalizedMessage.audios) &&
+              normalizedMessage.audios.length > 0
+                ? normalizedMessage.audios
+                : Array.isArray(current.audios)
+                  ? current.audios
+                  : [],
+          };
+          nextMessages = [...existing];
+          nextMessages[existingIndex] = merged;
+        } else {
+          nextMessages = [normalizedMessage as any, ...existing];
+        }
+        const nextGroup = {
+          ...group,
+          messages: nextMessages,
+        };
+        list.splice(idx, 1);
+        list.unshift(nextGroup);
+        return list;
       });
 
       // Media can arrive delayed on backend processing; if socket payload is empty/blank,
@@ -1373,6 +1497,24 @@ export const Chats: React.FC = () => {
       timestamp: new Date().toISOString(),
       isOptimistic: true,
     };
+    const applyOptimisticPreviewToSidebar = (entityId: string, optimisticMsg: any) => {
+      setLiveGroupedUsers((prev) => {
+        const list = Array.isArray(prev) ? [...prev] : [];
+        const idx = list.findIndex(
+          (g: any) => String(g?.entity_id ?? "").trim() === String(entityId).trim()
+        );
+        if (idx === -1) return prev;
+        const group: any = list[idx];
+        const existing = Array.isArray(group?.messages) ? group.messages : [];
+        const nextGroup = {
+          ...group,
+          messages: [optimisticMsg, ...existing],
+        };
+        list.splice(idx, 1);
+        list.unshift(nextGroup);
+        return list;
+      });
+    };
     setOptimisticMessages((prev) => {
       const newMap = new Map(prev);
       const entityId = selectedUser.entity_id;
@@ -1380,6 +1522,7 @@ export const Chats: React.FC = () => {
       newMap.set(entityId, [...existing, optimisticMessage]);
       return newMap;
     });
+    applyOptimisticPreviewToSidebar(selectedUser.entity_id, optimisticMessage);
     justAddedOptimisticRef.current = true;
     setTimeout(() => { justAddedOptimisticRef.current = false; }, 500);
     setIsSending(true);
@@ -1485,6 +1628,24 @@ export const Chats: React.FC = () => {
       timestamp: new Date().toISOString(),
       isOptimistic: true, // Flag to identify optimistic messages
     };
+    const applyOptimisticPreviewToSidebar = (entityId: string, optimisticMsg: any) => {
+      setLiveGroupedUsers((prev) => {
+        const list = Array.isArray(prev) ? [...prev] : [];
+        const idx = list.findIndex(
+          (g: any) => String(g?.entity_id ?? "").trim() === String(entityId).trim()
+        );
+        if (idx === -1) return prev;
+        const group: any = list[idx];
+        const existing = Array.isArray(group?.messages) ? group.messages : [];
+        const nextGroup = {
+          ...group,
+          messages: [optimisticMsg, ...existing],
+        };
+        list.splice(idx, 1);
+        list.unshift(nextGroup);
+        return list;
+      });
+    };
 
     // Add optimistic message immediately - this will be picked up by displayedMessages useMemo
     setOptimisticMessages((prev) => {
@@ -1498,6 +1659,7 @@ export const Chats: React.FC = () => {
       newMap.set(entityId, [...existing, optimisticMessage]);
       return newMap;
     });
+    applyOptimisticPreviewToSidebar(selectedUser.entity_id, optimisticMessage);
 
     // Set flag to prevent useEffect from overwriting selectedUser immediately
     justAddedOptimisticRef.current = true;
