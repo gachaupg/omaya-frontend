@@ -31,6 +31,8 @@ type TableProps = {
   showExportButton?: boolean;
   /** When true, hide the title + ALL + Search + Export row (for parent-provided toolbar) */
   hideToolbar?: boolean;
+  /** When true with type "p2p", hide the table toolbar date dropdown (parent already filters by date, e.g. Orders page). */
+  hideP2PDateFilter?: boolean;
   /** When hideToolbar is true, use this for export search filter */
   externalSearchQuery?: string;
 };
@@ -58,6 +60,7 @@ export const Table = forwardRef<TableExportRef, TableProps>(({
   dateFilter: externalDateFilter,
   showExportButton = true,
   hideToolbar = false,
+  hideP2PDateFilter = false,
   externalSearchQuery,
 }, ref) => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -646,7 +649,7 @@ export const Table = forwardRef<TableExportRef, TableProps>(({
               {title}
             </h3>
 
-            {type === "p2p" && (
+            {type === "p2p" && !hideP2PDateFilter && (
               <div className="relative w-full sm:w-auto sm:min-w-[80px]" ref={dateDropdownRef}>
                 <div className="flex items-center gap-2">
                   <div className="relative flex-1 sm:flex-initial">

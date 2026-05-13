@@ -250,9 +250,9 @@ export const tokenOptions = [
   { value: "usdt", label: "Tether", icon: "tether" },
   // Add more tokens as needed
 ];
-// Currency options for Filters
+// Currency options for Filters (Orders / P2P — generic USDT, not chain-specific artwork)
 export const currencyOptions = [
-  { value: "usdt", label: "USDT" },
+  { value: "usdt", label: "USDT", logo: "/images/tether.svg" },
   // Add more currencies as needed
 ];
 

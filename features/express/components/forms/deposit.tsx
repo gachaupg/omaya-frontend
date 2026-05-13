@@ -921,6 +921,17 @@ export default function DepositForm({
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [hasAutoExpanded, setHasAutoExpanded] = useState(false);
   const [isRestoringFromInitialState, setIsRestoringFromInitialState] = useState(false);
+
+  const getDefaultPaymentMethod = (methods: any[]) => {
+    const salaamMethod = methods.find((method: any) =>
+      getPaymentMethodKey(method).toLowerCase().includes("salaam")
+    );
+    if (salaamMethod) {
+      return salaamMethod;
+    }
+    return methods[1] || methods[0];
+  };
+
   // Auto-select payment method - respect initialState from login redirect
   useEffect(() => {
     if (paymentMethodsForSelect.length === 0) {
@@ -946,7 +957,7 @@ export default function DepositForm({
     );
 
     if (!payBank || !hasSelected) {
-      const defaultMethod = paymentMethodsForSelect[1] || paymentMethodsForSelect[0];
+      const defaultMethod = getDefaultPaymentMethod(paymentMethodsForSelect);
       const key =
         getPaymentMethodKey(defaultMethod) ||
         (defaultMethod?.provider_id != null ? String(defaultMethod.provider_id) : "");

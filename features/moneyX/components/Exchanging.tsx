@@ -1003,6 +1003,12 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
     liveCurrency ||
     effectiveTransactionData?.currency ||
     "USD";
+  const fromPaymentAccountNumber = String(
+    effectiveTransactionData?.fromPaymentMethod?.account_number ||
+      effectiveTransactionData?.fromPaymentMethod?.payment_details?.[0]
+        ?.account_number ||
+      ""
+  ).trim();
   const handleFailureModalClose = () => {
     setFailureModal({ isOpen: false, status: "", message: undefined });
     localStorage.removeItem("moneyx_transaction_data");
@@ -1156,7 +1162,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                   className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
                     } text-[10px] sm:text-xs font-semibold mb-0.5 mt-2 sm:mt-3`}
                 >
-                   Payment Method:
+                  From Payment Method:
                 </div>
                 <div className="flex items-center mb-2 gap-1 sm:gap-2 w-full min-w-0">
                   {effectiveTransactionData.fromPaymentMethod.provider_logo ||
@@ -1181,6 +1187,28 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                     {effectiveTransactionData.fromPaymentMethod.provider_name}
                   </span>
                 </div>
+                {fromPaymentAccountNumber && (
+                  <>
+                    <div
+                      className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                        } text-[10px] sm:text-xs font-semibold mb-0.5 mt-2`}
+                    >
+                      Bank Account Address:
+                    </div>
+                    <div className="flex items-center mb-2 gap-2 w-full">
+                      <span
+                        className={`${isDark ? "text-white" : "text-gray-900"
+                          } text-[10px] sm:text-xs font-mono bg-gray-500/10 dark:bg-gray-500/20 px-2 py-1.5 rounded break-all flex-1 min-w-0`}
+                      >
+                        {fromPaymentAccountNumber}
+                      </span>
+                      <CopyButton
+                        value={fromPaymentAccountNumber}
+                        className="flex-shrink-0"
+                      />
+                    </div>
+                  </>
+                )}
               </>
             )}
 
@@ -1190,7 +1218,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                   className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
                     } text-[10px] sm:text-xs font-semibold mb-0.5 mt-2 sm:mt-3`}
                 >
-                   Payment Method:
+                  To Payment Method:
                 </div>
                 <div className="flex items-center mb-2 gap-1 sm:gap-2 w-full min-w-0">
                   {effectiveTransactionData.toPaymentMethod.provider_logo ||
@@ -1218,29 +1246,6 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
               </>
             )}
 
-            {/* Bank Account Address */}
-            {effectiveTransactionData?.walletAddress && (
-              <>
-                <div
-                  className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                    } text-[10px] sm:text-xs font-semibold mb-0.5 mt-2 sm:mt-3`}
-                >
-                  Bank Account Address:
-                </div>
-                <div className="flex items-center mb-2 gap-2 w-full">
-                  <span
-                    className={`${isDark ? "text-white" : "text-gray-900"
-                      } text-[10px] sm:text-xs font-mono bg-gray-500/10 dark:bg-gray-500/20 px-2 py-1.5 rounded break-all flex-1 min-w-0`}
-                  >
-                    {effectiveTransactionData.walletAddress}
-                  </span>
-                  <CopyButton
-                    value={effectiveTransactionData.walletAddress}
-                    className="flex-shrink-0"
-                  />
-                </div>
-              </>
-            )}
           </div>
         </div>
         <div className="flex-shrink-0 ml-0 md:ml-2 md:mr-48 mt-3 sm:mt-2 md:mt-0 flex items-center justify-center py-2">
@@ -1248,7 +1253,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
           <div className="w-28 h-28 sm:w-36 sm:h-36 bg-white rounded-lg flex items-center justify-center">
             <img
               src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
-                ussdCode || effectiveTransactionData?.walletAddress || ""
+                ussdCode || fromPaymentAccountNumber || effectiveTransactionData?.walletAddress || ""
               )}`}
               alt="QR Code"
               className="w-24 h-24 sm:w-32 sm:h-32"
@@ -1758,12 +1763,12 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                   >
                     {effectiveTransactionData.fromPaymentMethod.provider_name}
                   </div>
-                  {effectiveTransactionData.fromPaymentMethod.account_number && (
+                  {fromPaymentAccountNumber && (
                     <div
                       className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
                         } text-xs sm:text-sm font-mono break-all`}
                     >
-                      {effectiveTransactionData.fromPaymentMethod.account_number}
+                      {fromPaymentAccountNumber}
                     </div>
                   )}
                 </div>
@@ -1803,14 +1808,6 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                   >
                     {effectiveTransactionData.toPaymentMethod.provider_name}
                   </div>
-                  {(effectiveTransactionData.walletAddress || effectiveTransactionData.toPaymentMethod.account_number) && (
-                    <div
-                      className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                        } text-xs sm:text-sm font-mono break-all`}
-                    >
-                      {effectiveTransactionData.walletAddress || effectiveTransactionData.toPaymentMethod.account_number}
-                    </div>
-                  )}
                 </div>
               </>
             ) : (

@@ -34,6 +34,13 @@ const extractCryptoNetworkForValidation = (source: string): string => {
   return "";
 };
 
+/** Bank tab: account / mobile number — digits only, max length for long domestic / IBAN-style numeric strings */
+const BANK_TAB_ACCOUNT_MAX_DIGITS = 34;
+const sanitizeBankTabAccountInput = (raw: string) =>
+  String(raw || "")
+    .replace(/\D/g, "")
+    .slice(0, BANK_TAB_ACCOUNT_MAX_DIGITS);
+
 type PaymentDetailPayload = {
   account_name: string;
   account_number: string;
@@ -44,6 +51,24 @@ type PaymentDetailPayload = {
   allow_auto_send?: boolean;
 };
 type PaymentTab = "crypto" | "bank" | "forex";
+
+const maskEmailForOtp = (email: string): string => {
+  const value = String(email || "").trim();
+  if (!value || !value.includes("@")) return "";
+
+  const [localPartRaw, domainRaw] = value.split("@");
+  const localPart = localPartRaw || "";
+  const [domainNameRaw, ...tldParts] = (domainRaw || "").split(".");
+  const domainName = domainNameRaw || "";
+  const tld = tldParts.length > 0 ? `.${tldParts.join(".")}` : "";
+
+  const maskedLocal =
+    localPart.length <= 5
+      ? `${localPart.slice(0, 1)}...`
+      : `${localPart.slice(0, 5)}...`;
+
+  return `${maskedLocal}${domainName}${tld}`;
+};
 
 interface PaymentMethodsModalProps {
   open: boolean;
@@ -82,7 +107,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
   });
   logger.debug('p2p', "Auth state", { isAuthenticated, user });
   const [method, setMethod] = useState("");
-  const [methodTab, setMethodTab] = useState<PaymentTab>("crypto");
+  const [methodTab, setMethodTab] = useState<PaymentTab>("bank");
   const [provider, setProvider] = useState("");
   const [name, setName] = useState("");
   const [account, setAccount] = useState("");
@@ -153,7 +178,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
          logger.debug('p2p', "Error fetching public payment methods:", error);
        }
       setMethod("");
-      setMethodTab("crypto");
+      setMethodTab("bank");
        setProvider("");
        // Auto-populate name with user's full name
        const fullName = user
@@ -310,6 +335,10 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
   }, [processedProvidersFiltered]);
 
   const providers = methodTab === "forex" ? forexBrokerOptions : providersForTab;
+  const maskedUserEmail = React.useMemo(
+    () => maskEmailForOtp(String(user?.email || "")),
+    [user?.email]
+  );
 
   // When filtered to a single provider, auto-select its method and provider
   const singleFilteredProvider = processedProvidersFiltered.length === 1 ? processedProvidersFiltered[0] : null;
@@ -369,14 +398,21 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
 
   const cryptoNetworkForValidation = React.useMemo(() => {
     if (!shouldUseWalletAddressField) return "";
-    const source =
-      selectedCryptoProvider?.payment_method_type ||
-      selectedCryptoProvider?.payment_method_name ||
-      selectedCryptoProvider?.provider_name ||
-      selectedCryptoProvider?.provider ||
-      "";
-    return extractCryptoNetworkForValidation(source);
-  }, [shouldUseWalletAddressField, selectedCryptoProvider]);
+    // Join every hint we have; labels like "Crypto Wallet" alone carry no chain.
+    const source = [
+      selectedCryptoProvider?.payment_method_type,
+      selectedCryptoProvider?.payment_method_name,
+      selectedCryptoProvider?.provider_name,
+      selectedCryptoProvider?.provider,
+      method,
+    ]
+      .filter(Boolean)
+      .join(" ");
+    const inferred = extractCryptoNetworkForValidation(source);
+    // USDT in this modal is validated against BEP20/BSC unless the provider string
+    // clearly indicates another chain (TRC20, ERC20, etc.).
+    return inferred || "bsc";
+  }, [shouldUseWalletAddressField, selectedCryptoProvider, method]);
 
   const {
     result: cryptoAddressValidationResult,
@@ -395,8 +431,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
     cryptoAddressValidationResult !== null &&
     cryptoAddressValidationResult.isValid === false;
   // Require validation once the user starts typing a long-enough address.
-  // We intentionally do NOT require network inference here, because other parts
-  // show the loader/message while typing even if network isn't fully inferred.
+  // Network defaults to BSC when the selected provider label does not name a chain.
   const shouldRequireCryptoValidation =
     shouldUseWalletAddressField && String(account || "").trim().length >= 10;
 
@@ -460,6 +495,24 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
         setOtpFeedback({
           type: "error",
           text: cryptoAddressValidationResult?.message || "Invalid wallet address",
+        });
+        return;
+      }
+    }
+
+    if (methodTab === "bank") {
+      const digits = String(account || "").trim();
+      if (!/^\d+$/.test(digits)) {
+        setOtpFeedback({
+          type: "error",
+          text: "Account number must contain numbers only. Remove any letters or symbols.",
+        });
+        return;
+      }
+      if (digits.length < 5) {
+        setOtpFeedback({
+          type: "error",
+          text: "Please enter a valid account number (at least 5 digits).",
         });
         return;
       }
@@ -630,7 +683,9 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
         {step === "otp" ? (
           <div className="flex flex-col gap-3">
             <p className="text-sm text-gray-600 dark:text-[#788099]">
-              We&apos;ve sent a verification code to your email address. Enter it below to continue.
+              {maskedUserEmail
+                ? `We&apos;ve sent a verification code to ${maskedUserEmail}. Enter it below to continue.`
+                : "We&apos;ve sent a verification code to your email address. Enter it below to continue."}
             </p>
             <input
               type="text"
@@ -711,8 +766,8 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
              </label>
              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                {[
-                 { key: "crypto", label: "Crypto Wallet" },
                  { key: "bank", label: "Bank Wallet" },
+                 { key: "crypto", label: "Crypto Wallet" },
                  { key: "forex", label: "Forex Wallet" },
                ].map((tab) => {
                  const active = methodTab === (tab.key as PaymentTab);
@@ -928,7 +983,9 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                placeholder={accountFieldPlaceholder}
                value={account}
                 onChange={(e) => {
-                  const next = e.target.value;
+                  const raw = e.target.value;
+                  const next =
+                    methodTab === "bank" ? sanitizeBankTabAccountInput(raw) : raw;
                   setAccount(next);
 
                   if (!shouldUseWalletAddressField) return;
@@ -943,7 +1000,9 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                   void validateCryptoAddress(trimmed, "usdt", cryptoNetworkForValidation);
                 }}
                disabled={publicMethodsLoading || (shouldUseWalletAddressField && !isCryptoWalletProviderSelected)}
-               maxLength={shouldUseWalletAddressField ? 128 : 20}
+               maxLength={shouldUseWalletAddressField ? 128 : BANK_TAB_ACCOUNT_MAX_DIGITS}
+               inputMode={methodTab === "bank" ? "numeric" : shouldUseWalletAddressField ? "text" : "numeric"}
+               pattern={methodTab === "bank" ? "[0-9]*" : undefined}
              />
 
               {shouldUseWalletAddressField &&

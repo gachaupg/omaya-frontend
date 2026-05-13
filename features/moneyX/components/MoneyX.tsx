@@ -2,6 +2,7 @@
 
 import React from "react";
 import TransferForm from "./TransferForm";
+import { useRouter } from "next/navigation";
 
 interface MoneyXProps {
   onTransferComplete?: (data: {
@@ -17,6 +18,7 @@ interface MoneyXProps {
 }
 
 const MoneyX = ({ onTransferComplete, initialState }: MoneyXProps) => {
+  const router = useRouter();
   const handleTransfer = (data: {
     fromPaymentMethod: any;
     toPaymentMethod: any;
@@ -63,6 +65,11 @@ const MoneyX = ({ onTransferComplete, initialState }: MoneyXProps) => {
     if (onTransferComplete) {
       onTransferComplete(data);
     }
+
+    const txId = data.moneyxTransactionId || "";
+    router.push(
+      `/dashboard/exchange/exchanging${txId ? `?transactionId=${encodeURIComponent(txId)}` : ""}`
+    );
   };
 
   return (

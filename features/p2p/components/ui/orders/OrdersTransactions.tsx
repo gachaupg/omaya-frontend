@@ -78,6 +78,8 @@ const OrdersTransactions = ({
         onPageChange={handlePageChange}
         onViewTransaction={handleViewTransaction}
         showExportButton={false}
+        hideP2PDateFilter
+        dateFilter="ALL"
       />
     </div>
   );

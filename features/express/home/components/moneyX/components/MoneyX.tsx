@@ -1,11 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
-import { useDispatch } from "react-redux";
-import { AppDispatch } from "@/store";
-import { resetMoneyXState } from "../slices/moneyXSlice";
+import React from "react";
 import TransferForm from "./TransferForm";
-import Exchanging from "./Exchanging";
+import { useRouter } from "next/navigation";
 
 interface MoneyXProps {
   isHomePage?: boolean;
@@ -23,9 +20,7 @@ interface MoneyXProps {
 }
 
 const MoneyX = ({ isHomePage = false, onTransferComplete, commissionType = "deposit" }: MoneyXProps) => {
-  const dispatch = useDispatch<AppDispatch>();
-  const [showExchanging, setShowExchanging] = useState(false);
-  const [transactionData, setTransactionData] = useState<any>(null);
+  const router = useRouter();
 
   const handleTransfer = (data: {
     fromPaymentMethod: any;
@@ -69,32 +64,16 @@ const MoneyX = ({ isHomePage = false, onTransferComplete, commissionType = "depo
       JSON.stringify(moneyxTransactionData)
     );
 
-    // Set state to show Exchanging component
-    setTransactionData(moneyxTransactionData);
-    setShowExchanging(true);
-
     // Call callback if provided (for external state management)
     if (onTransferComplete) {
       onTransferComplete(data);
     }
-  };
 
-  // If showing exchanging, render it
-  if (showExchanging && transactionData) {
-    return (
-      <Exchanging
-        transactionData={transactionData}
-        onBackToTransfer={() => {
-          setShowExchanging(false);
-          setTransactionData(null);
-          // Clear Redux MoneyX state so next transfer starts fresh (terms and form reset)
-          dispatch(resetMoneyXState());
-          localStorage.removeItem("moneyx_transaction_data");
-          localStorage.removeItem("express_transaction_data");
-        }}
-      />
+    const txId = data.moneyxTransactionId || "";
+    router.push(
+      `/dashboard/exchange/exchanging${txId ? `?transactionId=${encodeURIComponent(txId)}` : ""}`
     );
-  }
+  };
 
   // Otherwise show the transfer form
   return (

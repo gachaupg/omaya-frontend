@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { FaBitcoin, FaUniversity } from "react-icons/fa";
 import { FiChevronDown, FiInfo } from "react-icons/fi";
@@ -53,6 +53,8 @@ import CopyButton from "@/components/ui/CopyButton";
 import { API_CONFIG } from "@/lib/appConfig";
 import { useValidateAddress } from "@/hooks/useValidateAddress";
 import { resolveForexDepositAdminPaymentDetailId } from "../../express/utils/forexDepositResolution";
+import { ExpressP2PWithdrawalTermsPanel } from "@/features/express/components/legal/ExpressP2PWithdrawalTermsPanel";
+import { EXPRESS_P2P_WITHDRAWAL_TERMS_OF_SERVICE_MODAL } from "@/features/express/constants/expressP2PWithdrawalTerms";
 import ForexWithdrawal from "../../express/components/forms/ForexWithdrawal";
 import InfoModal from "../../express/components/forms/info";
 import { useBookmarkedAddresses } from "../../express/hooks/useBookmarkedAddresses";
@@ -294,11 +296,31 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
   const [walletError, setWalletError] = useState<string>("");
   const [isWalletValidating, setIsWalletValidating] = useState(false);
   const [isPasted, setIsPasted] = useState(false);
+  const [expandedP2pWithdrawalTerms, setExpandedP2pWithdrawalTerms] =
+    useState(false);
+  const [isP2pWithdrawalTermsAccepted, setIsP2pWithdrawalTermsAccepted] =
+    useState(false);
+  const [legalModal, setLegalModal] = useState<{
+    title: string;
+    content: string[];
+  } | null>(null);
+  const openLegalModal = useCallback((title: string, content: string[]) => {
+    setLegalModal({ title, content });
+  }, []);
   const [bookmarkOpen, setBookmarkOpen] = useState(false);
   const bookmarkAnchorRef = useRef<HTMLSpanElement>(null);
   /** FX Primus — same as express deposit.tsx (forex account + optional notes) */
   const [forexAccountNumber, setForexAccountNumber] = useState<string>("");
   const [forexUserNotes, setForexUserNotes] = useState<string>("");
+  const selectedAssetTicker = String(
+    selectedAsset?.ticker || selectedAsset?.symbol || selectedAsset?.name || ""
+  )
+    .trim()
+    .toUpperCase();
+  const shouldShowTemporaryWalletAddressNotice =
+    !!selectedAssetTicker &&
+    !selectedAssetTicker.includes("USDT") &&
+    !selectedAssetTicker.includes("USDC");
 
   const getValidationCurrency = (asset: any): string => {
     const ticker = String(asset?.ticker || asset?.symbol || asset?.name || "").trim();
@@ -1855,6 +1877,8 @@ const getPaymentRestrictionMessage = (status?: string) =>
     setQrCodeUrl("");
     setWalletAddress("");
     setWalletError("");
+    setIsP2pWithdrawalTermsAccepted(false);
+    setExpandedP2pWithdrawalTerms(false);
 
     // Clear estimate to force recalculation
     setEstimate(null);
@@ -1873,6 +1897,8 @@ const getPaymentRestrictionMessage = (status?: string) =>
     setWalletError("");
     setForexAccountNumber("");
     setForexUserNotes("");
+    setIsP2pWithdrawalTermsAccepted(false);
+    setExpandedP2pWithdrawalTerms(false);
     setForceUpdate((prev) => prev + 1);
   };
 
@@ -1971,6 +1997,13 @@ const getPaymentRestrictionMessage = (status?: string) =>
 
     // FX Primus withdrawal is completed inside ForexWithdrawal (createForexExchangeThunk → forex-status), not this handler.
     if (!isDepositMode && isRatesFxpWithdrawal) {
+      return;
+    }
+
+    if (!isDepositMode && !isRatesFxpWithdrawal && !isP2pWithdrawalTermsAccepted) {
+      showToast.error(
+        "Please read and accept the withdrawal terms before continuing."
+      );
       return;
     }
 
@@ -3647,7 +3680,10 @@ const getPaymentRestrictionMessage = (status?: string) =>
                 /* Bank/Payment Method Section - exact as express withdrawal */
                 <div className="flex-1 min-w-0">
                   <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
-                    {t("rates.bankPaymentMethod", "Bank/Payment Method")}
+                    {t(
+                      "rates.fromPaymentMethod",
+                      isDepositMode ? "From Payment Method" : "To Payment Method"
+                    )}
                   </label>
                   <div className="relative z-0">
                     {(() => {
@@ -3691,7 +3727,15 @@ const getPaymentRestrictionMessage = (status?: string) =>
                             setSelectedPaymentDetails([]);
                             setPaymentMethodError(null);
                           }}
-                          placeholder={isLoading ? "Loading payment methods..." : paymentMethodOptions.length > 0 ? "Select Payment Method" : "No payment methods available"}
+                          placeholder={
+                            isLoading
+                              ? "Loading payment methods..."
+                              : paymentMethodOptions.length > 0
+                                ? isDepositMode
+                                  ? "Select From Payment Method"
+                                  : "Select To Payment Method"
+                                : "No payment methods available"
+                          }
                           disabled={isLoading}
                           loading={isLoading}
                           loadingText="Loading payment methods..."
@@ -4140,7 +4184,10 @@ const getPaymentRestrictionMessage = (status?: string) =>
                 /* Payment Method Section (when swapped) - same CustomSelect as above */
                 <div className="flex-1 min-w-0">
                   <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
-                    {t("rates.bankPaymentMethod", "Bank/Payment Method")}
+                    {t(
+                      "rates.toPaymentMethod",
+                      isDepositMode ? "To Payment Method" : "From Payment Method"
+                    )}
                   </label>
                   <div className="relative z-0">
                     {(() => {
@@ -4182,7 +4229,13 @@ const getPaymentRestrictionMessage = (status?: string) =>
                             setSelectedPaymentDetails([]);
                             setPaymentMethodError(null);
                           }}
-                          placeholder={isLoading ? "Loading payment methods..." : "Select Payment Method"}
+                          placeholder={
+                            isLoading
+                              ? "Loading payment methods..."
+                              : isDepositMode
+                                ? "Select To Payment Method"
+                                : "Select From Payment Method"
+                          }
                           disabled={isLoading}
                           loading={isLoading}
                           searchable={true}
@@ -4880,6 +4933,11 @@ const getPaymentRestrictionMessage = (status?: string) =>
                   <h3 className="text-sm sm:text-base text-[#35353e] dark:text-[#788099] font-semibold mb-2">
                     USDT Wallet Address
                   </h3>
+                  {shouldShowTemporaryWalletAddressNotice && (
+                    <p className="text-xs sm:text-sm text-amber-600 dark:text-amber-400 mb-3">
+                      This wallet address is temporary and may change if you repeat this process. Please use the latest generated address.
+                    </p>
+                  )}
                   <div className="border border-[#1D8751] rounded-xl p-3 sm:p-4">
                     {withdrawalAddress ? (
                       <div className="flex items-center justify-between gap-3">
@@ -4911,14 +4969,132 @@ const getPaymentRestrictionMessage = (status?: string) =>
                   </div>
                 </div>
 
+                <ExpressP2PWithdrawalTermsPanel
+                  expandedTerms={expandedP2pWithdrawalTerms}
+                  setExpandedTerms={setExpandedP2pWithdrawalTerms}
+                  variant="dashboard"
+                  isDark={isDark}
+                />
+
+                <div className="mt-4">
+                  <style
+                    dangerouslySetInnerHTML={{
+                      __html: `
+                      input[type="checkbox"].rates-p2p-terms-checkbox:checked {
+                        background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-3.5-3.5a1 1 0 011.414-1.414L4.5 10.586l6.293-6.293a1 1 0 011.414 0z'/%3e%3c/svg%3e") !important;
+                        background-size: 14px 14px !important;
+                        background-repeat: no-repeat !important;
+                        background-position: center !important;
+                      }
+                    `,
+                    }}
+                  />
+                  <label className="flex items-start cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="rates-p2p-terms-checkbox mt-1 mr-3 w-4 h-4 rounded border-2 border-[#1D8751] focus:ring-[#1D8751] appearance-none bg-transparent checked:bg-[#1D8751] checked:border-[#1D8751] flex-shrink-0"
+                      checked={isP2pWithdrawalTermsAccepted}
+                      onChange={(e) =>
+                        setIsP2pWithdrawalTermsAccepted(e.target.checked)
+                      }
+                    />
+                    <span className="text-[#35353e] dark:text-[#788099] text-sm">
+                      I confirm that I have read and accepted all the terms listed
+                      above and the{" "}
+                      <button
+                        type="button"
+                        className="text-[#1D8751] cursor-pointer hover:underline"
+                        onClick={() =>
+                          openLegalModal(
+                            "Terms of Service",
+                            EXPRESS_P2P_WITHDRAWAL_TERMS_OF_SERVICE_MODAL
+                          )
+                        }
+                      >
+                        Terms of Service
+                      </button>
+                      , together with the{" "}
+                      <button
+                        type="button"
+                        className="text-[#1D8751] cursor-pointer hover:underline"
+                        onClick={() =>
+                          openLegalModal("Privacy Policy", [
+                            "OMAYA collects only the information necessary to provide secure withdrawal services, including identity, wallet/account, transaction, and technical session data.",
+                            "Your data is used for transaction processing, fraud prevention, account security, customer support, service improvement, and legal/compliance obligations.",
+                            "We implement technical and organizational safeguards to protect your data, but you are also responsible for safeguarding account credentials and devices.",
+                            "Data may be shared with payment partners, compliance providers, and regulators where required to complete transactions or satisfy legal obligations.",
+                            "By using the service, you consent to data handling described in this policy and acknowledge that retention periods may apply for audit, legal, and security purposes.",
+                          ])
+                        }
+                      >
+                        Privacy Policy
+                      </button>
+                      ,{" "}
+                      <button
+                        type="button"
+                        className="text-[#1D8751] cursor-pointer hover:underline"
+                        onClick={() =>
+                          openLegalModal("Payment Policies", [
+                            "Withdrawals are processed based on available liquidity, provider uptime, and internal risk controls. Processing time estimates are not guaranteed settlement deadlines.",
+                            "You must ensure that submitted payment details are valid and compatible with the selected provider. Incorrect details can lead to delays or failed payouts.",
+                            "Applicable charges may include network fees, provider fees, and platform commissions. Final settlement values may differ slightly from initial estimates.",
+                            "Transactions may be placed on hold for verification if unusual patterns, mismatched identity data, or suspicious activity is detected.",
+                            "Payments may be rejected, reversed, or returned where required by provider rules, legal obligations, or operational risk controls.",
+                          ])
+                        }
+                      >
+                        Payment Policies
+                      </button>
+                      ,{" "}
+                      <button
+                        type="button"
+                        className="text-[#1D8751] cursor-pointer hover:underline"
+                        onClick={() =>
+                          openLegalModal("AML", [
+                            "OMAYA enforces Anti-Money Laundering (AML) controls to detect and prevent illicit financial activity across all withdrawal and exchange operations.",
+                            "You may be required to complete identity verification (KYC), provide source-of-funds information, or submit additional supporting documentation.",
+                            "Transactions linked to sanctioned entities, high-risk patterns, structuring behavior, or suspicious blockchain activity may be delayed or blocked.",
+                            "OMAYA may file reports to relevant authorities and cooperate with lawful investigations where required by applicable regulations.",
+                            "Use of this service confirms your commitment to lawful financial activity and compliance with AML/CFT obligations.",
+                          ])
+                        }
+                      >
+                        AML
+                      </button>
+                      ,{" "}
+                      <button
+                        type="button"
+                        className="text-[#1D8751] cursor-pointer hover:underline"
+                        onClick={() =>
+                          openLegalModal("Risk Disclosure Statements", [
+                            "Digital asset and fiat settlement services involve operational, market, network, and counterparty risks that may affect execution and timing.",
+                            "Blockchain transactions can be delayed, congested, or irreversible depending on network conditions and confirmation requirements.",
+                            "Quoted prices and estimated outputs can change before completion due to volatility, liquidity shifts, and provider-side updates.",
+                            "Service interruptions, maintenance, third-party outages, and regulatory actions may temporarily limit or suspend certain transaction paths.",
+                            "By proceeding, you acknowledge these risks and accept responsibility for transaction decisions made on the platform.",
+                          ])
+                        }
+                      >
+                        Risk Disclosure Statements
+                      </button>
+                      .
+                    </span>
+                  </label>
+                </div>
+
                 <div className="mt-2 p-1 bg-[#1D8751] bg-opacity-10 border border-[#1D8751] rounded-xl">
                   <button
                     onClick={handleProceedToExchanging}
-                    disabled={isSubmitting || hasDecimalPlacesError}
-                    className={`w-full font-semibold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 ${(isSubmitting)
-                      ? "bg-gray-500 cursor-not-allowed text-white"
-                      : "bg-[#1D8751] hover:bg-[#166b3f] text-white"
-                      }`}
+                    disabled={
+                      isSubmitting ||
+                      hasDecimalPlacesError ||
+                      !isP2pWithdrawalTermsAccepted
+                    }
+                    className={`w-full font-semibold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 ${
+                      isSubmitting || !isP2pWithdrawalTermsAccepted
+                        ? "bg-gray-500 cursor-not-allowed text-white"
+                        : "bg-[#1D8751] hover:bg-[#166b3f] text-white"
+                    }`}
                   >
                     {isSubmitting ? (
                       <>
@@ -4963,6 +5139,32 @@ const getPaymentRestrictionMessage = (status?: string) =>
       />
         </div>
       </div>
+      {legalModal && (
+        <div className="fixed inset-0 z-[9990] bg-black/60 flex items-center justify-center p-3 sm:p-4 sm:pl-16">
+          <div className="w-full max-w-3xl h-[70vh] bg-white dark:bg-[#18181D] rounded-2xl border border-border dark:border-accent overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border dark:border-accent">
+              <h3 className="text-sm sm:text-base font-semibold text-[#35353e] dark:text-white">
+                {legalModal.title}
+              </h3>
+              <button
+                type="button"
+                className="text-[#1D8751] hover:text-[#166b3e] text-sm font-semibold"
+                onClick={() => setLegalModal(null)}
+              >
+                Close
+              </button>
+            </div>
+            <div className="w-full h-full overflow-y-auto p-4 sm:p-6 text-sm leading-6 text-[#35353e] dark:text-[#D6D6E0] space-y-3">
+              {legalModal.content.map((line, idx) => (
+                <div key={idx} className="flex items-start gap-2">
+                  <span className="text-[#1D8751] font-semibold">{idx + 1}.</span>
+                  <p>{line}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
       <FrozenAccountModal
         isOpen={showFrozenModal}
         onClose={() => setShowFrozenModal(false)}

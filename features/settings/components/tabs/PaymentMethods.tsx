@@ -27,6 +27,7 @@ import AddWalletAddressModal from "./AddWalletAddressModal";
 import { showToast } from "@/lib/utils/toast";
 import CopyButton from "@/components/ui/CopyButton";
 import QRCode from "qrcode";
+import { getHighResAssetIcon } from "@/features/express/utils/imageHelpers";
 
 const AddressQrImage: React.FC<{ value: string }> = ({ value }) => {
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
@@ -284,10 +285,9 @@ const PaymentMethods = () => {
     return "pending";
   };
 
-  // All payment methods that support pending/approved (exclude pure crypto wallets for P2P)
+  // All linked P2P payment details (bank, mobile money, forex, and crypto wallets).
   const allPaymentMethodsWithStatus = useMemo(
-    () =>
-      userPaymentDetails.filter((p) => !isCryptoWallet(p)),
+    () => (Array.isArray(userPaymentDetails) ? [...userPaymentDetails] : []),
     [userPaymentDetails]
   );
 
@@ -672,12 +672,18 @@ const PaymentMethods = () => {
                       <div className="relative">
                         <span className=" overflow-hidden flex-shrink-0 bg-white dark:bg-[#1F2432]">
                           <img
-                            src={payment?.provider_logo || (isCryptoWallet(payment) ? "/images/tether.svg" : "/default-provider-logo.svg")}
+                            src={
+                              isCryptoWallet(payment)
+                                ? getHighResAssetIcon({ ticker: "USDT" }, 80)
+                                : payment?.provider_logo || "/default-provider-logo.svg"
+                            }
                             alt={payment?.payment_provider_name || payment?.payment_method_name}
-                            className="w-10 h-10 rounded-full object-cover"
+                            className={`w-10 h-10 rounded-full object-cover ${isCryptoWallet(payment) ? "object-contain bg-white dark:bg-[#1F2432]" : ""}`}
                             style={{ display: 'block' }}
                             onError={(e) => {
-                              e.currentTarget.src = isCryptoWallet(payment) ? "/images/tether.svg" : "/default-provider-logo.svg";
+                              e.currentTarget.src = isCryptoWallet(payment)
+                                ? "/images/tether.svg"
+                                : "/default-provider-logo.svg";
                             }}
                           />
                         </span>
@@ -712,6 +718,11 @@ const PaymentMethods = () => {
                               ? (payment?.payment_method_name || "Bank")
                               : (payment?.payment_method_name || "Wallet")}
                           </p>
+                          {(payment?.account_name || "").trim() && !isBankMethod ? (
+                            <p className="text-xs text-gray-700 dark:text-gray-200 mt-1 font-medium">
+                              {payment.account_name}
+                            </p>
+                          ) : null}
                           {isRejected && (
                             <p className="mt-2 text-xs text-red-600 dark:text-red-400 max-w-[520px]">
                               {rejectionMessage}
@@ -770,7 +781,9 @@ const PaymentMethods = () => {
                           readOnly
                           value={displayAddress}
                           placeholder={placeholderText}
-                          className="w-full bg-transparent focus:outline-none placeholder:text-gray-400 dark:placeholder:text-[#5C6175] text-gray-900 dark:text-white"
+                          className={`w-full bg-transparent focus:outline-none placeholder:text-gray-400 dark:placeholder:text-[#5C6175] text-gray-900 dark:text-white ${
+                            isCryptoWallet(payment) ? "font-mono text-xs sm:text-sm break-all" : ""
+                          }`}
                         />
                       </div>
                     </div>
