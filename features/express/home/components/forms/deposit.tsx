@@ -1080,7 +1080,17 @@ export default function DepositForm({
     return String(providerKey).trim();
   };
 
-  // Auto-select the second payment method by default (fallback to first when only one exists)
+  const getDefaultPaymentMethod = (methods: any[]) => {
+    const salaamMethod = methods.find((method: any) =>
+      getPaymentMethodKey(method).toLowerCase().includes("salaam")
+    );
+    if (salaamMethod) {
+      return salaamMethod;
+    }
+    return methods[1] || methods[0];
+  };
+
+  // Auto-select Salaam Bank by default when available (fallback to prior ordering)
   useEffect(() => {
     if (finalPaymentMethods.length === 0) {
       return;
@@ -1091,7 +1101,7 @@ export default function DepositForm({
     );
 
     if (!payBank || !hasSelected) {
-      const defaultMethod = finalPaymentMethods[1] || finalPaymentMethods[0];
+      const defaultMethod = getDefaultPaymentMethod(finalPaymentMethods);
       setPayBank(getPaymentMethodKey(defaultMethod));
       setSelectedPaymentDetail(defaultMethod);
     } else if (!selectedPaymentDetail) {

@@ -1118,8 +1118,15 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
     validTxHowToSend ||
     validBankHowToSend ||
     payinAddress;
+  const fromPaymentAccountNumber = String(
+    effectiveTransactionData?.fromPaymentMethod?.account_number ||
+      effectiveTransactionData?.fromPaymentMethod?.payment_details?.[0]
+        ?.account_number ||
+      ""
+  ).trim();
   const qrPayload =
     howToSendValue ||
+    fromPaymentAccountNumber ||
     String(liveTransactionId || effectiveTransactionData?.transactionId || "").trim();
   const netAmountToDisplay =
     liveNetAmount ??
@@ -1339,6 +1346,30 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
                     {effectiveTransactionData.fromPaymentMethod.provider_name}
                   </span>
                 </div>
+                {fromPaymentAccountNumber && (
+                  <>
+                    <div
+                      className={`${
+                        isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                      } text-xs font-semibold mb-0.5 mt-2`}
+                    >
+                      Bank Account Address:
+                    </div>
+                    <div className="flex items-center mb-2 min-w-0">
+                      <span
+                        className={`${
+                          isDark ? "text-white" : "text-gray-900"
+                        } text-sm font-mono bg-gray-500/10 px-2 py-1 rounded text-xs break-all flex-1 min-w-0`}
+                      >
+                        {fromPaymentAccountNumber}
+                      </span>
+                      <CopyButton
+                        value={fromPaymentAccountNumber}
+                        className="ml-2 flex-shrink-0"
+                      />
+                    </div>
+                  </>
+                )}
               </>
             )}
 
@@ -1378,31 +1409,6 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
               </>
             )}
 
-            {/* Bank Account Address */}
-            {effectiveTransactionData?.walletAddress && (
-              <>
-                <div
-                  className={`${
-                    isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                  } text-xs font-semibold mb-0.5 mt-3`}
-                >
-                  Bank Account Number:
-                </div>
-                <div className="flex items-center mb-2 min-w-0">
-                  <span
-                    className={`${
-                      isDark ? "text-white" : "text-gray-900"
-                    } text-sm font-mono bg-gray-500/10 px-2 py-1 rounded text-xs break-all flex-1 min-w-0`}
-                  >
-                    {effectiveTransactionData.walletAddress}
-                  </span>
-                  <CopyButton
-                    value={effectiveTransactionData.walletAddress}
-                    className="ml-2 flex-shrink-0"
-                  />
-                </div>
-              </>
-            )}
           </div>
         </div>
         <div className={`${isHomePage ? "flex-shrink-0 ml-0 mt-2 md:mt-0 md:ml-3" : "flex-shrink-0 ml-0 md:ml-2 md:mr-48 mt-3 sm:mt-2 md:mt-0"} flex items-center justify-center ${isHomePage ? 'py-1 sm:py-2' : 'py-2'}`}>
@@ -1928,13 +1934,13 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
                   >
                     {effectiveTransactionData.fromPaymentMethod.provider_name}
                   </div>
-                  {effectiveTransactionData.fromPaymentMethod.account_number && (
+                  {fromPaymentAccountNumber && (
                     <div
                       className={`${
                         isDark ? "text-[#7B7B7B]" : "text-gray-600"
                       } text-xs sm:text-sm font-mono truncate`}
                     >
-                      {effectiveTransactionData.fromPaymentMethod.account_number}
+                      {fromPaymentAccountNumber}
                     </div>
                   )}
                 </div>
@@ -1976,15 +1982,6 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
                   >
                     {effectiveTransactionData.toPaymentMethod.provider_name}
                   </div>
-                  {effectiveTransactionData.toPaymentMethod.account_number && (
-                    <div
-                      className={`${
-                        isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                      } text-xs sm:text-sm font-mono truncate mt-1`}
-                    >
-                      {effectiveTransactionData.toPaymentMethod.account_number}
-                    </div>
-                  )}
                 </div>
               </>
             ) : (

@@ -5,6 +5,16 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { P2PResponse, MerchantApplicationStatus } from "../types";
 import * as api from "../api";
 
+/** Axios / fetch client timeouts often surface as raw messages; avoid showing those to users. */
+function isRequestTimeoutError(err: unknown): boolean {
+  const e = err as { code?: string; message?: string };
+  if (e?.code === "ECONNABORTED") return true;
+  if (typeof e?.message === "string" && e.message.toLowerCase().includes("timeout")) {
+    return true;
+  }
+  return false;
+}
+
 interface MerchantApplicationState {
   loading: boolean;
   error: string | { detail: string; errors: string[] } | null;
@@ -35,6 +45,11 @@ export const submitMerchantApplicationThunk = createAsyncThunk(
       if (err.response?.data) {
         return rejectWithValue(err.response.data);
       }
+      if (isRequestTimeoutError(err)) {
+        return rejectWithValue(
+          "Application could not be submitted. Please try again later."
+        );
+      }
       return rejectWithValue(err.message || "Failed to submit merchant application");
     }
   }
@@ -50,6 +65,11 @@ export const fetchMerchantApplicationStatusThunk = createAsyncThunk(
     } catch (err: any) {
       if (err.response?.data) {
         return rejectWithValue(err.response.data);
+      }
+      if (isRequestTimeoutError(err)) {
+        return rejectWithValue(
+          "Application status could not be loaded. Please try again later."
+        );
       }
       return rejectWithValue(err.message || "Failed to fetch merchant application status");
     }

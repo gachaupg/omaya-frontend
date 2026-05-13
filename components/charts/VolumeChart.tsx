@@ -60,22 +60,27 @@ const VolumeChart: React.FC<VolumeChartProps> = ({ transactionSummary }) => {
     {
       title: "Total Value",
       value: cleanTotalVolume(),
+      currency: "USDT" as const,
     },
     {
       title: "Exchange",
       value: formatValue(transactionSummary.total_approved_exchange_volume || transactionSummary.total_approved_exchange_combined || 0),
+      currency: "USDT" as const,
     },
     {
       title: "Money X",
       value: formatValue(moneyXVolume),
+      currency: "USD" as const,
     },
     {
       title: "P2P",
       value: formatValue(transactionSummary.total_approved_p2p_volume || transactionSummary.total_approved_p2p_combined || 0),
+      currency: "USDT" as const,
     },
     {
       title: "Swap",
       value: formatValue(transactionSummary.total_completed_changenow_swaps ?? 0),
+      currency: "USDT" as const,
     },
   ];
 
@@ -93,8 +98,9 @@ const VolumeChart: React.FC<VolumeChartProps> = ({ transactionSummary }) => {
             <span className="dark:text-gray-400 text-gray-600 text-xs sm:text-sm mb-2 text-center relative z-10">
               {item.title}
             </span>
-            <span className="text-[#F79330] text-base sm:text-lg md:text-xl font-bold text-center relative z-10">
-              {item.value}
+            <span className="text-[#F79330] text-base sm:text-lg md:text-xl font-bold text-center relative z-10 inline-flex flex-wrap items-baseline justify-center gap-x-1">
+              <span className="tabular-nums">{item.value}</span>
+              <span className="tracking-wide">{item.currency}</span>
             </span>
           </div>
         ))}

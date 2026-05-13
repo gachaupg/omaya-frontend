@@ -6,6 +6,7 @@
 "use client";
 import Image from "next/image";
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import {
   forgotPassword,
@@ -13,21 +14,25 @@ import {
 } from "@/features/auth/slices/authSlice";
 import { AppDispatch } from "@/features/auth/store";
 import { storage } from "../utils/storage";
-import { showToast } from "@/lib/utils/toast";
 import { useI18n } from "@/lib/useI18n";
 
 const ForgetPassword = () => {
   const { t } = useI18n("auth");
   const dispatch = useDispatch<AppDispatch>();
+  const router = useRouter();
   const [email, setEmail] = useState(() => storage.getUserEmail());
   const [emailError, setEmailError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [emailSent, setEmailSent] = useState(false);
+  const [formMessage, setFormMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
 
   // Step 1: Submit email
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setEmailError("");
+    setFormMessage(null);
     if (!email.trim()) {
       setEmailError("Email is required");
       return;
@@ -39,20 +44,20 @@ const ForgetPassword = () => {
     setIsLoading(true);
     try {
       const message = await dispatch(forgotPassword({ email })).unwrap();
-      setEmailSent(true);
       storage.setUserEmail(email);
-      showToast.success(
-        "Password Reset Email Sent",
-        "Check your email for a password reset link.",
-        { position: "top-center" }
-      );
+      setFormMessage({
+        type: "success",
+        text: "Password resent email sent to your your email. redirect in 7 seconds...",
+      });
+      setTimeout(() => {
+        router.push("/auth/login");
+      }, 7000);
     } catch (err: any) {
       setEmailError(err?.message || "Failed to send reset email");
-      showToast.error(
-        "Password Reset Failed",
-        err?.message || "Failed to send reset email",
-        { position: "top-center" }
-      );
+      setFormMessage({
+        type: "error",
+        text: err?.message || "Failed to send reset email",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -175,6 +180,17 @@ const ForgetPassword = () => {
                 )}
               </div>
             </div>
+            {formMessage && (
+              <div
+                className={`text-sm rounded-lg px-3 py-2 ${
+                  formMessage.type === "success"
+                    ? "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400"
+                    : "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400"
+                }`}
+              >
+                {formMessage.text}
+              </div>
+            )}
             <button
               type="submit"
               className="w-full bg-[#1D8751] text-white py-2 px-4 rounded-full hover:bg-[#0E5531] transition-colors duration-300 mt-4"

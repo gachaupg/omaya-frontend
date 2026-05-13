@@ -112,7 +112,7 @@ const Filters: React.FC<FiltersProps> = ({
     { name: string; code: string; logo: string }
   > = {
     usdt: {
-      name: "Tether",
+      name: "USDT",
       code: "USDT",
       logo: "/images/tether.svg",
     },
@@ -123,21 +123,28 @@ const Filters: React.FC<FiltersProps> = ({
     (option) => option.value === filters.currency
   );
 
+  // Orders: show generic USDT only (no chain-specific logos from upstream options).
   const currencyInfo =
-    currencyMeta[selectedCurrencyKey] || {
-      name:
-        selectedCurrencyOption?.label ||
-        selectedCurrencyKey.toUpperCase(),
-      code:
-        selectedCurrencyOption?.label ||
-        selectedCurrencyKey.toUpperCase(),
-      logo:
-        selectedCurrencyOption && "logo" in selectedCurrencyOption
-          ? // @ts-ignore (upstream data gradually adopting logos)
-          (selectedCurrencyOption as { logo?: string }).logo ||
-          currencyMeta.usdt.logo
-          : currencyMeta.usdt.logo,
-    };
+    selectedCurrencyKey === "usdt"
+      ? {
+          name: "USDT",
+          code: "USDT",
+          logo: "/images/tether.svg",
+        }
+      : currencyMeta[selectedCurrencyKey] || {
+          name:
+            selectedCurrencyOption?.label ||
+            selectedCurrencyKey.toUpperCase(),
+          code:
+            selectedCurrencyOption?.label ||
+            selectedCurrencyKey.toUpperCase(),
+          logo:
+            selectedCurrencyOption && "logo" in selectedCurrencyOption
+              ? // @ts-ignore (upstream data gradually adopting logos)
+                (selectedCurrencyOption as { logo?: string }).logo ||
+                currencyMeta.usdt.logo
+              : currencyMeta.usdt.logo,
+        };
 
   const typeOptionLabel =
     typeOptions.find((option) => option.value === filters.type)?.label ||

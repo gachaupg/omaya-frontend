@@ -542,10 +542,10 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                 </div>
               </div>
 
-              {/* Commission */}
+              {/* Rate */}
               <div className="flex-1 flex flex-col">
                 <span className="text-xs text-gray-600 dark:text-[#788099] mb-2">
-                  Commission
+                  Rate
                 </span>
                 <div
                   className={`flex w-full items-center justify-between bg-card border ${errors.commission
@@ -599,13 +599,13 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                     </button>
                   </div>
                 </div>
-                <div className="flex flex-wrap gap-2 mt-3">
+                <div className="relative z-10 flex flex-wrap gap-2 mt-3 pointer-events-auto">
                   {[1, 2, 3, 4, 5].map((n) => (
                     <button
                       key={`plus-${n}`}
                       type="button"
                       onClick={() => applyCommissionDelta(n / 100)}
-                      className="px-2.5 py-1.5 text-sm rounded-lg bg-gray-100 dark:bg-[#2A2D35] text-gray-700 dark:text-[#D1D5DB] hover:bg-gray-200 dark:hover:bg-[#3A3D45]"
+                      className="relative z-10 px-2.5 py-1.5 text-sm rounded-lg bg-gray-100 dark:bg-[#2A2D35] text-gray-700 dark:text-[#D1D5DB] hover:bg-gray-200 dark:hover:bg-[#3A3D45]"
                     >
                       +{n}%
                     </button>
@@ -615,7 +615,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                       key={`minus-${n}`}
                       type="button"
                       onClick={() => applyCommissionDelta(-(n / 100))}
-                      className="px-2.5 py-1.5 text-sm rounded-lg bg-gray-100 dark:bg-[#2A2D35] text-gray-700 dark:text-[#D1D5DB] hover:bg-gray-200 dark:hover:bg-[#3A3D45]"
+                      className="relative z-10 px-2.5 py-1.5 text-sm rounded-lg bg-gray-100 dark:bg-[#2A2D35] text-gray-700 dark:text-[#D1D5DB] hover:bg-gray-200 dark:hover:bg-[#3A3D45]"
                     >
                       -{n}%
                     </button>

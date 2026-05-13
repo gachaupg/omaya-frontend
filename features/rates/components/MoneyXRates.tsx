@@ -33,6 +33,15 @@ import { checkKYCStatus, openKYCModal } from "@/features/auth/slices/authSlice";
 import { useBookmarkedAddresses } from "@/features/express/hooks/useBookmarkedAddresses";
 import { BookmarkDropdown } from "@/features/express/components/forms/BookmarkDropdown";
 import { getHighResPaymentLogo } from "@/features/express/utils/imageHelpers";
+import {
+  clampMoneyXAmountNumber,
+  getMoneyXMaxAmountErrorMessage,
+  isMoneyXAmountOverHardLimit,
+  MONEYX_MAX_AMOUNT_INPUT_DIGITS,
+  normalizeMoneyXAmountInputForRestore,
+  prepareMoneyXAmountFieldValue,
+  toMoneyXClampedInputString,
+} from "@/lib/utils/moneyXAmountInput";
 
 const RATES_MONEYX_FORM_STATE_KEY = "rates_moneyx_form_state";
 
@@ -62,14 +71,6 @@ const resolvePaymentMethodLogo = (payment: any): string | undefined => {
     if (typeof c === "string" && c.trim()) return c.trim();
   }
   return undefined;
-};
-
-const normalizeRestoredAmountInput = (raw: unknown): string => {
-  const s = String(raw ?? "").trim();
-  if (!s) return "";
-  // Avoid showing "00" / "0.00" after restore; treat as empty so defaults stay.
-  if (/^0+(\.0+)?$/.test(s)) return "";
-  return s;
 };
 
 const MoneyXRates = ({
@@ -255,24 +256,32 @@ const MoneyXRates = ({
       }
       const state = JSON.parse(saved);
 
-      const restoredPayInput = normalizeRestoredAmountInput(state?.amountInput);
+      const restoredPayInput = normalizeMoneyXAmountInputForRestore(
+        state?.amountInput
+      );
       if (restoredPayInput) setPayAmountInput(restoredPayInput);
       if (
         restoredPayInput &&
         state?.amountValue != null &&
         !Number.isNaN(Number(state.amountValue))
       ) {
-        setPayAmount(Number(state.amountValue));
+        setPayAmount(
+          clampMoneyXAmountNumber(Number(state.amountValue))
+        );
       }
 
-      const restoredGetInput = normalizeRestoredAmountInput(state?.receiveAmountInput);
+      const restoredGetInput = normalizeMoneyXAmountInputForRestore(
+        state?.receiveAmountInput
+      );
       if (restoredGetInput) setGetAmountInput(restoredGetInput);
       if (
         restoredGetInput &&
         state?.receiveAmountValue != null &&
         !Number.isNaN(Number(state.receiveAmountValue))
       ) {
-        setGetAmount(Number(state.receiveAmountValue));
+        setGetAmount(
+          clampMoneyXAmountNumber(Number(state.receiveAmountValue))
+        );
       }
 
       if (state?.fromPaymentMethod) setFromPaymentMethod(String(state.fromPaymentMethod));
@@ -292,9 +301,9 @@ const MoneyXRates = ({
     if (!isStateHydrated) return;
     const state = {
       mode: "moneyx",
-      amountInput: normalizeRestoredAmountInput(payAmountInput),
+      amountInput: normalizeMoneyXAmountInputForRestore(payAmountInput),
       amountValue: payAmount,
-      receiveAmountInput: normalizeRestoredAmountInput(getAmountInput),
+      receiveAmountInput: normalizeMoneyXAmountInputForRestore(getAmountInput),
       receiveAmountValue: getAmount,
       fromPaymentMethod,
       toPaymentMethod,
@@ -366,18 +375,22 @@ const MoneyXRates = ({
   useEffect(() => {
     const rate = apiCommission ?? 0;
     if (isCalculatingFromPay && payAmount > 0) {
-      const calculatedGetAmount = calculateReceiveAmount(
-        payAmount,
-        rate,
-        apiCommissionIsPercentage
+      const calculatedGetAmount = clampMoneyXAmountNumber(
+        calculateReceiveAmount(
+          payAmount,
+          rate,
+          apiCommissionIsPercentage
+        )
       );
       setGetAmount(calculatedGetAmount);
       setGetAmountInput(calculatedGetAmount.toFixed(2));
     } else if (!isCalculatingFromPay && getAmount > 0) {
-      const calculatedPayAmount = calculateSendAmount(
-        getAmount,
-        rate,
-        apiCommissionIsPercentage
+      const calculatedPayAmount = clampMoneyXAmountNumber(
+        calculateSendAmount(
+          getAmount,
+          rate,
+          apiCommissionIsPercentage
+        )
       );
       setPayAmount(calculatedPayAmount);
       setPayAmountInput(calculatedPayAmount.toFixed(2));
@@ -621,50 +634,60 @@ const MoneyXRates = ({
 
   // Calculate amounts using commission percentage (receive = send - send*rate/100)
   const handleAmountChange = (value: string, isFromPay: boolean) => {
-    if (value === "" || /^\d*\.?\d*$/.test(value)) {
-      // If user clears the input, keep both fields empty (avoid reformatting to "0.00")
-      if (value === "") {
-        setPayAmountInput("");
-        setPayAmount(0);
-        setGetAmountInput("");
-        setGetAmount(0);
-        setValidationErrors([]);
-        return;
-      }
-      if (value.includes(".")) {
-        const decimalPart = value.split(".")[1];
-        if (decimalPart && decimalPart.length > 8) {
-          return;
-        }
-      }
-
-      const newAmount = parseFloat(value) || 0;
-      const rate = apiCommission ?? 0;
-
-      if (isFromPay) {
-        setPayAmountInput(value);
-        setPayAmount(newAmount);
-        setIsCalculatingFromPay(true);
-        const calculatedGetAmount = calculateReceiveAmount(
-          newAmount,
-          rate,
-          apiCommissionIsPercentage
-        );
-        setGetAmount(calculatedGetAmount);
-        setGetAmountInput(calculatedGetAmount.toFixed(2));
-      } else {
-        setGetAmountInput(value);
-        setGetAmount(newAmount);
-        setIsCalculatingFromPay(false);
-        const calculatedPayAmount = calculateSendAmount(
-          newAmount,
-          rate,
-          apiCommissionIsPercentage
-        );
-        setPayAmount(calculatedPayAmount);
-        setPayAmountInput(calculatedPayAmount.toFixed(2));
-      }
+    const prep = prepareMoneyXAmountFieldValue(value);
+    if (!prep.ok) {
+      if (prep.invalidPattern) return;
+      if (prep.error) setValidationErrors([prep.error]);
+      return;
     }
+    const v = prep.v;
+    if (v === "") {
+      setPayAmountInput("");
+      setPayAmount(0);
+      setGetAmountInput("");
+      setGetAmount(0);
+      setValidationErrors([]);
+      return;
+    }
+
+    const rate = apiCommission ?? 0;
+
+    if (isFromPay) {
+      const parsedPay = parseFloat(v) || 0;
+      const clampedPay = clampMoneyXAmountNumber(parsedPay);
+      const payDisplay =
+        clampedPay !== parsedPay ? toMoneyXClampedInputString(clampedPay) : v;
+      setPayAmountInput(payDisplay);
+      setPayAmount(clampedPay);
+      setIsCalculatingFromPay(true);
+      const calculatedGetAmount = clampMoneyXAmountNumber(
+        calculateReceiveAmount(
+          clampedPay,
+          rate,
+          apiCommissionIsPercentage
+        )
+      );
+      setGetAmount(calculatedGetAmount);
+      setGetAmountInput(calculatedGetAmount.toFixed(2));
+    } else {
+      const parsedRecv = parseFloat(v) || 0;
+      const clampedRecv = clampMoneyXAmountNumber(parsedRecv);
+      const recvDisplay =
+        clampedRecv !== parsedRecv ? toMoneyXClampedInputString(clampedRecv) : v;
+      setGetAmountInput(recvDisplay);
+      setGetAmount(clampedRecv);
+      setIsCalculatingFromPay(false);
+      const calculatedPayAmount = clampMoneyXAmountNumber(
+        calculateSendAmount(
+          clampedRecv,
+          rate,
+          apiCommissionIsPercentage
+        )
+      );
+      setPayAmount(calculatedPayAmount);
+      setPayAmountInput(calculatedPayAmount.toFixed(2));
+    }
+    setValidationErrors([]);
   };
 
   // Commission from API can be percentage OR fixed amount.
@@ -792,6 +815,10 @@ const MoneyXRates = ({
       payAmount <= 0
     ) {
       errors.push("Please enter a valid amount");
+    }
+
+    if (isMoneyXAmountOverHardLimit(payAmount)) {
+      errors.push(getMoneyXMaxAmountErrorMessage());
     }
 
     if (!fromPaymentMethod || !selectedFromPaymentDetail) {
@@ -959,9 +986,10 @@ const MoneyXRates = ({
         JSON.stringify(moneyxTransactionData)
       );
 
-      // Set transaction data and show exchanging component
-      setTransactionData(moneyxTransactionData);
-      setShowExchanging(true);
+      const txId = result.moneyx_transaction_id || "";
+      router.push(
+        `/dashboard/exchange/exchanging${txId ? `?transactionId=${encodeURIComponent(txId)}` : ""}`
+      );
     } catch (error: any) {
       console.error("Update transaction error:", error);
       const errorMessage =
@@ -1090,6 +1118,7 @@ const MoneyXRates = ({
                   type="text"
                   inputMode="decimal"
                   value={payAmountInput}
+                  maxLength={MONEYX_MAX_AMOUNT_INPUT_DIGITS + 1}
                   onChange={(e) => handleAmountChange(e.target.value, true)}
                   placeholder="Enter amount"
                   className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${isDark

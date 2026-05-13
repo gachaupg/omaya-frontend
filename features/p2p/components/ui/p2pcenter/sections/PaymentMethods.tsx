@@ -19,7 +19,13 @@ import { ChevronDown, Search } from "lucide-react";
 
 import { logger } from '@/lib/utils/logger';
 import { AdminPaymentMethod } from "@/features/p2p/types/paymentMethods";
-import { getHighResPaymentLogo, PAYMENT_LOGO_SIZE } from "@/features/express/utils/imageHelpers";
+import {
+  getHighResPaymentLogo,
+  getHighResAssetIcon,
+  PAYMENT_LOGO_SIZE,
+} from "@/features/express/utils/imageHelpers";
+
+const USDT_ICON_SIZE = 64;
 
 interface PaymentMethod {
   id: number;
@@ -430,6 +436,117 @@ const PaymentMethods = () => {
     );
   };
 
+  const renderCryptoPaymentMethod = (method: PaymentMethod) => {
+    if (!method || typeof method !== "object") return null;
+    const statusLabel = getMethodStatusLabel(method);
+    const wallet = String(method.wallet_address || "").trim();
+    return (
+      <tr
+        key={method.id}
+        className="border-b border-gray-200 dark:border-[#35353E] hover:bg-gray-50 dark:hover:bg-[var(--card-color)] transition-colors"
+      >
+        <td className="px-4 py-4">
+          <div className="flex flex-col gap-0.5">
+            <div className="flex items-center gap-3">
+              <img
+                src={getHighResAssetIcon({ ticker: "USDT" }, USDT_ICON_SIZE)}
+                alt="USDT"
+                className="w-10 h-10 rounded-full object-contain flex-shrink-0 bg-white dark:bg-[#1F2432]"
+                loading="lazy"
+                onError={(e) => {
+                  e.currentTarget.src = "/images/tether.svg";
+                }}
+              />
+              <span className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
+                {method.payment_provider_name}
+              </span>
+            </div>
+            {method.payment_method_name ? (
+              <span className="text-xs text-gray-500 dark:text-gray-400 pl-[52px]">
+                {method.payment_method_name}
+              </span>
+            ) : null}
+          </div>
+        </td>
+        <td className="px-4 py-4 text-sm sm:text-base text-gray-900 dark:text-white">
+          {method?.account_name?.trim() || "—"}
+        </td>
+        <td className="px-4 py-4 text-sm sm:text-base text-gray-900 dark:text-white font-mono max-w-[min(100vw,28rem)]">
+          {wallet ? (
+            <span className="break-all" title={wallet}>
+              {wallet}
+            </span>
+          ) : (
+            "—"
+          )}
+        </td>
+        <td className="px-4 py-4">
+          <span
+            className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${getMethodStatusClasses(
+              statusLabel
+            )}`}
+          >
+            {statusLabel}
+          </span>
+        </td>
+        <td className="px-4 py-4">
+          <div className="flex items-center justify-end gap-2">
+            <button
+              onClick={() => {
+                setEditingPaymentMethod(method);
+                setIsEditModalOpen(true);
+              }}
+              className="p-2 hover:bg-gray-100 dark:hover:bg-[#2A2A2A] rounded-full transition-colors"
+              title="Edit"
+              type="button"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-5 h-5 text-[#1D8751] cursor-pointer"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                />
+              </svg>
+            </button>
+            <button
+              disabled={deletingMethodId === method.id.toString()}
+              className="p-2 hover:bg-gray-100 dark:hover:bg-[#2A2A2A] rounded-full transition-colors disabled:opacity-50"
+              title="Delete"
+              type="button"
+              onClick={() => handleDeleteMethod(method.id.toString())}
+            >
+              {deletingMethodId === method.id.toString() ? (
+                <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-[#1D8751]" />
+              ) : (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-5 h-5 text-red-500 cursor-pointer"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"
+                  />
+                </svg>
+              )}
+            </button>
+          </div>
+        </td>
+      </tr>
+    );
+  };
+
   // Render helper specifically for Mobile Money items
   const renderMobilePaymentMethod = (method: PaymentMethod) => {
     // Safety check - return null if method is invalid
@@ -642,20 +759,45 @@ const PaymentMethods = () => {
 
   const mobileMoneyMethods: PaymentMethod[] = safeUserPaymentDetails.filter(isMobileMoneyMethod);
 
-  const bankMethods: PaymentMethod[] = safeUserPaymentDetails.filter((m: any) => !isMobileMoneyMethod(m));
+  const isCryptoPaymentMethod = (method: any) => {
+    if (!method) return false;
+    const pm = String(method.payment_method_name || "").toLowerCase();
+    if (pm.includes("crypto")) return true;
+    const prov = String(method.payment_provider_name || "").toLowerCase();
+    if (/\b(bsc|bep20|usdt|trc20|tron|erc20|polygon|metamask|tether)\b/.test(prov)) {
+      const wa = String(method.wallet_address || "").trim();
+      if (wa.startsWith("0x") || wa.length >= 26) return true;
+    }
+    return false;
+  };
 
-  // Paginate bank methods only
-  const bankMethodsPaginated = bankMethods.slice(
+  const isForexPaymentMethod = (method: any) => {
+    if (!method) return false;
+    return String(method.payment_method_name || "").toLowerCase().includes("forex");
+  };
+
+  const traditionalBankMethods: PaymentMethod[] = safeUserPaymentDetails.filter(
+    (m: any) =>
+      !isMobileMoneyMethod(m) &&
+      !isCryptoPaymentMethod(m) &&
+      !isForexPaymentMethod(m)
+  );
+
+  const cryptoMethods: PaymentMethod[] = safeUserPaymentDetails.filter(isCryptoPaymentMethod);
+  const forexMethods: PaymentMethod[] = safeUserPaymentDetails.filter(isForexPaymentMethod);
+
+  // Paginate classic bank rows only (crypto/forex are usually short lists)
+  const bankMethodsPaginated = traditionalBankMethods.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
 
   useEffect(() => {
-    const totalPages = Math.ceil(bankMethods.length / ITEMS_PER_PAGE) || 1;
+    const totalPages = Math.ceil(traditionalBankMethods.length / ITEMS_PER_PAGE) || 1;
     if (currentPage > totalPages) {
       setCurrentPage(totalPages);
     }
-  }, [bankMethods.length]);
+  }, [traditionalBankMethods.length]);
 
   // Inline Add Method Dropdown - searchable list of all payment providers
   const renderAddMethodDropdown = () => (
@@ -882,7 +1024,7 @@ const PaymentMethods = () => {
           {/* Bank Section */}
           <div className="mb-6" ref={listRef}>
             <div>
-              {bankMethods.length === 0 ? (
+              {traditionalBankMethods.length === 0 ? (
                 <p className="text-sm text-gray-500 dark:text-gray-400">No bank payment methods added.</p>
               ) : (
                 <>
@@ -902,10 +1044,56 @@ const PaymentMethods = () => {
                       </tbody>
                     </table>
                   </div>
-                  {renderPagination(bankMethods.length)}
+                  {renderPagination(traditionalBankMethods.length)}
                 </>
               )}
             </div>
+          </div>
+
+          {/* Crypto wallets (own section so they are not buried in bank pagination / empty account column) */}
+          <div className="mb-6">
+            <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Crypto</h4>
+            {cryptoMethods.length === 0 ? (
+              <p className="text-sm text-gray-500 dark:text-gray-400">No crypto payment methods added.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b-2 border-gray-200 dark:border-[#35353E]">
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">Provider</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">Account Name</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">Wallet Address</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">Status</th>
+                      <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-white">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>{cryptoMethods.map(renderCryptoPaymentMethod)}</tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {/* Forex */}
+          <div className="mb-6">
+            <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Forex</h4>
+            {forexMethods.length === 0 ? (
+              <p className="text-sm text-gray-500 dark:text-gray-400">No forex payment methods added.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b-2 border-gray-200 dark:border-[#35353E]">
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">Provider</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">Account Name</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">Account / MT ID</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">Status</th>
+                      <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-white">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>{forexMethods.map(renderPaymentMethod)}</tbody>
+                </table>
+              </div>
+            )}
           </div>
 
           {/* Separator */}

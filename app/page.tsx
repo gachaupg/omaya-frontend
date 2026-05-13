@@ -382,7 +382,7 @@ export default function MarketingPage() {
     },
     {
       label: "Countries",
-      value: "50+",
+      value: "150+",
       icon: Globe,
       gradient: "from-[#AD46FF] to-[#F6339A]",
     },
@@ -515,7 +515,7 @@ export default function MarketingPage() {
                 <span className="relative">
                   <span className="text-gray-900 dark:text-[#788099]">Experience lightning-fast trades, ultra-low fees and bank grade security</span>
                   <br />
-                  <span className="text-[#1D8751] dark:text-secondary">Join 500,000+ traders worldwide.</span>
+                  <span className="text-[#1D8751] dark:text-secondary">Join 50,000+ traders worldwide.</span>
                 </span>
               </p>
 
@@ -1135,7 +1135,7 @@ export default function MarketingPage() {
                         },
                         {
                           icon: Users,
-                          title: "100K+ Active Users",
+                          title: "50K+ Active Users",
                           desc: "Trusted by traders across East Africa",
                           bgColor: "bg-gradient-to-br from-[#22C55E] to-[#10B981]",
                         },

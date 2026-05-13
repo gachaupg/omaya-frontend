@@ -378,7 +378,7 @@ export default function MarketingPage() {
                 <span className="text-gray-900 dark:text-[#788099]">
                   Experience lightning-fast trades, ultra-low fees, and bank-grade security.
                 </span>{" "}
-                <span className="text-[#1D8751] dark:text-[#13B562]">Join 500,000+ traders worldwide.</span>
+                <span className="text-[#1D8751] dark:text-[#13B562]">Join 50,000+ traders worldwide.</span>
               </p>
 
               {/* CTA Buttons */}

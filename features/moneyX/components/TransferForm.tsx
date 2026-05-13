@@ -20,6 +20,15 @@ import { useBookmarkedAddresses } from "@/features/express/hooks/useBookmarkedAd
 import { BookmarkDropdown } from "@/features/express/components/forms/BookmarkDropdown";
 import { usePaymentMethodsDisplay } from "../../express/hooks/useDataDisplay";
 import { useExpressI18n } from "@/lib/useExpressI18n";
+import {
+  clampMoneyXAmountNumber,
+  getMoneyXMaxAmountErrorMessage,
+  isMoneyXAmountOverHardLimit,
+  MONEYX_MAX_AMOUNT_INPUT_DIGITS,
+  normalizeMoneyXAmountInputForRestore,
+  prepareMoneyXAmountFieldValue,
+  toMoneyXClampedInputString,
+} from "@/lib/utils/moneyXAmountInput";
 
 interface TransferFormProps {
   onTransfer?: (transactionData: {
@@ -35,14 +44,6 @@ interface TransferFormProps {
   /** Used for range-commissions API: commission_type=deposit | withdrawal */
   commissionType?: "deposit" | "withdrawal";
 }
-
-const normalizeRestoredAmountInput = (raw: unknown): string => {
-  const s = String(raw ?? "").trim();
-  if (!s) return "";
-  // Avoid restoring "00" / "0.00" into inputs.
-  if (/^0+(\.0+)?$/.test(s)) return "";
-  return s;
-};
 
 export default function TransferForm({ onTransfer, initialState, commissionType = "deposit" }: TransferFormProps) {
   const dispatch = useDispatch<AppDispatch>();
@@ -261,21 +262,25 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
   useEffect(() => {
     const rate = apiCommission ?? 0;
     if (isCalculatingFromPay && payAmount > 0) {
-      const calculatedGetAmount = calculateReceiveAmount(
-        payAmount,
-        rate,
-        apiCommissionIsPercentage
+      const calculatedGetAmount = clampMoneyXAmountNumber(
+        calculateReceiveAmount(
+          payAmount,
+          rate,
+          apiCommissionIsPercentage
+        )
       );
       setGetAmount(calculatedGetAmount);
       setGetAmountInput(calculatedGetAmount.toString());
     } else if (!isCalculatingFromPay && getAmount > 0) {
-      const calculatedPayAmount = calculateSendAmount(
-        getAmount,
-        rate,
-        apiCommissionIsPercentage
+      const calculatedPayAmount = clampMoneyXAmountNumber(
+        calculateSendAmount(
+          getAmount,
+          rate,
+          apiCommissionIsPercentage
+        )
       );
       setPayAmount(calculatedPayAmount);
-      setPayAmountInput(calculatedPayAmount.toString());
+      setPayAmountInput(toMoneyXClampedInputString(calculatedPayAmount));
     }
   }, [apiCommission, apiCommissionIsPercentage]);
 
@@ -473,15 +478,23 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
 
         isRestoringRef.current = true;
 
-        const restoredPayInput = normalizeRestoredAmountInput(state.amountInput);
+        const restoredPayInput = normalizeMoneyXAmountInputForRestore(
+          state.amountInput
+        );
         if (restoredPayInput) {
-          const sendAmount = state.amountValue || parseFloat(restoredPayInput) || 0;
+          const sendAmount = clampMoneyXAmountNumber(
+            state.amountValue || parseFloat(restoredPayInput) || 0
+          );
           setPayAmountInput(restoredPayInput);
           setPayAmount(sendAmount);
         }
-        const restoredGetInput = normalizeRestoredAmountInput(state.receiveAmountInput);
+        const restoredGetInput = normalizeMoneyXAmountInputForRestore(
+          state.receiveAmountInput
+        );
         if (restoredGetInput) {
-          const receiveAmount = state.receiveAmountValue || parseFloat(restoredGetInput) || 0;
+          const receiveAmount = clampMoneyXAmountNumber(
+            state.receiveAmountValue || parseFloat(restoredGetInput) || 0
+          );
           setGetAmountInput(restoredGetInput);
           setGetAmount(receiveAmount);
         }
@@ -533,15 +546,27 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
       const state = JSON.parse(saved);
       isRestoringRef.current = true;
 
-      const restoredPayInput = normalizeRestoredAmountInput(state.payAmountInput);
+      const restoredPayInput = normalizeMoneyXAmountInputForRestore(
+        state.payAmountInput
+      );
       if (restoredPayInput) {
         setPayAmountInput(restoredPayInput);
-        setPayAmount(state.payAmount ?? (parseFloat(restoredPayInput) || 0));
+        setPayAmount(
+          clampMoneyXAmountNumber(
+            state.payAmount ?? (parseFloat(restoredPayInput) || 0)
+          )
+        );
       }
-      const restoredGetInput = normalizeRestoredAmountInput(state.getAmountInput);
+      const restoredGetInput = normalizeMoneyXAmountInputForRestore(
+        state.getAmountInput
+      );
       if (restoredGetInput) {
         setGetAmountInput(restoredGetInput);
-        setGetAmount(state.getAmount ?? (parseFloat(restoredGetInput) || 0));
+        setGetAmount(
+          clampMoneyXAmountNumber(
+            state.getAmount ?? (parseFloat(restoredGetInput) || 0)
+          )
+        );
       }
       if (state.bankAccountAddress !== undefined) {
         setBankAccountAddress(state.bankAccountAddress || "");
@@ -1047,54 +1072,64 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
 
   // Calculate receive/send using commission percentage from API (receive = send - send*rate/100)
   const handleAmountChange = (value: string, isFromPay: boolean) => {
-    if (value === "" || /^\d*\.?\d*$/.test(value)) {
-      // If user clears the input, keep both fields empty (avoid reformatting to "0" / "0.00")
-      if (value === "") {
-        setPayAmountInput("");
-        setPayAmount(0);
-        setGetAmountInput("");
-        setGetAmount(0);
-        setApiValidationError(null);
-        return;
-      }
-      if (value.includes(".")) {
-        const decimalPart = value.split(".")[1];
-        if (decimalPart && decimalPart.length > 8) {
-          setApiValidationError("Number cannot have more than 8 decimal places.");
-          return;
-        }
-      }
-
-      const newAmount = parseFloat(value) || 0;
-      const rate = apiCommission ?? 0;
-
-      if (isFromPay) {
-        setPayAmountInput(value);
-        setPayAmount(newAmount);
-        setIsCalculatingFromPay(true);
-        const calculatedGetAmount = calculateReceiveAmount(
-          newAmount,
-          rate,
-          apiCommissionIsPercentage
-        );
-        setGetAmount(calculatedGetAmount);
-        setGetAmountInput(calculatedGetAmount.toString());
-      } else {
-        setGetAmountInput(value);
-        setGetAmount(newAmount);
-        setIsCalculatingFromPay(false);
-        const calculatedPayAmount = calculateSendAmount(
-          newAmount,
-          rate,
-          apiCommissionIsPercentage
-        );
-        setPayAmount(calculatedPayAmount);
-        setPayAmountInput(calculatedPayAmount.toString());
-      }
-
+    const prep = prepareMoneyXAmountFieldValue(value);
+    if (!prep.ok) {
+      if (prep.invalidPattern) return;
+      setApiValidationError(prep.error ?? null);
+      return;
+    }
+    const v = prep.v;
+    if (v === "") {
+      setPayAmountInput("");
+      setPayAmount(0);
+      setGetAmountInput("");
+      setGetAmount(0);
       setApiValidationError(null);
+      return;
+    }
 
-      if (newAmount > 15000) {
+    const rate = apiCommission ?? 0;
+
+    if (isFromPay) {
+      const parsedPay = parseFloat(v) || 0;
+      const clampedPay = clampMoneyXAmountNumber(parsedPay);
+      const payDisplay =
+        clampedPay !== parsedPay ? toMoneyXClampedInputString(clampedPay) : v;
+      setPayAmountInput(payDisplay);
+      setPayAmount(clampedPay);
+      setIsCalculatingFromPay(true);
+      const calculatedGetAmount = clampMoneyXAmountNumber(
+        calculateReceiveAmount(
+          clampedPay,
+          rate,
+          apiCommissionIsPercentage
+        )
+      );
+      setGetAmount(calculatedGetAmount);
+      setGetAmountInput(calculatedGetAmount.toString());
+      setApiValidationError(null);
+      if (clampedPay > 15000) {
+        // You can add an info modal here similar to deposit form
+      }
+    } else {
+      const parsedRecv = parseFloat(v) || 0;
+      const clampedRecv = clampMoneyXAmountNumber(parsedRecv);
+      const recvDisplay =
+        clampedRecv !== parsedRecv ? toMoneyXClampedInputString(clampedRecv) : v;
+      setGetAmountInput(recvDisplay);
+      setGetAmount(clampedRecv);
+      setIsCalculatingFromPay(false);
+      const calculatedPayAmount = clampMoneyXAmountNumber(
+        calculateSendAmount(
+          clampedRecv,
+          rate,
+          apiCommissionIsPercentage
+        )
+      );
+      setPayAmount(calculatedPayAmount);
+      setPayAmountInput(toMoneyXClampedInputString(calculatedPayAmount));
+      setApiValidationError(null);
+      if (clampedRecv > 15000) {
         // You can add an info modal here similar to deposit form
       }
     }
@@ -1109,6 +1144,10 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
 
     if (!payAmountInput || payAmountInput.trim() === "" || !payAmount || payAmount <= 0) {
       errors.push("Please enter a valid amount");
+    }
+
+    if (isMoneyXAmountOverHardLimit(payAmount)) {
+      errors.push(getMoneyXMaxAmountErrorMessage());
     }
 
     if (!fromPaymentMethod || !selectedFromPaymentDetail) {
@@ -1190,6 +1229,7 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
                   type="text"
                   inputMode="decimal"
                   value={payAmountInput}
+                  maxLength={MONEYX_MAX_AMOUNT_INPUT_DIGITS + 1}
                   onChange={(e) => {
                     handleAmountChange(e.target.value, true);
                   }}
@@ -1205,7 +1245,7 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
               className="flex-1 sm:pl-4 border-t sm:border-t-0 sm:border-l border-border dark:border-[#35353E] pt-3 sm:pt-0 sm:border-none"
             >
               <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
-                {t("express.paymentMethod", "Payment Method")}
+                {t("express.fromPaymentMethod", "From Payment Method")}
                 <div className="w-2 h-2 opacity-0"></div>
               </label>
               <div className="relative w-full">
@@ -1226,7 +1266,7 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
                       finalPaymentMethods.length === 0
                       ? "Loading payment methods..."
                       : finalPaymentMethods && finalPaymentMethods.length > 0
-                        ? "Select Payment Method"
+                        ? "Select From Payment Method"
                         : "No payment methods available"
                   }
                   disabled={
@@ -1311,7 +1351,7 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
             {/* To Payment Method Section */}
             <div className="flex-1 sm:pl-4 border-t sm:border-t-0 sm:border-l border-border dark:border-[#35353E] pt-3 sm:pt-0 sm:border-none">
               <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
-                {t("express.paymentMethod", "Payment Method")}
+                {t("express.toPaymentMethod", "To Payment Method")}
                 <div className="w-2 h-2 opacity-0"></div>
                 {!isCalculatingFromPay && (
                   <span className="text-xs opacity-0 font-medium hidden sm:inline">
@@ -1339,7 +1379,7 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
                       finalPaymentMethods.length === 0
                       ? "Loading payment methods..."
                       : finalPaymentMethods && finalPaymentMethods.length > 0
-                        ? "Select Payment Method"
+                        ? "Select To Payment Method"
                         : "No payment methods available"
                   }
                   disabled={

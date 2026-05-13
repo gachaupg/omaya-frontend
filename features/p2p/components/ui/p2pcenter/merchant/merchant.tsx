@@ -98,6 +98,16 @@ const Merchant = () => {
 
   const handleFileChange = (file: File | null) => {
     if (currentUploadType && file) {
+      if (!file.size || file.size <= 0) {
+        showToast.error(
+          "This file is empty (0 KB). Please choose a valid document with content."
+        )
+        if (fileInputRef.current) {
+          fileInputRef.current.value = ""
+        }
+        return
+      }
+
       // Check for duplicate file names
       const existingFiles = Object.values(files).filter(f => f !== null)
       const duplicateFile = existingFiles.find(existingFile => existingFile?.name === file.name)
@@ -156,6 +166,20 @@ const Merchant = () => {
     if (missingFiles.length > 0) {
       const readableLabels = missingFiles.map(formatLabel).join(', ')
       showToast.error(`Please upload the following required documents: ${readableLabels}`)
+      return
+    }
+
+    const emptyFileKeys = Object.entries(files)
+      .filter((entry): entry is [string, File] => {
+        const f = entry[1]
+        return f != null && (!f.size || f.size <= 0)
+      })
+      .map(([key]) => key)
+    if (emptyFileKeys.length > 0) {
+      const readableEmpty = emptyFileKeys.map(formatLabel).join(", ")
+      showToast.error(
+        `Empty files (0 KB) are not allowed: ${readableEmpty}. Please replace them with valid documents.`
+      )
       return
     }
 
@@ -644,16 +668,13 @@ const Merchant = () => {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex justify-center gap-4 pl-6 pr-6">
-          {Object.values(files).some(file => file !== null) &&
-            !(!!showStatusBanner && status?.status !== 'rejected') && (
-              <button
-                onClick={handleCancel}
-                className="px-8 py-3 border border-[#1D8751] text-[#1D8751] rounded-lg hover:bg-[#1D8751]/10 transition-all duration-200 font-medium"
-              >
-                Cancel
-              </button>
-            )}
+        <div className="flex justify-center gap-4 pl-6 pr-6 mb-8">
+          <button
+            onClick={handleCancel}
+            className="px-8 py-3 border border-gray-300 dark:border-[#4B5563] bg-gray-100 dark:bg-[#2A2F40] text-gray-800 dark:text-gray-100 rounded-lg hover:bg-gray-200 dark:hover:bg-[#35353E] transition-all duration-200 font-medium"
+          >
+            Cancel
+          </button>
           <button
             onClick={handleSubmit}
             disabled={loading || (!!showStatusBanner && status?.status !== 'rejected')}

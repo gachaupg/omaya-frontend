@@ -74,6 +74,8 @@ import {
   AssetDropdownVirtualized,
   buildAssetDropdownRows,
 } from "./AssetDropdownVirtualized";
+import { ExpressP2PWithdrawalTermsPanel } from "@/features/express/components/legal/ExpressP2PWithdrawalTermsPanel";
+import { EXPRESS_P2P_WITHDRAWAL_TERMS_OF_SERVICE_MODAL } from "@/features/express/constants/expressP2PWithdrawalTerms";
 
 // Add UserPaymentDetail interface
 interface UserPaymentDetail {
@@ -817,6 +819,15 @@ export default function WithdrawalForm({
   // Forex-specific state for withdrawal
   const [userNotesForex, setUserNotesForex] = useState<string>("");
   const [showForexWithdrawalForm, setShowForexWithdrawalForm] = useState<boolean>(false);
+  const selectedAssetTicker = String(
+    selectedAsset?.ticker || selectedAsset?.symbol || selectedAsset?.name || ""
+  )
+    .trim()
+    .toUpperCase();
+  const shouldShowTemporaryWalletAddressNotice =
+    !!selectedAssetTicker &&
+    !selectedAssetTicker.includes("USDT") &&
+    !selectedAssetTicker.includes("USDC");
 
   useEffect(() => {
     if (!selectedAsset || !isForexAsset(selectedAsset)) {
@@ -5007,6 +5018,11 @@ export default function WithdrawalForm({
                   <h3 className="text-sm sm:text-base text-[#35353e] dark:text-[#788099] font-semibold mb-2">
                     USDT Wallet Address
                   </h3>
+                  {shouldShowTemporaryWalletAddressNotice && (
+                    <p className="text-xs sm:text-sm text-amber-600 dark:text-amber-400 mb-3">
+                      This wallet address is temporary and may change if you repeat this process. Please use the latest generated address.
+                    </p>
+                  )}
                   {withdrawalAddress ? (
                     <div className=" dark:bg-[#1D1D23]  border border-[#1D8751] rounded-xl p-3 sm:p-4">
                       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
@@ -5134,62 +5150,13 @@ export default function WithdrawalForm({
                   </p>
                 </div>
 
-                {/* Terms & Conditions */}
-                <div className="flex items-center gap-2 mb-2">
-                  <svg className="w-5 h-5 text-[#1D8751]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <h3 className={`font-medium text-sm sm:text-base ${isDark ? "text-white" : "text-gray-900"}`}>
-                    Terms & Conditions
-                  </h3>
-                </div>
-                <div className={`border border-[#1D8751] rounded-xl overflow-hidden transition-all duration-300 ${isDark ? "bg-[#1D1D23]" : "bg-[#F8FAFF]"}`}>
-                  <div className="p-4">
-                    <div className={`space-y-2 sm:space-y-3 ${expandedTerms ? "" : "line-clamp-3"}`}>
-                      <div className="flex items-start gap-2 sm:gap-3">
-                        <span className="text-[#1D8751] font-bold text-sm sm:text-base flex-shrink-0">1.</span>
-                        <p className={`text-xs sm:text-sm ${isDark ? "text-[#788099]" : "text-[#475569]"}`}>
-                          <span className="font-semibold">Your receiving account:</span> We will send money to your{" "}
-                          <span className="font-semibold text-[#1D8751]">{selectedPaymentDetail?.provider_name || selectedProviderData?.provider_name || payBank || "the selected provider"}</span>{" "}
-                          account <span className="font-semibold text-[#1D8751]">{selectedPaymentDetail?.account_number || selectedPaymentDetail?.payment_details?.[0]?.account_number || selectedPaymentDetail?.payment_details?.[0]?.mobile_number || "—"}</span>{" "}
-                          for withdrawal of <span className="font-semibold text-[#1D8751]">{selectedAsset?.ticker || selectedAsset?.symbol || "crypto"}</span>. Please ensure this is your own account.
-                        </p>
-                      </div>
-                      <div className="flex items-start gap-2 sm:gap-3">
-                        <span className="text-[#1D8751] font-bold text-sm sm:text-base flex-shrink-0">2.</span>
-                        <p className={`text-xs sm:text-sm ${isDark ? "text-[#788099]" : "text-[#475569]"}`}>
-                          <span className="font-semibold">Put transaction ID in the description field:</span> You must put the transaction ID in the description/memo field of the bank.
-                        </p>
-                      </div>
-                      <div className="flex items-start gap-2 sm:gap-3">
-                        <span className="text-[#1D8751] font-bold text-sm sm:text-base flex-shrink-0">3.</span>
-                        <p className={`text-xs sm:text-sm ${isDark ? "text-[#788099]" : "text-[#475569]"}`}>
-                          <span className="font-semibold">Non-compliance:</span> Please note, if you do not follow the above conditions, we may reject your transaction and return your funds, but delays may apply.
-                        </p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => setExpandedTerms(!expandedTerms)}
-                      className="mt-3 sm:mt-4 text-[#1D8751] hover:text-[#166b3e] font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition-colors"
-                    >
-                      {expandedTerms ? (
-                        <>
-                          <span>Show Less</span>
-                          <svg className="w-4 h-4 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                          </svg>
-                        </>
-                      ) : (
-                        <>
-                          <span>Show More</span>
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                          </svg>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
+                {/* Terms & Conditions — P2P / USDT BEP20 withdrawal */}
+                <ExpressP2PWithdrawalTermsPanel
+                  expandedTerms={expandedTerms}
+                  setExpandedTerms={setExpandedTerms}
+                  variant="dashboard"
+                  isDark={isDark}
+                />
 
                 {/* Terms Checkbox */}
                 <div className="mt-4">
@@ -5211,23 +5178,17 @@ export default function WithdrawalForm({
                       onChange={(e) => setIsTermsAccepted(e.target.checked)}
                     />
                     <span className="text-[#35353e] dark:text-[#788099] text-sm">
-                      I've read and agree to the{" "}
+                      I confirm that I have read and accepted all the terms listed above and the{" "}
                       <button
                         type="button"
                         className="text-[#1D8751] cursor-pointer hover:underline"
                         onClick={() =>
-                          openLegalModal("Terms of Use", [
-                            "By using this withdrawal service, you confirm that all payment details and receiving account information submitted by you are true, accurate, and belong to you. You are solely responsible for ensuring the account number, account name, provider details, and network/asset selections are correct before submitting any request.",
-                            "You agree to provide complete transaction information, including required references such as transaction identifiers or descriptions where requested. If mandatory information is missing or incorrect, your transaction may be delayed, placed under review, rejected, or returned according to operational and compliance procedures.",
-                            "Processing times, fees, commissions, exchange rates, and applicable limits may vary depending on network conditions, liquidity, provider availability, security checks, and market volatility. Any estimate shown before completion is indicative only and does not constitute a final guaranteed settlement amount.",
-                            "You acknowledge that OMAYA may perform verification, compliance, and fraud-prevention checks at any stage of the transaction lifecycle. Transactions that appear suspicious, violate policy, or conflict with AML/KYC requirements may be paused, restricted, cancelled, or escalated for manual review without prior notice.",
-                            "By proceeding, you confirm that you have read and accepted these Terms of Use and related legal documents, including the Privacy Policy, Payment Policies, AML Policy, and Risk Disclosure Statements. Continued use of this service indicates your consent to be bound by current terms and any lawful updates published by OMAYA."
-                          ])
+                          openLegalModal("Terms of Service", EXPRESS_P2P_WITHDRAWAL_TERMS_OF_SERVICE_MODAL)
                         }
                       >
-                        Terms of Use
+                        Terms of Service
                       </button>
-                      ,{" "}
+                      , together with the{" "}
                       <button
                         type="button"
                         className="text-[#1D8751] cursor-pointer hover:underline"

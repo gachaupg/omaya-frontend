@@ -27,6 +27,15 @@ import {
   PAYMENT_LOGO_BASE_CLASS,
   PAYMENT_LOGO_SIZE,
 } from "@/features/express/utils/imageHelpers";
+import {
+  clampMoneyXAmountNumber,
+  getMoneyXMaxAmountErrorMessage,
+  isMoneyXAmountOverHardLimit,
+  MONEYX_MAX_AMOUNT_INPUT_DIGITS,
+  normalizeMoneyXAmountInputForRestore,
+  prepareMoneyXAmountFieldValue,
+  toMoneyXClampedInputString,
+} from "@/lib/utils/moneyXAmountInput";
 
 interface TransferFormProps {
   isHomePage?: boolean;
@@ -42,14 +51,6 @@ interface TransferFormProps {
   /** Used for range-commissions API: commission_type=deposit | withdrawal */
   commissionType?: "deposit" | "withdrawal";
 }
-
-const normalizeRestoredAmountInput = (raw: unknown): string => {
-  const s = String(raw ?? "").trim();
-  if (!s) return "";
-  // Avoid restoring "00" / "0.00" into inputs.
-  if (/^0+(\.0+)?$/.test(s)) return "";
-  return s;
-};
 
 export default function TransferForm({ isHomePage = false, onTransfer, commissionType = "deposit" }: TransferFormProps) {
   const dispatch = useDispatch<AppDispatch>();
@@ -299,21 +300,25 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
   useEffect(() => {
     const rate = apiCommission ?? 0;
     if (isCalculatingFromPay && payAmount > 0) {
-      const calculatedGetAmount = calculateReceiveAmount(
-        payAmount,
-        rate,
-        apiCommissionIsPercentage
+      const calculatedGetAmount = clampMoneyXAmountNumber(
+        calculateReceiveAmount(
+          payAmount,
+          rate,
+          apiCommissionIsPercentage
+        )
       );
       setGetAmount(calculatedGetAmount);
       setGetAmountInput(calculatedGetAmount.toString());
     } else if (!isCalculatingFromPay && getAmount > 0) {
-      const calculatedPayAmount = calculateSendAmount(
-        getAmount,
-        rate,
-        apiCommissionIsPercentage
+      const calculatedPayAmount = clampMoneyXAmountNumber(
+        calculateSendAmount(
+          getAmount,
+          rate,
+          apiCommissionIsPercentage
+        )
       );
       setPayAmount(calculatedPayAmount);
-      setPayAmountInput(calculatedPayAmount.toString());
+      setPayAmountInput(toMoneyXClampedInputString(calculatedPayAmount));
     }
   }, [apiCommission, apiCommissionIsPercentage]);
 
@@ -470,15 +475,27 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
         isRestoringRef.current = true;
 
         // Restore amounts immediately
-        const restoredPayInput = normalizeRestoredAmountInput(state.amountInput);
+        const restoredPayInput = normalizeMoneyXAmountInputForRestore(
+          state.amountInput
+        );
         if (restoredPayInput) {
           setPayAmountInput(restoredPayInput);
-          setPayAmount(state.amountValue || parseFloat(restoredPayInput) || 0);
+          setPayAmount(
+            clampMoneyXAmountNumber(
+              state.amountValue || parseFloat(restoredPayInput) || 0
+            )
+          );
         }
-        const restoredGetInput = normalizeRestoredAmountInput(state.receiveAmountInput);
+        const restoredGetInput = normalizeMoneyXAmountInputForRestore(
+          state.receiveAmountInput
+        );
         if (restoredGetInput) {
           setGetAmountInput(restoredGetInput);
-          setGetAmount(state.receiveAmountValue || parseFloat(restoredGetInput) || 0);
+          setGetAmount(
+            clampMoneyXAmountNumber(
+              state.receiveAmountValue || parseFloat(restoredGetInput) || 0
+            )
+          );
         }
 
         // Restore bank account address and expand form
@@ -724,54 +741,64 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
 
   // Calculate receive/send using commission percentage from API (receive = send - send*rate/100)
   const handleAmountChange = (value: string, isFromPay: boolean) => {
-    if (value === "" || /^\d*\.?\d*$/.test(value)) {
-      // If user clears the input, keep both fields empty (avoid reformatting to "0" / "0.00")
-      if (value === "") {
-        setPayAmountInput("");
-        setPayAmount(0);
-        setGetAmountInput("");
-        setGetAmount(0);
-        setApiValidationError(null);
-        return;
-      }
-      if (value.includes(".")) {
-        const decimalPart = value.split(".")[1];
-        if (decimalPart && decimalPart.length > 8) {
-          setApiValidationError("Number cannot have more than 8 decimal places.");
-          return;
-        }
-      }
-
-      const newAmount = parseFloat(value) || 0;
-      const rate = apiCommission ?? 0;
-
-      if (isFromPay) {
-        setPayAmountInput(value);
-        setPayAmount(newAmount);
-        setIsCalculatingFromPay(true);
-        const calculatedGetAmount = calculateReceiveAmount(
-          newAmount,
-          rate,
-          apiCommissionIsPercentage
-        );
-        setGetAmount(calculatedGetAmount);
-        setGetAmountInput(calculatedGetAmount.toString());
-      } else {
-        setGetAmountInput(value);
-        setGetAmount(newAmount);
-        setIsCalculatingFromPay(false);
-        const calculatedPayAmount = calculateSendAmount(
-          newAmount,
-          rate,
-          apiCommissionIsPercentage
-        );
-        setPayAmount(calculatedPayAmount);
-        setPayAmountInput(calculatedPayAmount.toString());
-      }
-
+    const prep = prepareMoneyXAmountFieldValue(value);
+    if (!prep.ok) {
+      if (prep.invalidPattern) return;
+      setApiValidationError(prep.error ?? null);
+      return;
+    }
+    const v = prep.v;
+    if (v === "") {
+      setPayAmountInput("");
+      setPayAmount(0);
+      setGetAmountInput("");
+      setGetAmount(0);
       setApiValidationError(null);
+      return;
+    }
 
-      if (newAmount > 15000) {
+    const rate = apiCommission ?? 0;
+
+    if (isFromPay) {
+      const parsedPay = parseFloat(v) || 0;
+      const clampedPay = clampMoneyXAmountNumber(parsedPay);
+      const payDisplay =
+        clampedPay !== parsedPay ? toMoneyXClampedInputString(clampedPay) : v;
+      setPayAmountInput(payDisplay);
+      setPayAmount(clampedPay);
+      setIsCalculatingFromPay(true);
+      const calculatedGetAmount = clampMoneyXAmountNumber(
+        calculateReceiveAmount(
+          clampedPay,
+          rate,
+          apiCommissionIsPercentage
+        )
+      );
+      setGetAmount(calculatedGetAmount);
+      setGetAmountInput(calculatedGetAmount.toString());
+      setApiValidationError(null);
+      if (clampedPay > 15000) {
+        // You can add an info modal here similar to deposit form
+      }
+    } else {
+      const parsedRecv = parseFloat(v) || 0;
+      const clampedRecv = clampMoneyXAmountNumber(parsedRecv);
+      const recvDisplay =
+        clampedRecv !== parsedRecv ? toMoneyXClampedInputString(clampedRecv) : v;
+      setGetAmountInput(recvDisplay);
+      setGetAmount(clampedRecv);
+      setIsCalculatingFromPay(false);
+      const calculatedPayAmount = clampMoneyXAmountNumber(
+        calculateSendAmount(
+          clampedRecv,
+          rate,
+          apiCommissionIsPercentage
+        )
+      );
+      setPayAmount(calculatedPayAmount);
+      setPayAmountInput(toMoneyXClampedInputString(calculatedPayAmount));
+      setApiValidationError(null);
+      if (clampedRecv > 15000) {
         // You can add an info modal here similar to deposit form
       }
     }
@@ -788,6 +815,10 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
 
     if (!payAmountInput || payAmountInput.trim() === "" || !payAmount || payAmount <= 0) {
       errors.push("Please enter a valid amount");
+    }
+
+    if (isMoneyXAmountOverHardLimit(payAmount)) {
+      errors.push(getMoneyXMaxAmountErrorMessage());
     }
 
     if (!fromPaymentMethod || !selectedFromPaymentDetail) {
@@ -923,12 +954,22 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
       isRestoringRef.current = true;
 
       if (state.payAmountInput !== undefined && state.payAmountInput !== null) {
-        setPayAmountInput(state.payAmountInput);
-        setPayAmount(state.payAmount ?? (parseFloat(state.payAmountInput) || 0));
+        const payIn = normalizeMoneyXAmountInputForRestore(state.payAmountInput);
+        setPayAmountInput(payIn);
+        setPayAmount(
+          clampMoneyXAmountNumber(
+            state.payAmount ?? (parseFloat(payIn) || 0)
+          )
+        );
       }
       if (state.getAmountInput !== undefined && state.getAmountInput !== null) {
-        setGetAmountInput(state.getAmountInput);
-        setGetAmount(state.getAmount ?? (parseFloat(state.getAmountInput) || 0));
+        const getIn = normalizeMoneyXAmountInputForRestore(state.getAmountInput);
+        setGetAmountInput(getIn);
+        setGetAmount(
+          clampMoneyXAmountNumber(
+            state.getAmount ?? (parseFloat(getIn) || 0)
+          )
+        );
       }
       if (state.bankAccountAddress !== undefined) {
         setBankAccountAddress(state.bankAccountAddress || "");
@@ -1012,6 +1053,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
                   type="text"
                   inputMode="decimal"
                   value={payAmountInput}
+                  maxLength={MONEYX_MAX_AMOUNT_INPUT_DIGITS + 1}
                   onChange={(e) => {
                     handleAmountChange(e.target.value, true);
                   }}
@@ -1025,7 +1067,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
             {/* Payment Method Section */}
             <div className="flex-1 min-w-0">
               <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
-                Payment Method
+                From Payment Method
                 <div className="w-2 h-2 opacity-0" aria-hidden />
               </label>
               <div
@@ -1058,14 +1100,14 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
                   placeholder={
                     paymentMethodsDisplay.isLoading && finalPaymentMethods.length === 0
                       ? "Loading payment methods..."
-                      : " Payment Method"
+                      : "Select From Payment Method"
                   }
                   disabled={paymentMethodsDisplay.isLoading && finalPaymentMethods.length === 0}
                   loading={paymentMethodsDisplay.isLoading && finalPaymentMethods.length === 0}
                   loadingText="Loading payment methods..."
                   emptyText="No payment methods available"
                   searchable={true}
-                  dropdownTitle=" payment method"
+                  dropdownTitle="From payment method"
                   dropdownOffsetY={-68}
                   dropdownOffsetX={0}
                 />
@@ -1141,7 +1183,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
             {/* Payment Method Section */}
             <div className="flex-1 min-w-0">
               <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
-                Payment Method
+                To Payment Method
                 <div className="w-2 h-2 opacity-0" aria-hidden />
               </label>
               <div
@@ -1176,14 +1218,14 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
                   placeholder={
                     paymentMethodsDisplay.isLoading && finalPaymentMethods.length === 0
                       ? "Loading payment methods..."
-                      : " Payment Method"
+                      : "Select To Payment Method"
                   }
                   disabled={paymentMethodsDisplay.isLoading && finalPaymentMethods.length === 0}
                   loading={paymentMethodsDisplay.isLoading && finalPaymentMethods.length === 0}
                   loadingText="Loading payment methods..."
                   emptyText="No payment methods available"
                   searchable={true}
-                  dropdownTitle=" payment method"
+                  dropdownTitle="To payment method"
                   dropdownOffsetY={-68}
                   dropdownOffsetX={0}
                 />

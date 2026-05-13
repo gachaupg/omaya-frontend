@@ -214,11 +214,47 @@ const TradePreview: React.FC<TradePreviewProps> = ({
   const matchingUserPaymentMethods = React.useMemo(() => {
     if (tradeType !== "sell" || !paymentMethod || !userPaymentDetails?.length) return [];
     const selectedLower = paymentMethod.toLowerCase().trim();
+
+    const cryptoKeywords = /\b(crypto|wallet|usdt|bsc|bep20|trc20|tron|tether|erc20|polygon|matic|arb|bitcoin|btc|eth)\b/i;
+
+    const chainHints = (s: string) => ({
+      bsc: /\b(bsc|bep20|binance)\b/i.test(s),
+      trc: /\b(trc20|tron)\b/i.test(s),
+      erc: /\b(erc20|ethereum|\beth\b)\b/i.test(s),
+    });
+
     return (userPaymentDetails as any[]).filter((d: any) => {
       if (!d || typeof d !== "object") return false;
       const userProvider = (d.payment_provider_name || d.provider_name || d.provider || "").toLowerCase().trim();
-      if (!userProvider) return false;
-      return selectedLower.includes(userProvider) || userProvider.includes(selectedLower);
+      const userMethod = (d.payment_method_name || "").toLowerCase().trim();
+      if (!userProvider && !userMethod) return false;
+
+      if (userProvider && (selectedLower.includes(userProvider) || userProvider.includes(selectedLower))) {
+        return true;
+      }
+
+      const adCrypto = cryptoKeywords.test(selectedLower);
+      const userCrypto =
+        cryptoKeywords.test(userProvider) ||
+        cryptoKeywords.test(userMethod) ||
+        (String(d.payment_method_name || "").toLowerCase().includes("crypto") &&
+          String(d.wallet_address || "").trim().length > 0);
+
+      if (adCrypto && userCrypto) {
+        const adC = chainHints(selectedLower);
+        const usrC = chainHints(`${userProvider} ${userMethod}`);
+        const adHasChain = adC.bsc || adC.trc || adC.erc;
+        const usrHasChain = usrC.bsc || usrC.trc || usrC.erc;
+        if (adHasChain && usrHasChain) {
+          return (adC.bsc && usrC.bsc) || (adC.trc && usrC.trc) || (adC.erc && usrC.erc);
+        }
+        // Generic ad label (e.g. "Crypto Wallet") with no explicit chain → match any saved crypto wallet
+        if (!adHasChain && usrHasChain) return true;
+        if (adHasChain && !usrHasChain) return false;
+        return true;
+      }
+
+      return false;
     });
   }, [tradeType, paymentMethod, userPaymentDetails]);
 
@@ -333,6 +369,20 @@ const TradePreview: React.FC<TradePreviewProps> = ({
   ].filter((v) => Number.isFinite(v) && v >= 0);
   const walletBalance = Math.max(0, ...walletBalanceCandidates, 0);
   const absoluteMinimumAmount = 10;
+  const handleSetMaxAmount = () => {
+    if (tradeType === "sell") {
+      const sellMaxAmount = Math.max(0, walletBalance);
+      handleSendAmountChange(sellMaxAmount > 0 ? sellMaxAmount.toFixed(2) : "");
+      return;
+    }
+
+    const adAvailable = Math.max(0, advertiserData.availableAmount || 0);
+    const buyMaxInRangeCurrency = Math.max(0, adAvailable * commissionRate);
+    handleSendAmountChange(
+      buyMaxInRangeCurrency > 0 ? buyMaxInRangeCurrency.toFixed(2) : ""
+    );
+  };
+
   const handleSendAmountChange = (value: string) => {
     setActiveField("send");
 
@@ -432,7 +482,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
 
       // Use the same min/max shown in the UI range for live validation.
       const effectiveMin = buyRangeMin;
-      const effectiveMax = Math.min(buyRangeMax, maxSendAmount);
+      const effectiveMax = maxSendAmount;
 
       if (numericAmount < effectiveMin) {
         setIsAmountValid(false);
@@ -573,7 +623,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
 
       // Use the same min/max shown in the UI range for live validation.
       const effectiveMin = buyRangeMin;
-      const effectiveMax = Math.min(buyRangeMax, maxSendAmount);
+      const effectiveMax = maxSendAmount;
 
       if (calculatedSendKes < effectiveMin) {
         setIsAmountValid(false);
@@ -803,8 +853,17 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                     I Want to Sell
                   </div>
                   <div className="flex flex-col gap-2 sm:gap-2">
-                    <div className="text-sm text-gray-500 dark:text-[#788099] pl-0 sm:pl-2 font-medium">
-                      Range: {displayedSellRange}
+                    <div className="flex items-center justify-between gap-2 pl-0 sm:pl-2">
+                      <div className="text-sm text-gray-500 dark:text-[#788099] font-medium">
+                        Range: {displayedSellRange}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleSetMaxAmount}
+                        className="px-2.5 py-1 rounded-md text-xs font-semibold border border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751] hover:text-white transition"
+                      >
+                        Max
+                      </button>
                     </div>
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                       <span className="text-2xl sm:text-3xl text-[#1D8751] font-semibold flex-shrink-0">
@@ -880,8 +939,17 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                     I Want to Send
                   </div>
                   <div className="flex flex-col gap-2 sm:gap-2">
-                    <div className="text-sm text-gray-500 dark:text-[#788099] pl-0 sm:pl-2 font-medium">
-                      Range: {displayedLimitRange}
+                    <div className="flex items-center justify-between gap-2 pl-0 sm:pl-2">
+                      <div className="text-sm text-gray-500 dark:text-[#788099] font-medium">
+                        Range: {displayedLimitRange}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleSetMaxAmount}
+                        className="px-2.5 py-1 rounded-md text-xs font-semibold border border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751] hover:text-white transition"
+                      >
+                        Max
+                      </button>
                     </div>
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                       <span className="text-2xl sm:text-3xl text-[#1D8751] font-semibold flex-shrink-0">
