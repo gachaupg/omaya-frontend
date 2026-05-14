@@ -18,6 +18,7 @@ import {
   SupportRequestPayload,
 } from "../types";
 import { showToast } from "@/lib/utils/toast";
+import { updateUser } from "@/features/auth/slices/authSlice";
 
 import { logger } from '@/lib/utils/logger';
 
@@ -90,14 +91,46 @@ export const fetchProfile = createAsyncThunk(
 
 export const updateProfile = createAsyncThunk(
   "settings/updateProfile",
-  async (data: ProfileUpdateRequest, { rejectWithValue }) => {
+  async (data: ProfileUpdateRequest, { rejectWithValue, dispatch }) => {
     try {
-      const response = await settingsApi.updateProfile(data);
+      const response = (await settingsApi.updateProfile(data)) as Record<
+        string,
+        unknown
+      >;
+      if (response?.otp_required === true) {
+        return {
+          outcome: "otp_required" as const,
+          message: String(
+            response.message ||
+              "OTP sent to your email. Submit again with the OTP to confirm your name change."
+          ),
+        };
+      }
+      if (response?.user && typeof response.user === "object") {
+        const u = response.user as Record<string, unknown>;
+        dispatch(
+          updateUser({
+            ...(typeof u.first_name === "string"
+              ? { first_name: u.first_name }
+              : {}),
+            ...(typeof u.last_name === "string" ? { last_name: u.last_name } : {}),
+            ...(typeof u.email === "string" ? { email: u.email } : {}),
+            ...(typeof u.phone_number === "string"
+              ? { phone_number: u.phone_number }
+              : {}),
+          })
+        );
+        showToast.success("Profile updated successfully");
+        return { outcome: "success" as const, user: response.user };
+      }
       showToast.success("Profile updated successfully");
-      return response.data;
+      return { outcome: "success" as const, profilePayload: response };
     } catch (error: any) {
-      showToast.error(error.message || "Failed to update profile");
-      return rejectWithValue(error.message || "Failed to update profile");
+      const msg =
+        getApiErrorPayload(error) ||
+        normalizeApiErrorMessage(error, "Failed to update profile");
+      showToast.error(msg);
+      return rejectWithValue(msg);
     }
   }
 );
@@ -472,13 +505,15 @@ export const logoutDevice = createAsyncThunk(
 
 export const logoutAllDevices = createAsyncThunk(
   "settings/logoutAllDevices",
-  async (_, { rejectWithValue }) => {
+  async (payload: { password: string }, { rejectWithValue }) => {
     try {
-      const response = await settingsApi.logoutAllDevices();
-      return response.data;
+      const data = await settingsApi.logoutAllDevices(payload.password);
+      return data;
     } catch (error: any) {
-      // Don't show toast here – component handles success/error and clears local state on sign out
-      return rejectWithValue(normalizeApiErrorMessage(error, "Failed to logout all devices"));
+      return rejectWithValue(
+        getApiErrorPayload(error) ??
+          normalizeApiErrorMessage(error, "Failed to logout all devices")
+      );
     }
   }
 );
@@ -525,6 +560,13 @@ const settingsSlice = createSlice({
     setUpdating: (state, action: PayloadAction<boolean>) => {
       state.updating = action.payload;
     },
+    setDeviceSessionsFromRealtime: (
+      state,
+      action: PayloadAction<DeviceSession[]>
+    ) => {
+      state.deviceSessions = action.payload;
+      state.deviceSessionsError = null;
+    },
   },
   extraReducers: (builder) => {
     // Profile
@@ -548,8 +590,38 @@ const settingsSlice = createSlice({
       })
       .addCase(updateProfile.fulfilled, (state, action) => {
         state.updating = false;
-        state.profile = action.payload;
+        const p = action.payload as {
+          outcome: "otp_required" | "success";
+          user?: Record<string, unknown>;
+          profilePayload?: unknown;
+        };
+        if (p.outcome === "otp_required") {
+          state.success = null;
+          return;
+        }
         state.success = "Profile updated successfully";
+        if (p.user && typeof p.user === "object") {
+          const u = p.user as Record<string, unknown>;
+          if (state.profile && typeof state.profile === "object") {
+            const prev = state.profile as Record<string, unknown>;
+            const prevUser = prev.user as Record<string, unknown> | undefined;
+            if (prevUser && typeof prevUser === "object") {
+              state.profile = {
+                ...prev,
+                user: { ...prevUser, ...u },
+              } as unknown as UserProfile;
+            } else {
+              state.profile = {
+                ...prev,
+                ...u,
+              } as unknown as UserProfile;
+            }
+          } else {
+            state.profile = { user: u } as unknown as UserProfile;
+          }
+        } else if (p.profilePayload !== undefined) {
+          state.profile = p.profilePayload as unknown as UserProfile;
+        }
       })
       .addCase(updateProfile.rejected, (state, action) => {
         state.updating = false;
@@ -846,6 +918,7 @@ export const {
   setThemeMode,
   setLoading,
   setUpdating,
+  setDeviceSessionsFromRealtime,
 } = settingsSlice.actions;
 
 export default settingsSlice.reducer;

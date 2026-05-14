@@ -233,8 +233,8 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
           next.orderMax = "Maximum order amount must be greater than 0";
         } else if (maxNum < 10) {
           next.orderMax = "Maximum order amount must be at least 10";
-        } else if (hasMin && maxNum <= minNum) {
-          next.orderMax = "Maximum order amount must be greater than minimum order amount";
+        } else if (hasMin && maxNum < minNum) {
+          next.orderMax = "Maximum order amount cannot be less than minimum order amount";
         } else if (
           activeCurrency === "KES" &&
           hasAmount &&
@@ -885,11 +885,11 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                                     : "Minimum order amount cannot be greater than amount"
                           }));
                         }
-                        // Check if it's greater than or equal to max order amount (if max is set)
-                        else if (orderMax && !isNaN(Number(orderMax)) && valueNum >= Number(orderMax)) {
+                        // Min must not exceed max (equal is allowed)
+                        else if (orderMax && !isNaN(Number(orderMax)) && valueNum > Number(orderMax)) {
                           setErrors((prev) => ({
                             ...prev,
-                            orderMin: "Minimum order amount must be less than maximum order amount"
+                            orderMin: "Minimum order amount cannot be greater than maximum order amount"
                           }));
                         }
                         // Valid - clear error
@@ -898,12 +898,15 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                           // Also re-validate orderMax if it exists
                           if (orderMax && !isNaN(Number(orderMax))) {
                             const maxNum = Number(orderMax);
-                            if (maxNum <= valueNum) {
+                            if (maxNum < valueNum) {
                               setErrors((prev) => ({
                                 ...prev,
-                                orderMax: "Maximum order amount must be greater than minimum order amount"
+                                orderMax: "Maximum order amount cannot be less than minimum order amount"
                               }));
-                            } else if (errors.orderMax && errors.orderMax.includes("greater than minimum")) {
+                            } else if (
+                              errors.orderMax &&
+                              errors.orderMax.includes("cannot be less than minimum")
+                            ) {
                               setErrors((prev) => ({ ...prev, orderMax: undefined }));
                             }
                           }
@@ -975,11 +978,11 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                             orderMax: "Maximum order amount must be at least 10"
                           }));
                         }
-                        // Check if it's less than or equal to min order amount
-                        else if (orderMin && !isNaN(Number(orderMin)) && valueNum <= Number(orderMin)) {
+                        // Max must not be below min (equal is allowed)
+                        else if (orderMin && !isNaN(Number(orderMin)) && valueNum < Number(orderMin)) {
                           setErrors((prev) => ({
                             ...prev,
-                            orderMax: "Maximum order amount must be greater than minimum order amount"
+                            orderMax: "Maximum order amount cannot be less than minimum order amount"
                           }));
                         }
                         // When KES: Order Max cannot exceed rate * amount (Rate at top)
@@ -996,12 +999,12 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                             setErrors((prev) => ({ ...prev, orderMax: undefined }));
                             if (orderMin && !isNaN(Number(orderMin))) {
                               const minNum = Number(orderMin);
-                              if (minNum >= valueNum) {
+                              if (minNum > valueNum) {
                                 setErrors((prev) => ({
                                   ...prev,
-                                  orderMin: "Minimum order amount must be less than maximum order amount"
+                                  orderMin: "Minimum order amount cannot be greater than maximum order amount"
                                 }));
-                              } else if (errors.orderMin?.includes("less than maximum")) {
+                              } else if (errors.orderMin?.includes("cannot be greater than maximum")) {
                                 setErrors((prev) => ({ ...prev, orderMin: undefined }));
                               }
                             }
@@ -1027,12 +1030,15 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                           // Re-validate orderMin if it exists
                           if (orderMin && !isNaN(Number(orderMin))) {
                             const minNum = Number(orderMin);
-                            if (minNum >= valueNum) {
+                            if (minNum > valueNum) {
                               setErrors((prev) => ({
                                 ...prev,
-                                orderMin: "Minimum order amount must be less than maximum order amount"
+                                orderMin: "Minimum order amount cannot be greater than maximum order amount"
                               }));
-                            } else if (errors.orderMin && errors.orderMin.includes("less than maximum")) {
+                            } else if (
+                              errors.orderMin &&
+                              errors.orderMin.includes("cannot be greater than maximum")
+                            ) {
                               setErrors((prev) => ({ ...prev, orderMin: undefined }));
                             }
                           }

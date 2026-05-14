@@ -13,7 +13,6 @@ const Overview = () => {
   const summary = useSelector(selectTransactionSummary);
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
   const wsWallet = useP2PWalletBalanceContext();
-  console.log('wsWallet', wsWallet);
   const [buyDateFilter, setBuyDateFilter] = useState("ALL");
   const [sellDateFilter, setSellDateFilter] = useState("ALL");
 

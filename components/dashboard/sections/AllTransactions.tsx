@@ -12,6 +12,10 @@ import { getHighResAssetIcon } from "@/features/express/utils/imageHelpers";
 import type { AllTransactionItem } from "@/features/transactions/api";
 import { getMyTransactions as getMyP2PTransactions } from "@/features/p2p/api";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import {
+  isPendingAddressDashboardStatus,
+  shouldOmitExchangeWithoutDepositOrWithdrawal,
+} from "@/lib/utils/dashboardTransactionFilters";
 
 const formatAmount = (amount: string | number | undefined | null): string => {
   if (amount === undefined || amount === null || amount === "") return "0.0000";
@@ -146,7 +150,10 @@ const AllTransactions = () => {
   };
 
   const rawResults = data?.results ?? [];
-  const results = [...rawResults].sort((a, b) => {
+  const results = [...rawResults]
+    .filter((tx) => !isPendingAddressDashboardStatus(tx.status))
+    .filter((tx) => !shouldOmitExchangeWithoutDepositOrWithdrawal(tx))
+    .sort((a, b) => {
     const dateA = new Date(a.created_at || 0).getTime();
     const dateB = new Date(b.created_at || 0).getTime();
     return dateB - dateA;

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useId } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useDispatch, useSelector } from "react-redux";
@@ -15,10 +15,15 @@ import { logger } from '@/lib/utils/logger';
 import DragFitCaptcha from "./capture";
 import { useTheme } from "@/context/theme";
 import { consumeAuthRedirectPath } from "@/lib/utils/authRedirect";
+import { storage } from "../utils/storage";
 
 export default function LoginPage() {
   const { t } = useI18n("auth");
   const { isDark } = useTheme();
+  const autofillGuardId = useId().replace(/:/g, "");
+  const [credentialFieldsActive, setCredentialFieldsActive] = useState(false);
+  const emailInputId = `login-email-${autofillGuardId}`;
+  const passwordInputId = `login-password-${autofillGuardId}`;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -108,6 +113,7 @@ export default function LoginPage() {
   };
 
   const proceedWithLogin = async () => {
+    setCredentialFieldsActive(true);
     if (!validateForm()) {
       return;
     }
@@ -115,7 +121,9 @@ export default function LoginPage() {
     setIsSubmitting(true);
 
     try {
-      const result = await dispatch(loginUser({ email, password }));
+      const result = await dispatch(
+        loginUser({ email, password, remember_me: rememberMe })
+      );
 
       if (loginUser.fulfilled.match(result)) {
         // Check if 2FA is required
@@ -206,6 +214,7 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setCredentialFieldsActive(true);
 
     // Validate email and password first
     if (!validateForm()) {
@@ -237,20 +246,24 @@ export default function LoginPage() {
     };
   }, []);
 
+  // Never surface another user's email from app storage on a shared device (legacy key from forgot-password flow).
+  useEffect(() => {
+    storage.removeUserEmail();
+  }, []);
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a] flex flex-col-reverse md:flex-row items-start justify-center relative overflow-hidden px-4 sm:px-6 md:px-8 lg:px-12 py-12 sm:py-16 md:pt-24 md:pb-24">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a] flex flex-col md:flex-row items-center justify-center relative overflow-hidden px-4 sm:px-6 md:px-8 lg:px-12 py-12 sm:py-16 md:py-20 gap-10 md:gap-14 lg:gap-16">
       {/* Left Side - Mobile App Preview */}
-      <div className="w-full md:w-1/2 flex justify-center mb-8 md:mb-0 relative z-10">
+      <div className="w-full max-w-xs sm:max-w-sm md:max-w-none md:w-[40%] lg:w-[38%] flex justify-center shrink-0 relative z-10 mb-6 md:mb-0">
         {/* Background Glow Effect */}
-        <div className="w-[438px] h-[403px] bg-[#1D8751] blur-[60px] absolute left-16 2xl:left-54 opacity-60"></div>
-        <div className="relative">
+        <div className="w-[min(100%,280px)] h-[220px] md:h-[260px] bg-[#1D8751] blur-[48px] md:blur-[56px] absolute left-1/2 -translate-x-1/2 top-8 opacity-50 pointer-events-none" />
+        <div className="relative flex flex-col items-center">
           <Image
             src="/images/iphone_vn7ejc.webp"
             alt="OMAYA Exchange Mobile App"
-            width={350}
-            height={650}
-            className="mx-auto"
-            style={{ width: "auto", height: "auto" }}
+            width={240}
+            height={448}
+            className="mx-auto w-[min(100%,200px)] sm:w-[min(100%,230px)] md:w-[min(100%,250px)] lg:w-[min(100%,270px)] h-auto"
             priority
           />
           {/* App store badges */}
@@ -291,8 +304,8 @@ export default function LoginPage() {
       </div>
 
       {/* Right Side - Login Form (card like register + shadow) */}
-      <div className="w-full md:w-1/2 relative z-10 px-4 sm:px-6 md:px-8 lg:px-0 flex justify-center md:justify-start">
-        <div className="max-w-xl mx-auto 2xl:max-w-2xl w-full rounded-2xl p-6 sm:p-8 bg-white dark:bg-transparent shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_10px_20px_-5px_rgba(0,0,0,0.1)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.7),0_20px_60px_rgba(0,0,0,0.8),0_40px_100px_rgba(0,0,0,0.6)]">
+      <div className="w-full md:flex-1 relative z-10 px-4 sm:px-6 md:px-8 lg:px-10 flex justify-center">
+        <div className="max-w-md w-full rounded-2xl p-6 sm:p-8 bg-white dark:bg-transparent shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_10px_20px_-5px_rgba(0,0,0,0.1)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.7),0_20px_60px_rgba(0,0,0,0.8),0_40px_100px_rgba(0,0,0,0.6)]">
           <div className="mb-6">
             <h1 className="text-gray-900 dark:text-white text-2xl sm:text-3xl font-bold">
               {t("auth.login.title", "Welcome")}
@@ -302,11 +315,38 @@ export default function LoginPage() {
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4 relative">
+          <form
+            onSubmit={handleSubmit}
+            className="space-y-3 sm:space-y-4 relative"
+            autoComplete="off"
+          >
+            {/*
+              Browsers/password managers often ignore autocomplete=off on visible login fields.
+              Decoy fields + readonly-until-focus keep another user's saved credentials off-screen until this user engages.
+            */}
+            <div
+              className="absolute w-px h-px p-0 -m-px overflow-hidden whitespace-nowrap border-0"
+              aria-hidden
+            >
+              <input
+                type="text"
+                name="fakeusernameremembered"
+                tabIndex={-1}
+                autoComplete="username"
+                readOnly
+              />
+              <input
+                type="password"
+                name="fakepasswordremembered"
+                tabIndex={-1}
+                autoComplete="current-password"
+                readOnly
+              />
+            </div>
             {/* Email Field - same design as register */}
             <div>
               <label
-                htmlFor="email"
+                htmlFor={emailInputId}
                 className="block text-gray-600 dark:text-[#9CA3AF] text-xs font-semibold uppercase tracking-wide mb-2"
               >
                 {t("auth.login.email", "Email")}
@@ -314,9 +354,16 @@ export default function LoginPage() {
               <div className="relative">
                 <input
                   type="email"
-                  id="email"
+                  id={emailInputId}
+                  name={`signin_email_${autofillGuardId}`}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  onFocus={() => setCredentialFieldsActive(true)}
+                  readOnly={!credentialFieldsActive}
+                  autoComplete="off"
+                  inputMode="email"
+                  autoCorrect="off"
+                  spellCheck={false}
                   className={`w-full py-2.5 px-4 pl-10 rounded-lg bg-transparent border ${errors.email
                     ? "border-[#FDA29B]"
                     : "border-gray-300 dark:border-[#35353e]"
@@ -361,7 +408,7 @@ export default function LoginPage() {
             {/* Password Field - same design as register */}
             <div>
               <label
-                htmlFor="password"
+                htmlFor={passwordInputId}
                 className="block text-gray-600 dark:text-[#9CA3AF] text-xs font-semibold uppercase tracking-wide mb-2"
               >
                 {t("auth.login.password", "Password")}
@@ -369,9 +416,15 @@ export default function LoginPage() {
               <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}
-                  id="password"
+                  id={passwordInputId}
+                  name={`signin_password_${autofillGuardId}`}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  onFocus={() => setCredentialFieldsActive(true)}
+                  readOnly={!credentialFieldsActive}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  spellCheck={false}
                   className={`w-full py-2.5 px-4 pl-10 pr-12 rounded-lg bg-transparent border ${errors.password
                     ? "border-[#FDA29B]"
                     : "border-gray-300 dark:border-[#35353e]"
@@ -499,7 +552,7 @@ export default function LoginPage() {
                 <div className="relative flex items-center">
                   <input
                     type="checkbox"
-                    id="remember-me"
+                    id={`remember-me-${autofillGuardId}`}
                     checked={rememberMe}
                     onChange={() => {
                       setRememberMe(!rememberMe);
@@ -507,6 +560,8 @@ export default function LoginPage() {
                         setErrors((prev) => ({ ...prev, rememberMe: "" }));
                       }
                     }}
+                    autoComplete="off"
+                    name={`remember_session_${autofillGuardId}`}
                     className={`opacity-0 absolute h-5 w-5 sm:h-4 sm:w-4 cursor-pointer ${errors.rememberMe ? "ring-2 ring-[#F04438] rounded" : ""
                       }`}
                   />
@@ -527,7 +582,7 @@ export default function LoginPage() {
                     )}
                   </div>
                   <label
-                    htmlFor="remember-me"
+                    htmlFor={`remember-me-${autofillGuardId}`}
                     className={`text-xs sm:text-sm cursor-pointer ${errors.rememberMe
                       ? "text-[#F04438]"
                       : "text-gray-600 dark:text-[#9CA3AF]"

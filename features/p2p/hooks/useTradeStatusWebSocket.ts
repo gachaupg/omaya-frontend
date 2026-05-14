@@ -28,7 +28,6 @@ interface UseTradeStatusWebSocketOptions {
 export const useTradeStatusWebSocket = (options: UseTradeStatusWebSocketOptions) => {
   const { tradeId, enabled = true, onStatusUpdate } = options;
   const dispatch = useDispatch<AppDispatch>();
-  const wsRef = useRef(getTradeStatusWebSocket(tradeId));
   const mountedRef = useRef(true);
   const cancelEventFiredRef = useRef(false);
   // Keep latest callback in a ref so effect only depends on tradeId/enabled (avoids reconnect loops when callback reference changes)
@@ -65,7 +64,8 @@ export const useTradeStatusWebSocket = (options: UseTradeStatusWebSocketOptions)
 
     cancelEventFiredRef.current = false;
 
-    const ws = wsRef.current;
+    // Always use the socket for *this* tradeId — a ref initialized with the first tradeId would leak the previous trade's connection after navigation.
+    const ws = getTradeStatusWebSocket(tradeId);
 
     const unsubscribeMessage = ws.onMessage((message: WebSocketMessage) => {
       if (!mountedRef.current) return;
@@ -178,7 +178,8 @@ export const useTradeStatusWebSocket = (options: UseTradeStatusWebSocketOptions)
   }, [enabled, tradeId]);
 
   return {
-    isConnected: wsRef.current.isConnected(),
+    isConnected:
+      Boolean(enabled && tradeId?.trim()) && getTradeStatusWebSocket(tradeId).isConnected(),
   };
 };
 

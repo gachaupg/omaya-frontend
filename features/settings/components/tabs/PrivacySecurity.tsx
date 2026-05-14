@@ -31,6 +31,7 @@ import {
 } from "../../utils/sessionUtils";
 
 import { logger } from '@/lib/utils/logger';
+import { Eye, EyeOff } from "lucide-react";
 
 // Helper functions for device info
 const getDeviceType = (): string => {
@@ -126,6 +127,15 @@ const PrivacySecurity = () => {
 
   // Enhanced logout states
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [logoutAllPassword, setLogoutAllPassword] = useState("");
+  const [logoutAllPasswordVisible, setLogoutAllPasswordVisible] = useState(false);
+  const [logoutAllModalError, setLogoutAllModalError] = useState<string | null>(null);
+  const [signOutCurrentPassword, setSignOutCurrentPassword] = useState("");
+  const [signOutCurrentPasswordVisible, setSignOutCurrentPasswordVisible] =
+    useState(false);
+  const [signOutCurrentModalError, setSignOutCurrentModalError] = useState<
+    string | null
+  >(null);
   const [logoutMode, setLogoutMode] = useState<"all" | "one-by-one" | null>(
     null
   );
@@ -340,6 +350,9 @@ const PrivacySecurity = () => {
   };
 
   const handleSignOutAllDevices = async () => {
+    setLogoutAllPassword("");
+    setLogoutAllPasswordVisible(false);
+    setLogoutAllModalError(null);
     setShowLogoutModal(true);
   };
 
@@ -370,6 +383,13 @@ const PrivacySecurity = () => {
   }, [dispatch]);
 
   const handleLogoutAllDevices = async () => {
+    const pwd = logoutAllPassword.trim();
+    if (!pwd) {
+      setLogoutAllModalError("Please enter your account password.");
+      return;
+    }
+
+    setLogoutAllModalError(null);
     isRedirectingAfterLogoutAllRef.current = true;
     setLogoutLoading(true);
     setLogoutMode("all");
@@ -377,7 +397,12 @@ const PrivacySecurity = () => {
     dispatch(clearDeviceSessionsError());
 
     try {
-      await dispatch(logoutAllDevices()).unwrap();
+      const result = await dispatch(logoutAllDevices({ password: pwd })).unwrap();
+      const msg =
+        typeof (result as { message?: string })?.message === "string"
+          ? (result as { message: string }).message
+          : "Successfully logged out from all devices";
+      showToast.success(msg);
       setLogoutProgress(50);
       // Call auth logout endpoint so server invalidates current session
       try {
@@ -387,15 +412,16 @@ const PrivacySecurity = () => {
       }
       setLogoutProgress(100);
       isRedirectingAfterLogoutAllRef.current = true;
+      setShowLogoutModal(false);
+      setLogoutAllPassword("");
+      setLogoutAllPasswordVisible(false);
+      setLogoutAllModalError(null);
       performLogoutAndRedirect();
-    } catch (_) {
-      // Server may return 400 (e.g. already logged out); still clear local state and redirect
-      setLogoutProgress(100);
-      isRedirectingAfterLogoutAllRef.current = true;
-      performLogoutAndRedirect();
+    } catch {
+      isRedirectingAfterLogoutAllRef.current = false;
+      setLogoutAllModalError("Check your password and try again.");
     } finally {
       setLogoutLoading(false);
-      setShowLogoutModal(false);
       setLogoutMode(null);
       setLogoutProgress(0);
     }
@@ -447,9 +473,15 @@ const PrivacySecurity = () => {
     setLogoutMode(null);
     setLogoutProgress(0);
     setCurrentLogoutSession(null);
+    setLogoutAllPassword("");
+    setLogoutAllPasswordVisible(false);
+    setLogoutAllModalError(null);
   };
 
   const handleRemoveSessionClick = (session: DeviceSession) => {
+    setSignOutCurrentPassword("");
+    setSignOutCurrentPasswordVisible(false);
+    setSignOutCurrentModalError(null);
     setSessionToDelete(session);
     setShowDeleteConfirmModal(true);
   };
@@ -457,19 +489,39 @@ const PrivacySecurity = () => {
   const handleConfirmDelete = async () => {
     if (!sessionToDelete) return;
 
-    setDeletingSessionId(sessionToDelete.session_id);
-    setShowDeleteConfirmModal(false);
-
-    // Deleting current session = sign out immediately
     if (sessionToDelete.is_current) {
-      try {
-        await dispatch(logoutAllDevices()).unwrap();
-      } catch (_) {
-        // Ignore - we'll clear locally
+      const pwd = signOutCurrentPassword.trim();
+      if (!pwd) {
+        setSignOutCurrentModalError("Please enter your account password.");
+        return;
       }
-      performLogoutAndRedirect();
+      setSignOutCurrentModalError(null);
+      setDeletingSessionId(sessionToDelete.session_id);
+      try {
+        const result = await dispatch(
+          logoutAllDevices({ password: signOutCurrentPassword.trim() })
+        ).unwrap();
+        const msg =
+          typeof (result as { message?: string })?.message === "string"
+            ? (result as { message: string }).message
+            : "Successfully logged out from all devices";
+        showToast.success(msg);
+        setShowDeleteConfirmModal(false);
+        setSessionToDelete(null);
+        setSignOutCurrentPassword("");
+        setSignOutCurrentPasswordVisible(false);
+        setSignOutCurrentModalError(null);
+        performLogoutAndRedirect();
+      } catch {
+        setSignOutCurrentModalError("Check your password and try again.");
+      } finally {
+        setDeletingSessionId(null);
+      }
       return;
     }
+
+    setDeletingSessionId(sessionToDelete.session_id);
+    setShowDeleteConfirmModal(false);
 
     try {
       await dispatch(logoutDevice(sessionToDelete.session_id)).unwrap();
@@ -490,6 +542,9 @@ const PrivacySecurity = () => {
   const handleCancelDelete = () => {
     setShowDeleteConfirmModal(false);
     setSessionToDelete(null);
+    setSignOutCurrentPassword("");
+    setSignOutCurrentPasswordVisible(false);
+    setSignOutCurrentModalError(null);
   };
 
   const formatDate = (dateString: string) => {
@@ -806,6 +861,53 @@ const PrivacySecurity = () => {
                 ? "This will sign you out immediately and redirect you to the login page."
                 : "Are you sure you want to delete this session? This will sign out the device from your account."}
             </div>
+            {sessionToDelete.is_current && (
+              <div className="mb-4">
+                <label
+                  htmlFor="sign-out-current-password"
+                  className="block text-xs font-medium text-gray-600 dark:text-[#8C8CA1] mb-1.5"
+                >
+                  Account password
+                </label>
+                <div className="flex items-center gap-2 rounded-lg border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[#1F2937] px-3 py-2 focus-within:ring-2 focus-within:ring-[#1D8751]/30 focus-within:border-[#1D8751]/50">
+                  <input
+                    id="sign-out-current-password"
+                    type={signOutCurrentPasswordVisible ? "text" : "password"}
+                    autoComplete="current-password"
+                    value={signOutCurrentPassword}
+                    onChange={(e) => {
+                      setSignOutCurrentPassword(e.target.value);
+                      setSignOutCurrentModalError(null);
+                    }}
+                    className="min-w-0 flex-1 bg-transparent text-sm text-gray-900 dark:text-white outline-none"
+                    placeholder="Enter your login password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSignOutCurrentPasswordVisible((v) => !v)
+                    }
+                    className="shrink-0 text-gray-500 hover:text-gray-800 dark:text-[#788099] dark:hover:text-white p-0.5 rounded transition-colors"
+                    aria-label={
+                      signOutCurrentPasswordVisible
+                        ? "Hide password"
+                        : "Show password"
+                    }
+                  >
+                    {signOutCurrentPasswordVisible ? (
+                      <EyeOff size={18} />
+                    ) : (
+                      <Eye size={18} />
+                    )}
+                  </button>
+                </div>
+                {signOutCurrentModalError && (
+                  <p className="text-sm text-red-600 dark:text-red-400 mt-2" role="alert">
+                    {signOutCurrentModalError}
+                  </p>
+                )}
+              </div>
+            )}
             <div className="bg-gray-50 dark:bg-[#1F2937] rounded-lg p-3 mb-4 space-y-2 text-sm">
               <div className="flex items-center gap-2">
                 <span className="font-semibold dark:text-white text-gray-900">Browser:</span>
@@ -867,19 +969,58 @@ const PrivacySecurity = () => {
                   Choose how you want to sign out from your devices:
                 </div>
 
+                <div className="mb-4">
+                  <label
+                    htmlFor="logout-all-password"
+                    className="block text-xs font-medium text-gray-600 dark:text-[#8C8CA1] mb-1.5"
+                  >
+                    Account password
+                  </label>
+                  <div className="flex items-center gap-2 rounded-lg border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[#1F2937] px-3 py-2 focus-within:ring-2 focus-within:ring-[#1D8751]/30 focus-within:border-[#1D8751]/50">
+                    <input
+                      id="logout-all-password"
+                      type={logoutAllPasswordVisible ? "text" : "password"}
+                      autoComplete="current-password"
+                      value={logoutAllPassword}
+                      onChange={(e) => {
+                        setLogoutAllPassword(e.target.value);
+                        setLogoutAllModalError(null);
+                      }}
+                      className="min-w-0 flex-1 bg-transparent text-sm text-gray-900 dark:text-white outline-none"
+                      placeholder="Enter your login password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setLogoutAllPasswordVisible((v) => !v)}
+                      className="shrink-0 text-gray-500 hover:text-gray-800 dark:text-[#788099] dark:hover:text-white p-0.5 rounded transition-colors"
+                      aria-label={
+                        logoutAllPasswordVisible ? "Hide password" : "Show password"
+                      }
+                    >
+                      {logoutAllPasswordVisible ? (
+                        <EyeOff size={18} />
+                      ) : (
+                        <Eye size={18} />
+                      )}
+                    </button>
+                  </div>
+                  {logoutAllModalError && (
+                    <p className="text-sm text-red-600 dark:text-red-400 mt-2" role="alert">
+                      {logoutAllModalError}
+                    </p>
+                  )}
+                  <p className="text-xs text-gray-500 dark:text-[#788099] mt-1.5">
+                    Required to confirm signing out every device where you are logged in.
+                  </p>
+                </div>
+
                 <div className="flex flex-col gap-3 mb-4">
                   <button
                     className="w-full py-2.5 sm:py-3 px-4 rounded-xl border border-[#E23D3A] text-[#E23D3A] hover:bg-[#E23D3A] hover:text-white transition font-semibold text-sm"
                     onClick={handleLogoutAllDevices}
                   >
-                    Sign out from ALL devices (including this one)
-                    <div className="text-xs mt-1 opacity-75">
-                      {
-                        allSessions.filter((s: DeviceSession) => s.is_active)
-                          .length
-                      }{" "}
-                      active sessions
-                    </div>
+                    Sign out from ALL devices
+                  
                   </button>
                 </div>
 

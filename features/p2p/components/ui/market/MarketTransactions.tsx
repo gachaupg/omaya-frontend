@@ -430,8 +430,11 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
           completion_time: formatLimitDuration(
             order.completion_time || "00:00:00"
           ),
-          // Check online status from API - status "offline" means offline, otherwise online
-          online: order.status !== 'offline',
+          // Advertiser online flag from API; fall back for older payloads that only sent order.status
+          online:
+            typeof order.advertiser_online === "boolean"
+              ? order.advertiser_online
+              : order.status !== "offline",
           commission: `${order.commission_rate || 0} ${commissionSuffix}`,
           available: `${availableAmount.toFixed(2)} ${orderCurrency}`,
           availableAmount,

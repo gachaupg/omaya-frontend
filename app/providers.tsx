@@ -14,6 +14,7 @@ import { initializeCrossTabSync } from "@/lib/utils/crossTabSync";
 import { Spinner } from "@/components/ui/Skeletons";
 import { storage } from "@/features/auth/utils/storage";
 import { initializeTokenRefresh } from "@/lib/utils/tokenRefresh";
+import GlobalSessionManager from "@/components/GlobalSessionManager";
 
 declare global {
   interface Window {
@@ -248,6 +249,8 @@ export default function Providers({ children }: { children: React.ReactNode }) {
 
   return (
       <Provider store={store}>
+      {/* Outside PersistGate so session/presence hooks run immediately; auth updates after REHYDRATE */}
+      <GlobalSessionManager />
       <PersistGate
         loading={
           <div className="min-h-screen flex items-center justify-center">

@@ -14,6 +14,7 @@ import { useDashboardI18n } from "@/lib/useDashboardI18n";
 import { SortArrowsIcon } from "@/components/ui/SortArrowsIcon";
 import { getHighResAssetIcon } from "@/features/express/utils/imageHelpers";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { isPendingAddressDashboardStatus } from "@/lib/utils/dashboardTransactionFilters";
 
 const BANK_ICONS: Record<string, string> = {
   "Salam Bank": "/banks/salam.png",
@@ -45,7 +46,12 @@ const P2PTransactions = () => {
   const [page, setPage] = useState(1);
   const itemsPerPage = 8;
   // Ensure trades.results is an array
-  const tradesArray = Array.isArray(trades?.results) ? trades.results : [];
+  const tradesArray = (
+    Array.isArray(trades?.results) ? trades.results : []
+  ).filter(
+    (trade: any) =>
+      !isPendingAddressDashboardStatus(trade?.status)
+  );
   const totalPages = Math.ceil(tradesArray.length / itemsPerPage);
   const paginatedData = tradesArray.slice(
     (page - 1) * itemsPerPage,

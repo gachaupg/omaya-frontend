@@ -445,7 +445,12 @@ export interface MatchedTrade {
   timestamp: string;
   associated_trade: number;
   order_type: "buy" | "sell";
-  status: "matched" | "half-matched" | "completed" | "cancelled";
+  /** REST may mirror WebSocket states such as pending_acceptance */
+  status: "matched" | "half-matched" | "completed" | "cancelled" | string;
+  /** When false while status is pending_acceptance, buyer must not mark payment sent yet */
+  can_confirm_payment?: boolean;
+  /** When false, seller must not mark payment received yet */
+  can_confirm_receipt?: boolean;
   rate: number;
   commission_rate?: number;
   payment_details: PaymentDetail[];

@@ -9,6 +9,7 @@ import { useDashboardI18n } from "@/lib/useDashboardI18n";
 import { SortArrowsIcon } from "@/components/ui/SortArrowsIcon";
 import { formatCurrency } from "@/lib/globalFormatter";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { isPendingAddressDashboardStatus } from "@/lib/utils/dashboardTransactionFilters";
 
 const formatRecentTime = (dateValue: string) => {
   const v = formatDistanceToNow(new Date(dateValue), { addSuffix: true });
@@ -44,7 +45,9 @@ const MoneyXTransactions = () => {
     );
   }
 
-  const transactionsList = transactions || [];
+  const transactionsList = (transactions || []).filter(
+    (tx: any) => !isPendingAddressDashboardStatus(tx?.status)
+  );
 
   if (!transactionsList || transactionsList.length === 0) {
     return (

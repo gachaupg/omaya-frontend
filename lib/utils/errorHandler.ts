@@ -1,6 +1,65 @@
 import { AxiosError } from "axios";
 import { showToast } from "./toast";
 
+/**
+ * Reads a human-readable message from typical API JSON bodies, e.g.
+ * `{ "error": "Trade is not awaiting acceptance." }`,
+ * `{ "message": "..." }`, DRF `detail`, nested `error.message`, or `non_field_errors`.
+ */
+export function extractMessageFromResponseData(data: unknown): string | null {
+  if (data == null || typeof data !== "object") return null;
+  const d = data as Record<string, unknown>;
+
+  const err = d.error;
+  if (typeof err === "string" && err.trim()) {
+    return err.trim();
+  }
+  if (err && typeof err === "object") {
+    const eo = err as Record<string, unknown>;
+    if (typeof eo.message === "string" && eo.message.trim()) {
+      return eo.message.trim();
+    }
+    if (typeof eo.detail === "string" && eo.detail.trim()) {
+      return eo.detail.trim();
+    }
+  }
+
+  if (typeof d.message === "string" && d.message.trim()) {
+    return d.message.trim();
+  }
+
+  if (typeof d.detail === "string" && d.detail.trim()) {
+    return d.detail.trim();
+  }
+
+  if (Array.isArray(d.non_field_errors) && d.non_field_errors.length > 0) {
+    const first = d.non_field_errors[0];
+    if (typeof first === "string" && first.trim()) return first.trim();
+  }
+
+  return null;
+}
+
+/** Best-effort user-facing string for any thrown API/network error. */
+export function getMessageFromApiError(error: unknown): string {
+  if (error instanceof AxiosError) {
+    if (!error.response) {
+      return "Network error - please check your connection.";
+    }
+    const fromBody = extractMessageFromResponseData(error.response.data);
+    if (fromBody) return fromBody;
+    const status = error.response.status;
+    if (status === 400) return "The server could not process this request.";
+    if (status === 403) return "You do not have permission to do that.";
+    if (status === 404) return "That resource was not found.";
+    if (status >= 500) return "Server error - please try again later.";
+  }
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+  return "Something went wrong. Please try again.";
+}
+
 // Callback type for auth-related actions
 type AuthCallback = () => void;
 
@@ -37,16 +96,17 @@ export const handleApiError = (error: unknown, options?: { suppress401?: boolean
     // Handle API errors
     const status = error.response.status;
     const data = error.response.data;
+    const bodyMessage = extractMessageFromResponseData(data);
 
     switch (status) {
       case 400:
         if (!shouldSuppress401) {
           showToast.error(
-            "Error Trying to Make The Request",
-            data.message || data.error || "Invalid request"
+            "Request could not be completed",
+            bodyMessage || "Invalid request."
           );
         }
-        throw new Error(data.message || data.error || "Bad request");
+        throw new Error(bodyMessage || "Bad request");
       case 401:
         // Silently suppress 401 errors if flag is set
         if (shouldSuppress401) {
@@ -71,9 +131,12 @@ export const handleApiError = (error: unknown, options?: { suppress401?: boolean
         throw new Error("Server error - please try again later");
       default:
         if (!shouldSuppress401) {
-          showToast.error("Error", data.message || "An error occurred");
+          showToast.error(
+            "Something went wrong",
+            bodyMessage || "An error occurred."
+          );
         }
-        throw new Error(data.message || "An error occurred");
+        throw new Error(bodyMessage || "An error occurred");
     }
   }
 
@@ -104,12 +167,16 @@ export const handleApiErrorSafe = (error: unknown, options?: { suppress401?: boo
 
       const status = error.response.status;
       const data: any = error.response.data || {};
+      const bodyMessage = extractMessageFromResponseData(data);
       switch (status) {
         case 400:
           if (!shouldSuppress401) {
-            showToast.error("Error Trying to Make The Request", data.message || data.error || "Invalid request");
+            showToast.error(
+              "Request could not be completed",
+              bodyMessage || "Invalid request."
+            );
           }
-          return data.message || data.error || "Bad request";
+          return bodyMessage || "Bad request";
         case 401:
           if (shouldSuppress401) return "Unauthorized";
           authCallback();
@@ -131,9 +198,12 @@ export const handleApiErrorSafe = (error: unknown, options?: { suppress401?: boo
           return "Server error - please try again later";
         default:
           if (!shouldSuppress401) {
-            showToast.error("Error", data.message || "An error occurred");
+            showToast.error(
+              "Something went wrong",
+              bodyMessage || "An error occurred."
+            );
           }
-          return data.message || "An error occurred";
+          return bodyMessage || "An error occurred";
       }
     }
     if (!shouldSuppress401) {

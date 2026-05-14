@@ -229,12 +229,28 @@ const IdentityVerificationModal: React.FC<IdentityVerificationModalProps> = ({
     kycStatusNormalized === "waiting_approval"
       ? "Verification Waiting Approval"
       : "Verification Under Review";
-  const pendingApprovalMessage = (kycStatus?.message ||
-    (kycStatusNormalized === "waiting_approval"
-      ? "Your KYC is waiting approval."
-      : "Your KYC is under verification. Please wait for admin approval."))
+  const pendingMsgRaw = String(kycStatus?.message || "")
     .replace(/^message:\s*/i, "")
     .trim();
+  const isGenericPendingMsg = (msg: string) => {
+    const m = msg.toLowerCase();
+    return (
+      !msg ||
+      m === "unknown status." ||
+      m === "unknown status" ||
+      m === "your kyc is waiting approval." ||
+      m === "your kyc is waiting approval" ||
+      m === "verification waiting approval" ||
+      (m.includes("waiting approval") && msg.length < 90) ||
+      (m.includes("under review") && m.includes("please wait") && msg.length < 120)
+    );
+  };
+  const pendingApprovalBody =
+    !pendingMsgRaw || isGenericPendingMsg(pendingMsgRaw)
+      ? kycStatusNormalized === "waiting_approval"
+        ? "Your documents were received and are with our team for review. You do not need to resubmit unless we contact you."
+        : "Your documents are being reviewed. You do not need to resubmit unless we contact you."
+      : pendingMsgRaw;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/60 p-4">
@@ -248,7 +264,7 @@ const IdentityVerificationModal: React.FC<IdentityVerificationModalProps> = ({
               </h2>
               <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
                 {isKycPendingApproval
-                  ? "KYC Status Update"
+                  ? "We're reviewing your submitted documents."
                   : phoneVerified
                   ? "Email verified! Proceeding to document verification..."
                   : "First, verify your email to continue"}
@@ -300,9 +316,16 @@ const IdentityVerificationModal: React.FC<IdentityVerificationModalProps> = ({
                   />
                 </svg>
               </div>
-              <p className="text-sm text-amber-700 dark:text-amber-300 mb-5">
-                {pendingApprovalMessage}
+              <p className="text-sm text-gray-700 dark:text-gray-300 mb-3 text-left max-w-sm mx-auto leading-relaxed">
+                {pendingApprovalBody}
               </p>
+              <div className="bg-amber-50 dark:bg-amber-900/25 border border-amber-200 dark:border-amber-700/40 rounded-lg p-3 mb-5 text-left text-sm text-amber-950 dark:text-amber-100 max-w-sm mx-auto">
+                <p className="font-semibold mb-1">Typical processing time</p>
+                <p>
+                  Most verifications are completed within <span className="font-semibold">1–3 business days</span>.
+                  During busy periods it may take a little longer. We will email you when there is an update.
+                </p>
+              </div>
               <Button
                 type="button"
                 variant="primary"

@@ -61,7 +61,60 @@ const ENDPOINT_SPECIFIC_CONFIG: Record<string, Partial<ApiClientConfig>> = {
   "/api/changenow/supported-tokens": { timeout: 180000, retries: 1 },
 };
 
+const MAX_LOG_JSON_LEN = 8000;
+const SENSITIVE_REQUEST_KEYS = new Set([
+  "password",
+  "current_password",
+  "new_password",
+  "confirm_password",
+  "otp",
+  "refresh",
+  "access",
+  "access_token",
+  "refresh_token",
+  "token",
+  "authorization",
+]);
 
+/** Shallow + nested redaction for logging only */
+function redactForLog(value: unknown, depth = 0): unknown {
+  if (depth > 8) return "[…]";
+  if (value == null) return value;
+  if (typeof value !== "object") return value;
+  if (value instanceof FormData) return "[FormData]";
+  if (Array.isArray(value)) {
+    return value.slice(0, 50).map((v) => redactForLog(v, depth + 1));
+  }
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+    if (SENSITIVE_REQUEST_KEYS.has(k.toLowerCase())) {
+      out[k] = "[REDACTED]";
+    } else if (v && typeof v === "object") {
+      out[k] = redactForLog(v, depth + 1) as unknown;
+    } else {
+      out[k] = v;
+    }
+  }
+  return out;
+}
+
+function stringifyForLog(value: unknown): string {
+  try {
+    const s =
+      typeof value === "string" ? value : JSON.stringify(redactForLog(value));
+    if (s.length <= MAX_LOG_JSON_LEN) return s;
+    return `${s.slice(0, MAX_LOG_JSON_LEN)}…[truncated ${s.length - MAX_LOG_JSON_LEN} chars]`;
+  } catch {
+    return "[unserializable]";
+  }
+}
+
+function buildFullUrl(config: AxiosRequestConfig): string {
+  const base = config.baseURL || "";
+  const path = config.url || "";
+  if (path.startsWith("http")) return path;
+  return `${base}${path}`;
+}
 
 // Request deduplication tracking
 const pendingRequests = new Map<string, Promise<any>>();
@@ -130,9 +183,17 @@ const createAxiosInstance = (config: ApiClientConfig = DEFAULT_CONFIG): AxiosIns
       requestConfig.timeout = endpointConfig.timeout || config.timeout;
     }
 
-    logger.debug("api", "API Request", {
-      method: requestConfig.method,
-      url: requestConfig.url,
+    (requestConfig as any).__requestStartedAt = Date.now();
+
+    logger.debug("api", {
+      type: "request",
+      method: String(requestConfig.method || "get").toUpperCase(),
+      url: buildFullUrl(requestConfig),
+      params: requestConfig.params,
+      data:
+        requestConfig.data instanceof FormData
+          ? "[FormData]"
+          : redactForLog(requestConfig.data),
       timeout: requestConfig.timeout,
     });
 
@@ -360,13 +421,54 @@ const addDeduplicationInterceptor = (
   return instance;
 };
 
+/** Logs successful and failed HTTP responses when `api` logging is enabled. */
+const addHttpTraceInterceptor = (instance: AxiosInstance): AxiosInstance => {
+  instance.interceptors.response.use(
+    (response) => {
+      const cfg = response.config;
+      const started = (cfg as any).__requestStartedAt as number | undefined;
+      const durationMs =
+        typeof started === "number" ? Date.now() - started : undefined;
+      logger.debug("api", {
+        type: "response",
+        method: String(cfg.method || "get").toUpperCase(),
+        url: buildFullUrl(cfg),
+        status: response.status,
+        durationMs,
+        data: stringifyForLog(response.data),
+      });
+      return response;
+    },
+    (error: AxiosError) => {
+      const cfg = error.config;
+      const started = (cfg as any)?.__requestStartedAt as number | undefined;
+      const durationMs =
+        typeof started === "number" ? Date.now() - started : undefined;
+      logger.debug("api", {
+        type: "response_error",
+        method: String(cfg?.method || "get").toUpperCase(),
+        url: cfg ? buildFullUrl(cfg) : undefined,
+        status: error.response?.status,
+        durationMs,
+        data:
+          error.response?.data !== undefined
+            ? stringifyForLog(error.response.data)
+            : undefined,
+        message: error.message,
+      });
+      return Promise.reject(error);
+    }
+  );
+  return instance;
+};
+
 const createApiClient = (): AxiosInstance => {
   const instance = createAxiosInstance();
   const withAuth = addAuthInterceptor(instance);
   const withRefresh = addRefreshTokenInterceptor(withAuth);
   const withRetry = addRetryInterceptor(withRefresh, DEFAULT_CONFIG);
   const withDedup = addDeduplicationInterceptor(withRetry);
-  return withDedup;
+  return addHttpTraceInterceptor(withDedup);
 };
 
 const apiClient = createApiClient();

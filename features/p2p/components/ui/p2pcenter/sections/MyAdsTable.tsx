@@ -233,7 +233,7 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
                   {option === "Duplicate" && (
                     <Upload size={20} className="text-[#1D8751] rotate-90" />
                   )}
-                  {option}
+                  Cancle
                 </li>
               ))}
             </ul>

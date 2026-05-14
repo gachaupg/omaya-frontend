@@ -15,12 +15,12 @@ import {
   CreateDeviceSessionPayload,
   DeviceSessionsResponse,
   LogoutDeviceResponse,
-  LogoutAllDevicesResponse,
   SupportRequestPayload,
   SupportRequestResponse,
   CashWithdrawalRequest,
   CashWithdrawalResponse,
   ReferralFeeCalculationResponse,
+  ProfilePatchUpdateResponse,
 } from "./types";
 import { API_CONFIG } from "@/lib/appConfig";
 
@@ -37,10 +37,10 @@ export const settingsApi = {
 
   updateProfile: async (
     data: ProfileUpdateRequest
-  ): Promise<ProfileUpdateResponse> => {
+  ): Promise<ProfilePatchUpdateResponse | ProfileUpdateResponse> => {
     return withRetry(async () => {
-      const response = await apiClient.put(
-        `${SETTINGS_API_BASE}/profile`,
+      const response = await apiClient.patch(
+        API_CONFIG.P2P.UPDATE_PROFILE,
         data
       );
       return response.data;
@@ -303,10 +303,11 @@ export const settingsApi = {
     });
   },
 
-  logoutAllDevices: async (): Promise<LogoutAllDevicesResponse> => {
+  logoutAllDevices: async (password: string): Promise<{ message?: string }> => {
     return withRetry(async () => {
       const response = await apiClient.post(
-        `${SETTINGS_API_BASE}/device-sessions/logout-all/`
+        `${SETTINGS_API_BASE}/device-sessions/logout-all/`,
+        { password }
       );
       return response.data;
     });
